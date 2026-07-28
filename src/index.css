@@ -1,0 +1,79 @@
+/* ===== Tokens de diseño — paleta "Tinta marina y coral" ===== */
+:root {
+  /* Barra lateral oscura (tinta marina) */
+  --side-bg: #0b1f2c;
+  --side-panel: #0f2734;
+  --side-line: #122a39;
+  --side-text: #ffffff;
+  --side-dim: #6f8a97;
+  --side-dim-soft: #5e7986;
+
+  /* Marca / acento principal */
+  --brand-dark: #06151f;
+  --coral: #e2725b;
+  --coral-hover: #d35f47;
+  --coral-soft: #fbe8e3;
+  --coral-soft-text: #a3422e;
+  --marina: #0e4f63;
+  --marina-hover: #0b3f4f;
+
+  /* Área de trabajo clara */
+  --bg: #fafbfc;
+  --surface: #ffffff;
+  --line: #e2e4e9;
+  --line-strong: #dde0e6;
+  --text: #0b1f2c;
+  --text-dim: #5b6080;
+  --text-mute: #9499ab;
+  --text-faint: #b8bccb;
+
+  /* Estado */
+  --danger: #e23b3b;
+  --ink: #0b1f2c;
+
+  --radius: 9px;
+  --radius-sm: 7px;
+
+  --font-display: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
