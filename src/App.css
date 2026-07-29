@@ -1484,3 +1484,317 @@ select.input {
   justify-content: flex-end;
   padding: 4px 14px 8px;
 }
+
+/* ============================================================
+   REDISEÑO: dos barras horizontales blancas (sin sidebar)
+   Este bloque va al FINAL de App.css y sobrescribe el layout viejo.
+   ============================================================ */
+
+/* El layout raíz ahora es columna: barra1 / barra2 / workspace */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: #fafbfc;
+}
+
+/* ===== Barra superior (marca + acciones + config) ===== */
+.topbar {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  padding: 0 18px;
+  gap: 6px;
+  background: #ffffff;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 40;
+}
+.topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.topbar__brand-icon {
+  width: 30px;
+  height: 30px;
+  background: var(--coral, #e2725b);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.topbar__brand-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+}
+.topbar__spacer {
+  flex: 1;
+}
+
+/* Item genérico estilo Waze: ícono + texto, sin caja, hover gris */
+.topitem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: #4a4a4a;
+  flex-shrink: 0;
+  font-family: inherit;
+}
+.topitem:hover {
+  background: #f4f5f7;
+}
+.topitem svg {
+  color: #9499ab;
+}
+.topitem__val {
+  color: #1a1a1a;
+  font-weight: 600;
+}
+.topitem__chev {
+  color: #c0c4cc !important;
+}
+.topitem--accent {
+  color: var(--coral, #e2725b);
+  font-weight: 600;
+}
+.topitem--accent svg {
+  color: var(--coral, #e2725b);
+}
+
+/* Contenedor relativo para posicionar el dropdown */
+.topmenu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* ===== Dropdowns ===== */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.14);
+  padding: 8px;
+  z-index: 50;
+  animation: dropdown-in 0.12s ease;
+}
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.dropdown--trips {
+  width: 280px;
+}
+.dropdown--mini {
+  width: 120px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.dropdown__label {
+  font-size: 11px;
+  color: #9499ab;
+  font-weight: 600;
+  padding: 8px 12px 6px;
+}
+.dropdown__empty {
+  font-size: 13px;
+  color: #b8bcc8;
+  padding: 12px;
+  text-align: center;
+}
+.dropdown__trip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 10px;
+}
+.dropdown__trip:hover {
+  background: #f7f8fa;
+}
+.dropdown__trip.is-current {
+  background: #fef1ee;
+}
+.dropdown__trip-open {
+  flex: 1;
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.dropdown__trip-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dropdown__trip.is-current .dropdown__trip-name {
+  color: var(--coral, #e2725b);
+}
+.dropdown__trip-meta {
+  font-size: 11px;
+  color: #9499ab;
+}
+.dropdown__trip-del {
+  border: none;
+  background: transparent;
+  color: #d0d3da;
+  cursor: pointer;
+  padding: 8px 10px;
+  display: flex;
+}
+.dropdown__trip-del:hover {
+  color: var(--danger, #e23b3b);
+}
+.dropdown__opt {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4a4a4a;
+  cursor: pointer;
+  font-family: inherit;
+}
+.dropdown__opt:hover {
+  background: #f7f8fa;
+}
+.dropdown__opt.is-active {
+  background: #fef1ee;
+  color: var(--coral, #e2725b);
+  font-weight: 600;
+}
+
+/* ===== Elementos fusionados en la barra única ===== */
+.topbar__sep {
+  width: 1px;
+  height: 20px;
+  background: #e6e8ec;
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+.topbar__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  border: none;
+  outline: none;
+  background: transparent;
+  min-width: 70px;
+  max-width: 200px;
+  font-family: inherit;
+  letter-spacing: -0.01em;
+}
+.topbar__title::placeholder {
+  color: #c8ccd4;
+}
+.topbar__tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.topbar__tab {
+  padding: 7px 13px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #9499ab;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+}
+.topbar__tab:hover {
+  background: #f4f5f7;
+}
+.topbar__tab.is-active {
+  color: var(--coral, #e2725b);
+  background: #fef1ee;
+  font-weight: 600;
+}
+.topbar__save {
+  background: var(--marina, #0e4f63);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 15px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-family: inherit;
+  margin-left: 4px;
+}
+.topbar__save:hover {
+  background: var(--marina-hover, #0b3f4f);
+}
+.topbar__save:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.tabbar__badge {
+  background: rgba(226, 114, 91, 0.15);
+  color: var(--coral, #e2725b);
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 1px 6px;
+}
+
+/* ===== Workspace ahora ocupa el resto en vertical ===== */
+.workspace {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+/* El editor ya no tiene su propia barra/pestañas (subieron a tabbar) */
+.editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #fafbfc;
+  overflow: hidden;
+}
+.editor__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+}

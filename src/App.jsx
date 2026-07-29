@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   IconMap2,
-  IconMenu2,
   IconX,
   IconDeviceFloppy,
   IconArrowRight,
@@ -10,12 +9,15 @@ import {
   IconChecklist,
   IconPlus,
   IconTrash,
+  IconBookmark,
+  IconChevronDown,
+  IconCoin,
+  IconLanguage,
 } from '@tabler/icons-react';
 import { useTranslation } from './i18n/index.jsx';
 import { useTrip } from './modules/trips/useTrip.js';
 import { useSavedTrips } from './modules/trips/useSavedTrips.js';
 import { SegmentForm } from './modules/trips/SegmentForm.jsx';
-import { SavedTrips } from './modules/trips/SavedTrips.jsx';
 import { RouteMap } from './modules/map/RouteMap.jsx';
 import { ResizablePanes } from './components/ResizableSplit.jsx';
 import { tripTotal, isTripSavable, routeStops } from './modules/trips/tripModel.js';
@@ -48,13 +50,15 @@ export default function App() {
 
   const { trips, loading, saveTrip, deleteTrip } = useSavedTrips();
   const [toast, setToast] = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileView, setMobileView] = useState('form');
   const [activeTab, setActiveTab] = useState('segments');
   const [expandedSegments, setExpandedSegments] = useState({});
   const [newItemText, setNewItemText] = useState('');
   const [confirmDeleteNote, setConfirmDeleteNote] = useState(null);
+  // Dropdown abierto en la barra superior: 'trips' | 'currency' | 'language' | null
+  const [openMenu, setOpenMenu] = useState(null);
   const newItemRef = useRef(null);
+  const menuWrapRef = useRef(null);
 
   const intlLocale = locale === 'es' ? 'es-MX' : 'en-US';
   const canSave = isTripSavable(trip);
@@ -89,6 +93,19 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [handleSave]);
 
+  // Cierra cualquier dropdown de la barra superior al hacer clic afuera.
+  useEffect(() => {
+    function onClickOutside(e) {
+      if (menuWrapRef.current && !menuWrapRef.current.contains(e.target)) {
+        setOpenMenu(null);
+      }
+    }
+    if (openMenu) {
+      document.addEventListener('mousedown', onClickOutside);
+      return () => document.removeEventListener('mousedown', onClickOutside);
+    }
+  }, [openMenu]);
+
   const prevTripIdRef = useRef(trip.id);
   if (prevTripIdRef.current !== trip.id) {
     prevTripIdRef.current = trip.id;
@@ -98,6 +115,7 @@ export default function App() {
     });
     setExpandedSegments(collapsed);
   }
+
   function handleAddItem(e) {
     e.preventDefault();
     const text = newItemText.trim();
@@ -114,65 +132,184 @@ export default function App() {
   const doneCount = checklist.filter((i) => i.done).length;
   const notes = trip.notes || [];
 
-  const editorPane = (
-    <section className="editor">
-      <header className="editor__bar">
-        <button
-          type="button"
-          className="btn btn--icon editor__menu"
-          aria-label="Menú"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setSidebarOpen(true);
-          }}
-        >
-          <IconMenu2 size={18} aria-hidden="true" />
-        </button>
-        <div className="editor__title">
-          <input
-            type="text"
-            className="editor__name"
-            value={trip.name}
-            placeholder={t('tripNamePlaceholder')}
-            onChange={(e) => renameTrip(e.target.value)}
-            aria-label={t('tripName')}
-          />
+  // ===== Barra superior (marca + acciones + config) =====
+  const topbar = (
+    <header className="topbar" ref={menuWrapRef}>
+      <div className="topbar__brand">
+        <div className="topbar__brand-icon">
+          <IconMap2 size={17} aria-hidden="true" />
         </div>
-        <div className="editor__actions">
-          <button
-            type="button"
-            className="btn btn--primary"
-            onClick={handleSave}
-            disabled={!canSave}
-          >
-            <IconDeviceFloppy size={15} aria-hidden="true" /> {t('saveTrip')}
-          </button>
-        </div>
-      </header>
+        <span className="topbar__brand-name">{t('appName')}</span>
+      </div>
 
-      <div className="editor__tabs">
+      <span className="topbar__sep" />
+
+      <input
+        type="text"
+        className="topbar__title"
+        value={trip.name}
+        placeholder={t('tripNamePlaceholder')}
+        onChange={(e) => renameTrip(e.target.value)}
+        aria-label={t('tripName')}
+      />
+
+      <span className="topbar__sep" />
+
+      <div className="topbar__tabs">
         <button
           type="button"
-          className={'editor__tab' + (activeTab === 'segments' ? ' is-active' : '')}
+          className={'topbar__tab' + (activeTab === 'segments' ? ' is-active' : '')}
           onClick={() => setActiveTab('segments')}
         >
-          <IconMap size={14} aria-hidden="true" /> Tramos
+          <IconMap size={15} aria-hidden="true" /> Tramos
         </button>
         <button
           type="button"
-          className={'editor__tab' + (activeTab === 'notes' ? ' is-active' : '')}
+          className={'topbar__tab' + (activeTab === 'notes' ? ' is-active' : '')}
           onClick={() => setActiveTab('notes')}
         >
-          <IconNotes size={14} aria-hidden="true" /> Notas
+          <IconNotes size={15} aria-hidden="true" /> Notas
           {checklist.length > 0 && (
-            <span className="editor__tab-badge">
+            <span className="tabbar__badge">
               {doneCount}/{checklist.length}
             </span>
           )}
         </button>
       </div>
 
+      <button type="button" className="topbar__save" onClick={handleSave} disabled={!canSave}>
+        <IconDeviceFloppy size={15} aria-hidden="true" /> {t('saveTrip')}
+      </button>
+
+      <div className="topbar__spacer" />
+
+      <button
+        type="button"
+        className="topitem topitem--accent"
+        onClick={() => {
+          resetTrip();
+          setOpenMenu(null);
+        }}
+      >
+        <IconPlus size={17} aria-hidden="true" /> {t('newTrip')}
+      </button>
+
+      <div className="topmenu">
+        <button
+          type="button"
+          className="topitem"
+          onClick={() => setOpenMenu(openMenu === 'trips' ? null : 'trips')}
+        >
+          <IconBookmark size={17} aria-hidden="true" /> Viajes guardados
+          <IconChevronDown size={13} className="topitem__chev" aria-hidden="true" />
+        </button>
+        {openMenu === 'trips' && (
+          <div className="dropdown dropdown--trips">
+            <div className="dropdown__label">Viajes guardados</div>
+            {loading ? (
+              <div className="dropdown__empty">…</div>
+            ) : trips.length === 0 ? (
+              <div className="dropdown__empty">Sin viajes guardados</div>
+            ) : (
+              trips.map((tr) => (
+                <div
+                  key={tr.id}
+                  className={'dropdown__trip' + (tr.id === trip.id ? ' is-current' : '')}
+                >
+                  <button
+                    type="button"
+                    className="dropdown__trip-open"
+                    onClick={() => {
+                      loadTrip(tr);
+                      setOpenMenu(null);
+                    }}
+                  >
+                    <span className="dropdown__trip-name">{tr.name || 'Sin nombre'}</span>
+                    <span className="dropdown__trip-meta">
+                      {tr.segments?.length || 0}{' '}
+                      {tr.segments?.length === 1 ? 'tramo' : 'tramos'}
+                      {' · '}
+                      {formatMoney(tripTotal(tr), tr.currency, intlLocale)}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="dropdown__trip-del"
+                    aria-label="Eliminar viaje"
+                    onClick={() => deleteTrip(tr.id)}
+                  >
+                    <IconTrash size={15} aria-hidden="true" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="topmenu">
+        <button
+          type="button"
+          className="topitem"
+          onClick={() => setOpenMenu(openMenu === 'currency' ? null : 'currency')}
+        >
+          <IconCoin size={17} aria-hidden="true" />
+          <span className="topitem__val">{trip.currency}</span>
+          <IconChevronDown size={13} className="topitem__chev" aria-hidden="true" />
+        </button>
+        {openMenu === 'currency' && (
+          <div className="dropdown dropdown--mini">
+            {CURRENCIES.map((c) => (
+              <button
+                type="button"
+                key={c}
+                className={'dropdown__opt' + (c === trip.currency ? ' is-active' : '')}
+                onClick={() => {
+                  setCurrency(c);
+                  setOpenMenu(null);
+                }}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="topmenu">
+        <button
+          type="button"
+          className="topitem"
+          onClick={() => setOpenMenu(openMenu === 'language' ? null : 'language')}
+        >
+          <IconLanguage size={17} aria-hidden="true" />
+          <span className="topitem__val">{locale.toUpperCase()}</span>
+          <IconChevronDown size={13} className="topitem__chev" aria-hidden="true" />
+        </button>
+        {openMenu === 'language' && (
+          <div className="dropdown dropdown--mini">
+            {availableLocales.map((l) => (
+              <button
+                type="button"
+                key={l}
+                className={'dropdown__opt' + (l === locale ? ' is-active' : '')}
+                onClick={() => {
+                  setLocale(l);
+                  setOpenMenu(null);
+                }}
+              >
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </header>
+  );
+
+  // ===== Panel editor (tramos / notas) =====
+  const editorPane = (
+    <section className="editor">
       <div className="editor__body">
         {activeTab === 'segments' && (
           <>
@@ -340,6 +477,7 @@ export default function App() {
     </section>
   );
 
+  // ===== Panel mapa =====
   const mapPane = (
     <section className="mappane">
       <RouteMap segments={trip.segments} />
@@ -372,94 +510,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <aside className={'sidebar' + (sidebarOpen ? ' is-open' : '')}>
-        <header className="brand">
-          <div className="brand__mark">
-            <IconMap2 size={18} aria-hidden="true" />
-          </div>
-          <div>
-            <h1 className="brand__name">{t('appName')}</h1>
-            <p className="brand__tag">{t('appTagline')}</p>
-          </div>
-          <button
-            type="button"
-            className="btn btn--icon sidebar__close"
-            aria-label="Cerrar menú"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setSidebarOpen(false);
-            }}
-          >
-            <IconX size={18} aria-hidden="true" />
-          </button>
-        </header>
-
-        <button
-          type="button"
-          className="btn btn--new"
-          onClick={() => {
-            resetTrip();
-            setSidebarOpen(false);
-          }}
-        >
-          + {t('newTrip')}
-        </button>
-
-        <SavedTrips
-          trips={trips}
-          loading={loading}
-          currentId={trip.id}
-          onOpen={(tr) => {
-            loadTrip(tr);
-            setSidebarOpen(false);
-          }}
-          onDelete={deleteTrip}
-        />
-
-        <div className="sidebar__foot">
-          <label className="mini">
-            <span>{t('currency')}</span>
-            <select
-              className="mini__select"
-              value={trip.currency}
-              onChange={(e) => setCurrency(e.target.value)}
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="mini">
-            <span>{t('language')}</span>
-            <select
-              className="mini__select"
-              value={locale}
-              onChange={(e) => setLocale(e.target.value)}
-            >
-              {availableLocales.map((l) => (
-                <option key={l} value={l}>
-                  {l.toUpperCase()}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </aside>
-
-      {sidebarOpen && (
-        <div
-          className="sidebar__scrim"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setSidebarOpen(false);
-          }}
-        />
-      )}
-
+      {topbar}
       <main className="workspace">
         <div className="workspace__desktop">
           <ResizablePanes left={editorPane} right={mapPane} />
