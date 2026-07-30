@@ -216,7 +216,7 @@ export function AppEditorPane({
                 </span>
                 {checklist.length > 0 && (
                   <span className="notes-section__count">
-                    {doneCount} de {checklist.length} {t('completed')}
+                    {doneCount} {t('of')} {checklist.length} {t('completed')}
                   </span>
                 )}
               </div>
