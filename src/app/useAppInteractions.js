@@ -1,9 +1,14 @@
 import { useEffect, useRef } from 'react';
+import {
+  createCollapsedSegments,
+  isOutsideTarget,
+  isSaveShortcut,
+} from './appInteractionModel.js';
 
 export function useSaveShortcut(onSave) {
   useEffect(() => {
     function onKey(event) {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+      if (isSaveShortcut(event)) {
         event.preventDefault();
         onSave();
       }
@@ -19,7 +24,7 @@ export function useOutsideClick(ref, active, onOutside) {
     if (!active) return undefined;
 
     function onPointerDown(event) {
-      if (ref.current && !ref.current.contains(event.target)) {
+      if (isOutsideTarget(ref.current, event.target)) {
         onOutside();
       }
     }
@@ -36,10 +41,6 @@ export function useCollapseSegmentsOnTripChange(tripId, segments, setExpandedSeg
     if (previousTripIdRef.current === tripId) return;
 
     previousTripIdRef.current = tripId;
-    const collapsed = {};
-    (segments || []).forEach((segment) => {
-      collapsed[segment.id] = false;
-    });
-    setExpandedSegments(collapsed);
+    setExpandedSegments(createCollapsedSegments(segments));
   }, [segments, setExpandedSegments, tripId]);
 }
