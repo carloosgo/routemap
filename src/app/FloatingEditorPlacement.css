@@ -182,7 +182,7 @@
   /* Etiqueta compacta con el nombre, encima del logo oficial de Mapbox. */
   .trip-name-pill {
     position: fixed;
-    left: 448px;
+    left: 418px;
     bottom: 34px;
     z-index: 702;
     max-width: 240px;
@@ -199,7 +199,7 @@
   }
 
   .workspace__desktop--floating .mapboxgl-ctrl-bottom-left {
-    left: 448px;
+    left: 418px;
   }
 
   /* Atribución obligatoria, más compacta pero visible y legible. */
