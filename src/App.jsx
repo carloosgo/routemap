@@ -1,10 +1,14 @@
 import { useCallback, useRef, useState } from 'react';
 import {
+  IconBookmark,
   IconChevronDown,
   IconCoin,
+  IconDotsVertical,
   IconLanguage,
   IconMap,
   IconNotes,
+  IconPlus,
+  IconTrash,
 } from '@tabler/icons-react';
 import { useTranslation } from './i18n/index.jsx';
 import { useTrip } from './modules/trips/useTrip.js';
@@ -12,6 +16,7 @@ import { useSavedTrips } from './modules/trips/useSavedTrips.js';
 import { useFirebaseAuth } from './infrastructure/firebase/useFirebaseAuth.js';
 import { isTripSavable, tripTotal } from './modules/trips/tripModel.js';
 import { tripBreakdown } from './modules/expenses/expenseModel.js';
+import { formatMoney } from './shared/utils.js';
 import { AppTopbar } from './app/AppTopbar.jsx';
 import { AppEditorPane } from './app/AppEditorPane.jsx';
 import { AppMapPane } from './app/AppMapPane.jsx';
@@ -124,14 +129,10 @@ export default function App() {
   const closeSegmentNote = useCallback(() => setOpenNoteSegmentId(null), []);
 
   useSaveShortcut(handleSave);
-  useOutsideClick(
-    menuWrapRef,
-    Boolean(openMenu && openMenu !== 'currency' && openMenu !== 'language'),
-    closeMenu
-  );
+  useOutsideClick(menuWrapRef, openMenu === 'account', closeMenu);
   useOutsideClick(
     editorMenuRef,
-    openMenu === 'currency' || openMenu === 'language',
+    openMenu === 'currency' || openMenu === 'workspace',
     closeMenu
   );
   useOutsideClickSelector('.segnote', Boolean(openNoteSegmentId), closeSegmentNote);
@@ -163,14 +164,8 @@ export default function App() {
       t={t}
       trip={trip}
       renameTrip={renameTrip}
-      resetTrip={resetTrip}
       openMenu={openMenu}
       setOpenMenu={setOpenMenu}
-      trips={trips}
-      loading={loading}
-      loadTrip={loadTrip}
-      deleteTrip={deleteTrip}
-      intlLocale={intlLocale}
       handleSave={handleSave}
       canSave={canSave}
       authUser={auth.user}
@@ -241,23 +236,24 @@ export default function App() {
         </button>
 
         <div className="editor-module__settings">
-          <div className="topmenu">
+          <div className="editor-module__menu-anchor">
             <button
               type="button"
-              className="topitem"
+              className={'editor-module__tab' + (openMenu === 'currency' ? ' is-active' : '')}
               onClick={() => setOpenMenu(openMenu === 'currency' ? null : 'currency')}
             >
-              <IconCoin size={17} aria-hidden="true" />
-              <span className="topitem__val">{trip.currency}</span>
-              <IconChevronDown size={13} className="topitem__chev" aria-hidden="true" />
+              <IconCoin size={15} aria-hidden="true" />
+              {trip.currency}
+              <IconChevronDown size={12} aria-hidden="true" />
             </button>
             {openMenu === 'currency' && (
-              <div className="dropdown dropdown--mini">
+              <div className="editor-module__currency-menu">
                 {CURRENCIES.map((currency) => (
                   <button
                     type="button"
                     key={currency}
-                    className={'dropdown__opt' + (currency === trip.currency ? ' is-active' : '')}
+                    className={'editor-module__currency-option' +
+                      (currency === trip.currency ? ' is-active' : '')}
                     onClick={() => {
                       setCurrency(currency);
                       setOpenMenu(null);
@@ -270,31 +266,107 @@ export default function App() {
             )}
           </div>
 
-          <div className="topmenu">
+          <div className="editor-module__menu-anchor">
             <button
               type="button"
-              className="topitem"
-              onClick={() => setOpenMenu(openMenu === 'language' ? null : 'language')}
+              className={'editor-module__more-button' +
+                (openMenu === 'workspace' ? ' is-active' : '')}
+              aria-label="Más opciones"
+              onClick={() => setOpenMenu(openMenu === 'workspace' ? null : 'workspace')}
             >
-              <IconLanguage size={17} aria-hidden="true" />
-              <span className="topitem__val">{locale.toUpperCase()}</span>
-              <IconChevronDown size={13} className="topitem__chev" aria-hidden="true" />
+              <IconDotsVertical size={18} aria-hidden="true" />
             </button>
-            {openMenu === 'language' && (
-              <div className="dropdown dropdown--mini">
-                {availableLocales.map((availableLocale) => (
-                  <button
-                    type="button"
-                    key={availableLocale}
-                    className={'dropdown__opt' + (availableLocale === locale ? ' is-active' : '')}
-                    onClick={() => {
-                      setLocale(availableLocale);
-                      setOpenMenu(null);
-                    }}
-                  >
-                    {availableLocale.toUpperCase()}
-                  </button>
-                ))}
+
+            {openMenu === 'workspace' && (
+              <div className="editor-module__more-menu">
+                <button
+                  type="button"
+                  className="editor-module__menu-item"
+                  onClick={() => {
+                    resetTrip();
+                    setOpenMenu(null);
+                  }}
+                >
+                  <IconPlus size={17} aria-hidden="true" />
+                  <span>{t('newTrip')}</span>
+                </button>
+
+                <div className="editor-module__menu-separator" />
+
+                <div className="editor-module__menu-heading">
+                  <IconBookmark size={17} aria-hidden="true" />
+                  <span>{t('savedTrips')}</span>
+                </div>
+                <div className="editor-module__saved-list">
+                  {loading ? (
+                    <div className="editor-module__menu-empty">…</div>
+                  ) : trips.length === 0 ? (
+                    <div className="editor-module__menu-empty">{t('noSavedTrips')}</div>
+                  ) : (
+                    trips.map((savedTrip) => {
+                      const segmentCount = savedTrip.segments?.length || 0;
+                      return (
+                        <div
+                          key={savedTrip.id}
+                          className={'editor-module__saved-item' +
+                            (savedTrip.id === trip.id ? ' is-current' : '')}
+                        >
+                          <button
+                            type="button"
+                            className="editor-module__saved-open"
+                            onClick={() => {
+                              loadTrip(savedTrip);
+                              setOpenMenu(null);
+                            }}
+                          >
+                            <span className="editor-module__saved-name">
+                              {savedTrip.name || t('unnamedTrip')}
+                            </span>
+                            <span className="editor-module__saved-meta">
+                              {segmentCount}{' '}
+                              {segmentCount === 1
+                                ? t('segment').toLowerCase()
+                                : t('segmentPlural')}
+                              {' · '}
+                              {formatMoney(tripTotal(savedTrip), savedTrip.currency, intlLocale)}
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            className="editor-module__saved-delete"
+                            aria-label={t('deleteTrip')}
+                            onClick={() => deleteTrip(savedTrip.id)}
+                          >
+                            <IconTrash size={14} aria-hidden="true" />
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <div className="editor-module__menu-separator" />
+
+                <div className="editor-module__menu-heading">
+                  <IconLanguage size={17} aria-hidden="true" />
+                  <span>{t('language')}</span>
+                </div>
+                <div className="editor-module__language-options">
+                  {availableLocales.map((availableLocale) => (
+                    <button
+                      type="button"
+                      key={availableLocale}
+                      className={'editor-module__language-option' +
+                        (availableLocale === locale ? ' is-active' : '')}
+                      onClick={() => {
+                        setLocale(availableLocale);
+                        setOpenMenu(null);
+                      }}
+                    >
+                      {availableLocale.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
