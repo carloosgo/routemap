@@ -1,6 +1,5 @@
 import { IconArrowRight, IconCheck, IconX } from '@tabler/icons-react';
 import { RouteMap } from '../modules/map/RouteMap.jsx';
-import { flagImageUrl } from '../modules/flags/flags.js';
 import { colorForIndex } from '../config.js';
 
 export function AppMapPane({
@@ -8,7 +7,6 @@ export function AppMapPane({
   openNoteSegmentId,
   setOpenNoteSegmentId,
   updateSegment,
-  stops,
   toast,
   t,
 }) {
@@ -41,7 +39,7 @@ export function AppMapPane({
             className="segnote"
             role="dialog"
             aria-label={t('segmentNote')}
-            style={{ zIndex: 11 }}
+            style={{ zIndex: 720 }}
           >
             <div className="segnote__head">
               <span
@@ -82,33 +80,6 @@ export function AppMapPane({
           </div>
         );
       })()}
-      {stops.length > 0 && (
-        <div className="routestrip" role="list" aria-label={t('routeSummary')}>
-          {stops.map((city, index) => (
-            <span
-              className="routestrip__item"
-              role="listitem"
-              key={`${city.lat}-${city.lon}-${index}`}
-            >
-              {city.countryCode ? (
-                <img
-                  className="flag"
-                  src={flagImageUrl(city.countryCode, 20)}
-                  alt={city.countryCode}
-                  width={20}
-                  height={14}
-                  loading="lazy"
-                />
-              ) : (
-                <span className="flag flag--empty" />
-              )}
-              {index < stops.length - 1 && (
-                <IconArrowRight size={12} className="routestrip__arrow" aria-hidden="true" />
-              )}
-            </span>
-          ))}
-        </div>
-      )}
       {toast && (
         <div className="toast" role="status" aria-live="polite">
           {toast}
