@@ -40,7 +40,6 @@ export function AppEditorPane({
   updateExpenses,
   removeSegment,
   reorderSegment,
-  moveSegment,
   setOpenNoteSegmentId,
   addSegment,
   t,
@@ -113,13 +112,6 @@ export function AppEditorPane({
     };
   }, [dragState, reorderSegment]);
 
-  function moveSegmentWithKeyboard(segmentId, offset) {
-    moveSegment(segmentId, offset);
-    window.requestAnimationFrame(() => {
-      document.querySelector(`[data-reorder-handle="${CSS.escape(segmentId)}"]`)?.focus();
-    });
-  }
-
   return (
     <section className="editor">
       <div className="editor__body">
@@ -146,7 +138,6 @@ export function AppEditorPane({
                   onOpenNote={() => setOpenNoteSegmentId(segment.id)}
                   onReorderPointerStart={(event) => {
                     if (event.pointerType === 'mouse' && event.button !== 0) return;
-                    event.currentTarget.focus({ preventScroll: true });
                     event.preventDefault();
                     setDragState({
                       segmentId: segment.id,
@@ -155,11 +146,6 @@ export function AppEditorPane({
                       targetId: null,
                       placement: null,
                     });
-                  }}
-                  onReorderKeyDown={(event) => {
-                    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
-                    event.preventDefault();
-                    moveSegmentWithKeyboard(segment.id, event.key === 'ArrowUp' ? -1 : 1);
                   }}
                 />
               ))}
