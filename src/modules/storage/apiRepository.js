@@ -9,7 +9,7 @@ import { normalizeTrip } from '../trips/tripModel.js';
 // el flujo de tu proveedor de auth (Auth0, Cognito, Firebase Auth).
 
 export function createApiRepository(baseUrl) {
-  const normalizedBaseUrl = (baseUrl || '').replace(/\/$/, '');
+  const normalizedBaseUrl = (baseUrl || '').replace(/\/+$/, '');
   const persistedIds = new Set();
 
   if (!normalizedBaseUrl) {
@@ -73,7 +73,7 @@ export function createApiRepository(baseUrl) {
           body: JSON.stringify(trip),
         }
       );
-      return remember(normalizeTrip(data));
+      return remember(normalizeTrip(data || trip));
     },
 
     async remove(id) {
