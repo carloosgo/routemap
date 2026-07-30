@@ -7,9 +7,7 @@ import {
   IconDeviceFloppy,
   IconLanguage,
   IconLogout,
-  IconMap,
   IconMap2,
-  IconNotes,
   IconPlus,
   IconTrash,
   IconUser,
@@ -22,10 +20,6 @@ const CURRENCIES = ['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'];
 export function AppTopbar({
   menuWrapRef,
   t,
-  activeTab,
-  setActiveTab,
-  checklist,
-  doneCount,
   trip,
   renameTrip,
   resetTrip,
@@ -68,30 +62,6 @@ export function AppTopbar({
         onChange={(event) => renameTrip(event.target.value)}
         aria-label={t('tripName')}
       />
-
-      <span className="topbar__sep" />
-
-      <div className="topbar__tabs">
-        <button
-          type="button"
-          className={'topbar__tab' + (activeTab === 'segments' ? ' is-active' : '')}
-          onClick={() => setActiveTab('segments')}
-        >
-          <IconMap size={15} aria-hidden="true" /> {t('segments')}
-        </button>
-        <button
-          type="button"
-          className={'topbar__tab' + (activeTab === 'notes' ? ' is-active' : '')}
-          onClick={() => setActiveTab('notes')}
-        >
-          <IconNotes size={15} aria-hidden="true" /> {t('notes')}
-          {checklist.length > 0 && (
-            <span className="tabbar__badge">
-              {doneCount}/{checklist.length}
-            </span>
-          )}
-        </button>
-      </div>
 
       <div className="topbar__spacer" />
 
