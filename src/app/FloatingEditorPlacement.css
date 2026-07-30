@@ -10,7 +10,7 @@
 
 .editor-module__settings > .editor-module__menu-anchor:last-child {
   position: fixed;
-  top: 70px;
+  top: 158px;
   right: 14px;
   z-index: 900;
 }
@@ -29,40 +29,33 @@
   background: var(--marina-hover, #0b3f4f);
 }
 
-/* Guardar: círculo flotante justo encima del menú de tres puntos. */
+/* La barra deja de ocupar espacio; sus controles conservan la lógica existente. */
+.topbar--floating-only {
+  height: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  flex: 0 0 0;
+  background: transparent;
+  overflow: visible;
+  border: 0;
+  z-index: auto;
+}
+
 @media (min-width: 721px) {
-  .topbar__save {
-    position: fixed;
-    top: 14px;
+  /* Controles + / −, Atlas, Guardar y menú forman una columna flotante. */
+  .workspace__desktop--floating .mapboxgl-ctrl-top-left {
+    left: auto;
     right: 14px;
-    z-index: 901;
-    width: 38px;
-    height: 38px;
-    min-width: 38px;
-    padding: 0;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
-    font-size: 0;
-    line-height: 0;
+    top: 14px;
+    bottom: auto;
   }
 
-  .topbar__save svg {
-    display: block;
-    width: 21px;
-    height: 21px;
-    margin: 0;
-    flex: 0 0 21px;
-  }
-
-  /* Marca Atlas: pequeña, transparente y encima de la atribución. */
   .topbar__brand {
     position: fixed;
+    top: 82px;
     right: 14px;
-    bottom: 25px;
-    z-index: 701;
+    z-index: 901;
     padding: 0;
     border-radius: 0;
     background: transparent;
@@ -85,15 +78,125 @@
     font-size: 12px;
   }
 
-  /* Los controles + / − quedan justo encima de la marca Atlas. */
-  .workspace__desktop--floating .mapboxgl-ctrl-top-left {
-    left: auto;
+  .topbar__save {
+    position: fixed;
+    top: 112px;
     right: 14px;
-    top: auto;
-    bottom: 56px;
+    z-index: 901;
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    padding: 0;
+    margin: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+    font-size: 0;
+    line-height: 0;
   }
 
-  /* El logo oficial de Mapbox permanece visible al lado del panel flotante. */
+  .topbar__save:disabled {
+    opacity: 1;
+    cursor: pointer;
+  }
+
+  .topbar__save svg {
+    display: block;
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    flex: 0 0 22px;
+  }
+
+  .trip-save-popover {
+    position: fixed;
+    top: 112px;
+    right: 62px;
+    z-index: 930;
+    width: 260px;
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid var(--line, #e5e7eb);
+    border-radius: 8px;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.2);
+  }
+
+  .trip-save-popover__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 11px;
+    border-bottom: 1px solid var(--line, #e5e7eb);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text, #1f2937);
+  }
+
+  .trip-save-popover__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    border: 0;
+    background: transparent;
+    color: var(--text-mute, #9499ab);
+    cursor: pointer;
+  }
+
+  .trip-save-popover__body {
+    display: flex;
+    gap: 7px;
+    padding: 10px;
+  }
+
+  .trip-save-popover__input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--line-strong, #d1d5db);
+    border-radius: 6px;
+    padding: 7px 9px;
+    font: inherit;
+    font-size: 12px;
+    outline: none;
+  }
+
+  .trip-save-popover__input:focus {
+    border-color: #357d94;
+  }
+
+  .trip-save-popover__submit {
+    border: 0;
+    border-radius: 6px;
+    padding: 7px 10px;
+    background: var(--marina, #0e4f63);
+    color: #ffffff;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* Etiqueta compacta con el nombre, encima del logo oficial de Mapbox. */
+  .trip-name-pill {
+    position: fixed;
+    left: 448px;
+    bottom: 34px;
+    z-index: 702;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: #b9d8e0;
+    color: #325b68;
+    font-size: 11px;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+  }
+
   .workspace__desktop--floating .mapboxgl-ctrl-bottom-left {
     left: 448px;
   }
@@ -115,8 +218,12 @@
 }
 
 @media (max-width: 720px) {
+  .topbar--floating-only {
+    display: none;
+  }
+
   .editor-module__settings > .editor-module__menu-anchor:last-child {
-    top: 66px;
+    top: 12px;
     right: 12px;
   }
 }
