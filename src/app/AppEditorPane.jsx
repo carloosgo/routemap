@@ -69,18 +69,53 @@ export function AppEditorPane({
   useEffect(() => {
     if (!dragState) return undefined;
 
-    function handlePointerMove(event) {
-      const target = document
-        .elementFromPoint(event.clientX, event.clientY)
-        ?.closest('[data-segment-id]');
-      const targetId = target?.dataset.segmentId || null;
-      let placement = null;
+    function visibleDropCandidates(sourceId) {
+      return Array.from(document.querySelectorAll('[data-segment-id]'))
+        .map((element) => ({
+          element,
+          id: element.dataset.segmentId,
+          bounds: element.getBoundingClientRect(),
+        }))
+        .filter(
+          ({ id, bounds }) =>
+            id && id !== sourceId && bounds.width > 0 && bounds.height > 0
+        )
+        .sort((left, right) => left.bounds.top - right.bounds.top);
+    }
 
-      if (targetId && targetId !== dragState.segmentId) {
-        const bounds = target.getBoundingClientRect();
-        placement = event.clientY >= bounds.top + bounds.height / 2 ? 'after' : 'before';
+    function resolveDropTarget(event, sourceId) {
+      const candidates = visibleDropCandidates(sourceId);
+      if (candidates.length === 0) return { targetId: null, placement: null };
+
+      const samePaneCandidates = candidates.filter(
+        ({ bounds }) => event.clientX >= bounds.left && event.clientX <= bounds.right
+      );
+      const available = samePaneCandidates.length > 0 ? samePaneCandidates : candidates;
+      const first = available[0];
+      const last = available[available.length - 1];
+
+      if (event.clientY <= first.bounds.top + first.bounds.height / 2) {
+        return { targetId: first.id, placement: 'before' };
+      }
+      if (event.clientY >= last.bounds.top + last.bounds.height / 2) {
+        return { targetId: last.id, placement: 'after' };
       }
 
+      const nearest = available.reduce((best, candidate) => {
+        const midpoint = candidate.bounds.top + candidate.bounds.height / 2;
+        const distance = Math.abs(event.clientY - midpoint);
+        return !best || distance < best.distance ? { candidate, distance } : best;
+      }, null).candidate;
+
+      return {
+        targetId: nearest.id,
+        placement:
+          event.clientY >= nearest.bounds.top + nearest.bounds.height / 2 ? 'after' : 'before',
+      };
+    }
+
+    function handlePointerMove(event) {
+      const { targetId, placement } = resolveDropTarget(event, dragState.segmentId);
       setDragState((current) =>
         current
           ? {
