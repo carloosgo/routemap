@@ -339,9 +339,6 @@ components:
         currency:
           type: string
           pattern: '^[A-Z]{3}$'
-        unitSystem:
-          type: string
-          enum: [metric, imperial]
         segments:
           type: array
           maxItems: 500
