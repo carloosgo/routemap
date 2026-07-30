@@ -20,6 +20,8 @@ export default {
   addSegment: 'Add segment',
   removeSegment: 'Remove segment',
   confirmDeleteSegment: 'Delete this segment?',
+  moveSegment: 'Move segment',
+  moveSegmentHint: 'Drag to change its position. Use the up and down arrow keys with the keyboard.',
   expand: 'Expand',
   collapse: 'Collapse',
   segment: 'Segment',
