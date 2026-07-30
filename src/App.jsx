@@ -32,6 +32,8 @@ export default function App() {
     removeChecklistItem,
     addSegment,
     removeSegment,
+    reorderSegment,
+    moveSegment,
     updateSegment,
     updateExpenses,
   } = useTrip();
@@ -136,6 +138,8 @@ export default function App() {
       updateSegment={updateSegment}
       updateExpenses={updateExpenses}
       removeSegment={removeSegment}
+      reorderSegment={reorderSegment}
+      moveSegment={moveSegment}
       setOpenNoteSegmentId={setOpenNoteSegmentId}
       addSegment={addSegment}
       t={t}
