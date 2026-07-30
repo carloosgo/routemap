@@ -11,9 +11,15 @@ import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
 import { ConfirmDialog } from '../../components/ConfirmDialog.jsx';
 import { ExpenseEditor } from '../expenses/ExpenseEditor.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
-import { formatMoney } from '../../shared/utils.js';
 import { colorForIndex } from '../../config.js';
 import { segmentTotal } from './tripModel.js';
+
+function formatSegmentAmount(amount, locale) {
+  return new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(amount) || 0);
+}
 
 export function SegmentForm({
   segment,
@@ -119,7 +125,7 @@ export function SegmentForm({
           {formattedDates && <span className="segment__dates">{formattedDates}</span>}
         </div>
 
-        <span className="segment__pill">{formatMoney(total, currency, locale)}</span>
+        <span className="segment__pill">{formatSegmentAmount(total, locale)}</span>
 
         <button
           type="button"
