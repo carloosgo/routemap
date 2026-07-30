@@ -13,15 +13,20 @@ import { uid } from '../../shared/utils.js';
 // Mitigación incluida aquí: debounce (en el hook), límite de resultados,
 // cancelación de peticiones obsoletas (AbortController) y caché en memoria.
 
+const ENDPOINT = 'https://nominatim.openstreetmap.org/search';
+const MAX_CACHE_ENTRIES = 100;
+const MAX_QUERY_LENGTH = 200;
+const MAX_RESULTS = 10;
+
 export function createNominatimProvider() {
-  const ENDPOINT = 'https://nominatim.openstreetmap.org/search';
   const cache = new Map(); // query -> CityResult[]
 
   async function search(query, { signal, limit = config.citySearchLimit } = {}) {
-    const q = query.trim();
+    const q = typeof query === 'string' ? query.trim().slice(0, MAX_QUERY_LENGTH) : '';
     if (q.length < config.citySearchMinChars) return [];
 
-    const cacheKey = `${q.toLowerCase()}|${limit}`;
+    const safeLimit = clampLimit(limit);
+    const cacheKey = `${q.toLowerCase()}|${safeLimit}`;
     if (cache.has(cacheKey)) return cache.get(cacheKey);
 
     // Pedimos más resultados de los necesarios para que el filtro no deje la
@@ -30,7 +35,7 @@ export function createNominatimProvider() {
       q,
       format: 'jsonv2',
       addressdetails: '1',
-      limit: String(limit * 3),
+      limit: String(safeLimit * 3),
       'accept-language': config.defaultLocale,
     });
 
@@ -43,26 +48,44 @@ export function createNominatimProvider() {
     if (!res.ok) throw new Error(`Geocoder error ${res.status}`);
 
     const data = await res.json();
+    if (!Array.isArray(data)) throw new Error('Geocoder returned an invalid response.');
 
     const seen = new Set();
     const results = data
-      .filter((item) => item.lat && item.lon && isPlace(item))
+      .filter((item) => item?.lat && item?.lon && isPlace(item))
       .map((item) => normalize(item))
       .filter((item) => {
         if (!item.name || !item.countryCode) return false;
+        if (!Number.isFinite(item.lat) || !Number.isFinite(item.lon)) return false;
+        if (item.lat < -90 || item.lat > 90 || item.lon < -180 || item.lon > 180) return false;
+
         // Deduplicar por nombre normalizado + país.
         const key = `${item.name.toLowerCase()}|${item.countryCode}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
       })
-      .slice(0, limit);
+      .slice(0, safeLimit);
 
-    cache.set(cacheKey, results);
+    remember(cache, cacheKey, results);
     return results;
   }
 
   return { search };
+}
+
+function clampLimit(limit) {
+  const parsed = Number.parseInt(limit, 10);
+  if (!Number.isFinite(parsed)) return config.citySearchLimit;
+  return Math.min(Math.max(parsed, 1), MAX_RESULTS);
+}
+
+function remember(cache, key, value) {
+  if (cache.size >= MAX_CACHE_ENTRIES) {
+    const oldestKey = cache.keys().next().value;
+    cache.delete(oldestKey);
+  }
+  cache.set(key, value);
 }
 
 // Solo aceptamos resultados de tipo "lugar" o "división administrativa".
@@ -100,7 +123,7 @@ function normalize(item) {
     displayName,
     country: countryName,
     countryCode: (addr.country_code || '').toUpperCase(),
-    lat: parseFloat(item.lat),
-    lon: parseFloat(item.lon),
+    lat: Number.parseFloat(item.lat),
+    lon: Number.parseFloat(item.lon),
   };
 }

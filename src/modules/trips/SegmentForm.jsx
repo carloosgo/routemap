@@ -21,11 +21,15 @@ export function SegmentForm({
   currency,
   locale,
   expanded,
+  dragging,
+  dragOffsetY,
+  dropPlacement,
   onToggle,
   onUpdate,
   onUpdateExpenses,
   onRemove,
   onOpenNote,
+  onReorderPointerStart,
 }) {
   const { t } = useTranslation();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -36,13 +40,13 @@ export function SegmentForm({
     segment.startDate || segment.endDate
       ? [
           segment.startDate
-            ? new Date(segment.startDate + 'T00:00:00').toLocaleDateString('es-MX', {
+            ? new Date(`${segment.startDate}T00:00:00`).toLocaleDateString(locale, {
                 day: 'numeric',
                 month: 'short',
               })
             : '—',
           segment.endDate
-            ? new Date(segment.endDate + 'T00:00:00').toLocaleDateString('es-MX', {
+            ? new Date(`${segment.endDate}T00:00:00`).toLocaleDateString(locale, {
                 day: 'numeric',
                 month: 'short',
               })
@@ -51,9 +55,52 @@ export function SegmentForm({
       : null;
 
   return (
-    <article className="segment">
+    <article
+      className={
+        'segment' +
+        (dragging ? ' is-dragging' : '') +
+        (dropPlacement ? ` is-drop-${dropPlacement}` : '')
+      }
+      data-segment-id={segment.id}
+      style={
+        dragging
+          ? {
+              transform: `translateY(${dragOffsetY}px)`,
+              pointerEvents: 'none',
+              zIndex: 20,
+            }
+          : undefined
+      }
+    >
+      {dropPlacement && (
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: dropPlacement === 'before' ? '-3px' : 'auto',
+            bottom: dropPlacement === 'after' ? '-3px' : 'auto',
+            height: '1px',
+            background: 'var(--line-strong)',
+            pointerEvents: 'none',
+            zIndex: 30,
+          }}
+        />
+      )}
+
       <header className="segment__header">
-        <span className="segment__badge" style={{ background: colorForIndex(index) }}>
+        <span
+          className="segment__badge"
+          style={{
+            background: colorForIndex(index),
+            cursor: dragging ? 'grabbing' : 'grab',
+            touchAction: 'none',
+            userSelect: 'none',
+          }}
+          onPointerDown={onReorderPointerStart}
+          aria-hidden="true"
+        >
           {index + 1}
         </span>
 
@@ -77,8 +124,8 @@ export function SegmentForm({
         <button
           type="button"
           className={'btn btn--icon segment__note-btn' + (segment.note ? ' has-note' : '')}
-          aria-label="Nota del tramo"
-          title="Nota del tramo"
+          aria-label={t('segmentNote')}
+          title={t('segmentNote')}
           onClick={onOpenNote}
         >
           <IconNote size={14} aria-hidden="true" />
@@ -120,7 +167,7 @@ export function SegmentForm({
                 type="date"
                 className="input"
                 value={segment.startDate}
-                onChange={(e) => onUpdate({ startDate: e.target.value })}
+                onChange={(event) => onUpdate({ startDate: event.target.value })}
               />
               <IconArrowRight size={13} className="dates__arrow" aria-hidden="true" />
               <input
@@ -128,7 +175,7 @@ export function SegmentForm({
                 className="input"
                 value={segment.endDate}
                 min={segment.startDate || undefined}
-                onChange={(e) => onUpdate({ endDate: e.target.value })}
+                onChange={(event) => onUpdate({ endDate: event.target.value })}
               />
             </div>
           </div>

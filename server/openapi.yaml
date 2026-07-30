@@ -1,0 +1,397 @@
+openapi: 3.1.0
+info:
+  title: Atlas API
+  version: 1.0.0-draft
+  description: Contrato inicial para cuentas, viajes y sincronización entre dispositivos.
+servers:
+  - url: /api
+security:
+  - sessionCookie: []
+paths:
+  /auth/session:
+    get:
+      summary: Obtiene la sesión activa
+      responses:
+        '200':
+          description: Sesión autenticada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/logout:
+    post:
+      summary: Cierra la sesión actual
+      responses:
+        '204':
+          description: Sesión cerrada
+  /trips:
+    get:
+      summary: Lista viajes del usuario autenticado
+      parameters:
+        - $ref: '#/components/parameters/UpdatedAfter'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Página de viajes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      summary: Crea un viaje
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripInput'
+      responses:
+        '201':
+          description: Viaje creado
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /trips/{tripId}:
+    parameters:
+      - $ref: '#/components/parameters/TripId'
+    get:
+      summary: Obtiene un viaje del usuario autenticado
+      responses:
+        '200':
+          description: Viaje encontrado
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      summary: Actualiza un viaje con control de concurrencia
+      parameters:
+        - name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+          description: ETag recibido al leer o guardar el viaje.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripInput'
+      responses:
+        '200':
+          description: Viaje actualizado
+          headers:
+            ETag:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trip'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: El viaje cambió en otro dispositivo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      summary: Elimina un viaje
+      parameters:
+        - name: If-Match
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Viaje eliminado
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Conflicto de versión
+  /geocode:
+    get:
+      summary: Busca ciudades mediante proxy con caché y rate limiting
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 120
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+            default: 6
+      responses:
+        '200':
+          description: Resultados normalizados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/City'
+        '429':
+          description: Límite de solicitudes excedido
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: atlas_session
+  parameters:
+    TripId:
+      name: tripId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+    UpdatedAfter:
+      name: updated_after
+      in: query
+      schema:
+        type: string
+        format: date-time
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+        maxLength: 500
+  responses:
+    Unauthorized:
+      description: Sesión inexistente o expirada
+    NotFound:
+      description: Recurso inexistente o no perteneciente al usuario
+    ValidationError:
+      description: Datos inválidos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+  schemas:
+    Session:
+      type: object
+      required: [user]
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+    User:
+      type: object
+      required: [id, email]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+          maxLength: 120
+    City:
+      type: object
+      required: [name, displayName, country, countryCode, lat, lon]
+      properties:
+        name:
+          type: string
+          maxLength: 120
+        displayName:
+          type: string
+          maxLength: 200
+        country:
+          type: string
+          maxLength: 100
+        countryCode:
+          type: string
+          pattern: '^[A-Z]{2}$'
+        lat:
+          type: number
+          minimum: -90
+          maximum: 90
+        lon:
+          type: number
+          minimum: -180
+          maximum: 180
+        timeZone:
+          type: string
+          description: Identificador IANA, por ejemplo Europe/Berlin.
+    LineItem:
+      type: object
+      required: [id, label, amount]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+          maxLength: 120
+        amount:
+          type: number
+          minimum: 0
+    Expenses:
+      type: object
+      additionalProperties: true
+      description: Estructura compatible con expenseModel.js; se validará estrictamente en el servidor.
+    Segment:
+      type: object
+      required: [id, expenses]
+      properties:
+        id:
+          type: string
+        origin:
+          oneOf:
+            - $ref: '#/components/schemas/City'
+            - type: 'null'
+        destination:
+          oneOf:
+            - $ref: '#/components/schemas/City'
+            - type: 'null'
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        note:
+          type: string
+          maxLength: 500
+        expenses:
+          $ref: '#/components/schemas/Expenses'
+    Note:
+      type: object
+      required: [id, title, text]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+          maxLength: 60
+        text:
+          type: string
+          maxLength: 2000
+    ChecklistItem:
+      type: object
+      required: [id, text, done]
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+          maxLength: 120
+        done:
+          type: boolean
+    TripInput:
+      type: object
+      required: [id, name, currency, segments, notes, checklist]
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        name:
+          type: string
+          maxLength: 120
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        segments:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/Segment'
+        notes:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/Note'
+        checklist:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/ChecklistItem'
+    Trip:
+      allOf:
+        - $ref: '#/components/schemas/TripInput'
+        - type: object
+          required: [createdAt, updatedAt, version]
+          properties:
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+            version:
+              type: integer
+              minimum: 1
+    TripPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Trip'
+        nextCursor:
+          type: string
+    Conflict:
+      type: object
+      required: [code, current]
+      properties:
+        code:
+          const: trip_version_conflict
+        current:
+          $ref: '#/components/schemas/Trip'
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string

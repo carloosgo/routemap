@@ -1,48 +1,117 @@
 import { normalizeTrip } from '../trips/tripModel.js';
 
+const REQUEST_TIMEOUT_MS = 15_000;
+
+export class ApiRepositoryError extends Error {
+  constructor(message, { code = 'request_failed', status = 0, retryAfter = null } = {}) {
+    super(message);
+    this.name = 'ApiRepositoryError';
+    this.code = code;
+    this.status = status;
+    this.retryAfter = retryAfter;
+  }
+}
+
+function errorForResponse(response) {
+  const status = Number(response?.status) || 0;
+  const retryAfter = response?.headers?.get?.('retry-after') || null;
+
+  if (status === 401) {
+    return new ApiRepositoryError('La sesión expiró o no está disponible.', {
+      code: 'session_expired',
+      status,
+    });
+  }
+  if (status === 409) {
+    return new ApiRepositoryError('El viaje cambió en otro dispositivo.', {
+      code: 'trip_version_conflict',
+      status,
+    });
+  }
+  if (status === 422) {
+    return new ApiRepositoryError('El servidor rechazó datos inválidos.', {
+      code: 'validation_failed',
+      status,
+    });
+  }
+  if (status === 429) {
+    return new ApiRepositoryError('Se alcanzó temporalmente el límite de solicitudes.', {
+      code: 'rate_limited',
+      status,
+      retryAfter,
+    });
+  }
+  if (status >= 500) {
+    return new ApiRepositoryError(`El servicio no está disponible temporalmente (HTTP ${status}).`, {
+      code: 'server_unavailable',
+      status,
+    });
+  }
+  return new ApiRepositoryError(`No se pudo completar la solicitud (HTTP ${status}).`, {
+    status,
+  });
+}
+
 // Implementación contra backend REST (para multiusuario / escala global).
 // Mismo contrato que el repositorio local. El backend de referencia está
-// documentado en /server/README.md (FastAPI + PostgreSQL).
-//
-// Autenticación: cuando exista login, inyecta aquí el token (JWT) en los
-// headers. NUNCA guardes secretos en el cliente; usa cookies httpOnly o
-// el flujo de tu proveedor de auth (Auth0, Cognito, Firebase Auth).
+// documentado en /server/openapi.yaml.
 
 export function createApiRepository(baseUrl) {
-  const normalizedBaseUrl = (baseUrl || '').replace(/\/+$/, '');
+  const normalizedBaseUrl = (typeof baseUrl === 'string' ? baseUrl.trim() : '').replace(/\/+$/, '');
   const persistedIds = new Set();
+  const etagsById = new Map();
 
   if (!normalizedBaseUrl) {
-    console.warn('[storage] VITE_API_BASE_URL no configurada; el driver "api" fallará.');
-  }
-
-  function authHeaders() {
-    // Placeholder: integra tu proveedor de auth.
-    // const token = getAccessToken();
-    // return token ? { Authorization: `Bearer ${token}` } : {};
-    return {};
+    throw new TypeError('Se requiere una URL base válida para el repositorio API.');
   }
 
   async function request(path, options = {}) {
-    const res = await fetch(`${normalizedBaseUrl}${path}`, {
-      ...options,
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        ...authHeaders(),
-        ...(options.headers || {}),
-      },
-      credentials: 'include', // permite cookies de sesión httpOnly
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const { onResponse, ...fetchOptions } = options;
 
-    if (!res.ok) {
-      // No propagamos el cuerpo crudo del servidor al cliente: podría contener
-      // detalles internos. El backend debe registrar el error completo.
-      throw new Error(`No se pudo completar la solicitud (HTTP ${res.status}).`);
+    try {
+      const res = await fetch(`${normalizedBaseUrl}${path}`, {
+        ...fetchOptions,
+        signal: controller.signal,
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...(fetchOptions.headers || {}),
+        },
+        credentials: 'include',
+      });
+
+      if (!res.ok) throw errorForResponse(res);
+
+      onResponse?.(res);
+      if (res.status === 204) return null;
+
+      try {
+        return await res.json();
+      } catch {
+        throw new ApiRepositoryError('El servidor devolvió una respuesta inválida.', {
+          code: 'invalid_response',
+          status: res.status,
+        });
+      }
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        throw new ApiRepositoryError('La solicitud tardó demasiado y fue cancelada.', {
+          code: 'request_timeout',
+        });
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
     }
+  }
 
-    if (res.status === 204) return null;
-    return res.json();
+  function requireId(id) {
+    if (typeof id !== 'string' || !id.trim()) {
+      throw new TypeError('Se requiere un identificador de viaje válido.');
+    }
+    return id.trim();
   }
 
   function remember(trip) {
@@ -50,35 +119,59 @@ export function createApiRepository(baseUrl) {
     return trip;
   }
 
+  function rememberEtag(id, response) {
+    const etag = response?.headers?.get?.('etag');
+    if (id && etag) etagsById.set(id, etag);
+  }
+
+  function tripsFromListResponse(data) {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.items)) return data.items;
+    return [];
+  }
+
   return {
     async list() {
       const data = await request('/api/trips');
-      const trips = Array.isArray(data) ? data.map(normalizeTrip) : [];
+      const trips = tripsFromListResponse(data).map(normalizeTrip);
       persistedIds.clear();
       trips.forEach(remember);
       return trips;
     },
 
     async get(id) {
-      const data = await request(`/api/trips/${encodeURIComponent(id)}`);
+      const safeId = requireId(id);
+      const data = await request(`/api/trips/${encodeURIComponent(safeId)}`, {
+        onResponse: (response) => rememberEtag(safeId, response),
+      });
       return data ? remember(normalizeTrip(data)) : null;
     },
 
     async save(trip) {
-      const exists = Boolean(trip?.id && persistedIds.has(trip.id));
+      const normalized = normalizeTrip(trip);
+      const exists = persistedIds.has(normalized.id);
+      const etag = etagsById.get(normalized.id);
       const data = await request(
-        exists ? `/api/trips/${encodeURIComponent(trip.id)}` : '/api/trips',
+        exists ? `/api/trips/${encodeURIComponent(normalized.id)}` : '/api/trips',
         {
           method: exists ? 'PUT' : 'POST',
-          body: JSON.stringify(trip),
+          body: JSON.stringify(normalized),
+          headers: exists && etag ? { 'If-Match': etag } : undefined,
+          onResponse: (response) => rememberEtag(normalized.id, response),
         }
       );
-      return remember(normalizeTrip(data || trip));
+      return remember(normalizeTrip(data || normalized));
     },
 
     async remove(id) {
-      await request(`/api/trips/${encodeURIComponent(id)}`, { method: 'DELETE' });
-      persistedIds.delete(id);
+      const safeId = requireId(id);
+      const etag = etagsById.get(safeId);
+      await request(`/api/trips/${encodeURIComponent(safeId)}`, {
+        method: 'DELETE',
+        headers: etag ? { 'If-Match': etag } : undefined,
+      });
+      persistedIds.delete(safeId);
+      etagsById.delete(safeId);
     },
   };
 }
