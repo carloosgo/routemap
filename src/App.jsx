@@ -12,6 +12,7 @@ import { AppMapPane } from './app/AppMapPane.jsx';
 import {
   useCollapseSegmentsOnTripChange,
   useOutsideClick,
+  useOutsideClickSelector,
   useSaveShortcut,
 } from './app/useAppInteractions.js';
 import './App.css';
@@ -50,7 +51,6 @@ export default function App() {
   const [openNoteSegmentId, setOpenNoteSegmentId] = useState(null);
   const newItemRef = useRef(null);
   const menuWrapRef = useRef(null);
-  const segmentNoteRef = useRef(null);
 
   const intlLocale = locale === 'es' ? 'es-MX' : 'en-US';
   const canSave = isTripSavable(trip);
@@ -78,7 +78,7 @@ export default function App() {
 
   useSaveShortcut(handleSave);
   useOutsideClick(menuWrapRef, Boolean(openMenu), closeMenu);
-  useOutsideClick(segmentNoteRef, Boolean(openNoteSegmentId), closeSegmentNote);
+  useOutsideClickSelector('.segnote', Boolean(openNoteSegmentId), closeSegmentNote);
   useCollapseSegmentsOnTripChange(trip.id, trip.segments, setExpandedSegments);
 
   function isExpanded(id) {
@@ -170,7 +170,6 @@ export default function App() {
       trip={trip}
       openNoteSegmentId={openNoteSegmentId}
       setOpenNoteSegmentId={setOpenNoteSegmentId}
-      segmentNoteRef={segmentNoteRef}
       updateSegment={updateSegment}
       stops={stops}
       toast={toast}
