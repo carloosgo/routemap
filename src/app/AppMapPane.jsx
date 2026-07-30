@@ -37,6 +37,7 @@ export function AppMapPane({
         return (
           <div
             className="segnote"
+            data-segment-id={segment.id}
             role="dialog"
             aria-label={t('segmentNote')}
             style={{ zIndex: 720 }}
