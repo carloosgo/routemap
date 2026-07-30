@@ -17,6 +17,21 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Enforce frozen design scope
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          changed_files="$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}")"
+          forbidden_files="$(printf '%s\n' "$changed_files" | grep -E '(^|/)([^/]+\.(css|scss|sass|less)|styles?/)' || true)"
+
+          if [ -n "$forbidden_files" ]; then
+            echo "This phase does not allow visual-design or stylesheet changes:"
+            printf '%s\n' "$forbidden_files"
+            exit 1
+          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
