@@ -16,6 +16,7 @@ export default {
   cancel: 'Cancelar',
   confirmDelete: '¿Eliminar este viaje?',
   loadTrip: 'Abrir',
+  of: 'de',
   // Tramos
   segments: 'Tramos',
   addSegment: 'Agregar tramo',
