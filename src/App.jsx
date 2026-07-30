@@ -14,6 +14,7 @@ import {
   useOutsideClick,
   useSaveShortcut,
 } from './app/useAppInteractions.js';
+import { useInstallPrompt, useUnitSystem } from './app/useAppPreferences.js';
 import './App.css';
 
 export default function App() {
@@ -37,6 +38,8 @@ export default function App() {
   } = useTrip();
 
   const { trips, loading, saveTrip, deleteTrip } = useSavedTrips();
+  const { unitSystem, setUnitSystem } = useUnitSystem(locale);
+  const { canInstall, installApp } = useInstallPrompt();
   const [toast, setToast] = useState('');
   const [mobileView, setMobileView] = useState('form');
   const [activeTab, setActiveTab] = useState('segments');
@@ -118,6 +121,10 @@ export default function App() {
       locale={locale}
       availableLocales={availableLocales}
       setLocale={setLocale}
+      unitSystem={unitSystem}
+      setUnitSystem={setUnitSystem}
+      canInstall={canInstall}
+      installApp={installApp}
       handleSave={handleSave}
       canSave={canSave}
     />
@@ -197,7 +204,7 @@ export default function App() {
               className={'mobiletabs__btn' + (mobileView === 'map' ? ' is-active' : '')}
               onClick={() => setMobileView('map')}
             >
-              <IconMap size={16} aria-hidden="true" /> Mapa
+              <IconMap size={16} aria-hidden="true" /> {t('map')}
             </button>
           </nav>
         </div>
