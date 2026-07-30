@@ -5,20 +5,40 @@ import { normalizeTrip } from '../trips/tripModel.js';
 // la implementación 'api' contra el backend.
 
 export function createLocalStorageRepository(storageKey) {
+  const safeStorageKey = typeof storageKey === 'string' ? storageKey.trim() : '';
+  if (!safeStorageKey) {
+    throw new TypeError('Se requiere una clave de almacenamiento válida.');
+  }
+
+  function storage() {
+    if (!globalThis.localStorage) {
+      throw new Error('localStorage no está disponible en este entorno.');
+    }
+    return globalThis.localStorage;
+  }
+
+  function requireId(id) {
+    if (typeof id !== 'string' || !id.trim()) {
+      throw new TypeError('Se requiere un identificador de viaje válido.');
+    }
+    return id.trim();
+  }
+
   function readAll() {
     try {
-      const raw = localStorage.getItem(storageKey);
+      const raw = storage().getItem(safeStorageKey);
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) return [];
       return parsed.map(normalizeTrip);
-    } catch {
-      return [];
+    } catch (error) {
+      if (error instanceof SyntaxError) return [];
+      throw error;
     }
   }
 
   function writeAll(trips) {
-    localStorage.setItem(storageKey, JSON.stringify(trips));
+    storage().setItem(safeStorageKey, JSON.stringify(trips));
   }
 
   return {
@@ -27,21 +47,24 @@ export function createLocalStorageRepository(storageKey) {
     },
 
     async get(id) {
-      return readAll().find((t) => t.id === id) || null;
+      const safeId = requireId(id);
+      return readAll().find((trip) => trip.id === safeId) || null;
     },
 
     async save(trip) {
+      const normalized = normalizeTrip(trip);
       const trips = readAll();
-      const stamped = { ...trip, updatedAt: new Date().toISOString() };
-      const idx = trips.findIndex((t) => t.id === trip.id);
-      if (idx >= 0) trips[idx] = stamped;
+      const stamped = normalizeTrip({ ...normalized, updatedAt: new Date().toISOString() });
+      const index = trips.findIndex((storedTrip) => storedTrip.id === stamped.id);
+      if (index >= 0) trips[index] = stamped;
       else trips.push(stamped);
       writeAll(trips);
       return stamped;
     },
 
     async remove(id) {
-      writeAll(readAll().filter((t) => t.id !== id));
+      const safeId = requireId(id);
+      writeAll(readAll().filter((trip) => trip.id !== safeId));
     },
   };
 }
