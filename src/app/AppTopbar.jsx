@@ -3,17 +3,20 @@ import {
   IconChevronDown,
   IconCoin,
   IconDeviceFloppy,
+  IconDownload,
   IconLanguage,
   IconMap,
   IconMap2,
   IconNotes,
   IconPlus,
+  IconRuler,
   IconTrash,
 } from '@tabler/icons-react';
 import { formatMoney } from '../shared/utils.js';
 import { tripTotal } from '../modules/trips/tripModel.js';
 
 const CURRENCIES = ['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'];
+const UNIT_SYSTEMS = ['metric', 'imperial'];
 
 export function AppTopbar({
   menuWrapRef,
@@ -36,6 +39,10 @@ export function AppTopbar({
   locale,
   availableLocales,
   setLocale,
+  unitSystem,
+  setUnitSystem,
+  canInstall,
+  installApp,
   handleSave,
   canSave,
 }) {
@@ -132,7 +139,8 @@ export function AppTopbar({
                         {savedTrip.name || t('unnamedTrip')}
                       </span>
                       <span className="dropdown__trip-meta">
-                        {segmentCount} {segmentCount === 1 ? t('segment').toLowerCase() : t('segmentPlural')}
+                        {segmentCount}{' '}
+                        {segmentCount === 1 ? t('segment').toLowerCase() : t('segmentPlural')}
                         {' · '}
                         {formatMoney(tripTotal(savedTrip), savedTrip.currency, intlLocale)}
                       </span>
@@ -186,6 +194,36 @@ export function AppTopbar({
         <button
           type="button"
           className="topitem"
+          aria-label={t('units')}
+          onClick={() => setOpenMenu(openMenu === 'units' ? null : 'units')}
+        >
+          <IconRuler size={17} aria-hidden="true" />
+          <span className="topitem__val">{unitSystem === 'imperial' ? 'MI' : 'KM'}</span>
+          <IconChevronDown size={13} className="topitem__chev" aria-hidden="true" />
+        </button>
+        {openMenu === 'units' && (
+          <div className="dropdown dropdown--mini">
+            {UNIT_SYSTEMS.map((system) => (
+              <button
+                type="button"
+                key={system}
+                className={'dropdown__opt' + (system === unitSystem ? ' is-active' : '')}
+                onClick={() => {
+                  setUnitSystem(system);
+                  setOpenMenu(null);
+                }}
+              >
+                {system === 'imperial' ? t('miles') : t('kilometers')}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="topmenu">
+        <button
+          type="button"
+          className="topitem"
           onClick={() => setOpenMenu(openMenu === 'language' ? null : 'language')}
         >
           <IconLanguage size={17} aria-hidden="true" />
@@ -210,6 +248,12 @@ export function AppTopbar({
           </div>
         )}
       </div>
+
+      {canInstall && (
+        <button type="button" className="topitem" onClick={installApp}>
+          <IconDownload size={17} aria-hidden="true" /> {t('installApp')}
+        </button>
+      )}
 
       <button
         type="button"
