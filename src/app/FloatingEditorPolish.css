@@ -59,13 +59,7 @@
   font-size: 10px;
 }
 
-.floating-editor .segment__body svg {
-  width: 1px;
-  height: 1px;
-}
-
-/* Se reestablecen tamaños concretos un punto menores; evita depender del tamaño
-   declarado en cada componente sin alterar áreas clicables ni comportamiento. */
+/* Iconos concretos un punto menores, manteniendo intactas sus áreas clicables. */
 .floating-editor .segment__body .dates__label svg {
   width: 11px;
   height: 11px;
