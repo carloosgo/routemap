@@ -23,3 +23,78 @@
   width: 18px;
   height: 13px;
 }
+
+/* El formulario expandido conserva la misma estructura, pero reduce un punto
+   textos, iconos y controles para mantener la densidad compacta del módulo. */
+.floating-editor .segment__body {
+  font-size: 11px;
+}
+
+.floating-editor .segment__body .dates__label,
+.floating-editor .segment__body .field__label,
+.floating-editor .segment__body .expenses__togglelabel,
+.floating-editor .segment__body .expenses__title,
+.floating-editor .segment__body .moneycard__label,
+.floating-editor .segment__body .expenses__total,
+.floating-editor .segment__body .toggle__btn,
+.floating-editor .segment__body .btn--sm {
+  font-size: 10px;
+}
+
+.floating-editor .segment__body .input,
+.floating-editor .segment__body .input[type='date'],
+.floating-editor .segment__body .input[type='date']::-webkit-datetime-edit,
+.floating-editor .segment__body .input[type='date']::-webkit-datetime-edit-fields-wrapper,
+.floating-editor .segment__body .input[type='date']::-webkit-datetime-edit-text,
+.floating-editor .segment__body .input[type='date']::-webkit-datetime-edit-day-field,
+.floating-editor .segment__body .input[type='date']::-webkit-datetime-edit-month-field,
+.floating-editor .segment__body .input[type='date']::-webkit-datetime-edit-year-field,
+.floating-editor .segment__body .moneycard__input,
+.floating-editor .segment__body .moneycard__typeinput {
+  font-size: 11px;
+}
+
+.floating-editor .segment__body .moneycard__currency,
+.floating-editor .segment__body .moneycard__amount {
+  font-size: 10px;
+}
+
+.floating-editor .segment__body svg {
+  width: 1px;
+  height: 1px;
+}
+
+/* Se reestablecen tamaños concretos un punto menores; evita depender del tamaño
+   declarado en cada componente sin alterar áreas clicables ni comportamiento. */
+.floating-editor .segment__body .dates__label svg {
+  width: 11px;
+  height: 11px;
+}
+
+.floating-editor .segment__body .dates__arrow {
+  width: 12px;
+  height: 12px;
+}
+
+.floating-editor .segment__body .moneycard__icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.floating-editor .segment__body .moneycard__remove svg {
+  width: 13px;
+  height: 13px;
+}
+
+.floating-editor .segment__body .moneycard__icon {
+  width: 27px;
+  height: 27px;
+}
+
+.floating-editor .segment__body .toggle__btn {
+  padding: 4px 8px;
+}
+
+.floating-editor .segment__body .btn--sm {
+  padding: 5px 9px;
+}
