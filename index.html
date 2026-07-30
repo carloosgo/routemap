@@ -10,7 +10,24 @@
       name="description"
       content="Planifica y rastrea rutas de viaje internacionales con control de gastos por tramo."
     />
+    <meta name="application-name" content="Atlas" />
     <meta name="theme-color" content="#0f1620" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Atlas" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Atlas · Rutas de viaje" />
+    <meta
+      property="og:description"
+      content="Planifica rutas internacionales y controla gastos por tramo."
+    />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Atlas · Rutas de viaje" />
+    <meta
+      name="twitter:description"
+      content="Planifica rutas internacionales y controla gastos por tramo."
+    />
     <!--
       NOTA DE SEGURIDAD:
       La Content-Security-Policy real debe definirse como CABECERA HTTP en el
@@ -22,6 +39,9 @@
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; img-src 'self' data: blob: https://*.mapbox.com https://flagcdn.com; connect-src 'self' https://nominatim.openstreetmap.org https://*.mapbox.com https://events.mapbox.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; worker-src 'self' blob:; child-src 'self' blob:; script-src 'self' blob: https://*.mapbox.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
     />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/atlas-icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/atlas-icon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
