@@ -39,8 +39,7 @@ export function useOutsideClickSelector(selector, active, onOutside) {
     if (!active) return undefined;
 
     function onPointerDown(event) {
-      const target = event.target;
-      if (!(target instanceof Element) || !target.closest(selector)) {
+      if (!event.target?.closest?.(selector)) {
         onOutside();
       }
     }
