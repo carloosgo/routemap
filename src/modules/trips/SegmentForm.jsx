@@ -22,6 +22,8 @@ export function SegmentForm({
   locale,
   expanded,
   dragging,
+  dragOffsetY,
+  dropPlacement,
   onToggle,
   onUpdate,
   onUpdateExpenses,
@@ -55,20 +57,20 @@ export function SegmentForm({
 
   return (
     <article
-      className={'segment' + (dragging ? ' is-dragging' : '')}
+      className={
+        'segment' +
+        (dragging ? ' is-dragging' : '') +
+        (dropPlacement ? ` is-drop-${dropPlacement}` : '')
+      }
       data-segment-id={segment.id}
+      style={dragging ? { transform: `translateY(${dragOffsetY}px)` } : undefined}
     >
       <header className="segment__header">
         <button
           type="button"
           className="segment__badge"
-          style={{
-            background: colorForIndex(index),
-            border: 0,
-            padding: 0,
-            cursor: dragging ? 'grabbing' : 'grab',
-            touchAction: 'none',
-          }}
+          style={{ background: colorForIndex(index) }}
+          data-reorder-handle={segment.id}
           aria-label={`${t('moveSegment')} ${index + 1}`}
           aria-pressed={dragging}
           title={t('moveSegmentHint')}
