@@ -2,7 +2,7 @@
 
 Visual delta: none
 
-Los cambios de esta fase pueden reorganizar JSX y CSS o añadir estilos estrictamente necesarios para accesibilidad y nuevas capacidades, pero deben conservar la apariencia actual de Atlas.
+La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atlas debe permanecer intacto. Los controles añadidos reutilizan componentes, dimensiones, espaciados, iconografía y estados ya existentes.
 
 ## Invariantes
 
@@ -13,6 +13,12 @@ Los cambios de esta fase pueden reorganizar JSX y CSS o añadir estilos estricta
 - Los nuevos controles deben reutilizar componentes, dimensiones y estados visuales existentes.
 - Las reglas de accesibilidad no deben producir cambios visibles salvo foco de teclado cuando corresponda.
 - Cualquier modularización CSS debe conservar el orden efectivo de las reglas y el resultado de la cascada.
+
+## Controles incorporados
+
+- Selector `KM / MI`: reutiliza `topmenu`, `topitem`, `dropdown` y `dropdown__opt`.
+- Instalación PWA: reutiliza `topitem` y solo aparece cuando el navegador emite `beforeinstallprompt`.
+- No se añadieron colores, tamaños, bordes, sombras o animaciones nuevos.
 
 ## Validación requerida
 
