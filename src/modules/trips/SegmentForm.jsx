@@ -62,12 +62,25 @@ export function SegmentForm({
         (dropPlacement ? ` is-drop-${dropPlacement}` : '')
       }
       data-segment-id={segment.id}
-      style={dragging ? { transform: `translateY(${dragOffsetY}px)` } : undefined}
+      style={
+        dragging
+          ? {
+              transform: `translateY(${dragOffsetY}px)`,
+              pointerEvents: 'none',
+              zIndex: 20,
+            }
+          : undefined
+      }
     >
       <header className="segment__header">
         <span
           className="segment__badge"
-          style={{ background: colorForIndex(index) }}
+          style={{
+            background: colorForIndex(index),
+            cursor: dragging ? 'grabbing' : 'grab',
+            touchAction: 'none',
+            userSelect: 'none',
+          }}
           onPointerDown={onReorderPointerStart}
           aria-hidden="true"
         >
