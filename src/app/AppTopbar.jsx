@@ -56,14 +56,14 @@ export function AppTopbar({
           className={'topbar__tab' + (activeTab === 'segments' ? ' is-active' : '')}
           onClick={() => setActiveTab('segments')}
         >
-          <IconMap size={15} aria-hidden="true" /> Tramos
+          <IconMap size={15} aria-hidden="true" /> {t('segments')}
         </button>
         <button
           type="button"
           className={'topbar__tab' + (activeTab === 'notes' ? ' is-active' : '')}
           onClick={() => setActiveTab('notes')}
         >
-          <IconNotes size={15} aria-hidden="true" /> Notas
+          <IconNotes size={15} aria-hidden="true" /> {t('notes')}
           {checklist.length > 0 && (
             <span className="tabbar__badge">
               {doneCount}/{checklist.length}
@@ -79,7 +79,7 @@ export function AppTopbar({
         className="topbar__title"
         value={trip.name}
         placeholder={t('tripNamePlaceholder')}
-        onChange={(e) => renameTrip(e.target.value)}
+        onChange={(event) => renameTrip(event.target.value)}
         aria-label={t('tripName')}
       />
 
@@ -102,48 +102,52 @@ export function AppTopbar({
           className="topitem"
           onClick={() => setOpenMenu(openMenu === 'trips' ? null : 'trips')}
         >
-          <IconBookmark size={17} aria-hidden="true" /> Viajes guardados
+          <IconBookmark size={17} aria-hidden="true" /> {t('savedTrips')}
           <IconChevronDown size={13} className="topitem__chev" aria-hidden="true" />
         </button>
         {openMenu === 'trips' && (
           <div className="dropdown dropdown--trips">
-            <div className="dropdown__label">Viajes guardados</div>
+            <div className="dropdown__label">{t('savedTrips')}</div>
             {loading ? (
               <div className="dropdown__empty">…</div>
             ) : trips.length === 0 ? (
-              <div className="dropdown__empty">Sin viajes guardados</div>
+              <div className="dropdown__empty">{t('noSavedTrips')}</div>
             ) : (
-              trips.map((savedTrip) => (
-                <div
-                  key={savedTrip.id}
-                  className={'dropdown__trip' + (savedTrip.id === trip.id ? ' is-current' : '')}
-                >
-                  <button
-                    type="button"
-                    className="dropdown__trip-open"
-                    onClick={() => {
-                      loadTrip(savedTrip);
-                      setOpenMenu(null);
-                    }}
+              trips.map((savedTrip) => {
+                const segmentCount = savedTrip.segments?.length || 0;
+                return (
+                  <div
+                    key={savedTrip.id}
+                    className={'dropdown__trip' + (savedTrip.id === trip.id ? ' is-current' : '')}
                   >
-                    <span className="dropdown__trip-name">{savedTrip.name || 'Sin nombre'}</span>
-                    <span className="dropdown__trip-meta">
-                      {(savedTrip.segments?.length || 0)}{' '}
-                      {savedTrip.segments?.length === 1 ? 'tramo' : 'tramos'}
-                      {' · '}
-                      {formatMoney(tripTotal(savedTrip), savedTrip.currency, intlLocale)}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className="dropdown__trip-del"
-                    aria-label="Eliminar viaje"
-                    onClick={() => deleteTrip(savedTrip.id)}
-                  >
-                    <IconTrash size={15} aria-hidden="true" />
-                  </button>
-                </div>
-              ))
+                    <button
+                      type="button"
+                      className="dropdown__trip-open"
+                      onClick={() => {
+                        loadTrip(savedTrip);
+                        setOpenMenu(null);
+                      }}
+                    >
+                      <span className="dropdown__trip-name">
+                        {savedTrip.name || t('unnamedTrip')}
+                      </span>
+                      <span className="dropdown__trip-meta">
+                        {segmentCount} {segmentCount === 1 ? t('segment').toLowerCase() : t('segmentPlural')}
+                        {' · '}
+                        {formatMoney(tripTotal(savedTrip), savedTrip.currency, intlLocale)}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="dropdown__trip-del"
+                      aria-label={t('deleteTrip')}
+                      onClick={() => deleteTrip(savedTrip.id)}
+                    >
+                      <IconTrash size={15} aria-hidden="true" />
+                    </button>
+                  </div>
+                );
+              })
             )}
           </div>
         )}
