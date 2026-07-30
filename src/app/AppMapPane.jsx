@@ -15,6 +15,21 @@ export function AppMapPane({
   return (
     <section className="mappane" aria-label={t('mapRegion')}>
       <RouteMap segments={trip.segments} />
+      {openNoteSegmentId && (
+        <div
+          aria-hidden="true"
+          style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'transparent' }}
+          onPointerDown={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+          onPointerUp={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setOpenNoteSegmentId(null);
+          }}
+        />
+      )}
       {openNoteSegmentId && (() => {
         const segment = trip.segments.find((item) => item.id === openNoteSegmentId);
         if (!segment) return null;
@@ -22,7 +37,12 @@ export function AppMapPane({
         const originName = segment.origin?.name || t('origin');
         const destinationName = segment.destination?.name || t('destination');
         return (
-          <div className="segnote" role="dialog" aria-label={t('segmentNote')}>
+          <div
+            className="segnote"
+            role="dialog"
+            aria-label={t('segmentNote')}
+            style={{ zIndex: 11 }}
+          >
             <div className="segnote__head">
               <span
                 className="segnote__badge"
