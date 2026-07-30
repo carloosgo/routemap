@@ -108,6 +108,39 @@ export function appendSegment(trip) {
   return { ...trip, segments: [...segments, segment], updatedAt: nowISO() };
 }
 
+export function reorderSegments(trip, sourceId, targetId, placement = 'before') {
+  const segments = Array.isArray(trip?.segments) ? trip.segments : [];
+  if (!sourceId || !targetId || sourceId === targetId) return trip;
+
+  const sourceIndex = segments.findIndex((segment) => segment.id === sourceId);
+  const targetIndex = segments.findIndex((segment) => segment.id === targetId);
+  if (sourceIndex < 0 || targetIndex < 0) return trip;
+
+  const reordered = [...segments];
+  const [moved] = reordered.splice(sourceIndex, 1);
+  const targetIndexAfterRemoval = reordered.findIndex((segment) => segment.id === targetId);
+  const insertAt = targetIndexAfterRemoval + (placement === 'after' ? 1 : 0);
+  reordered.splice(insertAt, 0, moved);
+
+  if (reordered.every((segment, index) => segment === segments[index])) return trip;
+  return { ...trip, segments: reordered, updatedAt: nowISO() };
+}
+
+export function moveSegmentByOffset(trip, segmentId, offset) {
+  const segments = Array.isArray(trip?.segments) ? trip.segments : [];
+  const sourceIndex = segments.findIndex((segment) => segment.id === segmentId);
+  const numericOffset = Number.isFinite(Number(offset)) ? Math.trunc(Number(offset)) : 0;
+  if (sourceIndex < 0 || numericOffset === 0) return trip;
+
+  const targetIndex = Math.max(0, Math.min(segments.length - 1, sourceIndex + numericOffset));
+  if (targetIndex === sourceIndex) return trip;
+
+  const reordered = [...segments];
+  const [moved] = reordered.splice(sourceIndex, 1);
+  reordered.splice(targetIndex, 0, moved);
+  return { ...trip, segments: reordered, updatedAt: nowISO() };
+}
+
 export function segmentTotal(segment) {
   return expensesTotal(segment?.expenses);
 }
