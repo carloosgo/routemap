@@ -133,7 +133,7 @@ export default function App() {
 
   const prevTripIdRef = useRef(trip.id);
 
-useEffect(() => {
+  useEffect(() => {
   if (prevTripIdRef.current === trip.id) return;
 
   prevTripIdRef.current = trip.id;
