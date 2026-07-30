@@ -1,0 +1,33 @@
+name: Dependency audit
+
+on:
+  push:
+    branches: [main, agent/phase-2-hardening-no-design]
+  pull_request:
+    branches: [main, agent/phase-1-no-design]
+  schedule:
+    - cron: '41 9 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
