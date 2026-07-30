@@ -5,7 +5,6 @@ import {
   normalizeTrip,
   createChecklistItem,
   reorderSegments,
-  moveSegmentByOffset,
 } from './tripModel.js';
 import { sanitizeText, uid } from '../../shared/utils.js';
 
@@ -82,9 +81,6 @@ function reducer(state, action) {
     case 'REORDER_SEGMENT':
       return reorderSegments(state, action.sourceId, action.targetId, action.placement);
 
-    case 'MOVE_SEGMENT':
-      return moveSegmentByOffset(state, action.segmentId, action.offset);
-
     case 'UPDATE_SEGMENT':
       return {
         ...state,
@@ -148,10 +144,6 @@ export function useTrip(initial) {
       dispatch({ type: 'REORDER_SEGMENT', sourceId, targetId, placement }),
     []
   );
-  const moveSegment = useCallback(
-    (segmentId, offset) => dispatch({ type: 'MOVE_SEGMENT', segmentId, offset }),
-    []
-  );
   const updateSegment = useCallback(
     (segmentId, patch) => dispatch({ type: 'UPDATE_SEGMENT', segmentId, patch }),
     []
@@ -176,7 +168,6 @@ export function useTrip(initial) {
     addSegment,
     removeSegment,
     reorderSegment,
-    moveSegment,
     updateSegment,
     updateExpenses,
   };
