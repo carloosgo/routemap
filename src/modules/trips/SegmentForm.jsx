@@ -36,13 +36,13 @@ export function SegmentForm({
     segment.startDate || segment.endDate
       ? [
           segment.startDate
-            ? new Date(segment.startDate + 'T00:00:00').toLocaleDateString('es-MX', {
+            ? new Date(`${segment.startDate}T00:00:00`).toLocaleDateString(locale, {
                 day: 'numeric',
                 month: 'short',
               })
             : '—',
           segment.endDate
-            ? new Date(segment.endDate + 'T00:00:00').toLocaleDateString('es-MX', {
+            ? new Date(`${segment.endDate}T00:00:00`).toLocaleDateString(locale, {
                 day: 'numeric',
                 month: 'short',
               })
@@ -77,8 +77,8 @@ export function SegmentForm({
         <button
           type="button"
           className={'btn btn--icon segment__note-btn' + (segment.note ? ' has-note' : '')}
-          aria-label="Nota del tramo"
-          title="Nota del tramo"
+          aria-label={t('segmentNote')}
+          title={t('segmentNote')}
           onClick={onOpenNote}
         >
           <IconNote size={14} aria-hidden="true" />
@@ -120,7 +120,7 @@ export function SegmentForm({
                 type="date"
                 className="input"
                 value={segment.startDate}
-                onChange={(e) => onUpdate({ startDate: e.target.value })}
+                onChange={(event) => onUpdate({ startDate: event.target.value })}
               />
               <IconArrowRight size={13} className="dates__arrow" aria-hidden="true" />
               <input
@@ -128,7 +128,7 @@ export function SegmentForm({
                 className="input"
                 value={segment.endDate}
                 min={segment.startDate || undefined}
-                onChange={(e) => onUpdate({ endDate: e.target.value })}
+                onChange={(event) => onUpdate({ endDate: event.target.value })}
               />
             </div>
           </div>
