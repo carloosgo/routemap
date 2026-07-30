@@ -35,6 +35,8 @@ export default {
   segmentNote: 'Segment note',
   closeNote: 'Close note',
   segmentNotePlaceholder: 'Write a note for this segment…',
+  mapRegion: 'Trip map',
+  routeSummary: 'Route summary',
   // Notes and checklist
   notes: 'Notes',
   noteTitle: 'Note title',
