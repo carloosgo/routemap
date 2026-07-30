@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "atlasmap-dev",
+    "dev": "atlasmap-dev"
+  }
+}
