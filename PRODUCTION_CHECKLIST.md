@@ -38,7 +38,7 @@
 - [ ] Configurar CSP, HSTS, Referrer-Policy y Permissions-Policy como cabeceras HTTP.
 - [ ] Servir assets estáticos mediante CDN con compresión Brotli/Gzip.
 - [ ] Configurar fallback de SPA a `index.html` sin interceptar `/api` ni assets inexistentes.
-- [ ] Definir estrategia de caché y versionado del service worker.
+- [ ] Definir estrategia de caché y versionado de assets estáticos.
 - [ ] Probar despliegue desde varias regiones.
 
 ## Observabilidad
@@ -61,6 +61,5 @@
 - [ ] Mantener verdes pruebas, lint, build, CodeQL y auditoría de dependencias.
 - [ ] Añadir pruebas end-to-end de crear, editar, guardar, abrir y eliminar viajes.
 - [ ] Probar teclado, lectores de pantalla y contraste conforme a WCAG 2.2 AA.
-- [ ] Probar PWA instalada y actualización del service worker.
 - [ ] Probar en Safari/iOS, Chrome/Android, Firefox y Edge.
 - [ ] Ejecutar pruebas de carga del backend y de rutas con muchos marcadores.
