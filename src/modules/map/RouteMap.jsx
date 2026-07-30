@@ -2,23 +2,23 @@ import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { config, colorForIndex } from '../../config.js';
+import { useTranslation } from '../../i18n/index.jsx';
 import { isPlaced } from '../trips/tripModel.js';
 
 mapboxgl.accessToken = config.map.accessToken;
 
-// Estilos disponibles para alternar (como el botón de Google Maps)
 const MAP_STYLES = {
-  normal:    'mapbox://styles/carlosuriel/cmrzizttl00l901s8d8ye6iel',
+  normal: 'mapbox://styles/carlosuriel/cmrzizttl00l901s8d8ye6iel',
   satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
 };
 
 function dominantTransport(segment) {
-  const t = segment?.expenses?.transport || {};
+  const transport = segment?.expenses?.transport || {};
   const candidates = [
-    { type: 'plane', amount: t.plane || 0 },
-    { type: 'train', amount: t.train || 0 },
-    { type: 'bus', amount: t.bus || 0 },
-    { type: 'car', amount: t.taxiUber || 0 },
+    { type: 'plane', amount: transport.plane || 0 },
+    { type: 'train', amount: transport.train || 0 },
+    { type: 'bus', amount: transport.bus || 0 },
+    { type: 'car', amount: transport.taxiUber || 0 },
   ];
   const top = candidates.reduce((a, b) => (b.amount > a.amount ? b : a));
   return top.amount > 0 ? top.type : null;
@@ -78,10 +78,7 @@ function getVisitedCountries(segments) {
   return countryColor;
 }
 
-// Crea todas las fuentes y capas personalizadas. Se llama al cargar el mapa
-// Y cada vez que se cambia de estilo (setStyle borra las capas personalizadas).
 function setupLayers(map) {
-  // Países visitados
   if (!map.getSource('country-boundaries')) {
     map.addSource('country-boundaries', {
       type: 'vector',
@@ -98,7 +95,6 @@ function setupLayers(map) {
     });
   }
 
-  // Rutas
   if (!map.getSource('routes')) {
     map.addSource('routes', {
       type: 'geojson',
@@ -149,7 +145,6 @@ function setupLayers(map) {
     });
   }
 
-  // Flecha de dirección (imagen en canvas)
   if (!map.hasImage('arrow-white')) {
     const arrowSize = 8;
     const canvas = document.createElement('canvas');
@@ -183,7 +178,6 @@ function setupLayers(map) {
     });
   }
 
-  // Ciudades
   if (!map.getSource('city-points')) {
     map.addSource('city-points', {
       type: 'geojson',
@@ -234,6 +228,7 @@ function setupLayers(map) {
 }
 
 export function RouteMap({ segments }) {
+  const { t } = useTranslation();
   const mapElRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
@@ -246,12 +241,7 @@ export function RouteMap({ segments }) {
   }, [segments]);
 
   useEffect(() => {
-    if (!mapElRef.current) return;
-    if (!config.map.accessToken) {
-      mapElRef.current.innerHTML =
-        '<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:24px;text-align:center;color:#64748b;font-size:13px;">Falta configurar VITE_MAPBOX_TOKEN en tu archivo .env.local.</div>';
-      return;
-    }
+    if (!mapElRef.current || !config.map.accessToken) return undefined;
 
     const map = new mapboxgl.Map({
       container: mapElRef.current,
@@ -266,13 +256,13 @@ export function RouteMap({ segments }) {
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
     map.doubleClickZoom.disable();
 
-    map.on('click', (e) => {
-      if (e.originalEvent?.target?.closest?.('.map-marker')) return;
-      map.easeTo({ center: e.lngLat, zoom: map.getZoom() + 1, duration: 300 });
+    map.on('click', (event) => {
+      if (event.originalEvent?.target?.closest?.('.map-marker')) return;
+      map.easeTo({ center: event.lngLat, zoom: map.getZoom() + 1, duration: 300 });
     });
 
-    map.on('error', (e) => {
-      console.error('[Mapbox error]', e.error?.message || e.error || e);
+    map.on('error', (event) => {
+      console.error('[Mapbox error]', event.error?.message || event.error || event);
     });
 
     map.on('load', () => {
@@ -282,12 +272,12 @@ export function RouteMap({ segments }) {
       drawRoutes(map, markersRef, latestSegmentsRef.current);
     });
 
-    const ro = new window.ResizeObserver(() => map.resize());
-    ro.observe(mapElRef.current);
+    const resizeObserver = new window.ResizeObserver(() => map.resize());
+    resizeObserver.observe(mapElRef.current);
 
     return () => {
-      ro.disconnect();
-      markersRef.current.forEach((m) => m.remove());
+      resizeObserver.disconnect();
+      markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
       map.remove();
       mapRef.current = null;
@@ -301,14 +291,11 @@ export function RouteMap({ segments }) {
     drawRoutes(map, markersRef, segments);
   }, [segments]);
 
-  // Alterna entre vista normal y satélite
   function toggleStyle() {
     const map = mapRef.current;
     if (!map) return;
     const next = mapStyle === 'normal' ? 'satellite' : 'normal';
     setMapStyle(next);
-
-    // setStyle borra las capas personalizadas; se reconstruyen al cargar el nuevo estilo
     map.setStyle(MAP_STYLES[next]);
     map.once('style.load', () => {
       setupLayers(map);
@@ -318,21 +305,38 @@ export function RouteMap({ segments }) {
 
   return (
     <div className="map-wrap">
-      <div className="map" ref={mapElRef} />
-      <button
-        type="button"
-        className="map-style-toggle"
-        onClick={toggleStyle}
-        title={mapStyle === 'normal' ? 'Ver satélite' : 'Ver mapa'}
-      >
-        <span
-          className="map-style-toggle__thumb"
-          data-mode={mapStyle}
-        />
-        <span className="map-style-toggle__label">
-          {mapStyle === 'normal' ? 'Satélite' : 'Mapa'}
-        </span>
-      </button>
+      <div className="map" ref={mapElRef}>
+        {!config.map.accessToken && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              padding: 24,
+              textAlign: 'center',
+              color: '#64748b',
+              fontSize: 13,
+            }}
+          >
+            {t('mapConfigMissing')}
+          </div>
+        )}
+      </div>
+      {config.map.accessToken && (
+        <button
+          type="button"
+          className="map-style-toggle"
+          onClick={toggleStyle}
+          title={mapStyle === 'normal' ? t('viewSatellite') : t('viewMap')}
+          aria-label={mapStyle === 'normal' ? t('viewSatellite') : t('viewMap')}
+        >
+          <span className="map-style-toggle__thumb" data-mode={mapStyle} />
+          <span className="map-style-toggle__label">
+            {mapStyle === 'normal' ? t('satellite') : t('map')}
+          </span>
+        </button>
+      )}
     </div>
   );
 }
@@ -342,15 +346,12 @@ function drawRoutes(map, markersRef, segments) {
   const cityPointsSource = map.getSource('city-points');
   if (!routeSource || !cityPointsSource) return;
 
-  markersRef.current.forEach((m) => m.remove());
+  markersRef.current.forEach((marker) => marker.remove());
   markersRef.current = [];
 
-  // Países
   const countryColor = getVisitedCountries(segments);
   const visitedCodes = Object.keys(countryColor);
-  if (!map.getLayer('countries-fill')) {
-    // aún no lista
-  } else if (visitedCodes.length > 0) {
+  if (map.getLayer('countries-fill') && visitedCodes.length > 0) {
     const fillExpr = ['match', ['get', 'iso_3166_1_alpha_3']];
     visitedCodes.forEach((alpha2) => {
       const alpha3 = ISO_A2_TO_A3[alpha2];
@@ -359,16 +360,15 @@ function drawRoutes(map, markersRef, segments) {
     });
     fillExpr.push('transparent');
     map.setPaintProperty('countries-fill', 'fill-color', fillExpr);
-  } else {
+  } else if (map.getLayer('countries-fill')) {
     map.setPaintProperty('countries-fill', 'fill-color', 'transparent');
   }
 
-  // Líneas
   const features = [];
   const pairCount = {};
-  segments.forEach((seg) => {
-    if (!isPlaced(seg.origin) || !isPlaced(seg.destination)) return;
-    const key = routeKey(seg.origin, seg.destination);
+  segments.forEach((segment) => {
+    if (!isPlaced(segment.origin) || !isPlaced(segment.destination)) return;
+    const key = routeKey(segment.origin, segment.destination);
     pairCount[key] = (pairCount[key] || 0) + 1;
   });
   const pairIndex = {};
@@ -394,7 +394,6 @@ function drawRoutes(map, markersRef, segments) {
   });
   routeSource.setData({ type: 'FeatureCollection', features });
 
-  // Ciudades
   const cities = [];
   segments.forEach((segment) => {
     [segment.origin, segment.destination].forEach((city) => {
@@ -406,18 +405,17 @@ function drawRoutes(map, markersRef, segments) {
   });
   cityPointsSource.setData({
     type: 'FeatureCollection',
-    features: cities.map((city, i) => ({
+    features: cities.map((city, index) => ({
       type: 'Feature',
       properties: {
         name: city.name,
-        color: colorForIndex(i),
+        color: colorForIndex(index),
         icon: getCityIcon(city.name) || '',
       },
       geometry: { type: 'Point', coordinates: [city.lon, city.lat] },
     })),
   });
 
-  // Zoom
   const bounds = new mapboxgl.LngLatBounds();
   cities.forEach((city) => bounds.extend([city.lon, city.lat]));
   if (cities.length === 1) {
@@ -438,20 +436,20 @@ function adaptiveCurve(a, b, steps = 80) {
   const len = dist || 1;
   const cx = mx + (-dy / len) * offset;
   const cy = my + (dx / len) * offset;
-  const pts = [];
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    const u = 1 - t;
-    pts.push([
-      u * u * a[0] + 2 * u * t * cx + t * t * b[0],
-      u * u * a[1] + 2 * u * t * cy + t * t * b[1],
+  const points = [];
+  for (let index = 0; index <= steps; index++) {
+    const time = index / steps;
+    const remaining = 1 - time;
+    points.push([
+      remaining * remaining * a[0] + 2 * remaining * time * cx + time * time * b[0],
+      remaining * remaining * a[1] + 2 * remaining * time * cy + time * time * b[1],
     ]);
   }
-  return pts;
+  return points;
 }
 
 function routeKey(a, b) {
-  const p1 = `${a.lon},${a.lat}`;
-  const p2 = `${b.lon},${b.lat}`;
-  return p1 < p2 ? `${p1}|${p2}` : `${p2}|${p1}`;
+  const first = `${a.lon},${a.lat}`;
+  const second = `${b.lon},${b.lat}`;
+  return first < second ? `${first}|${second}` : `${second}|${first}`;
 }
