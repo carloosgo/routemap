@@ -1,7 +1,6 @@
 export default {
   appName: 'Atlas',
   appTagline: 'Travel routes & expenses',
-  // Trip
   newTrip: 'New trip',
   tripName: 'Trip name',
   tripNamePlaceholder: 'e.g. Eurotrip 2026',
@@ -17,7 +16,6 @@ export default {
   confirmDelete: 'Delete this trip?',
   loadTrip: 'Open',
   of: 'of',
-  // Segments
   segments: 'Segments',
   addSegment: 'Add segment',
   removeSegment: 'Remove segment',
@@ -35,9 +33,9 @@ export default {
   segmentNote: 'Segment note',
   closeNote: 'Close note',
   segmentNotePlaceholder: 'Write a note for this segment…',
+  map: 'Map',
   mapRegion: 'Trip map',
   routeSummary: 'Route summary',
-  // Notes and checklist
   notes: 'Notes',
   noteTitle: 'Note title',
   deleteNote: 'Delete note',
@@ -51,7 +49,6 @@ export default {
   markPending: 'Mark as pending',
   markDone: 'Mark as done',
   newChecklistItem: 'New checklist item…',
-  // Expenses
   expenses: 'Expenses',
   lodging: 'Lodging',
   food: 'Food',
@@ -77,11 +74,13 @@ export default {
   itemType: 'Type',
   itemTypePlaceholder: 'e.g. Museum, Tour…',
   amount: 'Amount',
-  // Totals
   segmentTotal: 'Segment total',
   grandTotal: 'Trip total',
   currency: 'Currency',
-  // States
+  units: 'Distance units',
+  kilometers: 'Kilometers',
+  miles: 'Miles',
+  installApp: 'Install',
   loading: 'Loading…',
   searching: 'Searching…',
   noResults: 'No results',
