@@ -1,7 +1,6 @@
 export default {
   appName: 'Atlas',
   appTagline: 'Rutas de viaje y gastos',
-  // Viaje
   newTrip: 'Nuevo viaje',
   tripName: 'Nombre del viaje',
   tripNamePlaceholder: 'Nombre de tu viaje',
@@ -17,7 +16,6 @@ export default {
   confirmDelete: '¿Eliminar este viaje?',
   loadTrip: 'Abrir',
   of: 'de',
-  // Tramos
   segments: 'Tramos',
   addSegment: 'Agregar tramo',
   removeSegment: 'Quitar tramo',
@@ -35,9 +33,9 @@ export default {
   segmentNote: 'Nota del tramo',
   closeNote: 'Cerrar nota',
   segmentNotePlaceholder: 'Escribe una nota para este tramo…',
+  map: 'Mapa',
   mapRegion: 'Mapa del viaje',
   routeSummary: 'Resumen de la ruta',
-  // Notas y pendientes
   notes: 'Notas',
   noteTitle: 'Título de la nota',
   deleteNote: 'Eliminar nota',
@@ -51,7 +49,6 @@ export default {
   markPending: 'Marcar como pendiente',
   markDone: 'Marcar como hecho',
   newChecklistItem: 'Nuevo pendiente…',
-  // Gastos
   expenses: 'Gastos',
   lodging: 'Hospedaje',
   food: 'Alimentos',
@@ -77,11 +74,13 @@ export default {
   itemType: 'Tipo',
   itemTypePlaceholder: 'Ej. Museo, Tour…',
   amount: 'Monto',
-  // Totales
   segmentTotal: 'Total del tramo',
   grandTotal: 'Total del viaje',
   currency: 'Moneda',
-  // Estados
+  units: 'Unidades de distancia',
+  kilometers: 'Kilómetros',
+  miles: 'Millas',
+  installApp: 'Instalar',
   loading: 'Cargando…',
   searching: 'Buscando…',
   noResults: 'Sin resultados',
