@@ -10,7 +10,7 @@
 
 .editor-module__settings > .editor-module__menu-anchor:last-child {
   position: fixed;
-  top: 158px;
+  top: 118px;
   right: 14px;
   z-index: 900;
 }
@@ -43,17 +43,18 @@
 }
 
 @media (min-width: 721px) {
-  /* Controles + / −, Atlas, Guardar y menú forman una columna flotante. */
+  /* Los controles + / − vuelven a la parte inferior derecha. */
   .workspace__desktop--floating .mapboxgl-ctrl-top-left {
     left: auto;
     right: 14px;
-    top: 14px;
-    bottom: auto;
+    top: auto;
+    bottom: 14px;
   }
 
+  /* Atlas y las acciones suben para formar una columna limpia. */
   .topbar__brand {
     position: fixed;
-    top: 82px;
+    top: 14px;
     right: 14px;
     z-index: 901;
     padding: 0;
@@ -80,7 +81,7 @@
 
   .topbar__save {
     position: fixed;
-    top: 112px;
+    top: 72px;
     right: 14px;
     z-index: 901;
     width: 38px;
@@ -112,7 +113,7 @@
 
   .trip-save-popover {
     position: fixed;
-    top: 112px;
+    top: 72px;
     right: 62px;
     z-index: 930;
     width: 260px;
