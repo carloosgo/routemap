@@ -7,6 +7,7 @@ export function AppMapPane({
   trip,
   openNoteSegmentId,
   setOpenNoteSegmentId,
+  segmentNoteRef,
   updateSegment,
   stops,
   toast,
@@ -22,7 +23,12 @@ export function AppMapPane({
         const originName = segment.origin?.name || t('origin');
         const destinationName = segment.destination?.name || t('destination');
         return (
-          <div className="segnote" role="dialog" aria-label={t('segmentNote')}>
+          <div
+            ref={segmentNoteRef}
+            className="segnote"
+            role="dialog"
+            aria-label={t('segmentNote')}
+          >
             <div className="segnote__head">
               <span
                 className="segnote__badge"
