@@ -4,7 +4,6 @@ import { useTranslation } from './i18n/index.jsx';
 import { useTrip } from './modules/trips/useTrip.js';
 import { useSavedTrips } from './modules/trips/useSavedTrips.js';
 import { useFirebaseAuth } from './infrastructure/firebase/useFirebaseAuth.js';
-import { ResizablePanes } from './components/ResizableSplit.jsx';
 import { isTripSavable, routeStops, tripTotal } from './modules/trips/tripModel.js';
 import { tripBreakdown } from './modules/expenses/expenseModel.js';
 import { AppTopbar } from './app/AppTopbar.jsx';
@@ -17,6 +16,7 @@ import {
   useSaveShortcut,
 } from './app/useAppInteractions.js';
 import './App.css';
+import './app/FloatingEditor.css';
 
 export default function App() {
   const { t, locale, setLocale, availableLocales } = useTranslation();
@@ -144,10 +144,6 @@ export default function App() {
     <AppTopbar
       menuWrapRef={menuWrapRef}
       t={t}
-      activeTab={activeTab}
-      setActiveTab={setActiveTab}
-      checklist={checklist}
-      doneCount={doneCount}
       trip={trip}
       renameTrip={renameTrip}
       resetTrip={resetTrip}
@@ -208,6 +204,33 @@ export default function App() {
     />
   );
 
+  const editorModule = (
+    <div className="editor-module">
+      <div className="editor-module__tabs">
+        <button
+          type="button"
+          className={'editor-module__tab' + (activeTab === 'segments' ? ' is-active' : '')}
+          onClick={() => setActiveTab('segments')}
+        >
+          <IconMap size={15} aria-hidden="true" /> {t('segments')}
+        </button>
+        <button
+          type="button"
+          className={'editor-module__tab' + (activeTab === 'notes' ? ' is-active' : '')}
+          onClick={() => setActiveTab('notes')}
+        >
+          <IconNotes size={15} aria-hidden="true" /> {t('notes')}
+          {checklist.length > 0 && (
+            <span className="tabbar__badge">
+              {doneCount}/{checklist.length}
+            </span>
+          )}
+        </button>
+      </div>
+      {editorPane}
+    </div>
+  );
+
   const mapPane = (
     <AppMapPane
       trip={trip}
@@ -224,12 +247,13 @@ export default function App() {
     <div className="app">
       {topbar}
       <main className="workspace">
-        <div className="workspace__desktop">
-          <ResizablePanes left={editorPane} right={mapPane} />
+        <div className="workspace__desktop workspace__desktop--floating">
+          {mapPane}
+          <div className="floating-editor">{editorModule}</div>
         </div>
         <div className="workspace__mobile">
           <div className={'mobilepane' + (mobileView === 'form' ? ' is-active' : '')}>
-            {editorPane}
+            {editorModule}
           </div>
           <div className={'mobilepane' + (mobileView === 'map' ? ' is-active' : '')}>
             {mapPane}
