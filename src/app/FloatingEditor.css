@@ -67,9 +67,21 @@
   font-weight: 600;
 }
 
+.editor-module__settings {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
 .editor-module > .editor {
   flex: 1;
   min-height: 0;
+}
+
+.workspace__desktop--floating .segnote {
+  position: absolute;
+  top: 14px;
+  left: 448px;
 }
 
 @media (max-width: 720px) {
