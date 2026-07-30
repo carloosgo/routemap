@@ -19,12 +19,24 @@ export function useSaveShortcut(onSave) {
   }, [onSave]);
 }
 
+function matchingScopeElements(element) {
+  if (!element) return [];
+
+  const scopeClass = Array.from(element.classList || []).find(Boolean);
+  if (!scopeClass) return [element];
+
+  return Array.from(document.getElementsByClassName(scopeClass));
+}
+
 export function useOutsideClick(ref, active, onOutside) {
   useEffect(() => {
     if (!active) return undefined;
 
     function onPointerDown(event) {
-      if (isOutsideTarget(ref.current, event.target)) {
+      const scopes = matchingScopeElements(ref.current);
+      const isInsideAnyScope = scopes.some((scope) => !isOutsideTarget(scope, event.target));
+
+      if (!isInsideAnyScope) {
         onOutside();
       }
     }
@@ -38,14 +50,26 @@ export function useOutsideClickSelector(selector, active, onOutside) {
   useEffect(() => {
     if (!active) return undefined;
 
-    function onPointerDown(event) {
+    function onDocumentClick(event) {
+      const noteButton = event.target?.closest?.('.segment__note-btn');
+
+      if (selector === '.segnote' && noteButton) {
+        const clickedSegmentId = noteButton.closest?.('[data-segment-id]')?.dataset?.segmentId;
+        const openSegmentId = document.querySelector('.segnote')?.dataset?.segmentId;
+
+        if (clickedSegmentId === openSegmentId) {
+          onOutside();
+        }
+        return;
+      }
+
       if (!event.target?.closest?.(selector)) {
         onOutside();
       }
     }
 
-    document.addEventListener('mousedown', onPointerDown);
-    return () => document.removeEventListener('mousedown', onPointerDown);
+    document.addEventListener('click', onDocumentClick);
+    return () => document.removeEventListener('click', onDocumentClick);
   }, [active, onOutside, selector]);
 }
 
