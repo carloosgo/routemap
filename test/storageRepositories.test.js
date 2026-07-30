@@ -92,6 +92,62 @@ test('API repository normaliza la URL base y solicita credenciales de sesión', 
   }
 });
 
+test('API repository usa POST para un viaje nuevo aunque ya tenga ID local', async () => {
+  const previousFetch = globalThis.fetch;
+  let receivedUrl;
+  let receivedMethod;
+
+  globalThis.fetch = async (url, options) => {
+    receivedUrl = url;
+    receivedMethod = options.method;
+    return {
+      ok: true,
+      status: 200,
+      async json() {
+        return { id: 'trip-new', name: 'Nuevo', segments: [] };
+      },
+    };
+  };
+
+  try {
+    const repository = createApiRepository('https://api.example.com');
+    await repository.save({ id: 'trip-new', name: 'Nuevo', segments: [] });
+
+    assert.equal(receivedUrl, 'https://api.example.com/api/trips');
+    assert.equal(receivedMethod, 'POST');
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test('API repository usa PUT para un viaje previamente cargado', async () => {
+  const previousFetch = globalThis.fetch;
+  const requests = [];
+
+  globalThis.fetch = async (url, options = {}) => {
+    requests.push({ url, method: options.method });
+    return {
+      ok: true,
+      status: 200,
+      async json() {
+        if (!options.method) return [{ id: 'trip-1', name: 'Europa', segments: [] }];
+        return { id: 'trip-1', name: 'Europa actualizada', segments: [] };
+      },
+    };
+  };
+
+  try {
+    const repository = createApiRepository('https://api.example.com');
+    await repository.list();
+    await repository.save({ id: 'trip-1', name: 'Europa actualizada', segments: [] });
+
+    assert.equal(requests[1].url, 'https://api.example.com/api/trips/trip-1');
+    assert.equal(requests[1].method, 'PUT');
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
 test('API repository no expone el cuerpo interno de una respuesta fallida', async () => {
   const previousFetch = globalThis.fetch;
   globalThis.fetch = async () => ({
