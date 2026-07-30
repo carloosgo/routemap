@@ -1,14 +1,18 @@
 import {
   IconBookmark,
+  IconBrandGoogle,
   IconChevronDown,
+  IconCloudUpload,
   IconCoin,
   IconDeviceFloppy,
   IconLanguage,
+  IconLogout,
   IconMap,
   IconMap2,
   IconNotes,
   IconPlus,
   IconTrash,
+  IconUser,
 } from '@tabler/icons-react';
 import { formatMoney } from '../shared/utils.js';
 import { tripTotal } from '../modules/trips/tripModel.js';
@@ -38,7 +42,14 @@ export function AppTopbar({
   setLocale,
   handleSave,
   canSave,
+  authUser,
+  authLoading,
+  onGoogleSignIn,
+  onSignOut,
+  onImportLocalTrips,
 }) {
+  const accountLabel = authUser?.displayName || authUser?.email || t('account');
+
   return (
     <header className="topbar" ref={menuWrapRef}>
       <div className="topbar__brand">
@@ -209,6 +220,43 @@ export function AppTopbar({
               </button>
             ))}
           </div>
+        )}
+      </div>
+
+      <div className="topmenu">
+        {authUser ? (
+          <>
+            <button
+              type="button"
+              className="topitem"
+              onClick={() => setOpenMenu(openMenu === 'account' ? null : 'account')}
+              aria-label={t('account')}
+            >
+              <IconUser size={17} aria-hidden="true" />
+              <span className="topitem__val">{accountLabel}</span>
+              <IconChevronDown size={13} className="topitem__chev" aria-hidden="true" />
+            </button>
+            {openMenu === 'account' && (
+              <div className="dropdown dropdown--mini">
+                <div className="dropdown__label">{accountLabel}</div>
+                <button type="button" className="dropdown__opt" onClick={onImportLocalTrips}>
+                  <IconCloudUpload size={15} aria-hidden="true" /> {t('importLocalTrips')}
+                </button>
+                <button type="button" className="dropdown__opt" onClick={onSignOut}>
+                  <IconLogout size={15} aria-hidden="true" /> {t('signOut')}
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <button
+            type="button"
+            className="topitem"
+            onClick={onGoogleSignIn}
+            disabled={authLoading}
+          >
+            <IconBrandGoogle size={17} aria-hidden="true" /> {t('continueWithGoogle')}
+          </button>
         )}
       </div>
 
