@@ -34,6 +34,22 @@ export function useOutsideClick(ref, active, onOutside) {
   }, [active, onOutside, ref]);
 }
 
+export function useOutsideClickSelector(selector, active, onOutside) {
+  useEffect(() => {
+    if (!active) return undefined;
+
+    function onPointerDown(event) {
+      const target = event.target;
+      if (!(target instanceof Element) || !target.closest(selector)) {
+        onOutside();
+      }
+    }
+
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [active, onOutside, selector]);
+}
+
 export function useCollapseSegmentsOnTripChange(tripId, segments, setExpandedSegments) {
   const previousTripIdRef = useRef(tripId);
 
