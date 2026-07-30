@@ -65,22 +65,42 @@ export function AppEditorPane({
   setNewItemText,
 }) {
   const segmentCount = trip.segments.length;
-  const [draggingSegmentId, setDraggingSegmentId] = useState(null);
+  const [dragState, setDragState] = useState(null);
 
   useEffect(() => {
-    if (!draggingSegmentId) return undefined;
+    if (!dragState) return undefined;
 
     function handlePointerMove(event) {
-      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-segment-id]');
-      const targetId = target?.dataset.segmentId;
-      if (!targetId || targetId === draggingSegmentId) return;
-      const bounds = target.getBoundingClientRect();
-      const placement = event.clientY >= bounds.top + bounds.height / 2 ? 'after' : 'before';
-      reorderSegment(draggingSegmentId, targetId, placement);
+      const target = document
+        .elementFromPoint(event.clientX, event.clientY)
+        ?.closest('[data-segment-id]');
+      const targetId = target?.dataset.segmentId || null;
+      let placement = null;
+
+      if (targetId && targetId !== dragState.segmentId) {
+        const bounds = target.getBoundingClientRect();
+        placement = event.clientY >= bounds.top + bounds.height / 2 ? 'after' : 'before';
+      }
+
+      setDragState((current) =>
+        current
+          ? {
+              ...current,
+              offsetY: event.clientY - current.startY,
+              targetId,
+              placement,
+            }
+          : current
+      );
     }
 
     function handlePointerEnd() {
-      setDraggingSegmentId(null);
+      setDragState((current) => {
+        if (current?.targetId && current.placement) {
+          reorderSegment(current.segmentId, current.targetId, current.placement);
+        }
+        return null;
+      });
     }
 
     document.addEventListener('pointermove', handlePointerMove);
@@ -91,7 +111,14 @@ export function AppEditorPane({
       document.removeEventListener('pointerup', handlePointerEnd);
       document.removeEventListener('pointercancel', handlePointerEnd);
     };
-  }, [draggingSegmentId, reorderSegment]);
+  }, [dragState, reorderSegment]);
+
+  function moveSegmentWithKeyboard(segmentId, offset) {
+    moveSegment(segmentId, offset);
+    window.requestAnimationFrame(() => {
+      document.querySelector(`[data-reorder-handle="${CSS.escape(segmentId)}"]`)?.focus();
+    });
+  }
 
   return (
     <section className="editor">
@@ -107,7 +134,11 @@ export function AppEditorPane({
                   currency={trip.currency}
                   locale={intlLocale}
                   expanded={isExpanded(segment.id)}
-                  dragging={draggingSegmentId === segment.id}
+                  dragging={dragState?.segmentId === segment.id}
+                  dragOffsetY={dragState?.segmentId === segment.id ? dragState.offsetY : 0}
+                  dropPlacement={
+                    dragState?.targetId === segment.id ? dragState.placement : null
+                  }
                   onToggle={() => toggleSegment(segment.id)}
                   onUpdate={(patch) => updateSegment(segment.id, patch)}
                   onUpdateExpenses={(expenses) => updateExpenses(segment.id, expenses)}
@@ -115,13 +146,20 @@ export function AppEditorPane({
                   onOpenNote={() => setOpenNoteSegmentId(segment.id)}
                   onReorderPointerStart={(event) => {
                     if (event.pointerType === 'mouse' && event.button !== 0) return;
+                    event.currentTarget.focus({ preventScroll: true });
                     event.preventDefault();
-                    setDraggingSegmentId(segment.id);
+                    setDragState({
+                      segmentId: segment.id,
+                      startY: event.clientY,
+                      offsetY: 0,
+                      targetId: null,
+                      placement: null,
+                    });
                   }}
                   onReorderKeyDown={(event) => {
                     if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
                     event.preventDefault();
-                    moveSegment(segment.id, event.key === 'ArrowUp' ? -1 : 1);
+                    moveSegmentWithKeyboard(segment.id, event.key === 'ArrowUp' ? -1 : 1);
                   }}
                 />
               ))}
