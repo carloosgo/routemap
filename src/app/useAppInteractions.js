@@ -46,30 +46,51 @@ export function useOutsideClick(ref, active, onOutside) {
   }, [active, onOutside, ref]);
 }
 
+function suppressNextClick(element) {
+  if (!element) return;
+
+  element.addEventListener(
+    'click',
+    (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    },
+    { capture: true, once: true }
+  );
+}
+
 export function useOutsideClickSelector(selector, active, onOutside) {
   useEffect(() => {
     if (!active) return undefined;
 
-    function onDocumentClick(event) {
-      const noteButton = event.target?.closest?.('.segment__note-btn');
+    function onPointerDown(event) {
+      const target = event.target;
+      if (!target?.closest) return;
 
-      if (selector === '.segnote' && noteButton) {
-        const clickedSegmentId = noteButton.closest?.('[data-segment-id]')?.dataset?.segmentId;
-        const openSegmentId = document.querySelector('.segnote')?.dataset?.segmentId;
+      if (selector === '.segnote') {
+        const noteButton = target.closest('.segment__note-btn');
 
-        if (clickedSegmentId === openSegmentId) {
-          onOutside();
+        if (noteButton) {
+          const clickedSegmentId = noteButton.closest('[data-segment-id]')?.dataset?.segmentId;
+          const openSegmentId = document.querySelector('.segnote[data-segment-id]')?.dataset
+            ?.segmentId;
+
+          if (clickedSegmentId && clickedSegmentId === openSegmentId) {
+            onOutside();
+            suppressNextClick(noteButton);
+          }
+
+          return;
         }
-        return;
       }
 
-      if (!event.target?.closest?.(selector)) {
+      if (!target.closest(selector)) {
         onOutside();
       }
     }
 
-    document.addEventListener('click', onDocumentClick);
-    return () => document.removeEventListener('click', onDocumentClick);
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
   }, [active, onOutside, selector]);
 }
 
