@@ -1,0 +1,25 @@
+/* Ajustes visuales puntuales del módulo flotante solicitados por el usuario. */
+.floating-editor,
+.floating-editor .editor-module,
+.floating-editor .editor,
+.floating-editor .editor__body {
+  background: #ffffff;
+}
+
+.floating-editor .segment {
+  box-shadow: 0 2px 7px rgba(15, 23, 42, 0.09);
+}
+
+/* Un punto menos para número, ciudad y elementos visuales asociados. */
+.floating-editor .segment__badge {
+  font-size: 9px;
+}
+
+.floating-editor .segment__route .autocomplete__field .input {
+  font-size: 11px;
+}
+
+.floating-editor .segment__header .flag {
+  width: 18px;
+  height: 13px;
+}
