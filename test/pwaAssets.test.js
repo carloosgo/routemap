@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const manifestPath = new URL('../public/manifest.webmanifest', import.meta.url);
-const serviceWorkerPath = new URL('../public/sw.js', import.meta.url);
-const indexPath = new URL('../index.html', import.meta.url);
+const manifestPath = new globalThis.URL('../public/manifest.webmanifest', import.meta.url);
+const serviceWorkerPath = new globalThis.URL('../public/sw.js', import.meta.url);
+const indexPath = new globalThis.URL('../index.html', import.meta.url);
 
 async function read(path) {
   return readFile(path, 'utf8');
