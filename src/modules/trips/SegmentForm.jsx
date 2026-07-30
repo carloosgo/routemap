@@ -30,30 +30,11 @@ export function SegmentForm({
   onRemove,
   onOpenNote,
   onReorderPointerStart,
-  onReorderKeyDown,
 }) {
   const { t } = useTranslation();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const total = segmentTotal(segment);
   const bodyId = `segment-body-${segment.id}`;
-  const dropShadow =
-    dropPlacement === 'before'
-      ? 'inset 0 3px 0 var(--coral), 0 1px 2px rgba(0, 0, 0, 0.04)'
-      : dropPlacement === 'after'
-        ? 'inset 0 -3px 0 var(--coral), 0 1px 2px rgba(0, 0, 0, 0.04)'
-        : undefined;
-  const articleStyle = dragging
-    ? {
-        transform: `translateY(${dragOffsetY}px) scale(1.015)`,
-        boxShadow: '0 14px 32px rgba(15, 23, 42, 0.22)',
-        opacity: 0.92,
-        zIndex: 50,
-        pointerEvents: 'none',
-        transition: 'none',
-      }
-    : dropShadow
-      ? { boxShadow: dropShadow, transition: 'box-shadow 120ms ease' }
-      : { transition: 'box-shadow 120ms ease, transform 120ms ease' };
 
   const formattedDates =
     segment.startDate || segment.endDate
@@ -81,28 +62,17 @@ export function SegmentForm({
         (dropPlacement ? ` is-drop-${dropPlacement}` : '')
       }
       data-segment-id={segment.id}
-      style={articleStyle}
+      style={dragging ? { transform: `translateY(${dragOffsetY}px)` } : undefined}
     >
       <header className="segment__header">
-        <button
-          type="button"
+        <span
           className="segment__badge"
-          style={{
-            background: colorForIndex(index),
-            border: 0,
-            padding: 0,
-            cursor: dragging ? 'grabbing' : 'grab',
-            touchAction: 'none',
-          }}
-          data-reorder-handle={segment.id}
-          aria-label={`${t('moveSegment')} ${index + 1}`}
-          aria-pressed={dragging}
-          title={t('moveSegmentHint')}
+          style={{ background: colorForIndex(index) }}
           onPointerDown={onReorderPointerStart}
-          onKeyDown={onReorderKeyDown}
+          aria-hidden="true"
         >
           {index + 1}
-        </button>
+        </span>
 
         <div className="segment__route">
           <CityAutocomplete
