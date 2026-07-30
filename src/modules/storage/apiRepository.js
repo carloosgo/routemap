@@ -2,6 +2,56 @@ import { normalizeTrip } from '../trips/tripModel.js';
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
+export class ApiRepositoryError extends Error {
+  constructor(message, { code = 'request_failed', status = 0, retryAfter = null } = {}) {
+    super(message);
+    this.name = 'ApiRepositoryError';
+    this.code = code;
+    this.status = status;
+    this.retryAfter = retryAfter;
+  }
+}
+
+function errorForResponse(response) {
+  const status = Number(response?.status) || 0;
+  const retryAfter = response?.headers?.get?.('retry-after') || null;
+
+  if (status === 401) {
+    return new ApiRepositoryError('La sesión expiró o no está disponible.', {
+      code: 'session_expired',
+      status,
+    });
+  }
+  if (status === 409) {
+    return new ApiRepositoryError('El viaje cambió en otro dispositivo.', {
+      code: 'trip_version_conflict',
+      status,
+    });
+  }
+  if (status === 422) {
+    return new ApiRepositoryError('El servidor rechazó datos inválidos.', {
+      code: 'validation_failed',
+      status,
+    });
+  }
+  if (status === 429) {
+    return new ApiRepositoryError('Se alcanzó temporalmente el límite de solicitudes.', {
+      code: 'rate_limited',
+      status,
+      retryAfter,
+    });
+  }
+  if (status >= 500) {
+    return new ApiRepositoryError('El servicio no está disponible temporalmente.', {
+      code: 'server_unavailable',
+      status,
+    });
+  }
+  return new ApiRepositoryError(`No se pudo completar la solicitud (HTTP ${status}).`, {
+    status,
+  });
+}
+
 // Implementación contra backend REST (para multiusuario / escala global).
 // Mismo contrato que el repositorio local. El backend de referencia está
 // documentado en /server/openapi.yaml.
@@ -32,9 +82,7 @@ export function createApiRepository(baseUrl) {
         credentials: 'include',
       });
 
-      if (!res.ok) {
-        throw new Error(`No se pudo completar la solicitud (HTTP ${res.status}).`);
-      }
+      if (!res.ok) throw errorForResponse(res);
 
       onResponse?.(res);
       if (res.status === 204) return null;
@@ -42,11 +90,16 @@ export function createApiRepository(baseUrl) {
       try {
         return await res.json();
       } catch {
-        throw new Error('El servidor devolvió una respuesta inválida.');
+        throw new ApiRepositoryError('El servidor devolvió una respuesta inválida.', {
+          code: 'invalid_response',
+          status: res.status,
+        });
       }
     } catch (error) {
       if (error?.name === 'AbortError') {
-        throw new Error('La solicitud tardó demasiado y fue cancelada.');
+        throw new ApiRepositoryError('La solicitud tardó demasiado y fue cancelada.', {
+          code: 'request_timeout',
+        });
       }
       throw error;
     } finally {
