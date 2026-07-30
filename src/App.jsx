@@ -3,6 +3,7 @@ import { IconMap, IconNotes } from '@tabler/icons-react';
 import { useTranslation } from './i18n/index.jsx';
 import { useTrip } from './modules/trips/useTrip.js';
 import { useSavedTrips } from './modules/trips/useSavedTrips.js';
+import { useFirebaseAuth } from './infrastructure/firebase/useFirebaseAuth.js';
 import { ResizablePanes } from './components/ResizableSplit.jsx';
 import { isTripSavable, routeStops, tripTotal } from './modules/trips/tripModel.js';
 import { tripBreakdown } from './modules/expenses/expenseModel.js';
@@ -19,6 +20,7 @@ import './App.css';
 
 export default function App() {
   const { t, locale, setLocale, availableLocales } = useTranslation();
+  const auth = useFirebaseAuth();
   const {
     trip,
     resetTrip,
@@ -38,7 +40,14 @@ export default function App() {
     updateExpenses,
   } = useTrip();
 
-  const { trips, loading, saveTrip, deleteTrip } = useSavedTrips();
+  const {
+    trips,
+    loading,
+    saveTrip,
+    deleteTrip,
+    importLocalTrips,
+    getLocalTripCount,
+  } = useSavedTrips(auth.user);
   const [toast, setToast] = useState('');
   const [mobileView, setMobileView] = useState('form');
   const [activeTab, setActiveTab] = useState('segments');
@@ -61,16 +70,47 @@ export default function App() {
   const doneCount = checklist.filter((item) => item.done).length;
   const notes = trip.notes || [];
 
+  const showToast = useCallback((message, duration = 2200) => {
+    setToast(message);
+    setTimeout(() => setToast(''), duration);
+  }, []);
+
   const handleSave = useCallback(async () => {
     if (!isTripSavable(trip)) {
-      setToast(t('saveValidationError'));
-      setTimeout(() => setToast(''), 2500);
+      showToast(t('saveValidationError'), 2500);
       return;
     }
     await saveTrip(trip);
-    setToast(t('saved'));
-    setTimeout(() => setToast(''), 2000);
-  }, [saveTrip, trip, t]);
+    showToast(t('saved'));
+  }, [saveTrip, showToast, trip, t]);
+
+  const handleGoogleSignIn = useCallback(async () => {
+    try {
+      await auth.signInWithGoogle();
+      setOpenMenu(null);
+      showToast(t('signedIn'));
+    } catch {
+      showToast(t('signInError'), 3000);
+    }
+  }, [auth, showToast, t]);
+
+  const handleSignOut = useCallback(async () => {
+    await auth.signOutUser();
+    setOpenMenu(null);
+    showToast(t('signedOut'));
+  }, [auth, showToast, t]);
+
+  const handleImportLocalTrips = useCallback(async () => {
+    const count = await getLocalTripCount();
+    if (count === 0) {
+      showToast(t('noLocalTrips'));
+      return;
+    }
+    if (!globalThis.confirm(t('confirmImportLocalTrips'))) return;
+    const imported = await importLocalTrips();
+    setOpenMenu(null);
+    showToast(`${t('importedTrips')}: ${imported}`);
+  }, [getLocalTripCount, importLocalTrips, showToast, t]);
 
   const closeMenu = useCallback(() => setOpenMenu(null), []);
   const closeSegmentNote = useCallback(() => setOpenNoteSegmentId(null), []);
@@ -124,6 +164,11 @@ export default function App() {
       setLocale={setLocale}
       handleSave={handleSave}
       canSave={canSave}
+      authUser={auth.user}
+      authLoading={auth.loading}
+      onGoogleSignIn={handleGoogleSignIn}
+      onSignOut={handleSignOut}
+      onImportLocalTrips={handleImportLocalTrips}
     />
   );
 
