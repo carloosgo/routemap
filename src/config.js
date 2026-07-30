@@ -2,7 +2,7 @@
 // Punto único de verdad: cambiar comportamiento global desde aquí o vía .env,
 // sin tocar los módulos. Esto mantiene los módulos desacoplados.
 
-const env = import.meta.env;
+const env = import.meta.env || {};
 
 export const config = {
   // --- Almacenamiento ---
