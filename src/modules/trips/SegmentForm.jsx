@@ -21,11 +21,14 @@ export function SegmentForm({
   currency,
   locale,
   expanded,
+  dragging,
   onToggle,
   onUpdate,
   onUpdateExpenses,
   onRemove,
   onOpenNote,
+  onReorderPointerStart,
+  onReorderKeyDown,
 }) {
   const { t } = useTranslation();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -51,11 +54,29 @@ export function SegmentForm({
       : null;
 
   return (
-    <article className="segment">
+    <article
+      className={'segment' + (dragging ? ' is-dragging' : '')}
+      data-segment-id={segment.id}
+    >
       <header className="segment__header">
-        <span className="segment__badge" style={{ background: colorForIndex(index) }}>
+        <button
+          type="button"
+          className="segment__badge"
+          style={{
+            background: colorForIndex(index),
+            border: 0,
+            padding: 0,
+            cursor: dragging ? 'grabbing' : 'grab',
+            touchAction: 'none',
+          }}
+          aria-label={`${t('moveSegment')} ${index + 1}`}
+          aria-pressed={dragging}
+          title={t('moveSegmentHint')}
+          onPointerDown={onReorderPointerStart}
+          onKeyDown={onReorderKeyDown}
+        >
           {index + 1}
-        </span>
+        </button>
 
         <div className="segment__route">
           <CityAutocomplete
