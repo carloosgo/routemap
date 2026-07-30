@@ -4,11 +4,12 @@ import { readFile } from 'node:fs/promises';
 
 const PURE_MODULES = [
   'src/shared/utils.js',
+  'src/app/appInteractionModel.js',
   'src/modules/trips/tripModel.js',
   'src/modules/expenses/expenseModel.js',
   'src/modules/storage/apiRepository.js',
   'src/modules/storage/localStorageRepository.js',
-  'src/modules/storage/repository.js',
+  'src/modules/geocoding/nominatimProvider.js',
 ];
 
 const FORBIDDEN_IMPORTS = [
