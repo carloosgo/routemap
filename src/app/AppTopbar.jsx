@@ -1,96 +1,96 @@
-import {
-  IconBrandGoogle,
-  IconChevronDown,
-  IconCloudUpload,
-  IconDeviceFloppy,
-  IconLogout,
-  IconMap2,
-  IconUser,
-} from '@tabler/icons-react';
+import { useEffect, useRef, useState } from 'react';
+import { IconDeviceFloppy, IconMap2, IconX } from '@tabler/icons-react';
 
 export function AppTopbar({
   menuWrapRef,
   t,
   trip,
   renameTrip,
-  openMenu,
-  setOpenMenu,
   handleSave,
-  canSave,
-  authUser,
-  authLoading,
-  onGoogleSignIn,
-  onSignOut,
-  onImportLocalTrips,
 }) {
-  const accountLabel = authUser?.displayName || authUser?.email || t('account');
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [draftName, setDraftName] = useState(trip.name || '');
+  const inputRef = useRef(null);
+  const latestSaveRef = useRef(handleSave);
+
+  useEffect(() => {
+    latestSaveRef.current = handleSave;
+  }, [handleSave]);
+
+  useEffect(() => {
+    if (!saveOpen) setDraftName(trip.name || '');
+  }, [saveOpen, trip.name]);
+
+  useEffect(() => {
+    if (saveOpen) inputRef.current?.focus();
+  }, [saveOpen]);
+
+  function submitSave(event) {
+    event.preventDefault();
+    const name = draftName.trim();
+    if (!name) {
+      inputRef.current?.focus();
+      return;
+    }
+
+    renameTrip(name);
+    setSaveOpen(false);
+    setTimeout(() => latestSaveRef.current(), 0);
+  }
 
   return (
-    <header className="topbar" ref={menuWrapRef}>
-      <div className="topbar__brand">
+    <header className="topbar topbar--floating-only" ref={menuWrapRef}>
+      <div className="topbar__brand" aria-label={t('appName')}>
         <div className="topbar__brand-icon">
-          <IconMap2 size={17} aria-hidden="true" />
+          <IconMap2 size={14} aria-hidden="true" />
         </div>
         <span className="topbar__brand-name">{t('appName')}</span>
-      </div>
-
-      <input
-        type="text"
-        className="topbar__title"
-        style={{ marginLeft: 8 }}
-        value={trip.name}
-        placeholder={t('tripNamePlaceholder')}
-        onChange={(event) => renameTrip(event.target.value)}
-        aria-label={t('tripName')}
-      />
-
-      <div className="topbar__spacer" />
-
-      <div className="topmenu">
-        {authUser ? (
-          <>
-            <button
-              type="button"
-              className="topitem"
-              onClick={() => setOpenMenu(openMenu === 'account' ? null : 'account')}
-              aria-label={t('account')}
-            >
-              <IconUser size={17} aria-hidden="true" />
-              <span className="topitem__val">{accountLabel}</span>
-              <IconChevronDown size={13} className="topitem__chev" aria-hidden="true" />
-            </button>
-            {openMenu === 'account' && (
-              <div className="dropdown dropdown--mini">
-                <div className="dropdown__label">{accountLabel}</div>
-                <button type="button" className="dropdown__opt" onClick={onImportLocalTrips}>
-                  <IconCloudUpload size={15} aria-hidden="true" /> {t('importLocalTrips')}
-                </button>
-                <button type="button" className="dropdown__opt" onClick={onSignOut}>
-                  <IconLogout size={15} aria-hidden="true" /> {t('signOut')}
-                </button>
-              </div>
-            )}
-          </>
-        ) : (
-          <button
-            type="button"
-            className="topitem"
-            onClick={onGoogleSignIn}
-            disabled={authLoading}
-          >
-            <IconBrandGoogle size={17} aria-hidden="true" /> {t('continueWithGoogle')}
-          </button>
-        )}
       </div>
 
       <button
         type="button"
         className="topbar__save"
-        onClick={handleSave}
-        disabled={!canSave}
+        onClick={() => {
+          setDraftName(trip.name || '');
+          setSaveOpen((open) => !open);
+        }}
+        aria-label={t('saveTrip')}
+        title={t('saveTrip')}
       >
-        <IconDeviceFloppy size={15} aria-hidden="true" /> {t('saveTrip')}
+        <IconDeviceFloppy size={22} aria-hidden="true" />
       </button>
+
+      {saveOpen && (
+        <form className="trip-save-popover" onSubmit={submitSave}>
+          <div className="trip-save-popover__head">
+            <span>{t('tripName')}</span>
+            <button
+              type="button"
+              className="trip-save-popover__close"
+              aria-label={t('cancel')}
+              onClick={() => setSaveOpen(false)}
+            >
+              <IconX size={15} aria-hidden="true" />
+            </button>
+          </div>
+          <div className="trip-save-popover__body">
+            <input
+              ref={inputRef}
+              type="text"
+              className="trip-save-popover__input"
+              value={draftName}
+              placeholder={t('tripNamePlaceholder')}
+              onChange={(event) => setDraftName(event.target.value)}
+              maxLength={80}
+            />
+            <button type="submit" className="trip-save-popover__submit">
+              {t('saveTrip')}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {trip.name?.trim() && <div className="trip-name-pill">{trip.name}</div>}
     </header>
   );
 }
