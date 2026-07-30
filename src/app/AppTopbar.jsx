@@ -59,6 +59,15 @@ export function AppTopbar({
         <span className="topbar__brand-name">{t('appName')}</span>
       </div>
 
+      <input
+        type="text"
+        className="topbar__title"
+        value={trip.name}
+        placeholder={t('tripNamePlaceholder')}
+        onChange={(event) => renameTrip(event.target.value)}
+        aria-label={t('tripName')}
+      />
+
       <span className="topbar__sep" />
 
       <div className="topbar__tabs">
@@ -82,17 +91,6 @@ export function AppTopbar({
           )}
         </button>
       </div>
-
-      <div className="topbar__spacer" />
-
-      <input
-        type="text"
-        className="topbar__title"
-        value={trip.name}
-        placeholder={t('tripNamePlaceholder')}
-        onChange={(event) => renameTrip(event.target.value)}
-        aria-label={t('tripName')}
-      />
 
       <div className="topbar__spacer" />
 
