@@ -263,7 +263,6 @@ export function RouteMap({ segments }) {
     });
 
     mapRef.current = map;
-    window.__routeMap = map;
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
     map.doubleClickZoom.disable();
 
@@ -293,7 +292,6 @@ export function RouteMap({ segments }) {
       map.remove();
       mapRef.current = null;
       loadedRef.current = false;
-      delete window.__routeMap;
     };
   }, []);
 
