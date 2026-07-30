@@ -1,4 +1,4 @@
-/* global self, caches, fetch, URL */
+/* global self, caches, URL */
 
 const CACHE_NAME = 'atlas-shell-v1';
 const APP_SHELL = ['/', '/manifest.webmanifest', '/atlas-icon.svg'];
