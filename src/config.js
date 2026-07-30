@@ -12,12 +12,31 @@ function cleanString(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function envBoolean(value, fallback = false) {
+  if (value === true || value === 'true') return true;
+  if (value === false || value === 'false') return false;
+  return fallback;
+}
+
 export const config = {
   // --- Almacenamiento ---
   // "local" = navegador (localStorage). "api" = backend REST.
   storageDriver: allowedValue(env.VITE_STORAGE_DRIVER, ['local', 'api'], 'local'),
   apiBaseUrl: cleanString(env.VITE_API_BASE_URL),
   storageKey: 'atlas:trips:v1',
+
+  // --- Firebase ---
+  // La configuración web identifica el proyecto; la autorización real depende
+  // de Authentication, Security Rules y posteriormente App Check.
+  firebase: {
+    apiKey: cleanString(env.VITE_FIREBASE_API_KEY),
+    authDomain: cleanString(env.VITE_FIREBASE_AUTH_DOMAIN),
+    projectId: cleanString(env.VITE_FIREBASE_PROJECT_ID),
+    storageBucket: cleanString(env.VITE_FIREBASE_STORAGE_BUCKET),
+    messagingSenderId: cleanString(env.VITE_FIREBASE_MESSAGING_SENDER_ID),
+    appId: cleanString(env.VITE_FIREBASE_APP_ID),
+    useEmulators: envBoolean(env.VITE_FIREBASE_USE_EMULATORS),
+  },
 
   // --- Geocodificación / autocompletado de ciudades ---
   geocoder: allowedValue(env.VITE_GEOCODER, ['nominatim'], 'nominatim'),
