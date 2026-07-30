@@ -10,6 +10,7 @@ import { normalizeTrip } from '../trips/tripModel.js';
 
 export function createApiRepository(baseUrl) {
   const normalizedBaseUrl = (baseUrl || '').replace(/\/$/, '');
+  const persistedIds = new Set();
 
   if (!normalizedBaseUrl) {
     console.warn('[storage] VITE_API_BASE_URL no configurada; el driver "api" fallará.');
@@ -44,19 +45,27 @@ export function createApiRepository(baseUrl) {
     return res.json();
   }
 
+  function remember(trip) {
+    if (trip?.id) persistedIds.add(trip.id);
+    return trip;
+  }
+
   return {
     async list() {
       const data = await request('/api/trips');
-      return Array.isArray(data) ? data.map(normalizeTrip) : [];
+      const trips = Array.isArray(data) ? data.map(normalizeTrip) : [];
+      persistedIds.clear();
+      trips.forEach(remember);
+      return trips;
     },
 
     async get(id) {
       const data = await request(`/api/trips/${encodeURIComponent(id)}`);
-      return data ? normalizeTrip(data) : null;
+      return data ? remember(normalizeTrip(data)) : null;
     },
 
     async save(trip) {
-      const exists = Boolean(trip.id);
+      const exists = Boolean(trip?.id && persistedIds.has(trip.id));
       const data = await request(
         exists ? `/api/trips/${encodeURIComponent(trip.id)}` : '/api/trips',
         {
@@ -64,11 +73,12 @@ export function createApiRepository(baseUrl) {
           body: JSON.stringify(trip),
         }
       );
-      return normalizeTrip(data);
+      return remember(normalizeTrip(data));
     },
 
     async remove(id) {
       await request(`/api/trips/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      persistedIds.delete(id);
     },
   };
 }
