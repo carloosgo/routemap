@@ -20,8 +20,9 @@
 }
 
 /* Las ciudades ya seleccionadas se destacan; placeholders y texto de búsqueda
-   conservan el peso normal mientras el autocompletado está abierto. */
+   conservan el peso y tamaño normal mientras el autocompletado está abierto. */
 .floating-editor .segment__route .autocomplete:not(:focus-within) .autocomplete__field .input:not(:placeholder-shown) {
+  font-size: 12px;
   font-weight: 700;
 }
 
