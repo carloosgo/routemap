@@ -19,14 +19,14 @@ import { formatMoney } from '../shared/utils.js';
 const MAX_NOTES = 2000;
 
 const BREAKDOWN_CATS = [
-  { key: 'plane', label: 'Vuelos', Icon: IconPlane, color: '#e2725b' },
-  { key: 'train', label: 'Tren', Icon: IconTrain, color: '#4f6df5' },
-  { key: 'bus', label: 'Bus', Icon: IconBus, color: '#e08a17' },
-  { key: 'taxiUber', label: 'Auto / Taxi', Icon: IconCar, color: '#5a8f3c' },
-  { key: 'lodging', label: 'Hospedaje', Icon: IconBed, color: '#d4a017' },
-  { key: 'food', label: 'Comidas', Icon: IconToolsKitchen2, color: '#2aa866' },
-  { key: 'attractions', label: 'Atracciones', Icon: IconTicket, color: '#9b59b6' },
-  { key: 'others', label: 'Otros', Icon: IconDots, color: '#9499ab' },
+  { key: 'plane', labelKey: 'flights', Icon: IconPlane, color: '#e2725b' },
+  { key: 'train', labelKey: 'train', Icon: IconTrain, color: '#4f6df5' },
+  { key: 'bus', labelKey: 'bus', Icon: IconBus, color: '#e08a17' },
+  { key: 'taxiUber', labelKey: 'carTaxi', Icon: IconCar, color: '#5a8f3c' },
+  { key: 'lodging', labelKey: 'lodging', Icon: IconBed, color: '#d4a017' },
+  { key: 'food', labelKey: 'meals', Icon: IconToolsKitchen2, color: '#2aa866' },
+  { key: 'attractions', labelKey: 'attractions', Icon: IconTicket, color: '#9b59b6' },
+  { key: 'others', labelKey: 'others', Icon: IconDots, color: '#9499ab' },
 ];
 
 export function AppEditorPane({
@@ -61,6 +61,8 @@ export function AppEditorPane({
   newItemText,
   setNewItemText,
 }) {
+  const segmentCount = trip.segments.length;
+
   return (
     <section className="editor">
       <div className="editor__body">
@@ -98,7 +100,8 @@ export function AppEditorPane({
                 <span className="total__info">
                   <span className="total__label">{t('grandTotal')}</span>
                   <span className="total__meta">
-                    {trip.segments.length} {trip.segments.length === 1 ? 'tramo' : 'tramos'}
+                    {segmentCount}{' '}
+                    {segmentCount === 1 ? t('segment').toLowerCase() : t('segmentPlural')}
                     {!hasCosts && ' · ' + t('noResults')}
                   </span>
                 </span>
@@ -126,7 +129,7 @@ export function AppEditorPane({
                           <span className="brk-icon">
                             <Icon size={18} style={{ color: category.color }} aria-hidden="true" />
                           </span>
-                          <span className="brk-name">{category.label}</span>
+                          <span className="brk-name">{t(category.labelKey)}</span>
                           <span className="brk-val">
                             {formatMoney(amount, trip.currency, intlLocale)}
                           </span>
@@ -152,12 +155,12 @@ export function AppEditorPane({
                     value={note.title}
                     maxLength={60}
                     onChange={(event) => updateNote(note.id, 'title', event.target.value)}
-                    aria-label="Título de la nota"
+                    aria-label={t('noteTitle')}
                   />
                   {notes.length > 1 &&
                     (confirmDeleteNote === note.id ? (
                       <span className="notes-confirm-delete">
-                        <span className="notes-confirm-delete__text">¿Eliminar?</span>
+                        <span className="notes-confirm-delete__text">{t('deleteQuestion')}</span>
                         <button
                           type="button"
                           className="notes-confirm-delete__yes"
@@ -166,21 +169,21 @@ export function AppEditorPane({
                             setConfirmDeleteNote(null);
                           }}
                         >
-                          Sí
+                          {t('yes')}
                         </button>
                         <button
                           type="button"
                           className="notes-confirm-delete__no"
                           onClick={() => setConfirmDeleteNote(null)}
                         >
-                          No
+                          {t('no')}
                         </button>
                       </span>
                     ) : (
                       <button
                         type="button"
                         className="notes-remove-btn"
-                        aria-label="Eliminar nota"
+                        aria-label={t('deleteNote')}
                         onClick={() => setConfirmDeleteNote(note.id)}
                       >
                         <IconTrash size={13} aria-hidden="true" />
@@ -190,7 +193,7 @@ export function AppEditorPane({
                 <textarea
                   className="notes-textarea"
                   maxLength={MAX_NOTES}
-                  placeholder="Agrega notas, ideas, recordatorios o cualquier detalle…"
+                  placeholder={t('notesPlaceholder')}
                   value={note.text}
                   onChange={(event) => updateNote(note.id, 'text', event.target.value)}
                 />
@@ -203,17 +206,17 @@ export function AppEditorPane({
             ))}
 
             <button type="button" className="btn btn--add" onClick={addNote}>
-              + Agregar nota
+              + {t('addNote')}
             </button>
 
             <div className="notes-section">
               <div className="notes-section__header">
                 <span className="notes-section__title">
-                  <IconChecklist size={13} aria-hidden="true" /> Pendientes
+                  <IconChecklist size={13} aria-hidden="true" /> {t('checklist')}
                 </span>
                 {checklist.length > 0 && (
                   <span className="notes-section__count">
-                    {doneCount} de {checklist.length} completados
+                    {doneCount} de {checklist.length} {t('completed')}
                   </span>
                 )}
               </div>
@@ -227,7 +230,7 @@ export function AppEditorPane({
                       <button
                         type="button"
                         className={'checklist__check' + (item.done ? ' is-done' : '')}
-                        aria-label={item.done ? 'Marcar como pendiente' : 'Marcar como hecho'}
+                        aria-label={item.done ? t('markPending') : t('markDone')}
                         onClick={() => toggleChecklistItem(item.id)}
                       >
                         {item.done && <IconX size={10} aria-hidden="true" />}
@@ -236,7 +239,7 @@ export function AppEditorPane({
                       <button
                         type="button"
                         className="checklist__remove"
-                        aria-label="Eliminar"
+                        aria-label={t('delete')}
                         onClick={() => removeChecklistItem(item.id)}
                       >
                         <IconTrash size={13} aria-hidden="true" />
@@ -250,14 +253,14 @@ export function AppEditorPane({
                   ref={newItemRef}
                   type="text"
                   className="input checklist__input"
-                  placeholder="Nuevo pendiente…"
+                  placeholder={t('newChecklistItem')}
                   value={newItemText}
                   onChange={(event) => setNewItemText(event.target.value)}
                 />
                 <button
                   type="submit"
                   className="btn btn--icon checklist__submit"
-                  aria-label="Agregar"
+                  aria-label={t('addItem')}
                 >
                   <IconPlus size={16} aria-hidden="true" />
                 </button>
