@@ -38,7 +38,7 @@ export function AppMapPane({
               <button
                 type="button"
                 className="segnote__x"
-                aria-label="Cerrar nota"
+                aria-label={t('closeNote')}
                 onClick={() => setOpenNoteSegmentId(null)}
               >
                 <IconX size={16} aria-hidden="true" />
@@ -47,14 +47,14 @@ export function AppMapPane({
             <textarea
               className="segnote__textarea"
               maxLength={500}
-              placeholder="Escribe una nota para este tramo…"
+              placeholder={t('segmentNotePlaceholder')}
               value={segment.note || ''}
               onChange={(event) => updateSegment(segment.id, { note: event.target.value })}
               autoFocus
             />
             <div className="segnote__foot">
               <span className="segnote__saved">
-                <IconCheck size={12} aria-hidden="true" /> Guardado
+                <IconCheck size={12} aria-hidden="true" /> {t('savedShort')}
               </span>
               <span className="segnote__count">{(segment.note || '').length} / 500</span>
             </div>
