@@ -16,6 +16,7 @@ export default {
   cancel: 'Cancel',
   confirmDelete: 'Delete this trip?',
   loadTrip: 'Open',
+  of: 'of',
   // Segments
   segments: 'Segments',
   addSegment: 'Add segment',
