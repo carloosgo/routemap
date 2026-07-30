@@ -2,6 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createApiRepository } from '../src/modules/storage/apiRepository.js';
 
+test('API repository exige una URL base válida', () => {
+  assert.throws(() => createApiRepository('  '), /URL base válida/);
+});
+
 test('API repository rechaza identificadores vacíos antes de llamar fetch', async () => {
   const previousFetch = globalThis.fetch;
   let calls = 0;
@@ -38,6 +42,51 @@ test('API repository codifica el identificador y recorta espacios externos', asy
     const repository = createApiRepository(' https://api.example.com/// ');
     await repository.get(' viaje/1 ');
     assert.equal(receivedUrl, 'https://api.example.com/api/trips/viaje%2F1');
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test('API repository acepta la respuesta paginada definida por OpenAPI', async () => {
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    async json() {
+      return { items: [{ id: 'trip-1', name: 'Europa', currency: 'eur', segments: [] }] };
+    },
+  });
+
+  try {
+    const repository = createApiRepository('https://api.example.com');
+    const trips = await repository.list();
+    assert.equal(trips.length, 1);
+    assert.equal(trips[0].currency, 'EUR');
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test('API repository normaliza el viaje antes de enviarlo', async () => {
+  const previousFetch = globalThis.fetch;
+  let receivedBody;
+  globalThis.fetch = async (_url, options) => {
+    receivedBody = JSON.parse(options.body);
+    return {
+      ok: true,
+      status: 201,
+      async json() {
+        return receivedBody;
+      },
+    };
+  };
+
+  try {
+    const repository = createApiRepository('https://api.example.com');
+    await repository.save({ id: 'trip-1', name: 'Prueba', currency: 'eur', segments: [] });
+    assert.equal(receivedBody.currency, 'EUR');
+    assert.ok(Array.isArray(receivedBody.notes));
+    assert.ok(Array.isArray(receivedBody.checklist));
   } finally {
     globalThis.fetch = previousFetch;
   }
