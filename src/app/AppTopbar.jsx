@@ -1,31 +1,20 @@
 import {
-  IconBookmark,
   IconBrandGoogle,
   IconChevronDown,
   IconCloudUpload,
   IconDeviceFloppy,
   IconLogout,
   IconMap2,
-  IconPlus,
-  IconTrash,
   IconUser,
 } from '@tabler/icons-react';
-import { formatMoney } from '../shared/utils.js';
-import { tripTotal } from '../modules/trips/tripModel.js';
 
 export function AppTopbar({
   menuWrapRef,
   t,
   trip,
   renameTrip,
-  resetTrip,
   openMenu,
   setOpenMenu,
-  trips,
-  loading,
-  loadTrip,
-  deleteTrip,
-  intlLocale,
   handleSave,
   canSave,
   authUser,
@@ -56,75 +45,6 @@ export function AppTopbar({
       />
 
       <div className="topbar__spacer" />
-
-      <button
-        type="button"
-        className="topitem topitem--accent"
-        onClick={() => {
-          resetTrip();
-          setOpenMenu(null);
-        }}
-      >
-        <IconPlus size={17} aria-hidden="true" /> {t('newTrip')}
-      </button>
-
-      <div className="topmenu">
-        <button
-          type="button"
-          className="topitem"
-          onClick={() => setOpenMenu(openMenu === 'trips' ? null : 'trips')}
-        >
-          <IconBookmark size={17} aria-hidden="true" /> {t('savedTrips')}
-          <IconChevronDown size={13} className="topitem__chev" aria-hidden="true" />
-        </button>
-        {openMenu === 'trips' && (
-          <div className="dropdown dropdown--trips">
-            <div className="dropdown__label">{t('savedTrips')}</div>
-            {loading ? (
-              <div className="dropdown__empty">…</div>
-            ) : trips.length === 0 ? (
-              <div className="dropdown__empty">{t('noSavedTrips')}</div>
-            ) : (
-              trips.map((savedTrip) => {
-                const segmentCount = savedTrip.segments?.length || 0;
-                return (
-                  <div
-                    key={savedTrip.id}
-                    className={'dropdown__trip' + (savedTrip.id === trip.id ? ' is-current' : '')}
-                  >
-                    <button
-                      type="button"
-                      className="dropdown__trip-open"
-                      onClick={() => {
-                        loadTrip(savedTrip);
-                        setOpenMenu(null);
-                      }}
-                    >
-                      <span className="dropdown__trip-name">
-                        {savedTrip.name || t('unnamedTrip')}
-                      </span>
-                      <span className="dropdown__trip-meta">
-                        {segmentCount}{' '}
-                        {segmentCount === 1 ? t('segment').toLowerCase() : t('segmentPlural')}
-                        {' · '}
-                        {formatMoney(tripTotal(savedTrip), savedTrip.currency, intlLocale)}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      className="dropdown__trip-del"
-                      aria-label={t('deleteTrip')}
-                      onClick={() => deleteTrip(savedTrip.id)}
-                    >
-                      <IconTrash size={15} aria-hidden="true" />
-                    </button>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        )}
-      </div>
 
       <div className="topmenu">
         {authUser ? (
