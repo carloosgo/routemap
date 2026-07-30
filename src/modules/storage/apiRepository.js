@@ -9,6 +9,7 @@ const REQUEST_TIMEOUT_MS = 15_000;
 export function createApiRepository(baseUrl) {
   const normalizedBaseUrl = (typeof baseUrl === 'string' ? baseUrl.trim() : '').replace(/\/+$/, '');
   const persistedIds = new Set();
+  const etagsById = new Map();
 
   if (!normalizedBaseUrl) {
     throw new TypeError('Se requiere una URL base válida para el repositorio API.');
@@ -17,15 +18,16 @@ export function createApiRepository(baseUrl) {
   async function request(path, options = {}) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const { onResponse, ...fetchOptions } = options;
 
     try {
       const res = await fetch(`${normalizedBaseUrl}${path}`, {
-        ...options,
+        ...fetchOptions,
         signal: controller.signal,
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
-          ...(options.headers || {}),
+          ...(fetchOptions.headers || {}),
         },
         credentials: 'include',
       });
@@ -34,6 +36,7 @@ export function createApiRepository(baseUrl) {
         throw new Error(`No se pudo completar la solicitud (HTTP ${res.status}).`);
       }
 
+      onResponse?.(res);
       if (res.status === 204) return null;
 
       try {
@@ -63,6 +66,11 @@ export function createApiRepository(baseUrl) {
     return trip;
   }
 
+  function rememberEtag(id, response) {
+    const etag = response?.headers?.get?.('etag');
+    if (id && etag) etagsById.set(id, etag);
+  }
+
   function tripsFromListResponse(data) {
     if (Array.isArray(data)) return data;
     if (data && Array.isArray(data.items)) return data.items;
@@ -80,18 +88,23 @@ export function createApiRepository(baseUrl) {
 
     async get(id) {
       const safeId = requireId(id);
-      const data = await request(`/api/trips/${encodeURIComponent(safeId)}`);
+      const data = await request(`/api/trips/${encodeURIComponent(safeId)}`, {
+        onResponse: (response) => rememberEtag(safeId, response),
+      });
       return data ? remember(normalizeTrip(data)) : null;
     },
 
     async save(trip) {
       const normalized = normalizeTrip(trip);
       const exists = persistedIds.has(normalized.id);
+      const etag = etagsById.get(normalized.id);
       const data = await request(
         exists ? `/api/trips/${encodeURIComponent(normalized.id)}` : '/api/trips',
         {
           method: exists ? 'PUT' : 'POST',
           body: JSON.stringify(normalized),
+          headers: exists && etag ? { 'If-Match': etag } : undefined,
+          onResponse: (response) => rememberEtag(normalized.id, response),
         }
       );
       return remember(normalizeTrip(data || normalized));
@@ -99,8 +112,13 @@ export function createApiRepository(baseUrl) {
 
     async remove(id) {
       const safeId = requireId(id);
-      await request(`/api/trips/${encodeURIComponent(safeId)}`, { method: 'DELETE' });
+      const etag = etagsById.get(safeId);
+      await request(`/api/trips/${encodeURIComponent(safeId)}`, {
+        method: 'DELETE',
+        headers: etag ? { 'If-Match': etag } : undefined,
+      });
       persistedIds.delete(safeId);
+      etagsById.delete(safeId);
     },
   };
 }
