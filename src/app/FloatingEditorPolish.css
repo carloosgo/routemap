@@ -24,6 +24,12 @@
   height: 13px;
 }
 
+/* Etiqueta del costo total de cada tramo. */
+.floating-editor .segment__pill {
+  background: #f3f3f3;
+  color: #656565;
+}
+
 /* El formulario expandido conserva la misma estructura, pero reduce un punto
    textos, iconos y controles para mantener la densidad compacta del módulo. */
 .floating-editor .segment__body {
