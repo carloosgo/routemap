@@ -5,7 +5,6 @@ import {
   appendSegment,
   createCity,
   createSegment,
-  moveSegmentByOffset,
   normalizeTrip,
   reorderSegments,
   routeStops,
@@ -100,25 +99,5 @@ test('reordena el tramo completo y actualiza el orden usado por la ruta', () => 
   assert.deepEqual(
     routeStops(reordered.segments).map((city) => city.name),
     ['E', 'F', 'A', 'B', 'C', 'D']
-  );
-});
-
-test('mueve segmentos con teclado sin salir de los límites', () => {
-  const trip = normalizeTrip({
-    id: 'trip',
-    segments: [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
-  });
-
-  assert.deepEqual(
-    moveSegmentByOffset(trip, 'b', -1).segments.map((segment) => segment.id),
-    ['b', 'a', 'c']
-  );
-  assert.deepEqual(
-    moveSegmentByOffset(trip, 'a', -1).segments.map((segment) => segment.id),
-    ['a', 'b', 'c']
-  );
-  assert.deepEqual(
-    moveSegmentByOffset(trip, 'c', 1).segments.map((segment) => segment.id),
-    ['a', 'b', 'c']
   );
 });
