@@ -13,7 +13,7 @@ export function AppMapPane({
   t,
 }) {
   return (
-    <section className="mappane">
+    <section className="mappane" aria-label={t('mapRegion')}>
       <RouteMap segments={trip.segments} />
       {openNoteSegmentId && (() => {
         const segment = trip.segments.find((item) => item.id === openNoteSegmentId);
@@ -22,7 +22,7 @@ export function AppMapPane({
         const originName = segment.origin?.name || t('origin');
         const destinationName = segment.destination?.name || t('destination');
         return (
-          <div className="segnote">
+          <div className="segnote" role="dialog" aria-label={t('segmentNote')}>
             <div className="segnote__head">
               <span
                 className="segnote__badge"
@@ -47,6 +47,7 @@ export function AppMapPane({
             <textarea
               className="segnote__textarea"
               maxLength={500}
+              aria-label={t('segmentNote')}
               placeholder={t('segmentNotePlaceholder')}
               value={segment.note || ''}
               onChange={(event) => updateSegment(segment.id, { note: event.target.value })}
@@ -62,9 +63,13 @@ export function AppMapPane({
         );
       })()}
       {stops.length > 0 && (
-        <div className="routestrip">
+        <div className="routestrip" role="list" aria-label={t('routeSummary')}>
           {stops.map((city, index) => (
-            <span className="routestrip__item" key={`${city.lat}-${city.lon}-${index}`}>
+            <span
+              className="routestrip__item"
+              role="listitem"
+              key={`${city.lat}-${city.lon}-${index}`}
+            >
               {city.countryCode ? (
                 <img
                   className="flag"
@@ -84,7 +89,11 @@ export function AppMapPane({
           ))}
         </div>
       )}
-      {toast && <div className="toast">{toast}</div>}
+      {toast && (
+        <div className="toast" role="status" aria-live="polite">
+          {toast}
+        </div>
+      )}
     </section>
   );
 }
