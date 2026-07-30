@@ -35,6 +35,8 @@ export default {
   segmentNote: 'Nota del tramo',
   closeNote: 'Cerrar nota',
   segmentNotePlaceholder: 'Escribe una nota para este tramo…',
+  mapRegion: 'Mapa del viaje',
+  routeSummary: 'Resumen de la ruta',
   // Notas y pendientes
   notes: 'Notas',
   noteTitle: 'Título de la nota',
