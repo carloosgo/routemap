@@ -3,9 +3,7 @@ import {
   IconBrandGoogle,
   IconChevronDown,
   IconCloudUpload,
-  IconCoin,
   IconDeviceFloppy,
-  IconLanguage,
   IconLogout,
   IconMap2,
   IconPlus,
@@ -14,8 +12,6 @@ import {
 } from '@tabler/icons-react';
 import { formatMoney } from '../shared/utils.js';
 import { tripTotal } from '../modules/trips/tripModel.js';
-
-const CURRENCIES = ['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'];
 
 export function AppTopbar({
   menuWrapRef,
@@ -30,10 +26,6 @@ export function AppTopbar({
   loadTrip,
   deleteTrip,
   intlLocale,
-  setCurrency,
-  locale,
-  availableLocales,
-  setLocale,
   handleSave,
   canSave,
   authUser,
@@ -130,64 +122,6 @@ export function AppTopbar({
                 );
               })
             )}
-          </div>
-        )}
-      </div>
-
-      <div className="topmenu">
-        <button
-          type="button"
-          className="topitem"
-          onClick={() => setOpenMenu(openMenu === 'currency' ? null : 'currency')}
-        >
-          <IconCoin size={17} aria-hidden="true" />
-          <span className="topitem__val">{trip.currency}</span>
-          <IconChevronDown size={13} className="topitem__chev" aria-hidden="true" />
-        </button>
-        {openMenu === 'currency' && (
-          <div className="dropdown dropdown--mini">
-            {CURRENCIES.map((currency) => (
-              <button
-                type="button"
-                key={currency}
-                className={'dropdown__opt' + (currency === trip.currency ? ' is-active' : '')}
-                onClick={() => {
-                  setCurrency(currency);
-                  setOpenMenu(null);
-                }}
-              >
-                {currency}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="topmenu">
-        <button
-          type="button"
-          className="topitem"
-          onClick={() => setOpenMenu(openMenu === 'language' ? null : 'language')}
-        >
-          <IconLanguage size={17} aria-hidden="true" />
-          <span className="topitem__val">{locale.toUpperCase()}</span>
-          <IconChevronDown size={13} className="topitem__chev" aria-hidden="true" />
-        </button>
-        {openMenu === 'language' && (
-          <div className="dropdown dropdown--mini">
-            {availableLocales.map((availableLocale) => (
-              <button
-                type="button"
-                key={availableLocale}
-                className={'dropdown__opt' + (availableLocale === locale ? ' is-active' : '')}
-                onClick={() => {
-                  setLocale(availableLocale);
-                  setOpenMenu(null);
-                }}
-              >
-                {availableLocale.toUpperCase()}
-              </button>
-            ))}
           </div>
         )}
       </div>
