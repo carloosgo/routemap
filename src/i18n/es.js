@@ -20,6 +20,8 @@ export default {
   addSegment: 'Agregar tramo',
   removeSegment: 'Quitar tramo',
   confirmDeleteSegment: '¿Eliminar este tramo?',
+  moveSegment: 'Mover tramo',
+  moveSegmentHint: 'Arrastra para cambiar la posición. Usa las flechas arriba y abajo con el teclado.',
   expand: 'Expandir',
   collapse: 'Contraer',
   segment: 'Tramo',
