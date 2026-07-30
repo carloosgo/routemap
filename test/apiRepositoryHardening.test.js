@@ -92,6 +92,54 @@ test('API repository normaliza el viaje antes de enviarlo', async () => {
   }
 });
 
+test('API repository usa ETag para actualizar y eliminar sin sobrescribir cambios ajenos', async () => {
+  const previousFetch = globalThis.fetch;
+  const requests = [];
+  let etag = '"v1"';
+
+  globalThis.fetch = async (url, options = {}) => {
+    requests.push({ url, options });
+    const method = options.method || 'GET';
+
+    if (method === 'GET') {
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: (name) => (name.toLowerCase() === 'etag' ? etag : null) },
+        async json() {
+          return { id: 'trip-1', name: 'Prueba', segments: [] };
+        },
+      };
+    }
+
+    if (method === 'PUT') {
+      etag = '"v2"';
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: (name) => (name.toLowerCase() === 'etag' ? etag : null) },
+        async json() {
+          return JSON.parse(options.body);
+        },
+      };
+    }
+
+    return { ok: true, status: 204, headers: { get: () => null } };
+  };
+
+  try {
+    const repository = createApiRepository('https://api.example.com');
+    const trip = await repository.get('trip-1');
+    await repository.save({ ...trip, name: 'Actualizado' });
+    await repository.remove('trip-1');
+
+    assert.equal(requests[1].options.headers['If-Match'], '"v1"');
+    assert.equal(requests[2].options.headers['If-Match'], '"v2"');
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
 test('API repository controla respuestas JSON inválidas', async () => {
   const previousFetch = globalThis.fetch;
   globalThis.fetch = async () => ({
