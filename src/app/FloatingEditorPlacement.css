@@ -29,6 +29,20 @@
   background: var(--marina-hover, #0b3f4f);
 }
 
+.editor-module__more-menu {
+  border-radius: 4px;
+}
+
+.editor-module__menu-separator {
+  margin-left: 47px;
+  margin-right: 10px;
+}
+
+.editor-module__menu-item svg,
+.editor-module__menu-heading svg {
+  color: #357d94;
+}
+
 @media (max-width: 720px) {
   .editor-module__settings > .editor-module__menu-anchor:last-child {
     top: 66px;
