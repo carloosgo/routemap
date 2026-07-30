@@ -1,5 +1,12 @@
 import { useReducer, useCallback } from 'react';
-import { createTrip, appendSegment, normalizeTrip, createChecklistItem } from './tripModel.js';
+import {
+  createTrip,
+  appendSegment,
+  normalizeTrip,
+  createChecklistItem,
+  reorderSegments,
+  moveSegmentByOffset,
+} from './tripModel.js';
 import { sanitizeText, uid } from '../../shared/utils.js';
 
 function reducer(state, action) {
@@ -72,6 +79,12 @@ function reducer(state, action) {
         updatedAt: nowISO(),
       };
 
+    case 'REORDER_SEGMENT':
+      return reorderSegments(state, action.sourceId, action.targetId, action.placement);
+
+    case 'MOVE_SEGMENT':
+      return moveSegmentByOffset(state, action.segmentId, action.offset);
+
     case 'UPDATE_SEGMENT':
       return {
         ...state,
@@ -130,6 +143,15 @@ export function useTrip(initial) {
     (segmentId) => dispatch({ type: 'REMOVE_SEGMENT', segmentId }),
     []
   );
+  const reorderSegment = useCallback(
+    (sourceId, targetId, placement) =>
+      dispatch({ type: 'REORDER_SEGMENT', sourceId, targetId, placement }),
+    []
+  );
+  const moveSegment = useCallback(
+    (segmentId, offset) => dispatch({ type: 'MOVE_SEGMENT', segmentId, offset }),
+    []
+  );
   const updateSegment = useCallback(
     (segmentId, patch) => dispatch({ type: 'UPDATE_SEGMENT', segmentId, patch }),
     []
@@ -153,6 +175,8 @@ export function useTrip(initial) {
     removeChecklistItem,
     addSegment,
     removeSegment,
+    reorderSegment,
+    moveSegment,
     updateSegment,
     updateExpenses,
   };
