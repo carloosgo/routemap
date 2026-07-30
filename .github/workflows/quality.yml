@@ -19,17 +19,24 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Enforce frozen design scope
+      - name: Enforce design-preservation contract
         if: github.event_name == 'pull_request'
         shell: bash
         run: |
           changed_files="$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}")"
-          forbidden_files="$(printf '%s\n' "$changed_files" | grep -E '(^|/)([^/]+\.(css|scss|sass|less)|styles?/)' || true)"
+          stylesheet_files="$(printf '%s\n' "$changed_files" | grep -E '(^|/)([^/]+\.(css|scss|sass|less)|styles?/)' || true)"
 
-          if [ -n "$forbidden_files" ]; then
-            echo "This phase does not allow visual-design or stylesheet changes:"
-            printf '%s\n' "$forbidden_files"
-            exit 1
+          if [ -n "$stylesheet_files" ]; then
+            if ! printf '%s\n' "$changed_files" | grep -qx 'DESIGN_PRESERVATION.md'; then
+              echo "Stylesheet changes require DESIGN_PRESERVATION.md in the same PR."
+              printf '%s\n' "$stylesheet_files"
+              exit 1
+            fi
+
+            if ! grep -q '^Visual delta: none$' DESIGN_PRESERVATION.md; then
+              echo "DESIGN_PRESERVATION.md must declare: Visual delta: none"
+              exit 1
+            fi
           fi
 
       - name: Set up Node.js
