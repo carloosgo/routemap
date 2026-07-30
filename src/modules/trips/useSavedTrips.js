@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getRepository } from '../storage/storageRepository.js';
 
+function errorMessage(error, fallback) {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 // Hook para la lista de viajes guardados (consultar, guardar, eliminar).
 // Habla con la capa de almacenamiento a través del repositorio, sin saber
 // si por debajo es localStorage o un backend REST.
@@ -15,8 +19,10 @@ export function useSavedTrips() {
     try {
       const list = await getRepository().list();
       setTrips(list);
+      return list;
     } catch (err) {
-      setError(err.message || 'Error al cargar viajes');
+      setError(errorMessage(err, 'Error al cargar viajes'));
+      return [];
     } finally {
       setLoading(false);
     }
@@ -28,20 +34,34 @@ export function useSavedTrips() {
 
   const saveTrip = useCallback(
     async (trip) => {
-      const saved = await getRepository().save(trip);
-      await refresh();
-      return saved;
+      setError(null);
+      try {
+        const saved = await getRepository().save(trip);
+        await refresh();
+        return saved;
+      } catch (err) {
+        setError(errorMessage(err, 'Error al guardar el viaje'));
+        throw err;
+      }
     },
     [refresh]
   );
 
   const deleteTrip = useCallback(
     async (id) => {
-      await getRepository().remove(id);
-      await refresh();
+      setError(null);
+      try {
+        await getRepository().remove(id);
+        await refresh();
+      } catch (err) {
+        setError(errorMessage(err, 'Error al eliminar el viaje'));
+        throw err;
+      }
     },
     [refresh]
   );
 
-  return { trips, loading, error, refresh, saveTrip, deleteTrip };
+  const clearError = useCallback(() => setError(null), []);
+
+  return { trips, loading, error, refresh, saveTrip, deleteTrip, clearError };
 }
