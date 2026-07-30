@@ -2,9 +2,8 @@ name: Quality checks
 
 on:
   pull_request:
-    branches: [main]
   push:
-    branches: [main, agent/phase-1-no-design]
+    branches: [main, agent/phase-1-no-design, agent/phase-2-hardening-no-design]
 
 permissions:
   contents: read
