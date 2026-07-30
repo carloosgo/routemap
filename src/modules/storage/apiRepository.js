@@ -9,7 +9,9 @@ import { normalizeTrip } from '../trips/tripModel.js';
 // el flujo de tu proveedor de auth (Auth0, Cognito, Firebase Auth).
 
 export function createApiRepository(baseUrl) {
-  if (!baseUrl) {
+  const normalizedBaseUrl = (baseUrl || '').replace(/\/$/, '');
+
+  if (!normalizedBaseUrl) {
     console.warn('[storage] VITE_API_BASE_URL no configurada; el driver "api" fallará.');
   }
 
@@ -21,19 +23,23 @@ export function createApiRepository(baseUrl) {
   }
 
   async function request(path, options = {}) {
-    const res = await fetch(`${baseUrl}${path}`, {
+    const res = await fetch(`${normalizedBaseUrl}${path}`, {
       ...options,
       headers: {
+        Accept: 'application/json',
         'Content-Type': 'application/json',
         ...authHeaders(),
         ...(options.headers || {}),
       },
       credentials: 'include', // permite cookies de sesión httpOnly
     });
+
     if (!res.ok) {
-      const body = await res.text().catch(() => '');
-      throw new Error(`API ${res.status}: ${body}`);
+      // No propagamos el cuerpo crudo del servidor al cliente: podría contener
+      // detalles internos. El backend debe registrar el error completo.
+      throw new Error(`No se pudo completar la solicitud (HTTP ${res.status}).`);
     }
+
     if (res.status === 204) return null;
     return res.json();
   }
