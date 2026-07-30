@@ -72,6 +72,25 @@ export function SegmentForm({
           : undefined
       }
     >
+      {dropPlacement && (
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: dropPlacement === 'before' ? '-4px' : 'auto',
+            bottom: dropPlacement === 'after' ? '-4px' : 'auto',
+            height: '3px',
+            borderRadius: '999px',
+            background: 'var(--coral)',
+            boxShadow: '0 0 0 1px var(--surface)',
+            pointerEvents: 'none',
+            zIndex: 30,
+          }}
+        />
+      )}
+
       <header className="segment__header">
         <span
           className="segment__badge"
