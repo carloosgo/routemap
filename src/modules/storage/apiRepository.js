@@ -1,5 +1,7 @@
 import { normalizeTrip } from '../trips/tripModel.js';
 
+const REQUEST_TIMEOUT_MS = 15_000;
+
 // Implementación contra backend REST (para multiusuario / escala global).
 // Mismo contrato que el repositorio local. El backend de referencia está
 // documentado en /server/README.md (FastAPI + PostgreSQL).
@@ -9,7 +11,7 @@ import { normalizeTrip } from '../trips/tripModel.js';
 // el flujo de tu proveedor de auth (Auth0, Cognito, Firebase Auth).
 
 export function createApiRepository(baseUrl) {
-  const normalizedBaseUrl = (baseUrl || '').replace(/\/+$/, '');
+  const normalizedBaseUrl = (typeof baseUrl === 'string' ? baseUrl.trim() : '').replace(/\/+$/, '');
   const persistedIds = new Set();
 
   if (!normalizedBaseUrl) {
@@ -24,25 +26,50 @@ export function createApiRepository(baseUrl) {
   }
 
   async function request(path, options = {}) {
-    const res = await fetch(`${normalizedBaseUrl}${path}`, {
-      ...options,
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        ...authHeaders(),
-        ...(options.headers || {}),
-      },
-      credentials: 'include', // permite cookies de sesión httpOnly
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-    if (!res.ok) {
-      // No propagamos el cuerpo crudo del servidor al cliente: podría contener
-      // detalles internos. El backend debe registrar el error completo.
-      throw new Error(`No se pudo completar la solicitud (HTTP ${res.status}).`);
+    try {
+      const res = await fetch(`${normalizedBaseUrl}${path}`, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          ...authHeaders(),
+          ...(options.headers || {}),
+        },
+        credentials: 'include', // permite cookies de sesión httpOnly
+      });
+
+      if (!res.ok) {
+        // No propagamos el cuerpo crudo del servidor al cliente: podría contener
+        // detalles internos. El backend debe registrar el error completo.
+        throw new Error(`No se pudo completar la solicitud (HTTP ${res.status}).`);
+      }
+
+      if (res.status === 204) return null;
+
+      try {
+        return await res.json();
+      } catch {
+        throw new Error('El servidor devolvió una respuesta inválida.');
+      }
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        throw new Error('La solicitud tardó demasiado y fue cancelada.');
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
     }
+  }
 
-    if (res.status === 204) return null;
-    return res.json();
+  function requireId(id) {
+    if (typeof id !== 'string' || !id.trim()) {
+      throw new TypeError('Se requiere un identificador de viaje válido.');
+    }
+    return id.trim();
   }
 
   function remember(trip) {
@@ -60,7 +87,8 @@ export function createApiRepository(baseUrl) {
     },
 
     async get(id) {
-      const data = await request(`/api/trips/${encodeURIComponent(id)}`);
+      const safeId = requireId(id);
+      const data = await request(`/api/trips/${encodeURIComponent(safeId)}`);
       return data ? remember(normalizeTrip(data)) : null;
     },
 
@@ -77,8 +105,9 @@ export function createApiRepository(baseUrl) {
     },
 
     async remove(id) {
-      await request(`/api/trips/${encodeURIComponent(id)}`, { method: 'DELETE' });
-      persistedIds.delete(id);
+      const safeId = requireId(id);
+      await request(`/api/trips/${encodeURIComponent(safeId)}`, { method: 'DELETE' });
+      persistedIds.delete(safeId);
     },
   };
 }
