@@ -4,25 +4,14 @@ const REQUEST_TIMEOUT_MS = 15_000;
 
 // Implementación contra backend REST (para multiusuario / escala global).
 // Mismo contrato que el repositorio local. El backend de referencia está
-// documentado en /server/README.md (FastAPI + PostgreSQL).
-//
-// Autenticación: cuando exista login, inyecta aquí el token (JWT) en los
-// headers. NUNCA guardes secretos en el cliente; usa cookies httpOnly o
-// el flujo de tu proveedor de auth (Auth0, Cognito, Firebase Auth).
+// documentado en /server/openapi.yaml.
 
 export function createApiRepository(baseUrl) {
   const normalizedBaseUrl = (typeof baseUrl === 'string' ? baseUrl.trim() : '').replace(/\/+$/, '');
   const persistedIds = new Set();
 
   if (!normalizedBaseUrl) {
-    console.warn('[storage] VITE_API_BASE_URL no configurada; el driver "api" fallará.');
-  }
-
-  function authHeaders() {
-    // Placeholder: integra tu proveedor de auth.
-    // const token = getAccessToken();
-    // return token ? { Authorization: `Bearer ${token}` } : {};
-    return {};
+    throw new TypeError('Se requiere una URL base válida para el repositorio API.');
   }
 
   async function request(path, options = {}) {
@@ -36,15 +25,12 @@ export function createApiRepository(baseUrl) {
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
-          ...authHeaders(),
           ...(options.headers || {}),
         },
-        credentials: 'include', // permite cookies de sesión httpOnly
+        credentials: 'include',
       });
 
       if (!res.ok) {
-        // No propagamos el cuerpo crudo del servidor al cliente: podría contener
-        // detalles internos. El backend debe registrar el error completo.
         throw new Error(`No se pudo completar la solicitud (HTTP ${res.status}).`);
       }
 
@@ -77,10 +63,16 @@ export function createApiRepository(baseUrl) {
     return trip;
   }
 
+  function tripsFromListResponse(data) {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.items)) return data.items;
+    return [];
+  }
+
   return {
     async list() {
       const data = await request('/api/trips');
-      const trips = Array.isArray(data) ? data.map(normalizeTrip) : [];
+      const trips = tripsFromListResponse(data).map(normalizeTrip);
       persistedIds.clear();
       trips.forEach(remember);
       return trips;
@@ -93,15 +85,16 @@ export function createApiRepository(baseUrl) {
     },
 
     async save(trip) {
-      const exists = Boolean(trip?.id && persistedIds.has(trip.id));
+      const normalized = normalizeTrip(trip);
+      const exists = persistedIds.has(normalized.id);
       const data = await request(
-        exists ? `/api/trips/${encodeURIComponent(trip.id)}` : '/api/trips',
+        exists ? `/api/trips/${encodeURIComponent(normalized.id)}` : '/api/trips',
         {
           method: exists ? 'PUT' : 'POST',
-          body: JSON.stringify(trip),
+          body: JSON.stringify(normalized),
         }
       );
-      return remember(normalizeTrip(data || trip));
+      return remember(normalizeTrip(data || normalized));
     },
 
     async remove(id) {
