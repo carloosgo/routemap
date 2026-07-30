@@ -5,7 +5,10 @@ import {
   appendSegment,
   createCity,
   createSegment,
+  moveSegmentByOffset,
   normalizeTrip,
+  reorderSegments,
+  routeStops,
 } from '../src/modules/trips/tripModel.js';
 
 test('normaliza códigos de país, coordenadas, fechas y moneda', () => {
@@ -57,4 +60,65 @@ test('no agrega segmentos por encima del límite', () => {
     segments: Array.from({ length: TRIP_LIMITS.segments }, (_, index) => ({ id: String(index) })),
   };
   assert.equal(appendSegment(trip), trip);
+});
+
+test('reordena el tramo completo y actualiza el orden usado por la ruta', () => {
+  const trip = normalizeTrip({
+    id: 'trip',
+    segments: [
+      {
+        id: 'a',
+        origin: { name: 'A', lat: 1, lon: 1 },
+        destination: { name: 'B', lat: 2, lon: 2 },
+        note: 'nota a',
+        expenses: { lodging: 10 },
+      },
+      {
+        id: 'b',
+        origin: { name: 'C', lat: 3, lon: 3 },
+        destination: { name: 'D', lat: 4, lon: 4 },
+        note: 'nota b',
+        expenses: { lodging: 20 },
+      },
+      {
+        id: 'c',
+        origin: { name: 'E', lat: 5, lon: 5 },
+        destination: { name: 'F', lat: 6, lon: 6 },
+        note: 'nota c',
+        expenses: { lodging: 30 },
+      },
+    ],
+  });
+
+  const reordered = reorderSegments(trip, 'c', 'a', 'before');
+  assert.deepEqual(
+    reordered.segments.map((segment) => segment.id),
+    ['c', 'a', 'b']
+  );
+  assert.equal(reordered.segments[0].note, 'nota c');
+  assert.equal(reordered.segments[0].expenses.lodging, 30);
+  assert.deepEqual(
+    routeStops(reordered.segments).map((city) => city.name),
+    ['E', 'F', 'A', 'B', 'C', 'D']
+  );
+});
+
+test('mueve segmentos con teclado sin salir de los límites', () => {
+  const trip = normalizeTrip({
+    id: 'trip',
+    segments: [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
+  });
+
+  assert.deepEqual(
+    moveSegmentByOffset(trip, 'b', -1).segments.map((segment) => segment.id),
+    ['b', 'a', 'c']
+  );
+  assert.deepEqual(
+    moveSegmentByOffset(trip, 'a', -1).segments.map((segment) => segment.id),
+    ['a', 'b', 'c']
+  );
+  assert.deepEqual(
+    moveSegmentByOffset(trip, 'c', 1).segments.map((segment) => segment.id),
+    ['a', 'b', 'c']
+  );
 });
