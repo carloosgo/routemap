@@ -34,8 +34,8 @@
   --radius: 9px;
   --radius-sm: 7px;
 
-  --font-display: 'Inter', 'Segoe UI', system-ui, sans-serif;
-  --font-body: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-display: 'Outfit', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
 * {
@@ -54,8 +54,13 @@ body {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
 }
-button {
+button,
+input,
+select,
+textarea {
   font-family: inherit;
+}
+button {
   cursor: pointer;
 }
 
