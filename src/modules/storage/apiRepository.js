@@ -42,7 +42,7 @@ function errorForResponse(response) {
     });
   }
   if (status >= 500) {
-    return new ApiRepositoryError('El servicio no está disponible temporalmente.', {
+    return new ApiRepositoryError(`El servicio no está disponible temporalmente (HTTP ${status}).`, {
       code: 'server_unavailable',
       status,
     });
