@@ -21,6 +21,7 @@ export function createSegment(overrides = {}) {
     startDate: overrides.startDate || '',
     endDate: overrides.endDate || '',
     expenses: overrides.expenses ? normalizeExpenses(overrides.expenses) : createExpenses(),
+    note: overrides.note || '',
   };
 }
 
@@ -121,6 +122,7 @@ export function normalizeTrip(raw) {
             startDate: s.startDate,
             endDate: s.endDate,
             expenses: s.expenses,
+            note: s.note,
           })
         )
       : [],
@@ -149,3 +151,5 @@ export function normalizeTrip(raw) {
 function nowISO() {
   return new Date().toISOString();
 }
+
+

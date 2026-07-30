@@ -109,3 +109,29 @@ export function normalizeExpenses(raw) {
       : [],
   };
 }
+
+// Agrega los gastos de todos los tramos por categoría, para el desglose del total.
+// Devuelve un objeto con el monto sumado de cada categoría a través de todos los tramos.
+export function tripBreakdown(segments) {
+  const acc = {
+    plane: 0, train: 0, bus: 0, taxiUber: 0,
+    lodging: 0, food: 0, attractions: 0, others: 0,
+  };
+ 
+  (segments || []).forEach((seg) => {
+    const e = seg.expenses;
+    if (!e) return;
+    acc.plane    += toAmount(e.transport?.plane);
+    acc.train    += toAmount(e.transport?.train);
+    acc.bus      += toAmount(e.transport?.bus);
+    acc.taxiUber += toAmount(e.transport?.taxiUber);
+    acc.lodging  += toAmount(e.lodging);
+    acc.food     += foodTotal(e.food);
+    acc.attractions += lineItemsTotal(e.attractions);
+    // "Otros" agrupa gastos libres de transporte + otros generales
+    acc.others   += lineItemsTotal(e.transportOthers) + lineItemsTotal(e.others);
+  });
+ 
+  return acc;
+}
+ 

@@ -5,6 +5,8 @@ import {
   IconDeviceFloppy,
   IconArrowRight,
   IconNotes,
+  IconNote,
+  IconCheck,
   IconMap,
   IconChecklist,
   IconPlus,
@@ -13,6 +15,14 @@ import {
   IconChevronDown,
   IconCoin,
   IconLanguage,
+  IconPlane,
+  IconTrain,
+  IconBus,
+  IconCar,
+  IconBed,
+  IconToolsKitchen2,
+  IconTicket,
+  IconDots,
 } from '@tabler/icons-react';
 import { useTranslation } from './i18n/index.jsx';
 import { useTrip } from './modules/trips/useTrip.js';
@@ -21,12 +31,26 @@ import { SegmentForm } from './modules/trips/SegmentForm.jsx';
 import { RouteMap } from './modules/map/RouteMap.jsx';
 import { ResizablePanes } from './components/ResizableSplit.jsx';
 import { tripTotal, isTripSavable, routeStops } from './modules/trips/tripModel.js';
+import { tripBreakdown } from './modules/expenses/expenseModel.js';
 import { formatMoney } from './shared/utils.js';
 import { flagImageUrl } from './modules/flags/flags.js';
+import { colorForIndex } from './config.js';
 import './App.css';
 
 const CURRENCIES = ['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'];
 const MAX_NOTES = 2000;
+
+// Categorías del desglose del total: clave en tripBreakdown → etiqueta, ícono, color
+const BREAKDOWN_CATS = [
+  { key: 'plane',       label: 'Vuelos',      Icon: IconPlane,          color: '#e2725b' },
+  { key: 'train',       label: 'Tren',        Icon: IconTrain,          color: '#4f6df5' },
+  { key: 'bus',         label: 'Bus',         Icon: IconBus,            color: '#e08a17' },
+  { key: 'taxiUber',    label: 'Auto / Taxi', Icon: IconCar,            color: '#5a8f3c' },
+  { key: 'lodging',     label: 'Hospedaje',   Icon: IconBed,            color: '#d4a017' },
+  { key: 'food',        label: 'Comidas',     Icon: IconToolsKitchen2,  color: '#2aa866' },
+  { key: 'attractions', label: 'Atracciones', Icon: IconTicket,         color: '#9b59b6' },
+  { key: 'others',      label: 'Otros',       Icon: IconDots,           color: '#9499ab' },
+];
 
 export default function App() {
   const { t, locale, setLocale, availableLocales } = useTranslation();
@@ -57,6 +81,8 @@ export default function App() {
   const [confirmDeleteNote, setConfirmDeleteNote] = useState(null);
   // Dropdown abierto en la barra superior: 'trips' | 'currency' | 'language' | null
   const [openMenu, setOpenMenu] = useState(null);
+  const [showBreakdown, setShowBreakdown] = useState(false);
+  const [openNoteSegmentId, setOpenNoteSegmentId] = useState(null);
   const newItemRef = useRef(null);
   const menuWrapRef = useRef(null);
 
@@ -127,6 +153,7 @@ export default function App() {
 
   const total = tripTotal(trip);
   const hasCosts = total > 0;
+  const breakdown = tripBreakdown(trip.segments);
   const stops = routeStops(trip.segments, { dedupeCountry: true });
   const checklist = trip.checklist || [];
   const doneCount = checklist.filter((i) => i.done).length;
@@ -141,17 +168,6 @@ export default function App() {
         </div>
         <span className="topbar__brand-name">{t('appName')}</span>
       </div>
-
-      <span className="topbar__sep" />
-
-      <input
-        type="text"
-        className="topbar__title"
-        value={trip.name}
-        placeholder={t('tripNamePlaceholder')}
-        onChange={(e) => renameTrip(e.target.value)}
-        aria-label={t('tripName')}
-      />
 
       <span className="topbar__sep" />
 
@@ -177,9 +193,16 @@ export default function App() {
         </button>
       </div>
 
-      <button type="button" className="topbar__save" onClick={handleSave} disabled={!canSave}>
-        <IconDeviceFloppy size={15} aria-hidden="true" /> {t('saveTrip')}
-      </button>
+      <div className="topbar__spacer" />
+
+      <input
+        type="text"
+        className="topbar__title"
+        value={trip.name}
+        placeholder={t('tripNamePlaceholder')}
+        onChange={(e) => renameTrip(e.target.value)}
+        aria-label={t('tripName')}
+      />
 
       <div className="topbar__spacer" />
 
@@ -226,8 +249,7 @@ export default function App() {
                   >
                     <span className="dropdown__trip-name">{tr.name || 'Sin nombre'}</span>
                     <span className="dropdown__trip-meta">
-                      {tr.segments?.length || 0}{' '}
-                      {tr.segments?.length === 1 ? 'tramo' : 'tramos'}
+                      {(tr.segments?.length || 0)} {(tr.segments?.length === 1 ? 'tramo' : 'tramos')}
                       {' · '}
                       {formatMoney(tripTotal(tr), tr.currency, intlLocale)}
                     </span>
@@ -304,6 +326,15 @@ export default function App() {
           </div>
         )}
       </div>
+
+      <button
+        type="button"
+        className="topbar__save"
+        onClick={handleSave}
+        disabled={!canSave}
+      >
+        <IconDeviceFloppy size={15} aria-hidden="true" /> {t('saveTrip')}
+      </button>
     </header>
   );
 
@@ -326,6 +357,7 @@ export default function App() {
                   onUpdate={(patch) => updateSegment(segment.id, patch)}
                   onUpdateExpenses={(expenses) => updateExpenses(segment.id, expenses)}
                   onRemove={() => removeSegment(segment.id)}
+                  onOpenNote={() => setOpenNoteSegmentId(segment.id)}
                 />
               ))}
             </div>
@@ -335,16 +367,52 @@ export default function App() {
             </button>
 
             <div className="total">
-              <div className="total__info">
-                <span className="total__label">{t('grandTotal')}</span>
-                <span className="total__meta">
-                  {trip.segments.length} {trip.segments.length === 1 ? 'tramo' : 'tramos'}
-                  {!hasCosts && ' · ' + t('noResults')}
+              <button
+                type="button"
+                className="total__head"
+                onClick={() => setShowBreakdown((v) => !v)}
+                disabled={!hasCosts}
+              >
+                <span className="total__info">
+                  <span className="total__label">{t('grandTotal')}</span>
+                  <span className="total__meta">
+                    {trip.segments.length} {trip.segments.length === 1 ? 'tramo' : 'tramos'}
+                    {!hasCosts && ' · ' + t('noResults')}
+                  </span>
                 </span>
-              </div>
-              <span className="total__value">
-                {formatMoney(total, trip.currency, intlLocale)}
-              </span>
+                <span className="total__value">
+                  {formatMoney(total, trip.currency, intlLocale)}
+                </span>
+                {hasCosts && (
+                  <IconChevronDown
+                    size={18}
+                    className={'total__chev' + (showBreakdown ? ' is-open' : '')}
+                    aria-hidden="true"
+                  />
+                )}
+              </button>
+
+              {showBreakdown && hasCosts && (
+                <div className="total__breakdown">
+                  {BREAKDOWN_CATS.filter((c) => breakdown[c.key] > 0).map((c) => {
+                    const amount = breakdown[c.key];
+                    const pct = Math.round((amount / total) * 100);
+                    const Icon = c.Icon;
+                    return (
+                      <div className="brk-row" key={c.key}>
+                        <span className="brk-icon">
+                          <Icon size={18} style={{ color: c.color }} aria-hidden="true" />
+                        </span>
+                        <span className="brk-name">{c.label}</span>
+                        <span className="brk-val">
+                          {formatMoney(amount, trip.currency, intlLocale)}
+                        </span>
+                        <span className="brk-pct">{pct}%</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </>
         )}
@@ -481,6 +549,52 @@ export default function App() {
   const mapPane = (
     <section className="mappane">
       <RouteMap segments={trip.segments} />
+      {openNoteSegmentId && (() => {
+        const seg = trip.segments.find((s) => s.id === openNoteSegmentId);
+        if (!seg) return null;
+        const idx = trip.segments.findIndex((s) => s.id === openNoteSegmentId);
+        const originName = seg.origin?.name || t('origin');
+        const destName = seg.destination?.name || t('destination');
+        return (
+          <div className="segnote">
+            <div className="segnote__head">
+              <span
+                className="segnote__badge"
+                style={{ background: colorForIndex(idx) }}
+              >
+                {idx + 1}
+              </span>
+              <span className="segnote__title">
+                {originName}
+                <IconArrowRight size={11} aria-hidden="true" />
+                {destName}
+              </span>
+              <button
+                type="button"
+                className="segnote__x"
+                aria-label="Cerrar nota"
+                onClick={() => setOpenNoteSegmentId(null)}
+              >
+                <IconX size={16} aria-hidden="true" />
+              </button>
+            </div>
+            <textarea
+              className="segnote__textarea"
+              maxLength={500}
+              placeholder="Escribe una nota para este tramo…"
+              value={seg.note || ''}
+              onChange={(e) => updateSegment(seg.id, { note: e.target.value })}
+              autoFocus
+            />
+            <div className="segnote__foot">
+              <span className="segnote__saved">
+                <IconCheck size={12} aria-hidden="true" /> Guardado
+              </span>
+              <span className="segnote__count">{(seg.note || '').length} / 500</span>
+            </div>
+          </div>
+        );
+      })()}
       {stops.length > 0 && (
         <div className="routestrip">
           {stops.map((city, i) => (

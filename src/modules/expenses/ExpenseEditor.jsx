@@ -206,13 +206,13 @@ export function ExpenseEditor({ expenses, currency, locale, onChange }) {
       {/* Otro transporte */}
       <LineItemsGrid
         title={t('otherTransport')}
-        items={expenses.otherTransport}
+        items={expenses.transportOthers}
         getIcon={(item) => getOtherTransportIcon(item.label)}
         typePlaceholder={t('itemTypePlaceholder')}
         addLabel={t('addItem')}
-        onAdd={() => addItem('otherTransport')}
-        onUpdate={(id, field, val) => updateItem('otherTransport', id, field, val)}
-        onRemove={(id) => removeItem('otherTransport', id)}
+        onAdd={() => addItem('transportOthers')}
+        onUpdate={(id, field, val) => updateItem('transportOthers', id, field, val)}
+        onRemove={(id) => removeItem('transportOthers', id)}
       />
 
       {/* Atracciones */}

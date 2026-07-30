@@ -437,7 +437,7 @@ body.is-resizing {
 }
 .input {
   width: 100%;
-  background: var(--surface);
+  background: transparent;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   color: var(--text);
@@ -502,22 +502,13 @@ select.input {
 }
 .segment {
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 0px solid var(--line);
   border-radius: var(--radius);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   position: relative;
 }
 .segment + .segment {
-  margin-top: 22px;
-}
-.segment + .segment::before {
-  content: '';
-  position: absolute;
-  top: -22px;
-  left: 50%;
-  width: 0;
-  height: 22px;
-  border-left: 2px dashed var(--line-strong);
+  margin-top: 6px;
 }
 .segment__header {
   display: flex;
@@ -584,8 +575,8 @@ select.input {
 }
 /* Etiqueta de total del tramo en azul (antes coral). */
 .segment__pill {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: #b9d8e0;
+  color: #325b68;
   border-radius: 999px;
   padding: 2px 8px;
   font-size: 11px;
@@ -692,8 +683,8 @@ select.input {
 /* Tarjeta de gasto individual: icono+etiqueta a la izquierda, monto a la
    derecha, en una sola fila horizontal (no apilado). */
 .moneycard {
-  background: var(--surface);
-  border: 1px solid var(--line);
+  background: #fafbfc;
+  border:0px solid var(--line);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
   display: flex;
@@ -836,7 +827,7 @@ select.input {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: var(--surface);
+  background: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   padding-left: 8px;
@@ -850,7 +841,7 @@ select.input {
   padding-left: 2px;
   min-width: 0;
   white-space: nowrap;
-  font-weight: 600;
+  font-weight: 400;
   font-size: 12px;
 }
 .autocomplete__field .input:focus {
@@ -931,15 +922,12 @@ select.input {
 /* ===== Tarjeta de total (oscura) ===== */
 .total {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  background: var(--ink);
-  color: #fff;
+  flex-direction: column;
+  background: #fff;
   border-radius: var(--radius);
   padding: 16px 18px;
   flex: 0 0 auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 .total__info {
   display: flex;
@@ -961,7 +949,7 @@ select.input {
   font-family: var(--font-display);
   font-size: 30px;
   font-weight: 700;
-  color: #ffffff;
+  color: #417c8f;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1521,7 +1509,7 @@ select.input {
 .topbar__brand-icon {
   width: 30px;
   height: 30px;
-  background: var(--coral, #e2725b);
+  background: #c9224d;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -1568,11 +1556,11 @@ select.input {
   color: #c0c4cc !important;
 }
 .topitem--accent {
-  color: var(--coral, #e2725b);
+  color:#357d94;
   font-weight: 600;
 }
 .topitem--accent svg {
-  color: var(--coral, #e2725b);
+  color: #357d94;
 }
 
 /* Contenedor relativo para posicionar el dropdown */
@@ -1594,14 +1582,8 @@ select.input {
   animation: dropdown-in 0.12s ease;
 }
 @keyframes dropdown-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 .dropdown--trips {
   width: 280px;
@@ -1742,8 +1724,8 @@ select.input {
   background: #f4f5f7;
 }
 .topbar__tab.is-active {
-  color: var(--coral, #e2725b);
-  background: #fef1ee;
+  color: #357d94;
+  background: #ffffff;
   font-weight: 600;
 }
 .topbar__save {
@@ -1797,4 +1779,241 @@ select.input {
   flex: 1;
   overflow-y: auto;
   padding: 14px 16px;
+}
+
+/* ===== Selector de vista del mapa (normal / satélite) ===== */
+.map-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.map-style-toggle {
+  position: absolute;
+  bottom: 24px;
+  left: 12px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 64px;
+  padding: 4px;
+  background: #fff;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  overflow: hidden;
+}
+.map-style-toggle__thumb {
+  width: 100%;
+  height: 44px;
+  border-radius: 6px;
+  background-size: cover;
+  background-position: center;
+}
+/* Miniatura: muestra la vista OPUESTA a la actual (lo que verás al hacer clic) */
+/* Miniatura: muestra la vista opuesta a la actual */
+.map-style-toggle__thumb[data-mode='normal'] {
+  background-image: none;
+}
+
+.map-style-toggle__thumb[data-mode='satellite'] {
+  background-image: none;
+}
+.map-style-toggle__label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1a1a1a;
+  font-family: var(--font-body, sans-serif);
+}
+
+/* ===== AGREGAR AL FINAL DE App.css: desglose expandible del total ===== */
+
+/* Cabecera clickeable del total */
+.total__head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+.total__head:disabled {
+  cursor: default;
+}
+.total__head .total__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.total__chev {
+  color: #b8bcc8;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+.total__chev.is-open {
+  transform: rotate(180deg);
+}
+
+/* Panel de desglose */
+.total__breakdown {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed #f0f1f3;
+}
+.brk-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+}
+.brk-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.brk-name {
+  flex: 1;
+  font-size: 13px;
+  color: #4a4a4a;
+  font-weight: 500;
+}
+.brk-val {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  text-align: right;
+}
+
+.brk-pct {
+  font-size: 10px;
+  color: #9499ab;
+  min-width: 30px;
+  text-align: right;
+}
+
+/* ===== AGREGAR AL FINAL DE App.css: nota por tramo ===== */
+
+/* Botón de nota en cada tramo */
+.segment__note-btn {
+  color: #9499ab;
+  position: relative;
+}
+.segment__note-btn.has-note {
+  color: #417c8f;
+}
+.segment__note-btn.has-note::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  background: #417c8f;
+  border-radius: 50%;
+  border: 1.5px solid var(--surface, #fff);
+}
+
+/* Panel de nota fijo sobre el mapa (esquina superior izquierda) */
+.segnote {
+  position: absolute;
+  top: 14px;
+  left: 56px;
+  width: 300px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  animation: segnote-in 0.14s ease;
+}
+@keyframes segnote-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.segnote__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 12px 8px;
+  border-bottom: 1px dashed #eef0f3;
+}
+.segnote__badge {
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.segnote__title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.segnote__title svg {
+  color: #b8bcc8;
+  flex-shrink: 0;
+}
+.segnote__x {
+  border: none;
+  background: transparent;
+  color: #b8bcc8;
+  cursor: pointer;
+  display: flex;
+  padding: 3px;
+  border-radius: 5px;
+}
+.segnote__x:hover {
+  background: #f4f5f7;
+}
+.segnote__textarea {
+  margin: 10px 12px;
+  min-height: 120px;
+  border: none;
+  outline: none;
+  resize: vertical;
+  font-size: 13px;
+  color: #333;
+  font-family: inherit;
+  line-height: 1.5;
+}
+.segnote__textarea::placeholder {
+  color: #c3c7d1;
+}
+.segnote__foot {
+  padding: 0 12px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.segnote__saved {
+  font-size: 10px;
+  color: #2aa866;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.segnote__count {
+  font-size: 10px;
+  color: #b8bcc8;
 }

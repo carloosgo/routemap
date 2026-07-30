@@ -4,6 +4,7 @@ import {
   IconCalendar,
   IconChevronDown,
   IconChevronUp,
+  IconNote,
   IconX,
 } from '@tabler/icons-react';
 import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
@@ -24,6 +25,7 @@ export function SegmentForm({
   onUpdate,
   onUpdateExpenses,
   onRemove,
+  onOpenNote,
 }) {
   const { t } = useTranslation();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -71,6 +73,16 @@ export function SegmentForm({
         </div>
 
         <span className="segment__pill">{formatMoney(total, currency, locale)}</span>
+
+        <button
+          type="button"
+          className={'btn btn--icon segment__note-btn' + (segment.note ? ' has-note' : '')}
+          aria-label="Nota del tramo"
+          title="Nota del tramo"
+          onClick={onOpenNote}
+        >
+          <IconNote size={14} aria-hidden="true" />
+        </button>
 
         <button
           type="button"
