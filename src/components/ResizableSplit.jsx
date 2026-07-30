@@ -1,5 +1,4 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import './ResizableSplit.css';
 
 const LS_KEY = 'atlas_split_width';
 const DEFAULT_WIDTH = 480;
