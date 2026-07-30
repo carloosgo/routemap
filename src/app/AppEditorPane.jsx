@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   IconChecklist,
   IconChevronDown,
@@ -38,6 +39,8 @@ export function AppEditorPane({
   updateSegment,
   updateExpenses,
   removeSegment,
+  reorderSegment,
+  moveSegment,
   setOpenNoteSegmentId,
   addSegment,
   t,
@@ -62,6 +65,33 @@ export function AppEditorPane({
   setNewItemText,
 }) {
   const segmentCount = trip.segments.length;
+  const [draggingSegmentId, setDraggingSegmentId] = useState(null);
+
+  useEffect(() => {
+    if (!draggingSegmentId) return undefined;
+
+    function handlePointerMove(event) {
+      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-segment-id]');
+      const targetId = target?.dataset.segmentId;
+      if (!targetId || targetId === draggingSegmentId) return;
+      const bounds = target.getBoundingClientRect();
+      const placement = event.clientY >= bounds.top + bounds.height / 2 ? 'after' : 'before';
+      reorderSegment(draggingSegmentId, targetId, placement);
+    }
+
+    function handlePointerEnd() {
+      setDraggingSegmentId(null);
+    }
+
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerEnd, { once: true });
+    document.addEventListener('pointercancel', handlePointerEnd, { once: true });
+    return () => {
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerEnd);
+      document.removeEventListener('pointercancel', handlePointerEnd);
+    };
+  }, [draggingSegmentId, reorderSegment]);
 
   return (
     <section className="editor">
@@ -77,11 +107,22 @@ export function AppEditorPane({
                   currency={trip.currency}
                   locale={intlLocale}
                   expanded={isExpanded(segment.id)}
+                  dragging={draggingSegmentId === segment.id}
                   onToggle={() => toggleSegment(segment.id)}
                   onUpdate={(patch) => updateSegment(segment.id, patch)}
                   onUpdateExpenses={(expenses) => updateExpenses(segment.id, expenses)}
                   onRemove={() => removeSegment(segment.id)}
                   onOpenNote={() => setOpenNoteSegmentId(segment.id)}
+                  onReorderPointerStart={(event) => {
+                    if (event.pointerType === 'mouse' && event.button !== 0) return;
+                    event.preventDefault();
+                    setDraggingSegmentId(segment.id);
+                  }}
+                  onReorderKeyDown={(event) => {
+                    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+                    event.preventDefault();
+                    moveSegment(segment.id, event.key === 'ArrowUp' ? -1 : 1);
+                  }}
                 />
               ))}
             </div>
