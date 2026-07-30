@@ -55,6 +55,7 @@
   cursor: pointer;
   border-radius: 8px;
   font-family: inherit;
+  white-space: nowrap;
 }
 
 .editor-module__tab:hover {
@@ -70,7 +71,223 @@
 .editor-module__settings {
   display: flex;
   align-items: center;
+  gap: 2px;
   margin-left: auto;
+}
+
+.editor-module__menu-anchor {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.editor-module__more-button {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e5ea;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #4a4a4a;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.editor-module__more-button:hover,
+.editor-module__more-button.is-active {
+  background: #f4f5f7;
+}
+
+.editor-module__currency-menu,
+.editor-module__more-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 80;
+  background: #ffffff;
+  border: 1px solid #e6e8ec;
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18);
+}
+
+.editor-module__currency-menu {
+  width: 110px;
+  padding: 6px;
+}
+
+.editor-module__currency-option {
+  width: 100%;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #4a4a4a;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.editor-module__currency-option:hover {
+  background: #f4f5f7;
+}
+
+.editor-module__currency-option.is-active {
+  color: #357d94;
+  background: #eef6f8;
+  font-weight: 600;
+}
+
+.editor-module__more-menu {
+  width: 270px;
+  max-height: min(520px, calc(100vh - 110px));
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.editor-module__menu-item,
+.editor-module__menu-heading {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #333333;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  padding: 10px 11px;
+}
+
+.editor-module__menu-item {
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.editor-module__menu-item:hover {
+  background: #f4f5f7;
+}
+
+.editor-module__menu-item svg,
+.editor-module__menu-heading svg {
+  color: #7f8796;
+  flex: 0 0 auto;
+}
+
+.editor-module__menu-heading {
+  padding-bottom: 7px;
+  font-weight: 600;
+}
+
+.editor-module__menu-separator {
+  height: 1px;
+  margin: 6px 10px;
+  background: #e7e9ed;
+}
+
+.editor-module__saved-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.editor-module__saved-item {
+  display: flex;
+  align-items: center;
+  border-radius: 7px;
+}
+
+.editor-module__saved-item:hover {
+  background: #f7f8fa;
+}
+
+.editor-module__saved-item.is-current {
+  background: #eef6f8;
+}
+
+.editor-module__saved-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 8px 10px 8px 37px;
+  cursor: pointer;
+}
+
+.editor-module__saved-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #333333;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.editor-module__saved-meta {
+  color: #9499ab;
+  font-size: 11px;
+}
+
+.editor-module__saved-delete {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #b6bbc5;
+  cursor: pointer;
+  padding: 0;
+  margin-right: 4px;
+}
+
+.editor-module__saved-delete:hover {
+  color: var(--danger);
+  background: #ffffff;
+}
+
+.editor-module__menu-empty {
+  color: #9499ab;
+  font-size: 12px;
+  padding: 7px 11px 9px 37px;
+}
+
+.editor-module__language-options {
+  display: flex;
+  gap: 6px;
+  padding: 0 10px 5px 37px;
+}
+
+.editor-module__language-option {
+  border: 1px solid #e1e4e9;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #4a4a4a;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.editor-module__language-option:hover {
+  background: #f4f5f7;
+}
+
+.editor-module__language-option.is-active {
+  color: #357d94;
+  border-color: #b9d8e0;
+  background: #eef6f8;
 }
 
 .editor-module > .editor {
@@ -87,5 +304,10 @@
 @media (max-width: 720px) {
   .editor-module {
     width: 100%;
+  }
+
+  .editor-module__more-menu {
+    right: 0;
+    max-width: calc(100vw - 24px);
   }
 }
