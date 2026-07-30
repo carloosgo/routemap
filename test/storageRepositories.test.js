@@ -81,7 +81,7 @@ test('API repository normaliza la URL base y solicita credenciales de sesión', 
   };
 
   try {
-    const repository = createApiRepository('https://api.example.com/');
+    const repository = createApiRepository('https://api.example.com///');
     await repository.list();
 
     assert.equal(receivedUrl, 'https://api.example.com/api/trips');
@@ -115,6 +115,31 @@ test('API repository usa POST para un viaje nuevo aunque ya tenga ID local', asy
 
     assert.equal(receivedUrl, 'https://api.example.com/api/trips');
     assert.equal(receivedMethod, 'POST');
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test('API repository conserva el viaje si guardar responde 204', async () => {
+  const previousFetch = globalThis.fetch;
+
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 204,
+  });
+
+  try {
+    const repository = createApiRepository('https://api.example.com');
+    const saved = await repository.save({
+      id: 'trip-204',
+      name: 'Viaje sin cuerpo',
+      currency: 'EUR',
+      segments: [],
+    });
+
+    assert.equal(saved.id, 'trip-204');
+    assert.equal(saved.name, 'Viaje sin cuerpo');
+    assert.equal(saved.currency, 'EUR');
   } finally {
     globalThis.fetch = previousFetch;
   }
