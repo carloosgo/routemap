@@ -1,10 +1,16 @@
 import { useCallback, useRef, useState } from 'react';
-import { IconMap, IconNotes } from '@tabler/icons-react';
+import {
+  IconChevronDown,
+  IconCoin,
+  IconLanguage,
+  IconMap,
+  IconNotes,
+} from '@tabler/icons-react';
 import { useTranslation } from './i18n/index.jsx';
 import { useTrip } from './modules/trips/useTrip.js';
 import { useSavedTrips } from './modules/trips/useSavedTrips.js';
 import { useFirebaseAuth } from './infrastructure/firebase/useFirebaseAuth.js';
-import { isTripSavable, routeStops, tripTotal } from './modules/trips/tripModel.js';
+import { isTripSavable, tripTotal } from './modules/trips/tripModel.js';
 import { tripBreakdown } from './modules/expenses/expenseModel.js';
 import { AppTopbar } from './app/AppTopbar.jsx';
 import { AppEditorPane } from './app/AppEditorPane.jsx';
@@ -17,6 +23,8 @@ import {
 } from './app/useAppInteractions.js';
 import './App.css';
 import './app/FloatingEditor.css';
+
+const CURRENCIES = ['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'];
 
 export default function App() {
   const { t, locale, setLocale, availableLocales } = useTranslation();
@@ -59,13 +67,13 @@ export default function App() {
   const [openNoteSegmentId, setOpenNoteSegmentId] = useState(null);
   const newItemRef = useRef(null);
   const menuWrapRef = useRef(null);
+  const editorMenuRef = useRef(null);
 
   const intlLocale = locale === 'es' ? 'es-MX' : 'en-US';
   const canSave = isTripSavable(trip);
   const total = tripTotal(trip);
   const hasCosts = total > 0;
   const breakdown = tripBreakdown(trip.segments);
-  const stops = routeStops(trip.segments, { dedupeCountry: true });
   const checklist = trip.checklist || [];
   const doneCount = checklist.filter((item) => item.done).length;
   const notes = trip.notes || [];
@@ -116,7 +124,16 @@ export default function App() {
   const closeSegmentNote = useCallback(() => setOpenNoteSegmentId(null), []);
 
   useSaveShortcut(handleSave);
-  useOutsideClick(menuWrapRef, Boolean(openMenu), closeMenu);
+  useOutsideClick(
+    menuWrapRef,
+    Boolean(openMenu && openMenu !== 'currency' && openMenu !== 'language'),
+    closeMenu
+  );
+  useOutsideClick(
+    editorMenuRef,
+    openMenu === 'currency' || openMenu === 'language',
+    closeMenu
+  );
   useOutsideClickSelector('.segnote', Boolean(openNoteSegmentId), closeSegmentNote);
   useCollapseSegmentsOnTripChange(trip.id, trip.segments, setExpandedSegments);
 
@@ -154,10 +171,6 @@ export default function App() {
       loadTrip={loadTrip}
       deleteTrip={deleteTrip}
       intlLocale={intlLocale}
-      setCurrency={setCurrency}
-      locale={locale}
-      availableLocales={availableLocales}
-      setLocale={setLocale}
       handleSave={handleSave}
       canSave={canSave}
       authUser={auth.user}
@@ -205,7 +218,7 @@ export default function App() {
   );
 
   const editorModule = (
-    <div className="editor-module">
+    <div className="editor-module" ref={editorMenuRef}>
       <div className="editor-module__tabs">
         <button
           type="button"
@@ -226,6 +239,66 @@ export default function App() {
             </span>
           )}
         </button>
+
+        <div className="editor-module__settings">
+          <div className="topmenu">
+            <button
+              type="button"
+              className="topitem"
+              onClick={() => setOpenMenu(openMenu === 'currency' ? null : 'currency')}
+            >
+              <IconCoin size={17} aria-hidden="true" />
+              <span className="topitem__val">{trip.currency}</span>
+              <IconChevronDown size={13} className="topitem__chev" aria-hidden="true" />
+            </button>
+            {openMenu === 'currency' && (
+              <div className="dropdown dropdown--mini">
+                {CURRENCIES.map((currency) => (
+                  <button
+                    type="button"
+                    key={currency}
+                    className={'dropdown__opt' + (currency === trip.currency ? ' is-active' : '')}
+                    onClick={() => {
+                      setCurrency(currency);
+                      setOpenMenu(null);
+                    }}
+                  >
+                    {currency}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="topmenu">
+            <button
+              type="button"
+              className="topitem"
+              onClick={() => setOpenMenu(openMenu === 'language' ? null : 'language')}
+            >
+              <IconLanguage size={17} aria-hidden="true" />
+              <span className="topitem__val">{locale.toUpperCase()}</span>
+              <IconChevronDown size={13} className="topitem__chev" aria-hidden="true" />
+            </button>
+            {openMenu === 'language' && (
+              <div className="dropdown dropdown--mini">
+                {availableLocales.map((availableLocale) => (
+                  <button
+                    type="button"
+                    key={availableLocale}
+                    className={'dropdown__opt' + (availableLocale === locale ? ' is-active' : '')}
+                    onClick={() => {
+                      setLocale(availableLocale);
+                      setOpenMenu(null);
+                    }}
+                  >
+                    {availableLocale.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
       {editorPane}
     </div>
@@ -237,7 +310,6 @@ export default function App() {
       openNoteSegmentId={openNoteSegmentId}
       setOpenNoteSegmentId={setOpenNoteSegmentId}
       updateSegment={updateSegment}
-      stops={stops}
       toast={toast}
       t={t}
     />
