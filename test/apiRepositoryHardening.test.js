@@ -85,7 +85,7 @@ test('API repository añade una señal de cancelación a cada solicitud', async 
   try {
     const repository = createApiRepository('https://api.example.com');
     await repository.list();
-    assert.equal(receivedSignal instanceof AbortSignal, true);
+    assert.equal(receivedSignal instanceof globalThis.AbortSignal, true);
     assert.equal(receivedSignal.aborted, false);
   } finally {
     globalThis.fetch = previousFetch;
