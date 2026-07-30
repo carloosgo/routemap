@@ -14,7 +14,6 @@ import {
   useOutsideClick,
   useSaveShortcut,
 } from './app/useAppInteractions.js';
-import { useInstallPrompt, useUnitSystem } from './app/useAppPreferences.js';
 import './App.css';
 
 export default function App() {
@@ -38,8 +37,6 @@ export default function App() {
   } = useTrip();
 
   const { trips, loading, saveTrip, deleteTrip } = useSavedTrips();
-  const { unitSystem, setUnitSystem } = useUnitSystem(locale);
-  const { canInstall, installApp } = useInstallPrompt();
   const [toast, setToast] = useState('');
   const [mobileView, setMobileView] = useState('form');
   const [activeTab, setActiveTab] = useState('segments');
@@ -121,10 +118,6 @@ export default function App() {
       locale={locale}
       availableLocales={availableLocales}
       setLocale={setLocale}
-      unitSystem={unitSystem}
-      setUnitSystem={setUnitSystem}
-      canInstall={canInstall}
-      installApp={installApp}
       handleSave={handleSave}
       canSave={canSave}
     />
