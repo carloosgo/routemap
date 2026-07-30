@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createApiRepository } from '../src/modules/storage/apiRepository.js';
+import {
+  ApiRepositoryError,
+  createApiRepository,
+} from '../src/modules/storage/apiRepository.js';
 
 test('API repository exige una URL base válida', () => {
   assert.throws(() => createApiRepository('  '), /URL base válida/);
@@ -140,6 +143,44 @@ test('API repository usa ETag para actualizar y eliminar sin sobrescribir cambio
   }
 });
 
+test('API repository clasifica errores sin exponer el cuerpo del servidor', async () => {
+  const previousFetch = globalThis.fetch;
+  const cases = [
+    [401, 'session_expired'],
+    [409, 'trip_version_conflict'],
+    [422, 'validation_failed'],
+    [429, 'rate_limited'],
+    [503, 'server_unavailable'],
+  ];
+
+  try {
+    for (const [status, expectedCode] of cases) {
+      globalThis.fetch = async () => ({
+        ok: false,
+        status,
+        headers: {
+          get: (name) => (name.toLowerCase() === 'retry-after' ? '30' : null),
+        },
+        async json() {
+          return { internal: 'detalle privado' };
+        },
+      });
+
+      const repository = createApiRepository('https://api.example.com');
+      await assert.rejects(repository.list(), (error) => {
+        assert.equal(error instanceof ApiRepositoryError, true);
+        assert.equal(error.code, expectedCode);
+        assert.equal(error.status, status);
+        assert.doesNotMatch(error.message, /detalle privado/);
+        if (status === 429) assert.equal(error.retryAfter, '30');
+        return true;
+      });
+    }
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
 test('API repository controla respuestas JSON inválidas', async () => {
   const previousFetch = globalThis.fetch;
   globalThis.fetch = async () => ({
@@ -156,6 +197,7 @@ test('API repository controla respuestas JSON inválidas', async () => {
       repository.list(),
       (error) => {
         assert.match(error.message, /respuesta inválida/);
+        assert.equal(error.code, 'invalid_response');
         assert.doesNotMatch(error.message, /contenido interno/);
         return true;
       }
