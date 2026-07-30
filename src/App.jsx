@@ -5,7 +5,6 @@ import {
   IconDeviceFloppy,
   IconArrowRight,
   IconNotes,
-  IconNote,
   IconCheck,
   IconMap,
   IconChecklist,
