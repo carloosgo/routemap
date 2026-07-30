@@ -29,9 +29,7 @@ jobs:
 
           path = Path('src/App.jsx')
           content = path.read_text(encoding='utf-8')
-          content = content.replace('  IconNote,\n', '', 1)
-
-          old = """useEffect(() => {
+          old = """  useEffect(() => {
             if (prevTripIdRef.current === trip.id) return;
 
             prevTripIdRef.current = trip.id;
@@ -42,18 +40,18 @@ jobs:
             setExpandedSegments(collapsed);
           }, [trip.id, trip.segments]);
           """
-          new = """  useEffect(() => {
-            if (prevTripIdRef.current === trip.id) return;
+          malformed = """  useEffect(() => {
+          if (prevTripIdRef.current === trip.id) return;
 
-            prevTripIdRef.current = trip.id;
-            const collapsed = {};
-            (trip.segments || []).forEach((s) => {
-              collapsed[s.id] = false;
-            });
-            setExpandedSegments(collapsed);
+          prevTripIdRef.current = trip.id;
+          const collapsed = {};
+          (trip.segments || []).forEach((s) => {
+            collapsed[s.id] = false;
+          });
+          setExpandedSegments(collapsed);
           }, [trip.id, trip.segments]);
           """
-          content = content.replace(old, new, 1)
+          content = content.replace(malformed, old, 1)
           path.write_text(content, encoding='utf-8')
 
       - name: Commit non-visual App cleanup
@@ -64,7 +62,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/App.jsx
           git diff --cached --quiet && exit 0
-          git commit -m "Clean App lifecycle code"
+          git commit -m "Format App lifecycle effect"
           git push origin HEAD:${{ github.event.pull_request.head.ref }}
 
       - name: Enforce frozen design scope
