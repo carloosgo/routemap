@@ -1,0 +1,21 @@
+{
+  "name": "Atlas · Rutas de viaje",
+  "short_name": "Atlas",
+  "description": "Planifica rutas internacionales y controla gastos por tramo.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f1620",
+  "theme_color": "#0f1620",
+  "orientation": "any",
+  "categories": ["travel", "productivity"],
+  "icons": [
+    {
+      "src": "/atlas-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
