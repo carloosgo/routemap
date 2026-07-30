@@ -62,6 +62,7 @@ export function AppTopbar({
       <input
         type="text"
         className="topbar__title"
+        style={{ marginLeft: 8 }}
         value={trip.name}
         placeholder={t('tripNamePlaceholder')}
         onChange={(event) => renameTrip(event.target.value)}
