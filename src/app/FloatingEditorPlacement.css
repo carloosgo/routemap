@@ -43,15 +43,15 @@
 }
 
 @media (min-width: 721px) {
-  /* Los controles + / − vuelven a la parte inferior derecha. */
+  /* Los controles + / − quedan separados de la atribución inferior. */
   .workspace__desktop--floating .mapboxgl-ctrl-top-left {
     left: auto;
     right: 14px;
     top: auto;
-    bottom: 14px;
+    bottom: 52px;
   }
 
-  /* Atlas y las acciones suben para formar una columna limpia. */
+  /* Atlas y las acciones forman una columna limpia. */
   .topbar__brand {
     position: fixed;
     top: 14px;
@@ -200,6 +200,17 @@
 
   .workspace__desktop--floating .mapboxgl-ctrl-bottom-left {
     left: 448px;
+  }
+
+  /* Atribución obligatoria, más compacta pero visible y legible. */
+  .workspace__desktop--floating .mapboxgl-ctrl-attrib {
+    padding: 1px 4px;
+    font-size: 9px;
+    line-height: 1.2;
+  }
+
+  .workspace__desktop--floating .mapboxgl-ctrl-attrib a {
+    font-size: inherit;
   }
 }
 
