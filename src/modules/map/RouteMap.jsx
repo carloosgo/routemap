@@ -51,6 +51,7 @@ const IDS = {
   routeHalo: 'atlas-routes-halo',
   routeSolid: 'atlas-routes-solid',
   routeDashed: 'atlas-routes-dashed',
+  routeArrowSource: 'atlas-route-arrowheads',
   routeArrows: 'atlas-routes-arrows',
   routeArrowImage: 'atlas-route-arrow',
   citySource: 'atlas-city-points',
@@ -155,21 +156,27 @@ function setupRouteLayers(map, theme) {
       'line-offset': ['get', 'offset'],
     },
   });
+
+  map.addSource(IDS.routeArrowSource, {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] },
+  });
   addRouteArrowImage(map, theme.arrowColor);
   map.addLayer({
     id: IDS.routeArrows,
     type: 'symbol',
-    source: IDS.routeSource,
+    source: IDS.routeArrowSource,
     layout: {
-      'symbol-placement': 'line',
-      'symbol-spacing': 100,
+      'symbol-placement': 'point',
       'icon-image': IDS.routeArrowImage,
-      'icon-size': 0.8,
+      'icon-size': 0.9,
+      'icon-rotate': ['get', 'rotation'],
       'icon-rotation-alignment': 'map',
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
     },
   });
+
   map.addSource(IDS.citySource, {
     type: 'geojson',
     data: { type: 'FeatureCollection', features: [] },
@@ -286,7 +293,7 @@ function stylizedCurve(origin, destination, steps = 64) {
 
   const direction = outwardCurveDirection(origin, destination);
   const distanceProgress = Math.min(1, routeDistanceKm / STRAIGHT_ROUTE_THRESHOLD_KM);
-  const bendRatio = 0.025 + 0.018 * distanceProgress;
+  const bendRatio = 0.042 + 0.032 * distanceProgress;
   const bend = distance * bendRatio * direction;
   const normalX = -dy / distance;
   const normalY = dx / distance;
@@ -311,6 +318,24 @@ function stylizedCurve(origin, destination, steps = 64) {
   return points;
 }
 
+function routeArrowFeature(coordinates, color, index) {
+  const arrowIndex = Math.max(0, Math.min(
+    coordinates.length - 2,
+    Math.floor((coordinates.length - 1) * 0.9)
+  ));
+  const point = coordinates[arrowIndex];
+  const nextPoint = coordinates[arrowIndex + 1] || coordinates[coordinates.length - 1];
+  const dx = nextPoint[0] - point[0];
+  const dy = nextPoint[1] - point[1];
+  const rotation = -Math.atan2(dy, dx) * 180 / Math.PI;
+
+  return {
+    type: 'Feature',
+    properties: { color, index, rotation },
+    geometry: { type: 'Point', coordinates: point },
+  };
+}
+
 function buildRouteData(segments) {
   const pairCount = {};
   segments.forEach((segment) => {
@@ -320,7 +345,8 @@ function buildRouteData(segments) {
   });
 
   const pairIndex = {};
-  const features = [];
+  const routeFeatures = [];
+  const arrowFeatures = [];
   segments.forEach((segment, index) => {
     if (!isPlaced(segment.origin) || !isPlaced(segment.destination)) return;
     const key = routeKey(segment.origin, segment.destination);
@@ -333,25 +359,30 @@ function buildRouteData(segments) {
     pairIndex[key] += 1;
 
     const transport = dominantTransport(segment);
-    features.push({
+    const color = colorForIndex(index);
+    const coordinates = stylizedCurve(
+      [segment.origin.lon, segment.origin.lat],
+      [segment.destination.lon, segment.destination.lat]
+    );
+
+    routeFeatures.push({
       type: 'Feature',
       properties: {
-        color: colorForIndex(index),
+        color,
         isDashed: transport === 'plane',
         offset,
         transport,
         index,
       },
-      geometry: {
-        type: 'LineString',
-        coordinates: stylizedCurve(
-          [segment.origin.lon, segment.origin.lat],
-          [segment.destination.lon, segment.destination.lat]
-        ),
-      },
+      geometry: { type: 'LineString', coordinates },
     });
+    arrowFeatures.push(routeArrowFeature(coordinates, color, index));
   });
-  return { type: 'FeatureCollection', features };
+
+  return {
+    routes: { type: 'FeatureCollection', features: routeFeatures },
+    arrows: { type: 'FeatureCollection', features: arrowFeatures },
+  };
 }
 
 function buildCityData(segments) {
@@ -402,9 +433,14 @@ function paintVisitedCountries(map, segments, theme) {
 
 function drawMapData(map, segments, theme) {
   const routeSource = map.getSource(IDS.routeSource);
+  const arrowSource = map.getSource(IDS.routeArrowSource);
   const citySource = map.getSource(IDS.citySource);
-  if (!routeSource || !citySource) return;
-  routeSource.setData(buildRouteData(segments));
+  if (!routeSource || !arrowSource || !citySource) return;
+
+  const { routes, arrows } = buildRouteData(segments);
+  routeSource.setData(routes);
+  arrowSource.setData(arrows);
+
   const { cities, collection } = buildCityData(segments);
   citySource.setData(collection);
   paintVisitedCountries(map, segments, theme);
