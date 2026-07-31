@@ -8,13 +8,7 @@ import { config } from '../config.js';
 // Campo de búsqueda de ciudad con autocompletado.
 // Muestra sugerencias a partir del 3er carácter y la bandera de cada país.
 // Al seleccionar, devuelve un objeto City completo (con lat/lon/countryCode).
-export function CityAutocomplete({
-  value,
-  onSelect,
-  placeholder,
-  selectedDisplay = 'full',
-  fitSelectedText = false,
-}) {
+export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay = 'full' }) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -24,11 +18,13 @@ export function CityAutocomplete({
 
   const { results, loading, error } = useCitySearch(open ? query : '');
   const flagOnlySelected = selectedDisplay === 'flag-only' && Boolean(value) && !open;
-  const displayValue = open ? query : flagOnlySelected ? '' : value?.name || '';
-  const inputSize = fitSelectedText
-    ? Math.max((displayValue || placeholder || t('searchCity')).length, 6)
-    : undefined;
 
+  // Texto mostrado: si hay ciudad seleccionada y no se está escribiendo, su nombre.
+  // El modo flag-only oculta solo la representación cerrada; al enfocar reaparece
+  // el buscador completo para poder cambiar la ciudad normalmente.
+  const displayValue = open ? query : flagOnlySelected ? '' : value?.name || '';
+
+  // Cierra el desplegable al hacer clic fuera.
   useEffect(() => {
     function onClickOutside(e) {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -73,14 +69,13 @@ export function CityAutocomplete({
 
   return (
     <div
-      className={
-        'autocomplete' +
-        (flagOnlySelected ? ' autocomplete--flag-only-selected' : '') +
-        (fitSelectedText ? ' autocomplete--fit-selected' : '')
-      }
+      className={'autocomplete' + (flagOnlySelected ? ' autocomplete--flag-only-selected' : '')}
       ref={containerRef}
     >
       <div className="autocomplete__field" onClick={() => inputRef.current?.focus()}>
+        {/* La bandera permanece montada siempre que haya ciudad seleccionada.
+            Solo se atenúa mientras el campo está abierto para no ocultar la
+            referencia visual ni desplazar el ancho del campo. */}
         {value?.countryCode ? (
           <img
             className={'flag' + (open ? ' flag--dim' : '')}
@@ -97,7 +92,6 @@ export function CityAutocomplete({
           ref={inputRef}
           type="text"
           className="input"
-          size={inputSize}
           value={displayValue}
           placeholder={flagOnlySelected ? '' : placeholder || t('searchCity')}
           aria-label={placeholder || t('searchCity')}
@@ -140,6 +134,8 @@ export function CityAutocomplete({
                   loading="lazy"
                 />
               )}
+              {/* Nombre de ciudad en negrita; país en línea secundaria (nunca
+                  el display_name completo de OSM). */}
               <span className="autocomplete__cityinfo">
                 <span className="autocomplete__name">{city.name}</span>
                 {city.country && <span className="autocomplete__meta">, {city.country}</span>}
