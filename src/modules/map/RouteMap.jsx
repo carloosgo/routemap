@@ -8,7 +8,7 @@ import { isPlaced } from '../trips/tripModel.js';
 mapboxgl.accessToken = config.map.accessToken;
 
 const MAP_STYLES = {
-  normal: 'mapbox://styles/carlosuriel/cmrzizttl00l901s8d8ye6iel',
+  normal: 'mapbox://styles/carlosuriel/cms9g0a2y000501qr1fhwb5a',
   satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
 };
 
