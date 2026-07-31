@@ -115,6 +115,7 @@ export function SegmentForm({
             value={segment.origin}
             onSelect={(city) => onUpdate({ origin: city })}
             placeholder={t('origin')}
+            selectedDisplay="flag-only"
           />
           <IconArrowRight size={12} className="segment__arrow" aria-hidden="true" />
           <CityAutocomplete
