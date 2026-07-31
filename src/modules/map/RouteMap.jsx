@@ -44,6 +44,20 @@ const MAP_THEMES = {
   },
 };
 
+const IDS = {
+  countrySource: 'atlas-country-boundaries',
+  countryFill: 'atlas-countries-fill',
+  routeSource: 'atlas-routes',
+  routeHalo: 'atlas-routes-halo',
+  routeSolid: 'atlas-routes-solid',
+  routeDashed: 'atlas-routes-dashed',
+  routeArrows: 'atlas-routes-arrows',
+  routeArrowImage: 'atlas-route-arrow',
+  citySource: 'atlas-city-points',
+  cityDots: 'atlas-city-dots',
+  cityIcons: 'atlas-city-icons',
+};
+
 function dominantTransport(segment) {
   const transport = segment?.expenses?.transport || {};
   const candidates = [
@@ -110,18 +124,43 @@ function getVisitedCountries(segments) {
   return countryColor;
 }
 
+function addRouteArrowImage(map, color) {
+  if (map.hasImage(IDS.routeArrowImage)) return;
+
+  const size = 8;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext('2d');
+  context.fillStyle = color;
+  context.beginPath();
+  context.moveTo(size, size / 2);
+  context.lineTo(0, 0);
+  context.lineTo(size * 0.3, size / 2);
+  context.lineTo(0, size);
+  context.closePath();
+  context.fill();
+
+  const image = context.getImageData(0, 0, size, size);
+  map.addImage(IDS.routeArrowImage, {
+    width: size,
+    height: size,
+    data: image.data,
+  });
+}
+
 function setupLayers(map, theme) {
-  if (!map.getSource('country-boundaries')) {
-    map.addSource('country-boundaries', {
+  if (!map.getSource(IDS.countrySource)) {
+    map.addSource(IDS.countrySource, {
       type: 'vector',
       url: 'mapbox://mapbox.country-boundaries-v1',
     });
   }
-  if (!map.getLayer('countries-fill')) {
+  if (!map.getLayer(IDS.countryFill)) {
     map.addLayer({
-      id: 'countries-fill',
+      id: IDS.countryFill,
       type: 'fill',
-      source: 'country-boundaries',
+      source: IDS.countrySource,
       'source-layer': 'country_boundaries',
       paint: {
         'fill-color': 'transparent',
@@ -130,17 +169,17 @@ function setupLayers(map, theme) {
     });
   }
 
-  if (!map.getSource('routes')) {
-    map.addSource('routes', {
+  if (!map.getSource(IDS.routeSource)) {
+    map.addSource(IDS.routeSource, {
       type: 'geojson',
       data: { type: 'FeatureCollection', features: [] },
     });
   }
-  if (!map.getLayer('routes-halo')) {
+  if (!map.getLayer(IDS.routeHalo)) {
     map.addLayer({
-      id: 'routes-halo',
+      id: IDS.routeHalo,
       type: 'line',
-      source: 'routes',
+      source: IDS.routeSource,
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
         'line-color': theme.routeHaloColor,
@@ -150,12 +189,12 @@ function setupLayers(map, theme) {
       },
     });
   }
-  if (!map.getLayer('routes-solid')) {
+  if (!map.getLayer(IDS.routeSolid)) {
     map.addLayer({
-      id: 'routes-solid',
+      id: IDS.routeSolid,
       type: 'line',
-      source: 'routes',
-      filter: ['!', ['get', 'isDashed']],
+      source: IDS.routeSource,
+      filter: ['==', ['get', 'isDashed'], false],
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
         'line-color': ['get', 'color'],
@@ -164,12 +203,12 @@ function setupLayers(map, theme) {
       },
     });
   }
-  if (!map.getLayer('routes-dashed')) {
+  if (!map.getLayer(IDS.routeDashed)) {
     map.addLayer({
-      id: 'routes-dashed',
+      id: IDS.routeDashed,
       type: 'line',
-      source: 'routes',
-      filter: ['get', 'isDashed'],
+      source: IDS.routeSource,
+      filter: ['==', ['get', 'isDashed'], true],
       layout: { 'line-cap': 'butt', 'line-join': 'round' },
       paint: {
         'line-color': ['get', 'color'],
@@ -180,32 +219,16 @@ function setupLayers(map, theme) {
     });
   }
 
-  if (!map.hasImage('route-arrow')) {
-    const arrowSize = 8;
-    const canvas = document.createElement('canvas');
-    canvas.width = arrowSize;
-    canvas.height = arrowSize;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = theme.arrowColor;
-    ctx.beginPath();
-    ctx.moveTo(arrowSize, arrowSize / 2);
-    ctx.lineTo(0, 0);
-    ctx.lineTo(arrowSize * 0.3, arrowSize / 2);
-    ctx.lineTo(0, arrowSize);
-    ctx.closePath();
-    ctx.fill();
-    const imgData = ctx.getImageData(0, 0, arrowSize, arrowSize);
-    map.addImage('route-arrow', { width: arrowSize, height: arrowSize, data: imgData.data });
-  }
-  if (!map.getLayer('routes-arrows')) {
+  addRouteArrowImage(map, theme.arrowColor);
+  if (!map.getLayer(IDS.routeArrows)) {
     map.addLayer({
-      id: 'routes-arrows',
+      id: IDS.routeArrows,
       type: 'symbol',
-      source: 'routes',
+      source: IDS.routeSource,
       layout: {
         'symbol-placement': 'line',
         'symbol-spacing': 100,
-        'icon-image': 'route-arrow',
+        'icon-image': IDS.routeArrowImage,
         'icon-size': 0.8,
         'icon-allow-overlap': true,
         'icon-ignore-placement': true,
@@ -213,17 +236,17 @@ function setupLayers(map, theme) {
     });
   }
 
-  if (!map.getSource('city-points')) {
-    map.addSource('city-points', {
+  if (!map.getSource(IDS.citySource)) {
+    map.addSource(IDS.citySource, {
       type: 'geojson',
       data: { type: 'FeatureCollection', features: [] },
     });
   }
-  if (!map.getLayer('city-dots')) {
+  if (!map.getLayer(IDS.cityDots)) {
     map.addLayer({
-      id: 'city-dots',
+      id: IDS.cityDots,
       type: 'circle',
-      source: 'city-points',
+      source: IDS.citySource,
       paint: {
         'circle-radius': theme.pointRadius,
         'circle-color': ['get', 'color'],
@@ -232,11 +255,11 @@ function setupLayers(map, theme) {
       },
     });
   }
-  if (!map.getLayer('city-icons')) {
+  if (!map.getLayer(IDS.cityIcons)) {
     map.addLayer({
-      id: 'city-icons',
+      id: IDS.cityIcons,
       type: 'symbol',
-      source: 'city-points',
+      source: IDS.citySource,
       layout: {
         'icon-image': ['case', ['!=', ['get', 'icon'], ''], ['get', 'icon'], ''],
         'icon-size': 0.25,
@@ -262,34 +285,57 @@ function setupLayers(map, theme) {
   }
 }
 
+function applyThemePaint(map, theme) {
+  if (map.getLayer(IDS.countryFill)) {
+    map.setPaintProperty(IDS.countryFill, 'fill-opacity', theme.countryFillOpacity);
+  }
+  if (map.getLayer(IDS.routeHalo)) {
+    map.setPaintProperty(IDS.routeHalo, 'line-color', theme.routeHaloColor);
+    map.setPaintProperty(IDS.routeHalo, 'line-width', theme.routeHaloWidth);
+    map.setPaintProperty(IDS.routeHalo, 'line-opacity', theme.routeHaloOpacity);
+  }
+  [IDS.routeSolid, IDS.routeDashed].forEach((layerId) => {
+    if (map.getLayer(layerId)) map.setPaintProperty(layerId, 'line-width', theme.routeWidth);
+  });
+  if (map.getLayer(IDS.cityDots)) {
+    map.setPaintProperty(IDS.cityDots, 'circle-radius', theme.pointRadius);
+    map.setPaintProperty(IDS.cityDots, 'circle-stroke-width', theme.pointStrokeWidth);
+    map.setPaintProperty(IDS.cityDots, 'circle-stroke-color', theme.pointStrokeColor);
+  }
+  if (map.getLayer(IDS.cityIcons)) {
+    map.setPaintProperty(IDS.cityIcons, 'text-color', theme.textColor);
+    map.setPaintProperty(IDS.cityIcons, 'text-halo-color', theme.textHaloColor);
+    map.setPaintProperty(IDS.cityIcons, 'text-halo-width', theme.textHaloWidth);
+  }
+}
+
 export function RouteMap({ segments }) {
   const { t } = useTranslation();
   const mapElRef = useRef(null);
   const mapRef = useRef(null);
-  const markersRef = useRef([]);
   const loadedRef = useRef(false);
   const latestSegmentsRef = useRef(segments);
-  const activeThemeRef = useRef('color');
-  const [mapTheme, setMapTheme] = useState(() => {
+  const initialThemeKeyRef = useRef(null);
+  const activeThemeRef = useRef(null);
+
+  if (initialThemeKeyRef.current === null) {
     const stored = window.localStorage.getItem('atlas-map-theme');
-    return MAP_THEMES[stored] ? stored : 'color';
-  });
+    initialThemeKeyRef.current = MAP_THEMES[stored] ? stored : 'color';
+    activeThemeRef.current = initialThemeKeyRef.current;
+  }
+
+  const [mapTheme, setMapTheme] = useState(initialThemeKeyRef.current);
 
   useEffect(() => {
     latestSegmentsRef.current = segments;
   }, [segments]);
 
   useEffect(() => {
-    activeThemeRef.current = mapTheme;
-  }, [mapTheme]);
-
-  useEffect(() => {
     if (!mapElRef.current || !config.map.accessToken) return undefined;
 
-    const initialTheme = MAP_THEMES[activeThemeRef.current];
     const map = new mapboxgl.Map({
       container: mapElRef.current,
-      style: initialTheme.styleUrl,
+      style: MAP_THEMES[activeThemeRef.current].styleUrl,
       center: [-99.1332, 19.4326],
       zoom: 4,
       projection: 'mercator',
@@ -300,6 +346,22 @@ export function RouteMap({ segments }) {
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
     map.doubleClickZoom.disable();
 
+    const rebuildAtlasLayers = () => {
+      const theme = MAP_THEMES[activeThemeRef.current];
+      try {
+        setupLayers(map, theme);
+        applyThemePaint(map, theme);
+        loadedRef.current = true;
+        drawRoutes(map, latestSegmentsRef.current, theme);
+        map.resize();
+      } catch (error) {
+        loadedRef.current = false;
+        console.error('[Atlas map layers]', error);
+      }
+    };
+
+    map.on('style.load', rebuildAtlasLayers);
+
     map.on('click', (event) => {
       if (event.originalEvent?.target?.closest?.('.map-marker')) return;
       map.easeTo({ center: event.lngLat, zoom: map.getZoom() + 1, duration: 300 });
@@ -309,20 +371,12 @@ export function RouteMap({ segments }) {
       console.error('[Mapbox error]', event.error?.message || event.error || event);
     });
 
-    map.on('load', () => {
-      map.resize();
-      setupLayers(map, initialTheme);
-      loadedRef.current = true;
-      drawRoutes(map, markersRef, latestSegmentsRef.current, initialTheme);
-    });
-
     const resizeObserver = new window.ResizeObserver(() => map.resize());
     resizeObserver.observe(mapElRef.current);
 
     return () => {
       resizeObserver.disconnect();
-      markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current = [];
+      map.off('style.load', rebuildAtlasLayers);
       map.remove();
       mapRef.current = null;
       loadedRef.current = false;
@@ -332,25 +386,19 @@ export function RouteMap({ segments }) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !loadedRef.current) return;
-    drawRoutes(map, markersRef, segments, MAP_THEMES[mapTheme]);
+    drawRoutes(map, segments, MAP_THEMES[mapTheme]);
   }, [segments, mapTheme]);
 
   function selectTheme(nextTheme) {
-    if (nextTheme === mapTheme) return;
+    if (!MAP_THEMES[nextTheme] || nextTheme === activeThemeRef.current) return;
     const map = mapRef.current;
     if (!map) return;
 
-    const theme = MAP_THEMES[nextTheme];
     activeThemeRef.current = nextTheme;
+    loadedRef.current = false;
     setMapTheme(nextTheme);
     window.localStorage.setItem('atlas-map-theme', nextTheme);
-    loadedRef.current = false;
-    map.setStyle(theme.styleUrl);
-    map.once('style.load', () => {
-      setupLayers(map, theme);
-      loadedRef.current = true;
-      drawRoutes(map, markersRef, latestSegmentsRef.current, theme);
-    });
+    map.setStyle(MAP_THEMES[nextTheme].styleUrl, { diff: false });
   }
 
   return (
@@ -424,35 +472,29 @@ export function RouteMap({ segments }) {
   );
 }
 
-function drawRoutes(map, markersRef, segments, theme) {
-  const routeSource = map.getSource('routes');
-  const cityPointsSource = map.getSource('city-points');
+function drawRoutes(map, segments, theme) {
+  const routeSource = map.getSource(IDS.routeSource);
+  const cityPointsSource = map.getSource(IDS.citySource);
   if (!routeSource || !cityPointsSource) return;
-
-  markersRef.current.forEach((marker) => marker.remove());
-  markersRef.current = [];
-
-  if (map.getLayer('countries-fill')) {
-    map.setPaintProperty('countries-fill', 'fill-opacity', theme.countryFillOpacity);
-  }
 
   const countryColor = getVisitedCountries(segments);
   const visitedCodes = Object.keys(countryColor);
-  if (theme.paintVisitedCountries && map.getLayer('countries-fill') && visitedCodes.length > 0) {
-    const fillExpr = ['match', ['get', 'iso_3166_1_alpha_3']];
+
+  if (theme.paintVisitedCountries && map.getLayer(IDS.countryFill) && visitedCodes.length > 0) {
+    const fillExpression = ['match', ['get', 'iso_3166_1_alpha_3']];
     visitedCodes.forEach((alpha2) => {
       const alpha3 = ISO_A2_TO_A3[alpha2];
-      if (!alpha3) return;
-      fillExpr.push(alpha3, countryColor[alpha2]);
+      if (alpha3) fillExpression.push(alpha3, countryColor[alpha2]);
     });
-    fillExpr.push('transparent');
-    map.setPaintProperty('countries-fill', 'fill-color', fillExpr);
-  } else if (map.getLayer('countries-fill')) {
-    map.setPaintProperty('countries-fill', 'fill-color', 'transparent');
+    fillExpression.push('transparent');
+    map.setPaintProperty(IDS.countryFill, 'fill-color', fillExpression);
+  } else if (map.getLayer(IDS.countryFill)) {
+    map.setPaintProperty(IDS.countryFill, 'fill-color', 'transparent');
   }
 
-  const features = [];
+  const routeFeatures = [];
   const pairCount = {};
+
   segments.forEach((segment) => {
     if (!isPlaced(segment.origin) || !isPlaced(segment.destination)) return;
     const key = routeKey(segment.origin, segment.destination);
@@ -462,35 +504,44 @@ function drawRoutes(map, markersRef, segments, theme) {
   const pairIndex = {};
   segments.forEach((segment, index) => {
     if (!isPlaced(segment.origin) || !isPlaced(segment.destination)) return;
+
     const color = colorForIndex(index);
     const transport = dominantTransport(segment);
     const isDashed = transport === 'plane';
     const key = routeKey(segment.origin, segment.destination);
     pairIndex[key] = pairIndex[key] || 0;
-    const isMulti = (pairCount[key] || 1) > 1;
-    const offset = isMulti ? (pairIndex[key] % 2 === 0 ? 5 : -5) : 0;
-    pairIndex[key]++;
-    const coords = adaptiveCurve(
-      [segment.origin.lon, segment.origin.lat],
-      [segment.destination.lon, segment.destination.lat]
-    );
-    features.push({
+    const offset = (pairCount[key] || 1) > 1
+      ? (pairIndex[key] % 2 === 0 ? 5 : -5)
+      : 0;
+    pairIndex[key] += 1;
+
+    routeFeatures.push({
       type: 'Feature',
       properties: { color, isDashed, offset, transport, index },
-      geometry: { type: 'LineString', coordinates: coords },
+      geometry: {
+        type: 'LineString',
+        coordinates: adaptiveCurve(
+          [segment.origin.lon, segment.origin.lat],
+          [segment.destination.lon, segment.destination.lat]
+        ),
+      },
     });
   });
-  routeSource.setData({ type: 'FeatureCollection', features });
+
+  routeSource.setData({ type: 'FeatureCollection', features: routeFeatures });
 
   const cities = [];
+  const cityKeys = new Set();
   segments.forEach((segment) => {
     [segment.origin, segment.destination].forEach((city) => {
       if (!isPlaced(city)) return;
-      const last = cities[cities.length - 1];
-      if (last && last.lat === city.lat && last.lon === city.lon) return;
+      const key = `${city.lon},${city.lat}`;
+      if (cityKeys.has(key)) return;
+      cityKeys.add(key);
       cities.push(city);
     });
   });
+
   cityPointsSource.setData({
     type: 'FeatureCollection',
     features: cities.map((city, index) => ({
@@ -500,7 +551,10 @@ function drawRoutes(map, markersRef, segments, theme) {
         color: colorForIndex(index),
         icon: getCityIcon(city.name) || '',
       },
-      geometry: { type: 'Point', coordinates: [city.lon, city.lat] },
+      geometry: {
+        type: 'Point',
+        coordinates: [city.lon, city.lat],
+      },
     })),
   });
 
@@ -516,23 +570,25 @@ function drawRoutes(map, markersRef, segments, theme) {
 function adaptiveCurve(a, b, steps = 80) {
   const dx = b[0] - a[0];
   const dy = b[1] - a[1];
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  const curveFactor = Math.max(0, Math.min(0.22, 0.22 - (dist - 1) * 0.04));
-  const offset = dist * curveFactor;
-  const mx = (a[0] + b[0]) / 2;
-  const my = (a[1] + b[1]) / 2;
-  const len = dist || 1;
-  const cx = mx + (-dy / len) * offset;
-  const cy = my + (dx / len) * offset;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  const curveFactor = Math.max(0, Math.min(0.22, 0.22 - (distance - 1) * 0.04));
+  const offset = distance * curveFactor;
+  const midpointX = (a[0] + b[0]) / 2;
+  const midpointY = (a[1] + b[1]) / 2;
+  const length = distance || 1;
+  const controlX = midpointX + (-dy / length) * offset;
+  const controlY = midpointY + (dx / length) * offset;
   const points = [];
-  for (let index = 0; index <= steps; index++) {
+
+  for (let index = 0; index <= steps; index += 1) {
     const time = index / steps;
     const remaining = 1 - time;
     points.push([
-      remaining * remaining * a[0] + 2 * remaining * time * cx + time * time * b[0],
-      remaining * remaining * a[1] + 2 * remaining * time * cy + time * time * b[1],
+      remaining * remaining * a[0] + 2 * remaining * time * controlX + time * time * b[0],
+      remaining * remaining * a[1] + 2 * remaining * time * controlY + time * time * b[1],
     ]);
   }
+
   return points;
 }
 
