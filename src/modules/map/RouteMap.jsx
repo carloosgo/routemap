@@ -10,7 +10,7 @@ mapboxgl.accessToken = config.map.accessToken;
 const MAP_THEMES = {
   light: {
     label: 'Light',
-    styleUrl: 'mapbox://styles/carlosuriel/cmrzizttl00l901s8d8ye6iel',
+    styleUrl: 'mapbox://styles/mapbox/light-v11',
     paintVisitedCountries: true,
     countryFillOpacity: 0.09,
     routeWidth: 1.8,
