@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   IconPlane,
   IconTrain,
@@ -21,8 +22,6 @@ import { createLineItem, expensesTotal } from './expenseModel.js';
 
 const ICON_SIZE = 15;
 
-// Cada concepto tiene su propio círculo pastel + icono saturado del mismo tono.
-// bg: color de fondo del círculo. color: color del icono dentro del círculo.
 const TRANSPORT_ICONS = {
   plane: { icon: <IconPlane size={ICON_SIZE} />, bg: '#eef0fd', color: '#4f6df5' },
   train: { icon: <IconTrain size={ICON_SIZE} />, bg: '#fff8e6', color: '#d4a017' },
@@ -59,12 +58,13 @@ const BOAT_KEYWORDS = ['ferri', 'ferry', 'barco', 'crucero', 'lancha', 'boat', '
 
 function getOtherTransportIcon(label) {
   const normalized = (label || '').toLowerCase();
-  if (BOAT_KEYWORDS.some((kw) => normalized.includes(kw))) return BOAT_ICON_DEF;
+  if (BOAT_KEYWORDS.some((keyword) => normalized.includes(keyword))) return BOAT_ICON_DEF;
   return OTHER_TRANSPORT;
 }
 
 export function ExpenseEditor({ expenses, currency, locale, onChange }) {
   const { t } = useTranslation();
+  const [activeVariableExpense, setActiveVariableExpense] = useState(null);
 
   function patch(part) {
     onChange({ ...expenses, ...part });
@@ -79,24 +79,53 @@ export function ExpenseEditor({ expenses, currency, locale, onChange }) {
     const current = Array.isArray(expenses[key]) ? expenses[key] : [];
     patch({ [key]: [...current, createLineItem('', 0)] });
   }
-  function updateItem(key, id, field, val) {
+  function updateItem(key, id, field, value) {
     const current = Array.isArray(expenses[key]) ? expenses[key] : [];
     patch({
-      [key]: current.map((it) =>
-        it.id === id ? { ...it, [field]: field === 'label' ? sanitizeText(val) : val } : it
+      [key]: current.map((item) =>
+        item.id === id
+          ? { ...item, [field]: field === 'label' ? sanitizeText(value) : value }
+          : item
       ),
     });
   }
   function removeItem(key, id) {
     const current = Array.isArray(expenses[key]) ? expenses[key] : [];
-    patch({ [key]: current.filter((it) => it.id !== id) });
+    patch({ [key]: current.filter((item) => item.id !== id) });
+  }
+  function openVariableExpense(key) {
+    const current = Array.isArray(expenses[key]) ? expenses[key] : [];
+    if (current.length === 0) addItem(key);
+    setActiveVariableExpense((active) => (active === key ? null : key));
   }
 
   const isDetailed = expenses.food.mode === 'detailed';
+  const variableCategories = [
+    {
+      key: 'transportOthers',
+      label: t('otherTransport'),
+      icon: OTHER_TRANSPORT,
+      getIcon: (item) => getOtherTransportIcon(item.label),
+    },
+    {
+      key: 'attractions',
+      label: t('attractions'),
+      icon: ATTRACTION_ICON,
+      getIcon: () => ATTRACTION_ICON,
+    },
+    {
+      key: 'others',
+      label: t('otherExpenses'),
+      icon: OTHER_ICON,
+      getIcon: () => OTHER_ICON,
+    },
+  ];
+  const activeCategory = variableCategories.find(
+    (category) => category.key === activeVariableExpense
+  );
 
   return (
-    <div className="expenses">
-      {/* Selector de modo de alimentos */}
+    <div className="expenses expenses--compact-layout">
       <div className="expenses__toggle">
         <span className="expenses__togglelabel">{t('food')}:</span>
         <div className="toggle">
@@ -117,15 +146,14 @@ export function ExpenseEditor({ expenses, currency, locale, onChange }) {
         </div>
       </div>
 
-      {/* Grilla de 2 columnas: todos los conceptos fijos */}
-      <div className="expenses__grid">
+      <div className={'expenses__fixed-row' + (isDetailed ? ' is-detailed' : '')}>
         <MoneyCard
           icon={TRANSPORT_ICONS.plane.icon}
           iconBg={TRANSPORT_ICONS.plane.bg}
           iconColor={TRANSPORT_ICONS.plane.color}
           label={t('plane')}
           value={expenses.transport.plane}
-          onChange={(v) => setTransport('plane', v)}
+          onChange={(value) => setTransport('plane', value)}
         />
         <MoneyCard
           icon={LODGING_ICON.icon}
@@ -133,16 +161,15 @@ export function ExpenseEditor({ expenses, currency, locale, onChange }) {
           iconColor={LODGING_ICON.color}
           label={t('lodging')}
           value={expenses.lodging}
-          onChange={(v) => patch({ lodging: v })}
+          onChange={(value) => patch({ lodging: value })}
         />
-
         <MoneyCard
           icon={TRANSPORT_ICONS.train.icon}
           iconBg={TRANSPORT_ICONS.train.bg}
           iconColor={TRANSPORT_ICONS.train.color}
           label={t('train')}
           value={expenses.transport.train}
-          onChange={(v) => setTransport('train', v)}
+          onChange={(value) => setTransport('train', value)}
         />
         <MoneyCard
           icon={TRANSPORT_ICONS.bus.icon}
@@ -150,30 +177,19 @@ export function ExpenseEditor({ expenses, currency, locale, onChange }) {
           iconColor={TRANSPORT_ICONS.bus.color}
           label={t('bus')}
           value={expenses.transport.bus}
-          onChange={(v) => setTransport('bus', v)}
+          onChange={(value) => setTransport('bus', value)}
         />
 
-        <MoneyCard
-          icon={TRANSPORT_ICONS.taxiUber.icon}
-          iconBg={TRANSPORT_ICONS.taxiUber.bg}
-          iconColor={TRANSPORT_ICONS.taxiUber.color}
-          label={t('taxiUber')}
-          value={expenses.transport.taxiUber}
-          onChange={(v) => setTransport('taxiUber', v)}
-        />
-
-        {!isDetailed && (
+        {!isDetailed ? (
           <MoneyCard
             icon={FOOD_ICONS.single.icon}
             iconBg={FOOD_ICONS.single.bg}
             iconColor={FOOD_ICONS.single.color}
             label={t('food')}
             value={expenses.food.single}
-            onChange={(v) => setFood({ single: v })}
+            onChange={(value) => setFood({ single: value })}
           />
-        )}
-
-        {isDetailed && (
+        ) : (
           <>
             <MoneyCard
               icon={FOOD_ICONS.breakfast.icon}
@@ -181,7 +197,7 @@ export function ExpenseEditor({ expenses, currency, locale, onChange }) {
               iconColor={FOOD_ICONS.breakfast.color}
               label={t('breakfast')}
               value={expenses.food.breakfast}
-              onChange={(v) => setFood({ breakfast: v })}
+              onChange={(value) => setFood({ breakfast: value })}
             />
             <MoneyCard
               icon={FOOD_ICONS.lunch.icon}
@@ -189,7 +205,7 @@ export function ExpenseEditor({ expenses, currency, locale, onChange }) {
               iconColor={FOOD_ICONS.lunch.color}
               label={t('lunch')}
               value={expenses.food.lunch}
-              onChange={(v) => setFood({ lunch: v })}
+              onChange={(value) => setFood({ lunch: value })}
             />
             <MoneyCard
               icon={FOOD_ICONS.dinner.icon}
@@ -197,47 +213,55 @@ export function ExpenseEditor({ expenses, currency, locale, onChange }) {
               iconColor={FOOD_ICONS.dinner.color}
               label={t('dinner')}
               value={expenses.food.dinner}
-              onChange={(v) => setFood({ dinner: v })}
+              onChange={(value) => setFood({ dinner: value })}
             />
           </>
         )}
       </div>
 
-      {/* Otro transporte */}
-      <LineItemsGrid
-        title={t('otherTransport')}
-        items={expenses.transportOthers}
-        getIcon={(item) => getOtherTransportIcon(item.label)}
-        typePlaceholder={t('itemTypePlaceholder')}
-        addLabel={t('addItem')}
-        onAdd={() => addItem('transportOthers')}
-        onUpdate={(id, field, val) => updateItem('transportOthers', id, field, val)}
-        onRemove={(id) => removeItem('transportOthers', id)}
-      />
+      <div className="expenses__variable-tabs">
+        {variableCategories.map((category) => {
+          const items = Array.isArray(expenses[category.key]) ? expenses[category.key] : [];
+          const amount = items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+          return (
+            <button
+              type="button"
+              key={category.key}
+              className={'expenses__variable-tab' +
+                (activeVariableExpense === category.key ? ' is-active' : '')}
+              onClick={() => openVariableExpense(category.key)}
+            >
+              <span
+                className="expenses__variable-icon"
+                style={{
+                  '--icon-bg': category.icon.bg,
+                  '--icon-color': category.icon.color,
+                }}
+                aria-hidden="true"
+              >
+                {category.icon.icon}
+              </span>
+              <span>{category.label}</span>
+              {amount > 0 && <strong>{formatMoney(amount, currency, locale)}</strong>}
+            </button>
+          );
+        })}
+      </div>
 
-      {/* Atracciones */}
-      <LineItemsGrid
-        title={t('attractions')}
-        items={expenses.attractions}
-        getIcon={() => ATTRACTION_ICON}
-        typePlaceholder={t('itemTypePlaceholder')}
-        addLabel={t('addItem')}
-        onAdd={() => addItem('attractions')}
-        onUpdate={(id, field, val) => updateItem('attractions', id, field, val)}
-        onRemove={(id) => removeItem('attractions', id)}
-      />
-
-      {/* Otros gastos */}
-      <LineItemsGrid
-        title={t('otherExpenses')}
-        items={expenses.others}
-        getIcon={() => OTHER_ICON}
-        typePlaceholder={t('itemTypePlaceholder')}
-        addLabel={t('addItem')}
-        onAdd={() => addItem('others')}
-        onUpdate={(id, field, val) => updateItem('others', id, field, val)}
-        onRemove={(id) => removeItem('others', id)}
-      />
+      {activeCategory && (
+        <LineItemsGrid
+          title={activeCategory.label}
+          items={expenses[activeCategory.key]}
+          getIcon={activeCategory.getIcon}
+          typePlaceholder={t('itemTypePlaceholder')}
+          addLabel={t('addItem')}
+          onAdd={() => addItem(activeCategory.key)}
+          onUpdate={(id, field, value) =>
+            updateItem(activeCategory.key, id, field, value)
+          }
+          onRemove={(id) => removeItem(activeCategory.key, id)}
+        />
+      )}
 
       <div className="expenses__total">
         <span>{t('segmentTotal')}</span>
@@ -247,8 +271,6 @@ export function ExpenseEditor({ expenses, currency, locale, onChange }) {
   );
 }
 
-// Grilla de ítems con tipo definido por el usuario.
-// getIcon(item) ahora devuelve { icon, bg, color } en vez de solo el elemento JSX.
 function LineItemsGrid({
   title,
   items,
@@ -261,60 +283,60 @@ function LineItemsGrid({
 }) {
   const safeItems = Array.isArray(items) ? items : [];
   return (
-    <section className="lineitems-section">
+    <section className="lineitems-section lineitems-section--active">
       <div className="expenses__head">
         <h4 className="expenses__title">{title}</h4>
         <button type="button" className="btn btn--ghost btn--sm" onClick={onAdd}>
           + {addLabel}
         </button>
       </div>
-      {safeItems.length > 0 && (
-        <div className="expenses__grid">
-          {safeItems.map((item) => {
-            const { icon, bg, color } = getIcon(item);
-            return (
-              <div className="moneycard moneycard--lineitem" key={item.id}>
-                <span
-                  className="moneycard__icon"
-                  style={{ '--icon-bg': bg, '--icon-color': color }}
-                  aria-hidden="true"
-                >
-                  {icon}
-                </span>
+      <div className="expenses__lineitems-row">
+        {safeItems.map((item) => {
+          const { icon, bg, color } = getIcon(item);
+          return (
+            <div className="moneycard moneycard--lineitem" key={item.id}>
+              <span
+                className="moneycard__icon"
+                style={{ '--icon-bg': bg, '--icon-color': color }}
+                aria-hidden="true"
+              >
+                {icon}
+              </span>
+              <input
+                type="text"
+                className="moneycard__typeinput"
+                placeholder={typePlaceholder}
+                value={item.label}
+                onChange={(event) => onUpdate(item.id, 'label', event.target.value)}
+              />
+              <span className="moneycard__amount">
+                <span className="moneycard__currency">$</span>
                 <input
-                  type="text"
-                  className="moneycard__typeinput"
-                  placeholder={typePlaceholder}
-                  value={item.label}
-                  onChange={(e) => onUpdate(item.id, 'label', e.target.value)}
+                  type="number"
+                  className="moneycard__input"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={item.amount === 0 ? '' : item.amount}
+                  placeholder="0.00"
+                  onChange={(event) =>
+                    onUpdate(item.id, 'amount', Number(event.target.value) || 0)
+                  }
+                  onFocus={(event) => event.target.select()}
                 />
-                <span className="moneycard__amount">
-                  <span className="moneycard__currency">$</span>
-                  <input
-                    type="number"
-                    className="moneycard__input"
-                    min="0"
-                    step="0.01"
-                    inputMode="decimal"
-                    value={item.amount === 0 ? '' : item.amount}
-                    placeholder="0.00"
-                    onChange={(e) => onUpdate(item.id, 'amount', Number(e.target.value) || 0)}
-                    onFocus={(e) => e.target.select()}
-                  />
-                  <button
-                    type="button"
-                    className="moneycard__remove"
-                    aria-label="remove"
-                    onClick={() => onRemove(item.id)}
-                  >
-                    <IconX size={14} aria-hidden="true" />
-                  </button>
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                <button
+                  type="button"
+                  className="moneycard__remove"
+                  aria-label="remove"
+                  onClick={() => onRemove(item.id)}
+                >
+                  <IconX size={14} aria-hidden="true" />
+                </button>
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </section>
   );
 }
