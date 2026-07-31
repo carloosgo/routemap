@@ -227,7 +227,56 @@ function setupCountryLayer(map, theme) {
   }
 }
 
-function stylizedCurve(origin, destination, direction = 1, steps = 72) {
+const EUROPE_REFERENCE = [10, 50];
+const STRAIGHT_ROUTE_THRESHOLD_KM = 1600;
+
+function distanceKm(origin, destination) {
+  const toRadians = (value) => value * Math.PI / 180;
+  const [lon1, lat1] = origin;
+  const [lon2, lat2] = destination;
+  const deltaLat = toRadians(lat2 - lat1);
+  const deltaLon = toRadians(lon2 - lon1);
+  const firstLat = toRadians(lat1);
+  const secondLat = toRadians(lat2);
+  const haversine = Math.sin(deltaLat / 2) ** 2
+    + Math.cos(firstLat) * Math.cos(secondLat) * Math.sin(deltaLon / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}
+
+function outwardCurveDirection(origin, destination) {
+  const [x1, y1] = origin;
+  const [x2, y2] = destination;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const length = Math.hypot(dx, dy) || 1;
+  const midpoint = [(x1 + x2) / 2, (y1 + y2) / 2];
+  const normal = [-dy / length, dx / length];
+  const sampleDistance = Math.max(1, length * 0.15);
+  const positive = [
+    midpoint[0] + normal[0] * sampleDistance,
+    midpoint[1] + normal[1] * sampleDistance,
+  ];
+  const negative = [
+    midpoint[0] - normal[0] * sampleDistance,
+    midpoint[1] - normal[1] * sampleDistance,
+  ];
+  const positiveDistance = Math.hypot(
+    positive[0] - EUROPE_REFERENCE[0],
+    positive[1] - EUROPE_REFERENCE[1]
+  );
+  const negativeDistance = Math.hypot(
+    negative[0] - EUROPE_REFERENCE[0],
+    negative[1] - EUROPE_REFERENCE[1]
+  );
+  return positiveDistance >= negativeDistance ? 1 : -1;
+}
+
+function stylizedCurve(origin, destination, steps = 64) {
+  const routeDistanceKm = distanceKm(origin, destination);
+  if (routeDistanceKm >= STRAIGHT_ROUTE_THRESHOLD_KM) {
+    return [origin, destination];
+  }
+
   const [x1, y1] = origin;
   const [x2, y2] = destination;
   const dx = x2 - x1;
@@ -235,14 +284,12 @@ function stylizedCurve(origin, destination, direction = 1, steps = 72) {
   const distance = Math.hypot(dx, dy);
   if (!distance) return [origin, destination];
 
-  // A gentle arc: short routes barely bend; long routes gain height gradually.
-  const bendRatio = Math.min(0.16, Math.max(0.055, 0.045 + distance * 0.007));
+  const direction = outwardCurveDirection(origin, destination);
+  const distanceProgress = Math.min(1, routeDistanceKm / STRAIGHT_ROUTE_THRESHOLD_KM);
+  const bendRatio = 0.025 + 0.018 * distanceProgress;
   const bend = distance * bendRatio * direction;
   const normalX = -dy / distance;
   const normalY = dx / distance;
-
-  // Cubic Bezier controls remain close to the route thirds, producing a clean arc
-  // without the bulbous midpoint seen in the previous quadratic curves.
   const control1 = [
     x1 + dx * 0.34 + normalX * bend,
     y1 + dy * 0.34 + normalY * bend,
@@ -280,9 +327,6 @@ function buildRouteData(segments) {
     pairIndex[key] = pairIndex[key] || 0;
     const duplicateIndex = pairIndex[key];
     const hasDuplicates = (pairCount[key] || 1) > 1;
-    const curveDirection = hasDuplicates
-      ? (duplicateIndex % 2 === 0 ? 1 : -1)
-      : 1;
     const offset = hasDuplicates
       ? (duplicateIndex % 2 === 0 ? 3 : -3)
       : 0;
@@ -302,8 +346,7 @@ function buildRouteData(segments) {
         type: 'LineString',
         coordinates: stylizedCurve(
           [segment.origin.lon, segment.origin.lat],
-          [segment.destination.lon, segment.destination.lat],
-          curveDirection
+          [segment.destination.lon, segment.destination.lat]
         ),
       },
     });
