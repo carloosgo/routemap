@@ -179,10 +179,129 @@
     cursor: pointer;
   }
 
+  /* El panel gana anchura para preservar nombres, fechas, costo y acciones. */
+  .floating-editor {
+    width: 470px;
+    overflow: visible;
+    transition: width 180ms ease;
+  }
+
+  .floating-editor:has(.editor.is-panel-collapsed) {
+    width: 112px;
+  }
+
+  .floating-editor .editor-module {
+    overflow: hidden;
+    border-radius: inherit;
+  }
+
+  .floating-editor .editor {
+    position: relative;
+  }
+
+  .editor-collapse-toggle {
+    position: absolute;
+    top: 50%;
+    right: -14px;
+    z-index: 35;
+    width: 28px;
+    height: 52px;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid #e2e4e9;
+    border-left: 0;
+    border-radius: 0 8px 8px 0;
+    background: #ffffff;
+    color: #788196;
+    box-shadow: 4px 1px 9px rgba(15, 23, 42, 0.12);
+    cursor: pointer;
+  }
+
+  .editor-collapse-toggle:hover {
+    color: #357d94;
+    background: #f8fafb;
+  }
+
+  .editor-module:has(.editor.is-panel-collapsed) .editor-module__tabs {
+    justify-content: flex-start;
+    padding: 5px 4px;
+  }
+
+  .editor-module:has(.editor.is-panel-collapsed)
+    .editor-module__tabs
+    > .editor-module__tab:not(:first-child),
+  .editor-module:has(.editor.is-panel-collapsed) .editor-module__settings {
+    display: none;
+  }
+
+  .editor-module:has(.editor.is-panel-collapsed) .editor-module__tabs > .editor-module__tab:first-child {
+    color: #357d94;
+    background: #ffffff;
+    font-weight: 600;
+    padding-left: 7px;
+    padding-right: 7px;
+  }
+
+  .editor.is-panel-collapsed .editor__body {
+    padding: 8px 6px;
+    overflow-x: hidden;
+  }
+
+  .segments--compact {
+    gap: 6px;
+  }
+
+  .compact-route {
+    min-height: 36px;
+    display: grid;
+    grid-template-columns: 17px 18px 11px 18px;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 6px 4px;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 2px 7px rgba(15, 23, 42, 0.09);
+  }
+
+  .compact-route__badge {
+    width: 17px;
+    height: 17px;
+    font-size: 9px;
+  }
+
+  .compact-route__flag {
+    width: 18px;
+    height: 13px;
+    object-fit: cover;
+  }
+
+  .compact-route__empty {
+    width: 18px;
+    height: 13px;
+    border: 1px dashed #cdd2dc;
+    border-radius: 2px;
+  }
+
+  .compact-route__arrow {
+    color: #9499ab;
+  }
+
+  .workspace__desktop--floating .segnote {
+    left: 498px;
+  }
+
+  .workspace__desktop--floating:has(.editor.is-panel-collapsed) .segnote {
+    display: none;
+  }
+
   /* Etiqueta compacta con el nombre, encima del logo oficial de Mapbox. */
   .trip-name-pill {
     position: fixed;
-    left: 418px;
+    left: 498px;
     bottom: 34px;
     z-index: 702;
     max-width: 240px;
@@ -199,7 +318,12 @@
   }
 
   .workspace__desktop--floating .mapboxgl-ctrl-bottom-left {
-    left: 418px;
+    left: 498px;
+  }
+
+  .workspace__desktop--floating:has(.editor.is-panel-collapsed) .trip-name-pill,
+  .workspace__desktop--floating:has(.editor.is-panel-collapsed) .mapboxgl-ctrl-bottom-left {
+    left: 140px;
   }
 
   /* Atribución obligatoria, más compacta pero visible y legible. */
@@ -231,6 +355,10 @@
 
 @media (max-width: 720px) {
   .topbar--floating-only {
+    display: none;
+  }
+
+  .editor-collapse-toggle {
     display: none;
   }
 
