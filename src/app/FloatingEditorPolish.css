@@ -31,6 +31,29 @@
   height: 13px;
 }
 
+/* Origen seleccionado: solo bandera. Al enfocarlo recupera el ancho normal
+   y el buscador completo para poder sustituir la ciudad. */
+.floating-editor .segment__route .autocomplete--flag-only-selected {
+  flex: 0 0 22px;
+  width: 22px;
+  min-width: 22px;
+  cursor: pointer;
+}
+
+.floating-editor .segment__route .autocomplete--flag-only-selected .autocomplete__field {
+  justify-content: center;
+  gap: 0;
+}
+
+.floating-editor .segment__route .autocomplete--flag-only-selected .autocomplete__field .input {
+  flex: 0 0 0;
+  width: 0;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+}
+
 /* Etiqueta del costo total de cada tramo. */
 .floating-editor .segment__pill {
   background: #f3f3f3;
