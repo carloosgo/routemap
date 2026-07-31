@@ -176,13 +176,13 @@
     cursor: pointer;
   }
 
-  /* Módulo flotante completo con fondo blanco sólido y 40% del mapa. */
+  /* Módulo flotante completo al 40% con superficie blanca continua. */
   .floating-editor {
     width: 40vw;
     min-width: 470px;
     max-width: calc(100vw - 112px);
     overflow: hidden;
-    background: #ffffff;
+    background-color: #ffffff !important;
     border: 1px solid rgba(226, 228, 233, 0.94);
     border-radius: 10px;
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
@@ -192,13 +192,20 @@
   .floating-editor .editor,
   .floating-editor .editor__body,
   .floating-editor .segments {
-    background: #ffffff;
+    background-color: #ffffff !important;
   }
 
   .floating-editor .editor-module {
     height: 100%;
+    min-height: 0;
     border-radius: inherit;
     overflow: hidden;
+  }
+
+  .floating-editor .editor {
+    display: flex;
+    flex: 1;
+    min-height: 0;
   }
 
   .floating-editor .editor-module__tabs {
@@ -206,11 +213,14 @@
     border: 0;
     border-bottom: 1px solid var(--line, #e2e4e9);
     border-radius: 0;
-    background: #ffffff;
+    background-color: #ffffff !important;
     box-shadow: none;
   }
 
   .floating-editor .editor__body {
+    flex: 1;
+    width: 100%;
+    min-height: 100%;
     padding: 10px 8px 12px;
   }
 
@@ -218,6 +228,7 @@
     display: flex;
     flex-direction: column;
     gap: 7px;
+    width: 100%;
   }
 
   .floating-editor .segment + .segment {
