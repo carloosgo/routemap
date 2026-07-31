@@ -176,67 +176,73 @@
     cursor: pointer;
   }
 
-  /* El contenedor deja de verse como una gran tarjeta. Solo organiza las tiras. */
+  /* Regresa el módulo flotante completo y ocupa aproximadamente 35% del mapa. */
   .floating-editor {
-    width: clamp(520px, 40vw, 680px);
+    width: 35vw;
+    min-width: 470px;
     max-width: calc(100vw - 112px);
-    overflow: visible;
-    background: transparent;
-    border-radius: 0;
-    box-shadow: none;
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid rgba(226, 228, 233, 0.94);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
   }
 
   .floating-editor .editor-module,
   .floating-editor .editor,
   .floating-editor .editor__body {
-    background: transparent;
+    background: #ffffff;
+  }
+
+  .floating-editor .editor-module {
+    height: 100%;
+    border-radius: inherit;
+    overflow: hidden;
+  }
+
+  .floating-editor .editor-module__tabs {
+    margin-bottom: 0;
+    border: 0;
+    border-bottom: 1px solid var(--line, #e2e4e9);
+    border-radius: 0;
+    background: #ffffff;
     box-shadow: none;
   }
 
-  /* La cabecera se mantiene como una pieza flotante independiente. */
-  .floating-editor .editor-module__tabs {
-    margin-bottom: 9px;
-    border: 1px solid rgba(226, 228, 233, 0.9);
-    border-radius: 9px;
-    background: rgba(255, 255, 255, 0.97);
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
-  }
-
   .floating-editor .editor__body {
-    padding: 0 3px 12px 0;
+    padding: 10px 8px 12px;
   }
 
   .floating-editor .segments {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 7px;
   }
 
   .floating-editor .segment + .segment {
     margin-top: 0;
   }
 
-  /* Cada tramo se convierte en una tira flotante autónoma. */
   .floating-editor .segment {
-    background: rgba(255, 255, 255, 0.98);
-    border: 1px solid rgba(226, 228, 233, 0.92);
+    background: #ffffff;
+    border: 1px solid rgba(226, 228, 233, 0.94);
     border-radius: 9px;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+    box-shadow: 0 2px 7px rgba(15, 23, 42, 0.09);
     overflow: visible;
   }
 
-  .floating-editor .segment__header {
+  .floating-editor .segment__header,
+  .floating-editor .segment__route {
     min-width: 0;
   }
 
   .floating-editor .segment__route {
-    min-width: 0;
     flex: 1 1 auto;
   }
 
   .floating-editor .segment__route .autocomplete {
     min-width: 0;
-    flex: 1 1 150px;
+    flex: 1 1 130px;
   }
 
   .floating-editor .segment__route .autocomplete__field .input {
@@ -245,25 +251,23 @@
     text-overflow: ellipsis;
   }
 
-  .floating-editor .segment__dates {
+  .floating-editor .segment__dates,
+  .floating-editor .segment__pill {
     flex: 0 0 auto;
     white-space: nowrap;
   }
 
   .floating-editor .segment__pill {
-    flex: 0 0 auto;
     min-width: 58px;
     text-align: center;
   }
 
-  /* Agregar y total también flotan, sin reconstruir un panel blanco detrás. */
   .floating-editor .btn--add,
   .floating-editor .total {
     margin-top: 9px;
-    background: rgba(255, 255, 255, 0.98);
-    border: 1px solid rgba(226, 228, 233, 0.92);
+    background: #ffffff;
     border-radius: 9px;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1);
+    box-shadow: none;
   }
 
   .editor-collapse-toggle,
@@ -271,13 +275,14 @@
     display: none !important;
   }
 
-  .workspace__desktop--floating .segnote {
-    left: calc(clamp(520px, 40vw, 680px) + 28px);
+  .workspace__desktop--floating .segnote,
+  .trip-name-pill,
+  .workspace__desktop--floating .mapboxgl-ctrl-bottom-left {
+    left: calc(max(470px, 35vw) + 28px);
   }
 
   .trip-name-pill {
     position: fixed;
-    left: calc(clamp(520px, 40vw, 680px) + 28px);
     bottom: 34px;
     z-index: 702;
     max-width: 240px;
@@ -291,10 +296,6 @@
     font-size: 11px;
     font-weight: 700;
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
-  }
-
-  .workspace__desktop--floating .mapboxgl-ctrl-bottom-left {
-    left: calc(clamp(520px, 40vw, 680px) + 28px);
   }
 
   .workspace__desktop--floating .mapboxgl-ctrl-attrib {
