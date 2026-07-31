@@ -110,19 +110,17 @@ export function SegmentForm({
           {index + 1}
         </span>
 
-        <div className="segment__route segment__route--city-pair">
+        <div className="segment__route">
           <CityAutocomplete
             value={segment.origin}
             onSelect={(city) => onUpdate({ origin: city })}
             placeholder={t('origin')}
-            fitSelectedText
           />
-          <span className="segment__route-separator" aria-hidden="true">-</span>
+          <IconArrowRight size={12} className="segment__arrow" aria-hidden="true" />
           <CityAutocomplete
             value={segment.destination}
             onSelect={(city) => onUpdate({ destination: city })}
             placeholder={t('destination')}
-            fitSelectedText
           />
           {formattedDates && <span className="segment__dates">{formattedDates}</span>}
         </div>
