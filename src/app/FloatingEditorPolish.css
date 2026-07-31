@@ -3,11 +3,12 @@
 .floating-editor .editor-module,
 .floating-editor .editor,
 .floating-editor .editor__body {
-  background: #ffffff;
+  background: transparent;
 }
 
 .floating-editor .segment {
-  box-shadow: 0 2px 7px rgba(15, 23, 42, 0.09);
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
 }
 
 /* Un punto menos para número, ciudad y elementos visuales asociados. */
@@ -29,29 +30,6 @@
 .floating-editor .segment__header .flag {
   width: 18px;
   height: 13px;
-}
-
-/* Origen seleccionado: solo bandera. Al enfocarlo recupera el ancho normal
-   y el buscador completo para poder sustituir la ciudad. */
-.floating-editor .segment__route .autocomplete--flag-only-selected {
-  flex: 0 0 22px;
-  width: 22px;
-  min-width: 22px;
-  cursor: pointer;
-}
-
-.floating-editor .segment__route .autocomplete--flag-only-selected .autocomplete__field {
-  justify-content: center;
-  gap: 0;
-}
-
-.floating-editor .segment__route .autocomplete--flag-only-selected .autocomplete__field .input {
-  flex: 0 0 0;
-  width: 0;
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  opacity: 0;
 }
 
 /* Etiqueta del costo total de cada tramo. */
