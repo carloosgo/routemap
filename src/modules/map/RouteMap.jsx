@@ -18,9 +18,7 @@ const MAP_THEMES = {
     routeHaloColor: '#ffffff',
     routeHaloOpacity: 0.9,
     pointRadius: 5,
-    pointStrokeWidth: 2,
-    pointStrokeColor: '#ffffff',
-    arrowColor: '#333333',
+    pointStrokeWidth: 2.4,
     textColor: '#222222',
     textHaloColor: '#ffffff',
     textHaloWidth: 2,
@@ -35,9 +33,7 @@ const MAP_THEMES = {
     routeHaloColor: '#ffffff',
     routeHaloOpacity: 0.78,
     pointRadius: 6,
-    pointStrokeWidth: 2.5,
-    pointStrokeColor: '#ffffff',
-    arrowColor: '#202733',
+    pointStrokeWidth: 2.7,
     textColor: '#202733',
     textHaloColor: '#ffffff',
     textHaloWidth: 2.25,
@@ -60,26 +56,27 @@ const IDS = {
 };
 
 const ISO_A2_TO_A3 = {
-  AF:'AFG',AL:'ALB',DZ:'DZA',AD:'AND',AO:'AGO',AR:'ARG',AM:'ARM',AU:'AUS',AT:'AUT',
-  AZ:'AZE',BS:'BHS',BH:'BHR',BD:'BGD',BY:'BLR',BE:'BEL',BZ:'BLZ',BJ:'BEN',BT:'BTN',
-  BO:'BOL',BA:'BIH',BW:'BWA',BR:'BRA',BN:'BRN',BG:'BGR',BF:'BFA',BI:'BDI',CV:'CPV',
-  KH:'KHM',CM:'CMR',CA:'CAN',CF:'CAF',TD:'TCD',CL:'CHL',CN:'CHN',CO:'COL',KM:'COM',
-  CD:'COD',CG:'COG',CR:'CRI',HR:'HRV',CU:'CUB',CY:'CYP',CZ:'CZE',DK:'DNK',DJ:'DJI',
-  DO:'DOM',EC:'ECU',EG:'EGY',SV:'SLV',GQ:'GNQ',ER:'ERI',EE:'EST',SZ:'SWZ',ET:'ETH',
-  FJ:'FJI',FI:'FIN',FR:'FRA',GA:'GAB',GM:'GMB',GE:'GEO',DE:'DEU',GH:'GHA',GR:'GRC',
-  GT:'GTM',GN:'GIN',GW:'GNB',GY:'GUY',HT:'HTI',HN:'HND',HU:'HUN',IS:'ISL',IN:'IND',
-  ID:'IDN',IR:'IRN',IQ:'IRQ',IE:'IRL',IL:'ISR',IT:'ITA',JM:'JAM',JP:'JPN',JO:'JOR',
-  KZ:'KAZ',KE:'KEN',KP:'PRK',KR:'KOR',KW:'KWT',KG:'KGZ',LA:'LAO',LV:'LVA',LB:'LBN',
-  LS:'LSO',LR:'LBR',LY:'LBY',LI:'LIE',LT:'LTU',LU:'LUX',MG:'MDG',MW:'MWI',MY:'MYS',
-  MV:'MDV',ML:'MLI',MT:'MLT',MR:'MRT',MU:'MUS',MX:'MEX',MD:'MDA',MC:'MCO',MN:'MNG',
-  ME:'MNE',MA:'MAR',MZ:'MOZ',MM:'MMR',NA:'NAM',NP:'NPL',NL:'NLD',NZ:'NZL',NI:'NIC',
-  NE:'NER',NG:'NGA',MK:'MKD',NO:'NOR',OM:'OMN',PK:'PAK',PA:'PAN',PG:'PNG',PY:'PRY',
-  PE:'PER',PH:'PHL',PL:'POL',PT:'PRT',QA:'QAT',RO:'ROU',RU:'RUS',RW:'RWA',SA:'SAU',
-  SN:'SEN',RS:'SRB',SL:'SLE',SK:'SVK',SI:'SVN',SO:'SOM',ZA:'ZAF',SS:'SSD',ES:'ESP',
-  LK:'LKA',SD:'SDN',SR:'SUR',SE:'SWE',CH:'CHE',SY:'SYR',TJ:'TJK',TZ:'TZA',TH:'THA',
-  TL:'TLS',TG:'TGO',TT:'TTO',TN:'TUN',TR:'TUR',TM:'TKM',UG:'UGA',UA:'UKR',AE:'ARE',
-  GB:'GBR',US:'USA',UY:'URY',UZ:'UZB',VE:'VEN',VN:'VNM',YE:'YEM',ZM:'ZMB',ZW:'ZWE',
+  AF:'AFG',AL:'ALB',DZ:'DZA',AD:'AND',AO:'AGO',AR:'ARG',AM:'ARM',AU:'AUS',AT:'AUT',AZ:'AZE',
+  BS:'BHS',BH:'BHR',BD:'BGD',BY:'BLR',BE:'BEL',BZ:'BLZ',BJ:'BEN',BT:'BTN',BO:'BOL',BA:'BIH',
+  BW:'BWA',BR:'BRA',BN:'BRN',BG:'BGR',BF:'BFA',BI:'BDI',CV:'CPV',KH:'KHM',CM:'CMR',CA:'CAN',
+  CF:'CAF',TD:'TCD',CL:'CHL',CN:'CHN',CO:'COL',KM:'COM',CD:'COD',CG:'COG',CR:'CRI',HR:'HRV',
+  CU:'CUB',CY:'CYP',CZ:'CZE',DK:'DNK',DJ:'DJI',DO:'DOM',EC:'ECU',EG:'EGY',SV:'SLV',GQ:'GNQ',
+  ER:'ERI',EE:'EST',SZ:'SWZ',ET:'ETH',FJ:'FJI',FI:'FIN',FR:'FRA',GA:'GAB',GM:'GMB',GE:'GEO',
+  DE:'DEU',GH:'GHA',GR:'GRC',GT:'GTM',GN:'GIN',GW:'GNB',GY:'GUY',HT:'HTI',HN:'HND',HU:'HUN',
+  IS:'ISL',IN:'IND',ID:'IDN',IR:'IRN',IQ:'IRQ',IE:'IRL',IL:'ISR',IT:'ITA',JM:'JAM',JP:'JPN',
+  JO:'JOR',KZ:'KAZ',KE:'KEN',KP:'PRK',KR:'KOR',KW:'KWT',KG:'KGZ',LA:'LAO',LV:'LVA',LB:'LBN',
+  LS:'LSO',LR:'LBR',LY:'LBY',LI:'LIE',LT:'LTU',LU:'LUX',MG:'MDG',MW:'MWI',MY:'MYS',MV:'MDV',
+  ML:'MLI',MT:'MLT',MR:'MRT',MU:'MUS',MX:'MEX',MD:'MDA',MC:'MCO',MN:'MNG',ME:'MNE',MA:'MAR',
+  MZ:'MOZ',MM:'MMR',NA:'NAM',NP:'NPL',NL:'NLD',NZ:'NZL',NI:'NIC',NE:'NER',NG:'NGA',MK:'MKD',
+  NO:'NOR',OM:'OMN',PK:'PAK',PA:'PAN',PG:'PNG',PY:'PRY',PE:'PER',PH:'PHL',PL:'POL',PT:'PRT',
+  QA:'QAT',RO:'ROU',RU:'RUS',RW:'RWA',SA:'SAU',SN:'SEN',RS:'SRB',SL:'SLE',SK:'SVK',SI:'SVN',
+  SO:'SOM',ZA:'ZAF',SS:'SSD',ES:'ESP',LK:'LKA',SD:'SDN',SR:'SUR',SE:'SWE',CH:'CHE',SY:'SYR',
+  TJ:'TJK',TZ:'TZA',TH:'THA',TL:'TLS',TG:'TGO',TT:'TTO',TN:'TUN',TR:'TUR',TM:'TKM',UG:'UGA',
+  UA:'UKR',AE:'ARE',GB:'GBR',US:'USA',UY:'URY',UZ:'UZB',VE:'VEN',VN:'VNM',YE:'YEM',ZM:'ZMB',ZW:'ZWE',
 };
+
+const EUROPE_REFERENCE = [10, 50];
+const STRAIGHT_ROUTE_THRESHOLD_KM = 1600;
 
 function dominantTransport(segment) {
   const transport = segment?.expenses?.transport || {};
@@ -95,23 +92,32 @@ function dominantTransport(segment) {
   return top.amount > 0 ? top.type : null;
 }
 
-function addRouteArrowImage(map, color) {
+function addRouteArrowImage(map) {
   if (map.hasImage(IDS.routeArrowImage)) return;
-  const size = 8;
+
+  const width = 18;
+  const height = 14;
   const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
+  canvas.width = width;
+  canvas.height = height;
   const context = canvas.getContext('2d');
-  context.fillStyle = color;
+
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = '#ffffff';
   context.beginPath();
-  context.moveTo(size, size / 2);
-  context.lineTo(0, 0);
-  context.lineTo(size * 0.3, size / 2);
-  context.lineTo(0, size);
+  context.moveTo(width - 1, height / 2);
+  context.lineTo(2, 1.5);
+  context.lineTo(6.2, height / 2);
+  context.lineTo(2, height - 1.5);
   context.closePath();
   context.fill();
-  const image = context.getImageData(0, 0, size, size);
-  map.addImage(IDS.routeArrowImage, { width: size, height: size, data: image.data });
+
+  const image = context.getImageData(0, 0, width, height);
+  map.addImage(
+    IDS.routeArrowImage,
+    { width, height, data: image.data },
+    { sdf: true }
+  );
 }
 
 function setupRouteLayers(map, theme) {
@@ -119,6 +125,7 @@ function setupRouteLayers(map, theme) {
     type: 'geojson',
     data: { type: 'FeatureCollection', features: [] },
   });
+
   map.addLayer({
     id: IDS.routeHalo,
     type: 'line',
@@ -131,6 +138,7 @@ function setupRouteLayers(map, theme) {
       'line-offset': ['get', 'offset'],
     },
   });
+
   map.addLayer({
     id: IDS.routeSolid,
     type: 'line',
@@ -143,6 +151,7 @@ function setupRouteLayers(map, theme) {
       'line-offset': ['get', 'offset'],
     },
   });
+
   map.addLayer({
     id: IDS.routeDashed,
     type: 'line',
@@ -161,7 +170,7 @@ function setupRouteLayers(map, theme) {
     type: 'geojson',
     data: { type: 'FeatureCollection', features: [] },
   });
-  addRouteArrowImage(map, theme.arrowColor);
+  addRouteArrowImage(map);
   map.addLayer({
     id: IDS.routeArrows,
     type: 'symbol',
@@ -169,11 +178,16 @@ function setupRouteLayers(map, theme) {
     layout: {
       'symbol-placement': 'point',
       'icon-image': IDS.routeArrowImage,
-      'icon-size': 0.9,
+      'icon-size': 0.55,
       'icon-rotate': ['get', 'rotation'],
       'icon-rotation-alignment': 'map',
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
+    },
+    paint: {
+      'icon-color': ['get', 'color'],
+      'icon-halo-color': '#ffffff',
+      'icon-halo-width': 0.45,
     },
   });
 
@@ -181,17 +195,19 @@ function setupRouteLayers(map, theme) {
     type: 'geojson',
     data: { type: 'FeatureCollection', features: [] },
   });
+
   map.addLayer({
     id: IDS.cityDots,
     type: 'circle',
     source: IDS.citySource,
     paint: {
       'circle-radius': theme.pointRadius,
-      'circle-color': ['get', 'color'],
+      'circle-color': '#ffffff',
       'circle-stroke-width': theme.pointStrokeWidth,
-      'circle-stroke-color': theme.pointStrokeColor,
+      'circle-stroke-color': ['get', 'color'],
     },
   });
+
   map.addLayer({
     id: IDS.cityLabels,
     type: 'symbol',
@@ -199,8 +215,8 @@ function setupRouteLayers(map, theme) {
     layout: {
       'text-field': ['get', 'name'],
       'text-size': 11,
-      'text-anchor': 'top',
-      'text-offset': [0, 0.65],
+      'text-anchor': 'left',
+      'text-offset': [0.8, 0],
       'text-allow-overlap': false,
       'text-optional': true,
     },
@@ -233,9 +249,6 @@ function setupCountryLayer(map, theme) {
     console.warn('[Atlas country layer]', error);
   }
 }
-
-const EUROPE_REFERENCE = [10, 50];
-const STRAIGHT_ROUTE_THRESHOLD_KM = 1600;
 
 function distanceKm(origin, destination) {
   const toRadians = (value) => value * Math.PI / 180;
@@ -280,9 +293,7 @@ function outwardCurveDirection(origin, destination) {
 
 function stylizedCurve(origin, destination, steps = 64) {
   const routeDistanceKm = distanceKm(origin, destination);
-  if (routeDistanceKm >= STRAIGHT_ROUTE_THRESHOLD_KM) {
-    return [origin, destination];
-  }
+  if (routeDistanceKm >= STRAIGHT_ROUTE_THRESHOLD_KM) return [origin, destination];
 
   const [x1, y1] = origin;
   const [x2, y2] = destination;
@@ -308,26 +319,32 @@ function stylizedCurve(origin, destination, steps = 64) {
 
   const points = [];
   for (let index = 0; index <= steps; index += 1) {
-    const t = index / steps;
-    const u = 1 - t;
+    const time = index / steps;
+    const remaining = 1 - time;
     points.push([
-      u ** 3 * x1 + 3 * u ** 2 * t * control1[0] + 3 * u * t ** 2 * control2[0] + t ** 3 * x2,
-      u ** 3 * y1 + 3 * u ** 2 * t * control1[1] + 3 * u * t ** 2 * control2[1] + t ** 3 * y2,
+      remaining ** 3 * x1
+        + 3 * remaining ** 2 * time * control1[0]
+        + 3 * remaining * time ** 2 * control2[0]
+        + time ** 3 * x2,
+      remaining ** 3 * y1
+        + 3 * remaining ** 2 * time * control1[1]
+        + 3 * remaining * time ** 2 * control2[1]
+        + time ** 3 * y2,
     ]);
   }
   return points;
 }
 
 function routeArrowFeature(coordinates, color, index) {
-  const arrowIndex = Math.max(0, Math.min(
-    coordinates.length - 2,
-    Math.floor((coordinates.length - 1) * 0.9)
-  ));
+  const lastIndex = coordinates.length - 1;
+  const arrowIndex = Math.max(0, Math.min(lastIndex - 1, Math.floor(lastIndex * 0.93)));
+  const previousIndex = Math.max(0, arrowIndex - 2);
   const point = coordinates[arrowIndex];
-  const nextPoint = coordinates[arrowIndex + 1] || coordinates[coordinates.length - 1];
-  const dx = nextPoint[0] - point[0];
-  const dy = nextPoint[1] - point[1];
-  const rotation = -Math.atan2(dy, dx) * 180 / Math.PI;
+  const previousPoint = coordinates[previousIndex];
+  const nextPoint = coordinates[Math.min(lastIndex, arrowIndex + 1)];
+  const dx = nextPoint[0] - previousPoint[0];
+  const dy = nextPoint[1] - previousPoint[1];
+  const rotation = Math.atan2(dy, dx) * 180 / Math.PI;
 
   return {
     type: 'Feature',
@@ -347,15 +364,15 @@ function buildRouteData(segments) {
   const pairIndex = {};
   const routeFeatures = [];
   const arrowFeatures = [];
+
   segments.forEach((segment, index) => {
     if (!isPlaced(segment.origin) || !isPlaced(segment.destination)) return;
+
     const key = routeKey(segment.origin, segment.destination);
     pairIndex[key] = pairIndex[key] || 0;
     const duplicateIndex = pairIndex[key];
     const hasDuplicates = (pairCount[key] || 1) > 1;
-    const offset = hasDuplicates
-      ? (duplicateIndex % 2 === 0 ? 3 : -3)
-      : 0;
+    const offset = hasDuplicates ? (duplicateIndex % 2 === 0 ? 3 : -3) : 0;
     pairIndex[key] += 1;
 
     const transport = dominantTransport(segment);
@@ -376,6 +393,7 @@ function buildRouteData(segments) {
       },
       geometry: { type: 'LineString', coordinates },
     });
+
     arrowFeatures.push(routeArrowFeature(coordinates, color, index));
   });
 
@@ -387,23 +405,26 @@ function buildRouteData(segments) {
 
 function buildCityData(segments) {
   const cities = [];
-  const keys = new Set();
-  segments.forEach((segment) => {
+  const cityByCoordinate = new Map();
+
+  segments.forEach((segment, segmentIndex) => {
     [segment.origin, segment.destination].forEach((city) => {
       if (!isPlaced(city)) return;
       const key = `${city.lon},${city.lat}`;
-      if (keys.has(key)) return;
-      keys.add(key);
-      cities.push(city);
+      if (cityByCoordinate.has(key)) return;
+      const entry = { ...city, color: colorForIndex(segmentIndex) };
+      cityByCoordinate.set(key, entry);
+      cities.push(entry);
     });
   });
+
   return {
     cities,
     collection: {
       type: 'FeatureCollection',
-      features: cities.map((city, index) => ({
+      features: cities.map((city) => ({
         type: 'Feature',
-        properties: { name: city.name, color: colorForIndex(index) },
+        properties: { name: city.name, color: city.color },
         geometry: { type: 'Point', coordinates: [city.lon, city.lat] },
       })),
     },
@@ -412,6 +433,7 @@ function buildCityData(segments) {
 
 function paintVisitedCountries(map, segments, theme) {
   if (!theme.paintVisitedCountries || !map.getLayer(IDS.countryFill)) return;
+
   const countryColors = {};
   segments.forEach((segment, index) => {
     [segment.origin, segment.destination].forEach((city) => {
@@ -420,11 +442,13 @@ function paintVisitedCountries(map, segments, theme) {
       if (alpha3 && !countryColors[alpha3]) countryColors[alpha3] = colorForIndex(index);
     });
   });
+
   const entries = Object.entries(countryColors);
   if (entries.length === 0) {
     map.setPaintProperty(IDS.countryFill, 'fill-color', 'transparent');
     return;
   }
+
   const expression = ['match', ['get', 'iso_3166_1_alpha_3']];
   entries.forEach(([alpha3, color]) => expression.push(alpha3, color));
   expression.push('transparent');
@@ -444,6 +468,7 @@ function drawMapData(map, segments, theme) {
   const { cities, collection } = buildCityData(segments);
   citySource.setData(collection);
   paintVisitedCountries(map, segments, theme);
+
   const bounds = new mapboxgl.LngLatBounds();
   cities.forEach((city) => bounds.extend([city.lon, city.lat]));
   if (cities.length === 1) {
@@ -467,6 +492,7 @@ function MapCanvas({ themeKey, segments, t }) {
 
   useEffect(() => {
     if (!mapElRef.current || !config.map.accessToken) return undefined;
+
     const map = new mapboxgl.Map({
       container: mapElRef.current,
       style: theme.styleUrl,
@@ -475,9 +501,11 @@ function MapCanvas({ themeKey, segments, t }) {
       projection: 'mercator',
       attributionControl: true,
     });
+
     mapRef.current = map;
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
     map.doubleClickZoom.disable();
+
     map.on('load', () => {
       try {
         setupRouteLayers(map, theme);
@@ -488,14 +516,18 @@ function MapCanvas({ themeKey, segments, t }) {
         console.error('[Atlas map setup]', error);
       }
     });
+
     map.on('click', (event) => {
       map.easeTo({ center: event.lngLat, zoom: map.getZoom() + 1, duration: 300 });
     });
+
     map.on('error', (event) => {
       console.error('[Mapbox error]', event.error?.message || event.error || event);
     });
+
     const resizeObserver = new window.ResizeObserver(() => map.resize());
     resizeObserver.observe(mapElRef.current);
+
     return () => {
       resizeObserver.disconnect();
       map.remove();
@@ -520,20 +552,57 @@ export function RouteMap({ segments }) {
     const stored = window.localStorage.getItem('atlas-map-theme');
     return MAP_THEMES[stored] ? stored : 'color';
   });
+
   function selectTheme(nextTheme) {
     if (!MAP_THEMES[nextTheme] || nextTheme === mapTheme) return;
     window.localStorage.setItem('atlas-map-theme', nextTheme);
     setMapTheme(nextTheme);
   }
+
   return (
     <div className="map-wrap">
       <MapCanvas key={mapTheme} themeKey={mapTheme} segments={segments} t={t} />
+
       {config.map.accessToken && (
-        <div className="map-theme-selector" role="group" aria-label="Estilo del mapa" style={{ position: 'absolute', top: 14, left: 'calc(40vw + 28px)', zIndex: 12, display: 'inline-flex', gap: 2, padding: 3, border: '1px solid rgba(148, 163, 184, 0.42)', borderRadius: 9, background: 'rgba(255, 255, 255, 0.94)', boxShadow: '0 4px 14px rgba(15, 23, 42, 0.14)', backdropFilter: 'blur(8px)' }}>
+        <div
+          className="map-theme-selector"
+          role="group"
+          aria-label="Estilo del mapa"
+          style={{
+            position: 'absolute',
+            top: 14,
+            left: 'calc(40vw + 28px)',
+            zIndex: 12,
+            display: 'inline-flex',
+            gap: 2,
+            padding: 3,
+            border: '1px solid rgba(148, 163, 184, 0.42)',
+            borderRadius: 9,
+            background: 'rgba(255, 255, 255, 0.94)',
+            boxShadow: '0 4px 14px rgba(15, 23, 42, 0.14)',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
           {Object.entries(MAP_THEMES).map(([key, theme]) => {
             const active = mapTheme === key;
             return (
-              <button key={key} type="button" aria-pressed={active} onClick={() => selectTheme(key)} style={{ border: 0, borderRadius: 6, padding: '6px 11px', background: active ? '#0d6078' : 'transparent', color: active ? '#ffffff' : '#596273', font: 'inherit', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+              <button
+                key={key}
+                type="button"
+                aria-pressed={active}
+                onClick={() => selectTheme(key)}
+                style={{
+                  border: 0,
+                  borderRadius: 6,
+                  padding: '6px 11px',
+                  background: active ? '#0d6078' : 'transparent',
+                  color: active ? '#ffffff' : '#596273',
+                  font: 'inherit',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
                 {theme.label}
               </button>
             );
