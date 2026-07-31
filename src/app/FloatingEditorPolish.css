@@ -54,6 +54,12 @@
   font-size: 10px;
 }
 
+/* El resumen final de cada tramo gana un punto de jerarquía visual. */
+.floating-editor .segment__body .expenses__total,
+.floating-editor .segment__body .expenses__total strong {
+  font-size: 11px;
+}
+
 .floating-editor .segment__body .input,
 .floating-editor .segment__body .input[type='date'],
 .floating-editor .segment__body .input[type='date']::-webkit-datetime-edit,
