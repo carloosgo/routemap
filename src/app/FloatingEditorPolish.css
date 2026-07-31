@@ -111,3 +111,14 @@
 .floating-editor .segment__body .btn--sm {
   padding: 5px 9px;
 }
+
+/* El catálogo de idioma también usa explícitamente Outfit. */
+.editor-module__menu-heading,
+.editor-module__language-options,
+.editor-module__language-option,
+.editor-module__menu-item,
+.editor-module__saved-name,
+.editor-module__saved-meta,
+.editor-module__menu-empty {
+  font-family: var(--font-body);
+}
