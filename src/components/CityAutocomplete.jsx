@@ -8,17 +8,21 @@ import { config } from '../config.js';
 // Campo de búsqueda de ciudad con autocompletado.
 // Muestra sugerencias a partir del 3er carácter y la bandera de cada país.
 // Al seleccionar, devuelve un objeto City completo (con lat/lon/countryCode).
-export function CityAutocomplete({ value, onSelect, placeholder }) {
+export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay = 'full' }) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(-1);
   const containerRef = useRef(null);
+  const inputRef = useRef(null);
 
   const { results, loading, error } = useCitySearch(open ? query : '');
+  const flagOnlySelected = selectedDisplay === 'flag-only' && Boolean(value) && !open;
 
   // Texto mostrado: si hay ciudad seleccionada y no se está escribiendo, su nombre.
-  const displayValue = open ? query : value?.name || '';
+  // El modo flag-only oculta solo la representación cerrada; al enfocar reaparece
+  // el buscador completo para poder cambiar la ciudad normalmente.
+  const displayValue = open ? query : flagOnlySelected ? '' : value?.name || '';
 
   // Cierra el desplegable al hacer clic fuera.
   useEffect(() => {
@@ -64,8 +68,11 @@ export function CityAutocomplete({ value, onSelect, placeholder }) {
     open && query.trim().length > 0 && query.trim().length < config.citySearchMinChars;
 
   return (
-    <div className="autocomplete" ref={containerRef}>
-      <div className="autocomplete__field">
+    <div
+      className={'autocomplete' + (flagOnlySelected ? ' autocomplete--flag-only-selected' : '')}
+      ref={containerRef}
+    >
+      <div className="autocomplete__field" onClick={() => inputRef.current?.focus()}>
         {/* La bandera permanece montada siempre que haya ciudad seleccionada.
             Solo se atenúa mientras el campo está abierto para no ocultar la
             referencia visual ni desplazar el ancho del campo. */}
@@ -82,10 +89,12 @@ export function CityAutocomplete({ value, onSelect, placeholder }) {
           <IconSearch size={14} className="autocomplete__search-icon" aria-hidden="true" />
         )}
         <input
+          ref={inputRef}
           type="text"
           className="input"
           value={displayValue}
-          placeholder={placeholder || t('searchCity')}
+          placeholder={flagOnlySelected ? '' : placeholder || t('searchCity')}
+          aria-label={placeholder || t('searchCity')}
           onChange={handleChange}
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
