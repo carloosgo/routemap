@@ -29,7 +29,6 @@
   background: var(--marina-hover, #0b3f4f);
 }
 
-/* La barra deja de ocupar espacio; sus controles conservan la lógica existente. */
 .topbar--floating-only {
   height: 0;
   min-height: 0;
@@ -43,7 +42,6 @@
 }
 
 @media (min-width: 721px) {
-  /* Los controles + / − quedan separados de la atribución inferior. */
   .workspace__desktop--floating .mapboxgl-ctrl-top-left {
     left: auto;
     right: 14px;
@@ -51,7 +49,6 @@
     bottom: 52px;
   }
 
-  /* Atlas y las acciones forman una columna limpia. */
   .topbar__brand {
     position: fixed;
     top: 14px;
@@ -179,7 +176,6 @@
     cursor: pointer;
   }
 
-  /* El panel gana anchura para preservar nombres, fechas, costo y acciones. */
   .floating-editor {
     width: 470px;
     overflow: visible;
@@ -191,12 +187,12 @@
   }
 
   .floating-editor .editor-module {
-    overflow: hidden;
     border-radius: inherit;
   }
 
   .floating-editor .editor {
     position: relative;
+    border-radius: 0 0 var(--radius) var(--radius);
   }
 
   .editor-collapse-toggle {
@@ -298,7 +294,6 @@
     display: none;
   }
 
-  /* Etiqueta compacta con el nombre, encima del logo oficial de Mapbox. */
   .trip-name-pill {
     position: fixed;
     left: 498px;
@@ -326,7 +321,6 @@
     left: 140px;
   }
 
-  /* Atribución obligatoria, más compacta pero visible y legible. */
   .workspace__desktop--floating .mapboxgl-ctrl-attrib {
     padding: 1px 4px;
     font-size: 9px;
@@ -338,7 +332,6 @@
   }
 }
 
-/* Menú solicitado: bordes discretos, separadores desde el texto e iconos azules. */
 .editor-module__more-menu {
   border-radius: 4px;
 }
