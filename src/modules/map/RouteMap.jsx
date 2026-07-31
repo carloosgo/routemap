@@ -7,9 +7,41 @@ import { isPlaced } from '../trips/tripModel.js';
 
 mapboxgl.accessToken = config.map.accessToken;
 
-const MAP_STYLES = {
-  normal: 'mapbox://styles/carlosuriel/cms9g0a2y000501qr1fhwb5ah',
-  satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
+const MAP_THEMES = {
+  light: {
+    label: 'Light',
+    styleUrl: 'mapbox://styles/carlosuriel/cmrzizttl00l901s8d8ye6iel',
+    paintVisitedCountries: true,
+    countryFillOpacity: 0.09,
+    routeWidth: 1.5,
+    routeHaloWidth: 4,
+    routeHaloColor: '#ffffff',
+    routeHaloOpacity: 0.9,
+    pointRadius: 5,
+    pointStrokeWidth: 2,
+    pointStrokeColor: '#ffffff',
+    arrowColor: '#333333',
+    textColor: '#222222',
+    textHaloColor: '#ffffff',
+    textHaloWidth: 2,
+  },
+  color: {
+    label: 'Color',
+    styleUrl: 'mapbox://styles/carlosuriel/cms9g0a2y000501qr1fhwb5ah',
+    paintVisitedCountries: false,
+    countryFillOpacity: 0,
+    routeWidth: 2.25,
+    routeHaloWidth: 4.5,
+    routeHaloColor: '#ffffff',
+    routeHaloOpacity: 0.78,
+    pointRadius: 6,
+    pointStrokeWidth: 2.5,
+    pointStrokeColor: '#ffffff',
+    arrowColor: '#202733',
+    textColor: '#202733',
+    textHaloColor: '#ffffff',
+    textHaloWidth: 2.25,
+  },
 };
 
 function dominantTransport(segment) {
@@ -78,7 +110,7 @@ function getVisitedCountries(segments) {
   return countryColor;
 }
 
-function setupLayers(map) {
+function setupLayers(map, theme) {
   if (!map.getSource('country-boundaries')) {
     map.addSource('country-boundaries', {
       type: 'vector',
@@ -91,7 +123,10 @@ function setupLayers(map) {
       type: 'fill',
       source: 'country-boundaries',
       'source-layer': 'country_boundaries',
-      paint: { 'fill-color': 'transparent', 'fill-opacity': 0.09 },
+      paint: {
+        'fill-color': 'transparent',
+        'fill-opacity': theme.countryFillOpacity,
+      },
     });
   }
 
@@ -108,9 +143,9 @@ function setupLayers(map) {
       source: 'routes',
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
-        'line-color': '#ffffff',
-        'line-width': 4,
-        'line-opacity': 0.9,
+        'line-color': theme.routeHaloColor,
+        'line-width': theme.routeHaloWidth,
+        'line-opacity': theme.routeHaloOpacity,
         'line-offset': ['get', 'offset'],
       },
     });
@@ -124,7 +159,7 @@ function setupLayers(map) {
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
         'line-color': ['get', 'color'],
-        'line-width': 1.5,
+        'line-width': theme.routeWidth,
         'line-offset': ['get', 'offset'],
       },
     });
@@ -138,20 +173,20 @@ function setupLayers(map) {
       layout: { 'line-cap': 'butt', 'line-join': 'round' },
       paint: {
         'line-color': ['get', 'color'],
-        'line-width': 1.5,
+        'line-width': theme.routeWidth,
         'line-dasharray': [5, 4],
         'line-offset': ['get', 'offset'],
       },
     });
   }
 
-  if (!map.hasImage('arrow-white')) {
+  if (!map.hasImage('route-arrow')) {
     const arrowSize = 8;
     const canvas = document.createElement('canvas');
     canvas.width = arrowSize;
     canvas.height = arrowSize;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#333333';
+    ctx.fillStyle = theme.arrowColor;
     ctx.beginPath();
     ctx.moveTo(arrowSize, arrowSize / 2);
     ctx.lineTo(0, 0);
@@ -160,7 +195,7 @@ function setupLayers(map) {
     ctx.closePath();
     ctx.fill();
     const imgData = ctx.getImageData(0, 0, arrowSize, arrowSize);
-    map.addImage('arrow-white', { width: arrowSize, height: arrowSize, data: imgData.data });
+    map.addImage('route-arrow', { width: arrowSize, height: arrowSize, data: imgData.data });
   }
   if (!map.getLayer('routes-arrows')) {
     map.addLayer({
@@ -170,7 +205,7 @@ function setupLayers(map) {
       layout: {
         'symbol-placement': 'line',
         'symbol-spacing': 100,
-        'icon-image': 'arrow-white',
+        'icon-image': 'route-arrow',
         'icon-size': 0.8,
         'icon-allow-overlap': true,
         'icon-ignore-placement': true,
@@ -190,10 +225,10 @@ function setupLayers(map) {
       type: 'circle',
       source: 'city-points',
       paint: {
-        'circle-radius': 5,
+        'circle-radius': theme.pointRadius,
         'circle-color': ['get', 'color'],
-        'circle-stroke-width': 2,
-        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': theme.pointStrokeWidth,
+        'circle-stroke-color': theme.pointStrokeColor,
       },
     });
   }
@@ -219,9 +254,9 @@ function setupLayers(map) {
         'text-optional': true,
       },
       paint: {
-        'text-color': '#222222',
-        'text-halo-color': '#ffffff',
-        'text-halo-width': 2,
+        'text-color': theme.textColor,
+        'text-halo-color': theme.textHaloColor,
+        'text-halo-width': theme.textHaloWidth,
       },
     });
   }
@@ -234,18 +269,27 @@ export function RouteMap({ segments }) {
   const markersRef = useRef([]);
   const loadedRef = useRef(false);
   const latestSegmentsRef = useRef(segments);
-  const [mapStyle, setMapStyle] = useState('normal');
+  const activeThemeRef = useRef('color');
+  const [mapTheme, setMapTheme] = useState(() => {
+    const stored = window.localStorage.getItem('atlas-map-theme');
+    return MAP_THEMES[stored] ? stored : 'color';
+  });
 
   useEffect(() => {
     latestSegmentsRef.current = segments;
   }, [segments]);
 
   useEffect(() => {
+    activeThemeRef.current = mapTheme;
+  }, [mapTheme]);
+
+  useEffect(() => {
     if (!mapElRef.current || !config.map.accessToken) return undefined;
 
+    const initialTheme = MAP_THEMES[activeThemeRef.current];
     const map = new mapboxgl.Map({
       container: mapElRef.current,
-      style: MAP_STYLES.normal,
+      style: initialTheme.styleUrl,
       center: [-99.1332, 19.4326],
       zoom: 4,
       projection: 'mercator',
@@ -267,9 +311,9 @@ export function RouteMap({ segments }) {
 
     map.on('load', () => {
       map.resize();
-      setupLayers(map);
+      setupLayers(map, initialTheme);
       loadedRef.current = true;
-      drawRoutes(map, markersRef, latestSegmentsRef.current);
+      drawRoutes(map, markersRef, latestSegmentsRef.current, initialTheme);
     });
 
     const resizeObserver = new window.ResizeObserver(() => map.resize());
@@ -288,18 +332,24 @@ export function RouteMap({ segments }) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !loadedRef.current) return;
-    drawRoutes(map, markersRef, segments);
-  }, [segments]);
+    drawRoutes(map, markersRef, segments, MAP_THEMES[mapTheme]);
+  }, [segments, mapTheme]);
 
-  function toggleStyle() {
+  function selectTheme(nextTheme) {
+    if (nextTheme === mapTheme) return;
     const map = mapRef.current;
     if (!map) return;
-    const next = mapStyle === 'normal' ? 'satellite' : 'normal';
-    setMapStyle(next);
-    map.setStyle(MAP_STYLES[next]);
+
+    const theme = MAP_THEMES[nextTheme];
+    activeThemeRef.current = nextTheme;
+    setMapTheme(nextTheme);
+    window.localStorage.setItem('atlas-map-theme', nextTheme);
+    loadedRef.current = false;
+    map.setStyle(theme.styleUrl);
     map.once('style.load', () => {
-      setupLayers(map);
-      drawRoutes(map, markersRef, latestSegmentsRef.current);
+      setupLayers(map, theme);
+      loadedRef.current = true;
+      drawRoutes(map, markersRef, latestSegmentsRef.current, theme);
     });
   }
 
@@ -323,25 +373,58 @@ export function RouteMap({ segments }) {
           </div>
         )}
       </div>
+
       {config.map.accessToken && (
-        <button
-          type="button"
-          className="map-style-toggle"
-          onClick={toggleStyle}
-          title={mapStyle === 'normal' ? t('viewSatellite') : t('viewMap')}
-          aria-label={mapStyle === 'normal' ? t('viewSatellite') : t('viewMap')}
+        <div
+          className="map-theme-selector"
+          role="group"
+          aria-label="Estilo del mapa"
+          style={{
+            position: 'absolute',
+            top: 14,
+            left: 'calc(40vw + 28px)',
+            zIndex: 12,
+            display: 'inline-flex',
+            gap: 2,
+            padding: 3,
+            border: '1px solid rgba(148, 163, 184, 0.42)',
+            borderRadius: 9,
+            background: 'rgba(255, 255, 255, 0.94)',
+            boxShadow: '0 4px 14px rgba(15, 23, 42, 0.14)',
+            backdropFilter: 'blur(8px)',
+          }}
         >
-          <span className="map-style-toggle__thumb" data-mode={mapStyle} />
-          <span className="map-style-toggle__label">
-            {mapStyle === 'normal' ? t('satellite') : t('map')}
-          </span>
-        </button>
+          {Object.entries(MAP_THEMES).map(([key, theme]) => {
+            const active = mapTheme === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={active}
+                onClick={() => selectTheme(key)}
+                style={{
+                  border: 0,
+                  borderRadius: 6,
+                  padding: '6px 11px',
+                  background: active ? '#0d6078' : 'transparent',
+                  color: active ? '#ffffff' : '#596273',
+                  font: 'inherit',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                {theme.label}
+              </button>
+            );
+          })}
+        </div>
       )}
     </div>
   );
 }
 
-function drawRoutes(map, markersRef, segments) {
+function drawRoutes(map, markersRef, segments, theme) {
   const routeSource = map.getSource('routes');
   const cityPointsSource = map.getSource('city-points');
   if (!routeSource || !cityPointsSource) return;
@@ -349,9 +432,13 @@ function drawRoutes(map, markersRef, segments) {
   markersRef.current.forEach((marker) => marker.remove());
   markersRef.current = [];
 
+  if (map.getLayer('countries-fill')) {
+    map.setPaintProperty('countries-fill', 'fill-opacity', theme.countryFillOpacity);
+  }
+
   const countryColor = getVisitedCountries(segments);
   const visitedCodes = Object.keys(countryColor);
-  if (map.getLayer('countries-fill') && visitedCodes.length > 0) {
+  if (theme.paintVisitedCountries && map.getLayer('countries-fill') && visitedCodes.length > 0) {
     const fillExpr = ['match', ['get', 'iso_3166_1_alpha_3']];
     visitedCodes.forEach((alpha2) => {
       const alpha3 = ISO_A2_TO_A3[alpha2];
@@ -371,6 +458,7 @@ function drawRoutes(map, markersRef, segments) {
     const key = routeKey(segment.origin, segment.destination);
     pairCount[key] = (pairCount[key] || 0) + 1;
   });
+
   const pairIndex = {};
   segments.forEach((segment, index) => {
     if (!isPlaced(segment.origin) || !isPlaced(segment.destination)) return;
