@@ -176,9 +176,9 @@
     cursor: pointer;
   }
 
-  /* Regresa el módulo flotante completo y ocupa aproximadamente 35% del mapa. */
+  /* Módulo flotante completo con fondo blanco sólido y 40% del mapa. */
   .floating-editor {
-    width: 35vw;
+    width: 40vw;
     min-width: 470px;
     max-width: calc(100vw - 112px);
     overflow: hidden;
@@ -190,7 +190,8 @@
 
   .floating-editor .editor-module,
   .floating-editor .editor,
-  .floating-editor .editor__body {
+  .floating-editor .editor__body,
+  .floating-editor .segments {
     background: #ffffff;
   }
 
@@ -278,7 +279,7 @@
   .workspace__desktop--floating .segnote,
   .trip-name-pill,
   .workspace__desktop--floating .mapboxgl-ctrl-bottom-left {
-    left: calc(max(470px, 35vw) + 28px);
+    left: calc(max(470px, 40vw) + 28px);
   }
 
   .trip-name-pill {
