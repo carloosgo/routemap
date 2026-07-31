@@ -96,7 +96,6 @@ function dominantTransport(segment) {
 
 function addRouteArrowImage(map, color) {
   if (map.hasImage(IDS.routeArrowImage)) return;
-
   const size = 8;
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -110,13 +109,8 @@ function addRouteArrowImage(map, color) {
   context.lineTo(0, size);
   context.closePath();
   context.fill();
-
   const image = context.getImageData(0, 0, size, size);
-  map.addImage(IDS.routeArrowImage, {
-    width: size,
-    height: size,
-    data: image.data,
-  });
+  map.addImage(IDS.routeArrowImage, { width: size, height: size, data: image.data });
 }
 
 function setupRouteLayers(map, theme) {
@@ -124,7 +118,6 @@ function setupRouteLayers(map, theme) {
     type: 'geojson',
     data: { type: 'FeatureCollection', features: [] },
   });
-
   map.addLayer({
     id: IDS.routeHalo,
     type: 'line',
@@ -137,7 +130,6 @@ function setupRouteLayers(map, theme) {
       'line-offset': ['get', 'offset'],
     },
   });
-
   map.addLayer({
     id: IDS.routeSolid,
     type: 'line',
@@ -150,7 +142,6 @@ function setupRouteLayers(map, theme) {
       'line-offset': ['get', 'offset'],
     },
   });
-
   map.addLayer({
     id: IDS.routeDashed,
     type: 'line',
@@ -164,7 +155,6 @@ function setupRouteLayers(map, theme) {
       'line-offset': ['get', 'offset'],
     },
   });
-
   addRouteArrowImage(map, theme.arrowColor);
   map.addLayer({
     id: IDS.routeArrows,
@@ -180,12 +170,10 @@ function setupRouteLayers(map, theme) {
       'icon-ignore-placement': true,
     },
   });
-
   map.addSource(IDS.citySource, {
     type: 'geojson',
     data: { type: 'FeatureCollection', features: [] },
   });
-
   map.addLayer({
     id: IDS.cityDots,
     type: 'circle',
@@ -197,7 +185,6 @@ function setupRouteLayers(map, theme) {
       'circle-stroke-color': theme.pointStrokeColor,
     },
   });
-
   map.addLayer({
     id: IDS.cityLabels,
     type: 'symbol',
@@ -220,7 +207,6 @@ function setupRouteLayers(map, theme) {
 
 function setupCountryLayer(map, theme) {
   if (!theme.paintVisitedCountries) return;
-
   try {
     map.addSource(IDS.countrySource, {
       type: 'vector',
@@ -241,6 +227,43 @@ function setupCountryLayer(map, theme) {
   }
 }
 
+function stylizedCurve(origin, destination, direction = 1, steps = 72) {
+  const [x1, y1] = origin;
+  const [x2, y2] = destination;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const distance = Math.hypot(dx, dy);
+  if (!distance) return [origin, destination];
+
+  // A gentle arc: short routes barely bend; long routes gain height gradually.
+  const bendRatio = Math.min(0.16, Math.max(0.055, 0.045 + distance * 0.007));
+  const bend = distance * bendRatio * direction;
+  const normalX = -dy / distance;
+  const normalY = dx / distance;
+
+  // Cubic Bezier controls remain close to the route thirds, producing a clean arc
+  // without the bulbous midpoint seen in the previous quadratic curves.
+  const control1 = [
+    x1 + dx * 0.34 + normalX * bend,
+    y1 + dy * 0.34 + normalY * bend,
+  ];
+  const control2 = [
+    x1 + dx * 0.66 + normalX * bend,
+    y1 + dy * 0.66 + normalY * bend,
+  ];
+
+  const points = [];
+  for (let index = 0; index <= steps; index += 1) {
+    const t = index / steps;
+    const u = 1 - t;
+    points.push([
+      u ** 3 * x1 + 3 * u ** 2 * t * control1[0] + 3 * u * t ** 2 * control2[0] + t ** 3 * x2,
+      u ** 3 * y1 + 3 * u ** 2 * t * control1[1] + 3 * u * t ** 2 * control2[1] + t ** 3 * y2,
+    ]);
+  }
+  return points;
+}
+
 function buildRouteData(segments) {
   const pairCount = {};
   segments.forEach((segment) => {
@@ -253,11 +276,15 @@ function buildRouteData(segments) {
   const features = [];
   segments.forEach((segment, index) => {
     if (!isPlaced(segment.origin) || !isPlaced(segment.destination)) return;
-
     const key = routeKey(segment.origin, segment.destination);
     pairIndex[key] = pairIndex[key] || 0;
-    const offset = (pairCount[key] || 1) > 1
-      ? (pairIndex[key] % 2 === 0 ? 5 : -5)
+    const duplicateIndex = pairIndex[key];
+    const hasDuplicates = (pairCount[key] || 1) > 1;
+    const curveDirection = hasDuplicates
+      ? (duplicateIndex % 2 === 0 ? 1 : -1)
+      : 1;
+    const offset = hasDuplicates
+      ? (duplicateIndex % 2 === 0 ? 3 : -3)
       : 0;
     pairIndex[key] += 1;
 
@@ -273,21 +300,20 @@ function buildRouteData(segments) {
       },
       geometry: {
         type: 'LineString',
-        coordinates: [
+        coordinates: stylizedCurve(
           [segment.origin.lon, segment.origin.lat],
           [segment.destination.lon, segment.destination.lat],
-        ],
+          curveDirection
+        ),
       },
     });
   });
-
   return { type: 'FeatureCollection', features };
 }
 
 function buildCityData(segments) {
   const cities = [];
   const keys = new Set();
-
   segments.forEach((segment) => {
     [segment.origin, segment.destination].forEach((city) => {
       if (!isPlaced(city)) return;
@@ -297,21 +323,14 @@ function buildCityData(segments) {
       cities.push(city);
     });
   });
-
   return {
     cities,
     collection: {
       type: 'FeatureCollection',
       features: cities.map((city, index) => ({
         type: 'Feature',
-        properties: {
-          name: city.name,
-          color: colorForIndex(index),
-        },
-        geometry: {
-          type: 'Point',
-          coordinates: [city.lon, city.lat],
-        },
+        properties: { name: city.name, color: colorForIndex(index) },
+        geometry: { type: 'Point', coordinates: [city.lon, city.lat] },
       })),
     },
   };
@@ -319,7 +338,6 @@ function buildCityData(segments) {
 
 function paintVisitedCountries(map, segments, theme) {
   if (!theme.paintVisitedCountries || !map.getLayer(IDS.countryFill)) return;
-
   const countryColors = {};
   segments.forEach((segment, index) => {
     [segment.origin, segment.destination].forEach((city) => {
@@ -328,13 +346,11 @@ function paintVisitedCountries(map, segments, theme) {
       if (alpha3 && !countryColors[alpha3]) countryColors[alpha3] = colorForIndex(index);
     });
   });
-
   const entries = Object.entries(countryColors);
   if (entries.length === 0) {
     map.setPaintProperty(IDS.countryFill, 'fill-color', 'transparent');
     return;
   }
-
   const expression = ['match', ['get', 'iso_3166_1_alpha_3']];
   entries.forEach(([alpha3, color]) => expression.push(alpha3, color));
   expression.push('transparent');
@@ -345,12 +361,10 @@ function drawMapData(map, segments, theme) {
   const routeSource = map.getSource(IDS.routeSource);
   const citySource = map.getSource(IDS.citySource);
   if (!routeSource || !citySource) return;
-
   routeSource.setData(buildRouteData(segments));
   const { cities, collection } = buildCityData(segments);
   citySource.setData(collection);
   paintVisitedCountries(map, segments, theme);
-
   const bounds = new mapboxgl.LngLatBounds();
   cities.forEach((city) => bounds.extend([city.lon, city.lat]));
   if (cities.length === 1) {
@@ -374,7 +388,6 @@ function MapCanvas({ themeKey, segments, t }) {
 
   useEffect(() => {
     if (!mapElRef.current || !config.map.accessToken) return undefined;
-
     const map = new mapboxgl.Map({
       container: mapElRef.current,
       style: theme.styleUrl,
@@ -383,11 +396,9 @@ function MapCanvas({ themeKey, segments, t }) {
       projection: 'mercator',
       attributionControl: true,
     });
-
     mapRef.current = map;
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
     map.doubleClickZoom.disable();
-
     map.on('load', () => {
       try {
         setupRouteLayers(map, theme);
@@ -398,18 +409,14 @@ function MapCanvas({ themeKey, segments, t }) {
         console.error('[Atlas map setup]', error);
       }
     });
-
     map.on('click', (event) => {
       map.easeTo({ center: event.lngLat, zoom: map.getZoom() + 1, duration: 300 });
     });
-
     map.on('error', (event) => {
       console.error('[Mapbox error]', event.error?.message || event.error || event);
     });
-
     const resizeObserver = new window.ResizeObserver(() => map.resize());
     resizeObserver.observe(mapElRef.current);
-
     return () => {
       resizeObserver.disconnect();
       map.remove();
@@ -420,18 +427,7 @@ function MapCanvas({ themeKey, segments, t }) {
   return (
     <div className="map" ref={mapElRef}>
       {!config.map.accessToken && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%',
-            padding: 24,
-            textAlign: 'center',
-            color: '#64748b',
-            fontSize: 13,
-          }}
-        >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 24, textAlign: 'center', color: '#64748b', fontSize: 13 }}>
           {t('mapConfigMissing')}
         </div>
       )}
@@ -445,57 +441,20 @@ export function RouteMap({ segments }) {
     const stored = window.localStorage.getItem('atlas-map-theme');
     return MAP_THEMES[stored] ? stored : 'color';
   });
-
   function selectTheme(nextTheme) {
     if (!MAP_THEMES[nextTheme] || nextTheme === mapTheme) return;
     window.localStorage.setItem('atlas-map-theme', nextTheme);
     setMapTheme(nextTheme);
   }
-
   return (
     <div className="map-wrap">
       <MapCanvas key={mapTheme} themeKey={mapTheme} segments={segments} t={t} />
-
       {config.map.accessToken && (
-        <div
-          className="map-theme-selector"
-          role="group"
-          aria-label="Estilo del mapa"
-          style={{
-            position: 'absolute',
-            top: 14,
-            left: 'calc(40vw + 28px)',
-            zIndex: 12,
-            display: 'inline-flex',
-            gap: 2,
-            padding: 3,
-            border: '1px solid rgba(148, 163, 184, 0.42)',
-            borderRadius: 9,
-            background: 'rgba(255, 255, 255, 0.94)',
-            boxShadow: '0 4px 14px rgba(15, 23, 42, 0.14)',
-            backdropFilter: 'blur(8px)',
-          }}
-        >
+        <div className="map-theme-selector" role="group" aria-label="Estilo del mapa" style={{ position: 'absolute', top: 14, left: 'calc(40vw + 28px)', zIndex: 12, display: 'inline-flex', gap: 2, padding: 3, border: '1px solid rgba(148, 163, 184, 0.42)', borderRadius: 9, background: 'rgba(255, 255, 255, 0.94)', boxShadow: '0 4px 14px rgba(15, 23, 42, 0.14)', backdropFilter: 'blur(8px)' }}>
           {Object.entries(MAP_THEMES).map(([key, theme]) => {
             const active = mapTheme === key;
             return (
-              <button
-                key={key}
-                type="button"
-                aria-pressed={active}
-                onClick={() => selectTheme(key)}
-                style={{
-                  border: 0,
-                  borderRadius: 6,
-                  padding: '6px 11px',
-                  background: active ? '#0d6078' : 'transparent',
-                  color: active ? '#ffffff' : '#596273',
-                  font: 'inherit',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
+              <button key={key} type="button" aria-pressed={active} onClick={() => selectTheme(key)} style={{ border: 0, borderRadius: 6, padding: '6px 11px', background: active ? '#0d6078' : 'transparent', color: active ? '#ffffff' : '#596273', font: 'inherit', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
                 {theme.label}
               </button>
             );
