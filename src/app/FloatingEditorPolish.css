@@ -123,3 +123,142 @@
 .editor-module__menu-empty {
   font-family: var(--font-body);
 }
+
+/* Prueba del editor de gastos: conceptos fijos en una sola fila. */
+.expenses--compact-layout {
+  gap: 10px;
+}
+
+.expenses__fixed-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.expenses__fixed-row.is-detailed {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.expenses__fixed-row .moneycard {
+  min-width: 0;
+  min-height: 68px;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 25px auto 22px;
+  justify-items: center;
+  align-items: center;
+  gap: 1px;
+  padding: 6px 4px;
+  text-align: center;
+}
+
+.expenses__fixed-row .moneycard__icon {
+  width: 25px;
+  height: 25px;
+}
+
+.expenses__fixed-row .moneycard__label {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px;
+}
+
+.expenses__fixed-row .moneycard__amount {
+  width: 100%;
+  justify-content: center;
+}
+
+.expenses__fixed-row .moneycard__input {
+  width: 52px;
+  max-width: 100%;
+  text-align: center;
+  font-size: 10px;
+}
+
+.expenses__fixed-row .moneycard__currency {
+  display: none;
+}
+
+/* Segunda fila: categorías variables como botones. */
+.expenses__variable-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.expenses__variable-tab {
+  min-width: 0;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid #e4e7ec;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #5e6677;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.expenses__variable-tab:hover,
+.expenses__variable-tab.is-active {
+  border-color: #b9d8e0;
+  background: #eef6f8;
+  color: #357d94;
+}
+
+.expenses__variable-tab > span:nth-child(2) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expenses__variable-tab strong {
+  margin-left: auto;
+  color: #656565;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.expenses__variable-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--icon-bg);
+  color: var(--icon-color);
+}
+
+.lineitems-section--active {
+  padding: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.expenses__lineitems-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.expenses__lineitems-row .moneycard--lineitem {
+  min-width: 0;
+}
+
+@media (max-width: 980px) and (min-width: 721px) {
+  .expenses__fixed-row,
+  .expenses__fixed-row.is-detailed {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
