@@ -215,6 +215,15 @@ function outwardCurveDirection(origin, destination) {
   const length = Math.hypot(dx, dy) || 1;
   const midpoint = [(x1 + x2) / 2, (y1 + y2) / 2];
   const normal = [-dy / length, dx / length];
+
+  const mostlyHorizontal = Math.abs(dx) >= Math.abs(dy) * 1.15;
+  const centralEuropeRoute = midpoint[1] >= 46.5 && midpoint[0] >= 12;
+  const northernEuropeRoute = midpoint[1] >= 50.5;
+
+  if (mostlyHorizontal && (centralEuropeRoute || northernEuropeRoute)) {
+    return normal[1] >= 0 ? 1 : -1;
+  }
+
   const sampleDistance = Math.max(1, length * 0.15);
   const positive = [midpoint[0] + normal[0] * sampleDistance, midpoint[1] + normal[1] * sampleDistance];
   const negative = [midpoint[0] - normal[0] * sampleDistance, midpoint[1] - normal[1] * sampleDistance];
