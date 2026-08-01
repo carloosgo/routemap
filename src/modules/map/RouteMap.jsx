@@ -17,8 +17,8 @@ const MAP_THEMES = {
     routeHaloWidth: 4,
     routeHaloColor: '#ffffff',
     routeHaloOpacity: 0.9,
-    pointRadius: 5,
-    pointStrokeWidth: 2.4,
+    pointRadius: 4.5,
+    pointStrokeWidth: 2.2,
     textColor: '#222222',
     textHaloColor: '#ffffff',
     textHaloWidth: 2,
@@ -32,8 +32,8 @@ const MAP_THEMES = {
     routeHaloWidth: 4.5,
     routeHaloColor: '#ffffff',
     routeHaloOpacity: 0.78,
-    pointRadius: 6,
-    pointStrokeWidth: 2.7,
+    pointRadius: 5.4,
+    pointStrokeWidth: 2.5,
     textColor: '#202733',
     textHaloColor: '#ffffff',
     textHaloWidth: 2.25,
@@ -77,6 +77,7 @@ const ISO_A2_TO_A3 = {
 
 const EUROPE_REFERENCE = [10, 50];
 const STRAIGHT_ROUTE_THRESHOLD_KM = 1600;
+const ROUTE_END_FRACTION = 0.9;
 
 function dominantTransport(segment) {
   const transport = segment?.expenses?.transport || {};
@@ -335,15 +336,30 @@ function stylizedCurve(origin, destination, steps = 64) {
   return points;
 }
 
+function trimRouteEnd(coordinates, fraction = ROUTE_END_FRACTION) {
+  if (coordinates.length < 2) return coordinates;
+
+  const segmentPosition = (coordinates.length - 1) * fraction;
+  const lowerIndex = Math.floor(segmentPosition);
+  const upperIndex = Math.min(coordinates.length - 1, lowerIndex + 1);
+  const interpolation = segmentPosition - lowerIndex;
+  const lowerPoint = coordinates[lowerIndex];
+  const upperPoint = coordinates[upperIndex];
+  const endPoint = [
+    lowerPoint[0] + (upperPoint[0] - lowerPoint[0]) * interpolation,
+    lowerPoint[1] + (upperPoint[1] - lowerPoint[1]) * interpolation,
+  ];
+
+  return [...coordinates.slice(0, lowerIndex + 1), endPoint];
+}
+
 function routeArrowFeature(coordinates, color, index) {
   const lastIndex = coordinates.length - 1;
-  const arrowIndex = Math.max(0, Math.min(lastIndex - 1, Math.floor(lastIndex * 0.93)));
-  const previousIndex = Math.max(0, arrowIndex - 2);
-  const point = coordinates[arrowIndex];
+  const previousIndex = Math.max(0, lastIndex - 2);
+  const point = coordinates[lastIndex];
   const previousPoint = coordinates[previousIndex];
-  const nextPoint = coordinates[Math.min(lastIndex, arrowIndex + 1)];
-  const dx = nextPoint[0] - previousPoint[0];
-  const dy = nextPoint[1] - previousPoint[1];
+  const dx = point[0] - previousPoint[0];
+  const dy = point[1] - previousPoint[1];
   const rotation = Math.atan2(dy, dx) * 180 / Math.PI;
 
   return {
@@ -377,10 +393,11 @@ function buildRouteData(segments) {
 
     const transport = dominantTransport(segment);
     const color = colorForIndex(index);
-    const coordinates = stylizedCurve(
+    const completeCoordinates = stylizedCurve(
       [segment.origin.lon, segment.origin.lat],
       [segment.destination.lon, segment.destination.lat]
     );
+    const visibleCoordinates = trimRouteEnd(completeCoordinates);
 
     routeFeatures.push({
       type: 'Feature',
@@ -391,10 +408,10 @@ function buildRouteData(segments) {
         transport,
         index,
       },
-      geometry: { type: 'LineString', coordinates },
+      geometry: { type: 'LineString', coordinates: visibleCoordinates },
     });
 
-    arrowFeatures.push(routeArrowFeature(coordinates, color, index));
+    arrowFeatures.push(routeArrowFeature(visibleCoordinates, color, index));
   });
 
   return {
