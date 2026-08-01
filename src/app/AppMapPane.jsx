@@ -1,5 +1,6 @@
 import { IconArrowRight, IconCheck, IconX } from '@tabler/icons-react';
 import { RouteMap } from '../modules/map/RouteMap.jsx';
+import { PlaceSearchOverlay } from '../modules/places/PlaceSearchOverlay.jsx';
 import { colorForIndex } from '../config.js';
 
 export function AppMapPane({
@@ -13,6 +14,7 @@ export function AppMapPane({
   return (
     <section className="mappane" aria-label={t('mapRegion')}>
       <RouteMap segments={trip.segments} />
+      <PlaceSearchOverlay />
       {openNoteSegmentId && (
         <div
           aria-hidden="true"
