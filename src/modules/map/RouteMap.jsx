@@ -4,6 +4,10 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { config, colorForIndex } from '../../config.js';
 import { useTranslation } from '../../i18n/index.jsx';
 import { isPlaced } from '../trips/tripModel.js';
+import {
+  LANDMARK_IMAGES,
+  landmarkForCity,
+} from './cityLandmarks.js';
 
 mapboxgl.accessToken = config.map.accessToken;
 
@@ -49,6 +53,7 @@ const IDS = {
   routeDashed: 'atlas-routes-dashed',
   citySource: 'atlas-city-points',
   cityDots: 'atlas-city-dots',
+  cityLandmarks: 'atlas-city-landmarks',
   cityLabels: 'atlas-city-labels',
 };
 
@@ -87,6 +92,42 @@ function dominantTransport(segment) {
     candidate.amount > current.amount ? candidate : current
   );
   return top.amount > 0 ? top.type : null;
+}
+
+function loadLandmarkImage(map, landmark) {
+  if (map.hasImage(landmark.imageId)) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      try {
+        const width = 192;
+        const height = 144;
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d');
+        context.clearRect(0, 0, width, height);
+        context.drawImage(image, 0, 0, width, height);
+        const imageData = context.getImageData(0, 0, width, height);
+        if (!map.hasImage(landmark.imageId)) {
+          map.addImage(landmark.imageId, imageData, { pixelRatio: 2 });
+        }
+      } catch (error) {
+        console.warn(`[Atlas landmark image: ${landmark.imageId}]`, error);
+      }
+      resolve();
+    };
+    image.onerror = () => {
+      console.warn(`[Atlas landmark image unavailable: ${landmark.path}]`);
+      resolve();
+    };
+    image.src = landmark.path;
+  });
+}
+
+async function loadLandmarkImages(map) {
+  await Promise.all(LANDMARK_IMAGES.map((landmark) => loadLandmarkImage(map, landmark)));
 }
 
 function setupRouteLayers(map, theme) {
@@ -149,6 +190,30 @@ function setupRouteLayers(map, theme) {
       'circle-color': '#ffffff',
       'circle-stroke-width': theme.pointStrokeWidth,
       'circle-stroke-color': ['get', 'color'],
+    },
+  });
+
+  map.addLayer({
+    id: IDS.cityLandmarks,
+    type: 'symbol',
+    source: IDS.citySource,
+    filter: ['!=', ['get', 'landmarkIcon'], ''],
+    layout: {
+      'icon-image': ['get', 'landmarkIcon'],
+      'icon-size': [
+        'interpolate',
+        ['linear'],
+        ['zoom'],
+        3, 0.42,
+        6, 0.62,
+        10, 0.82,
+      ],
+      'icon-anchor': 'bottom',
+      'icon-offset': [0, -8],
+      'icon-allow-overlap': false,
+      'icon-ignore-placement': false,
+      'icon-optional': true,
+      'symbol-sort-key': ['get', 'landmarkPriority'],
     },
   });
 
@@ -302,23 +367,40 @@ function buildRouteData(segments) {
 function buildCityData(segments) {
   const cities = [];
   const cityByCoordinate = new Map();
+
   segments.forEach((segment, segmentIndex) => {
     [segment.origin, segment.destination].forEach((city) => {
       if (!isPlaced(city)) return;
       const key = `${city.lon},${city.lat}`;
       if (cityByCoordinate.has(key)) return;
-      const entry = { ...city, color: colorForIndex(segmentIndex) };
+
+      const landmark = landmarkForCity(city);
+      const entry = {
+        ...city,
+        color: colorForIndex(segmentIndex),
+        landmarkIcon: landmark?.imageId || '',
+        landmarkLabel: landmark?.label || '',
+        landmarkPriority: landmark?.priority || 0,
+      };
       cityByCoordinate.set(key, entry);
       cities.push(entry);
     });
   });
+
   return {
     cities,
     collection: {
       type: 'FeatureCollection',
       features: cities.map((city) => ({
         type: 'Feature',
-        properties: { name: city.name, color: city.color },
+        properties: {
+          name: city.name,
+          countryCode: city.countryCode || '',
+          color: city.color,
+          landmarkIcon: city.landmarkIcon,
+          landmarkLabel: city.landmarkLabel,
+          landmarkPriority: city.landmarkPriority,
+        },
         geometry: { type: 'Point', coordinates: [city.lon, city.lat] },
       })),
     },
@@ -327,6 +409,7 @@ function buildCityData(segments) {
 
 function paintVisitedCountries(map, segments, theme) {
   if (!theme.paintVisitedCountries || !map.getLayer(IDS.countryFill)) return;
+
   const countryColors = {};
   segments.forEach((segment, index) => {
     [segment.origin, segment.destination].forEach((city) => {
@@ -335,11 +418,13 @@ function paintVisitedCountries(map, segments, theme) {
       if (alpha3 && !countryColors[alpha3]) countryColors[alpha3] = colorForIndex(index);
     });
   });
+
   const entries = Object.entries(countryColors);
   if (entries.length === 0) {
     map.setPaintProperty(IDS.countryFill, 'fill-color', 'transparent');
     return;
   }
+
   const expression = ['match', ['get', 'iso_3166_1_alpha_3']];
   entries.forEach(([alpha3, color]) => expression.push(alpha3, color));
   expression.push('transparent');
@@ -380,6 +465,7 @@ function MapCanvas({ themeKey, segments, t }) {
 
   useEffect(() => {
     if (!mapElRef.current || !config.map.accessToken) return undefined;
+
     const map = new mapboxgl.Map({
       container: mapElRef.current,
       style: theme.styleUrl,
@@ -388,11 +474,14 @@ function MapCanvas({ themeKey, segments, t }) {
       projection: 'mercator',
       attributionControl: true,
     });
+
     mapRef.current = map;
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
     map.doubleClickZoom.disable();
-    map.on('load', () => {
+
+    map.on('load', async () => {
       try {
+        await loadLandmarkImages(map);
         setupRouteLayers(map, theme);
         setupCountryLayer(map, theme);
         drawMapData(map, latestSegmentsRef.current, theme);
@@ -401,14 +490,18 @@ function MapCanvas({ themeKey, segments, t }) {
         console.error('[Atlas map setup]', error);
       }
     });
+
     map.on('click', (event) => {
       map.easeTo({ center: event.lngLat, zoom: map.getZoom() + 1, duration: 300 });
     });
+
     map.on('error', (event) => {
       console.error('[Mapbox error]', event.error?.message || event.error || event);
     });
+
     const resizeObserver = new window.ResizeObserver(() => map.resize());
     resizeObserver.observe(mapElRef.current);
+
     return () => {
       resizeObserver.disconnect();
       map.remove();
@@ -443,6 +536,7 @@ export function RouteMap({ segments }) {
   return (
     <div className="map-wrap">
       <MapCanvas key={mapTheme} themeKey={mapTheme} segments={segments} t={t} />
+
       {config.map.accessToken && (
         <div
           className="map-theme-selector"
@@ -463,7 +557,7 @@ export function RouteMap({ segments }) {
             backdropFilter: 'blur(8px)',
           }}
         >
-          {Object.entries(MAP_THEMES).map(([key, theme]) => {
+          {Object.entries(MAP_THEMES).map(([key, themeOption]) => {
             const active = mapTheme === key;
             return (
               <button
@@ -483,7 +577,7 @@ export function RouteMap({ segments }) {
                   cursor: 'pointer',
                 }}
               >
-                {theme.label}
+                {themeOption.label}
               </button>
             );
           })}
