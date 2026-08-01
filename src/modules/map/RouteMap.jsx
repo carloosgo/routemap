@@ -77,7 +77,7 @@ const ISO_A2_TO_A3 = {
 
 const EUROPE_REFERENCE = [10, 50];
 const STRAIGHT_ROUTE_THRESHOLD_KM = 1600;
-const ROUTE_END_FRACTION = 0.9;
+const ROUTE_END_FRACTION = 0.965;
 
 function dominantTransport(segment) {
   const transport = segment?.expenses?.transport || {};
@@ -96,8 +96,8 @@ function dominantTransport(segment) {
 function addRouteArrowImage(map) {
   if (map.hasImage(IDS.routeArrowImage)) return;
 
-  const width = 18;
-  const height = 14;
+  const width = 22;
+  const height = 16;
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -108,7 +108,7 @@ function addRouteArrowImage(map) {
   context.beginPath();
   context.moveTo(width - 1, height / 2);
   context.lineTo(2, 1.5);
-  context.lineTo(6.2, height / 2);
+  context.lineTo(7.2, height / 2);
   context.lineTo(2, height - 1.5);
   context.closePath();
   context.fill();
@@ -179,7 +179,8 @@ function setupRouteLayers(map, theme) {
     layout: {
       'symbol-placement': 'point',
       'icon-image': IDS.routeArrowImage,
-      'icon-size': 0.55,
+      'icon-size': 0.82,
+      'icon-anchor': 'right',
       'icon-rotate': ['get', 'rotation'],
       'icon-rotation-alignment': 'map',
       'icon-allow-overlap': true,
@@ -188,7 +189,7 @@ function setupRouteLayers(map, theme) {
     paint: {
       'icon-color': ['get', 'color'],
       'icon-halo-color': '#ffffff',
-      'icon-halo-width': 0.45,
+      'icon-halo-width': 0.35,
     },
   });
 
