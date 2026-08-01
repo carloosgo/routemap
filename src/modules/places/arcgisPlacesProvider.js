@@ -1,7 +1,7 @@
 import { config } from '../../config.js';
 
 const ARCGIS_FIND_URL =
-  'https://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates';
+  'https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates';
 
 function normalizeCandidate(candidate, index) {
   const attributes = candidate.attributes || {};
@@ -32,7 +32,18 @@ export async function searchArcgisPlaces(query, { signal, limit = 30 } = {}) {
 
   if (config.arcgis.apiKey) params.set('token', config.arcgis.apiKey);
 
-  const response = await fetch(`${ARCGIS_FIND_URL}?${params.toString()}`, { signal });
+  let response;
+  try {
+    response = await fetch(`${ARCGIS_FIND_URL}?${params.toString()}`, {
+      method: 'GET',
+      mode: 'cors',
+      signal,
+    });
+  } catch (error) {
+    if (error.name === 'AbortError') throw error;
+    throw new Error('No se pudo conectar con ArcGIS. Revisa la conexión o la clave configurada.');
+  }
+
   if (!response.ok) throw new Error(`ArcGIS respondió ${response.status}`);
 
   const payload = await response.json();
