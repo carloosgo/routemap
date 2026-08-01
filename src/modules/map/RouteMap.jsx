@@ -47,9 +47,9 @@ const IDS = {
   routeHalo: 'atlas-routes-halo',
   routeSolid: 'atlas-routes-solid',
   routeDashed: 'atlas-routes-dashed',
-  routeArrowSource: 'atlas-route-arrowheads',
-  routeArrows: 'atlas-routes-arrows',
-  routeArrowImage: 'atlas-route-arrow',
+  arrowSource: 'atlas-route-arrowheads',
+  arrowHalo: 'atlas-route-arrowheads-halo',
+  arrowLines: 'atlas-route-arrowheads-lines',
   citySource: 'atlas-city-points',
   cityDots: 'atlas-city-dots',
   cityLabels: 'atlas-city-labels',
@@ -77,7 +77,7 @@ const ISO_A2_TO_A3 = {
 
 const EUROPE_REFERENCE = [10, 50];
 const STRAIGHT_ROUTE_THRESHOLD_KM = 1600;
-const ROUTE_END_FRACTION = 0.965;
+const ROUTE_END_FRACTION = 0.985;
 
 function dominantTransport(segment) {
   const transport = segment?.expenses?.transport || {};
@@ -93,40 +93,11 @@ function dominantTransport(segment) {
   return top.amount > 0 ? top.type : null;
 }
 
-function addRouteArrowImage(map) {
-  if (map.hasImage(IDS.routeArrowImage)) return;
-
-  const width = 22;
-  const height = 16;
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext('2d');
-
-  context.clearRect(0, 0, width, height);
-  context.fillStyle = '#ffffff';
-  context.beginPath();
-  context.moveTo(width - 1, height / 2);
-  context.lineTo(2, 1.5);
-  context.lineTo(7.2, height / 2);
-  context.lineTo(2, height - 1.5);
-  context.closePath();
-  context.fill();
-
-  const image = context.getImageData(0, 0, width, height);
-  map.addImage(
-    IDS.routeArrowImage,
-    { width, height, data: image.data },
-    { sdf: true }
-  );
-}
-
 function setupRouteLayers(map, theme) {
   map.addSource(IDS.routeSource, {
     type: 'geojson',
     data: { type: 'FeatureCollection', features: [] },
   });
-
   map.addLayer({
     id: IDS.routeHalo,
     type: 'line',
@@ -139,7 +110,6 @@ function setupRouteLayers(map, theme) {
       'line-offset': ['get', 'offset'],
     },
   });
-
   map.addLayer({
     id: IDS.routeSolid,
     type: 'line',
@@ -152,7 +122,6 @@ function setupRouteLayers(map, theme) {
       'line-offset': ['get', 'offset'],
     },
   });
-
   map.addLayer({
     id: IDS.routeDashed,
     type: 'line',
@@ -167,29 +136,31 @@ function setupRouteLayers(map, theme) {
     },
   });
 
-  map.addSource(IDS.routeArrowSource, {
+  map.addSource(IDS.arrowSource, {
     type: 'geojson',
     data: { type: 'FeatureCollection', features: [] },
   });
-  addRouteArrowImage(map);
   map.addLayer({
-    id: IDS.routeArrows,
-    type: 'symbol',
-    source: IDS.routeArrowSource,
-    layout: {
-      'symbol-placement': 'point',
-      'icon-image': IDS.routeArrowImage,
-      'icon-size': 0.82,
-      'icon-anchor': 'right',
-      'icon-rotate': ['get', 'rotation'],
-      'icon-rotation-alignment': 'map',
-      'icon-allow-overlap': true,
-      'icon-ignore-placement': true,
-    },
+    id: IDS.arrowHalo,
+    type: 'line',
+    source: IDS.arrowSource,
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: {
-      'icon-color': ['get', 'color'],
-      'icon-halo-color': '#ffffff',
-      'icon-halo-width': 0.35,
+      'line-color': theme.routeHaloColor,
+      'line-width': theme.routeHaloWidth,
+      'line-opacity': theme.routeHaloOpacity,
+      'line-offset': ['get', 'offset'],
+    },
+  });
+  map.addLayer({
+    id: IDS.arrowLines,
+    type: 'line',
+    source: IDS.arrowSource,
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': ['get', 'color'],
+      'line-width': theme.routeWidth,
+      'line-offset': ['get', 'offset'],
     },
   });
 
@@ -197,7 +168,6 @@ function setupRouteLayers(map, theme) {
     type: 'geojson',
     data: { type: 'FeatureCollection', features: [] },
   });
-
   map.addLayer({
     id: IDS.cityDots,
     type: 'circle',
@@ -209,7 +179,6 @@ function setupRouteLayers(map, theme) {
       'circle-stroke-color': ['get', 'color'],
     },
   });
-
   map.addLayer({
     id: IDS.cityLabels,
     type: 'symbol',
@@ -274,22 +243,10 @@ function outwardCurveDirection(origin, destination) {
   const midpoint = [(x1 + x2) / 2, (y1 + y2) / 2];
   const normal = [-dy / length, dx / length];
   const sampleDistance = Math.max(1, length * 0.15);
-  const positive = [
-    midpoint[0] + normal[0] * sampleDistance,
-    midpoint[1] + normal[1] * sampleDistance,
-  ];
-  const negative = [
-    midpoint[0] - normal[0] * sampleDistance,
-    midpoint[1] - normal[1] * sampleDistance,
-  ];
-  const positiveDistance = Math.hypot(
-    positive[0] - EUROPE_REFERENCE[0],
-    positive[1] - EUROPE_REFERENCE[1]
-  );
-  const negativeDistance = Math.hypot(
-    negative[0] - EUROPE_REFERENCE[0],
-    negative[1] - EUROPE_REFERENCE[1]
-  );
+  const positive = [midpoint[0] + normal[0] * sampleDistance, midpoint[1] + normal[1] * sampleDistance];
+  const negative = [midpoint[0] - normal[0] * sampleDistance, midpoint[1] - normal[1] * sampleDistance];
+  const positiveDistance = Math.hypot(positive[0] - EUROPE_REFERENCE[0], positive[1] - EUROPE_REFERENCE[1]);
+  const negativeDistance = Math.hypot(negative[0] - EUROPE_REFERENCE[0], negative[1] - EUROPE_REFERENCE[1]);
   return positiveDistance >= negativeDistance ? 1 : -1;
 }
 
@@ -310,28 +267,16 @@ function stylizedCurve(origin, destination, steps = 64) {
   const bend = distance * bendRatio * direction;
   const normalX = -dy / distance;
   const normalY = dx / distance;
-  const control1 = [
-    x1 + dx * 0.34 + normalX * bend,
-    y1 + dy * 0.34 + normalY * bend,
-  ];
-  const control2 = [
-    x1 + dx * 0.66 + normalX * bend,
-    y1 + dy * 0.66 + normalY * bend,
-  ];
+  const control1 = [x1 + dx * 0.34 + normalX * bend, y1 + dy * 0.34 + normalY * bend];
+  const control2 = [x1 + dx * 0.66 + normalX * bend, y1 + dy * 0.66 + normalY * bend];
 
   const points = [];
   for (let index = 0; index <= steps; index += 1) {
     const time = index / steps;
     const remaining = 1 - time;
     points.push([
-      remaining ** 3 * x1
-        + 3 * remaining ** 2 * time * control1[0]
-        + 3 * remaining * time ** 2 * control2[0]
-        + time ** 3 * x2,
-      remaining ** 3 * y1
-        + 3 * remaining ** 2 * time * control1[1]
-        + 3 * remaining * time ** 2 * control2[1]
-        + time ** 3 * y2,
+      remaining ** 3 * x1 + 3 * remaining ** 2 * time * control1[0] + 3 * remaining * time ** 2 * control2[0] + time ** 3 * x2,
+      remaining ** 3 * y1 + 3 * remaining ** 2 * time * control1[1] + 3 * remaining * time ** 2 * control2[1] + time ** 3 * y2,
     ]);
   }
   return points;
@@ -339,7 +284,6 @@ function stylizedCurve(origin, destination, steps = 64) {
 
 function trimRouteEnd(coordinates, fraction = ROUTE_END_FRACTION) {
   if (coordinates.length < 2) return coordinates;
-
   const segmentPosition = (coordinates.length - 1) * fraction;
   const lowerIndex = Math.floor(segmentPosition);
   const upperIndex = Math.min(coordinates.length - 1, lowerIndex + 1);
@@ -350,24 +294,34 @@ function trimRouteEnd(coordinates, fraction = ROUTE_END_FRACTION) {
     lowerPoint[0] + (upperPoint[0] - lowerPoint[0]) * interpolation,
     lowerPoint[1] + (upperPoint[1] - lowerPoint[1]) * interpolation,
   ];
-
   return [...coordinates.slice(0, lowerIndex + 1), endPoint];
 }
 
-function routeArrowFeature(coordinates, color, index) {
+function buildArrowHead(coordinates, routeDistanceKm) {
   const lastIndex = coordinates.length - 1;
-  const previousIndex = Math.max(0, lastIndex - 2);
-  const point = coordinates[lastIndex];
-  const previousPoint = coordinates[previousIndex];
-  const dx = point[0] - previousPoint[0];
-  const dy = point[1] - previousPoint[1];
-  const rotation = Math.atan2(dy, dx) * 180 / Math.PI;
+  const tip = coordinates[lastIndex];
+  const tail = coordinates[Math.max(0, lastIndex - 3)];
+  const dx = tip[0] - tail[0];
+  const dy = tip[1] - tail[1];
+  const length = Math.hypot(dx, dy) || 1;
+  const ux = dx / length;
+  const uy = dy / length;
+  const angle = 28 * Math.PI / 180;
+  const size = Math.min(0.32, Math.max(0.08, 0.075 + routeDistanceKm / 8500));
 
-  return {
-    type: 'Feature',
-    properties: { color, index, rotation },
-    geometry: { type: 'Point', coordinates: point },
-  };
+  const left = [
+    tip[0] - size * (ux * Math.cos(angle) - uy * Math.sin(angle)),
+    tip[1] - size * (uy * Math.cos(angle) + ux * Math.sin(angle)),
+  ];
+  const right = [
+    tip[0] - size * (ux * Math.cos(angle) + uy * Math.sin(angle)),
+    tip[1] - size * (uy * Math.cos(angle) - ux * Math.sin(angle)),
+  ];
+
+  return [
+    [left, tip],
+    [right, tip],
+  ];
 }
 
 function buildRouteData(segments) {
@@ -384,7 +338,6 @@ function buildRouteData(segments) {
 
   segments.forEach((segment, index) => {
     if (!isPlaced(segment.origin) || !isPlaced(segment.destination)) return;
-
     const key = routeKey(segment.origin, segment.destination);
     pairIndex[key] = pairIndex[key] || 0;
     const duplicateIndex = pairIndex[key];
@@ -392,27 +345,26 @@ function buildRouteData(segments) {
     const offset = hasDuplicates ? (duplicateIndex % 2 === 0 ? 3 : -3) : 0;
     pairIndex[key] += 1;
 
-    const transport = dominantTransport(segment);
+    const origin = [segment.origin.lon, segment.origin.lat];
+    const destination = [segment.destination.lon, segment.destination.lat];
+    const routeDistanceKm = distanceKm(origin, destination);
     const color = colorForIndex(index);
-    const completeCoordinates = stylizedCurve(
-      [segment.origin.lon, segment.origin.lat],
-      [segment.destination.lon, segment.destination.lat]
-    );
-    const visibleCoordinates = trimRouteEnd(completeCoordinates);
+    const transport = dominantTransport(segment);
+    const visibleCoordinates = trimRouteEnd(stylizedCurve(origin, destination));
 
     routeFeatures.push({
       type: 'Feature',
-      properties: {
-        color,
-        isDashed: transport === 'plane',
-        offset,
-        transport,
-        index,
-      },
+      properties: { color, isDashed: transport === 'plane', offset, transport, index },
       geometry: { type: 'LineString', coordinates: visibleCoordinates },
     });
 
-    arrowFeatures.push(routeArrowFeature(visibleCoordinates, color, index));
+    buildArrowHead(visibleCoordinates, routeDistanceKm).forEach((coordinates) => {
+      arrowFeatures.push({
+        type: 'Feature',
+        properties: { color, offset, index },
+        geometry: { type: 'LineString', coordinates },
+      });
+    });
   });
 
   return {
@@ -424,7 +376,6 @@ function buildRouteData(segments) {
 function buildCityData(segments) {
   const cities = [];
   const cityByCoordinate = new Map();
-
   segments.forEach((segment, segmentIndex) => {
     [segment.origin, segment.destination].forEach((city) => {
       if (!isPlaced(city)) return;
@@ -435,7 +386,6 @@ function buildCityData(segments) {
       cities.push(entry);
     });
   });
-
   return {
     cities,
     collection: {
@@ -451,7 +401,6 @@ function buildCityData(segments) {
 
 function paintVisitedCountries(map, segments, theme) {
   if (!theme.paintVisitedCountries || !map.getLayer(IDS.countryFill)) return;
-
   const countryColors = {};
   segments.forEach((segment, index) => {
     [segment.origin, segment.destination].forEach((city) => {
@@ -460,13 +409,11 @@ function paintVisitedCountries(map, segments, theme) {
       if (alpha3 && !countryColors[alpha3]) countryColors[alpha3] = colorForIndex(index);
     });
   });
-
   const entries = Object.entries(countryColors);
   if (entries.length === 0) {
     map.setPaintProperty(IDS.countryFill, 'fill-color', 'transparent');
     return;
   }
-
   const expression = ['match', ['get', 'iso_3166_1_alpha_3']];
   entries.forEach(([alpha3, color]) => expression.push(alpha3, color));
   expression.push('transparent');
@@ -475,7 +422,7 @@ function paintVisitedCountries(map, segments, theme) {
 
 function drawMapData(map, segments, theme) {
   const routeSource = map.getSource(IDS.routeSource);
-  const arrowSource = map.getSource(IDS.routeArrowSource);
+  const arrowSource = map.getSource(IDS.arrowSource);
   const citySource = map.getSource(IDS.citySource);
   if (!routeSource || !arrowSource || !citySource) return;
 
@@ -510,7 +457,6 @@ function MapCanvas({ themeKey, segments, t }) {
 
   useEffect(() => {
     if (!mapElRef.current || !config.map.accessToken) return undefined;
-
     const map = new mapboxgl.Map({
       container: mapElRef.current,
       style: theme.styleUrl,
@@ -519,11 +465,9 @@ function MapCanvas({ themeKey, segments, t }) {
       projection: 'mercator',
       attributionControl: true,
     });
-
     mapRef.current = map;
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
     map.doubleClickZoom.disable();
-
     map.on('load', () => {
       try {
         setupRouteLayers(map, theme);
@@ -534,18 +478,14 @@ function MapCanvas({ themeKey, segments, t }) {
         console.error('[Atlas map setup]', error);
       }
     });
-
     map.on('click', (event) => {
       map.easeTo({ center: event.lngLat, zoom: map.getZoom() + 1, duration: 300 });
     });
-
     map.on('error', (event) => {
       console.error('[Mapbox error]', event.error?.message || event.error || event);
     });
-
     const resizeObserver = new window.ResizeObserver(() => map.resize());
     resizeObserver.observe(mapElRef.current);
-
     return () => {
       resizeObserver.disconnect();
       map.remove();
@@ -580,7 +520,6 @@ export function RouteMap({ segments }) {
   return (
     <div className="map-wrap">
       <MapCanvas key={mapTheme} themeKey={mapTheme} segments={segments} t={t} />
-
       {config.map.accessToken && (
         <div
           className="map-theme-selector"
