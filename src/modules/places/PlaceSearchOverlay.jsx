@@ -19,6 +19,26 @@ function submitToMapSearch(value) {
   window.requestAnimationFrame(() => form.requestSubmit());
 }
 
+function clearMapSearch() {
+  const input = document.querySelector('.map-wrap input[aria-label="Buscar lugares"]');
+  const form = input?.closest('form');
+  const clearButton = Array.from(form?.querySelectorAll('button') || [])
+    .find((button) => button.textContent?.trim() === 'Limpiar');
+
+  if (clearButton) {
+    clearButton.click();
+    return;
+  }
+
+  if (!input) return;
+  const valueSetter = Object.getOwnPropertyDescriptor(
+    window.HTMLInputElement.prototype,
+    'value'
+  )?.set;
+  valueSetter?.call(input, '');
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 export function PlaceSearchOverlay() {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
@@ -106,7 +126,7 @@ export function PlaceSearchOverlay() {
               setQuery('');
               setSuggestions([]);
               setOpen(false);
-              submitToMapSearch('');
+              clearMapSearch();
             }}
           >
             Limpiar
