@@ -1,0 +1,33 @@
+.editor-module__tabs > .editor-module__tab:nth-of-type(1) > svg:first-child,
+.editor-module__tabs > .editor-module__tab:nth-of-type(2) > svg:first-child,
+.editor-module__settings > .editor-module__menu-anchor:first-child > .editor-module__tab > svg:first-child,
+.mobiletabs > .mobiletabs__btn:first-child > svg:first-child {
+  display: none;
+}
+
+.editor-module__tabs > .editor-module__tab:nth-of-type(1)::before,
+.editor-module__tabs > .editor-module__tab:nth-of-type(2)::before,
+.editor-module__settings > .editor-module__menu-anchor:first-child > .editor-module__tab::before,
+.mobiletabs > .mobiletabs__btn:first-child::before {
+  content: '';
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  display: inline-block;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.editor-module__tabs > .editor-module__tab:nth-of-type(1)::before,
+.mobiletabs > .mobiletabs__btn:first-child::before {
+  background-image: url('/icons/tramos.svg');
+}
+
+.editor-module__tabs > .editor-module__tab:nth-of-type(2)::before {
+  background-image: url('/icons/notas.svg');
+}
+
+.editor-module__settings > .editor-module__menu-anchor:first-child > .editor-module__tab::before {
+  background-image: url('/icons/moneda.svg');
+}
