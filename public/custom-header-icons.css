@@ -10,9 +10,9 @@
 .editor-module__settings > .editor-module__menu-anchor:first-child > .editor-module__tab::before,
 .mobiletabs > .mobiletabs__btn:first-child::before {
   content: '';
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
+  width: 23px;
+  height: 23px;
+  flex: 0 0 23px;
   display: inline-block;
   background-position: center;
   background-repeat: no-repeat;
