@@ -1,1 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><image width="40" height="40" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoCAMAAAC7IEhfAAAB5lBMVEX///+ww8l9oa9ymqhvmKZul6ZznKt7orCzyM6zxMqSrq75893+9t/79N4/fY1ymZtpiJuRrrja2sJ7oJ9ohZjt7u/P09X39/g/fIvt5sl2nZ1IgZEOeZEDlqwgcYfHztCQrbdkl59GgItrmJpklJoGgJcC3u4C2vECyOYhZ37N1snS2s2+zcMlc4kGhp0Cz+sBzu4Dd5Ds6tZnk5psnKK1yMAJaICXucObusUHdZACyegCwOAtan4NgZgE1egIeZOgusSgvccIdI4cbYXV2Nqxxb4MgJcD2uwB0e+JqrYzcIRFfYtCgI1Cg5FChJHe4tELfpQKwd8YX3jS19jq6Nbn5tWvxb4LfJMD1+sLxuQhcokExeQTb4fCzsO/zsTN2Mqtw70QcIeitKnv7NhxmZ9wm6FwnaN9pqkPbYaxvrDd28JMg5LI1MkIXXcFwdS1wbHv6Mvm5dBWj5qiv8glcYQEttUNaYKvva/689rj5dQ2fJD9/PTh4tEpcoUFqcfv6MyBqKuFr7v++eiet7QOWXGwva/w6c0ebIELYnxRipctcIJnk5bJz7uRq7XR2csuc4S/ybf17tSRqrP38NZPeo+htrzFzMGTq6qCmaPu8PBEbX9Dc4FIfIpIfoxIgI8+b39hhJH39/dbSKh+AAABSUlEQVQ4y2NgGFKAkYmZhZWVlQUI2Ng5cKvj5OLm4eGFAj5+AZwKBXmQAJ+QsAiDqJg4QYUSQpJS0jKycvJYFCogK1RUUlZRVVPX0MSuUAsKtHl4dRR19fQNDAyxKjQyVoQAE24eUzNzC0sraxtCbjS1tbN3cHRydiGg0NXN3cPK0tMLmzqgQiNvH19fPz8/f9cAdw8Dg8CgYFzhGBIKAiFh4RFAdZFRYgQCHGJedIw07piJjYuL50kAq7NOTMKtMDklNS0dqi4jMysbb1zn5OaB1eUXFOJXWFRcUmpgXVZeUBGCV2FlVXVNbV1GZn0FD36FDY1N3M0trW1AJl6F3O0dnV3dPSB1PCG4fN0LlOzrl5rQNrGCB6/CSSDZiZPh8R06BYfCqdN4UMD0GTgUzpw1e87cefOkpaXnzZ07d878BQsZRsEowAsAH45WdsrOaiUAAAAASUVORK5CYII="/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" role="img" aria-label="Notas">
+  <path d="M8 5h17l7 7v23H8z" fill="#fff4d6" stroke="#14394b" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M25 5v7h7" fill="#fff" stroke="#14394b" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M12 17h10M12 22h8M12 27h6" fill="none" stroke="#c8b98f" stroke-width="1.7" stroke-linecap="round"/>
+  <g transform="rotate(-43 25 24)">
+    <path d="M22 12h6v19h-6z" fill="#09c7ef" stroke="#14394b" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M23.2 12h1.5v19h-1.5z" fill="#fff" opacity=".95"/>
+    <path d="m22 31 3 5 3-5z" fill="#ffe2a6" stroke="#14394b" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="m24.2 34.1.8 1.4.8-1.4z" fill="#14394b"/>
+    <path d="M22 9.5h6V12h-6z" fill="#22d8f2" stroke="#14394b" stroke-width="1.4"/>
+  </g>
+</svg>
