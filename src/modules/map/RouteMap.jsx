@@ -47,9 +47,6 @@ const IDS = {
   routeHalo: 'atlas-routes-halo',
   routeSolid: 'atlas-routes-solid',
   routeDashed: 'atlas-routes-dashed',
-  arrowSource: 'atlas-route-arrowheads',
-  arrowOutline: 'atlas-route-arrowheads-outline',
-  arrowFill: 'atlas-route-arrowheads-fill',
   citySource: 'atlas-city-points',
   cityDots: 'atlas-city-dots',
   cityLabels: 'atlas-city-labels',
@@ -77,7 +74,6 @@ const ISO_A2_TO_A3 = {
 
 const EUROPE_REFERENCE = [10, 50];
 const STRAIGHT_ROUTE_THRESHOLD_KM = 1600;
-const ROUTE_END_FRACTION = 0.985;
 
 function dominantTransport(segment) {
   const transport = segment?.expenses?.transport || {};
@@ -98,6 +94,7 @@ function setupRouteLayers(map, theme) {
     type: 'geojson',
     data: { type: 'FeatureCollection', features: [] },
   });
+
   map.addLayer({
     id: IDS.routeHalo,
     type: 'line',
@@ -110,6 +107,7 @@ function setupRouteLayers(map, theme) {
       'line-offset': ['get', 'offset'],
     },
   });
+
   map.addLayer({
     id: IDS.routeSolid,
     type: 'line',
@@ -122,6 +120,7 @@ function setupRouteLayers(map, theme) {
       'line-offset': ['get', 'offset'],
     },
   });
+
   map.addLayer({
     id: IDS.routeDashed,
     type: 'line',
@@ -136,35 +135,11 @@ function setupRouteLayers(map, theme) {
     },
   });
 
-  map.addSource(IDS.arrowSource, {
-    type: 'geojson',
-    data: { type: 'FeatureCollection', features: [] },
-  });
-  map.addLayer({
-    id: IDS.arrowFill,
-    type: 'fill',
-    source: IDS.arrowSource,
-    paint: {
-      'fill-color': ['get', 'color'],
-      'fill-opacity': 1,
-    },
-  });
-  map.addLayer({
-    id: IDS.arrowOutline,
-    type: 'line',
-    source: IDS.arrowSource,
-    layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: {
-      'line-color': theme.routeHaloColor,
-      'line-width': Math.max(0.8, theme.routeWidth * 0.55),
-      'line-opacity': theme.routeHaloOpacity,
-    },
-  });
-
   map.addSource(IDS.citySource, {
     type: 'geojson',
     data: { type: 'FeatureCollection', features: [] },
   });
+
   map.addLayer({
     id: IDS.cityDots,
     type: 'circle',
@@ -176,6 +151,7 @@ function setupRouteLayers(map, theme) {
       'circle-stroke-color': ['get', 'color'],
     },
   });
+
   map.addLayer({
     id: IDS.cityLabels,
     type: 'symbol',
@@ -279,42 +255,6 @@ function stylizedCurve(origin, destination, steps = 64) {
   return points;
 }
 
-function trimRouteEnd(coordinates, fraction = ROUTE_END_FRACTION) {
-  if (coordinates.length < 2) return coordinates;
-  const segmentPosition = (coordinates.length - 1) * fraction;
-  const lowerIndex = Math.floor(segmentPosition);
-  const upperIndex = Math.min(coordinates.length - 1, lowerIndex + 1);
-  const interpolation = segmentPosition - lowerIndex;
-  const lowerPoint = coordinates[lowerIndex];
-  const upperPoint = coordinates[upperIndex];
-  const endPoint = [
-    lowerPoint[0] + (upperPoint[0] - lowerPoint[0]) * interpolation,
-    lowerPoint[1] + (upperPoint[1] - lowerPoint[1]) * interpolation,
-  ];
-  return [...coordinates.slice(0, lowerIndex + 1), endPoint];
-}
-
-function buildArrowHead(coordinates, routeDistanceKm) {
-  const lastIndex = coordinates.length - 1;
-  const tip = coordinates[lastIndex];
-  const tail = coordinates[Math.max(0, lastIndex - 3)];
-  const dx = tip[0] - tail[0];
-  const dy = tip[1] - tail[1];
-  const length = Math.hypot(dx, dy) || 1;
-  const ux = dx / length;
-  const uy = dy / length;
-  const normalX = -uy;
-  const normalY = ux;
-
-  const arrowLength = Math.min(0.36, Math.max(0.12, 0.11 + routeDistanceKm / 8000));
-  const halfWidth = arrowLength * 0.48;
-  const baseCenter = [tip[0] - ux * arrowLength, tip[1] - uy * arrowLength];
-  const left = [baseCenter[0] + normalX * halfWidth, baseCenter[1] + normalY * halfWidth];
-  const right = [baseCenter[0] - normalX * halfWidth, baseCenter[1] - normalY * halfWidth];
-
-  return [[tip, left, right, tip]];
-}
-
 function buildRouteData(segments) {
   const pairCount = {};
   segments.forEach((segment) => {
@@ -325,7 +265,6 @@ function buildRouteData(segments) {
 
   const pairIndex = {};
   const routeFeatures = [];
-  const arrowFeatures = [];
 
   segments.forEach((segment, index) => {
     if (!isPlaced(segment.origin) || !isPlaced(segment.destination)) return;
@@ -338,28 +277,17 @@ function buildRouteData(segments) {
 
     const origin = [segment.origin.lon, segment.origin.lat];
     const destination = [segment.destination.lon, segment.destination.lat];
-    const routeDistanceKm = distanceKm(origin, destination);
     const color = colorForIndex(index);
     const transport = dominantTransport(segment);
-    const visibleCoordinates = trimRouteEnd(stylizedCurve(origin, destination));
 
     routeFeatures.push({
       type: 'Feature',
       properties: { color, isDashed: transport === 'plane', offset, transport, index },
-      geometry: { type: 'LineString', coordinates: visibleCoordinates },
-    });
-
-    arrowFeatures.push({
-      type: 'Feature',
-      properties: { color, offset, index },
-      geometry: { type: 'Polygon', coordinates: buildArrowHead(visibleCoordinates, routeDistanceKm) },
+      geometry: { type: 'LineString', coordinates: stylizedCurve(origin, destination) },
     });
   });
 
-  return {
-    routes: { type: 'FeatureCollection', features: routeFeatures },
-    arrows: { type: 'FeatureCollection', features: arrowFeatures },
-  };
+  return { type: 'FeatureCollection', features: routeFeatures };
 }
 
 function buildCityData(segments) {
@@ -411,13 +339,10 @@ function paintVisitedCountries(map, segments, theme) {
 
 function drawMapData(map, segments, theme) {
   const routeSource = map.getSource(IDS.routeSource);
-  const arrowSource = map.getSource(IDS.arrowSource);
   const citySource = map.getSource(IDS.citySource);
-  if (!routeSource || !arrowSource || !citySource) return;
+  if (!routeSource || !citySource) return;
 
-  const { routes, arrows } = buildRouteData(segments);
-  routeSource.setData(routes);
-  arrowSource.setData(arrows);
+  routeSource.setData(buildRouteData(segments));
 
   const { cities, collection } = buildCityData(segments);
   citySource.setData(collection);
