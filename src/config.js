@@ -44,6 +44,14 @@ export const config = {
   citySearchDebounceMs: 350,
   citySearchLimit: 6,
 
+  // --- Búsqueda de lugares (prueba ArcGIS) ---
+  arcgis: {
+    // Opcional para la prueba temporal. En producción debe configurarse una API key
+    // con restricciones de origen y habilitar almacenamiento únicamente al guardar.
+    apiKey: cleanString(env.VITE_ARCGIS_API_KEY),
+    placeSearchLimit: 30,
+  },
+
   // --- Idioma ---
   defaultLocale: allowedValue(env.VITE_DEFAULT_LOCALE, ['es', 'en'], 'es'),
 
