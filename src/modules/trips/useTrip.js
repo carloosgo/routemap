@@ -2,9 +2,6 @@ import { useReducer, useCallback } from 'react';
 import { createTrip, appendSegment, normalizeTrip, createChecklistItem, reorderSegments } from './tripModel.js';
 import { sanitizeText, uid } from '../../shared/utils.js';
 
-function samePoint(a,b){return a?.lat===b?.lat&&a?.lon===b?.lon;}
-function patchSegment(segment,patch){const relevantChange=('origin'in patch&&!samePoint(segment.origin,patch.origin))||('destination'in patch&&!samePoint(segment.destination,patch.destination))||('routeMode'in patch&&segment.routeMode!==patch.routeMode);return{...segment,...patch,route:relevantChange?null:('route'in patch?patch.route:segment.route)};}
-
 function reducer(state,action){switch(action.type){
 case'RESET':return appendSegment(createTrip());
 case'LOAD':return normalizeTrip(action.trip);
@@ -19,7 +16,7 @@ case'REMOVE_CHECKLIST_ITEM':return{...state,checklist:(state.checklist||[]).filt
 case'ADD_SEGMENT':return appendSegment(state);
 case'REMOVE_SEGMENT':return{...state,segments:state.segments.filter(s=>s.id!==action.segmentId),updatedAt:nowISO()};
 case'REORDER_SEGMENT':return reorderSegments(state,action.sourceId,action.targetId,action.placement);
-case'UPDATE_SEGMENT':return{...state,segments:state.segments.map(s=>s.id===action.segmentId?patchSegment(s,action.patch):s),updatedAt:nowISO()};
+case'UPDATE_SEGMENT':return{...state,segments:state.segments.map(s=>s.id===action.segmentId?{...s,...action.patch}:s),updatedAt:nowISO()};
 case'UPDATE_EXPENSES':return{...state,segments:state.segments.map(s=>s.id===action.segmentId?{...s,expenses:action.expenses}:s),updatedAt:nowISO()};
 default:return state;}}
 
