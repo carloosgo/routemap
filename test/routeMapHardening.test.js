@@ -11,11 +11,18 @@ async function source() {
 test('RouteMap no inyecta HTML para mostrar errores de configuración', async () => {
   const content = await source();
   assert.doesNotMatch(content, /\.innerHTML\s*=/);
-  assert.match(content, /t\('mapConfigMissing'\)/);
+  assert.match(content, /geo-map__missing/);
 });
 
-test('RouteMap vuelve a dibujar rutas cuando cambia el orden de segmentos', async () => {
+test('RouteMap vuelve a dibujar tramos cuando cambia su orden', async () => {
   const content = await source();
-  assert.match(content, /drawRoutes\(map, markersRef, segments\)/);
+  assert.match(content, /segments\.forEach\(\(segment, index\)/);
+  assert.match(content, /colorForIndex\(index\)/);
   assert.match(content, /\[segments\]/);
+});
+
+test('RouteMap no calcula ni persiste rutas mediante Geoapify', async () => {
+  const content = await source();
+  assert.doesNotMatch(content, /requestGeoapifyRoute|routeMode|geo-routes|Trazar ruta/);
+  assert.match(content, /searchGeoapifyPlaces/);
 });
