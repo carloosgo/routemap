@@ -6,21 +6,19 @@ import { defineSecret } from 'firebase-functions/params';
 import { error as logError, warn as logWarn } from 'firebase-functions/logger';
 import RequestRateLimiter from '@geoapify/request-rate-limiter';
 import {
-  compactCountryFeature,
-  countryFeaturePlaceId,
+  buildCountryLandFeature,
   decodeCountryBoundary,
   encodeCountryBoundary,
   isCountryBoundaryFeature,
-  selectCountryPlaceFeature,
-  selectFullGeometryFeature,
   utf8ByteLength,
 } from './countryBoundaryUtils.js';
 import {
   COUNTRY_BOUNDARY_GEOMETRY_SOURCE,
   countryBoundaryCacheKey,
-  countryBoundaryDetailsParams,
-  countryBoundaryLookupParams,
+  countryBoundaryDownloadUrls,
+  countryBoundaryMetadataUrl,
 } from './countryBoundaryRequest.js';
+import { iso2ToIso3 } from './isoCountryCodes.js';
 
 initializeApp();
 const db = getFirestore();
@@ -61,16 +59,26 @@ function safeError(error) {
   };
 }
 
-async function limitedFetch(url, options) {
+async function parseJsonResponse(response, serviceName) {
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    const preview = text.trim().slice(0, 160);
+    throw new Error(`${serviceName} devolvió JSON inválido${preview ? `: ${preview}` : ''}`);
+  }
+}
+
+async function limitedFetch(url, options, serviceName = 'Geoapify') {
   const [result] = await RequestRateLimiter.rateLimitedRequests([
     async () => {
       const response = await fetch(url, options);
       if (!response.ok) {
         const responseText = await response.text().catch(() => '');
         const suffix = responseText ? `: ${responseText.slice(0, 240)}` : '';
-        throw new Error(`Geoapify respondió ${response.status}${suffix}`);
+        throw new Error(`${serviceName} respondió ${response.status}${suffix}`);
       }
-      return response.json();
+      return parseJsonResponse(response, serviceName);
     },
   ], 5, 1000, { maxConcurrentRequests: 2 });
 
@@ -93,9 +101,6 @@ async function cached(collection, key, loader) {
   return { result, cacheHit: false };
 }
 
-// GeoJSON usa arreglos anidados para Polygon/MultiPolygon. Firestore no permite
-// que un arreglo contenga otro arreglo, así que la geometría se guarda como JSON
-// serializado. Un fallo de caché nunca debe impedir que la frontera llegue al mapa.
 async function cachedCountryBoundary(key, loader) {
   const ref = db.collection('countryBoundaryCache').doc(cacheId(key));
   const snapshot = await ref.get();
@@ -161,7 +166,6 @@ function mapPlace(item) {
   };
 }
 
-// Búsqueda de lugares dentro del mapa: hospedajes, restaurantes, estaciones, etc.
 export const geoapifyPlaceSearch = onCall({ secrets: [GEOAPIFY_API_KEY] }, async (request) => {
   const query = String(request.data?.query || '').trim();
   const queryKey = normalized(query);
@@ -188,8 +192,6 @@ export const geoapifyPlaceSearch = onCall({ secrets: [GEOAPIFY_API_KEY] }, async
   return { results: cachedResult.result, cacheHit: cachedResult.cacheHit };
 });
 
-// Función general de autocompletado Geoapify. Se conserva como capacidad backend,
-// pero no sustituye el flujo actual de selección de ciudades del itinerario.
 export const geoapifyAutocomplete = onCall({ secrets: [GEOAPIFY_API_KEY] }, async (request) => {
   const query = String(request.data?.query || '').trim();
   const queryKey = normalized(query);
@@ -216,8 +218,6 @@ export const geoapifyAutocomplete = onCall({ secrets: [GEOAPIFY_API_KEY] }, asyn
   return { results: cachedResult.result, cacheHit: cachedResult.cacheHit };
 });
 
-// Cálculo de rutas disponible como servicio independiente. El mapa actual no lo
-// usa para reemplazar las líneas visuales definidas por el producto.
 export const geoapifyRoute = onCall({ secrets: [GEOAPIFY_API_KEY] }, async (request) => {
   const { origin, destination } = request.data || {};
   const mode = ALLOWED_MODES.has(request.data?.mode) ? request.data.mode : 'drive';
@@ -317,76 +317,103 @@ export const geoapifyBatchGeocode = onCall({
   };
 });
 
-export const geoapifyCountryBoundary = onCall({ secrets: [GEOAPIFY_API_KEY] }, async (request) => {
-  const lat = Number(request.data?.lat);
-  const lon = Number(request.data?.lon);
-  const countryCode = String(request.data?.countryCode || '').trim().toUpperCase();
+export const geoapifyCountryBoundary = onCall(
+  { timeoutSeconds: 120, memory: '512MiB' },
+  async (request) => {
+    const lat = Number(request.data?.lat);
+    const lon = Number(request.data?.lon);
+    const countryCode = String(request.data?.countryCode || '').trim().toUpperCase();
 
-  if (!validCoordinate(lat, -90, 90) || !validCoordinate(lon, -180, 180)) {
-    throw new HttpsError('invalid-argument', 'Coordenadas inválidas.');
-  }
-  if (!/^[A-Z]{2}$/.test(countryCode)) {
-    throw new HttpsError('invalid-argument', 'Código de país inválido.');
-  }
+    if (!validCoordinate(lat, -90, 90) || !validCoordinate(lon, -180, 180)) {
+      throw new HttpsError('invalid-argument', 'Coordenadas inválidas.');
+    }
+    if (!/^[A-Z]{2}$/.test(countryCode)) {
+      throw new HttpsError('invalid-argument', 'Código de país inválido.');
+    }
 
-  try {
-    const key = countryBoundaryCacheKey(countryCode);
-    const cachedResult = await cachedCountryBoundary(key, async () => {
-      const lookupParams = countryBoundaryLookupParams({
+    const iso3 = iso2ToIso3(countryCode);
+    if (!iso3) {
+      throw new HttpsError(
+        'invalid-argument',
+        `No existe conversión ISO-3 para ${countryCode}.`
+      );
+    }
+
+    try {
+      const key = countryBoundaryCacheKey(countryCode);
+      const cachedResult = await cachedCountryBoundary(key, async () => {
+        const metadataUrl = countryBoundaryMetadataUrl(iso3);
+        const metadata = await limitedFetch(
+          metadataUrl,
+          { headers: { Accept: 'application/json' } },
+          'geoBoundaries'
+        );
+        const downloadUrls = countryBoundaryDownloadUrls(metadata);
+
+        if (!downloadUrls.length) {
+          throw new HttpsError(
+            'not-found',
+            `geoBoundaries no publicó un ADM0 completo para ${countryCode}.`
+          );
+        }
+
+        let payload = null;
+        let lastError = null;
+        for (const downloadUrl of downloadUrls) {
+          try {
+            payload = await limitedFetch(
+              downloadUrl,
+              {
+                headers: {
+                  Accept: 'application/geo+json, application/json',
+                  'User-Agent': 'AtlasMap country boundary service',
+                },
+              },
+              'geoBoundaries'
+            );
+            break;
+          } catch (error) {
+            lastError = error;
+          }
+        }
+
+        if (!payload) throw lastError || new Error('No se descargó la geometría ADM0.');
+
+        const feature = buildCountryLandFeature(payload, {
+          countryCode,
+          iso3,
+          name: metadata?.boundaryName || '',
+        });
+
+        if (!feature) {
+          throw new HttpsError(
+            'not-found',
+            `geoBoundaries no devolvió un polígono terrestre válido para ${countryCode}.`
+          );
+        }
+
+        return feature;
+      });
+
+      return {
+        feature: cachedResult.result,
+        cacheHit: cachedResult.cacheHit,
+        geometrySource: COUNTRY_BOUNDARY_GEOMETRY_SOURCE,
+      };
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+
+      logError('geoapifyCountryBoundary failed.', {
+        countryCode,
+        iso3,
         lat,
         lon,
-        apiKey: requireKey(),
+        error: safeError(error),
       });
-      const lookupPayload = await limitedFetch(
-        `https://api.geoapify.com/v1/boundaries/part-of?${lookupParams}`
+      throw new HttpsError(
+        'internal',
+        `No fue posible obtener el límite terrestre de ${countryCode}.`
       );
-      const countryPlace = selectCountryPlaceFeature(lookupPayload, countryCode);
-      const placeId = countryFeaturePlaceId(countryPlace);
-
-      if (!placeId) {
-        throw new HttpsError(
-          'not-found',
-          `Geoapify no devolvió el identificador nacional para ${countryCode}.`
-        );
-      }
-
-      const detailsParams = countryBoundaryDetailsParams({
-        placeId,
-        apiKey: requireKey(),
-      });
-      const detailsPayload = await limitedFetch(
-        `https://api.geoapify.com/v2/place-details?${detailsParams}`
-      );
-      const selected = selectFullGeometryFeature(detailsPayload, countryCode);
-      const feature = compactCountryFeature(selected, countryCode);
-
-      if (!feature) {
-        throw new HttpsError(
-          'not-found',
-          `Geoapify no devolvió la geometría original de ${countryCode}.`
-        );
-      }
-
-      return feature;
-    });
-
-    return {
-      feature: cachedResult.result,
-      cacheHit: cachedResult.cacheHit,
-      geometrySource: COUNTRY_BOUNDARY_GEOMETRY_SOURCE,
-    };
-  } catch (error) {
-    if (error instanceof HttpsError) throw error;
-
-    logError('geoapifyCountryBoundary failed.', {
-      countryCode,
-      lat,
-      lon,
-      error: safeError(error),
-    });
-    throw new HttpsError(
-      'internal',
-      `No fue posible obtener el límite nacional de ${countryCode}.`
-    );
+    }
   }
-});
+);
