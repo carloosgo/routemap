@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { config, colorForIndex } from '../../config.js';
 import { isPlaced } from '../trips/tripModel.js';
 import {
-  getGeoapifyCountryBoundary,
+  getCountryLandBoundary,
   searchGeoapifyPlaces,
 } from '../places/geoapifyClient.js';
 import { countryLayerStyle, visitedCountries } from './countryColoring.js';
@@ -31,7 +31,6 @@ function adaptiveCurve(origin, destination, steps = 80) {
   const dy = end[1] - start[1];
   const distance = Math.sqrt(dx * dx + dy * dy);
 
-  // Los trayectos muy cortos y continentales muy largos se muestran rectos.
   if (distance < 1.25 || distance > 24) {
     return [[origin.lat, origin.lon], [destination.lat, destination.lon]];
   }
@@ -42,8 +41,6 @@ function adaptiveCurve(origin, destination, steps = 80) {
   const middleY = (start[1] + end[1]) / 2;
   const length = distance || 1;
 
-  // Sentido invertido respecto a la perpendicular matemática estándar para
-  // reproducir la orientación visual aprobada del itinerario.
   const controlX = middleX + (dy / length) * offset;
   const controlY = middleY + (-dx / length) * offset;
   const points = [];
@@ -123,7 +120,10 @@ export function RouteMap({ segments, updateSegment }) {
 
     L.tileLayer(
       `https://maps.geoapify.com/v1/tile/${config.geoapify.mapStyle}/{z}/{x}/{y}.png?apiKey=${config.geoapify.mapApiKey}`,
-      { maxZoom: 20, attribution: '© OpenStreetMap contributors · Powered by Geoapify' }
+      {
+        maxZoom: 20,
+        attribution: '© OpenStreetMap contributors · Powered by Geoapify · Country boundaries © geoBoundaries',
+      }
     ).addTo(map);
 
     countryLayersRef.current.addTo(map);
@@ -151,39 +151,44 @@ export function RouteMap({ segments, updateSegment }) {
     countryLayersRef.current.clearLayers();
 
     async function paintVisitedCountries() {
-      // Esta lista se deriva exclusivamente de origin/destination de los tramos.
-      // Los lugares guardados por el buscador no participan en el coloreado.
       const countries = visitedCountries(segments, colorForIndex);
-      const resolved = await Promise.allSettled(
-        countries.map(async ({ countryCode, city, color }) => ({
-          feature: await getGeoapifyCountryBoundary({
-            countryCode,
-            lat: city.lat,
-            lon: city.lon,
-          }),
-          countryCode,
-          color,
-        }))
-      );
+      if (!countries.length) return;
 
-      if (boundaryRequestRef.current !== requestId || !mapRef.current) return;
-      countryLayersRef.current.clearLayers();
+      let nextIndex = 0;
+      const workerCount = Math.min(3, countries.length);
 
-      resolved.forEach((item) => {
-        if (item.status !== 'fulfilled' || !item.value.feature) return;
-        const { feature, countryCode, color } = item.value;
-        L.geoJSON(feature, {
-          pane: 'countryPane',
-          interactive: false,
-          style: countryLayerStyle(color),
-        })
-          .bindTooltip(countryCode, { sticky: true })
-          .addTo(countryLayersRef.current);
-      });
+      async function worker() {
+        while (nextIndex < countries.length) {
+          const currentIndex = nextIndex;
+          nextIndex += 1;
+          const { countryCode, city, color } = countries[currentIndex];
+
+          try {
+            const feature = await getCountryLandBoundary({
+              countryCode,
+              lat: city.lat,
+              lon: city.lon,
+            });
+
+            if (boundaryRequestRef.current !== requestId || !mapRef.current) return;
+            if (!feature) throw new Error('La respuesta no contiene geometría.');
+
+            L.geoJSON(feature, {
+              pane: 'countryPane',
+              interactive: false,
+              style: countryLayerStyle(color),
+            }).addTo(countryLayersRef.current);
+          } catch (boundaryError) {
+            console.error(`[Country coloring] ${countryCode}`, boundaryError);
+          }
+        }
+      }
+
+      await Promise.all(Array.from({ length: workerCount }, () => worker()));
     }
 
-    paintVisitedCountries().catch(() => {
-      // Las fronteras son una mejora visual; una falla de red no debe romper el mapa.
+    paintVisitedCountries().catch((boundaryError) => {
+      console.error('[Country coloring] Unexpected failure', boundaryError);
     });
 
     return () => {
