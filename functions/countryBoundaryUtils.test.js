@@ -48,6 +48,26 @@ test('selects the explicit country feature for the requested ISO code', () => {
   assert.equal(selected.properties.name, 'France');
 });
 
+test('recognizes administrative level 2 as the national boundary', () => {
+  const payload = {
+    features: [
+      {
+        type: 'Feature',
+        properties: { country_code: 'de', admin_level: 4, name: 'Bavaria' },
+        geometry: polygon(12),
+      },
+      {
+        type: 'Feature',
+        properties: { country_code: 'de', admin_level: 2, name: 'Germany' },
+        geometry: polygon(8),
+      },
+    ],
+  };
+
+  const selected = selectCountryFeature(payload, 'DE');
+  assert.equal(selected.properties.name, 'Germany');
+});
+
 test('falls back to the largest polygon when the API omits a country type marker', () => {
   const payload = {
     features: [
