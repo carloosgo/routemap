@@ -20,6 +20,11 @@ function featureCountryCode(feature) {
   );
 }
 
+export function countryFeaturePlaceId(feature) {
+  const properties = feature?.properties || {};
+  return String(properties.place_id || properties.placeId || '').trim();
+}
+
 function isExplicitCountry(feature) {
   const properties = feature?.properties || {};
   const values = [
@@ -69,6 +74,30 @@ function geometryEnvelopeArea(feature) {
   return Math.max(0, maxLon - minLon) * Math.max(0, maxLat - minLat);
 }
 
+// Selecciona el registro nacional del resultado part-of. En esta fase la
+// geometría es Point; lo importante es obtener el place_id exacto del país.
+export function selectCountryPlaceFeature(payload, expectedCountryCode) {
+  const expected = normalizeCountryCode(expectedCountryCode);
+  const features = Array.isArray(payload?.features) ? payload.features : [];
+  if (!features.length) return null;
+
+  return features
+    .map((feature, index) => ({
+      feature,
+      index,
+      codeMatch: expected && featureCountryCode(feature) === expected ? 1 : 0,
+      explicitCountry: isExplicitCountry(feature) ? 1 : 0,
+      hasPlaceId: countryFeaturePlaceId(feature) ? 1 : 0,
+    }))
+    .filter((item) => item.codeMatch || !expected)
+    .sort((left, right) => (
+      right.explicitCountry - left.explicitCountry
+      || right.hasPlaceId - left.hasPlaceId
+      || left.index - right.index
+    ))[0]?.feature || null;
+}
+
+// Conservado para validar respuestas poligonales y compatibilidad de pruebas.
 export function selectCountryFeature(payload, expectedCountryCode) {
   const expected = normalizeCountryCode(expectedCountryCode);
   const features = Array.isArray(payload?.features) ? payload.features : [];
@@ -90,6 +119,38 @@ export function selectCountryFeature(payload, expectedCountryCode) {
     .sort((left, right) => (
       right.explicitCountry - left.explicitCountry
       || right.envelopeArea - left.envelopeArea
+      || left.index - right.index
+    ))[0]?.feature || null;
+}
+
+// Place Details devuelve una FeatureCollection. La geometría original pedida
+// mediante details.full_geometry está en la feature de tipo "details".
+export function selectFullGeometryFeature(payload, expectedCountryCode) {
+  const expected = normalizeCountryCode(expectedCountryCode);
+  const features = Array.isArray(payload?.features) ? payload.features : [];
+  const polygons = features.filter(isCountryBoundaryFeature);
+  if (!polygons.length) return null;
+
+  const details = polygons.filter(
+    (feature) => String(feature?.properties?.feature_type || '').toLowerCase() === 'details'
+  );
+  const candidates = details.length ? details : polygons;
+  const codeMatches = expected
+    ? candidates.filter((feature) => {
+      const code = featureCountryCode(feature);
+      return !code || code === expected;
+    })
+    : candidates;
+  const finalCandidates = codeMatches.length ? codeMatches : candidates;
+
+  return finalCandidates
+    .map((feature, index) => ({
+      feature,
+      index,
+      envelopeArea: geometryEnvelopeArea(feature),
+    }))
+    .sort((left, right) => (
+      right.envelopeArea - left.envelopeArea
       || left.index - right.index
     ))[0]?.feature || null;
 }
