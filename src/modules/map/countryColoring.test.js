@@ -58,12 +58,12 @@ test('ignores incomplete cities and invalid country codes', () => {
   );
 });
 
-test('creates a visible Leaflet polygon style with the segment color', () => {
+test('renders only the fill and disables Leaflet geometry simplification', () => {
   assert.deepEqual(countryLayerStyle('#2563eb'), {
-    color: '#2563eb',
-    weight: 1,
-    opacity: 0.32,
+    stroke: false,
     fillColor: '#2563eb',
     fillOpacity: 0.09,
+    fillRule: 'evenodd',
+    smoothFactor: 0,
   });
 });
