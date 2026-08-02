@@ -7,16 +7,19 @@ import { error as logError, warn as logWarn } from 'firebase-functions/logger';
 import RequestRateLimiter from '@geoapify/request-rate-limiter';
 import {
   compactCountryFeature,
+  countryFeaturePlaceId,
   decodeCountryBoundary,
   encodeCountryBoundary,
   isCountryBoundaryFeature,
-  selectCountryFeature,
+  selectCountryPlaceFeature,
+  selectFullGeometryFeature,
   utf8ByteLength,
 } from './countryBoundaryUtils.js';
 import {
-  COUNTRY_BOUNDARY_ACCURACY_METERS,
+  COUNTRY_BOUNDARY_GEOMETRY_SOURCE,
   countryBoundaryCacheKey,
-  countryBoundaryRequestParams,
+  countryBoundaryDetailsParams,
+  countryBoundaryLookupParams,
 } from './countryBoundaryRequest.js';
 
 initializeApp();
@@ -329,21 +332,38 @@ export const geoapifyCountryBoundary = onCall({ secrets: [GEOAPIFY_API_KEY] }, a
   try {
     const key = countryBoundaryCacheKey(countryCode);
     const cachedResult = await cachedCountryBoundary(key, async () => {
-      const params = countryBoundaryRequestParams({
+      const lookupParams = countryBoundaryLookupParams({
         lat,
         lon,
         apiKey: requireKey(),
       });
-      const payload = await limitedFetch(
-        `https://api.geoapify.com/v1/boundaries/part-of?${params}`
+      const lookupPayload = await limitedFetch(
+        `https://api.geoapify.com/v1/boundaries/part-of?${lookupParams}`
       );
-      const selected = selectCountryFeature(payload, countryCode);
+      const countryPlace = selectCountryPlaceFeature(lookupPayload, countryCode);
+      const placeId = countryFeaturePlaceId(countryPlace);
+
+      if (!placeId) {
+        throw new HttpsError(
+          'not-found',
+          `Geoapify no devolvió el identificador nacional para ${countryCode}.`
+        );
+      }
+
+      const detailsParams = countryBoundaryDetailsParams({
+        placeId,
+        apiKey: requireKey(),
+      });
+      const detailsPayload = await limitedFetch(
+        `https://api.geoapify.com/v2/place-details?${detailsParams}`
+      );
+      const selected = selectFullGeometryFeature(detailsPayload, countryCode);
       const feature = compactCountryFeature(selected, countryCode);
 
       if (!feature) {
         throw new HttpsError(
           'not-found',
-          `Geoapify no devolvió el límite nacional para ${countryCode}.`
+          `Geoapify no devolvió la geometría original de ${countryCode}.`
         );
       }
 
@@ -353,7 +373,7 @@ export const geoapifyCountryBoundary = onCall({ secrets: [GEOAPIFY_API_KEY] }, a
     return {
       feature: cachedResult.result,
       cacheHit: cachedResult.cacheHit,
-      accuracyMeters: COUNTRY_BOUNDARY_ACCURACY_METERS,
+      geometrySource: COUNTRY_BOUNDARY_GEOMETRY_SOURCE,
     };
   } catch (error) {
     if (error instanceof HttpsError) throw error;
