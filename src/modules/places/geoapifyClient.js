@@ -2,12 +2,17 @@ import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/
 import { getFirebaseServices } from '../../infrastructure/firebase/firebaseClient.js';
 import { config } from '../../config.js';
 
-const CACHE_KEY = 'atlas:geoapify-search-cache:v1';
+const CACHE_KEY = 'atlas:geoapify-place-cache:v1';
 const memoryCache = new Map();
 let emulatorConnected = false;
 
 export function normalizeSearchKey(value) {
-  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ');
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
 }
 
 function readDiskCache() {
@@ -23,7 +28,7 @@ function persistCache() {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(Object.fromEntries(memoryCache)));
   } catch {
-    // La caché es una optimización; una cuota llena no debe romper la búsqueda.
+    // La caché es opcional y nunca debe bloquear la búsqueda.
   }
 }
 
@@ -42,32 +47,19 @@ function callable(name) {
 export async function searchGeoapifyPlaces(query, { signal } = {}) {
   const queryKey = normalizeSearchKey(query);
   if (queryKey.length < config.geoapify.searchMinChars) return [];
+
   const cached = memoryCache.get(queryKey);
-  if (cached && Date.now() - cached.timestamp < config.geoapify.clientCacheTtlMs) return cached.result;
+  if (cached && Date.now() - cached.timestamp < config.geoapify.clientCacheTtlMs) {
+    return cached.result;
+  }
+
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-  const request = callable('geoapifyAutocomplete');
+  const request = callable('geoapifyPlaceSearch');
   const response = await request({ query, limit: config.geoapify.searchLimit });
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+
   const result = Array.isArray(response.data?.results) ? response.data.results : [];
   memoryCache.set(queryKey, { result, timestamp: Date.now() });
   persistCache();
   return result;
-}
-
-export async function requestGeoapifyRoute({ origin, destination, mode }) {
-  const request = callable('geoapifyRoute');
-  const response = await request({ origin, destination, mode });
-  return response.data;
-}
-
-export async function reverseGeoapifyPoint(point) {
-  const request = callable('geoapifyReverse');
-  const response = await request({ point });
-  return response.data;
-}
-
-export async function batchGeoapifyGeocode(queries) {
-  const request = callable('geoapifyBatchGeocode');
-  const response = await request({ queries: queries.slice(0, 1000) });
-  return response.data?.results || [];
 }
