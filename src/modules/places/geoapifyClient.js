@@ -2,8 +2,10 @@ import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/
 import { getFirebaseServices } from '../../infrastructure/firebase/firebaseClient.js';
 import { config } from '../../config.js';
 
-const CACHE_KEY = 'atlas:geoapify-place-cache:v1';
-const memoryCache = new Map();
+const PLACE_CACHE_KEY = 'atlas:geoapify-place-cache:v1';
+const BOUNDARY_CACHE_KEY = 'atlas:geoapify-country-boundary-cache:v1';
+const placeCache = new Map();
+const boundaryCache = new Map();
 let emulatorConnected = false;
 
 export function normalizeSearchKey(value) {
@@ -15,24 +17,25 @@ export function normalizeSearchKey(value) {
     .replace(/\s+/g, ' ');
 }
 
-function readDiskCache() {
+function readCache(storageKey, target) {
   try {
-    const parsed = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
-    Object.entries(parsed).forEach(([key, entry]) => memoryCache.set(key, entry));
+    const parsed = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    Object.entries(parsed).forEach(([key, entry]) => target.set(key, entry));
   } catch {
-    localStorage.removeItem(CACHE_KEY);
+    localStorage.removeItem(storageKey);
   }
 }
 
-function persistCache() {
+function persistCache(storageKey, target) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(Object.fromEntries(memoryCache)));
+    localStorage.setItem(storageKey, JSON.stringify(Object.fromEntries(target)));
   } catch {
-    // La caché es opcional y nunca debe bloquear la búsqueda.
+    // La caché es opcional y nunca debe bloquear la aplicación.
   }
 }
 
-readDiskCache();
+readCache(PLACE_CACHE_KEY, placeCache);
+readCache(BOUNDARY_CACHE_KEY, boundaryCache);
 
 function callable(name) {
   const { app } = getFirebaseServices();
@@ -48,7 +51,7 @@ export async function searchGeoapifyPlaces(query, { signal } = {}) {
   const queryKey = normalizeSearchKey(query);
   if (queryKey.length < config.geoapify.searchMinChars) return [];
 
-  const cached = memoryCache.get(queryKey);
+  const cached = placeCache.get(queryKey);
   if (cached && Date.now() - cached.timestamp < config.geoapify.clientCacheTtlMs) {
     return cached.result;
   }
@@ -59,7 +62,24 @@ export async function searchGeoapifyPlaces(query, { signal } = {}) {
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 
   const result = Array.isArray(response.data?.results) ? response.data.results : [];
-  memoryCache.set(queryKey, { result, timestamp: Date.now() });
-  persistCache();
+  placeCache.set(queryKey, { result, timestamp: Date.now() });
+  persistCache(PLACE_CACHE_KEY, placeCache);
+  return result;
+}
+
+export async function getGeoapifyCountryBoundary({ countryCode, lat, lon }) {
+  const key = String(countryCode || '').trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(key)) return null;
+
+  const cached = boundaryCache.get(key);
+  if (cached && Date.now() - cached.timestamp < config.geoapify.clientCacheTtlMs) {
+    return cached.result;
+  }
+
+  const request = callable('geoapifyCountryBoundary');
+  const response = await request({ countryCode: key, lat, lon });
+  const result = response.data?.feature || null;
+  boundaryCache.set(key, { result, timestamp: Date.now() });
+  persistCache(BOUNDARY_CACHE_KEY, boundaryCache);
   return result;
 }
