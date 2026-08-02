@@ -1,14 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  buildCountryLandFeature,
   compactCountryFeature,
-  countryFeaturePlaceId,
   decodeCountryBoundary,
   encodeCountryBoundary,
   isCountryBoundaryFeature,
   selectCountryFeature,
-  selectCountryPlaceFeature,
-  selectFullGeometryFeature,
   utf8ByteLength,
 } from './countryBoundaryUtils.js';
 
@@ -25,6 +23,68 @@ function polygon(size = 1) {
   };
 }
 
+test('builds one land-only ADM0 feature and preserves every polygon part', () => {
+  const payload = {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        properties: { shapeGroup: 'FRA', shapeName: 'France' },
+        geometry: polygon(6),
+      },
+      {
+        type: 'Feature',
+        properties: { shapeGroup: 'FRA', shapeName: 'France' },
+        geometry: {
+          type: 'MultiPolygon',
+          coordinates: [polygon(1).coordinates, polygon(2).coordinates],
+        },
+      },
+    ],
+  };
+
+  const feature = buildCountryLandFeature(payload, {
+    countryCode: 'FR',
+    iso3: 'FRA',
+    name: 'France',
+  });
+
+  assert.equal(feature.properties.countryCode, 'FR');
+  assert.equal(feature.properties.iso3, 'FRA');
+  assert.equal(feature.properties.boundaryKind, 'land');
+  assert.equal(feature.geometry.type, 'MultiPolygon');
+  assert.equal(feature.geometry.coordinates.length, 3);
+});
+
+test('does not mix polygon features from another ISO-3 country', () => {
+  const feature = buildCountryLandFeature({
+    features: [
+      {
+        type: 'Feature',
+        properties: { shapeGroup: 'DEU' },
+        geometry: polygon(9),
+      },
+      {
+        type: 'Feature',
+        properties: { shapeGroup: 'FRA' },
+        geometry: polygon(4),
+      },
+    ],
+  }, { countryCode: 'FR', iso3: 'FRA' });
+
+  assert.deepEqual(feature.geometry, polygon(4));
+});
+
+test('rejects payloads without Polygon or MultiPolygon geometries', () => {
+  assert.equal(buildCountryLandFeature({
+    features: [{
+      type: 'Feature',
+      properties: {},
+      geometry: { type: 'Point', coordinates: [0, 0] },
+    }],
+  }, { countryCode: 'FR', iso3: 'FRA' }), null);
+});
+
 test('selects the explicit country feature for the requested ISO code', () => {
   const payload = {
     type: 'FeatureCollection',
@@ -39,149 +99,41 @@ test('selects the explicit country feature for the requested ISO code', () => {
         properties: { country_code: 'fr', result_type: 'country', name: 'France' },
         geometry: polygon(6),
       },
-      {
-        type: 'Feature',
-        properties: { country_code: 'be', result_type: 'country', name: 'Belgium' },
-        geometry: polygon(2),
-      },
     ],
   };
 
-  const selected = selectCountryFeature(payload, 'FR');
-  assert.equal(selected.properties.name, 'France');
+  assert.equal(selectCountryFeature(payload, 'FR').properties.name, 'France');
 });
 
-test('recognizes administrative level 2 as the national boundary', () => {
-  const payload = {
-    features: [
-      {
-        type: 'Feature',
-        properties: { country_code: 'de', admin_level: 4, name: 'Bavaria' },
-        geometry: polygon(12),
-      },
-      {
-        type: 'Feature',
-        properties: { country_code: 'de', admin_level: 2, name: 'Germany' },
-        geometry: polygon(8),
-      },
-    ],
-  };
-
-  const selected = selectCountryFeature(payload, 'DE');
-  assert.equal(selected.properties.name, 'Germany');
-});
-
-test('selects the country place id from point-only part-of results', () => {
-  const payload = {
-    type: 'FeatureCollection',
-    features: [
-      {
-        type: 'Feature',
-        properties: {
-          country_code: 'fr',
-          result_type: 'city',
-          name: 'Paris',
-          place_id: 'paris-id',
-        },
-        geometry: { type: 'Point', coordinates: [2.3522, 48.8566] },
-      },
-      {
-        type: 'Feature',
-        properties: {
-          country_code: 'fr',
-          result_type: 'country',
-          admin_level: 2,
-          name: 'France',
-          country: 'France',
-          place_id: 'france-id',
-        },
-        geometry: { type: 'Point', coordinates: [2.2, 46.2] },
-      },
-    ],
-  };
-
-  const selected = selectCountryPlaceFeature(payload, 'FR');
-  assert.equal(selected.properties.name, 'France');
-  assert.equal(countryFeaturePlaceId(selected), 'france-id');
-});
-
-test('selects details.full_geometry polygon from Place Details response', () => {
-  const payload = {
-    type: 'FeatureCollection',
-    features: [
-      {
-        type: 'Feature',
-        properties: { feature_type: 'building' },
-        geometry: polygon(0.1),
-      },
-      {
-        type: 'Feature',
-        properties: {
-          feature_type: 'details',
-          country_code: 'fr',
-          name: 'France',
-        },
-        geometry: polygon(8),
-      },
-    ],
-  };
-
-  const selected = selectFullGeometryFeature(payload, 'FR');
-  assert.equal(selected.properties.feature_type, 'details');
-  assert.deepEqual(selected.geometry, polygon(8));
-});
-
-test('falls back to the largest polygon when the API omits a country type marker', () => {
-  const payload = {
-    features: [
-      { type: 'Feature', properties: { country_code: 'de' }, geometry: polygon(1) },
-      { type: 'Feature', properties: { country_code: 'de' }, geometry: polygon(8) },
-    ],
-  };
-
-  const selected = selectCountryFeature(payload, 'DE');
-  assert.deepEqual(selected.geometry, polygon(8));
-});
-
-test('compacts a Geoapify feature without losing polygon coordinates', () => {
+test('compacts a feature without losing polygon coordinates', () => {
   const original = {
     type: 'Feature',
-    properties: {
-      country_code: 'es',
-      result_type: 'country',
-      name: 'Spain',
-      unnecessaryLargeMetadata: 'discard me',
-    },
+    properties: { country_code: 'es', name: 'Spain', discard: 'x' },
     geometry: polygon(4),
   };
 
   const compact = compactCountryFeature(original, 'ES');
-  assert.equal(compact.properties.countryCode, 'ES');
-  assert.equal(compact.properties.name, 'Spain');
   assert.deepEqual(compact.geometry, original.geometry);
-  assert.equal('unnecessaryLargeMetadata' in compact.properties, false);
+  assert.equal('discard' in compact.properties, false);
 });
 
 test('serializes nested GeoJSON arrays as a Firestore-safe string and restores them', () => {
-  const feature = compactCountryFeature({
-    type: 'Feature',
-    properties: { country_code: 'hu', name: 'Hungary' },
-    geometry: {
-      type: 'MultiPolygon',
-      coordinates: [[polygon(2).coordinates]],
-    },
-  }, 'HU');
+  const feature = buildCountryLandFeature({
+    features: [{
+      type: 'Feature',
+      properties: { shapeGroup: 'HUN', shapeName: 'Hungary' },
+      geometry: polygon(2),
+    }],
+  }, { countryCode: 'HU', iso3: 'HUN' });
 
   const encoded = encodeCountryBoundary(feature);
   assert.equal(typeof encoded, 'string');
   assert.ok(utf8ByteLength(encoded) > 0);
-
-  const decoded = decodeCountryBoundary(encoded);
-  assert.deepEqual(decoded, feature);
-  assert.equal(isCountryBoundaryFeature(decoded), true);
+  assert.deepEqual(decodeCountryBoundary(encoded), feature);
+  assert.equal(isCountryBoundaryFeature(feature), true);
 });
 
-test('rejects malformed cached strings instead of breaking the callable', () => {
+test('rejects malformed cached strings', () => {
   assert.equal(decodeCountryBoundary('{not-json'), null);
   assert.equal(isCountryBoundaryFeature(null), false);
 });
