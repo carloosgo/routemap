@@ -3,7 +3,10 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { config, colorForIndex } from '../../config.js';
 import { isPlaced } from '../trips/tripModel.js';
-import { searchGeoapifyPlaces } from '../places/geoapifyClient.js';
+import {
+  getGeoapifyCountryBoundary,
+  searchGeoapifyPlaces,
+} from '../places/geoapifyClient.js';
 import './RouteMap.css';
 
 function dominantTransport(segment) {
@@ -27,23 +30,19 @@ function adaptiveCurve(origin, destination, steps = 80) {
   const dy = end[1] - start[1];
   const distance = Math.sqrt(dx * dx + dy * dy);
 
-  // Los trayectos muy cortos y los extremadamente largos permanecen rectos.
-  if (distance < 1.45 || distance > 28) {
-    return [
-      [origin.lat, origin.lon],
-      [destination.lat, destination.lon],
-    ];
+  // Los trayectos muy cortos y continentales muy largos se muestran rectos.
+  if (distance < 1.25 || distance > 24) {
+    return [[origin.lat, origin.lon], [destination.lat, destination.lon]];
   }
 
-  const curveFactor = Math.max(0.075, Math.min(0.21, 0.20 - Math.max(0, distance - 2) * 0.007));
-  const offset = Math.min(distance * curveFactor, 3.5);
+  const curveFactor = Math.max(0.06, Math.min(0.20, 0.19 - Math.max(0, distance - 2) * 0.008));
+  const offset = Math.min(distance * curveFactor, 3.25);
   const middleX = (start[0] + end[0]) / 2;
   const middleY = (start[1] + end[1]) / 2;
   const length = distance || 1;
 
-  // Perpendicular invertida respecto a la versión anterior. Así Budapest → Viena
-  // cuelga al norte, París → Budapest al sur y los trayectos hacia Ámsterdam
-  // se abren hacia el noroeste.
+  // Sentido invertido respecto a la perpendicular matemática estándar para
+  // reproducir la orientación visual aprobada del itinerario.
   const controlX = middleX + (dy / length) * offset;
   const controlY = middleY + (-dx / length) * offset;
   const points = [];
@@ -84,11 +83,31 @@ function orderedCities(segments) {
   return cities;
 }
 
+// Reproduce la regla usada por el mapa anterior: cada país adopta el color
+// del primer tramo que lo visita.
+function visitedCountries(segments) {
+  const countries = new Map();
+
+  segments.forEach((segment, index) => {
+    const color = colorForIndex(index);
+    [segment.origin, segment.destination].forEach((city) => {
+      if (!isPlaced(city)) return;
+      const countryCode = String(city.countryCode || '').trim().toUpperCase();
+      if (!/^[A-Z]{2}$/.test(countryCode) || countries.has(countryCode)) return;
+      countries.set(countryCode, { countryCode, city, color });
+    });
+  });
+
+  return [...countries.values()];
+}
+
 export function RouteMap({ segments, updateSegment }) {
   const mapNode = useRef(null);
   const mapRef = useRef(null);
+  const countryLayersRef = useRef(L.layerGroup());
   const routeLayersRef = useRef(L.layerGroup());
   const resultLayersRef = useRef(L.layerGroup());
+  const boundaryRequestRef = useRef(0);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -110,18 +129,19 @@ export function RouteMap({ segments, updateSegment }) {
   useEffect(() => {
     if (!mapNode.current || mapRef.current || !config.geoapify.mapApiKey) return undefined;
 
-    const map = L.map(mapNode.current, { zoomControl: false })
-      .setView(config.map.initialCenter, config.map.initialZoom);
-
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    const map = L.map(mapNode.current, {
+      zoomControl: false,
+    }).setView(config.map.initialCenter, config.map.initialZoom);
 
     L.tileLayer(
       `https://maps.geoapify.com/v1/tile/${config.geoapify.mapStyle}/{z}/{x}/{y}.png?apiKey=${config.geoapify.mapApiKey}`,
       { maxZoom: 20, attribution: '© OpenStreetMap contributors · Powered by Geoapify' }
     ).addTo(map);
 
+    countryLayersRef.current.addTo(map);
     routeLayersRef.current.addTo(map);
     resultLayersRef.current.addTo(map);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
     mapRef.current = map;
 
     const observer = new ResizeObserver(() => map.invalidateSize());
@@ -129,10 +149,63 @@ export function RouteMap({ segments, updateSegment }) {
 
     return () => {
       observer.disconnect();
+      boundaryRequestRef.current += 1;
       map.remove();
       mapRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return undefined;
+
+    const requestId = ++boundaryRequestRef.current;
+    countryLayersRef.current.clearLayers();
+
+    async function paintVisitedCountries() {
+      const countries = visitedCountries(segments);
+      const resolved = await Promise.allSettled(
+        countries.map(async ({ countryCode, city, color }) => ({
+          feature: await getGeoapifyCountryBoundary({
+            countryCode,
+            lat: city.lat,
+            lon: city.lon,
+          }),
+          countryCode,
+          color,
+        }))
+      );
+
+      if (boundaryRequestRef.current !== requestId || !mapRef.current) return;
+      countryLayersRef.current.clearLayers();
+
+      resolved.forEach((item) => {
+        if (item.status !== 'fulfilled' || !item.value.feature) return;
+        const { feature, countryCode, color } = item.value;
+        L.geoJSON(feature, {
+          pane: 'overlayPane',
+          interactive: false,
+          style: {
+            color,
+            weight: 1,
+            opacity: 0.32,
+            fillColor: color,
+            fillOpacity: 0.09,
+          },
+        })
+          .bindTooltip(countryCode, { sticky: true })
+          .addTo(countryLayersRef.current);
+      });
+    }
+
+    paintVisitedCountries().catch(() => {
+      // Las fronteras son una mejora visual; una falla de red no debe romper el mapa.
+    });
+
+    return () => {
+      boundaryRequestRef.current += 1;
+    };
+  }, [segments]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -171,16 +244,16 @@ export function RouteMap({ segments, updateSegment }) {
       bounds.push([city.lat, city.lon]);
 
       L.circleMarker([city.lat, city.lon], {
-        radius: 8,
+        radius: 6,
         color: '#ffffff',
-        weight: 3,
+        weight: 2,
         fillColor: color,
         fillOpacity: 1,
         pane: 'markerPane',
       })
         .bindTooltip(city.name || city.displayName || 'Ciudad', {
           direction: 'top',
-          offset: [0, -8],
+          offset: [0, -7],
         })
         .addTo(routeLayersRef.current);
     });
