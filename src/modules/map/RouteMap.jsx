@@ -7,6 +7,7 @@ import {
   getGeoapifyCountryBoundary,
   searchGeoapifyPlaces,
 } from '../places/geoapifyClient.js';
+import { countryLayerStyle, visitedCountries } from './countryColoring.js';
 import './RouteMap.css';
 
 function dominantTransport(segment) {
@@ -83,24 +84,6 @@ function orderedCities(segments) {
   return cities;
 }
 
-// Reproduce la regla usada por el mapa anterior: cada país adopta el color
-// del primer tramo que lo visita.
-function visitedCountries(segments) {
-  const countries = new Map();
-
-  segments.forEach((segment, index) => {
-    const color = colorForIndex(index);
-    [segment.origin, segment.destination].forEach((city) => {
-      if (!isPlaced(city)) return;
-      const countryCode = String(city.countryCode || '').trim().toUpperCase();
-      if (!/^[A-Z]{2}$/.test(countryCode) || countries.has(countryCode)) return;
-      countries.set(countryCode, { countryCode, city, color });
-    });
-  });
-
-  return [...countries.values()];
-}
-
 export function RouteMap({ segments, updateSegment }) {
   const mapNode = useRef(null);
   const mapRef = useRef(null);
@@ -133,6 +116,11 @@ export function RouteMap({ segments, updateSegment }) {
       zoomControl: false,
     }).setView(config.map.initialCenter, config.map.initialZoom);
 
+    map.createPane('countryPane');
+    const countryPane = map.getPane('countryPane');
+    countryPane.style.zIndex = '350';
+    countryPane.style.pointerEvents = 'none';
+
     L.tileLayer(
       `https://maps.geoapify.com/v1/tile/${config.geoapify.mapStyle}/{z}/{x}/{y}.png?apiKey=${config.geoapify.mapApiKey}`,
       { maxZoom: 20, attribution: '© OpenStreetMap contributors · Powered by Geoapify' }
@@ -163,7 +151,9 @@ export function RouteMap({ segments, updateSegment }) {
     countryLayersRef.current.clearLayers();
 
     async function paintVisitedCountries() {
-      const countries = visitedCountries(segments);
+      // Esta lista se deriva exclusivamente de origin/destination de los tramos.
+      // Los lugares guardados por el buscador no participan en el coloreado.
+      const countries = visitedCountries(segments, colorForIndex);
       const resolved = await Promise.allSettled(
         countries.map(async ({ countryCode, city, color }) => ({
           feature: await getGeoapifyCountryBoundary({
@@ -183,15 +173,9 @@ export function RouteMap({ segments, updateSegment }) {
         if (item.status !== 'fulfilled' || !item.value.feature) return;
         const { feature, countryCode, color } = item.value;
         L.geoJSON(feature, {
-          pane: 'overlayPane',
+          pane: 'countryPane',
           interactive: false,
-          style: {
-            color,
-            weight: 1,
-            opacity: 0.32,
-            fillColor: color,
-            fillOpacity: 0.09,
-          },
+          style: countryLayerStyle(color),
         })
           .bindTooltip(countryCode, { sticky: true })
           .addTo(countryLayersRef.current);
