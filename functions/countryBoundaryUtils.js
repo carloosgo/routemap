@@ -20,6 +20,17 @@ function featureCountryCode(feature) {
   );
 }
 
+function featureIso3(feature) {
+  const properties = feature?.properties || {};
+  return String(
+    properties.shapeGroup
+      || properties.shapeISO
+      || properties.boundaryISO
+      || properties.iso_a3
+      || ''
+  ).trim().toUpperCase();
+}
+
 export function countryFeaturePlaceId(feature) {
   const properties = feature?.properties || {};
   return String(properties.place_id || properties.placeId || '').trim();
@@ -74,8 +85,6 @@ function geometryEnvelopeArea(feature) {
   return Math.max(0, maxLon - minLon) * Math.max(0, maxLat - minLat);
 }
 
-// Selecciona el registro nacional del resultado part-of. En esta fase la
-// geometría es Point; lo importante es obtener el place_id exacto del país.
 export function selectCountryPlaceFeature(payload, expectedCountryCode) {
   const expected = normalizeCountryCode(expectedCountryCode);
   const features = Array.isArray(payload?.features) ? payload.features : [];
@@ -97,7 +106,6 @@ export function selectCountryPlaceFeature(payload, expectedCountryCode) {
     ))[0]?.feature || null;
 }
 
-// Conservado para validar respuestas poligonales y compatibilidad de pruebas.
 export function selectCountryFeature(payload, expectedCountryCode) {
   const expected = normalizeCountryCode(expectedCountryCode);
   const features = Array.isArray(payload?.features) ? payload.features : [];
@@ -123,8 +131,6 @@ export function selectCountryFeature(payload, expectedCountryCode) {
     ))[0]?.feature || null;
 }
 
-// Place Details devuelve una FeatureCollection. La geometría original pedida
-// mediante details.full_geometry está en la feature de tipo "details".
 export function selectFullGeometryFeature(payload, expectedCountryCode) {
   const expected = normalizeCountryCode(expectedCountryCode);
   const features = Array.isArray(payload?.features) ? payload.features : [];
@@ -153,6 +159,59 @@ export function selectFullGeometryFeature(payload, expectedCountryCode) {
       right.envelopeArea - left.envelopeArea
       || left.index - right.index
     ))[0]?.feature || null;
+}
+
+function polygonParts(feature) {
+  if (!isCountryBoundaryFeature(feature)) return [];
+  if (feature.geometry.type === 'Polygon') {
+    return [feature.geometry.coordinates];
+  }
+  return feature.geometry.coordinates;
+}
+
+export function buildCountryLandFeature(
+  payload,
+  { countryCode, iso3, name = '' } = {}
+) {
+  const normalizedIso3 = String(iso3 || '').trim().toUpperCase();
+  const features = Array.isArray(payload?.features) ? payload.features : [];
+  const polygons = features.filter(isCountryBoundaryFeature);
+  if (!polygons.length) return null;
+
+  const matching = normalizedIso3
+    ? polygons.filter((feature) => {
+      const code = featureIso3(feature);
+      return !code || code === normalizedIso3;
+    })
+    : polygons;
+  const candidates = matching.length ? matching : polygons;
+  const parts = candidates.flatMap(polygonParts);
+  if (!parts.length) return null;
+
+  const properties = candidates[0]?.properties || {};
+  const normalizedCode = normalizeCountryCode(countryCode);
+  const resolvedName = String(
+    name
+      || properties.shapeName
+      || properties.boundaryName
+      || properties.name
+      || normalizedIso3
+      || normalizedCode
+  ).trim();
+
+  return {
+    type: 'Feature',
+    properties: {
+      countryCode: normalizedCode,
+      iso3: normalizedIso3,
+      name: resolvedName,
+      boundaryKind: 'land',
+      source: 'geoBoundaries',
+    },
+    geometry: parts.length === 1
+      ? { type: 'Polygon', coordinates: parts[0] }
+      : { type: 'MultiPolygon', coordinates: parts },
+  };
 }
 
 export function compactCountryFeature(feature, countryCode) {
