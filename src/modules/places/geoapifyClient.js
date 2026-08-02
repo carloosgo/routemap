@@ -3,8 +3,8 @@ import { getFirebaseServices } from '../../infrastructure/firebase/firebaseClien
 import { config } from '../../config.js';
 
 const PLACE_CACHE_KEY = 'atlas:geoapify-place-cache:v1';
-const BOUNDARY_CACHE_KEY = 'atlas:geoapify-country-boundary-cache:v3';
-const BOUNDARY_ACCURACY_METERS = 1000;
+const BOUNDARY_CACHE_KEY = 'atlas:geoapify-country-boundary-cache:v4';
+const BOUNDARY_GEOMETRY_SOURCE = 'details.full_geometry';
 const placeCache = new Map();
 const boundaryCache = new Map();
 const boundaryRequests = new Map();
@@ -82,7 +82,7 @@ export async function getGeoapifyCountryBoundary({ countryCode, lat, lon }) {
   const cached = boundaryCache.get(key);
   if (
     cached
-    && cached.accuracyMeters === BOUNDARY_ACCURACY_METERS
+    && cached.geometrySource === BOUNDARY_GEOMETRY_SOURCE
     && isCountryBoundaryFeature(cached.result)
     && Date.now() - cached.timestamp < config.geoapify.clientCacheTtlMs
   ) {
@@ -100,20 +100,20 @@ export async function getGeoapifyCountryBoundary({ countryCode, lat, lon }) {
     const request = callable('geoapifyCountryBoundary');
     const response = await request({ countryCode: key, lat, lon });
     const result = response.data?.feature || null;
-    const accuracyMeters = Number(response.data?.accuracyMeters);
+    const geometrySource = String(response.data?.geometrySource || '');
 
     if (!isCountryBoundaryFeature(result)) {
       throw new Error(`No se recibió una frontera válida para ${key}.`);
     }
-    if (accuracyMeters !== BOUNDARY_ACCURACY_METERS) {
+    if (geometrySource !== BOUNDARY_GEOMETRY_SOURCE) {
       throw new Error(
-        `La función de fronteras para ${key} no está desplegada con precisión de ${BOUNDARY_ACCURACY_METERS} m.`
+        `La función de fronteras para ${key} aún no usa la geometría original.`
       );
     }
 
     boundaryCache.set(key, {
       result,
-      accuracyMeters,
+      geometrySource,
       timestamp: Date.now(),
     });
     persistCache(BOUNDARY_CACHE_KEY, boundaryCache);
