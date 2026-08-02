@@ -15,7 +15,7 @@
   "dependencies": {
     "@tabler/icons-react": "^3.44.0",
     "firebase": "^12.17.0",
-    "mapbox-gl": "^3.9.0",
+    "leaflet": "^1.9.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "topojson-client": "^3.1.0"
@@ -31,6 +31,6 @@
     "vite": "^5.4.21"
   },
   "engines": {
-    "node": ">=18"
+    "node": "20 || 22 || 24"
   }
 }
