@@ -2,10 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   compactCountryFeature,
+  countryFeaturePlaceId,
   decodeCountryBoundary,
   encodeCountryBoundary,
   isCountryBoundaryFeature,
   selectCountryFeature,
+  selectCountryPlaceFeature,
+  selectFullGeometryFeature,
   utf8ByteLength,
 } from './countryBoundaryUtils.js';
 
@@ -66,6 +69,66 @@ test('recognizes administrative level 2 as the national boundary', () => {
 
   const selected = selectCountryFeature(payload, 'DE');
   assert.equal(selected.properties.name, 'Germany');
+});
+
+test('selects the country place id from point-only part-of results', () => {
+  const payload = {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        properties: {
+          country_code: 'fr',
+          result_type: 'city',
+          name: 'Paris',
+          place_id: 'paris-id',
+        },
+        geometry: { type: 'Point', coordinates: [2.3522, 48.8566] },
+      },
+      {
+        type: 'Feature',
+        properties: {
+          country_code: 'fr',
+          result_type: 'country',
+          admin_level: 2,
+          name: 'France',
+          country: 'France',
+          place_id: 'france-id',
+        },
+        geometry: { type: 'Point', coordinates: [2.2, 46.2] },
+      },
+    ],
+  };
+
+  const selected = selectCountryPlaceFeature(payload, 'FR');
+  assert.equal(selected.properties.name, 'France');
+  assert.equal(countryFeaturePlaceId(selected), 'france-id');
+});
+
+test('selects details.full_geometry polygon from Place Details response', () => {
+  const payload = {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        properties: { feature_type: 'building' },
+        geometry: polygon(0.1),
+      },
+      {
+        type: 'Feature',
+        properties: {
+          feature_type: 'details',
+          country_code: 'fr',
+          name: 'France',
+        },
+        geometry: polygon(8),
+      },
+    ],
+  };
+
+  const selected = selectFullGeometryFeature(payload, 'FR');
+  assert.equal(selected.properties.feature_type, 'details');
+  assert.deepEqual(selected.geometry, polygon(8));
 });
 
 test('falls back to the largest polygon when the API omits a country type marker', () => {
