@@ -6,6 +6,54 @@ import { isPlaced } from '../trips/tripModel.js';
 import { searchGeoapifyPlaces } from '../places/geoapifyClient.js';
 import './RouteMap.css';
 
+function dominantTransport(segment) {
+  const transport = segment?.expenses?.transport || {};
+  const candidates = [
+    { type: 'plane', amount: Number(transport.plane) || 0 },
+    { type: 'train', amount: Number(transport.train) || 0 },
+    { type: 'bus', amount: Number(transport.bus) || 0 },
+    { type: 'car', amount: Number(transport.taxiUber) || 0 },
+  ];
+  const top = candidates.reduce((current, candidate) => (
+    candidate.amount > current.amount ? candidate : current
+  ));
+  return top.amount > 0 ? top.type : null;
+}
+
+function adaptiveCurve(origin, destination, steps = 80) {
+  const start = [origin.lon, origin.lat];
+  const end = [destination.lon, destination.lat];
+  const dx = end[0] - start[0];
+  const dy = end[1] - start[1];
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  const curveFactor = Math.max(0, Math.min(0.22, 0.22 - (distance - 1) * 0.04));
+  const offset = distance * curveFactor;
+  const middleX = (start[0] + end[0]) / 2;
+  const middleY = (start[1] + end[1]) / 2;
+  const length = distance || 1;
+  const controlX = middleX + (-dy / length) * offset;
+  const controlY = middleY + (dx / length) * offset;
+  const points = [];
+
+  for (let index = 0; index <= steps; index += 1) {
+    const time = index / steps;
+    const remaining = 1 - time;
+    const lon = remaining * remaining * start[0]
+      + 2 * remaining * time * controlX
+      + time * time * end[0];
+    const lat = remaining * remaining * start[1]
+      + 2 * remaining * time * controlY
+      + time * time * end[1];
+    points.push([lat, lon]);
+  }
+
+  return points;
+}
+
+function cityKey(city) {
+  return `${Number(city.lat).toFixed(6)},${Number(city.lon).toFixed(6)}`;
+}
+
 export function RouteMap({ segments, updateSegment }) {
   const mapNode = useRef(null);
   const mapRef = useRef(null);
@@ -60,37 +108,57 @@ export function RouteMap({ segments, updateSegment }) {
 
     routeLayersRef.current.clearLayers();
     const bounds = [];
+    const cityColors = new Map();
 
     segments.forEach((segment, index) => {
       const color = colorForIndex(index);
-      const originPlaced = isPlaced(segment.origin);
-      const destinationPlaced = isPlaced(segment.destination);
-
-      if (originPlaced && destinationPlaced) {
-        const line = [
-          [segment.origin.lat, segment.origin.lon],
-          [segment.destination.lat, segment.destination.lon],
-        ];
-        L.polyline(line, { color: '#ffffff', weight: 5, opacity: 0.9 })
-          .addTo(routeLayersRef.current);
-        L.polyline(line, { color, weight: 2, opacity: 0.95, dashArray: '8 7' })
-          .addTo(routeLayersRef.current);
-      }
-
       [segment.origin, segment.destination].forEach((city) => {
         if (!isPlaced(city)) return;
-        bounds.push([city.lat, city.lon]);
-        L.circleMarker([city.lat, city.lon], {
-          radius: 6,
-          color: '#ffffff',
-          weight: 2,
-          fillColor: color,
-          fillOpacity: 1,
-        })
-          .bindTooltip(city.name || city.displayName || 'Ciudad')
-          .addTo(routeLayersRef.current);
+        const key = cityKey(city);
+        if (!cityColors.has(key)) cityColors.set(key, { city, color });
       });
 
+      if (!isPlaced(segment.origin) || !isPlaced(segment.destination)) return;
+
+      const curve = adaptiveCurve(segment.origin, segment.destination);
+      const dashed = dominantTransport(segment) === 'plane';
+
+      L.polyline(curve, {
+        color: '#ffffff',
+        weight: 5,
+        opacity: 0.9,
+        interactive: false,
+      }).addTo(routeLayersRef.current);
+
+      L.polyline(curve, {
+        color,
+        weight: 2,
+        opacity: 0.95,
+        dashArray: dashed ? '10 8' : null,
+        lineCap: dashed ? 'butt' : 'round',
+        lineJoin: 'round',
+        interactive: false,
+      }).addTo(routeLayersRef.current);
+    });
+
+    cityColors.forEach(({ city, color }) => {
+      bounds.push([city.lat, city.lon]);
+      L.circleMarker([city.lat, city.lon], {
+        radius: 7,
+        color: '#ffffff',
+        weight: 3,
+        fillColor: color,
+        fillOpacity: 1,
+        pane: 'markerPane',
+      })
+        .bindTooltip(city.name || city.displayName || 'Ciudad', {
+          direction: 'top',
+          offset: [0, -7],
+        })
+        .addTo(routeLayersRef.current);
+    });
+
+    segments.forEach((segment) => {
       (segment.places || []).forEach((place) => {
         if (!isPlaced(place)) return;
         bounds.push([place.lat, place.lon]);
