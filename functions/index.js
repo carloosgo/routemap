@@ -13,6 +13,11 @@ import {
   selectCountryFeature,
   utf8ByteLength,
 } from './countryBoundaryUtils.js';
+import {
+  COUNTRY_BOUNDARY_ACCURACY_METERS,
+  countryBoundaryCacheKey,
+  countryBoundaryRequestParams,
+} from './countryBoundaryRequest.js';
 
 initializeApp();
 const db = getFirestore();
@@ -322,14 +327,11 @@ export const geoapifyCountryBoundary = onCall({ secrets: [GEOAPIFY_API_KEY] }, a
   }
 
   try {
-    const key = `country-boundary:v2:${countryCode}`;
+    const key = countryBoundaryCacheKey(countryCode);
     const cachedResult = await cachedCountryBoundary(key, async () => {
-      const params = new URLSearchParams({
-        lat: String(lat),
-        lon: String(lon),
-        boundaries: 'administrative',
-        geometry: 'geometry_10000',
-        lang: 'en',
+      const params = countryBoundaryRequestParams({
+        lat,
+        lon,
         apiKey: requireKey(),
       });
       const payload = await limitedFetch(
@@ -348,7 +350,11 @@ export const geoapifyCountryBoundary = onCall({ secrets: [GEOAPIFY_API_KEY] }, a
       return feature;
     });
 
-    return { feature: cachedResult.result, cacheHit: cachedResult.cacheHit };
+    return {
+      feature: cachedResult.result,
+      cacheHit: cachedResult.cacheHit,
+      accuracyMeters: COUNTRY_BOUNDARY_ACCURACY_METERS,
+    };
   } catch (error) {
     if (error instanceof HttpsError) throw error;
 
