@@ -26,8 +26,12 @@ function adaptiveCurve(origin, destination, steps = 80) {
   const dx = end[0] - start[0];
   const dy = end[1] - start[1];
   const distance = Math.sqrt(dx * dx + dy * dy);
-  const curveFactor = Math.max(0, Math.min(0.22, 0.22 - (distance - 1) * 0.04));
-  const offset = distance * curveFactor;
+
+  // Conserva una curva visible también en trayectos largos. La perpendicular
+  // depende del sentido origen -> destino, así que los recorridos inversos
+  // cuelgan naturalmente hacia el lado contrario, como en el mapa anterior.
+  const curveFactor = Math.max(0.06, Math.min(0.20, 0.19 - Math.max(0, distance - 2) * 0.008));
+  const offset = Math.min(distance * curveFactor, 3.25);
   const middleX = (start[0] + end[0]) / 2;
   const middleY = (start[1] + end[1]) / 2;
   const length = distance || 1;
@@ -52,6 +56,23 @@ function adaptiveCurve(origin, destination, steps = 80) {
 
 function cityKey(city) {
   return `${Number(city.lat).toFixed(6)},${Number(city.lon).toFixed(6)}`;
+}
+
+function orderedCities(segments) {
+  const cities = [];
+  const seen = new Set();
+
+  segments.forEach((segment) => {
+    [segment.origin, segment.destination].forEach((city) => {
+      if (!isPlaced(city)) return;
+      const key = cityKey(city);
+      if (seen.has(key)) return;
+      seen.add(key);
+      cities.push(city);
+    });
+  });
+
+  return cities;
 }
 
 export function RouteMap({ segments, updateSegment }) {
@@ -108,18 +129,11 @@ export function RouteMap({ segments, updateSegment }) {
 
     routeLayersRef.current.clearLayers();
     const bounds = [];
-    const cityColors = new Map();
 
     segments.forEach((segment, index) => {
-      const color = colorForIndex(index);
-      [segment.origin, segment.destination].forEach((city) => {
-        if (!isPlaced(city)) return;
-        const key = cityKey(city);
-        if (!cityColors.has(key)) cityColors.set(key, { city, color });
-      });
-
       if (!isPlaced(segment.origin) || !isPlaced(segment.destination)) return;
 
+      const color = colorForIndex(index);
       const curve = adaptiveCurve(segment.origin, segment.destination);
       const dashed = dominantTransport(segment) === 'plane';
 
@@ -141,10 +155,12 @@ export function RouteMap({ segments, updateSegment }) {
       }).addTo(routeLayersRef.current);
     });
 
-    cityColors.forEach(({ city, color }) => {
+    orderedCities(segments).forEach((city, index) => {
+      const color = colorForIndex(index);
       bounds.push([city.lat, city.lon]);
+
       L.circleMarker([city.lat, city.lon], {
-        radius: 7,
+        radius: 8,
         color: '#ffffff',
         weight: 3,
         fillColor: color,
@@ -153,7 +169,7 @@ export function RouteMap({ segments, updateSegment }) {
       })
         .bindTooltip(city.name || city.displayName || 'Ciudad', {
           direction: 'top',
-          offset: [0, -7],
+          offset: [0, -8],
         })
         .addTo(routeLayersRef.current);
     });
@@ -169,7 +185,7 @@ export function RouteMap({ segments, updateSegment }) {
     });
 
     if (bounds.length === 1) map.setView(bounds[0], 10);
-    else if (bounds.length > 1) map.fitBounds(bounds, { padding: [70, 70], maxZoom: 10 });
+    else if (bounds.length > 1) map.fitBounds(bounds, { padding: [84, 84], maxZoom: 10 });
   }, [segments]);
 
   useEffect(() => {
