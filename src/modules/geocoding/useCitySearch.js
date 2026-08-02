@@ -1,66 +1,59 @@
 import { useEffect, useRef, useState } from 'react';
 import { config } from '../../config.js';
-import { getGeocoder } from './geocodingProvider.js';
+import { searchGeoapifyPlaces } from '../places/geoapifyClient.js';
 
 // Hook de búsqueda de ciudades.
 // - Dispara sugerencias a partir del 3er carácter (config.citySearchMinChars).
-// - Debounce para no saturar al proveedor (requisito de robustez/escala).
-// - Cancela peticiones obsoletas con AbortController (evita "race conditions").
-//
-// Estados expuestos: { results, loading, error }
+// - Debounce para no saturar al proveedor.
+// - Ignora respuestas obsoletas para evitar race conditions.
+// - La clave privada permanece en Firebase Secret Manager; el navegador solo
+//   invoca la callable function geoapifyAutocomplete.
 export function useCitySearch(query) {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const debounceRef = useRef(null);
-  const abortRef = useRef(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     const q = (query || '').trim();
+    const requestId = ++requestIdRef.current;
 
-    // Limpia temporizador previo en cada cambio de query.
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (q.length < config.citySearchMinChars) {
       setResults([]);
       setLoading(false);
       setError(null);
-      return;
+      return undefined;
     }
 
     setLoading(true);
     setError(null);
 
     debounceRef.current = setTimeout(async () => {
-      // Aborta la petición anterior si seguía en curso.
-      if (abortRef.current) abortRef.current.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-
       try {
-        const data = await getGeocoder().search(q, { signal: controller.signal });
+        const data = await searchGeoapifyPlaces(q);
+        if (requestIdRef.current !== requestId) return;
         setResults(data);
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          setError(err.message || 'Error de búsqueda');
-          setResults([]);
-        }
+      } catch (searchError) {
+        if (requestIdRef.current !== requestId) return;
+        setError(searchError instanceof Error ? searchError.message : 'Error de búsqueda');
+        setResults([]);
       } finally {
-        // Solo apaga el loading si esta petición sigue siendo la vigente.
-        if (abortRef.current === controller) setLoading(false);
+        if (requestIdRef.current === requestId) setLoading(false);
       }
     }, config.citySearchDebounceMs);
 
     return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
+      clearTimeout(debounceRef.current);
     };
   }, [query]);
 
-  // Limpieza al desmontar.
   useEffect(() => {
     return () => {
-      if (abortRef.current) abortRef.current.abort();
+      requestIdRef.current += 1;
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, []);
