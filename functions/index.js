@@ -3,7 +3,7 @@ import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
-import { rateLimitedRequests } from '@geoapify/request-rate-limiter';
+import RequestRateLimiter from '@geoapify/request-rate-limiter';
 
 initializeApp();
 const db = getFirestore();
@@ -22,7 +22,7 @@ function validPoint(point) {
     && Math.abs(Number(point.lat)) <= 90 && Math.abs(Number(point.lon)) <= 180;
 }
 async function limitedFetch(url, options) {
-  const [result] = await rateLimitedRequests([async () => {
+  const [result] = await RequestRateLimiter.rateLimitedRequests([async () => {
     const response = await fetch(url, options);
     if (!response.ok) throw new Error(`Geoapify respondió ${response.status}`);
     return response.json();
@@ -124,6 +124,6 @@ export const geoapifyBatchGeocode = onCall({ secrets: [GEOAPIFY_API_KEY], timeou
     });
     return value.result;
   });
-  const results = await rateLimitedRequests(tasks, 5, 1000, { maxConcurrentRequests: 2 });
+  const results = await RequestRateLimiter.rateLimitedRequests(tasks, 5, 1000, { maxConcurrentRequests: 2 });
   return { results: results.map((item) => item instanceof Error ? null : item) };
 });
