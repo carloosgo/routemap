@@ -28,9 +28,11 @@ test('RouteMap conserva las curvas adaptativas y solo puntea vuelos', async () =
   assert.match(content, /dashArray: dashed \? '10 8' : null/);
 });
 
-test('RouteMap pinta las ciudades con el color del tramo', async () => {
+test('RouteMap pinta solo las ciudades definidas por los tramos', async () => {
   const content = await source();
-  assert.match(content, /cityColors\.set\(key, \{ city, color \}\)/);
+  assert.match(content, /function orderedCities/);
+  assert.match(content, /\[segment\.origin, segment\.destination\]/);
+  assert.match(content, /orderedCities\(segments\)\.forEach/);
   assert.match(content, /fillColor: color/);
 });
 
