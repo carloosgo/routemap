@@ -3,8 +3,8 @@ import { getFirebaseServices } from '../../infrastructure/firebase/firebaseClien
 import { config } from '../../config.js';
 
 const PLACE_CACHE_KEY = 'atlas:geoapify-place-cache:v1';
-const BOUNDARY_CACHE_KEY = 'atlas:geoapify-country-boundary-cache:v4';
-const BOUNDARY_GEOMETRY_SOURCE = 'details.full_geometry';
+const BOUNDARY_CACHE_KEY = 'atlas:country-land-boundary-cache:v5';
+const BOUNDARY_GEOMETRY_SOURCE = 'geoBoundaries.gbOpen.ADM0.full';
 const placeCache = new Map();
 const boundaryCache = new Map();
 const boundaryRequests = new Map();
@@ -22,7 +22,8 @@ export function normalizeSearchKey(value) {
 function isCountryBoundaryFeature(feature) {
   return feature?.type === 'Feature'
     && ['Polygon', 'MultiPolygon'].includes(feature?.geometry?.type)
-    && Array.isArray(feature?.geometry?.coordinates);
+    && Array.isArray(feature?.geometry?.coordinates)
+    && feature?.properties?.boundaryKind === 'land';
 }
 
 function readCache(storageKey, target) {
@@ -75,7 +76,7 @@ export async function searchGeoapifyPlaces(query, { signal } = {}) {
   return result;
 }
 
-export async function getGeoapifyCountryBoundary({ countryCode, lat, lon }) {
+export async function getCountryLandBoundary({ countryCode, lat, lon }) {
   const key = String(countryCode || '').trim().toUpperCase();
   if (!/^[A-Z]{2}$/.test(key)) return null;
 
@@ -103,11 +104,11 @@ export async function getGeoapifyCountryBoundary({ countryCode, lat, lon }) {
     const geometrySource = String(response.data?.geometrySource || '');
 
     if (!isCountryBoundaryFeature(result)) {
-      throw new Error(`No se recibió una frontera válida para ${key}.`);
+      throw new Error(`No se recibió un límite terrestre válido para ${key}.`);
     }
     if (geometrySource !== BOUNDARY_GEOMETRY_SOURCE) {
       throw new Error(
-        `La función de fronteras para ${key} aún no usa la geometría original.`
+        `La función de límites para ${key} no está desplegada con la fuente terrestre esperada.`
       );
     }
 
@@ -127,3 +128,5 @@ export async function getGeoapifyCountryBoundary({ countryCode, lat, lon }) {
     boundaryRequests.delete(key);
   }
 }
+
+export const getGeoapifyCountryBoundary = getCountryLandBoundary;
