@@ -3,9 +3,10 @@ import { getFirebaseServices } from '../../infrastructure/firebase/firebaseClien
 import { config } from '../../config.js';
 
 const PLACE_CACHE_KEY = 'atlas:geoapify-place-cache:v1';
-const BOUNDARY_CACHE_KEY = 'atlas:geoapify-country-boundary-cache:v1';
+const BOUNDARY_CACHE_KEY = 'atlas:geoapify-country-boundary-cache:v2';
 const placeCache = new Map();
 const boundaryCache = new Map();
+const boundaryRequests = new Map();
 let emulatorConnected = false;
 
 export function normalizeSearchKey(value) {
@@ -15,6 +16,12 @@ export function normalizeSearchKey(value) {
     .toLowerCase()
     .trim()
     .replace(/\s+/g, ' ');
+}
+
+function isCountryBoundaryFeature(feature) {
+  return feature?.type === 'Feature'
+    && ['Polygon', 'MultiPolygon'].includes(feature?.geometry?.type)
+    && Array.isArray(feature?.geometry?.coordinates);
 }
 
 function readCache(storageKey, target) {
@@ -72,14 +79,39 @@ export async function getGeoapifyCountryBoundary({ countryCode, lat, lon }) {
   if (!/^[A-Z]{2}$/.test(key)) return null;
 
   const cached = boundaryCache.get(key);
-  if (cached && Date.now() - cached.timestamp < config.geoapify.clientCacheTtlMs) {
+  if (
+    cached
+    && isCountryBoundaryFeature(cached.result)
+    && Date.now() - cached.timestamp < config.geoapify.clientCacheTtlMs
+  ) {
     return cached.result;
   }
 
-  const request = callable('geoapifyCountryBoundary');
-  const response = await request({ countryCode: key, lat, lon });
-  const result = response.data?.feature || null;
-  boundaryCache.set(key, { result, timestamp: Date.now() });
-  persistCache(BOUNDARY_CACHE_KEY, boundaryCache);
-  return result;
+  if (cached) {
+    boundaryCache.delete(key);
+    persistCache(BOUNDARY_CACHE_KEY, boundaryCache);
+  }
+
+  if (boundaryRequests.has(key)) return boundaryRequests.get(key);
+
+  const pending = (async () => {
+    const request = callable('geoapifyCountryBoundary');
+    const response = await request({ countryCode: key, lat, lon });
+    const result = response.data?.feature || null;
+
+    if (!isCountryBoundaryFeature(result)) {
+      throw new Error(`No se recibió una frontera válida para ${key}.`);
+    }
+
+    boundaryCache.set(key, { result, timestamp: Date.now() });
+    persistCache(BOUNDARY_CACHE_KEY, boundaryCache);
+    return result;
+  })();
+
+  boundaryRequests.set(key, pending);
+  try {
+    return await pending;
+  } finally {
+    boundaryRequests.delete(key);
+  }
 }
