@@ -26,10 +26,10 @@ export function visitedCountries(segments, colorForIndex) {
 
 export function countryLayerStyle(color) {
   return {
-    color,
-    weight: 1,
-    opacity: 0.32,
+    stroke: false,
     fillColor: color,
     fillOpacity: 0.09,
+    fillRule: 'evenodd',
+    smoothFactor: 0,
   };
 }
