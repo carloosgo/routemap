@@ -28,7 +28,15 @@ function isExplicitCountry(feature) {
     properties.type,
     properties.feature_type,
   ].map((value) => String(value || '').toLowerCase());
-  return values.includes('country');
+  const name = String(properties.name || '').trim().toLowerCase();
+  const country = String(properties.country || '').trim().toLowerCase();
+  const rankAddress = Number(properties.rank?.address);
+  const adminLevel = Number(properties.admin_level ?? properties.adminLevel);
+
+  return values.includes('country')
+    || rankAddress === 4
+    || adminLevel === 2
+    || Boolean(name && country && name === country);
 }
 
 function visitCoordinates(value, visitor) {
