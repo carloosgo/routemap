@@ -7,7 +7,8 @@ test('config usa valores seguros fuera de Vite', () => {
   assert.equal(config.geocoder, 'nominatim');
   assert.equal(config.defaultLocale, 'es');
   assert.equal(config.apiBaseUrl, '');
-  assert.equal(config.map.accessToken, '');
+  assert.equal(config.geoapify.mapApiKey, '');
+  assert.equal(config.firebase.projectId, '');
 });
 
 test('colorForIndex cicla la paleta y tolera índices inválidos', () => {
