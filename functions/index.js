@@ -23,6 +23,11 @@ function cacheId(value) {
   return createHash('sha256').update(value).digest('hex');
 }
 
+function validCoordinate(value, min, max) {
+  const number = Number(value);
+  return Number.isFinite(number) && number >= min && number <= max;
+}
+
 async function limitedFetch(url, options) {
   const [result] = await RequestRateLimiter.rateLimitedRequests([
     async () => {
@@ -57,9 +62,6 @@ function requireKey() {
   return key;
 }
 
-// Geoapify se utiliza únicamente para buscar lugares que el usuario puede
-// guardar dentro de un tramo: hospedajes, restaurantes, estaciones, museos,
-// etc. La selección de países y ciudades sigue un flujo independiente.
 export const geoapifyPlaceSearch = onCall({ secrets: [GEOAPIFY_API_KEY] }, async (request) => {
   const query = String(request.data?.query || '').trim();
   const queryKey = normalized(query);
@@ -96,4 +98,47 @@ export const geoapifyPlaceSearch = onCall({ secrets: [GEOAPIFY_API_KEY] }, async
   });
 
   return { results: cachedResult.result, cacheHit: cachedResult.cacheHit };
+});
+
+export const geoapifyCountryBoundary = onCall({ secrets: [GEOAPIFY_API_KEY] }, async (request) => {
+  const lat = Number(request.data?.lat);
+  const lon = Number(request.data?.lon);
+  const countryCode = String(request.data?.countryCode || '').trim().toUpperCase();
+
+  if (!validCoordinate(lat, -90, 90) || !validCoordinate(lon, -180, 180)) {
+    throw new HttpsError('invalid-argument', 'Coordenadas inválidas.');
+  }
+  if (!/^[A-Z]{2}$/.test(countryCode)) {
+    throw new HttpsError('invalid-argument', 'Código de país inválido.');
+  }
+
+  const key = `country-boundary:${countryCode}`;
+  const cachedResult = await cached('countryBoundaryCache', key, async () => {
+    const params = new URLSearchParams({
+      lat: String(lat),
+      lon: String(lon),
+      boundaries: 'administrative',
+      geometry: 'geometry_10000',
+      lang: 'en',
+      apiKey: requireKey(),
+    });
+    const payload = await limitedFetch(
+      `https://api.geoapify.com/v1/boundaries/part-of?${params}`
+    );
+    const features = Array.isArray(payload.features) ? payload.features : [];
+    const matching = features.filter((feature) => {
+      const code = String(feature?.properties?.country_code || '').toUpperCase();
+      const geometryType = feature?.geometry?.type;
+      return code === countryCode && ['Polygon', 'MultiPolygon'].includes(geometryType);
+    });
+    const countryFeature = matching.find((feature) => (
+      feature?.properties?.result_type === 'country'
+      || feature?.properties?.place_type === 'country'
+      || feature?.properties?.rank?.address === 4
+    )) || matching.at(-1) || null;
+
+    return countryFeature;
+  });
+
+  return { feature: cachedResult.result, cacheHit: cachedResult.cacheHit };
 });
