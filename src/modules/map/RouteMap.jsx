@@ -152,7 +152,7 @@ function addCountryBoundaryLayer(map) {
     filter: [
       'all',
       ['==', ['get', 'subtype'], 'country'],
-      ['==', ['get', 'is_land'], true],
+      ['==', ['get', 'class'], 'land'],
       ['==', ['get', 'country'], '__NO_VISITED_COUNTRIES__'],
     ],
     paint: {
