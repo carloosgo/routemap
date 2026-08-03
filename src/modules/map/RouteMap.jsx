@@ -1,14 +1,35 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import * as maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { config, colorForIndex } from '../../config.js';
 import { isPlaced } from '../trips/tripModel.js';
 import {
   getCountryLandBoundary,
   searchGeoapifyPlaces,
 } from '../places/geoapifyClient.js';
-import { countryLayerStyle, visitedCountries } from './countryColoring.js';
+import { getStaticCountryBoundary } from './countryBoundaryClient.js';
+import { visitedCountries } from './countryColoring.js';
 import './RouteMap.css';
+
+const ROUTE_SOURCE_ID = 'atlas-routes';
+const ROUTE_CASING_LAYER_ID = 'atlas-routes-casing';
+const ROUTE_SOLID_LAYER_ID = 'atlas-routes-solid';
+const ROUTE_DASHED_LAYER_ID = 'atlas-routes-dashed';
+const CITY_SOURCE_ID = 'atlas-cities';
+const CITY_LAYER_ID = 'atlas-cities-layer';
+const PLACE_SOURCE_ID = 'atlas-saved-places';
+const PLACE_LAYER_ID = 'atlas-saved-places-layer';
+const RESULT_SOURCE_ID = 'atlas-search-results';
+const RESULT_LAYER_ID = 'atlas-search-results-layer';
+
+function emptyFeatureCollection() {
+  return { type: 'FeatureCollection', features: [] };
+}
+
+function sourceData(map, sourceId, data) {
+  const source = map.getSource(sourceId);
+  if (source && typeof source.setData === 'function') source.setData(data);
+}
 
 function dominantTransport(segment) {
   const transport = segment?.expenses?.transport || {};
@@ -31,16 +52,13 @@ function adaptiveCurve(origin, destination, steps = 80) {
   const dy = end[1] - start[1];
   const distance = Math.sqrt(dx * dx + dy * dy);
 
-  if (distance < 1.25 || distance > 24) {
-    return [[origin.lat, origin.lon], [destination.lat, destination.lon]];
-  }
+  if (distance < 1.25 || distance > 24) return [start, end];
 
   const curveFactor = Math.max(0.06, Math.min(0.20, 0.19 - Math.max(0, distance - 2) * 0.008));
   const offset = Math.min(distance * curveFactor, 3.25);
   const middleX = (start[0] + end[0]) / 2;
   const middleY = (start[1] + end[1]) / 2;
   const length = distance || 1;
-
   const controlX = middleX + (dy / length) * offset;
   const controlY = middleY + (-dx / length) * offset;
   const points = [];
@@ -54,7 +72,7 @@ function adaptiveCurve(origin, destination, steps = 80) {
     const lat = remaining * remaining * start[1]
       + 2 * remaining * time * controlY
       + time * time * end[1];
-    points.push([lat, lon]);
+    points.push([lon, lat]);
   }
 
   return points;
@@ -81,19 +99,167 @@ function orderedCities(segments) {
   return cities;
 }
 
+function escaped(value) {
+  return String(value || '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function placePopupHtml(properties = {}) {
+  const name = escaped(properties.name || 'Lugar');
+  const address = escaped(properties.address || '');
+  return `<strong>${name}</strong>${address ? `<br>${address}` : ''}`;
+}
+
+function geoapifyStyleUrl() {
+  const style = encodeURIComponent(config.geoapify.mapStyle);
+  const apiKey = encodeURIComponent(config.geoapify.mapApiKey);
+  return `https://maps.geoapify.com/v1/styles/${style}/style.json?apiKey=${apiKey}`;
+}
+
+function countrySourceId(countryCode) {
+  return `atlas-country-${countryCode.toLowerCase()}-source`;
+}
+
+function countryLayerId(countryCode) {
+  return `atlas-country-${countryCode.toLowerCase()}-fill`;
+}
+
+function removeCountryLayer(map, entry) {
+  if (map.getLayer(entry.layerId)) map.removeLayer(entry.layerId);
+  if (map.getSource(entry.sourceId)) map.removeSource(entry.sourceId);
+}
+
+function addBaseSourcesAndLayers(map) {
+  map.addSource(ROUTE_SOURCE_ID, {
+    type: 'geojson',
+    data: emptyFeatureCollection(),
+  });
+  map.addLayer({
+    id: ROUTE_CASING_LAYER_ID,
+    type: 'line',
+    source: ROUTE_SOURCE_ID,
+    layout: {
+      'line-cap': 'round',
+      'line-join': 'round',
+    },
+    paint: {
+      'line-color': '#ffffff',
+      'line-width': 5,
+      'line-opacity': 0.9,
+    },
+  });
+  map.addLayer({
+    id: ROUTE_SOLID_LAYER_ID,
+    type: 'line',
+    source: ROUTE_SOURCE_ID,
+    filter: ['==', ['get', 'dashed'], false],
+    layout: {
+      'line-cap': 'round',
+      'line-join': 'round',
+    },
+    paint: {
+      'line-color': ['get', 'color'],
+      'line-width': 2,
+      'line-opacity': 0.95,
+    },
+  });
+  map.addLayer({
+    id: ROUTE_DASHED_LAYER_ID,
+    type: 'line',
+    source: ROUTE_SOURCE_ID,
+    filter: ['==', ['get', 'dashed'], true],
+    layout: {
+      'line-cap': 'butt',
+      'line-join': 'round',
+    },
+    paint: {
+      'line-color': ['get', 'color'],
+      'line-width': 2,
+      'line-opacity': 0.95,
+      'line-dasharray': [5, 4],
+    },
+  });
+
+  map.addSource(CITY_SOURCE_ID, {
+    type: 'geojson',
+    data: emptyFeatureCollection(),
+  });
+  map.addLayer({
+    id: CITY_LAYER_ID,
+    type: 'circle',
+    source: CITY_SOURCE_ID,
+    paint: {
+      'circle-radius': 6,
+      'circle-color': ['get', 'color'],
+      'circle-opacity': 1,
+      'circle-stroke-color': '#ffffff',
+      'circle-stroke-width': 2,
+    },
+  });
+
+  map.addSource(PLACE_SOURCE_ID, {
+    type: 'geojson',
+    data: emptyFeatureCollection(),
+  });
+  map.addLayer({
+    id: PLACE_LAYER_ID,
+    type: 'circle',
+    source: PLACE_SOURCE_ID,
+    paint: {
+      'circle-radius': 7,
+      'circle-color': '#2563eb',
+      'circle-opacity': 0.95,
+      'circle-stroke-color': '#ffffff',
+      'circle-stroke-width': 2,
+    },
+  });
+
+  map.addSource(RESULT_SOURCE_ID, {
+    type: 'geojson',
+    data: emptyFeatureCollection(),
+  });
+  map.addLayer({
+    id: RESULT_LAYER_ID,
+    type: 'circle',
+    source: RESULT_SOURCE_ID,
+    paint: {
+      'circle-radius': 7,
+      'circle-color': '#0d6078',
+      'circle-opacity': 0.95,
+      'circle-stroke-color': '#ffffff',
+      'circle-stroke-width': 2,
+    },
+  });
+}
+
+async function loadCountryFeature(country) {
+  const staticFeature = await getStaticCountryBoundary(country.countryCode);
+  if (staticFeature) return staticFeature;
+
+  return getCountryLandBoundary({
+    countryCode: country.countryCode,
+    lat: country.city.lat,
+    lon: country.city.lon,
+  });
+}
+
 export function RouteMap({ segments, updateSegment }) {
   const mapNode = useRef(null);
   const mapRef = useRef(null);
-  const countryLayersRef = useRef(L.layerGroup());
-  const routeLayersRef = useRef(L.layerGroup());
-  const resultLayersRef = useRef(L.layerGroup());
-  const boundaryRequestRef = useRef(0);
+  const countryLayersRef = useRef(new Map());
+  const countryRequestRef = useRef(0);
+  const countrySignatureRef = useRef('');
+  const abortRef = useRef(null);
+  const [mapReady, setMapReady] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
   const [selectedSegmentId, setSelectedSegmentId] = useState(segments[0]?.id || '');
-  const abortRef = useRef(null);
 
   const selectedSegment = useMemo(
     () => segments.find((segment) => segment.id === selectedSegmentId) || segments[0],
@@ -109,35 +275,82 @@ export function RouteMap({ segments, updateSegment }) {
   useEffect(() => {
     if (!mapNode.current || mapRef.current || !config.geoapify.mapApiKey) return undefined;
 
-    const map = L.map(mapNode.current, {
-      zoomControl: false,
-    }).setView(config.map.initialCenter, config.map.initialZoom);
+    const map = new maplibregl.Map({
+      container: mapNode.current,
+      style: geoapifyStyleUrl(),
+      center: [config.map.initialCenter[1], config.map.initialCenter[0]],
+      zoom: config.map.initialZoom,
+      attributionControl: true,
+      pitchWithRotate: false,
+      dragRotate: false,
+    });
 
-    map.createPane('countryPane');
-    const countryPane = map.getPane('countryPane');
-    countryPane.style.zIndex = '350';
-    countryPane.style.pointerEvents = 'none';
+    map.addControl(
+      new maplibregl.NavigationControl({ showCompass: false, visualizePitch: false }),
+      'bottom-right'
+    );
 
-    L.tileLayer(
-      `https://maps.geoapify.com/v1/tile/${config.geoapify.mapStyle}/{z}/{x}/{y}.png?apiKey=${config.geoapify.mapApiKey}`,
-      {
-        maxZoom: 20,
-        attribution: '© OpenStreetMap contributors · Powered by Geoapify · Country boundaries © geoBoundaries',
-      }
-    ).addTo(map);
+    const cityPopup = new maplibregl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      offset: 10,
+    });
 
-    countryLayersRef.current.addTo(map);
-    routeLayersRef.current.addTo(map);
-    resultLayersRef.current.addTo(map);
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    const showFeaturePopup = (event) => {
+      const feature = event.features?.[0];
+      if (!feature || feature.geometry?.type !== 'Point') return;
+      new maplibregl.Popup({ offset: 10 })
+        .setLngLat(feature.geometry.coordinates)
+        .setHTML(placePopupHtml(feature.properties))
+        .addTo(map);
+    };
+
+    const showCityPopup = (event) => {
+      const feature = event.features?.[0];
+      if (!feature || feature.geometry?.type !== 'Point') return;
+      map.getCanvas().style.cursor = 'pointer';
+      cityPopup
+        .setLngLat(feature.geometry.coordinates)
+        .setText(feature.properties?.name || 'Ciudad')
+        .addTo(map);
+    };
+
+    const clearHover = () => {
+      map.getCanvas().style.cursor = '';
+      cityPopup.remove();
+    };
+
+    const setPointer = () => {
+      map.getCanvas().style.cursor = 'pointer';
+    };
+
+    const clearPointer = () => {
+      map.getCanvas().style.cursor = '';
+    };
+
+    map.on('load', () => {
+      addBaseSourcesAndLayers(map);
+      map.on('mouseenter', CITY_LAYER_ID, showCityPopup);
+      map.on('mouseleave', CITY_LAYER_ID, clearHover);
+      map.on('mouseenter', PLACE_LAYER_ID, setPointer);
+      map.on('mouseleave', PLACE_LAYER_ID, clearPointer);
+      map.on('mouseenter', RESULT_LAYER_ID, setPointer);
+      map.on('mouseleave', RESULT_LAYER_ID, clearPointer);
+      map.on('click', PLACE_LAYER_ID, showFeaturePopup);
+      map.on('click', RESULT_LAYER_ID, showFeaturePopup);
+      setMapReady(true);
+    });
+
     mapRef.current = map;
-
-    const observer = new ResizeObserver(() => map.invalidateSize());
+    const observer = new ResizeObserver(() => map.resize());
     observer.observe(mapNode.current);
 
     return () => {
       observer.disconnect();
-      boundaryRequestRef.current += 1;
+      countryRequestRef.current += 1;
+      countryLayersRef.current.clear();
+      cityPopup.remove();
+      setMapReady(false);
       map.remove();
       mapRef.current = null;
     };
@@ -145,41 +358,76 @@ export function RouteMap({ segments, updateSegment }) {
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return undefined;
+    if (!map || !mapReady) return undefined;
 
-    const requestId = ++boundaryRequestRef.current;
-    countryLayersRef.current.clearLayers();
+    const countries = visitedCountries(segments, colorForIndex);
+    const signature = countries
+      .map(({ countryCode, color }) => `${countryCode}:${color}`)
+      .join('|');
 
-    async function paintVisitedCountries() {
-      const countries = visitedCountries(segments, colorForIndex);
-      if (!countries.length) return;
+    if (countrySignatureRef.current === signature) return undefined;
+    countrySignatureRef.current = signature;
 
+    const wantedCodes = new Set(countries.map(({ countryCode }) => countryCode));
+    for (const [countryCode, entry] of countryLayersRef.current) {
+      if (wantedCodes.has(countryCode)) continue;
+      removeCountryLayer(map, entry);
+      countryLayersRef.current.delete(countryCode);
+    }
+
+    countries.forEach(({ countryCode, color }) => {
+      const existing = countryLayersRef.current.get(countryCode);
+      if (!existing || existing.color === color) return;
+      if (map.getLayer(existing.layerId)) {
+        map.setPaintProperty(existing.layerId, 'fill-color', color);
+      }
+      existing.color = color;
+    });
+
+    const requestId = ++countryRequestRef.current;
+    const pendingCountries = countries.filter(
+      ({ countryCode }) => !countryLayersRef.current.has(countryCode)
+    );
+
+    async function paintCountries() {
       let nextIndex = 0;
-      const workerCount = Math.min(3, countries.length);
+      const workerCount = Math.min(2, pendingCountries.length);
 
       async function worker() {
-        while (nextIndex < countries.length) {
+        while (nextIndex < pendingCountries.length) {
           const currentIndex = nextIndex;
           nextIndex += 1;
-          const { countryCode, city, color } = countries[currentIndex];
+          const country = pendingCountries[currentIndex];
 
           try {
-            const feature = await getCountryLandBoundary({
-              countryCode,
-              lat: city.lat,
-              lon: city.lon,
+            const feature = await loadCountryFeature(country);
+            if (requestId !== countryRequestRef.current || !mapRef.current || !feature) return;
+            if (countryLayersRef.current.has(country.countryCode)) continue;
+
+            const sourceId = countrySourceId(country.countryCode);
+            const layerId = countryLayerId(country.countryCode);
+            map.addSource(sourceId, {
+              type: 'geojson',
+              data: feature,
+              maxzoom: 12,
             });
+            map.addLayer({
+              id: layerId,
+              type: 'fill',
+              source: sourceId,
+              paint: {
+                'fill-color': country.color,
+                'fill-opacity': 0.18,
+              },
+            }, ROUTE_CASING_LAYER_ID);
 
-            if (boundaryRequestRef.current !== requestId || !mapRef.current) return;
-            if (!feature) throw new Error('La respuesta no contiene geometría.');
-
-            L.geoJSON(feature, {
-              pane: 'countryPane',
-              interactive: false,
-              style: countryLayerStyle(color),
-            }).addTo(countryLayersRef.current);
+            countryLayersRef.current.set(country.countryCode, {
+              sourceId,
+              layerId,
+              color: country.color,
+            });
           } catch (boundaryError) {
-            console.error(`[Country coloring] ${countryCode}`, boundaryError);
+            console.warn(`[Country coloring] ${country.countryCode}`, boundaryError);
           }
         }
       }
@@ -187,98 +435,120 @@ export function RouteMap({ segments, updateSegment }) {
       await Promise.all(Array.from({ length: workerCount }, () => worker()));
     }
 
-    paintVisitedCountries().catch((boundaryError) => {
-      console.error('[Country coloring] Unexpected failure', boundaryError);
+    paintCountries().catch((boundaryError) => {
+      console.warn('[Country coloring] Unexpected failure', boundaryError);
     });
 
     return () => {
-      boundaryRequestRef.current += 1;
+      countryRequestRef.current += 1;
     };
-  }, [segments]);
+  }, [segments, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || !mapReady) return;
 
-    routeLayersRef.current.clearLayers();
-    const bounds = [];
+    const routeFeatures = [];
+    const cityFeatures = [];
+    const placeFeatures = [];
+    const bounds = new maplibregl.LngLatBounds();
+    let boundsCount = 0;
 
     segments.forEach((segment, index) => {
       if (!isPlaced(segment.origin) || !isPlaced(segment.destination)) return;
-
-      const color = colorForIndex(index);
-      const curve = adaptiveCurve(segment.origin, segment.destination);
-      const dashed = dominantTransport(segment) === 'plane';
-
-      L.polyline(curve, {
-        color: '#ffffff',
-        weight: 5,
-        opacity: 0.9,
-        interactive: false,
-      }).addTo(routeLayersRef.current);
-
-      L.polyline(curve, {
-        color,
-        weight: 2,
-        opacity: 0.95,
-        dashArray: dashed ? '10 8' : null,
-        lineCap: dashed ? 'butt' : 'round',
-        lineJoin: 'round',
-        interactive: false,
-      }).addTo(routeLayersRef.current);
+      routeFeatures.push({
+        type: 'Feature',
+        properties: {
+          color: colorForIndex(index),
+          dashed: dominantTransport(segment) === 'plane',
+        },
+        geometry: {
+          type: 'LineString',
+          coordinates: adaptiveCurve(segment.origin, segment.destination),
+        },
+      });
     });
 
     orderedCities(segments).forEach((city, index) => {
-      const color = colorForIndex(index);
-      bounds.push([city.lat, city.lon]);
-
-      L.circleMarker([city.lat, city.lon], {
-        radius: 6,
-        color: '#ffffff',
-        weight: 2,
-        fillColor: color,
-        fillOpacity: 1,
-        pane: 'markerPane',
-      })
-        .bindTooltip(city.name || city.displayName || 'Ciudad', {
-          direction: 'top',
-          offset: [0, -7],
-        })
-        .addTo(routeLayersRef.current);
+      cityFeatures.push({
+        type: 'Feature',
+        properties: {
+          name: city.name || city.displayName || 'Ciudad',
+          color: colorForIndex(index),
+        },
+        geometry: {
+          type: 'Point',
+          coordinates: [city.lon, city.lat],
+        },
+      });
+      bounds.extend([city.lon, city.lat]);
+      boundsCount += 1;
     });
 
     segments.forEach((segment) => {
       (segment.places || []).forEach((place) => {
         if (!isPlaced(place)) return;
-        bounds.push([place.lat, place.lon]);
-        L.marker([place.lat, place.lon])
-          .bindPopup(`<strong>${place.name}</strong>${place.address ? `<br>${place.address}` : ''}`)
-          .addTo(routeLayersRef.current);
+        placeFeatures.push({
+          type: 'Feature',
+          properties: {
+            name: place.name || 'Lugar',
+            address: place.address || '',
+          },
+          geometry: {
+            type: 'Point',
+            coordinates: [place.lon, place.lat],
+          },
+        });
+        bounds.extend([place.lon, place.lat]);
+        boundsCount += 1;
       });
     });
 
-    if (bounds.length === 1) map.setView(bounds[0], 10);
-    else if (bounds.length > 1) map.fitBounds(bounds, { padding: [84, 84], maxZoom: 10 });
-  }, [segments]);
+    sourceData(map, ROUTE_SOURCE_ID, {
+      type: 'FeatureCollection',
+      features: routeFeatures,
+    });
+    sourceData(map, CITY_SOURCE_ID, {
+      type: 'FeatureCollection',
+      features: cityFeatures,
+    });
+    sourceData(map, PLACE_SOURCE_ID, {
+      type: 'FeatureCollection',
+      features: placeFeatures,
+    });
+
+    if (boundsCount === 1) {
+      map.easeTo({ center: bounds.getCenter(), zoom: 10, duration: 0 });
+    } else if (boundsCount > 1) {
+      map.fitBounds(bounds, {
+        padding: 84,
+        maxZoom: 10,
+        duration: 0,
+      });
+    }
+  }, [segments, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || !mapReady) return;
 
-    resultLayersRef.current.clearLayers();
-    results.forEach((place) => {
-      if (!isPlaced(place)) return;
-      L.circleMarker([place.lat, place.lon], {
-        radius: 7,
-        color: '#ffffff',
-        weight: 2,
-        fillColor: '#0d6078',
-        fillOpacity: 0.95,
-      })
-        .bindPopup(`<strong>${place.name}</strong>${place.address ? `<br>${place.address}` : ''}`)
-        .addTo(resultLayersRef.current);
+    sourceData(map, RESULT_SOURCE_ID, {
+      type: 'FeatureCollection',
+      features: results
+        .filter(isPlaced)
+        .map((place) => ({
+          type: 'Feature',
+          properties: {
+            name: place.name || 'Lugar',
+            address: place.address || place.formatted || '',
+          },
+          geometry: {
+            type: 'Point',
+            coordinates: [place.lon, place.lat],
+          },
+        })),
     });
-  }, [results]);
+  }, [results, mapReady]);
 
   useEffect(() => {
     abortRef.current?.abort();
