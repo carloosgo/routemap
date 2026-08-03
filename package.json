@@ -10,12 +10,13 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "node --test",
-    "test:rules": "firebase emulators:exec --only firestore \"node --test firebase-tests/firestore.rules.spec.js\""
+    "test:rules": "firebase emulators:exec --only firestore \"node --test firebase-tests/firestore.rules.spec.js\"",
+    "boundaries:build": "node scripts/build-country-boundaries.mjs"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.44.0",
     "firebase": "^12.17.0",
-    "leaflet": "^1.9.4",
+    "maplibre-gl": "^5.24.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "topojson-client": "^3.1.0"
