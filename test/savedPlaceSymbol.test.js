@@ -21,14 +21,15 @@ test('saved places use one shared MapLibre symbol with a circle fallback', async
   assert.match(symbol, /circle fallback/);
 });
 
-test('saved place pin is a transparent pure SVG matching the supplied design', async () => {
+test('saved place pin is a transparent pure SVG with a solid black body and white center dot', async () => {
   const icon = await read('src/assets/map/saved-place-pin.svg');
 
   assert.match(icon, /viewBox="0 0 40 56"/);
-  assert.match(icon, /#009dcc/);
-  assert.match(icon, /#ffeed1/);
-  assert.match(icon, /#68807f/);
-  assert.match(icon, /#4d4d4d/);
+  assert.match(icon, /fill="#000000"/);
+  assert.match(icon, /<circle[^>]+cx="20"[^>]+cy="22\.5"[^>]+r="3\.25"[^>]+fill="#ffffff"/);
+  assert.equal((icon.match(/fill="#000000"/g) || []).length, 1);
+  assert.equal((icon.match(/fill="#ffffff"/g) || []).length, 1);
+  assert.doesNotMatch(icon, /#009dcc|#ffeed1|#68807f|#4d4d4d|#dadada/);
   assert.doesNotMatch(icon, /<image\b|data:image\/|<metadata>|<rect[^>]+width="40"[^>]+height="56"/i);
 });
 
