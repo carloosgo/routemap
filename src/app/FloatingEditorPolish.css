@@ -171,37 +171,68 @@
   filter: brightness(0.92);
 }
 
-/* Las cuatro opciones superiores comparten tipografía y peso, incluso activas. */
-.editor-module__tab,
-.editor-module__tab.is-active {
+/* Una sola estructura y una sola regla para Tramos, Lugares, Notas y Moneda. */
+.editor-module__tabs .editor-module__nav-tab,
+.editor-module__tabs .editor-module__nav-tab.is-active {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  height: 36px;
+  min-height: 36px;
+  margin: 0;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: #ffffff;
   color: #111827;
   font-family: var(--font-body);
   font-size: 12px;
   font-weight: 500;
+  font-style: normal;
   line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  appearance: none;
 }
 
-.editor-module__tab:hover {
+.editor-module__tabs .editor-module__nav-tab:hover,
+.editor-module__tabs .editor-module__nav-tab.is-active:hover {
+  background: #f4f5f7;
   color: #4b5563;
 }
 
-/* Uniforma el tamaño visual del icono principal de cada opción. */
-.editor-module__tab > svg:first-child,
-.editor-module__tab[data-tab-icon='places-map-pin']::before {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
+.editor-module__tab-icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  overflow: visible;
+  line-height: 0;
 }
 
-/* Sustituye el icono anterior de Lugares por el recurso entregado por el usuario. */
-.editor-module__tab[data-tab-icon='places-map-pin'] > svg:first-child {
-  display: none;
-}
-
-.editor-module__tab[data-tab-icon='places-map-pin']::before {
-  content: '';
+.editor-module__tab-icon > svg,
+.editor-module__tab-icon > img {
   display: block;
-  background: url('../assets/lugares.svg') center / contain no-repeat;
+  width: 20px;
+  height: 20px;
+  max-width: none;
+  object-fit: contain;
+}
+
+.editor-module__tab-label {
+  display: inline-block;
+  font: inherit;
+  line-height: 1;
+}
+
+.editor-module__tab-chevron {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
 }
 
 /* Solo el contador de lugares conserva el acento azul con número blanco. */
