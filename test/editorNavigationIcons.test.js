@@ -42,12 +42,16 @@ test('all desktop navigation options share Tramos dimensions, 14px text, 25px ic
   assert.match(css, /color:\s*#4b5563;/);
 });
 
-test('places uses the uploaded cafe icon asset without its editor metadata', async () => {
+test('places uses a self-contained pure vector cafe icon', async () => {
   const icon = await read('src/assets/lugares-storefront-v2.svg');
 
-  assert.match(icon, /viewBox="0 0 120 120"/);
+  assert.match(icon, /viewBox="0 0 40 40"/);
   assert.match(icon, /aria-label="Lugares"/);
-  assert.match(icon, /data:image\/png;base64/);
-  assert.doesNotMatch(icon, /c2pa:manifest/);
+  assert.match(icon, />CAFE<\/text>/);
+  assert.match(icon, /#14394b/);
+  assert.match(icon, /#19a5d0/);
+  assert.match(icon, /#fff3d6/);
+  assert.doesNotMatch(icon, /data:image\//);
+  assert.doesNotMatch(icon, /<image\b/);
   assert.doesNotMatch(icon, /<metadata>/);
 });
