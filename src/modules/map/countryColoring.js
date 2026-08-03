@@ -1,6 +1,4 @@
-import { iso2ToIso3 } from './isoCountryCodes.js';
-
-const COUNTRY_CODE_PROPERTY = 'iso_3166_1_alpha_3';
+const COUNTRY_CODE_PROPERTY = 'country';
 const EMPTY_COUNTRY_CODE = '__NO_VISITED_COUNTRIES__';
 
 function isRouteCity(city) {
@@ -29,30 +27,43 @@ export function visitedCountries(segments, colorForIndex) {
   return [...countries.values()];
 }
 
+function baseCountryFilter(countrySelection) {
+  return [
+    'all',
+    ['==', ['get', 'subtype'], 'country'],
+    ['==', ['get', 'is_land'], true],
+    countrySelection,
+  ];
+}
+
 export function countryFillStyleState(segments, colorForIndex) {
   const entries = visitedCountries(segments, colorForIndex)
-    .map(({ countryCode, color }) => ({
-      alpha3: iso2ToIso3(countryCode),
-      color,
-    }))
-    .filter(({ alpha3 }) => alpha3);
+    .map(({ countryCode, color }) => ({ countryCode, color }));
 
   if (!entries.length) {
     return {
-      filter: ['==', ['get', COUNTRY_CODE_PROPERTY], EMPTY_COUNTRY_CODE],
+      filter: baseCountryFilter([
+        '==',
+        ['get', COUNTRY_CODE_PROPERTY],
+        EMPTY_COUNTRY_CODE,
+      ]),
       colorExpression: 'transparent',
     };
   }
 
-  const alpha3Codes = entries.map(({ alpha3 }) => alpha3);
+  const countryCodes = entries.map(({ countryCode }) => countryCode);
   const colorExpression = ['match', ['get', COUNTRY_CODE_PROPERTY]];
-  entries.forEach(({ alpha3, color }) => {
-    colorExpression.push(alpha3, color);
+  entries.forEach(({ countryCode, color }) => {
+    colorExpression.push(countryCode, color);
   });
   colorExpression.push('transparent');
 
   return {
-    filter: ['in', ['get', COUNTRY_CODE_PROPERTY], ['literal', alpha3Codes]],
+    filter: baseCountryFilter([
+      'in',
+      ['get', COUNTRY_CODE_PROPERTY],
+      ['literal', countryCodes],
+    ]),
     colorExpression,
   };
 }
