@@ -43,7 +43,7 @@ test('MapLibre uses open Overture PMTiles country polygons without Mapbox', asyn
   assert.doesNotMatch(routeMap, /from 'leaflet'/);
 });
 
-test('country colors keep the first segment assignment and use a brighter fill', () => {
+test('country colors are sequential, distinct and use a brighter fill', () => {
   const segments = [
     {
       origin: { countryCode: 'FR', lat: 48.8566, lon: 2.3522 },
@@ -54,7 +54,7 @@ test('country colors keep the first segment assignment and use a brighter fill',
       destination: { countryCode: 'NL', lat: 52.3676, lon: 4.9041 },
     },
   ];
-  const colors = ['#e23b3b', '#2563eb'];
+  const colors = ['#e23b3b', '#2563eb', '#7c3aed'];
   const state = countryFillStyleState(segments, (index) => colors[index]);
 
   assert.deepEqual(state.filter, [
@@ -67,8 +67,8 @@ test('country colors keep the first segment assignment and use a brighter fill',
     'match',
     ['get', 'country'],
     'FR', '#f84e4e',
-    'DE', '#f84e4e',
-    'NL', '#3a78ff',
+    'DE', '#3a78ff',
+    'NL', '#8e54ff',
     'transparent',
   ]);
 });
