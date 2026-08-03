@@ -26,7 +26,7 @@ test('each desktop navigation option has one canonical icon source', async () =>
   assert.match(css, /\.editor-module__nav-tab::before,[\s\S]*content:\s*none !important;/);
 });
 
-test('all desktop navigation options share Tramos dimensions, 14px text, background and hover', async () => {
+test('all desktop navigation options share Tramos dimensions, 14px text, 25px icons, background and hover', async () => {
   const css = await read('src/app/EditorNavigationIcons.css');
 
   assert.match(css, /height:\s*36px;/);
@@ -36,6 +36,8 @@ test('all desktop navigation options share Tramos dimensions, 14px text, backgro
   assert.match(css, /font-family:\s*var\(--font-body\);/);
   assert.match(css, /font-size:\s*14px;/);
   assert.match(css, /font-weight:\s*500;/);
+  assert.match(css, /\.editor-module__tab-icon\s*\{[\s\S]*width:\s*25px;[\s\S]*height:\s*25px;[\s\S]*flex:\s*0 0 25px;/);
+  assert.match(css, /\.editor-module__tab-icon > img\s*\{[\s\S]*width:\s*25px;[\s\S]*height:\s*25px;/);
   assert.match(css, /\.editor-module__nav-tab\.is-active,[\s\S]*background:\s*#f4f5f7;/);
   assert.match(css, /color:\s*#4b5563;/);
 });
