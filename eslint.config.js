@@ -18,6 +18,8 @@ export default [
         localStorage: 'readonly',
         fetch: 'readonly',
         AbortController: 'readonly',
+        DOMException: 'readonly',
+        URL: 'readonly',
         URLSearchParams: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
@@ -34,6 +36,14 @@ export default [
       'react/prop-types': 'off',
       'react/react-in-jsx-scope': 'off',
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+    },
+  },
+  {
+    files: ['functions/**/*.js'],
+    languageOptions: {
+      globals: {
+        Buffer: 'readonly',
+      },
     },
   },
 ];
