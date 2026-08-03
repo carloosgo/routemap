@@ -3,14 +3,13 @@ import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { config, colorForIndex } from '../../config.js';
 import { isPlaced } from '../trips/tripModel.js';
-import {
-  getCountryLandBoundary,
-  searchGeoapifyPlaces,
-} from '../places/geoapifyClient.js';
-import { getStaticCountryBoundary } from './countryBoundaryClient.js';
-import { visitedCountries } from './countryColoring.js';
+import { searchGeoapifyPlaces } from '../places/geoapifyClient.js';
+import { countryFillStyleState } from './countryColoring.js';
 import './RouteMap.css';
 
+const COUNTRY_BOUNDARY_SOURCE_ID = 'atlas-country-boundaries';
+const COUNTRY_FILL_LAYER_ID = 'atlas-country-fill';
+const COUNTRY_BOUNDARY_SOURCE_LAYER = 'country_boundaries';
 const ROUTE_SOURCE_ID = 'atlas-routes';
 const ROUTE_CASING_LAYER_ID = 'atlas-routes-casing';
 const ROUTE_SOLID_LAYER_ID = 'atlas-routes-solid';
@@ -120,20 +119,36 @@ function geoapifyStyleUrl() {
   return `https://maps.geoapify.com/v1/styles/${style}/style.json?apiKey=${apiKey}`;
 }
 
-function countrySourceId(countryCode) {
-  return `atlas-country-${countryCode.toLowerCase()}-source`;
+function mapboxCountryBoundariesTileJsonUrl() {
+  const accessToken = encodeURIComponent(config.map.countryBoundariesToken);
+  return `https://api.mapbox.com/v4/mapbox.country-boundaries-v1.json?secure&access_token=${accessToken}`;
 }
 
-function countryLayerId(countryCode) {
-  return `atlas-country-${countryCode.toLowerCase()}-fill`;
-}
+function addCountryBoundaryLayer(map) {
+  if (!config.map.countryBoundariesToken) return;
 
-function removeCountryLayer(map, entry) {
-  if (map.getLayer(entry.layerId)) map.removeLayer(entry.layerId);
-  if (map.getSource(entry.sourceId)) map.removeSource(entry.sourceId);
+  map.addSource(COUNTRY_BOUNDARY_SOURCE_ID, {
+    type: 'vector',
+    url: mapboxCountryBoundariesTileJsonUrl(),
+  });
+
+  map.addLayer({
+    id: COUNTRY_FILL_LAYER_ID,
+    type: 'fill',
+    source: COUNTRY_BOUNDARY_SOURCE_ID,
+    'source-layer': COUNTRY_BOUNDARY_SOURCE_LAYER,
+    filter: ['==', ['get', 'iso_3166_1_alpha_3'], '__NO_VISITED_COUNTRIES__'],
+    paint: {
+      'fill-color': 'transparent',
+      'fill-opacity': 0.09,
+      'fill-antialias': false,
+    },
+  });
 }
 
 function addBaseSourcesAndLayers(map) {
+  addCountryBoundaryLayer(map);
+
   map.addSource(ROUTE_SOURCE_ID, {
     type: 'geojson',
     data: emptyFeatureCollection(),
@@ -236,23 +251,9 @@ function addBaseSourcesAndLayers(map) {
   });
 }
 
-async function loadCountryFeature(country) {
-  const staticFeature = await getStaticCountryBoundary(country.countryCode);
-  if (staticFeature) return staticFeature;
-
-  return getCountryLandBoundary({
-    countryCode: country.countryCode,
-    lat: country.city.lat,
-    lon: country.city.lon,
-  });
-}
-
 export function RouteMap({ segments, updateSegment }) {
   const mapNode = useRef(null);
   const mapRef = useRef(null);
-  const countryLayersRef = useRef(new Map());
-  const countryRequestRef = useRef(0);
-  const countrySignatureRef = useRef('');
   const abortRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
   const [query, setQuery] = useState('');
@@ -347,8 +348,6 @@ export function RouteMap({ segments, updateSegment }) {
 
     return () => {
       observer.disconnect();
-      countryRequestRef.current += 1;
-      countryLayersRef.current.clear();
       cityPopup.remove();
       setMapReady(false);
       map.remove();
@@ -358,90 +357,11 @@ export function RouteMap({ segments, updateSegment }) {
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady) return undefined;
+    if (!map || !mapReady || !map.getLayer(COUNTRY_FILL_LAYER_ID)) return;
 
-    const countries = visitedCountries(segments, colorForIndex);
-    const signature = countries
-      .map(({ countryCode, color }) => `${countryCode}:${color}`)
-      .join('|');
-
-    if (countrySignatureRef.current === signature) return undefined;
-    countrySignatureRef.current = signature;
-
-    const wantedCodes = new Set(countries.map(({ countryCode }) => countryCode));
-    for (const [countryCode, entry] of countryLayersRef.current) {
-      if (wantedCodes.has(countryCode)) continue;
-      removeCountryLayer(map, entry);
-      countryLayersRef.current.delete(countryCode);
-    }
-
-    countries.forEach(({ countryCode, color }) => {
-      const existing = countryLayersRef.current.get(countryCode);
-      if (!existing || existing.color === color) return;
-      if (map.getLayer(existing.layerId)) {
-        map.setPaintProperty(existing.layerId, 'fill-color', color);
-      }
-      existing.color = color;
-    });
-
-    const requestId = ++countryRequestRef.current;
-    const pendingCountries = countries.filter(
-      ({ countryCode }) => !countryLayersRef.current.has(countryCode)
-    );
-
-    async function paintCountries() {
-      let nextIndex = 0;
-      const workerCount = Math.min(2, pendingCountries.length);
-
-      async function worker() {
-        while (nextIndex < pendingCountries.length) {
-          const currentIndex = nextIndex;
-          nextIndex += 1;
-          const country = pendingCountries[currentIndex];
-
-          try {
-            const feature = await loadCountryFeature(country);
-            if (requestId !== countryRequestRef.current || !mapRef.current || !feature) return;
-            if (countryLayersRef.current.has(country.countryCode)) continue;
-
-            const sourceId = countrySourceId(country.countryCode);
-            const layerId = countryLayerId(country.countryCode);
-            map.addSource(sourceId, {
-              type: 'geojson',
-              data: feature,
-              maxzoom: 12,
-            });
-            map.addLayer({
-              id: layerId,
-              type: 'fill',
-              source: sourceId,
-              paint: {
-                'fill-color': country.color,
-                'fill-opacity': 0.18,
-              },
-            }, ROUTE_CASING_LAYER_ID);
-
-            countryLayersRef.current.set(country.countryCode, {
-              sourceId,
-              layerId,
-              color: country.color,
-            });
-          } catch (boundaryError) {
-            console.warn(`[Country coloring] ${country.countryCode}`, boundaryError);
-          }
-        }
-      }
-
-      await Promise.all(Array.from({ length: workerCount }, () => worker()));
-    }
-
-    paintCountries().catch((boundaryError) => {
-      console.warn('[Country coloring] Unexpected failure', boundaryError);
-    });
-
-    return () => {
-      countryRequestRef.current += 1;
-    };
+    const { filter, colorExpression } = countryFillStyleState(segments, colorForIndex);
+    map.setFilter(COUNTRY_FILL_LAYER_ID, filter);
+    map.setPaintProperty(COUNTRY_FILL_LAYER_ID, 'fill-color', colorExpression);
   }, [segments, mapReady]);
 
   useEffect(() => {
