@@ -42,19 +42,17 @@ test('all desktop navigation options share Tramos dimensions, 14px text, 25px ic
   assert.match(css, /color:\s*#4b5563;/);
 });
 
-test('places uses the refined self-contained transparent cafe icon', async () => {
+test('places uses a self-contained transparent signpost icon in the Atlas palette', async () => {
   const icon = await read('src/assets/lugares-storefront-v2.svg');
 
-  assert.match(icon, /viewBox="0 0 64 64"/);
+  assert.match(icon, /viewBox="0 0 40 40"/);
   assert.match(icon, /aria-label="Lugares"/);
-  assert.match(icon, />CAFE<\/text>/);
   assert.match(icon, /#14394b/);
-  assert.match(icon, /#19a5d0/);
-  assert.match(icon, /#fff3d6/);
-  assert.match(icon, /#b7c58a/);
-  assert.match(icon, /#c79a6b/);
+  assert.match(icon, /fill="#19a5d0"/);
+  assert.equal((icon.match(/fill="#fff3d6"/g) || []).length, 3);
+  assert.doesNotMatch(icon, />CAFE<\/text>/);
+  assert.doesNotMatch(icon, /#b7c58a|#c79a6b/);
   assert.doesNotMatch(icon, /data:image\//);
   assert.doesNotMatch(icon, /<image\b/);
   assert.doesNotMatch(icon, /<metadata>/);
-  assert.doesNotMatch(icon, /<rect[^>]+(?:fill="(?:#fff|white)"|class="(?:white|cream)")[^>]+(?:width="64"|height="64")/i);
 });
