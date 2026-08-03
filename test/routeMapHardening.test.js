@@ -62,12 +62,14 @@ test('si no existe imagen se usa un icono alusivo, nunca una inicial', async () 
   assert.doesNotMatch(content, /charAt\(0\)\.toUpperCase/);
 });
 
-test('al pulsar un resultado solo aparece la confirmación compacta de guardado', async () => {
+test('la confirmación se mantiene unida al marcador seleccionado', async () => {
   const content = await source();
   assert.match(content, /function savePrompt/);
   assert.match(content, /¿Guardar lugar para tu ruta\?/);
   assert.match(content, /className:'place-save-popup'/);
-  assert.match(content, /offset:\[0,-64\]/);
+  assert.match(content, /anchor:'bottom'/);
+  assert.match(content, /offset:\[0,-58\]/);
+  assert.match(content, /focusAfterOpen:false/);
   assert.doesNotMatch(content, /Guardar en mi ruta/);
 });
 
@@ -82,14 +84,33 @@ test('guardar normaliza el lugar, valida coordenadas y cierra la confirmación',
   assert.match(content, /onClose:\(\)=>popup\.remove\(\)/);
 });
 
-test('los resultados solo cambian al enviar el formulario de búsqueda', async () => {
+test('el formulario conserva la búsqueda explícita y sus validaciones', async () => {
   const content = await source();
   assert.match(content, /async function submitSearch/);
   assert.match(content, /<form className="geo-search" onSubmit=\{submitSearch\}>/);
   assert.match(content, /type="submit"/);
+  assert.match(content, /text\.length<config\.geoapify\.searchMinChars/);
   assert.match(content, /setResults\(next\)/);
-  const autocompleteBlock = content.slice(content.indexOf("useEffect(()=>{autocompleteAbortRef"), content.indexOf('async function submitSearch'));
-  assert.doesNotMatch(autocompleteBlock, /setResults\(/);
+});
+
+test('elegir una sugerencia la selecciona, centra y abre sin una segunda búsqueda', async () => {
+  const content = await source();
+  assert.match(content, /function chooseSuggestion\(place\)\{if\(!isPlaced\(place\)\)return/);
+  assert.match(content, /pendingSelectionRef\.current=String\(place\.id\)/);
+  assert.match(content, /skipAutocompleteRef\.current=true/);
+  assert.match(content, /setResults\(\[place\]\)/);
+  assert.match(content, /if\(pendingPlace\)\{pendingSelectionRef\.current=null;openPlace\(pendingPlace\);\}/);
+  assert.match(content, /map\.easeTo\(\{center:\[place\.lon,place\.lat\],zoom:Math\.max\(map\.getZoom\(\),15\),duration:350\}\)/);
+});
+
+test('seleccionar una sugerencia no dispara otra petición de autocompletado', async () => {
+  const content = await source();
+  assert.match(content, /skipAutocompleteRef/);
+  assert.match(content, /if\(skipAutocompleteRef\.current\)\{skipAutocompleteRef\.current=false/);
+  const chooseBlock = content.slice(content.indexOf('function chooseSuggestion'), content.indexOf('function handleQueryChange'));
+  assert.doesNotMatch(chooseBlock, /searchGeoapifyPlaces/);
+  assert.match(chooseBlock, /autocompleteAbortRef\.current\?\.abort\(\)/);
+  assert.match(chooseBlock, /searchAbortRef\.current\?\.abort\(\)/);
 });
 
 test('limpiar o editar la consulta apaga inmediatamente el estado de sugerencias', async () => {
