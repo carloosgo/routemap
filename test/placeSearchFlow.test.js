@@ -41,9 +41,10 @@ test('image failure is non-blocking and leaves an icon fallback visible', async 
   const css = await read('src/modules/map/RouteMap.css');
   assert.match(map, /place-result-marker__fallback/);
   assert.match(map, /representativePlaceIcon/);
-  assert.match(map, /if \(!url \|\| controller\.signal\.aborted\) return/);
+  assert.match(map, /if\(!url\|\|controller\.signal\.aborted\)return/);
+  assert.match(map, /addEventListener\('error'/);
   assert.match(css, /place-result-marker__fallback/);
-  assert.match(css, /img\.is-loaded/);
+  assert.match(css, /img\.is-loaded\{display:block\}/);
 });
 
 test('saved places include city, country, type and country flag', async () => {
@@ -58,10 +59,10 @@ test('saved places include city, country, type and country flag', async () => {
 
 test('places, notes and mobile route navigation use distinct icons', async () => {
   const app = await read('src/App.jsx');
-  assert.match(app, /<IconMapPin size=\{15\} aria-hidden="true" \/> \{t\('places'\)\}/);
-  assert.match(app, /<IconNotebook size=\{15\} aria-hidden="true" \/> \{t\('notes'\)\}/);
+  assert.match(app, /data-tab-icon="places-map-pin"[\s\S]*<IconMapPin size=\{15\}/);
+  assert.match(app, /data-tab-icon="notes"[\s\S]*<IconNotes size=\{15\}/);
   assert.match(app, /<IconRoute size=\{16\} aria-hidden="true" \/> \{t\('segments'\)\}/);
-  assert.doesNotMatch(app, /IconNotes/);
+  assert.doesNotMatch(app, /IconNotebook/);
 });
 
 test('CSP permits Geoapify details and Wikimedia images only through explicit hosts', async () => {
