@@ -72,8 +72,10 @@ test('editar rápidamente la búsqueda no permite que una respuesta vieja reempl
 
 test('una edición válida conserva los resultados anteriores mientras llega la siguiente respuesta', async () => {
   const content = await source();
-  const validSearchBranch = content.slice(content.indexOf("const controller = new AbortController()"));
-  assert.doesNotMatch(validSearchBranch.slice(0, validSearchBranch.indexOf('const timer')), /setResults\(\[\]\)/);
+  const validStart = content.indexOf('abortRef.current = controller;');
+  const validEnd = content.indexOf('const timer = setTimeout', validStart);
+  assert.ok(validStart >= 0 && validEnd > validStart);
+  assert.doesNotMatch(content.slice(validStart, validEnd), /setResults\(\[\]\)/);
   assert.match(content, /text\.length < config\.geoapify\.searchMinChars[\s\S]*setResults\(\[\]\)/);
 });
 
