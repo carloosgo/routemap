@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { countryFillStyleState, visitedCountries } from './countryColoring.js';
+import {
+  countryFillStyleState,
+  vividCountryColor,
+  visitedCountries,
+} from './countryColoring.js';
 
 const colors = ['#e23b3b', '#2563eb', '#7c3aed'];
 const colorForIndex = (index) => colors[index] || '#000000';
@@ -32,6 +36,12 @@ test('keeps the color of the first route segment that visits a country', () => {
   assert.equal(belgium.color, colors[0]);
 });
 
+test('makes country fills brighter without changing their opacity', () => {
+  assert.equal(vividCountryColor('#e23b3b'), '#f84e4e');
+  assert.equal(vividCountryColor('#2563eb'), '#3a78ff');
+  assert.equal(vividCountryColor('not-a-color'), 'not-a-color');
+});
+
 test('builds the MapLibre filter for Overture land country polygons', () => {
   const segments = [
     { origin: city('FR', 48.8566, 2.3522), destination: city('DE', 52.52, 13.405) },
@@ -48,9 +58,9 @@ test('builds the MapLibre filter for Overture land country polygons', () => {
     colorExpression: [
       'match',
       ['get', 'country'],
-      'FR', colors[0],
-      'DE', colors[0],
-      'NL', colors[1],
+      'FR', '#f84e4e',
+      'DE', '#f84e4e',
+      'NL', '#3a78ff',
       'transparent',
     ],
   });
