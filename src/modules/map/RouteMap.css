@@ -10,6 +10,13 @@
   inset: 0;
 }
 
+.geo-map .maplibregl-map,
+.geo-map .maplibregl-canvas-container,
+.geo-map .maplibregl-canvas {
+  width: 100%;
+  height: 100%;
+}
+
 .geo-map__missing {
   position: absolute;
   inset: 0;
@@ -112,24 +119,29 @@
   cursor: pointer;
 }
 
-.geo-map-wrap .leaflet-bottom.leaflet-right {
-  bottom: 24px;
+.geo-map-wrap .maplibregl-ctrl-bottom-right {
   right: 8px;
+  bottom: 24px;
 }
 
-.geo-map-wrap .leaflet-control-zoom {
+.geo-map-wrap .maplibregl-ctrl-group {
   margin: 0;
 }
 
-.geo-map-wrap .leaflet-control-zoom a {
-  width: 26px;
-  height: 26px;
-  line-height: 26px;
-  font-size: 16px;
+.geo-map-wrap .maplibregl-ctrl-group button {
+  width: 28px;
+  height: 28px;
 }
 
-.geo-map-wrap .leaflet-control-attribution {
+.geo-map-wrap .maplibregl-ctrl-attrib {
   font-size: 10px;
+}
+
+.geo-map-wrap .maplibregl-popup-content {
+  border-radius: 8px;
+  padding: 9px 11px;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 @media (max-width: 900px) {
@@ -153,17 +165,14 @@
     flex-basis: 100%;
   }
 
-  .geo-map-wrap .leaflet-bottom.leaflet-right {
-    bottom: 28px;
+  .geo-map-wrap .maplibregl-ctrl-bottom-right {
     right: 8px;
+    bottom: 28px;
   }
 }
 
 /* En escritorio el mapa ocupa todo el workspace, pero el editor flota encima.
-   Centrar al 50% del contenedor completo colocaba el buscador detrás del editor.
-   Este bloque lo centra dentro del área realmente visible del mapa: desde el
-   borde derecho del editor (14 + 390 px) más 14 px de separación, hasta el
-   borde derecho del workspace. */
+   Este bloque centra el buscador dentro del área realmente visible del mapa. */
 @media (min-width: 721px) {
   .workspace__desktop--floating .geo-map-wrap {
     --geo-search-safe-left: calc(14px + 390px + 14px);
