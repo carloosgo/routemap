@@ -54,6 +54,12 @@ test('saved places include city, country, type and country flag', async () => {
   assert.match(panel, /countryCode/);
 });
 
+test('places and notes keep distinct tab icons', async () => {
+  const app = await read('src/App.jsx');
+  assert.match(app, /<IconMapPin size=\{15\} aria-hidden="true" \/> \{t\('places'\)\}/);
+  assert.match(app, /<IconNotes size=\{15\} aria-hidden="true" \/> \{t\('notes'\)\}/);
+});
+
 test('CSP permits Geoapify details and Wikimedia images only through explicit hosts', async () => {
   const html = await read('index.html');
   assert.match(html, /connect-src[^;]*https:\/\/\*\.geoapify\.com/);
