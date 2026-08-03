@@ -6,7 +6,6 @@ import {
   IconDotsVertical,
   IconLanguage,
   IconMap,
-  IconMapPin,
   IconNotes,
   IconPlus,
   IconRoute,
@@ -23,6 +22,7 @@ import { AppTopbar } from './app/AppTopbar.jsx';
 import { AppEditorPane } from './app/AppEditorPane.jsx';
 import { AppMapPane } from './app/AppMapPane.jsx';
 import { TripPlacesPanel } from './modules/places/TripPlacesPanel.jsx';
+import lugaresIcon from './assets/lugares-storefront-v2.svg';
 import {
   useCollapseSegmentsOnTripChange,
   useOutsideClick,
@@ -225,27 +225,39 @@ export default function App() {
       <div className="editor-module__tabs">
         <button
           type="button"
-          className={'editor-module__tab' + (activeTab === 'segments' ? ' is-active' : '')}
+          className={'editor-module__tab editor-module__nav-tab' +
+            (activeTab === 'segments' ? ' is-active' : '')}
           onClick={() => setActiveTab('segments')}
         >
-          <IconMap size={15} aria-hidden="true" /> {t('segments')}
+          <span className="editor-module__tab-icon" aria-hidden="true">
+            <IconMap />
+          </span>
+          <span className="editor-module__tab-label">{t('segments')}</span>
         </button>
         <button
           type="button"
-          className={'editor-module__tab' + (activeTab === 'places' ? ' is-active' : '')}
+          className={'editor-module__tab editor-module__nav-tab' +
+            (activeTab === 'places' ? ' is-active' : '')}
           onClick={() => setActiveTab('places')}
           data-tab-icon="places-map-pin"
         >
-          <IconMapPin size={15} aria-hidden="true" /> {t('places')}
+          <span className="editor-module__tab-icon" aria-hidden="true">
+            <img src={lugaresIcon} alt="" />
+          </span>
+          <span className="editor-module__tab-label">{t('places')}</span>
           {places.length > 0 && <span className="tabbar__badge">{places.length}</span>}
         </button>
         <button
           type="button"
-          className={'editor-module__tab' + (activeTab === 'notes' ? ' is-active' : '')}
+          className={'editor-module__tab editor-module__nav-tab' +
+            (activeTab === 'notes' ? ' is-active' : '')}
           onClick={() => setActiveTab('notes')}
           data-tab-icon="notes"
         >
-          <IconNotes size={15} aria-hidden="true" /> {t('notes')}
+          <span className="editor-module__tab-icon" aria-hidden="true">
+            <IconNotes />
+          </span>
+          <span className="editor-module__tab-label">{t('notes')}</span>
           {checklist.length > 0 && (
             <span className="tabbar__badge">
               {doneCount}/{checklist.length}
@@ -257,12 +269,15 @@ export default function App() {
           <div className="editor-module__menu-anchor">
             <button
               type="button"
-              className={'editor-module__tab' + (openMenu === 'currency' ? ' is-active' : '')}
+              className={'editor-module__tab editor-module__nav-tab' +
+                (openMenu === 'currency' ? ' is-active' : '')}
               onClick={() => setOpenMenu(openMenu === 'currency' ? null : 'currency')}
             >
-              <IconCoin size={15} aria-hidden="true" />
-              {trip.currency}
-              <IconChevronDown size={12} aria-hidden="true" />
+              <span className="editor-module__tab-icon" aria-hidden="true">
+                <IconCoin />
+              </span>
+              <span className="editor-module__tab-label">{trip.currency}</span>
+              <IconChevronDown className="editor-module__tab-chevron" aria-hidden="true" />
             </button>
             {openMenu === 'currency' && (
               <div className="editor-module__currency-menu">
