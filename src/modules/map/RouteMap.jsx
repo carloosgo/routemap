@@ -6,6 +6,7 @@ import { config, colorForIndex } from '../../config.js';
 import { isPlaced } from '../trips/tripModel.js';
 import { searchGeoapifyPlaces } from '../places/geoapifyClient.js';
 import { countryFillStyleState } from './countryColoring.js';
+import { resolveOvertureDivisionsPmtilesUrl } from './overtureCountrySource.js';
 import './RouteMap.css';
 
 const COUNTRY_BOUNDARY_SOURCE_ID = 'atlas-country-boundaries';
@@ -121,26 +122,32 @@ function geoapifyStyleUrl() {
   return `https://maps.geoapify.com/v1/styles/${style}/style.json?apiKey=${apiKey}`;
 }
 
-function ensurePmtilesProtocol() {
-  if (globalThis[PMTILES_PROTOCOL_STATE]) return;
+function ensurePmtilesProtocol(archiveUrl) {
+  let state = globalThis[PMTILES_PROTOCOL_STATE];
+  if (!state) {
+    const protocol = new Protocol();
+    maplibregl.addProtocol('pmtiles', protocol.tile);
+    state = { protocol, archiveUrls: new Set() };
+    globalThis[PMTILES_PROTOCOL_STATE] = state;
+  }
 
-  const protocol = new Protocol();
-  const archive = new PMTiles(config.map.countryBoundariesUrl);
-  protocol.add(archive);
-  maplibregl.addProtocol('pmtiles', protocol.tile);
-  globalThis[PMTILES_PROTOCOL_STATE] = { protocol, archive };
+  if (!state.archiveUrls.has(archiveUrl)) {
+    state.protocol.add(new PMTiles(archiveUrl));
+    state.archiveUrls.add(archiveUrl);
+  }
 }
 
 function firstSymbolLayerId(map) {
   return map.getStyle()?.layers?.find((layer) => layer.type === 'symbol')?.id;
 }
 
-function addCountryBoundaryLayer(map) {
-  ensurePmtilesProtocol();
+function addCountryBoundaryLayer(map, archiveUrl) {
+  if (!archiveUrl || map.getSource(COUNTRY_BOUNDARY_SOURCE_ID)) return;
+  ensurePmtilesProtocol(archiveUrl);
 
   map.addSource(COUNTRY_BOUNDARY_SOURCE_ID, {
     type: 'vector',
-    url: `pmtiles://${config.map.countryBoundariesUrl}`,
+    url: `pmtiles://${archiveUrl}`,
     attribution: '© Overture Maps Foundation · © OpenStreetMap contributors',
   });
 
@@ -164,8 +171,6 @@ function addCountryBoundaryLayer(map) {
 }
 
 function addBaseSourcesAndLayers(map) {
-  addCountryBoundaryLayer(map);
-
   map.addSource(ROUTE_SOURCE_ID, {
     type: 'geojson',
     data: emptyFeatureCollection(),
@@ -273,6 +278,7 @@ export function RouteMap({ segments, updateSegment }) {
   const mapRef = useRef(null);
   const abortRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
+  const [countryLayerReady, setCountryLayerReady] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -293,6 +299,7 @@ export function RouteMap({ segments, updateSegment }) {
   useEffect(() => {
     if (!mapNode.current || mapRef.current || !config.geoapify.mapApiKey) return undefined;
 
+    let disposed = false;
     const map = new maplibregl.Map({
       container: mapNode.current,
       style: geoapifyStyleUrl(),
@@ -357,6 +364,16 @@ export function RouteMap({ segments, updateSegment }) {
       map.on('click', PLACE_LAYER_ID, showFeaturePopup);
       map.on('click', RESULT_LAYER_ID, showFeaturePopup);
       setMapReady(true);
+
+      resolveOvertureDivisionsPmtilesUrl(config.map.countryBoundariesUrl)
+        .then((archiveUrl) => {
+          if (disposed || !mapRef.current) return;
+          addCountryBoundaryLayer(map, archiveUrl);
+          setCountryLayerReady(true);
+        })
+        .catch((countryError) => {
+          console.warn('[Country coloring] Overture PMTiles unavailable', countryError);
+        });
     });
 
     mapRef.current = map;
@@ -364,8 +381,10 @@ export function RouteMap({ segments, updateSegment }) {
     observer.observe(mapNode.current);
 
     return () => {
+      disposed = true;
       observer.disconnect();
       cityPopup.remove();
+      setCountryLayerReady(false);
       setMapReady(false);
       map.remove();
       mapRef.current = null;
@@ -374,12 +393,12 @@ export function RouteMap({ segments, updateSegment }) {
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady || !map.getLayer(COUNTRY_FILL_LAYER_ID)) return;
+    if (!map || !mapReady || !countryLayerReady || !map.getLayer(COUNTRY_FILL_LAYER_ID)) return;
 
     const { filter, colorExpression } = countryFillStyleState(segments, colorForIndex);
     map.setFilter(COUNTRY_FILL_LAYER_ID, filter);
     map.setPaintProperty(COUNTRY_FILL_LAYER_ID, 'fill-color', colorExpression);
-  }, [segments, mapReady]);
+  }, [segments, mapReady, countryLayerReady]);
 
   useEffect(() => {
     const map = mapRef.current;
