@@ -1,0 +1,100 @@
+/*
+ * Fuente única de verdad para la navegación superior del editor.
+ * Los iconos antiguos inyectados desde public/custom-header-icons.css fueron retirados.
+ */
+.editor-module__tabs .editor-module__nav-tab,
+.editor-module__tabs .editor-module__nav-tab.is-active {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  height: 36px;
+  min-height: 36px;
+  margin: 0;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  appearance: none;
+}
+
+.editor-module__tabs .editor-module__nav-tab.is-active,
+.editor-module__tabs .editor-module__nav-tab:hover,
+.editor-module__tabs .editor-module__nav-tab.is-active:hover {
+  background: #f4f5f7;
+  color: #4b5563;
+}
+
+/* Ninguna opción puede volver a recibir iconos mediante pseudo-elementos. */
+.editor-module__tabs .editor-module__nav-tab::before,
+.editor-module__tabs .editor-module__nav-tab::after {
+  content: none !important;
+  display: none !important;
+  background-image: none !important;
+}
+
+.editor-module__tabs .editor-module__tab-icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  overflow: visible;
+  line-height: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+/* Los SVG de Tabler se sustituyen por los iconos visuales ya definidos para Atlas. */
+.editor-module__tabs .editor-module__tab-icon > svg {
+  display: none;
+}
+
+.editor-module__tabs .editor-module__tab-icon > img {
+  display: block;
+  width: 20px;
+  height: 20px;
+  max-width: none;
+  object-fit: contain;
+}
+
+.editor-module__tabs > .editor-module__nav-tab:nth-of-type(1) .editor-module__tab-icon {
+  background-image: url('/icons/tramos.svg');
+}
+
+.editor-module__tabs > .editor-module__nav-tab[data-tab-icon='notes'] .editor-module__tab-icon {
+  background-image: url('/icons/notas.svg');
+}
+
+.editor-module__settings > .editor-module__menu-anchor:first-child > .editor-module__nav-tab .editor-module__tab-icon {
+  background-image: url('/icons/moneda.svg');
+}
+
+/* Lugares conserva como único icono el recurso entregado por el usuario. */
+.editor-module__tabs > .editor-module__nav-tab[data-tab-icon='places-map-pin'] .editor-module__tab-icon {
+  background-image: none;
+}
+
+.editor-module__tabs .editor-module__tab-label {
+  display: inline-block;
+  font: inherit;
+  line-height: 1;
+}
+
+.editor-module__tabs .editor-module__tab-chevron {
+  display: block;
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+}
