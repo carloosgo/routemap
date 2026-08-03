@@ -41,151 +41,38 @@
   padding: 6px;
 }
 
-.geo-search__row {
-  display: flex;
-  gap: 6px;
-}
-
-.geo-search input {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  padding: 9px;
-  font: inherit;
-  font-size: 12px;
-}
-
-.geo-search select {
-  border: 1px solid #dbe3ea;
-  border-radius: 7px;
-  background: #fff;
-  padding: 7px;
-  font: inherit;
-  font-size: 11px;
-}
-
+.geo-search__row { display: flex; gap: 6px; }
+.geo-search input { flex: 1; min-width: 0; border: 0; outline: 0; padding: 9px; font: inherit; font-size: 12px; }
 .geo-search__status,
-.geo-search__error {
-  padding: 7px 9px;
-  font-size: 11px;
-}
+.geo-search__error { padding: 7px 9px; font-size: 11px; }
+.geo-search__error { color: #b42318; }
 
-.geo-search__error {
-  color: #b42318;
-}
+.geo-map-wrap .maplibregl-ctrl-bottom-right { right: 8px; bottom: 24px; }
+.geo-map-wrap .maplibregl-ctrl-group { margin: 0; }
+.geo-map-wrap .maplibregl-ctrl-group button { width: 28px; height: 28px; }
+.geo-map-wrap .maplibregl-ctrl-attrib { font-size: 10px; }
+.geo-map-wrap .maplibregl-popup-content { border-radius: 10px; padding: 10px 12px; font-size: 12px; line-height: 1.35; }
 
-.geo-search__results {
-  max-height: 260px;
-  overflow: auto;
-  border-top: 1px solid #edf2f7;
-}
+.place-popup { display: flex; min-width: 190px; max-width: 260px; flex-direction: column; gap: 3px; }
+.place-popup strong { color: #0f172a; font-size: 13px; }
+.place-popup span { color: #475569; font-size: 11px; }
+.place-popup small { color: #64748b; font-size: 11px; }
+.place-popup button { margin-top: 7px; border: 0; border-radius: 7px; background: #0d6078; color: #fff; padding: 8px 10px; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.place-popup button:hover { background: #0a4d61; }
 
-.geo-search__result {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px;
-  border-bottom: 1px solid #edf2f7;
-}
-
-.geo-search__result span {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-}
-
-.geo-search__result strong {
-  font-size: 12px;
-}
-
-.geo-search__result small {
-  overflow: hidden;
-  color: #64748b;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.geo-search__result button {
-  border: 0;
-  border-radius: 7px;
-  background: #0d6078;
-  color: #fff;
-  padding: 7px 10px;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.geo-map-wrap .maplibregl-ctrl-bottom-right {
-  right: 8px;
-  bottom: 24px;
-}
-
-.geo-map-wrap .maplibregl-ctrl-group {
-  margin: 0;
-}
-
-.geo-map-wrap .maplibregl-ctrl-group button {
-  width: 28px;
-  height: 28px;
-}
-
-.geo-map-wrap .maplibregl-ctrl-attrib {
-  font-size: 10px;
-}
-
-.geo-map-wrap .maplibregl-popup-content {
-  border-radius: 8px;
-  padding: 9px 11px;
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-@media (max-width: 900px) {
-  .geo-search {
-    width: min(430px, calc(100% - 160px));
-  }
-}
-
+@media (max-width: 900px) { .geo-search { width: min(430px, calc(100% - 160px)); } }
 @media (max-width: 800px) {
-  .geo-search {
-    top: 12px;
-    left: 50%;
-    width: calc(100% - 88px);
-  }
-
-  .geo-search__row {
-    flex-wrap: wrap;
-  }
-
-  .geo-search input {
-    flex-basis: 100%;
-  }
-
-  .geo-map-wrap .maplibregl-ctrl-bottom-right {
-    right: 8px;
-    bottom: 28px;
-  }
+  .geo-search { top: 12px; left: 50%; width: calc(100% - 88px); }
+  .geo-map-wrap .maplibregl-ctrl-bottom-right { right: 8px; bottom: 28px; }
 }
 
-/* En escritorio el mapa ocupa todo el workspace, pero el editor flota encima.
-   Este bloque centra el buscador dentro del área realmente visible del mapa. */
 @media (min-width: 721px) {
-  .workspace__desktop--floating .geo-map-wrap {
-    --geo-search-safe-left: calc(14px + 390px + 14px);
-  }
-
+  .workspace__desktop--floating .geo-map-wrap { --geo-search-safe-left: calc(14px + 390px + 14px); }
   .workspace__desktop--floating .geo-search {
     left: var(--geo-search-safe-left);
     right: 0;
     margin-inline: auto;
     transform: none;
-    width: min(
-      470px,
-      calc(100% - var(--geo-search-safe-left) - 32px)
-    );
+    width: min(470px, calc(100% - var(--geo-search-safe-left) - 32px));
   }
 }
