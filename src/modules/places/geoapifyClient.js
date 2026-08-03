@@ -2,7 +2,7 @@ import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/
 import { getFirebaseServices } from '../../infrastructure/firebase/firebaseClient.js';
 import { config } from '../../config.js';
 
-const PLACE_CACHE_KEY = 'atlas:geoapify-place-cache:v2';
+const PLACE_CACHE_KEY = 'atlas:geoapify-place-cache:v3';
 const DETAIL_CACHE_KEY = 'atlas:geoapify-place-detail-cache:v1';
 const placeCache = new Map();
 const detailCache = new Map();
@@ -47,23 +47,6 @@ function callable(name) {
   return httpsCallable(functions, name);
 }
 
-export function contextualQuery(query, context) {
-  const base = String(query || '').trim();
-  const city = String(context?.city || '').trim();
-  const country = String(context?.country || '').trim();
-  const normalized = normalizeSearchKey(base);
-  const knownLocations = [
-    ...(Array.isArray(context?.knownLocations) ? context.knownLocations : []),
-    city,
-    country,
-  ].filter(Boolean);
-  const alreadyNamesLocation = knownLocations
-    .some((value) => normalized.includes(normalizeSearchKey(value)));
-  return alreadyNamesLocation || (!city && !country)
-    ? base
-    : [base, city, country].filter(Boolean).join(', ');
-}
-
 function contextKey(context) {
   return [
     normalizeSearchKey(context?.city),
@@ -73,8 +56,19 @@ function contextKey(context) {
   ].join('|');
 }
 
+function searchContextPayload(context) {
+  return {
+    city: String(context?.city || '').trim(),
+    country: String(context?.country || '').trim(),
+    countryCode: String(context?.countryCode || '').trim().toUpperCase(),
+    lat: Number.isFinite(context?.lat) ? Number(context.lat) : null,
+    lon: Number.isFinite(context?.lon) ? Number(context.lon) : null,
+  };
+}
+
 export async function searchGeoapifyPlaces(query, { signal, context } = {}) {
-  const queryKey = normalizeSearchKey(query);
+  const cleanQuery = String(query || '').trim();
+  const queryKey = normalizeSearchKey(cleanQuery);
   if (queryKey.length < config.geoapify.searchMinChars) return [];
 
   const cacheKey = `${queryKey}|${contextKey(context)}`;
@@ -86,7 +80,8 @@ export async function searchGeoapifyPlaces(query, { signal, context } = {}) {
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
   const request = callable('geoapifyPlaceSearch');
   const response = await request({
-    query: contextualQuery(query, context),
+    query: cleanQuery,
+    context: searchContextPayload(context),
     limit: config.geoapify.searchLimit,
   });
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
