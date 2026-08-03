@@ -50,7 +50,25 @@ test('cada pestaña muestra nombre, ciudad, país e intenta cargar imagen real',
   assert.match(content, /\[place\.city, place\.country \|\| place\.countryCode\]/);
   assert.match(content, /fetchGeoapifyPlaceImage/);
   assert.match(content, /image\.classList\.add\('is-loaded'\)/);
-  assert.match(content, /Guardar en mi ruta/);
+});
+
+test('si no existe imagen se usa un icono alusivo, nunca una inicial', async () => {
+  const content = await source();
+  assert.match(content, /export function representativePlaceIcon/);
+  assert.match(content, /🏛️/);
+  assert.match(content, /🍽️/);
+  assert.match(content, /📍/);
+  assert.doesNotMatch(content, /charAt\(0\)\.toUpperCase/);
+});
+
+test('guardar un lugar normaliza todos sus datos y evita doble guardado', async () => {
+  const content = await source();
+  assert.match(content, /event\.stopPropagation\(\)/);
+  assert.match(content, /alreadySaved/);
+  assert.match(content, /lat: Number\(selected\.lat\)/);
+  assert.match(content, /lon: Number\(selected\.lon\)/);
+  assert.match(content, /button\.textContent = 'Guardado'/);
+  assert.match(content, /addPlaceRef\.current\?\.\(savedPlace\)/);
 });
 
 test('la búsqueda contextual usa la ciudad más reciente de la ruta', async () => {
@@ -62,21 +80,33 @@ test('la búsqueda contextual usa la ciudad más reciente de la ruta', async () 
   assert.match(content, /context: searchContext/);
 });
 
-test('editar rápidamente la búsqueda no permite que una respuesta vieja reemplace la nueva', async () => {
+test('los resultados solo cambian al enviar el formulario de búsqueda', async () => {
   const content = await source();
-  assert.match(content, /searchSequenceRef/);
-  assert.match(content, /sequence === searchSequenceRef\.current/);
-  assert.match(content, /abortRef\.current\?\.abort\(\)/);
-  assert.match(content, /clearTimeout\(timer\)/);
+  assert.match(content, /async function submitSearch/);
+  assert.match(content, /<form className="geo-search" onSubmit=\{submitSearch\}>/);
+  assert.match(content, /type="submit"/);
+  assert.match(content, /setResults\(nextResults\)/);
+  const autocompleteBlock = content.slice(content.indexOf('autocompleteAbortRef.current?.abort()'), content.indexOf('async function submitSearch'));
+  assert.doesNotMatch(autocompleteBlock, /setResults\(/);
 });
 
-test('una edición válida conserva los resultados anteriores mientras llega la siguiente respuesta', async () => {
+test('el autocompletado permanece activo pero separado de los resultados del mapa', async () => {
   const content = await source();
-  const validStart = content.indexOf('abortRef.current = controller;');
-  const validEnd = content.indexOf('const timer = setTimeout', validStart);
-  assert.ok(validStart >= 0 && validEnd > validStart);
-  assert.doesNotMatch(content.slice(validStart, validEnd), /setResults\(\[\]\)/);
-  assert.match(content, /text\.length < config\.geoapify\.searchMinChars[\s\S]*setResults\(\[\]\)/);
+  assert.match(content, /setSuggestions\(nextSuggestions\)/);
+  assert.match(content, /geo-search__suggestions/);
+  assert.match(content, /chooseSuggestion/);
+  assert.match(content, /setShowSuggestions\(false\)/);
+});
+
+test('respuestas antiguas no reemplazan búsquedas o sugerencias nuevas', async () => {
+  const content = await source();
+  assert.match(content, /searchSequenceRef/);
+  assert.match(content, /autocompleteSequenceRef/);
+  assert.match(content, /sequence === searchSequenceRef\.current/);
+  assert.match(content, /sequence === autocompleteSequenceRef\.current/);
+  assert.match(content, /searchAbortRef\.current\?\.abort\(\)/);
+  assert.match(content, /autocompleteAbortRef\.current\?\.abort\(\)/);
+  assert.match(content, /clearTimeout\(timer\)/);
 });
 
 test('RouteMap elimina marcadores y solicitudes de imágenes al actualizar o desmontar', async () => {
