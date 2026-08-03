@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { countryLayerStyle, visitedCountries } from './countryColoring.js';
+import { countryFillStyleState, visitedCountries } from './countryColoring.js';
 
 const colors = ['#e23b3b', '#2563eb', '#7c3aed'];
 const colorForIndex = (index) => colors[index] || '#000000';
@@ -32,14 +32,36 @@ test('keeps the color of the first route segment that visits a country', () => {
   assert.equal(belgium.color, colors[0]);
 });
 
-test('uses the previous map fill and border values without geometry smoothing', () => {
-  assert.deepEqual(countryLayerStyle('#2563eb'), {
-    color: '#2563eb',
-    weight: 1.5,
-    opacity: 0.5,
-    fillColor: '#2563eb',
-    fillOpacity: 0.18,
-    fillRule: 'evenodd',
-    smoothFactor: 0,
+test('builds the MapLibre filter and color expression with ISO alpha-3 codes', () => {
+  const segments = [
+    { origin: city('FR', 48.8566, 2.3522), destination: city('DE', 52.52, 13.405) },
+    { origin: city('DE', 52.52, 13.405), destination: city('NL', 52.3676, 4.9041) },
+  ];
+
+  assert.deepEqual(countryFillStyleState(segments, colorForIndex), {
+    filter: [
+      'in',
+      ['get', 'iso_3166_1_alpha_3'],
+      ['literal', ['FRA', 'DEU', 'NLD']],
+    ],
+    colorExpression: [
+      'match',
+      ['get', 'iso_3166_1_alpha_3'],
+      'FRA', colors[0],
+      'DEU', colors[0],
+      'NLD', colors[1],
+      'transparent',
+    ],
+  });
+});
+
+test('uses an empty MapLibre filter when no valid country is present', () => {
+  assert.deepEqual(countryFillStyleState([], colorForIndex), {
+    filter: [
+      '==',
+      ['get', 'iso_3166_1_alpha_3'],
+      '__NO_VISITED_COUNTRIES__',
+    ],
+    colorExpression: 'transparent',
   });
 });
