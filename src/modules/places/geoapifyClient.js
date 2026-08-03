@@ -47,15 +47,19 @@ function callable(name) {
   return httpsCallable(functions, name);
 }
 
-function contextualQuery(query, context) {
+export function contextualQuery(query, context) {
   const base = String(query || '').trim();
   const city = String(context?.city || '').trim();
   const country = String(context?.country || '').trim();
   const normalized = normalizeSearchKey(base);
-  const alreadyNamesContext = [city, country]
-    .filter(Boolean)
+  const knownLocations = [
+    ...(Array.isArray(context?.knownLocations) ? context.knownLocations : []),
+    city,
+    country,
+  ].filter(Boolean);
+  const alreadyNamesLocation = knownLocations
     .some((value) => normalized.includes(normalizeSearchKey(value)));
-  return alreadyNamesContext || (!city && !country)
+  return alreadyNamesLocation || (!city && !country)
     ? base
     : [base, city, country].filter(Boolean).join(', ');
 }
