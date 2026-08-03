@@ -122,6 +122,27 @@ function geoapifyStyleUrl() {
   return `https://maps.geoapify.com/v1/styles/${style}/style.json?apiKey=${apiKey}`;
 }
 
+function setPaintIfPresent(map, layerId, property, value) {
+  if (map.getLayer(layerId)) map.setPaintProperty(layerId, property, value);
+}
+
+function setVisibilityIfPresent(map, layerId, visibility) {
+  if (map.getLayer(layerId)) map.setLayoutProperty(layerId, 'visibility', visibility);
+}
+
+function applyBaseStyleOverrides(map) {
+  setPaintIfPresent(map, 'background', 'background-color', '#f4f4f4');
+  setPaintIfPresent(map, 'park', 'fill-color', '#e3e7e1');
+  setVisibilityIfPresent(map, 'park', 'none');
+  setPaintIfPresent(map, 'water', 'fill-color', '#d6d6d6');
+  setPaintIfPresent(map, 'landuse_residential', 'fill-color', '#ebebeb');
+  setPaintIfPresent(map, 'waterway', 'line-color', '#89b5c3');
+  setVisibilityIfPresent(map, 'waterway', 'none');
+  setPaintIfPresent(map, 'highway_motorway_subtle', 'line-color', 'rgba(232,232,232,0.53)');
+  setPaintIfPresent(map, 'boundary_state', 'line-color', '#b6b6b6');
+  setVisibilityIfPresent(map, 'boundary_country', 'none');
+}
+
 function ensurePmtilesProtocol(archiveUrl) {
   let state = globalThis[PMTILES_PROTOCOL_STATE];
   if (!state) {
@@ -354,6 +375,7 @@ export function RouteMap({ segments, updateSegment }) {
     };
 
     map.on('load', () => {
+      applyBaseStyleOverrides(map);
       addBaseSourcesAndLayers(map);
       map.on('mouseenter', CITY_LAYER_ID, showCityPopup);
       map.on('mouseleave', CITY_LAYER_ID, clearHover);
