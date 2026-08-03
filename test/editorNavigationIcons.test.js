@@ -26,7 +26,7 @@ test('each desktop navigation option has one canonical icon source', async () =>
   assert.match(css, /\.editor-module__nav-tab::before,[\s\S]*content:\s*none !important;/);
 });
 
-test('all desktop navigation options share Tramos dimensions, background and hover', async () => {
+test('all desktop navigation options share Tramos dimensions, 14px text, background and hover', async () => {
   const css = await read('src/app/EditorNavigationIcons.css');
 
   assert.match(css, /height:\s*36px;/);
@@ -34,8 +34,18 @@ test('all desktop navigation options share Tramos dimensions, background and hov
   assert.match(css, /border-radius:\s*8px;/);
   assert.match(css, /background:\s*#ffffff;/);
   assert.match(css, /font-family:\s*var\(--font-body\);/);
-  assert.match(css, /font-size:\s*12px;/);
+  assert.match(css, /font-size:\s*14px;/);
   assert.match(css, /font-weight:\s*500;/);
   assert.match(css, /\.editor-module__nav-tab\.is-active,[\s\S]*background:\s*#f4f5f7;/);
   assert.match(css, /color:\s*#4b5563;/);
+});
+
+test('places icon uses the same cream, navy and cyan palette as the other Atlas icons', async () => {
+  const icon = await read('src/assets/lugares-storefront-v2.svg');
+
+  assert.match(icon, /fill="#fff3d6"/);
+  assert.match(icon, /stroke="#14394b"/);
+  assert.match(icon, /fill="#19bde6"/);
+  assert.doesNotMatch(icon, /data:image\/png;base64/);
+  assert.doesNotMatch(icon, /fill="#000(?:000)?"/i);
 });
