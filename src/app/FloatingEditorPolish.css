@@ -147,8 +147,7 @@
   padding-bottom: 3px;
 }
 
-/* Acento visual unificado solicitado para los controles principales. */
-.topbar__brand-icon,
+/* Acento visual unificado para los controles principales solicitados. */
 .topbar__save,
 .trip-save-popover__submit,
 .editor-module__settings .editor-module__more-button,
@@ -172,9 +171,20 @@
   filter: brightness(0.92);
 }
 
+/* Las pestañas y la moneda vuelven a texto negro; el hover usa gris fuerte. */
 .editor-module__tab,
 .editor-module__tab.is-active {
-  color: var(--atlas-accent);
+  color: #111827;
+}
+
+.editor-module__tab:hover {
+  color: #4b5563;
+}
+
+/* Solo el contador de lugares conserva el acento azul con número blanco. */
+.editor-module__tab[data-tab-icon='places-map-pin'] .tabbar__badge {
+  background: var(--atlas-accent);
+  color: #ffffff;
 }
 
 .trip-place button:hover {
@@ -186,4 +196,9 @@
 .place-result-marker:focus-visible {
   border-color: var(--atlas-accent);
   box-shadow: 0 7px 20px rgba(25, 165, 208, 0.28);
+}
+
+/* El popup se descarta al pulsar fuera; no muestra botón de cierre. */
+.place-save-popup .maplibregl-popup-close-button {
+  display: none;
 }
