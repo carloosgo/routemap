@@ -42,12 +42,12 @@ test('all desktop navigation options share Tramos dimensions, 14px text, 25px ic
   assert.match(css, /color:\s*#4b5563;/);
 });
 
-test('places icon uses the same cream, navy and cyan palette as the other Atlas icons', async () => {
+test('places uses the uploaded cafe icon asset without its editor metadata', async () => {
   const icon = await read('src/assets/lugares-storefront-v2.svg');
 
-  assert.match(icon, /fill="#fff3d6"/);
-  assert.match(icon, /stroke="#14394b"/);
-  assert.match(icon, /fill="#19bde6"/);
-  assert.doesNotMatch(icon, /data:image\/png;base64/);
-  assert.doesNotMatch(icon, /fill="#000(?:000)?"/i);
+  assert.match(icon, /viewBox="0 0 120 120"/);
+  assert.match(icon, /aria-label="Lugares"/);
+  assert.match(icon, /data:image\/png;base64/);
+  assert.doesNotMatch(icon, /c2pa:manifest/);
+  assert.doesNotMatch(icon, /<metadata>/);
 });
