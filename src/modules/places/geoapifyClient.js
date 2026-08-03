@@ -3,7 +3,6 @@ import { getFirebaseServices } from '../../infrastructure/firebase/firebaseClien
 import { config } from '../../config.js';
 
 const PLACE_CACHE_KEY = 'atlas:geoapify-place-cache:v1';
-const BOUNDARY_CACHE_KEY = 'atlas:country-land-boundary-cache:v5';
 const BOUNDARY_GEOMETRY_SOURCE = 'geoBoundaries.gbOpen.ADM0.full';
 const placeCache = new Map();
 const boundaryCache = new Map();
@@ -44,7 +43,6 @@ function persistCache(storageKey, target) {
 }
 
 readCache(PLACE_CACHE_KEY, placeCache);
-readCache(BOUNDARY_CACHE_KEY, boundaryCache);
 
 function callable(name) {
   const { app } = getFirebaseServices();
@@ -90,11 +88,7 @@ export async function getCountryLandBoundary({ countryCode, lat, lon }) {
     return cached.result;
   }
 
-  if (cached) {
-    boundaryCache.delete(key);
-    persistCache(BOUNDARY_CACHE_KEY, boundaryCache);
-  }
-
+  if (cached) boundaryCache.delete(key);
   if (boundaryRequests.has(key)) return boundaryRequests.get(key);
 
   const pending = (async () => {
@@ -117,7 +111,6 @@ export async function getCountryLandBoundary({ countryCode, lat, lon }) {
       geometrySource,
       timestamp: Date.now(),
     });
-    persistCache(BOUNDARY_CACHE_KEY, boundaryCache);
     return result;
   })();
 
