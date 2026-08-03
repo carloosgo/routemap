@@ -1,8 +1,5 @@
 const env = import.meta.env || {};
 
-const DEFAULT_COUNTRY_BOUNDARIES_URL =
-  'https://overturemaps-extras-us-west-2.s3.us-west-2.amazonaws.com/tiles/2026-06-17.0/divisions.pmtiles';
-
 function allowedValue(value, allowed, fallback) {
   return allowed.includes(value) ? value : fallback;
 }
@@ -45,8 +42,7 @@ export const config = {
   map: {
     initialCenter: [19.4326, -99.1332],
     initialZoom: 4,
-    countryBoundariesUrl:
-      cleanString(env.VITE_COUNTRY_BOUNDARIES_PMTILES_URL) || DEFAULT_COUNTRY_BOUNDARIES_URL,
+    countryBoundariesUrl: cleanString(env.VITE_COUNTRY_BOUNDARIES_PMTILES_URL),
     startColor: '#15803d',
     endColor: '#e23b3b',
   },
