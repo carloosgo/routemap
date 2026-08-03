@@ -1,4 +1,5 @@
 const BOUNDARY_VERSION = 'v1';
+const MAX_MEMORY_BOUNDARIES = 12;
 const boundaryCache = new Map();
 const boundaryRequests = new Map();
 
@@ -11,6 +12,24 @@ function boundaryAssetUrl(countryCode) {
   const base = String(import.meta.env.BASE_URL || '/');
   const normalizedBase = base.endsWith('/') ? base : `${base}/`;
   return `${normalizedBase}country-boundaries/${BOUNDARY_VERSION}/${countryCode}.geojson`;
+}
+
+function rememberBoundary(code, feature) {
+  if (boundaryCache.has(code)) boundaryCache.delete(code);
+  boundaryCache.set(code, feature);
+
+  while (boundaryCache.size > MAX_MEMORY_BOUNDARIES) {
+    const oldestCode = boundaryCache.keys().next().value;
+    boundaryCache.delete(oldestCode);
+  }
+}
+
+function cachedBoundary(code) {
+  if (!boundaryCache.has(code)) return null;
+  const feature = boundaryCache.get(code);
+  boundaryCache.delete(code);
+  boundaryCache.set(code, feature);
+  return feature;
 }
 
 export function isStaticCountryBoundary(feature, expectedCountryCode = '') {
@@ -26,7 +45,8 @@ export async function getStaticCountryBoundary(countryCode) {
   const code = normalizedCountryCode(countryCode);
   if (!code) return null;
 
-  if (boundaryCache.has(code)) return boundaryCache.get(code);
+  const cached = cachedBoundary(code);
+  if (cached) return cached;
   if (boundaryRequests.has(code)) return boundaryRequests.get(code);
 
   const pending = (async () => {
@@ -46,7 +66,7 @@ export async function getStaticCountryBoundary(countryCode) {
       throw new Error(`El límite estático de ${code} no contiene geometría válida.`);
     }
 
-    boundaryCache.set(code, feature);
+    rememberBoundary(code, feature);
     return feature;
   })();
 
