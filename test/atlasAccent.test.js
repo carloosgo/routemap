@@ -30,18 +30,35 @@ test('the selected Atlas controls retain the exact #19a5d0 accent token', async 
   assert.match(polish, /border-color:\s*var\(--atlas-accent\)/);
 });
 
-test('tabs use black text, strong gray hover and only the places badge stays blue', async () => {
+test('all four top options share the same typeface, size, weight and line height', async () => {
   const polish = await read('src/app/FloatingEditorPolish.css');
 
   assert.match(
     polish,
-    /\.editor-module__tab,\s*\.editor-module__tab\.is-active\s*\{\s*color:\s*#111827;/
+    /\.editor-module__tab,\s*\.editor-module__tab\.is-active\s*\{[\s\S]*color:\s*#111827;[\s\S]*font-family:\s*var\(--font-body\);[\s\S]*font-size:\s*12px;[\s\S]*font-weight:\s*500;[\s\S]*line-height:\s*1;/
   );
   assert.match(polish, /\.editor-module__tab:hover\s*\{\s*color:\s*#4b5563;/);
   assert.match(
     polish,
     /data-tab-icon='places-map-pin'[\s\S]*background:\s*var\(--atlas-accent\);[\s\S]*color:\s*#ffffff;/
   );
+});
+
+test('places uses the supplied optimized icon while keeping the tab order intact', async () => {
+  const polish = await read('src/app/FloatingEditorPolish.css');
+  const app = await read('src/App.jsx');
+  const placesIcon = await read('src/assets/lugares.svg');
+
+  assert.match(polish, /data-tab-icon='places-map-pin'[\s\S]*background:\s*url\('\.\.\/assets\/lugares\.svg'\)/);
+  assert.match(polish, /data-tab-icon='places-map-pin'[^\{]*> svg:first-child\s*\{\s*display:\s*none;/);
+  assert.match(placesIcon, /viewBox="0 0 64 64"/);
+  assert.ok(placesIcon.length < 10000, 'The optimized places icon should stay lightweight');
+
+  const segmentsIndex = app.indexOf("setActiveTab('segments')");
+  const placesIndex = app.indexOf("setActiveTab('places')");
+  const notesIndex = app.indexOf("setActiveTab('notes')");
+  const currencyIndex = app.indexOf("openMenu === 'currency'");
+  assert.ok(segmentsIndex < placesIndex && placesIndex < notesIndex && notesIndex < currencyIndex);
 });
 
 test('place save popup hides its close icon and dismisses through outside clicks', async () => {
