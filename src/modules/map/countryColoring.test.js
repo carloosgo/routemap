@@ -42,7 +42,7 @@ test('builds the MapLibre filter for Overture land country polygons', () => {
     filter: [
       'all',
       ['==', ['get', 'subtype'], 'country'],
-      ['==', ['get', 'is_land'], true],
+      ['==', ['get', 'class'], 'land'],
       ['in', ['get', 'country'], ['literal', ['FR', 'DE', 'NL']]],
     ],
     colorExpression: [
@@ -61,7 +61,7 @@ test('uses an empty Overture country filter when no valid country is present', (
     filter: [
       'all',
       ['==', ['get', 'subtype'], 'country'],
-      ['==', ['get', 'is_land'], true],
+      ['==', ['get', 'class'], 'land'],
       ['==', ['get', 'country'], '__NO_VISITED_COUNTRIES__'],
     ],
     colorExpression: 'transparent',
