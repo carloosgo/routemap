@@ -54,10 +54,11 @@ test('places uses the supplied optimized icon while keeping the tab order intact
   assert.match(placesIcon, /viewBox="0 0 64 64"/);
   assert.ok(placesIcon.length < 10000, 'The optimized places icon should stay lightweight');
 
-  const segmentsIndex = app.indexOf("setActiveTab('segments')");
-  const placesIndex = app.indexOf("setActiveTab('places')");
-  const notesIndex = app.indexOf("setActiveTab('notes')");
-  const currencyIndex = app.indexOf("openMenu === 'currency'");
+  const editorTabs = app.slice(app.indexOf('const editorModule = ('), app.indexOf('const mapPane = ('));
+  const segmentsIndex = editorTabs.indexOf("setActiveTab('segments')");
+  const placesIndex = editorTabs.indexOf("setActiveTab('places')");
+  const notesIndex = editorTabs.indexOf("setActiveTab('notes')");
+  const currencyIndex = editorTabs.indexOf("openMenu === 'currency'");
   assert.ok(segmentsIndex < placesIndex && placesIndex < notesIndex && notesIndex < currencyIndex);
 });
 
