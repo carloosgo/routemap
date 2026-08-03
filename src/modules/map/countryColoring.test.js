@@ -25,15 +25,33 @@ test('derives colored countries only from segment origins and destinations', () 
   assert.equal(result.some((item) => item.countryCode === 'ES'), false);
 });
 
-test('keeps the color of the first route segment that visits a country', () => {
+test('assigns a different color to each next country in route order', () => {
   const segments = [
     { origin: city('FR', 48.8566, 2.3522), destination: city('BE', 50.8503, 4.3517) },
     { origin: city('BE', 50.8503, 4.3517), destination: city('DE', 52.52, 13.405) },
   ];
 
-  const belgium = visitedCountries(segments, colorForIndex)
-    .find((item) => item.countryCode === 'BE');
-  assert.equal(belgium.color, colors[0]);
+  assert.deepEqual(
+    visitedCountries(segments, colorForIndex).map(({ countryCode, color }) => ({ countryCode, color })),
+    [
+      { countryCode: 'FR', color: colors[0] },
+      { countryCode: 'BE', color: colors[1] },
+      { countryCode: 'DE', color: colors[2] },
+    ]
+  );
+});
+
+test('skips a repeated palette value for the next country', () => {
+  const repeatedPalette = ['#e23b3b', '#e23b3b', '#2563eb'];
+  const repeatedColorForIndex = (index) => repeatedPalette[index] || '#7c3aed';
+  const segments = [{
+    origin: city('FR', 48.8566, 2.3522),
+    destination: city('DE', 52.52, 13.405),
+  }];
+
+  const [france, germany] = visitedCountries(segments, repeatedColorForIndex);
+  assert.equal(france.color, '#e23b3b');
+  assert.equal(germany.color, '#2563eb');
 });
 
 test('makes country fills brighter without changing their opacity', () => {
@@ -59,8 +77,8 @@ test('builds the MapLibre filter for Overture land country polygons', () => {
       'match',
       ['get', 'country'],
       'FR', '#f84e4e',
-      'DE', '#f84e4e',
-      'NL', '#3a78ff',
+      'DE', '#3a78ff',
+      'NL', '#8e54ff',
       'transparent',
     ],
   });
