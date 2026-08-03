@@ -7,7 +7,7 @@ import {
   IconLanguage,
   IconMap,
   IconMapPin,
-  IconNotebook,
+  IconNotes,
   IconPlus,
   IconRoute,
   IconTrash,
@@ -234,6 +234,7 @@ export default function App() {
           type="button"
           className={'editor-module__tab' + (activeTab === 'places' ? ' is-active' : '')}
           onClick={() => setActiveTab('places')}
+          data-tab-icon="places-map-pin"
         >
           <IconMapPin size={15} aria-hidden="true" /> {t('places')}
           {places.length > 0 && <span className="tabbar__badge">{places.length}</span>}
@@ -242,8 +243,9 @@ export default function App() {
           type="button"
           className={'editor-module__tab' + (activeTab === 'notes' ? ' is-active' : '')}
           onClick={() => setActiveTab('notes')}
+          data-tab-icon="notes"
         >
-          <IconNotebook size={15} aria-hidden="true" /> {t('notes')}
+          <IconNotes size={15} aria-hidden="true" /> {t('notes')}
           {checklist.length > 0 && (
             <span className="tabbar__badge">
               {doneCount}/{checklist.length}
