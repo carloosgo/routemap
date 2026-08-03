@@ -11,6 +11,7 @@ async function read(relativePath) {
 
 test('MapLibre uses open Overture PMTiles country polygons without Mapbox', async () => {
   const routeMap = await read('src/modules/map/RouteMap.jsx');
+  const countryColoring = await read('src/modules/map/countryColoring.js');
   const config = await read('src/config.js');
   const envExample = await read('.env.example');
   const packageJson = JSON.parse(await read('package.json'));
@@ -23,8 +24,8 @@ test('MapLibre uses open Overture PMTiles country polygons without Mapbox', asyn
   assert.match(routeMap, /COUNTRY_BOUNDARY_SOURCE_LAYER = 'division_area'/);
   assert.match(routeMap, /'source-layer': COUNTRY_BOUNDARY_SOURCE_LAYER/);
   assert.match(routeMap, /pmtiles:\/\//);
-  assert.match(routeMap, /\['get', 'subtype'\], 'country'/);
-  assert.match(routeMap, /\['get', 'is_land'\], true/);
+  assert.match(countryColoring, /\['get', 'subtype'\], 'country'/);
+  assert.match(countryColoring, /\['get', 'class'\], 'land'/);
   assert.match(routeMap, /type:\s*'fill'/);
   assert.match(routeMap, /'fill-antialias': false/);
   assert.doesNotMatch(routeMap, /fill-outline-color/);
@@ -53,7 +54,7 @@ test('country colors keep the color of the first route segment that touches each
   assert.deepEqual(state.filter, [
     'all',
     ['==', ['get', 'subtype'], 'country'],
-    ['==', ['get', 'is_land'], true],
+    ['==', ['get', 'class'], 'land'],
     ['in', ['get', 'country'], ['literal', ['FR', 'DE', 'NL']]],
   ]);
   assert.deepEqual(state.colorExpression, [
