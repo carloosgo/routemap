@@ -45,7 +45,7 @@ test('segments, places, notes and currency use the same real button structure an
   assert.match(polish, /font-family:\s*var\(--font-body\);/);
   assert.match(polish, /font-size:\s*14px;/);
   assert.match(polish, /font-weight:\s*500;/);
-  assert.match(polish, /\.editor-module__tab-icon\s*\{[\s\S]*width:\s*20px;[\s\S]*height:\s*20px;/);
+  assert.match(polish, /\.editor-module__tab-icon\s*\{[\s\S]*width:\s*25px;[\s\S]*height:\s*25px;/);
   assert.match(polish, /background:\s*#f4f5f7;/);
   assert.match(polish, /color:\s*#4b5563;/);
 });
