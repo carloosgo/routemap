@@ -12,8 +12,10 @@ async function read(relativePath) {
 test('MapLibre uses open Overture PMTiles country polygons without Mapbox', async () => {
   const routeMap = await read('src/modules/map/RouteMap.jsx');
   const countryColoring = await read('src/modules/map/countryColoring.js');
+  const overtureSource = await read('src/modules/map/overtureCountrySource.js');
   const config = await read('src/config.js');
   const envExample = await read('.env.example');
+  const indexHtml = await read('index.html');
   const packageJson = JSON.parse(await read('package.json'));
 
   assert.equal(packageJson.dependencies['maplibre-gl'], '^5.24.0');
@@ -21,6 +23,7 @@ test('MapLibre uses open Overture PMTiles country polygons without Mapbox', asyn
   assert.equal(packageJson.dependencies.leaflet, undefined);
   assert.match(routeMap, /from 'maplibre-gl'/);
   assert.match(routeMap, /from 'pmtiles'/);
+  assert.match(routeMap, /resolveOvertureDivisionsPmtilesUrl/);
   assert.match(routeMap, /COUNTRY_BOUNDARY_SOURCE_LAYER = 'division_area'/);
   assert.match(routeMap, /'source-layer': COUNTRY_BOUNDARY_SOURCE_LAYER/);
   assert.match(routeMap, /pmtiles:\/\//);
@@ -32,7 +35,10 @@ test('MapLibre uses open Overture PMTiles country polygons without Mapbox', asyn
   assert.doesNotMatch(routeMap, /api\.mapbox\.com|mapbox\.country-boundaries|VITE_MAPBOX_TOKEN/);
   assert.doesNotMatch(config, /VITE_MAPBOX_TOKEN|countryBoundariesToken/);
   assert.doesNotMatch(envExample, /VITE_MAPBOX_TOKEN/);
-  assert.match(config, /overturemaps-extras-us-west-2/);
+  assert.match(overtureSource, /stac\.overturemaps\.org\/catalog\.json/);
+  assert.match(overtureSource, /link\?\.rel === 'pmtiles'/);
+  assert.match(indexHtml, /https:\/\/stac\.overturemaps\.org/);
+  assert.match(indexHtml, /overturemaps-extras-us-west-2/);
   assert.doesNotMatch(routeMap, /getStaticCountryBoundary|getCountryLandBoundary/);
   assert.doesNotMatch(routeMap, /from 'leaflet'/);
 });
