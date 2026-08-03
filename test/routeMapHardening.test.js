@@ -2,11 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const routeMapPath = new globalThis.URL('../src/modules/map/RouteMap.jsx', import.meta.url);
-
-async function source() {
-  return readFile(routeMapPath, 'utf8');
-}
+const root = new globalThis.URL('../', import.meta.url);
+async function read(path) { return readFile(new URL(path, root), 'utf8'); }
+async function source() { return read('src/modules/map/RouteMap.jsx'); }
 
 test('RouteMap muestra de forma declarativa los errores de configuración', async () => {
   const content = await source();
@@ -37,13 +35,53 @@ test('RouteMap pinta solo las ciudades definidas por los tramos', async () => {
   assert.match(content, /'circle-color':\s*\['get', 'color'\]/);
 });
 
-test('RouteMap muestra resultados en el mapa y guarda desde el popup', async () => {
+test('los resultados de lugares se muestran como pestañas DOM, no como puntos', async () => {
   const content = await source();
-  assert.match(content, /RESULT_LAYER_ID/);
-  assert.match(content, /showSearchResult/);
+  assert.match(content, /function markerElement/);
+  assert.match(content, /place-result-marker/);
+  assert.match(content, /new maplibregl\.Marker/);
+  assert.match(content, /anchor: 'bottom'/);
+  assert.doesNotMatch(content, /RESULT_LAYER_ID|atlas-search-results-layer/);
+});
+
+test('cada pestaña muestra nombre, ciudad, país e intenta cargar imagen real', async () => {
+  const content = await source();
+  assert.match(content, /place\.name/);
+  assert.match(content, /\[place\.city, place\.country \|\| place\.countryCode\]/);
+  assert.match(content, /fetchGeoapifyPlaceImage/);
+  assert.match(content, /image\.classList\.add\('is-loaded'\)/);
   assert.match(content, /Guardar en mi ruta/);
-  assert.match(content, /addPlaceRef\.current/);
-  assert.doesNotMatch(content, /selectedSegmentId|Tramo donde guardar|geo-search__results/);
+});
+
+test('la búsqueda contextual usa la ciudad más reciente de la ruta', async () => {
+  const content = await source();
+  assert.match(content, /export function placeSearchContext/);
+  assert.match(content, /\.reverse\(\)/);
+  assert.match(content, /\[segment\.destination, segment\.origin\]/);
+  assert.match(content, /knownLocations/);
+  assert.match(content, /context: searchContext/);
+});
+
+test('editar rápidamente la búsqueda no permite que una respuesta vieja reemplace la nueva', async () => {
+  const content = await source();
+  assert.match(content, /searchSequenceRef/);
+  assert.match(content, /sequence === searchSequenceRef\.current/);
+  assert.match(content, /abortRef\.current\?\.abort\(\)/);
+  assert.match(content, /clearTimeout\(timer\)/);
+});
+
+test('una edición válida conserva los resultados anteriores mientras llega la siguiente respuesta', async () => {
+  const content = await source();
+  const validSearchBranch = content.slice(content.indexOf("const controller = new AbortController()"));
+  assert.doesNotMatch(validSearchBranch.slice(0, validSearchBranch.indexOf('const timer')), /setResults\(\[\]\)/);
+  assert.match(content, /text\.length < config\.geoapify\.searchMinChars[\s\S]*setResults\(\[\]\)/);
+});
+
+test('RouteMap elimina marcadores y solicitudes de imágenes al actualizar o desmontar', async () => {
+  const content = await source();
+  assert.match(content, /resultMarkersRef\.current\.forEach/);
+  assert.match(content, /controller\.abort\(\)/);
+  assert.match(content, /marker\.remove\(\)/);
 });
 
 test('RouteMap no calcula ni persiste rutas mediante Geoapify', async () => {
