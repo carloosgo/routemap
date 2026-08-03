@@ -1,4 +1,5 @@
 import { IconMapPin, IconTrash } from '@tabler/icons-react';
+import { flagImageUrl } from '../flags/flags.js';
 import './TripPlacesPanel.css';
 
 function groupPlaces(places) {
@@ -7,10 +8,24 @@ function groupPlaces(places) {
     const city = place.city || 'Sin ciudad';
     const country = place.country || place.countryCode || 'Sin país';
     const key = `${city}\u0000${country}`;
-    if (!groups.has(key)) groups.set(key, { city, country, places: [] });
+    if (!groups.has(key)) groups.set(key, { city, country, countryCode: place.countryCode, places: [] });
     groups.get(key).places.push(place);
   });
   return [...groups.values()];
+}
+
+function CountryFlag({ countryCode, country }) {
+  if (!countryCode) return null;
+  return (
+    <img
+      className="trip-places__flag"
+      src={flagImageUrl(countryCode, 24)}
+      alt={country || countryCode}
+      width={24}
+      height={16}
+      loading="lazy"
+    />
+  );
 }
 
 export function TripPlacesPanel({ places, removePlace, t }) {
@@ -31,7 +46,10 @@ export function TripPlacesPanel({ places, removePlace, t }) {
       {groups.map((group) => (
         <section className="trip-places__group" key={`${group.city}-${group.country}`}>
           <header className="trip-places__group-head">
-            <strong>{group.city}</strong>
+            <span className="trip-places__location">
+              <CountryFlag countryCode={group.countryCode} country={group.country} />
+              <strong>{group.city}</strong>
+            </span>
             <span>{group.country}</span>
           </header>
           <div className="trip-places__list">
