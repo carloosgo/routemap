@@ -42,6 +42,7 @@ export const config = {
   map: {
     initialCenter: [19.4326, -99.1332],
     initialZoom: 4,
+    countryBoundariesToken: cleanString(env.VITE_MAPBOX_TOKEN),
     startColor: '#15803d',
     endColor: '#e23b3b',
   },
