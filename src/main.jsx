@@ -6,6 +6,7 @@ import './modules/map/placeSavePopupDismiss.js';
 import './index.css';
 import './app/FloatingEditorPlacement.css';
 import './app/FloatingEditorPolish.css';
+import './app/EditorNavigationIcons.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <I18nProvider>
