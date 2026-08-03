@@ -47,6 +47,21 @@ function callable(name) {
   return httpsCallable(functions, name);
 }
 
+export function contextualQuery(query, context) {
+  const base = String(query || '').trim();
+  const normalized = normalizeSearchKey(base);
+  const city = String(context?.city || '').trim();
+  const country = String(context?.country || '').trim();
+  const knownLocations = Array.isArray(context?.knownLocations) ? context.knownLocations : [];
+  const explicitlyNamesLocation = [...knownLocations, city, country]
+    .filter(Boolean)
+    .some((value) => normalized.includes(normalizeSearchKey(value)));
+  const isGenericSingleTerm = normalized.split(' ').filter(Boolean).length === 1;
+
+  if (!base || explicitlyNamesLocation || !isGenericSingleTerm || (!city && !country)) return base;
+  return [base, city, country].filter(Boolean).join(', ');
+}
+
 function contextKey(context) {
   return [
     normalizeSearchKey(context?.city),
@@ -54,16 +69,6 @@ function contextKey(context) {
     Number.isFinite(context?.lat) ? Number(context.lat).toFixed(4) : '',
     Number.isFinite(context?.lon) ? Number(context.lon).toFixed(4) : '',
   ].join('|');
-}
-
-function searchContextPayload(context) {
-  return {
-    city: String(context?.city || '').trim(),
-    country: String(context?.country || '').trim(),
-    countryCode: String(context?.countryCode || '').trim().toUpperCase(),
-    lat: Number.isFinite(context?.lat) ? Number(context.lat) : null,
-    lon: Number.isFinite(context?.lon) ? Number(context.lon) : null,
-  };
 }
 
 export async function searchGeoapifyPlaces(query, { signal, context } = {}) {
@@ -80,8 +85,14 @@ export async function searchGeoapifyPlaces(query, { signal, context } = {}) {
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
   const request = callable('geoapifyPlaceSearch');
   const response = await request({
-    query: cleanQuery,
-    context: searchContextPayload(context),
+    query: contextualQuery(cleanQuery, context),
+    context: {
+      city: String(context?.city || '').trim(),
+      country: String(context?.country || '').trim(),
+      countryCode: String(context?.countryCode || '').trim().toUpperCase(),
+      lat: Number.isFinite(context?.lat) ? Number(context.lat) : null,
+      lon: Number.isFinite(context?.lon) ? Number(context.lon) : null,
+    },
     limit: config.geoapify.searchLimit,
   });
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
