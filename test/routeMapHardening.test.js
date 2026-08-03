@@ -18,14 +18,15 @@ test('RouteMap vuelve a dibujar tramos cuando cambia su orden', async () => {
   const content = await source();
   assert.match(content, /segments\.forEach\(\(segment, index\)/);
   assert.match(content, /colorForIndex\(index\)/);
-  assert.match(content, /\[segments\]/);
+  assert.match(content, /\[segments, mapReady\]/);
 });
 
 test('RouteMap conserva las curvas adaptativas y solo puntea vuelos', async () => {
   const content = await source();
   assert.match(content, /function adaptiveCurve/);
   assert.match(content, /dominantTransport\(segment\) === 'plane'/);
-  assert.match(content, /dashArray: dashed \? '10 8' : null/);
+  assert.match(content, /filter:\s*\['==', \['get', 'dashed'\], true\]/);
+  assert.match(content, /'line-dasharray':\s*\[5, 4\]/);
 });
 
 test('RouteMap pinta solo las ciudades definidas por los tramos', async () => {
@@ -33,7 +34,7 @@ test('RouteMap pinta solo las ciudades definidas por los tramos', async () => {
   assert.match(content, /function orderedCities/);
   assert.match(content, /\[segment\.origin, segment\.destination\]/);
   assert.match(content, /orderedCities\(segments\)\.forEach/);
-  assert.match(content, /fillColor: color/);
+  assert.match(content, /'circle-color':\s*\['get', 'color'\]/);
 });
 
 test('RouteMap no calcula ni persiste rutas mediante Geoapify', async () => {
