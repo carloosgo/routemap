@@ -311,7 +311,10 @@ function markerElement(place) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'place-result-marker';
-  button.setAttribute('aria-label', `${place.name || 'Lugar'}, ${place.city || ''}, ${place.country || ''}`);
+  button.setAttribute(
+    'aria-label',
+    `${place.name || 'Lugar'}, ${place.city || ''}, ${place.country || ''}`
+  );
 
   const media = document.createElement('span');
   media.className = 'place-result-marker__media';
@@ -352,6 +355,8 @@ export function RouteMap({ segments, places = [], addPlace }) {
   const placesRef = useRef(places);
   const activePromptRef = useRef(null);
   const skipAutocompleteRef = useRef(false);
+  const lastRouteViewportKeyRef = useRef(null);
+  const saveNoticeTimerRef = useRef(null);
 
   const [mapReady, setMapReady] = useState(false);
   const [countryLayerReady, setCountryLayerReady] = useState(false);
@@ -362,6 +367,7 @@ export function RouteMap({ segments, places = [], addPlace }) {
   const [searching, setSearching] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
   const [error, setError] = useState('');
+  const [saveNotice, setSaveNotice] = useState('');
 
   const searchContext = useMemo(() => placeSearchContext(segments), [segments]);
 
@@ -372,6 +378,13 @@ export function RouteMap({ segments, places = [], addPlace }) {
   useEffect(() => {
     placesRef.current = places;
   }, [places]);
+
+  useEffect(
+    () => () => {
+      clearTimeout(saveNoticeTimerRef.current);
+    },
+    []
+  );
 
   useEffect(() => {
     if (!mapNode.current || mapRef.current || !config.geoapify.mapApiKey) return undefined;
@@ -494,8 +507,8 @@ export function RouteMap({ segments, places = [], addPlace }) {
     const routeFeatures = [];
     const cityFeatures = [];
     const placeFeatures = [];
-    const bounds = new maplibregl.LngLatBounds();
-    let boundsCount = 0;
+    const routeCities = orderedCities(segments);
+    const routeBounds = new maplibregl.LngLatBounds();
 
     segments.forEach((segment, index) => {
       if (!isPlaced(segment.origin) || !isPlaced(segment.destination)) return;
@@ -512,7 +525,7 @@ export function RouteMap({ segments, places = [], addPlace }) {
       });
     });
 
-    orderedCities(segments).forEach((city, index) => {
+    routeCities.forEach((city, index) => {
       cityFeatures.push({
         type: 'Feature',
         properties: {
@@ -521,8 +534,7 @@ export function RouteMap({ segments, places = [], addPlace }) {
         },
         geometry: { type: 'Point', coordinates: [city.lon, city.lat] },
       });
-      bounds.extend([city.lon, city.lat]);
-      boundsCount += 1;
+      routeBounds.extend([city.lon, city.lat]);
     });
 
     places.filter(isPlaced).forEach((place) => {
@@ -539,16 +551,21 @@ export function RouteMap({ segments, places = [], addPlace }) {
         },
         geometry: { type: 'Point', coordinates: [place.lon, place.lat] },
       });
-      bounds.extend([place.lon, place.lat]);
-      boundsCount += 1;
     });
 
     sourceData(map, ROUTE_SOURCE_ID, { type: 'FeatureCollection', features: routeFeatures });
     sourceData(map, CITY_SOURCE_ID, { type: 'FeatureCollection', features: cityFeatures });
     sourceData(map, PLACE_SOURCE_ID, { type: 'FeatureCollection', features: placeFeatures });
 
-    if (boundsCount === 1) map.easeTo({ center: bounds.getCenter(), zoom: 10, duration: 0 });
-    else if (boundsCount > 1) map.fitBounds(bounds, { padding: 84, maxZoom: 10, duration: 0 });
+    const routeViewportKey = routeCities.map(cityKey).join('|');
+    if (routeViewportKey !== lastRouteViewportKeyRef.current) {
+      lastRouteViewportKeyRef.current = routeViewportKey;
+      if (routeCities.length === 1) {
+        map.easeTo({ center: routeBounds.getCenter(), zoom: 10, duration: 0 });
+      } else if (routeCities.length > 1) {
+        map.fitBounds(routeBounds, { padding: 84, maxZoom: 10, duration: 0 });
+      }
+    }
   }, [segments, places, mapReady]);
 
   useEffect(() => {
@@ -585,6 +602,7 @@ export function RouteMap({ segments, places = [], addPlace }) {
         focusAfterOpen: false,
         className: 'place-save-popup',
       })
+        .setMaxWidth('320px')
         .setLngLat([place.lon, place.lat])
         .setDOMContent(
           savePrompt(place, {
@@ -602,7 +620,12 @@ export function RouteMap({ segments, places = [], addPlace }) {
                 lon: Number(selected.lon),
                 savedAt: new Date().toISOString(),
               };
-              if (isPlaced(savedPlace)) addPlaceRef.current?.(savedPlace);
+              if (isPlaced(savedPlace)) {
+                addPlaceRef.current?.(savedPlace);
+                clearTimeout(saveNoticeTimerRef.current);
+                setSaveNotice('Lugar guardado');
+                saveNoticeTimerRef.current = setTimeout(() => setSaveNotice(''), 2200);
+              }
             },
             onClose: () => popup.remove(),
           })
@@ -854,6 +877,11 @@ export function RouteMap({ segments, places = [], addPlace }) {
           !searching && <div className="geo-search__status">Buscando sugerencias…</div>}
         {error && <div className="geo-search__error">{error}</div>}
       </form>
+      {saveNotice && (
+        <div className="toast" role="status" aria-live="polite">
+          {saveNotice}
+        </div>
+      )}
     </div>
   );
 }
