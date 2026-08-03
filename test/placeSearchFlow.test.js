@@ -13,18 +13,19 @@ test('place search preserves the configured minimum and maximum limits', async (
   assert.match(functions, /Math\.min\(Math\.max\(Number\(request\.data\?\.limit\) \|\| 5, 1\), 5\)/);
 });
 
-test('context is appended only when the user did not name a known route location', async () => {
+test('generic one-word searches use route context but specific searches remain literal', async () => {
   const client = await read('src/modules/places/geoapifyClient.js');
   assert.match(client, /export function contextualQuery/);
   assert.match(client, /knownLocations/);
-  assert.match(client, /alreadyNamesLocation/);
+  assert.match(client, /explicitlyNamesLocation/);
+  assert.match(client, /isGenericSingleTerm/);
   assert.match(client, /\[base, city, country\]\.filter\(Boolean\)\.join\(', '\)/);
 });
 
 test('search cache is separated by query and route context', async () => {
   const client = await read('src/modules/places/geoapifyClient.js');
   assert.match(client, /const cacheKey = `\$\{queryKey\}\|\$\{contextKey\(context\)\}`/);
-  assert.match(client, /PLACE_CACHE_KEY = 'atlas:geoapify-place-cache:v2'/);
+  assert.match(client, /PLACE_CACHE_KEY = 'atlas:geoapify-place-cache:v3'/);
 });
 
 test('place detail images are cached and fetched through the official details endpoint', async () => {
@@ -35,10 +36,11 @@ test('place detail images are cached and fetched through the official details en
   assert.match(client, /DETAIL_CACHE_KEY/);
 });
 
-test('image failure is non-blocking and leaves the representative fallback visible', async () => {
+test('image failure is non-blocking and leaves an icon fallback visible', async () => {
   const map = await read('src/modules/map/RouteMap.jsx');
   const css = await read('src/modules/map/RouteMap.css');
   assert.match(map, /place-result-marker__fallback/);
+  assert.match(map, /representativePlaceIcon/);
   assert.match(map, /if \(!url \|\| controller\.signal\.aborted\) return/);
   assert.match(css, /place-result-marker__fallback/);
   assert.match(css, /img\.is-loaded/);
@@ -54,10 +56,12 @@ test('saved places include city, country, type and country flag', async () => {
   assert.match(panel, /countryCode/);
 });
 
-test('places and notes keep distinct tab icons', async () => {
+test('places, notes and mobile route navigation use distinct icons', async () => {
   const app = await read('src/App.jsx');
   assert.match(app, /<IconMapPin size=\{15\} aria-hidden="true" \/> \{t\('places'\)\}/);
-  assert.match(app, /<IconNotes size=\{15\} aria-hidden="true" \/> \{t\('notes'\)\}/);
+  assert.match(app, /<IconNotebook size=\{15\} aria-hidden="true" \/> \{t\('notes'\)\}/);
+  assert.match(app, /<IconRoute size=\{16\} aria-hidden="true" \/> \{t\('segments'\)\}/);
+  assert.doesNotMatch(app, /IconNotes/);
 });
 
 test('CSP permits Geoapify details and Wikimedia images only through explicit hosts', async () => {
