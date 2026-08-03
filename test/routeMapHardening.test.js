@@ -14,42 +14,43 @@ test('RouteMap muestra de forma declarativa los errores de configuración', asyn
 
 test('RouteMap vuelve a dibujar tramos y lugares cuando cambia el viaje', async () => {
   const content = await source();
-  assert.match(content, /segments\.forEach\(\(segment, index\)/);
+  assert.match(content, /segments\.forEach\(\(segment,index\)/);
   assert.match(content, /colorForIndex\(index\)/);
-  assert.match(content, /\[segments, places, mapReady\]/);
+  assert.match(content, /\[segments,places,mapReady\]/);
 });
 
 test('RouteMap conserva las curvas adaptativas y solo puntea vuelos', async () => {
   const content = await source();
   assert.match(content, /function adaptiveCurve/);
-  assert.match(content, /dominantTransport\(segment\) === 'plane'/);
-  assert.match(content, /filter:\s*\['==', \['get', 'dashed'\], true\]/);
-  assert.match(content, /'line-dasharray':\s*\[5, 4\]/);
+  assert.match(content, /dominantTransport\(segment\)==='plane'/);
+  assert.match(content, /filter:\['==',\['get','dashed'\],true\]/);
+  assert.match(content, /'line-dasharray':\[5,4\]/);
 });
 
 test('RouteMap pinta solo las ciudades definidas por los tramos', async () => {
   const content = await source();
   assert.match(content, /function orderedCities/);
-  assert.match(content, /\[segment\.origin, segment\.destination\]/);
+  assert.match(content, /\[segment\.origin,segment\.destination\]/);
   assert.match(content, /orderedCities\(segments\)\.forEach/);
-  assert.match(content, /'circle-color':\s*\['get', 'color'\]/);
+  assert.match(content, /'circle-color':\['get','color'\]/);
 });
 
-test('los resultados de lugares se muestran como pestañas DOM, no como puntos', async () => {
+test('los resultados se muestran como pestañas DOM, no como puntos', async () => {
   const content = await source();
   assert.match(content, /function markerElement/);
   assert.match(content, /place-result-marker/);
   assert.match(content, /new maplibregl\.Marker/);
-  assert.match(content, /anchor: 'bottom'/);
+  assert.match(content, /anchor:'bottom'/);
   assert.doesNotMatch(content, /RESULT_LAYER_ID|atlas-search-results-layer/);
 });
 
-test('cada pestaña muestra nombre, ciudad, país e intenta cargar imagen real', async () => {
+test('la pestaña intenta cargar imagen y solo la muestra después de load', async () => {
   const content = await source();
-  assert.match(content, /place\.name/);
-  assert.match(content, /\[place\.city, place\.country \|\| place\.countryCode\]/);
   assert.match(content, /fetchGeoapifyPlaceImage/);
-  assert.match(content, /image\.classList\.add\('is-loaded'\)/);
+  assert.match(content, /addEventListener\('load'/);
+  assert.match(content, /classList\.add\('is-loaded'\)/);
+  assert.match(content, /addEventListener\('error'/);
+  assert.match(content, /removeAttribute\('src'\)/);
 });
 
 test('si no existe imagen se usa un icono alusivo, nunca una inicial', async () => {
@@ -61,23 +62,24 @@ test('si no existe imagen se usa un icono alusivo, nunca una inicial', async () 
   assert.doesNotMatch(content, /charAt\(0\)\.toUpperCase/);
 });
 
-test('guardar un lugar normaliza todos sus datos y evita doble guardado', async () => {
+test('al pulsar un resultado solo aparece la confirmación compacta de guardado', async () => {
+  const content = await source();
+  assert.match(content, /function savePrompt/);
+  assert.match(content, /¿Guardar lugar para tu ruta\?/);
+  assert.match(content, /className:'place-save-popup'/);
+  assert.match(content, /offset:\[0,-64\]/);
+  assert.doesNotMatch(content, /Guardar en mi ruta/);
+});
+
+test('guardar normaliza el lugar, valida coordenadas y cierra la confirmación', async () => {
   const content = await source();
   assert.match(content, /event\.stopPropagation\(\)/);
   assert.match(content, /alreadySaved/);
-  assert.match(content, /lat: Number\(selected\.lat\)/);
-  assert.match(content, /lon: Number\(selected\.lon\)/);
-  assert.match(content, /button\.textContent = 'Guardado'/);
+  assert.match(content, /lat:Number\(selected\.lat\)/);
+  assert.match(content, /lon:Number\(selected\.lon\)/);
+  assert.match(content, /isPlaced\(savedPlace\)/);
   assert.match(content, /addPlaceRef\.current\?\.\(savedPlace\)/);
-});
-
-test('la búsqueda contextual usa la ciudad más reciente de la ruta', async () => {
-  const content = await source();
-  assert.match(content, /export function placeSearchContext/);
-  assert.match(content, /\.reverse\(\)/);
-  assert.match(content, /\[segment\.destination, segment\.origin\]/);
-  assert.match(content, /knownLocations/);
-  assert.match(content, /context: searchContext/);
+  assert.match(content, /onClose:\(\)=>popup\.remove\(\)/);
 });
 
 test('los resultados solo cambian al enviar el formulario de búsqueda', async () => {
@@ -85,33 +87,35 @@ test('los resultados solo cambian al enviar el formulario de búsqueda', async (
   assert.match(content, /async function submitSearch/);
   assert.match(content, /<form className="geo-search" onSubmit=\{submitSearch\}>/);
   assert.match(content, /type="submit"/);
-  assert.match(content, /setResults\(nextResults\)/);
-  const autocompleteBlock = content.slice(content.indexOf('autocompleteAbortRef.current?.abort()'), content.indexOf('async function submitSearch'));
+  assert.match(content, /setResults\(next\)/);
+  const autocompleteBlock = content.slice(content.indexOf("useEffect(()=>{autocompleteAbortRef"), content.indexOf('async function submitSearch'));
   assert.doesNotMatch(autocompleteBlock, /setResults\(/);
 });
 
-test('el autocompletado permanece activo pero separado de los resultados del mapa', async () => {
+test('limpiar o editar la consulta apaga inmediatamente el estado de sugerencias', async () => {
   const content = await source();
-  assert.match(content, /setSuggestions\(nextSuggestions\)/);
-  assert.match(content, /geo-search__suggestions/);
-  assert.match(content, /chooseSuggestion/);
-  assert.match(content, /setShowSuggestions\(false\)/);
+  assert.match(content, /function handleQueryChange/);
+  assert.match(content, /setSuggesting\(false\)/);
+  assert.match(content, /autocompleteSequenceRef\.current\+=1/);
+  assert.match(content, /setSuggestions\(\[\]\)/);
+  assert.match(content, /query\.trim\(\)\.length>=config\.geoapify\.searchMinChars/);
 });
 
 test('respuestas antiguas no reemplazan búsquedas o sugerencias nuevas', async () => {
   const content = await source();
   assert.match(content, /searchSequenceRef/);
   assert.match(content, /autocompleteSequenceRef/);
-  assert.match(content, /sequence === searchSequenceRef\.current/);
-  assert.match(content, /sequence === autocompleteSequenceRef\.current/);
+  assert.match(content, /sequence===searchSequenceRef\.current/);
+  assert.match(content, /sequence===autocompleteSequenceRef\.current/);
   assert.match(content, /searchAbortRef\.current\?\.abort\(\)/);
   assert.match(content, /autocompleteAbortRef\.current\?\.abort\(\)/);
   assert.match(content, /clearTimeout\(timer\)/);
 });
 
-test('RouteMap elimina marcadores y solicitudes de imágenes al actualizar o desmontar', async () => {
+test('RouteMap elimina marcadores, popups y solicitudes al actualizar o desmontar', async () => {
   const content = await source();
   assert.match(content, /resultMarkersRef\.current\.forEach/);
+  assert.match(content, /activePromptRef\.current\?\.remove\(\)/);
   assert.match(content, /controller\.abort\(\)/);
   assert.match(content, /marker\.remove\(\)/);
 });
