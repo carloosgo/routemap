@@ -6,6 +6,7 @@ import {
   IconDotsVertical,
   IconLanguage,
   IconMap,
+  IconMapPin,
   IconNotes,
   IconPlus,
   IconTrash,
@@ -20,6 +21,7 @@ import { formatMoney } from './shared/utils.js';
 import { AppTopbar } from './app/AppTopbar.jsx';
 import { AppEditorPane } from './app/AppEditorPane.jsx';
 import { AppMapPane } from './app/AppMapPane.jsx';
+import { TripPlacesPanel } from './modules/places/TripPlacesPanel.jsx';
 import {
   useCollapseSegmentsOnTripChange,
   useOutsideClick,
@@ -51,6 +53,8 @@ export default function App() {
     reorderSegment,
     updateSegment,
     updateExpenses,
+    addPlace,
+    removePlace,
   } = useTrip();
 
   const {
@@ -82,6 +86,7 @@ export default function App() {
   const checklist = trip.checklist || [];
   const doneCount = checklist.filter((item) => item.done).length;
   const notes = trip.notes || [];
+  const places = trip.places || [];
 
   const showToast = useCallback((message, duration = 2200) => {
     setToast(message);
@@ -176,7 +181,9 @@ export default function App() {
     />
   );
 
-  const editorPane = (
+  const editorPane = activeTab === 'places' ? (
+    <TripPlacesPanel places={places} removePlace={removePlace} t={t} />
+  ) : (
     <AppEditorPane
       activeTab={activeTab}
       trip={trip}
@@ -221,6 +228,14 @@ export default function App() {
           onClick={() => setActiveTab('segments')}
         >
           <IconMap size={15} aria-hidden="true" /> {t('segments')}
+        </button>
+        <button
+          type="button"
+          className={'editor-module__tab' + (activeTab === 'places' ? ' is-active' : '')}
+          onClick={() => setActiveTab('places')}
+        >
+          <IconMapPin size={15} aria-hidden="true" /> {t('places')}
+          {places.length > 0 && <span className="tabbar__badge">{places.length}</span>}
         </button>
         <button
           type="button"
@@ -382,6 +397,7 @@ export default function App() {
       openNoteSegmentId={openNoteSegmentId}
       setOpenNoteSegmentId={setOpenNoteSegmentId}
       updateSegment={updateSegment}
+      addPlace={addPlace}
       toast={toast}
       t={t}
     />
