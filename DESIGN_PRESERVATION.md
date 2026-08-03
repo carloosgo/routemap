@@ -18,6 +18,7 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 
 - Selector `KM / MI`: reutiliza `topmenu`, `topitem`, `dropdown` y `dropdown__opt`.
 - Instalación PWA: reutiliza `topitem` y solo aparece cuando el navegador emite `beforeinstallprompt`.
+- Búsqueda de lugares: conserva los componentes visuales existentes; la sugerencia seleccionada ahora se enfoca directamente y la confirmación permanece anclada a su marcador.
 - No se añadieron colores, tamaños, bordes, sombras o animaciones nuevos.
 
 ## Validación requerida
