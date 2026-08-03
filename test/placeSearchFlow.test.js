@@ -41,7 +41,7 @@ test('image failure is non-blocking and leaves an icon fallback visible', async 
   const css = await read('src/modules/map/RouteMap.css');
   assert.match(map, /place-result-marker__fallback/);
   assert.match(map, /representativePlaceIcon/);
-  assert.match(map, /if\(!url\|\|controller\.signal\.aborted\)return/);
+  assert.match(map, /if \(!url \|\| controller\.signal\.aborted\) return/);
   assert.match(map, /addEventListener\('error'/);
   assert.match(css, /place-result-marker__fallback/);
   assert.match(css, /img\.is-loaded\{display:block\}/);
