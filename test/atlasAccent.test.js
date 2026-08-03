@@ -43,14 +43,14 @@ test('segments, places, notes and currency use the same real button structure an
   assert.match(polish, /padding:\s*6px 10px;/);
   assert.match(polish, /background:\s*#ffffff;/);
   assert.match(polish, /font-family:\s*var\(--font-body\);/);
-  assert.match(polish, /font-size:\s*12px;/);
+  assert.match(polish, /font-size:\s*14px;/);
   assert.match(polish, /font-weight:\s*500;/);
   assert.match(polish, /\.editor-module__tab-icon\s*\{[\s\S]*width:\s*20px;[\s\S]*height:\s*20px;/);
   assert.match(polish, /background:\s*#f4f5f7;/);
   assert.match(polish, /color:\s*#4b5563;/);
 });
 
-test('places renders the supplied storefront asset directly instead of a hidden Tabler icon', async () => {
+test('places renders a clean Atlas-colored storefront icon instead of a black raster', async () => {
   const app = await read('src/App.jsx');
   const polish = await read('src/app/FloatingEditorPolish.css');
   const icon = await read('src/assets/lugares-storefront-v2.svg');
@@ -61,7 +61,10 @@ test('places renders the supplied storefront asset directly instead of a hidden 
   assert.doesNotMatch(polish, /data-tab-icon='places-map-pin'\]::before/);
   assert.doesNotMatch(polish, /assets\/lugares\.svg/);
   assert.match(icon, /aria-label="Lugares"/);
-  assert.match(icon, /data:image\/png;base64/);
+  assert.match(icon, /fill="#fff3d6"/);
+  assert.match(icon, /stroke="#14394b"/);
+  assert.match(icon, /fill="#19bde6"/);
+  assert.doesNotMatch(icon, /data:image\/png;base64/);
 });
 
 test('the desktop navigation remains ordered as segments, places, notes and currency', async () => {
