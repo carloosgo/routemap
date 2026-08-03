@@ -7,6 +7,7 @@ import { isPlaced } from '../trips/tripModel.js';
 import { fetchGeoapifyPlaceImage, searchGeoapifyPlaces } from '../places/geoapifyClient.js';
 import { countryFillStyleState } from './countryColoring.js';
 import { resolveOvertureDivisionsPmtilesUrl } from './overtureCountrySource.js';
+import { installSavedPlaceSymbolLayer } from './savedPlaceSymbol.js';
 import './RouteMap.css';
 
 const COUNTRY_BOUNDARY_SOURCE_ID = 'atlas-country-boundaries';
@@ -256,14 +257,28 @@ function addBaseSourcesAndLayers(map) {
   });
 }
 
+function normalizedCountryCode(value) {
+  const code = String(value || '').trim().toLowerCase();
+  return /^[a-z]{2}$/.test(code) ? code : '';
+}
+
 function savedPlacePopup(place) {
   const wrap = document.createElement('div');
   wrap.className = 'place-popup';
-  wrap.innerHTML = `<strong>${escaped(place.name || 'Lugar')}</strong><span>${escaped(
-    place.city || ''
-  )}${place.city && place.country ? ', ' : ''}${escaped(
-    place.country || place.countryCode || ''
-  )}</span><small>${escaped(place.category || 'Lugar')}</small>`;
+  const code = normalizedCountryCode(place.countryCode);
+  const country = place.country || place.countryCode || '';
+  const flag = code
+    ? `<img class="place-popup__flag" src="https://flagcdn.com/24x18/${code}.png" width="24" height="18" alt="Bandera de ${escaped(
+        country
+      )}" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
+    : '';
+  wrap.innerHTML = `<div class="place-popup__heading">${flag}<strong>${escaped(
+    place.name || 'Lugar'
+  )}</strong></div><span>${escaped(place.city || '')}${
+    place.city && country ? ', ' : ''
+  }${escaped(country)}</span><small>${escaped(place.category || 'Lugar')}</small>`;
+  const flagImage = wrap.querySelector('.place-popup__flag');
+  flagImage?.addEventListener('error', () => flagImage.remove(), { once: true });
   return wrap;
 }
 
@@ -436,6 +451,7 @@ export function RouteMap({ segments, places = [], addPlace }) {
     map.on('load', () => {
       applyBaseStyleOverrides(map);
       addBaseSourcesAndLayers(map);
+      installSavedPlaceSymbolLayer(map);
       map.on('mouseenter', CITY_LAYER_ID, showCityPopup);
       map.on('mouseleave', CITY_LAYER_ID, clearHover);
       map.on('mouseenter', PLACE_LAYER_ID, setPointer);
