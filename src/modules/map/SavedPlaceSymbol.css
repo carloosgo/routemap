@@ -1,0 +1,23 @@
+.place-popup__heading{
+  display:flex;
+  min-width:0;
+  align-items:center;
+  gap:7px;
+}
+
+.place-popup__heading strong{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.place-popup__flag{
+  display:block;
+  width:24px;
+  height:18px;
+  flex:0 0 24px;
+  border-radius:2px;
+  object-fit:cover;
+  box-shadow:0 0 0 1px rgba(15,23,42,.14);
+}
