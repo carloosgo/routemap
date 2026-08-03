@@ -254,18 +254,38 @@ function addBaseSourcesAndLayers(map) {
   });
 }
 
-function popupContent(place, { allowSave = false, onSave } = {}) {
+function popupContent(place, { allowSave = false, onSave, alreadySaved = false } = {}) {
   const wrap = document.createElement('div');
   wrap.className = 'place-popup';
   wrap.innerHTML = `<strong>${escaped(place.name || 'Lugar')}</strong><span>${escaped(place.city || '')}${place.city && place.country ? ', ' : ''}${escaped(place.country || place.countryCode || '')}</span><small>${escaped(place.category || 'Lugar')}</small>`;
   if (allowSave) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = 'Guardar en mi ruta';
-    button.addEventListener('click', () => onSave?.(place));
+    button.textContent = alreadySaved ? 'Guardado' : 'Guardar en mi ruta';
+    button.disabled = alreadySaved;
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (button.disabled) return;
+      onSave?.(place);
+      button.textContent = 'Guardado';
+      button.disabled = true;
+    });
     wrap.append(button);
   }
   return wrap;
+}
+
+export function representativePlaceIcon(place) {
+  const text = `${place?.category || ''} ${place?.name || ''}`.toLowerCase();
+  if (/museum|museo|gallery|galer/.test(text)) return '🏛️';
+  if (/restaurant|restaurante|food|cafe|coffee|bar|comida/.test(text)) return '🍽️';
+  if (/hotel|hostel|lodging|hosped/.test(text)) return '🛏️';
+  if (/station|estaci|train|metro|airport|aeropuerto/.test(text)) return '🚉';
+  if (/park|parque|garden|jard/.test(text)) return '🌳';
+  if (/church|iglesia|temple|templo|cathedral|catedral/.test(text)) return '⛪';
+  if (/shop|store|tienda|market|mercado/.test(text)) return '🛍️';
+  return '📍';
 }
 
 function markerElement(place) {
@@ -278,7 +298,7 @@ function markerElement(place) {
   media.className = 'place-result-marker__media';
   const fallback = document.createElement('span');
   fallback.className = 'place-result-marker__fallback';
-  fallback.textContent = String(place.name || 'L').trim().charAt(0).toUpperCase();
+  fallback.textContent = representativePlaceIcon(place);
   const image = document.createElement('img');
   image.alt = '';
   image.loading = 'lazy';
@@ -299,19 +319,26 @@ function markerElement(place) {
 export function RouteMap({ segments, places = [], addPlace }) {
   const mapNode = useRef(null);
   const mapRef = useRef(null);
-  const abortRef = useRef(null);
+  const searchAbortRef = useRef(null);
+  const autocompleteAbortRef = useRef(null);
   const searchSequenceRef = useRef(0);
+  const autocompleteSequenceRef = useRef(0);
   const resultMarkersRef = useRef([]);
   const addPlaceRef = useRef(addPlace);
+  const placesRef = useRef(places);
   const [mapReady, setMapReady] = useState(false);
   const [countryLayerReady, setCountryLayerReady] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
   const [error, setError] = useState('');
   const searchContext = useMemo(() => placeSearchContext(segments), [segments]);
 
   useEffect(() => { addPlaceRef.current = addPlace; }, [addPlace]);
+  useEffect(() => { placesRef.current = places; }, [places]);
 
   useEffect(() => {
     if (!mapNode.current || mapRef.current || !config.geoapify.mapApiKey) return undefined;
@@ -377,6 +404,8 @@ export function RouteMap({ segments, places = [], addPlace }) {
     return () => {
       disposed = true;
       observer.disconnect();
+      searchAbortRef.current?.abort();
+      autocompleteAbortRef.current?.abort();
       resultMarkersRef.current.forEach(({ marker, controller }) => {
         controller.abort();
         marker.remove();
@@ -484,18 +513,29 @@ export function RouteMap({ segments, places = [], addPlace }) {
         .setLngLat([place.lon, place.lat])
         .addTo(map);
 
-      button.addEventListener('click', () => {
-        const popup = new maplibregl.Popup({ offset: [0, -10] })
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const alreadySaved = placesRef.current.some((saved) => String(saved.id) === String(place.id));
+        const popup = new maplibregl.Popup({ offset: [0, -10], closeOnClick: false })
           .setLngLat([place.lon, place.lat])
           .setDOMContent(popupContent(place, {
             allowSave: true,
+            alreadySaved,
             onSave: (selected) => {
-              addPlaceRef.current?.({
-                ...selected,
+              const savedPlace = {
+                id: selected.id,
+                name: selected.name || 'Lugar',
                 address: selected.address || selected.formatted || '',
+                city: selected.city || '',
+                country: selected.country || '',
+                countryCode: selected.countryCode || '',
+                category: selected.category || '',
+                lat: Number(selected.lat),
+                lon: Number(selected.lon),
                 savedAt: new Date().toISOString(),
-              });
-              popup.remove();
+              };
+              addPlaceRef.current?.(savedPlace);
             },
           }))
           .addTo(map);
@@ -533,38 +573,38 @@ export function RouteMap({ segments, places = [], addPlace }) {
   }, [results, mapReady]);
 
   useEffect(() => {
-    abortRef.current?.abort();
+    autocompleteAbortRef.current?.abort();
     const text = query.trim();
-    const sequence = searchSequenceRef.current + 1;
-    searchSequenceRef.current = sequence;
+    const sequence = autocompleteSequenceRef.current + 1;
+    autocompleteSequenceRef.current = sequence;
 
     if (text.length < config.geoapify.searchMinChars) {
-      setResults([]);
-      setSearching(false);
-      setError('');
+      setSuggestions([]);
+      setSuggesting(false);
+      setShowSuggestions(false);
       return undefined;
     }
 
     const controller = new AbortController();
-    abortRef.current = controller;
+    autocompleteAbortRef.current = controller;
     const timer = setTimeout(async () => {
-      setSearching(true);
-      setError('');
+      setSuggesting(true);
       try {
-        const nextResults = await searchGeoapifyPlaces(text, {
+        const nextSuggestions = await searchGeoapifyPlaces(text, {
           signal: controller.signal,
           context: searchContext,
         });
-        if (!controller.signal.aborted && sequence === searchSequenceRef.current) {
-          setResults(nextResults);
+        if (!controller.signal.aborted && sequence === autocompleteSequenceRef.current) {
+          setSuggestions(nextSuggestions);
+          setShowSuggestions(true);
         }
-      } catch (searchError) {
-        if (searchError?.name !== 'AbortError' && sequence === searchSequenceRef.current) {
-          setError(searchError.message || 'No fue posible buscar lugares.');
+      } catch (suggestionError) {
+        if (suggestionError?.name !== 'AbortError') {
+          console.warn('[Place autocomplete] unavailable', suggestionError);
         }
       } finally {
-        if (!controller.signal.aborted && sequence === searchSequenceRef.current) {
-          setSearching(false);
+        if (!controller.signal.aborted && sequence === autocompleteSequenceRef.current) {
+          setSuggesting(false);
         }
       }
     }, config.geoapify.searchDebounceMs);
@@ -575,6 +615,49 @@ export function RouteMap({ segments, places = [], addPlace }) {
     };
   }, [query, searchContext]);
 
+  async function submitSearch(event) {
+    event?.preventDefault();
+    const text = query.trim();
+    if (text.length < config.geoapify.searchMinChars) {
+      setError(`Escribe al menos ${config.geoapify.searchMinChars} caracteres.`);
+      return;
+    }
+
+    autocompleteAbortRef.current?.abort();
+    searchAbortRef.current?.abort();
+    setShowSuggestions(false);
+    const sequence = searchSequenceRef.current + 1;
+    searchSequenceRef.current = sequence;
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+    setSearching(true);
+    setError('');
+
+    try {
+      const nextResults = await searchGeoapifyPlaces(text, {
+        signal: controller.signal,
+        context: searchContext,
+      });
+      if (!controller.signal.aborted && sequence === searchSequenceRef.current) {
+        setResults(nextResults);
+      }
+    } catch (searchError) {
+      if (searchError?.name !== 'AbortError' && sequence === searchSequenceRef.current) {
+        setError(searchError.message || 'No fue posible buscar lugares.');
+      }
+    } finally {
+      if (!controller.signal.aborted && sequence === searchSequenceRef.current) {
+        setSearching(false);
+      }
+    }
+  }
+
+  function chooseSuggestion(place) {
+    const location = [place.city, place.country].filter(Boolean).join(', ');
+    setQuery([place.name, location].filter(Boolean).join(', '));
+    setShowSuggestions(false);
+  }
+
   return (
     <div className="geo-map-wrap">
       <div className="geo-map" ref={mapNode}>
@@ -582,18 +665,39 @@ export function RouteMap({ segments, places = [], addPlace }) {
           <div className="geo-map__missing">Falta VITE_GEOAPIFY_MAPS_API_KEY.</div>
         )}
       </div>
-      <div className="geo-search">
+      <form className="geo-search" onSubmit={submitSearch}>
         <div className="geo-search__row">
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            onFocus={() => suggestions.length && setShowSuggestions(true)}
             placeholder="Buscar hotel, restaurante, estación…"
             aria-label="Buscar lugares"
+            autoComplete="off"
           />
+          <button type="submit" className="geo-search__button" disabled={searching}>
+            {searching ? 'Buscando…' : 'Buscar'}
+          </button>
         </div>
-        {searching && <div className="geo-search__status">Buscando…</div>}
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="geo-search__suggestions" role="listbox" aria-label="Sugerencias de lugares">
+            {suggestions.map((place) => (
+              <button
+                type="button"
+                className="geo-search__suggestion"
+                key={place.id}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => chooseSuggestion(place)}
+              >
+                <strong>{place.name}</strong>
+                <small>{[place.city, place.country].filter(Boolean).join(', ')}</small>
+              </button>
+            ))}
+          </div>
+        )}
+        {suggesting && !searching && <div className="geo-search__status">Buscando sugerencias…</div>}
         {error && <div className="geo-search__error">{error}</div>}
-      </div>
+      </form>
     </div>
   );
 }
