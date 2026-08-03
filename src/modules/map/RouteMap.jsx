@@ -164,7 +164,7 @@ function addCountryBoundaryLayer(map, archiveUrl) {
     ],
     paint: {
       'fill-color': 'transparent',
-      'fill-opacity': 0.09,
+      'fill-opacity': 0.13,
       'fill-antialias': false,
     },
   }, firstSymbolLayerId(map));
