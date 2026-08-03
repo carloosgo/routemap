@@ -50,7 +50,7 @@ test('segments, places, notes and currency use the same real button structure an
   assert.match(polish, /color:\s*#4b5563;/);
 });
 
-test('places renders the refined transparent vector cafe icon through the existing tab asset', async () => {
+test('places renders the transparent signpost icon through the existing tab asset', async () => {
   const app = await read('src/App.jsx');
   const polish = await read('src/app/FloatingEditorPolish.css');
   const icon = await read('src/assets/lugares-storefront-v2.svg');
@@ -61,13 +61,11 @@ test('places renders the refined transparent vector cafe icon through the existi
   assert.doesNotMatch(polish, /data-tab-icon='places-map-pin'\]::before/);
   assert.doesNotMatch(polish, /assets\/lugares\.svg/);
   assert.match(icon, /aria-label="Lugares"/);
-  assert.match(icon, /viewBox="0 0 64 64"/);
-  assert.match(icon, />CAFE<\/text>/);
+  assert.match(icon, /viewBox="0 0 40 40"/);
   assert.match(icon, /#14394b/);
-  assert.match(icon, /#19a5d0/);
-  assert.match(icon, /#fff3d6/);
-  assert.match(icon, /#b7c58a/);
-  assert.match(icon, /#c79a6b/);
+  assert.match(icon, /fill="#19a5d0"/);
+  assert.equal((icon.match(/fill="#fff3d6"/g) || []).length, 3);
+  assert.doesNotMatch(icon, />CAFE<\/text>/);
   assert.doesNotMatch(icon, /data:image\//);
   assert.doesNotMatch(icon, /<image\b/);
 });
