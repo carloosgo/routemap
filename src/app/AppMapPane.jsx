@@ -2,10 +2,10 @@ import { IconArrowRight, IconCheck, IconX } from '@tabler/icons-react';
 import { RouteMap } from '../modules/map/RouteMap.jsx';
 import { colorForIndex } from '../config.js';
 
-export function AppMapPane({ trip, openNoteSegmentId, setOpenNoteSegmentId, updateSegment, toast, t }) {
+export function AppMapPane({ trip, openNoteSegmentId, setOpenNoteSegmentId, updateSegment, addPlace, toast, t }) {
   return (
     <section className="mappane" aria-label={t('mapRegion')}>
-      <RouteMap segments={trip.segments} updateSegment={updateSegment} />
+      <RouteMap segments={trip.segments} places={trip.places || []} addPlace={addPlace} />
       {openNoteSegmentId && (
         <div aria-hidden="true" style={{ position:'absolute',inset:0,zIndex:10,background:'transparent' }}
           onPointerDown={(event)=>{event.preventDefault();event.stopPropagation();}}
