@@ -7,8 +7,9 @@ import {
   IconLanguage,
   IconMap,
   IconMapPin,
-  IconNotes,
+  IconNotebook,
   IconPlus,
+  IconRoute,
   IconTrash,
 } from '@tabler/icons-react';
 import { useTranslation } from './i18n/index.jsx';
@@ -242,7 +243,7 @@ export default function App() {
           className={'editor-module__tab' + (activeTab === 'notes' ? ' is-active' : '')}
           onClick={() => setActiveTab('notes')}
         >
-          <IconNotes size={15} aria-hidden="true" /> {t('notes')}
+          <IconNotebook size={15} aria-hidden="true" /> {t('notes')}
           {checklist.length > 0 && (
             <span className="tabbar__badge">
               {doneCount}/{checklist.length}
@@ -424,7 +425,7 @@ export default function App() {
               className={'mobiletabs__btn' + (mobileView === 'form' ? ' is-active' : '')}
               onClick={() => setMobileView('form')}
             >
-              <IconNotes size={16} aria-hidden="true" /> {t('segments')}
+              <IconRoute size={16} aria-hidden="true" /> {t('segments')}
             </button>
             <button
               type="button"
