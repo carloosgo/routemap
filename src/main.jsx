@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import { I18nProvider } from './i18n/index.jsx';
+import './modules/map/placeSavePopupDismiss.js';
 import './index.css';
 import './app/FloatingEditorPlacement.css';
 import './app/FloatingEditorPolish.css';
