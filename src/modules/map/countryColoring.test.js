@@ -32,7 +32,7 @@ test('keeps the color of the first route segment that visits a country', () => {
   assert.equal(belgium.color, colors[0]);
 });
 
-test('builds the MapLibre filter and color expression with ISO alpha-3 codes', () => {
+test('builds the MapLibre filter for Overture land country polygons', () => {
   const segments = [
     { origin: city('FR', 48.8566, 2.3522), destination: city('DE', 52.52, 13.405) },
     { origin: city('DE', 52.52, 13.405), destination: city('NL', 52.3676, 4.9041) },
@@ -40,27 +40,29 @@ test('builds the MapLibre filter and color expression with ISO alpha-3 codes', (
 
   assert.deepEqual(countryFillStyleState(segments, colorForIndex), {
     filter: [
-      'in',
-      ['get', 'iso_3166_1_alpha_3'],
-      ['literal', ['FRA', 'DEU', 'NLD']],
+      'all',
+      ['==', ['get', 'subtype'], 'country'],
+      ['==', ['get', 'is_land'], true],
+      ['in', ['get', 'country'], ['literal', ['FR', 'DE', 'NL']]],
     ],
     colorExpression: [
       'match',
-      ['get', 'iso_3166_1_alpha_3'],
-      'FRA', colors[0],
-      'DEU', colors[0],
-      'NLD', colors[1],
+      ['get', 'country'],
+      'FR', colors[0],
+      'DE', colors[0],
+      'NL', colors[1],
       'transparent',
     ],
   });
 });
 
-test('uses an empty MapLibre filter when no valid country is present', () => {
+test('uses an empty Overture country filter when no valid country is present', () => {
   assert.deepEqual(countryFillStyleState([], colorForIndex), {
     filter: [
-      '==',
-      ['get', 'iso_3166_1_alpha_3'],
-      '__NO_VISITED_COUNTRIES__',
+      'all',
+      ['==', ['get', 'subtype'], 'country'],
+      ['==', ['get', 'is_land'], true],
+      ['==', ['get', 'country'], '__NO_VISITED_COUNTRIES__'],
     ],
     colorExpression: 'transparent',
   });
