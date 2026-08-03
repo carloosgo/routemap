@@ -31,7 +31,7 @@ function baseCountryFilter(countrySelection) {
   return [
     'all',
     ['==', ['get', 'subtype'], 'country'],
-    ['==', ['get', 'is_land'], true],
+    ['==', ['get', 'class'], 'land'],
     countrySelection,
   ];
 }
