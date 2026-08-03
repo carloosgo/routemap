@@ -2,8 +2,10 @@ import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/
 import { getFirebaseServices } from '../../infrastructure/firebase/firebaseClient.js';
 import { config } from '../../config.js';
 
-const PLACE_CACHE_KEY = 'atlas:geoapify-place-cache:v1';
+const PLACE_CACHE_KEY = 'atlas:geoapify-place-cache:v2';
+const DETAIL_CACHE_KEY = 'atlas:geoapify-place-detail-cache:v1';
 const placeCache = new Map();
+const detailCache = new Map();
 let emulatorConnected = false;
 
 export function normalizeSearchKey(value) {
@@ -17,22 +19,23 @@ export function normalizeSearchKey(value) {
 
 function readCache(storageKey, target) {
   try {
-    const parsed = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    const parsed = JSON.parse(globalThis.localStorage?.getItem(storageKey) || '{}');
     Object.entries(parsed).forEach(([key, entry]) => target.set(key, entry));
   } catch {
-    localStorage.removeItem(storageKey);
+    try { globalThis.localStorage?.removeItem(storageKey); } catch { /* opcional */ }
   }
 }
 
 function persistCache(storageKey, target) {
   try {
-    localStorage.setItem(storageKey, JSON.stringify(Object.fromEntries(target)));
+    globalThis.localStorage?.setItem(storageKey, JSON.stringify(Object.fromEntries(target)));
   } catch {
     // La caché es opcional y nunca debe bloquear la aplicación.
   }
 }
 
 readCache(PLACE_CACHE_KEY, placeCache);
+readCache(DETAIL_CACHE_KEY, detailCache);
 
 function callable(name) {
   const { app } = getFirebaseServices();
@@ -44,22 +47,73 @@ function callable(name) {
   return httpsCallable(functions, name);
 }
 
-export async function searchGeoapifyPlaces(query, { signal } = {}) {
+function contextualQuery(query, context) {
+  const base = String(query || '').trim();
+  const city = String(context?.city || '').trim();
+  const country = String(context?.country || '').trim();
+  const normalized = normalizeSearchKey(base);
+  const alreadyNamesContext = [city, country]
+    .filter(Boolean)
+    .some((value) => normalized.includes(normalizeSearchKey(value)));
+  return alreadyNamesContext || (!city && !country)
+    ? base
+    : [base, city, country].filter(Boolean).join(', ');
+}
+
+function contextKey(context) {
+  return [
+    normalizeSearchKey(context?.city),
+    normalizeSearchKey(context?.country),
+    Number.isFinite(context?.lat) ? Number(context.lat).toFixed(4) : '',
+    Number.isFinite(context?.lon) ? Number(context.lon).toFixed(4) : '',
+  ].join('|');
+}
+
+export async function searchGeoapifyPlaces(query, { signal, context } = {}) {
   const queryKey = normalizeSearchKey(query);
   if (queryKey.length < config.geoapify.searchMinChars) return [];
 
-  const cached = placeCache.get(queryKey);
+  const cacheKey = `${queryKey}|${contextKey(context)}`;
+  const cached = placeCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < config.geoapify.clientCacheTtlMs) {
     return cached.result;
   }
 
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
   const request = callable('geoapifyPlaceSearch');
-  const response = await request({ query, limit: config.geoapify.searchLimit });
+  const response = await request({
+    query: contextualQuery(query, context),
+    limit: config.geoapify.searchLimit,
+  });
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 
   const result = Array.isArray(response.data?.results) ? response.data.results : [];
-  placeCache.set(queryKey, { result, timestamp: Date.now() });
+  placeCache.set(cacheKey, { result, timestamp: Date.now() });
   persistCache(PLACE_CACHE_KEY, placeCache);
   return result;
+}
+
+export async function fetchGeoapifyPlaceImage(place, { signal } = {}) {
+  const id = String(place?.id || '').trim();
+  if (!id || !config.geoapify.mapApiKey) return '';
+  const cached = detailCache.get(id);
+  if (cached && Date.now() - cached.timestamp < config.geoapify.clientCacheTtlMs) {
+    return cached.image || '';
+  }
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+
+  const params = new URLSearchParams({
+    id,
+    features: 'details',
+    apiKey: config.geoapify.mapApiKey,
+  });
+  const response = await fetch(`https://api.geoapify.com/v2/place-details?${params}`, { signal });
+  if (!response.ok) return '';
+  const payload = await response.json();
+  const details = payload.features?.find((feature) => feature.properties?.feature_type === 'details')
+    || payload.features?.[0];
+  const image = String(details?.properties?.wiki_and_media?.image || '').trim();
+  detailCache.set(id, { image, timestamp: Date.now() });
+  persistCache(DETAIL_CACHE_KEY, detailCache);
+  return image;
 }
