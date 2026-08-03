@@ -50,7 +50,7 @@ test('segments, places, notes and currency use the same real button structure an
   assert.match(polish, /color:\s*#4b5563;/);
 });
 
-test('places renders a clean Atlas-colored storefront icon instead of a black raster', async () => {
+test('places renders the uploaded cafe icon through the existing tab asset', async () => {
   const app = await read('src/App.jsx');
   const polish = await read('src/app/FloatingEditorPolish.css');
   const icon = await read('src/assets/lugares-storefront-v2.svg');
@@ -61,10 +61,9 @@ test('places renders a clean Atlas-colored storefront icon instead of a black ra
   assert.doesNotMatch(polish, /data-tab-icon='places-map-pin'\]::before/);
   assert.doesNotMatch(polish, /assets\/lugares\.svg/);
   assert.match(icon, /aria-label="Lugares"/);
-  assert.match(icon, /fill="#fff3d6"/);
-  assert.match(icon, /stroke="#14394b"/);
-  assert.match(icon, /fill="#19bde6"/);
-  assert.doesNotMatch(icon, /data:image\/png;base64/);
+  assert.match(icon, /viewBox="0 0 120 120"/);
+  assert.match(icon, /data:image\/png;base64/);
+  assert.doesNotMatch(icon, /c2pa:manifest/);
 });
 
 test('the desktop navigation remains ordered as segments, places, notes and currency', async () => {
