@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
+import { PMTiles, Protocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { config, colorForIndex } from '../../config.js';
 import { isPlaced } from '../trips/tripModel.js';
@@ -9,7 +10,8 @@ import './RouteMap.css';
 
 const COUNTRY_BOUNDARY_SOURCE_ID = 'atlas-country-boundaries';
 const COUNTRY_FILL_LAYER_ID = 'atlas-country-fill';
-const COUNTRY_BOUNDARY_SOURCE_LAYER = 'country_boundaries';
+const COUNTRY_BOUNDARY_SOURCE_LAYER = 'division_area';
+const PMTILES_PROTOCOL_STATE = '__atlasPmtilesProtocolStateV1';
 const ROUTE_SOURCE_ID = 'atlas-routes';
 const ROUTE_CASING_LAYER_ID = 'atlas-routes-casing';
 const ROUTE_SOLID_LAYER_ID = 'atlas-routes-solid';
@@ -119,17 +121,27 @@ function geoapifyStyleUrl() {
   return `https://maps.geoapify.com/v1/styles/${style}/style.json?apiKey=${apiKey}`;
 }
 
-function mapboxCountryBoundariesTileJsonUrl() {
-  const accessToken = encodeURIComponent(config.map.countryBoundariesToken);
-  return `https://api.mapbox.com/v4/mapbox.country-boundaries-v1.json?secure&access_token=${accessToken}`;
+function ensurePmtilesProtocol() {
+  if (globalThis[PMTILES_PROTOCOL_STATE]) return;
+
+  const protocol = new Protocol();
+  const archive = new PMTiles(config.map.countryBoundariesUrl);
+  protocol.add(archive);
+  maplibregl.addProtocol('pmtiles', protocol.tile);
+  globalThis[PMTILES_PROTOCOL_STATE] = { protocol, archive };
+}
+
+function firstSymbolLayerId(map) {
+  return map.getStyle()?.layers?.find((layer) => layer.type === 'symbol')?.id;
 }
 
 function addCountryBoundaryLayer(map) {
-  if (!config.map.countryBoundariesToken) return;
+  ensurePmtilesProtocol();
 
   map.addSource(COUNTRY_BOUNDARY_SOURCE_ID, {
     type: 'vector',
-    url: mapboxCountryBoundariesTileJsonUrl(),
+    url: `pmtiles://${config.map.countryBoundariesUrl}`,
+    attribution: '© Overture Maps Foundation · © OpenStreetMap contributors',
   });
 
   map.addLayer({
@@ -137,13 +149,18 @@ function addCountryBoundaryLayer(map) {
     type: 'fill',
     source: COUNTRY_BOUNDARY_SOURCE_ID,
     'source-layer': COUNTRY_BOUNDARY_SOURCE_LAYER,
-    filter: ['==', ['get', 'iso_3166_1_alpha_3'], '__NO_VISITED_COUNTRIES__'],
+    filter: [
+      'all',
+      ['==', ['get', 'subtype'], 'country'],
+      ['==', ['get', 'is_land'], true],
+      ['==', ['get', 'country'], '__NO_VISITED_COUNTRIES__'],
+    ],
     paint: {
       'fill-color': 'transparent',
       'fill-opacity': 0.09,
       'fill-antialias': false,
     },
-  });
+  }, firstSymbolLayerId(map));
 }
 
 function addBaseSourcesAndLayers(map) {
