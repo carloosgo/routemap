@@ -171,14 +171,37 @@
   filter: brightness(0.92);
 }
 
-/* Las pestañas y la moneda vuelven a texto negro; el hover usa gris fuerte. */
+/* Las cuatro opciones superiores comparten tipografía y peso, incluso activas. */
 .editor-module__tab,
 .editor-module__tab.is-active {
   color: #111827;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
 }
 
 .editor-module__tab:hover {
   color: #4b5563;
+}
+
+/* Uniforma el tamaño visual del icono principal de cada opción. */
+.editor-module__tab > svg:first-child,
+.editor-module__tab[data-tab-icon='places-map-pin']::before {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+/* Sustituye el icono anterior de Lugares por el recurso entregado por el usuario. */
+.editor-module__tab[data-tab-icon='places-map-pin'] > svg:first-child {
+  display: none;
+}
+
+.editor-module__tab[data-tab-icon='places-map-pin']::before {
+  content: '';
+  display: block;
+  background: url('../assets/lugares.svg') center / contain no-repeat;
 }
 
 /* Solo el contador de lugares conserva el acento azul con número blanco. */
