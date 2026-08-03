@@ -146,3 +146,44 @@
   padding-top: 3px;
   padding-bottom: 3px;
 }
+
+/* Acento visual unificado solicitado para los controles principales. */
+.topbar__brand-icon,
+.topbar__save,
+.trip-save-popover__submit,
+.editor-module__settings .editor-module__more-button,
+.geo-search__button,
+.place-save-prompt button,
+.toast {
+  background: var(--atlas-accent);
+  border-color: var(--atlas-accent);
+  color: #ffffff;
+}
+
+.topbar__save:hover,
+.trip-save-popover__submit:hover,
+.editor-module__settings .editor-module__more-button:hover,
+.editor-module__settings .editor-module__more-button.is-active,
+.geo-search__button:hover,
+.place-save-prompt button:hover {
+  background: var(--atlas-accent);
+  border-color: var(--atlas-accent);
+  color: #ffffff;
+  filter: brightness(0.92);
+}
+
+.editor-module__tab,
+.editor-module__tab.is-active {
+  color: var(--atlas-accent);
+}
+
+.trip-place button:hover {
+  background: var(--atlas-accent);
+  color: #ffffff;
+}
+
+.place-result-marker:hover,
+.place-result-marker:focus-visible {
+  border-color: var(--atlas-accent);
+  box-shadow: 0 7px 20px rgba(25, 165, 208, 0.28);
+}
