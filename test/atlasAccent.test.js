@@ -30,36 +30,55 @@ test('the selected Atlas controls retain the exact #19a5d0 accent token', async 
   assert.match(polish, /border-color:\s*var\(--atlas-accent\)/);
 });
 
-test('all four top options share the same typeface, size, weight and line height', async () => {
+test('segments, places, notes and currency use the same real button structure and styles', async () => {
+  const app = await read('src/App.jsx');
   const polish = await read('src/app/FloatingEditorPolish.css');
 
-  assert.match(
-    polish,
-    /\.editor-module__tab,\s*\.editor-module__tab\.is-active\s*\{[\s\S]*color:\s*#111827;[\s\S]*font-family:\s*var\(--font-body\);[\s\S]*font-size:\s*12px;[\s\S]*font-weight:\s*500;[\s\S]*line-height:\s*1;/
-  );
-  assert.match(polish, /\.editor-module__tab:hover\s*\{\s*color:\s*#4b5563;/);
-  assert.match(
-    polish,
-    /data-tab-icon='places-map-pin'[\s\S]*background:\s*var\(--atlas-accent\);[\s\S]*color:\s*#ffffff;/
-  );
+  assert.equal((app.match(/editor-module__nav-tab/g) || []).length, 4);
+  assert.equal((app.match(/editor-module__tab-icon/g) || []).length, 4);
+  assert.equal((app.match(/editor-module__tab-label/g) || []).length, 4);
+
+  assert.match(polish, /\.editor-module__tabs \.editor-module__nav-tab,/);
+  assert.match(polish, /height:\s*36px;/);
+  assert.match(polish, /padding:\s*6px 10px;/);
+  assert.match(polish, /background:\s*#ffffff;/);
+  assert.match(polish, /font-family:\s*var\(--font-body\);/);
+  assert.match(polish, /font-size:\s*12px;/);
+  assert.match(polish, /font-weight:\s*500;/);
+  assert.match(polish, /\.editor-module__tab-icon\s*\{[\s\S]*width:\s*20px;[\s\S]*height:\s*20px;/);
+  assert.match(polish, /background:\s*#f4f5f7;/);
+  assert.match(polish, /color:\s*#4b5563;/);
 });
 
-test('places uses the supplied optimized icon while keeping the tab order intact', async () => {
-  const polish = await read('src/app/FloatingEditorPolish.css');
+test('places renders the supplied storefront asset directly instead of a hidden Tabler icon', async () => {
   const app = await read('src/App.jsx');
-  const placesIcon = await read('src/assets/lugares.svg');
+  const polish = await read('src/app/FloatingEditorPolish.css');
+  const icon = await read('src/assets/lugares-storefront-v2.svg');
 
-  assert.match(polish, /data-tab-icon='places-map-pin'[\s\S]*background:\s*url\('\.\.\/assets\/lugares\.svg'\)/);
-  assert.match(polish, /data-tab-icon='places-map-pin'[^\{]*> svg:first-child\s*\{\s*display:\s*none;/);
-  assert.match(placesIcon, /viewBox="0 0 64 64"/);
-  assert.ok(placesIcon.length < 10000, 'The optimized places icon should stay lightweight');
+  assert.match(app, /import lugaresIcon from '\.\/assets\/lugares-storefront-v2\.svg'/);
+  assert.match(app, /<img src=\{lugaresIcon\} alt="" \/>/);
+  assert.doesNotMatch(app, /IconMapPin/);
+  assert.doesNotMatch(polish, /data-tab-icon='places-map-pin'\]::before/);
+  assert.doesNotMatch(polish, /assets\/lugares\.svg/);
+  assert.match(icon, /aria-label="Lugares"/);
+  assert.match(icon, /data:image\/png;base64/);
+});
 
-  const editorTabs = app.slice(app.indexOf('const editorModule = ('), app.indexOf('const mapPane = ('));
-  const segmentsIndex = editorTabs.indexOf("setActiveTab('segments')");
-  const placesIndex = editorTabs.indexOf("setActiveTab('places')");
-  const notesIndex = editorTabs.indexOf("setActiveTab('notes')");
-  const currencyIndex = editorTabs.indexOf("openMenu === 'currency'");
-  assert.ok(segmentsIndex < placesIndex && placesIndex < notesIndex && notesIndex < currencyIndex);
+test('the desktop navigation remains ordered as segments, places, notes and currency', async () => {
+  const app = await read('src/App.jsx');
+  const start = app.indexOf('const editorModule');
+  const end = app.indexOf('const mapPane');
+  const tabs = app.slice(start, end);
+
+  const segmentIndex = tabs.indexOf("setActiveTab('segments')");
+  const placesIndex = tabs.indexOf("setActiveTab('places')");
+  const notesIndex = tabs.indexOf("setActiveTab('notes')");
+  const currencyIndex = tabs.indexOf("openMenu === 'currency'");
+
+  assert.ok(segmentIndex >= 0);
+  assert.ok(segmentIndex < placesIndex);
+  assert.ok(placesIndex < notesIndex);
+  assert.ok(notesIndex < currencyIndex);
 });
 
 test('place save popup hides its close icon and dismisses through outside clicks', async () => {
