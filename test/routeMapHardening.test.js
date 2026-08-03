@@ -31,7 +31,7 @@ test('RouteMap pinta solo las ciudades definidas por los tramos', async () => {
   const content = await source();
   assert.match(content, /function orderedCities/);
   assert.match(content, /\[segment\.origin, segment\.destination\]/);
-  assert.match(content, /orderedCities\(segments\)\.forEach/);
+  assert.match(content, /routeCities\.forEach/);
   assert.match(content, /'circle-color': \['get', 'color'\]/);
 });
 
@@ -69,6 +69,7 @@ test('la confirmación se abre únicamente al pulsar una pestaña de resultado',
   assert.match(content, /¿Guardar lugar para tu ruta\?/);
   assert.match(content, /className: 'place-save-popup'/);
   assert.match(content, /closeButton: true/);
+  assert.match(content, /setMaxWidth\('320px'\)/);
   assert.doesNotMatch(content, /pendingSelectionRef|pendingPlace/);
 
   const chooseBlock = content.slice(
@@ -88,6 +89,22 @@ test('guardar normaliza el lugar, valida coordenadas y cierra la confirmación',
   assert.match(content, /isPlaced\(savedPlace\)/);
   assert.match(content, /addPlaceRef\.current\?\.\(savedPlace\)/);
   assert.match(content, /onClose: \(\) => popup\.remove\(\)/);
+});
+
+test('guardar un lugar confirma la acción sin mover nuevamente la cámara', async () => {
+  const content = await source();
+  assert.match(content, /lastRouteViewportKeyRef/);
+  assert.match(content, /const routeViewportKey = routeCities\.map\(cityKey\)\.join\('\|'\)/);
+  assert.match(content, /if \(routeViewportKey !== lastRouteViewportKeyRef\.current\)/);
+  assert.match(content, /setSaveNotice\('Lugar guardado'\)/);
+  assert.match(content, /setTimeout\(\(\) => setSaveNotice\(''\), 2200\)/);
+  assert.match(content, /role="status" aria-live="polite"/);
+
+  const placesBlock = content.slice(
+    content.indexOf('places.filter(isPlaced).forEach'),
+    content.indexOf('sourceData(map, ROUTE_SOURCE_ID')
+  );
+  assert.doesNotMatch(placesBlock, /routeBounds\.extend/);
 });
 
 test('el formulario conserva la búsqueda explícita y sus validaciones', async () => {
@@ -141,8 +158,9 @@ test('las pestañas de resultados reducen su escala al alejar el mapa', async ()
 
 test('el cierre del mensaje de guardado tiene un área propia y no cubre Guardar', async () => {
   const css = await read('src/modules/map/RouteMap.css');
-  assert.match(css, /place-save-popup \.maplibregl-popup-content\{min-width:236px;padding:10px 42px 10px 12px\}/);
-  assert.match(css, /place-save-popup \.maplibregl-popup-close-button\{top:4px;right:4px;display:grid;width:30px;height:30px/);
+  assert.match(css, /place-save-popup \.maplibregl-popup-content\{width:max-content;min-width:286px;max-width:calc\(100vw - 24px\);padding:12px 46px 12px 14px\}/);
+  assert.match(css, /place-save-prompt\{display:grid;grid-template-columns:minmax\(0,1fr\) auto/);
+  assert.match(css, /place-save-popup \.maplibregl-popup-close-button\{top:6px;right:6px\}/);
 });
 
 test('limpiar o editar la consulta apaga inmediatamente el estado de sugerencias', async () => {
