@@ -13,6 +13,8 @@ test('saved places use one shared MapLibre symbol with a circle fallback', async
   assert.match(symbol, /atlas-saved-place-pin/);
   assert.match(symbol, /atlas-saved-places-symbol/);
   assert.match(symbol, /map\.addImage\(PLACE_ICON_ID, image, \{ pixelRatio: 2 \}\)/);
+  assert.match(symbol, /image\.width = 52/);
+  assert.match(symbol, /image\.height = 56/);
   assert.match(symbol, /type: 'symbol'/);
   assert.match(symbol, /'icon-anchor': 'bottom'/);
   assert.match(symbol, /'icon-allow-overlap': true/);
@@ -21,16 +23,16 @@ test('saved places use one shared MapLibre symbol with a circle fallback', async
   assert.match(symbol, /circle fallback/);
 });
 
-test('saved place pin is a transparent pure SVG with a solid black body and white center dot', async () => {
+test('saved place pin is a wide transparent SVG in the Atlas accent with an undistorted white dot', async () => {
   const icon = await read('src/assets/map/saved-place-pin.svg');
 
-  assert.match(icon, /viewBox="0 0 40 56"/);
-  assert.match(icon, /fill="#000000"/);
-  assert.match(icon, /<circle[^>]+cx="20"[^>]+cy="22\.5"[^>]+r="3\.25"[^>]+fill="#ffffff"/);
-  assert.equal((icon.match(/fill="#000000"/g) || []).length, 1);
+  assert.match(icon, /width="52" height="56" viewBox="0 0 52 56"/);
+  assert.match(icon, /fill="#19a5d0"/);
+  assert.match(icon, /<circle[^>]+cx="26"[^>]+cy="22\.5"[^>]+r="3\.25"[^>]+fill="#ffffff"/);
+  assert.equal((icon.match(/fill="#19a5d0"/g) || []).length, 1);
   assert.equal((icon.match(/fill="#ffffff"/g) || []).length, 1);
-  assert.doesNotMatch(icon, /#009dcc|#ffeed1|#68807f|#4d4d4d|#dadada/);
-  assert.doesNotMatch(icon, /<image\b|data:image\/|<metadata>|<rect[^>]+width="40"[^>]+height="56"/i);
+  assert.doesNotMatch(icon, /#000000|#009dcc|#ffeed1|#68807f|#4d4d4d|#dadada/);
+  assert.doesNotMatch(icon, /<image\b|data:image\/|<metadata>|<rect[^>]+width="52"[^>]+height="56"/i);
 });
 
 test('saved place popup adds a lazy country flag only for ISO2 codes', async () => {
