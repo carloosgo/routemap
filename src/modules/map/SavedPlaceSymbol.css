@@ -22,14 +22,9 @@
   box-shadow:0 0 0 1px rgba(15,23,42,.14);
 }
 
-.editor-module__settings > .editor-module__menu-anchor:first-child .editor-module__tab-icon{
-  display:inline-block;
+.editor-module__currency-icon{
+  display:block;
   width:18px;
   height:18px;
-  flex:0 0 18px;
-  background:url('../../assets/currency-coin-menu.svg') center/contain no-repeat;
-}
-
-.editor-module__settings > .editor-module__menu-anchor:first-child .editor-module__tab-icon svg{
-  display:none;
+  object-fit:contain;
 }
