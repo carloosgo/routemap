@@ -103,4 +103,30 @@ export function useCollapseSegmentsOnTripChange(tripId, segments, setExpandedSeg
     previousTripIdRef.current = tripId;
     setExpandedSegments(createCollapsedSegments(segments));
   }, [segments, setExpandedSegments, tripId]);
+
+  useEffect(() => {
+    const workspace = document.querySelector('.workspace__desktop--floating');
+    const editor = workspace?.querySelector('.floating-editor');
+    if (!workspace || !editor) return undefined;
+
+    function syncSearchSafeLeft() {
+      const workspaceRect = workspace.getBoundingClientRect();
+      const editorRect = editor.getBoundingClientRect();
+      const safeLeft = Math.max(0, editorRect.right - workspaceRect.left + 14);
+      workspace.style.setProperty('--geo-search-safe-left', `${safeLeft}px`);
+    }
+
+    syncSearchSafeLeft();
+
+    const observer = new ResizeObserver(syncSearchSafeLeft);
+    observer.observe(workspace);
+    observer.observe(editor);
+    window.addEventListener('resize', syncSearchSafeLeft);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', syncSearchSafeLeft);
+      workspace.style.removeProperty('--geo-search-safe-left');
+    };
+  }, []);
 }
