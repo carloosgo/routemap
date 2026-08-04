@@ -9,7 +9,7 @@ const PLACE_ICON_ID = 'atlas-saved-place-pin';
 function loadImageElement(url) {
   return new Promise((resolve, reject) => {
     const image = document.createElement('img');
-    image.width = 40;
+    image.width = 52;
     image.height = 56;
     image.decoding = 'async';
     image.addEventListener('load', () => resolve(image), { once: true });
