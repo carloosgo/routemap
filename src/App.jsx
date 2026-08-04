@@ -2,7 +2,6 @@ import { useCallback, useRef, useState } from 'react';
 import {
   IconBookmark,
   IconChevronDown,
-  IconCoin,
   IconDotsVertical,
   IconLanguage,
   IconMap,
@@ -23,6 +22,7 @@ import { AppEditorPane } from './app/AppEditorPane.jsx';
 import { AppMapPane } from './app/AppMapPane.jsx';
 import { TripPlacesPanel } from './modules/places/TripPlacesPanel.jsx';
 import lugaresIcon from './assets/lugares-storefront-v2.svg';
+import currencyCoinIcon from './assets/currency-coin-menu.svg';
 import {
   useCollapseSegmentsOnTripChange,
   useOutsideClick,
@@ -274,7 +274,7 @@ export default function App() {
               onClick={() => setOpenMenu(openMenu === 'currency' ? null : 'currency')}
             >
               <span className="editor-module__tab-icon" aria-hidden="true">
-                <IconCoin />
+                <img className="editor-module__currency-icon" src={currencyCoinIcon} alt="" />
               </span>
               <span className="editor-module__tab-label">{trip.currency}</span>
               <IconChevronDown className="editor-module__tab-chevron" aria-hidden="true" />
