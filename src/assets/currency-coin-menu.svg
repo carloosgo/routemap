@@ -1,28 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 64 64" role="img" aria-label="Moneda">
-  <defs>
-    <radialGradient id="coinCenter" cx="38%" cy="35%" r="75%">
-      <stop offset="0%" stop-color="#f8f2dc"/>
-      <stop offset="100%" stop-color="#efe7cb"/>
-    </radialGradient>
-  </defs>
-
-  <circle cx="32" cy="32" r="24" fill="#0b5b84"/>
-  <circle cx="32" cy="32" r="22.25" fill="none" stroke="#08263a" stroke-width="0.9" opacity="0.65"/>
-  <circle cx="32" cy="32" r="20.7" fill="none" stroke="#f3edd8" stroke-width="3.9"/>
-  <circle cx="32" cy="32" r="17.9" fill="none" stroke="#083c5c" stroke-width="3.2"/>
-
-  <g fill="none" stroke="#53dff0" stroke-width="2.1" stroke-linecap="round">
-    <path d="M17.4 26.3a16.2 16.2 0 0 1 4.4-7.1"/>
-    <path d="M24.9 16.8a16.2 16.2 0 0 1 14.2 0"/>
-    <path d="M42.2 19.2a16.2 16.2 0 0 1 4.4 7.1"/>
-    <path d="M47.4 27.8a16.2 16.2 0 0 1 0 8.4"/>
-    <path d="M46.6 39.7a16.2 16.2 0 0 1-4.4 7.1"/>
-    <path d="M39.1 49.2a16.2 16.2 0 0 1-14.2 0"/>
-    <path d="M21.8 46.8a16.2 16.2 0 0 1-4.4-7.1"/>
-    <path d="M16.6 36.2a16.2 16.2 0 0 1 0-8.4"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 205 205" role="img" aria-label="Moneda">
+  <circle cx="102.5" cy="102.5" r="99.5" fill="#0a527c" stroke="#072b43" stroke-width="1.6"/>
+  <circle cx="102.5" cy="102.5" r="88.2" fill="none" stroke="#fbf6db" stroke-width="11.4"/>
+  <circle cx="102.5" cy="102.5" r="73.3" fill="none" stroke="#0b4267" stroke-width="11.2"/>
+  <g fill="none" stroke="#55d7e4" stroke-width="8" stroke-linecap="round">
+    <path d="M46.96 55.9A72.5 72.5 0 0 1 158.04 55.9"/>
+    <path d="M166.51 68.46A72.5 72.5 0 0 1 173.9 89.91"/>
+    <path d="M174.96 105.03A72.5 72.5 0 0 1 143.04 162.61"/>
+    <path d="M129.66 169.72A72.5 72.5 0 0 1 75.34 169.72"/>
+    <path d="M61.96 162.61A72.5 72.5 0 0 1 30.04 105.03"/>
+    <path d="M31.1 89.91A72.5 72.5 0 0 1 38.49 68.46"/>
   </g>
-
-  <circle cx="32" cy="32" r="13.55" fill="url(#coinCenter)"/>
-  <circle cx="32" cy="32" r="13.55" fill="none" stroke="#0b5b84" stroke-width="0.95"/>
-  <text x="32" y="43.2" text-anchor="middle" font-size="27.5" font-family="Arial Black, Inter, Segoe UI Symbol, sans-serif" font-weight="900" fill="#083f61">$</text>
+  <circle cx="102.5" cy="102.5" r="56" fill="#fbf6db"/>
+  <path d="M103 40L103 50L101 52L97 52L86 57L78 65L75 73L75 84L78 91L85 98L95 103L100 104L103 107L103 136L102 137L99 137L93 135L78 126L76 126L71 137L83 144L85 144L91 147L101 149L103 151L103 162L113 162L114 161L113 159L113 152L115 149L120 149L127 147L136 142L140 138L143 133L145 126L145 122L144 121L144 117L141 111L133 103L113 94L113 65L114 64L120 65L131 70L133 72L135 72L138 66L139 60L127 54L116 52L113 47L113 44L114 43L113 40ZM115 108L122 111L128 117L130 121L128 130L123 135L119 137L114 137L113 136L113 110ZM102 64L103 65L103 90L102 91L99 91L95 89L90 84L88 80L88 74L91 69L96 65Z" fill="#0c4b72" fill-rule="evenodd"/>
 </svg>
