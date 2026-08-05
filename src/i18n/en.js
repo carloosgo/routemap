@@ -101,6 +101,6 @@ export default {
   signInError: 'Could not sign in with Google.',
   importLocalTrips: 'Import local trips',
   confirmImportLocalTrips: 'Import the trips saved on this device into your account? Local trips will not be deleted.',
-  importedTrips: 'Trips imported',
+  importedTrips: 'Imported trips',
   noLocalTrips: 'There are no local trips to import.',
 };
