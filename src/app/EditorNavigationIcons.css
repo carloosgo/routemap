@@ -43,6 +43,13 @@
   background-image: none !important;
 }
 
+/* Reactiva únicamente los separadores definidos para las opciones consecutivas. */
+.editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab::before {
+  content: '' !important;
+  display: block !important;
+  background-image: none !important;
+}
+
 .editor-module__tabs .editor-module__tab-icon {
   display: grid;
   place-items: center;
