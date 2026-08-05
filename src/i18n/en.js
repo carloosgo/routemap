@@ -19,6 +19,8 @@ export default {
   segments: 'Segments',
   places: 'Places',
   place: 'Place',
+  deletePlace: 'Delete place',
+  confirmDeletePlace: 'Delete “{name}” from your saved places?',
   noSavedPlaces: 'No saved places yet',
   savedPlacesHint: 'Search for places on the map and select them to add them to this trip.',
   addSegment: 'Add segment',
@@ -99,6 +101,6 @@ export default {
   signInError: 'Could not sign in with Google.',
   importLocalTrips: 'Import local trips',
   confirmImportLocalTrips: 'Import the trips saved on this device into your account? Local trips will not be deleted.',
-  importedTrips: 'Imported trips',
+  importedTrips: 'Trips imported',
   noLocalTrips: 'There are no local trips to import.',
 };
