@@ -10,19 +10,38 @@ on:
       - agent/phase-3-firebase-foundation
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   test-lint-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
 
     steps:
-      - name: Checkout working branch
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           fetch-depth: 0
+
+      - name: Enforce design-preservation contract
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          changed_files="$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}")"
+          stylesheet_files="$(printf '%s\n' "$changed_files" | grep -E '(^|/)([^/]+\.(css|scss|sass|less)|styles?/)' || true)"
+
+          if [ -n "$stylesheet_files" ]; then
+            if ! printf '%s\n' "$changed_files" | grep -qx 'DESIGN_PRESERVATION.md'; then
+              echo "Stylesheet changes require DESIGN_PRESERVATION.md in the same PR."
+              printf '%s\n' "$stylesheet_files"
+              exit 1
+            fi
+
+            if ! grep -q '^Visual delta: none$' DESIGN_PRESERVATION.md; then
+              echo "DESIGN_PRESERVATION.md must declare: Visual delta: none"
+              exit 1
+            fi
+          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -32,40 +51,6 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             functions/package-lock.json
-
-      - name: Apply one-time stabilization
-        if: github.actor != 'github-actions[bot]'
-        run: python scripts/stabilize_once.py
-
-      - name: Regenerate root lockfile
-        run: npm install --package-lock-only --ignore-scripts
-
-      - name: Commit stabilization changes
-        if: github.actor != 'github-actions[bot]'
-        shell: bash
-        run: |
-          git add -A -- \
-            package.json \
-            package-lock.json \
-            .nvmrc \
-            src/config.js \
-            functions/index.js \
-            firestore.rules \
-            firebase-tests/firestore.rules.spec.js \
-            test/geoapifyUsageContract.test.js \
-            docs/GEOAPIFY_USAGE_CONTRACT.md \
-            .github/dependabot.yml \
-            scripts/stabilize_once.py
-
-          if git diff --cached --quiet; then
-            echo "No stabilization changes were required."
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Estabiliza CI y contrato de datos"
-          git push origin HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}
 
       - name: Install application dependencies
         run: npm ci
