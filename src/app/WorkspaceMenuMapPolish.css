@@ -22,12 +22,12 @@
   transform: scale(var(--place-marker-scale));
 }
 
-/* El globo ya no reserva espacio para el botón de cierre oculto. */
+/* El globo reserva solo el espacio necesario para un cierre compacto. */
 .place-save-popup .maplibregl-popup-content {
   width: max-content;
   min-width: 0;
   max-width: calc(100vw - 24px);
-  padding: 10px 12px;
+  padding: 10px 44px 10px 12px;
 }
 
 .place-save-prompt {
@@ -42,4 +42,35 @@
 .place-save-prompt span,
 .place-save-prompt button {
   font-family: var(--font-body);
+}
+
+/* Cierre azul, centrado y sin hover gris fuera del mensaje. */
+.place-save-popup .maplibregl-popup-close-button {
+  top: 9px;
+  right: 9px;
+  display: grid !important;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: var(--atlas-accent) !important;
+  color: #ffffff !important;
+  font-family: var(--font-body);
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.place-save-popup .maplibregl-popup-close-button:hover,
+.place-save-popup .maplibregl-popup-close-button:focus,
+.place-save-popup .maplibregl-popup-close-button:focus-visible,
+.place-save-popup .maplibregl-popup-close-button:active {
+  background: var(--atlas-accent) !important;
+  color: #ffffff !important;
+  outline: none;
+  box-shadow: none;
+  filter: none;
 }
