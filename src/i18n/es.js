@@ -19,6 +19,8 @@ export default {
   segments: 'Tramos',
   places: 'Lugares',
   place: 'Lugar',
+  deletePlace: 'Eliminar lugar',
+  confirmDeletePlace: '¿Eliminar “{name}” de tus lugares guardados?',
   noSavedPlaces: 'Aún no hay lugares guardados',
   savedPlacesHint: 'Busca lugares en el mapa y selecciónalos para agregarlos a este viaje.',
   addSegment: 'Agregar tramo',
