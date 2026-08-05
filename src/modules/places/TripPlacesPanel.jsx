@@ -89,12 +89,9 @@ export function TripPlacesPanel({ places, removePlace, t }) {
             className="confirm__card"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="confirm-delete-place-title"
+            aria-label={t('deletePlace')}
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <h3 className="confirm__title" id="confirm-delete-place-title">
-              {t('deletePlace')}
-            </h3>
             <p className="confirm__message">
               {t('confirmDeletePlace').replace('{name}', placeToDelete.name || t('place'))}
             </p>
