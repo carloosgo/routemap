@@ -44,7 +44,7 @@ test('segments, places, notes and currency use the same real button structure an
   assert.match(polish, /background:\s*#ffffff;/);
   assert.match(polish, /font-family:\s*var\(--font-body\);/);
   assert.match(polish, /font-size:\s*14px;/);
-  assert.match(polish, /font-weight:\s*500;/);
+  assert.match(polish, /font-weight:\s*500(?:\s*!important)?;/);
   assert.match(polish, /\.editor-module__tab-icon\s*\{[\s\S]*width:\s*25px;[\s\S]*height:\s*25px;/);
   assert.match(polish, /background:\s*#f4f5f7;/);
   assert.match(polish, /color:\s*#4b5563;/);
@@ -63,7 +63,7 @@ test('places renders the transparent signpost icon through the existing tab asse
   assert.match(icon, /aria-label="Lugares"/);
   assert.match(icon, /viewBox="0 0 40 40"/);
   assert.match(icon, /#14394b/);
-  assert.match(icon, /fill="#19a5d0"/);
+  assert.match(icon, /fill="#11c7dc"/);
   assert.equal((icon.match(/fill="#fff3d6"/g) || []).length, 3);
   assert.doesNotMatch(icon, />CAFE<\/text>/);
   assert.doesNotMatch(icon, /data:image\//);
