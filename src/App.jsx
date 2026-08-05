@@ -72,6 +72,7 @@ export default function App() {
   const [expandedSegments, setExpandedSegments] = useState({});
   const [newItemText, setNewItemText] = useState('');
   const [confirmDeleteNote, setConfirmDeleteNote] = useState(null);
+  const [tripToDelete, setTripToDelete] = useState(null);
   const [openMenu, setOpenMenu] = useState(null);
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [openNoteSegmentId, setOpenNoteSegmentId] = useState(null);
@@ -162,6 +163,12 @@ export default function App() {
     addChecklistItem(text);
     setNewItemText('');
     newItemRef.current?.focus();
+  }
+
+  async function confirmRemoveTrip() {
+    if (!tripToDelete) return;
+    await deleteTrip(tripToDelete.id);
+    setTripToDelete(null);
   }
 
   const topbar = (
@@ -368,7 +375,7 @@ export default function App() {
                             type="button"
                             className="editor-module__saved-delete"
                             aria-label={t('deleteTrip')}
-                            onClick={() => deleteTrip(savedTrip.id)}
+                            onClick={() => setTripToDelete(savedTrip)}
                           >
                             <IconTrash size={14} aria-hidden="true" />
                           </button>
@@ -454,6 +461,42 @@ export default function App() {
           </nav>
         </div>
       </main>
+
+      {tripToDelete && (
+        <div className="confirm__scrim" role="presentation" onMouseDown={() => setTripToDelete(null)}>
+          <div
+            className="confirm__card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-delete-trip-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <h3 className="confirm__title" id="confirm-delete-trip-title">
+              {t('deleteTrip')}
+            </h3>
+            <p className="confirm__message">
+              {t('confirmDelete')}{' '}
+              <strong>{tripToDelete.name || t('unnamedTrip')}</strong>
+            </p>
+            <div className="confirm__actions">
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                onClick={() => setTripToDelete(null)}
+              >
+                {t('cancel')}
+              </button>
+              <button
+                type="button"
+                className="btn btn--danger btn--sm"
+                onClick={confirmRemoveTrip}
+              >
+                {t('delete')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
