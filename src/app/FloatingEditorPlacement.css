@@ -49,6 +49,17 @@
     bottom: 52px;
   }
 
+  /* Alinea información y zoom con la guía derecha de Guardar y del menú. */
+  .workspace__desktop--floating .maplibregl-ctrl-bottom-right,
+  .workspace__desktop--floating .mapboxgl-ctrl-bottom-right {
+    right: 14px;
+  }
+
+  .workspace__desktop--floating .maplibregl-ctrl-bottom-right > .maplibregl-ctrl,
+  .workspace__desktop--floating .mapboxgl-ctrl-bottom-right > .mapboxgl-ctrl {
+    margin-right: 0;
+  }
+
   .topbar__brand {
     position: fixed;
     top: 14px;
