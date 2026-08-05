@@ -35,15 +35,17 @@
   appearance: none;
 }
 
-.editor-module__tabs .editor-module__nav-tab:not(.is-active):hover {
-  background: #f4f5f7;
-  color: #4b5563;
-}
-
+/* Ninguna opción muestra fondo o sombra gris al pasar, pulsar o quedar seleccionada. */
+.editor-module__tabs .editor-module__nav-tab:hover,
+.editor-module__tabs .editor-module__nav-tab:focus,
+.editor-module__tabs .editor-module__nav-tab:focus-visible,
+.editor-module__tabs .editor-module__nav-tab:active,
 .editor-module__tabs .editor-module__nav-tab.is-active,
 .editor-module__tabs .editor-module__nav-tab.is-active:hover {
-  background: #ffffff;
-  color: #4b5563;
+  background: #ffffff !important;
+  color: #111827;
+  box-shadow: none !important;
+  outline: none;
 }
 
 /* Ninguna opción puede volver a recibir iconos mediante pseudo-elementos. */
