@@ -305,3 +305,17 @@
 .floating-editor .total__value {
   color: var(--atlas-accent);
 }
+
+/* Los cuadros de eliminación muestran solo la pregunta y las acciones. */
+#confirm-delete-place-title,
+#confirm-delete-trip-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
