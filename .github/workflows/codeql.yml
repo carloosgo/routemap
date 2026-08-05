@@ -2,9 +2,15 @@ name: CodeQL
 
 on:
   push:
-    branches: [main, agent/phase-2-hardening-no-design]
+    branches:
+      - main
+      - agent/phase-2-hardening-no-design
+      - agent/phase-3-firebase-foundation
   pull_request:
-    branches: [main, agent/phase-1-no-design]
+    branches:
+      - main
+      - agent/phase-1-no-design
+      - agent/phase-2-hardening-no-design
   schedule:
     - cron: '23 8 * * 2'
 
@@ -16,7 +22,7 @@ jobs:
   analyze:
     name: Analyze JavaScript
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
