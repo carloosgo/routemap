@@ -256,3 +256,31 @@
 .place-save-popup .maplibregl-popup-close-button {
   display: none;
 }
+
+/* Acento verde azulado compartido con la moneda seleccionada. */
+.floating-editor .btn--add:hover {
+  border-color: #357d94;
+  color: #357d94;
+}
+
+.floating-editor .notes-section__title svg {
+  color: #357d94;
+}
+
+.floating-editor .checklist__check.is-done {
+  background: #357d94;
+  border-color: #357d94;
+  color: #ffffff;
+}
+
+.floating-editor .checklist__submit {
+  color: #357d94;
+  border-color: #357d94;
+}
+
+.floating-editor .checklist__submit:hover,
+.floating-editor .checklist__submit:focus-visible {
+  background: #eef6f8;
+  color: #357d94;
+  border-color: #357d94;
+}
