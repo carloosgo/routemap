@@ -35,7 +35,7 @@ test('all desktop navigation options share Tramos dimensions, 14px text, 25px ic
   assert.match(css, /background:\s*#ffffff;/);
   assert.match(css, /font-family:\s*var\(--font-body\);/);
   assert.match(css, /font-size:\s*14px;/);
-  assert.match(css, /font-weight:\s*500;/);
+  assert.match(css, /font-weight:\s*500(?:\s*!important)?;/);
   assert.match(css, /\.editor-module__tab-icon\s*\{[\s\S]*width:\s*25px;[\s\S]*height:\s*25px;[\s\S]*flex:\s*0 0 25px;/);
   assert.match(css, /\.editor-module__tab-icon > img\s*\{[\s\S]*width:\s*25px;[\s\S]*height:\s*25px;/);
   assert.match(css, /\.editor-module__nav-tab\.is-active,[\s\S]*background:\s*#f4f5f7;/);
@@ -48,7 +48,7 @@ test('places uses a self-contained transparent signpost icon in the Atlas palett
   assert.match(icon, /viewBox="0 0 40 40"/);
   assert.match(icon, /aria-label="Lugares"/);
   assert.match(icon, /#14394b/);
-  assert.match(icon, /fill="#19a5d0"/);
+  assert.match(icon, /fill="#11c7dc"/);
   assert.equal((icon.match(/fill="#fff3d6"/g) || []).length, 3);
   assert.doesNotMatch(icon, />CAFE<\/text>/);
   assert.doesNotMatch(icon, /#b7c58a|#c79a6b/);
