@@ -59,10 +59,11 @@ test('saved places include city, country, type and country flag', async () => {
 
 test('places, notes and mobile route navigation use distinct icons', async () => {
   const app = await read('src/App.jsx');
-  assert.match(app, /data-tab-icon="places-map-pin"[\s\S]*<IconMapPin size=\{15\}/);
-  assert.match(app, /data-tab-icon="notes"[\s\S]*<IconNotes size=\{15\}/);
+  assert.match(app, /import lugaresIcon from '\.\/assets\/lugares-storefront-v2\.svg'/);
+  assert.match(app, /data-tab-icon="places-map-pin"[\s\S]*<img src=\{lugaresIcon\} alt="" \/>/);
+  assert.match(app, /data-tab-icon="notes"[\s\S]*<IconNotes \/>/);
   assert.match(app, /<IconRoute size=\{16\} aria-hidden="true" \/> \{t\('segments'\)\}/);
-  assert.doesNotMatch(app, /IconNotebook/);
+  assert.doesNotMatch(app, /IconMapPin|IconNotebook/);
 });
 
 test('CSP permits Geoapify details and Wikimedia images only through explicit hosts', async () => {
