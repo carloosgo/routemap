@@ -2,13 +2,19 @@
  * Fuente única de verdad para la navegación superior del editor.
  * Los iconos antiguos inyectados desde public/custom-header-icons.css fueron retirados.
  */
+.editor-module__tabs {
+  min-width: 0;
+  overflow-x: clip;
+}
+
 .editor-module__tabs .editor-module__nav-tab,
 .editor-module__tabs .editor-module__nav-tab.is-active {
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 0;
   gap: 6px;
   height: 36px;
   min-height: 36px;
@@ -44,11 +50,52 @@
   background-image: none !important;
 }
 
-/* Reactiva únicamente los separadores definidos para las opciones consecutivas. */
+/* Los separadores no ocupan ancho ni empujan las opciones vecinas. */
+.editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab {
+  position: relative;
+  margin-left: 0 !important;
+}
+
 .editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab::before {
   content: '' !important;
   display: block !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 0 !important;
+  width: 1px !important;
+  height: 18px !important;
+  background: #d7d9df !important;
   background-image: none !important;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* Sustituye el separador del contenedor de ajustes por uno absoluto. */
+.editor-module__settings::before {
+  display: none !important;
+}
+
+.editor-module__settings > .editor-module__menu-anchor:first-child {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.editor-module__settings > .editor-module__menu-anchor:first-child::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 1px;
+  height: 18px;
+  background: #d7d9df;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.editor-module__settings > .editor-module__menu-anchor:first-child > .editor-module__nav-tab {
+  width: 100%;
+  min-width: 0;
 }
 
 .editor-module__tabs .editor-module__tab-icon {
@@ -96,9 +143,16 @@
 
 .editor-module__tabs .editor-module__tab-label {
   display: inline-block;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font: inherit;
   line-height: 1;
+}
+
+.editor-module__tabs .tabbar__badge {
+  flex: 0 0 auto;
 }
 
 .editor-module__tabs .editor-module__tab-chevron {
