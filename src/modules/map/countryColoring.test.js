@@ -57,6 +57,7 @@ test('skips a repeated palette value for the next country', () => {
 test('makes country fills brighter without changing their opacity', () => {
   assert.equal(vividCountryColor('#e23b3b'), '#f84e4e');
   assert.equal(vividCountryColor('#2563eb'), '#3a78ff');
+  assert.equal(vividCountryColor('#7c3aed'), '#9151ff');
   assert.equal(vividCountryColor('not-a-color'), 'not-a-color');
 });
 
@@ -78,7 +79,7 @@ test('builds the MapLibre filter for Overture land country polygons', () => {
       ['get', 'country'],
       'FR', '#f84e4e',
       'DE', '#3a78ff',
-      'NL', '#8e54ff',
+      'NL', '#9151ff',
       'transparent',
     ],
   });
