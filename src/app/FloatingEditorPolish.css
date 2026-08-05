@@ -319,3 +319,12 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* La nota del tramo con contenido usa el mismo acento azul de Buscar. */
+.floating-editor .segment__note-btn.has-note {
+  color: var(--atlas-accent);
+}
+
+.floating-editor .segment__note-btn.has-note::after {
+  background: var(--atlas-accent);
+}
