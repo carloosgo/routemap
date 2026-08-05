@@ -241,9 +241,17 @@
   color: #ffffff;
 }
 
-.trip-place button:hover {
-  background: var(--atlas-accent);
-  color: #ffffff;
+/* Eliminar Lugares replica exactamente el estilo de viajes guardados. */
+.floating-editor .trip-place button {
+  background: transparent;
+  color: #b6bbc5;
+}
+
+.floating-editor .trip-place button:hover,
+.floating-editor .trip-place button:focus-visible {
+  background: #ffffff;
+  color: var(--danger);
+  outline: none;
 }
 
 .place-result-marker:hover,
