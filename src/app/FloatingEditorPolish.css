@@ -292,3 +292,8 @@
   border-color: #357d94 !important;
   outline-color: #357d94;
 }
+
+/* El monto del total global usa exactamente el color del botón Buscar. */
+.floating-editor .total__value {
+  color: var(--atlas-accent);
+}
