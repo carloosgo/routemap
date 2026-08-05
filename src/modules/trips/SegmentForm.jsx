@@ -9,6 +9,7 @@ import {
 } from '@tabler/icons-react';
 import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
 import { ConfirmDialog } from '../../components/ConfirmDialog.jsx';
+import { CalendarDateInput } from '../../components/CalendarDateInput.jsx';
 import { ExpenseEditor } from '../expenses/ExpenseEditor.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
 import { colorForIndex } from '../../config.js';
@@ -169,19 +170,20 @@ export function SegmentForm({
               <IconCalendar size={12} aria-hidden="true" /> {t('startDate')} / {t('endDate')}
             </span>
             <div className="dates__row">
-              <input
-                type="date"
-                className="input"
+              <CalendarDateInput
                 value={segment.startDate}
-                onChange={(event) => onUpdate({ startDate: event.target.value })}
+                locale={locale}
+                ariaLabel={t('startDate')}
+                onChange={(startDate) => onUpdate({ startDate })}
               />
               <IconArrowRight size={13} className="dates__arrow" aria-hidden="true" />
-              <input
-                type="date"
-                className="input"
+              <CalendarDateInput
                 value={segment.endDate}
                 min={segment.startDate || undefined}
-                onChange={(event) => onUpdate({ endDate: event.target.value })}
+                locale={locale}
+                ariaLabel={t('endDate')}
+                align="end"
+                onChange={(endDate) => onUpdate({ endDate })}
               />
             </div>
           </div>
