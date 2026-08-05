@@ -1,0 +1,45 @@
+/* Ajustes finales del menú de trabajo y de los lugares mostrados en el mapa. */
+.editor-module__menu-item svg,
+.editor-module__menu-heading svg {
+  color: var(--atlas-accent);
+}
+
+.editor-module__saved-name {
+  color: var(--atlas-accent);
+}
+
+.editor-module__language-option.is-active {
+  color: var(--atlas-accent);
+  border-color: var(--atlas-accent);
+  background: rgba(25, 165, 208, 0.1);
+}
+
+/* Al pasar el mouse, el lugar conserva exactamente su apariencia normal. */
+.place-result-marker:hover {
+  border-color: rgba(15, 23, 42, 0.14);
+  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.22);
+  outline: 0;
+  transform: scale(var(--place-marker-scale));
+}
+
+/* El globo ya no reserva espacio para el botón de cierre oculto. */
+.place-save-popup .maplibregl-popup-content {
+  width: max-content;
+  min-width: 0;
+  max-width: calc(100vw - 24px);
+  padding: 10px 12px;
+}
+
+.place-save-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: auto;
+  font-family: var(--font-body);
+  white-space: nowrap;
+}
+
+.place-save-prompt span,
+.place-save-prompt button {
+  font-family: var(--font-body);
+}
