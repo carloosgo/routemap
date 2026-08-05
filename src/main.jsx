@@ -7,6 +7,7 @@ import './index.css';
 import './app/FloatingEditorPlacement.css';
 import './app/FloatingEditorPolish.css';
 import './app/EditorNavigationIcons.css';
+import './app/SegmentInteractionColors.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <I18nProvider>
