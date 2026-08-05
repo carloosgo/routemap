@@ -68,7 +68,7 @@ test('country colors are sequential, distinct and use a brighter fill', () => {
     ['get', 'country'],
     'FR', '#f84e4e',
     'DE', '#3a78ff',
-    'NL', '#8e54ff',
+    'NL', '#9151ff',
     'transparent',
   ]);
 });
