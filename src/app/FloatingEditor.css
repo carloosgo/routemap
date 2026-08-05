@@ -58,6 +58,23 @@
   white-space: nowrap;
 }
 
+.editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab {
+  position: relative;
+  margin-left: 9px;
+}
+
+.editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -5px;
+  width: 1px;
+  height: 18px;
+  background: #d7d9df;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
 .editor-module__tab:hover {
   background: #f4f5f7;
 }
@@ -73,6 +90,15 @@
   align-items: center;
   gap: 2px;
   margin-left: auto;
+}
+
+.editor-module__settings::before {
+  content: '';
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  flex: 0 0 auto;
+  background: #d7d9df;
 }
 
 .editor-module__menu-anchor {
