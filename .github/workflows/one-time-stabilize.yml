@@ -1,0 +1,507 @@
+name: One-time stabilization
+
+on:
+  push:
+    branches: [agent/phase-3-firebase-foundation]
+    paths: [.github/workflows/one-time-stabilize.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  stabilize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout working branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/phase-3-firebase-foundation
+          fetch-depth: 0
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply stabilization changes
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import json
+
+          package_path = Path('package.json')
+          package = json.loads(package_path.read_text(encoding='utf-8'))
+          package['engines'] = {'node': '22.x'}
+          package_path.write_text(json.dumps(package, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          Path('.nvmrc').write_text('22\n', encoding='utf-8')
+
+          config_path = Path('src/config.js')
+          config = config_path.read_text(encoding='utf-8')
+          replacements = {
+              'citySearchMinChars: 3,': 'citySearchMinChars: 5,',
+              'citySearchDebounceMs: 350,': 'citySearchDebounceMs: 450,',
+              'citySearchLimit: 6,': 'citySearchLimit: 5,',
+              'searchMinChars: 3,': 'searchMinChars: 5,',
+          }
+          for old, new in replacements.items():
+              if old not in config:
+                  raise SystemExit(f'No se encontró en config.js: {old}')
+              config = config.replace(old, new)
+          config_path.write_text(config, encoding='utf-8')
+
+          functions_path = Path('functions/index.js')
+          functions = functions_path.read_text(encoding='utf-8')
+          if functions.count('queryKey.length < 3') != 2:
+              raise SystemExit('Cantidad inesperada de validaciones de búsqueda en functions/index.js')
+          functions = functions.replace('queryKey.length < 3', 'queryKey.length < 5')
+          functions = functions.replace('normalized(text).length < 3', 'normalized(text).length < 5')
+          functions = functions.replace('al menos 3 caracteres', 'al menos 5 caracteres')
+          functions_path.write_text(functions, encoding='utf-8')
+
+          Path('firestore.rules').write_text("""rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsUserPath(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function validTripShape(data) {
+      return data.keys().hasOnly([
+          'id',
+          'name',
+          'currency',
+          'segments',
+          'places',
+          'notes',
+          'checklist',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.id is string
+        && data.id.size() > 0
+        && data.id.size() <= 128
+        && data.name is string
+        && data.name.size() <= 120
+        && data.currency is string
+        && data.currency.matches('^[A-Z]{3}$')
+        && data.segments is list
+        && data.segments.size() <= 500
+        && data.places is list
+        && data.places.size() <= 500
+        && data.notes is list
+        && data.notes.size() <= 50
+        && data.checklist is list
+        && data.checklist.size() <= 500
+        && data.createdAt is string
+        && data.createdAt.size() <= 40
+        && data.updatedAt is string
+        && data.updatedAt.size() <= 40;
+    }
+
+    match /users/{userId} {
+      allow read, write: if false;
+
+      match /trips/{tripId} {
+        allow get, list: if ownsUserPath(userId);
+        allow create: if ownsUserPath(userId)
+          && request.resource.data.id == tripId
+          && validTripShape(request.resource.data);
+        allow update: if ownsUserPath(userId)
+          && request.resource.data.id == tripId
+          && resource.data.id == tripId
+          && request.resource.data.createdAt == resource.data.createdAt
+          && validTripShape(request.resource.data);
+        allow delete: if ownsUserPath(userId);
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+""", encoding='utf-8')
+
+          Path('firebase-tests/firestore.rules.spec.js').write_text("""import { after, before, test } from 'node:test';
+import {
+  assertFails,
+  assertSucceeds,
+  initializeTestEnvironment,
+} from '@firebase/rules-unit-testing';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { readFile } from 'node:fs/promises';
+import { normalizeTrip } from '../src/modules/trips/tripModel.js';
+
+let testEnv;
+
+const validTrip = {
+  id: 'trip-1',
+  name: 'Viaje de prueba',
+  currency: 'MXN',
+  segments: [],
+  places: [],
+  notes: [],
+  checklist: [],
+  createdAt: '2026-07-30T00:00:00.000Z',
+  updatedAt: '2026-07-30T00:00:00.000Z',
+};
+
+before(async () => {
+  testEnv = await initializeTestEnvironment({
+    projectId: 'atlasmap-dev',
+    firestore: {
+      host: '127.0.0.1',
+      port: 8080,
+      rules: await readFile('firestore.rules', 'utf8'),
+    },
+  });
+});
+
+after(async () => {
+  await testEnv?.cleanup();
+});
+
+test('un usuario autenticado puede guardar y leer su propio viaje', async () => {
+  const alice = testEnv.authenticatedContext('alice').firestore();
+  const ref = doc(alice, 'users/alice/trips/trip-1');
+
+  await assertSucceeds(setDoc(ref, validTrip));
+  await assertSucceeds(getDoc(ref));
+});
+
+test('las reglas aceptan la forma normalizada actual con lugares persistentes', async () => {
+  const alice = testEnv.authenticatedContext('alice').firestore();
+  const trip = normalizeTrip({
+    ...validTrip,
+    id: 'trip-with-place',
+    places: [
+      {
+        id: 'place-1',
+        name: 'Museo de prueba',
+        city: 'Ciudad de México',
+        country: 'México',
+        countryCode: 'MX',
+        lat: 19.4326,
+        lon: -99.1332,
+      },
+    ],
+  });
+
+  await assertSucceeds(setDoc(doc(alice, 'users/alice/trips/trip-with-place'), trip));
+});
+
+test('un usuario no puede leer viajes de otro usuario', async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), 'users/alice/trips/trip-1'), validTrip);
+  });
+
+  const bob = testEnv.authenticatedContext('bob').firestore();
+  await assertFails(getDoc(doc(bob, 'users/alice/trips/trip-1')));
+});
+
+test('un visitante sin autenticar no puede leer ni escribir viajes', async () => {
+  const guest = testEnv.unauthenticatedContext().firestore();
+  const ref = doc(guest, 'users/alice/trips/trip-1');
+
+  await assertFails(getDoc(ref));
+  await assertFails(setDoc(ref, validTrip));
+});
+
+test('las reglas rechazan documentos con campos inesperados', async () => {
+  const alice = testEnv.authenticatedContext('alice').firestore();
+  const ref = doc(alice, 'users/alice/trips/trip-invalid');
+
+  await assertFails(
+    setDoc(ref, {
+      ...validTrip,
+      id: 'trip-invalid',
+      privateAdminFlag: true,
+    })
+  );
+});
+
+test('las reglas rechazan más de 500 lugares', async () => {
+  const alice = testEnv.authenticatedContext('alice').firestore();
+  const ref = doc(alice, 'users/alice/trips/trip-too-many-places');
+
+  await assertFails(
+    setDoc(ref, {
+      ...validTrip,
+      id: 'trip-too-many-places',
+      places: Array.from({ length: 501 }, (_, index) => ({ id: `place-${index}` })),
+    })
+  );
+});
+
+test('createdAt no puede modificarse después de crear el viaje', async () => {
+  const alice = testEnv.authenticatedContext('alice').firestore();
+  const ref = doc(alice, 'users/alice/trips/trip-1');
+
+  await assertSucceeds(setDoc(ref, validTrip));
+  await assertFails(setDoc(ref, { ...validTrip, createdAt: '2030-01-01T00:00:00.000Z' }));
+});
+""", encoding='utf-8')
+
+          Path('.github/workflows/quality.yml').write_text("""name: Quality checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - agent/phase-1-no-design
+      - agent/phase-2-hardening-no-design
+      - agent/phase-3-firebase-foundation
+
+permissions:
+  contents: read
+
+jobs:
+  test-lint-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Enforce design-preservation contract
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          changed_files="$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}")"
+          stylesheet_files="$(printf '%s\\n' "$changed_files" | grep -E '(^|/)([^/]+\\.(css|scss|sass|less)|styles?/)' || true)"
+
+          if [ -n "$stylesheet_files" ]; then
+            if ! printf '%s\\n' "$changed_files" | grep -qx 'DESIGN_PRESERVATION.md'; then
+              echo "Stylesheet changes require DESIGN_PRESERVATION.md in the same PR."
+              printf '%s\\n' "$stylesheet_files"
+              exit 1
+            fi
+
+            if ! grep -q '^Visual delta: none$' DESIGN_PRESERVATION.md; then
+              echo "DESIGN_PRESERVATION.md must declare: Visual delta: none"
+              exit 1
+            fi
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+
+      - name: Install application dependencies
+        run: npm ci
+
+      - name: Install Functions dependencies
+        run: npm ci --prefix functions
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Test Firestore security rules
+        run: npm run test:rules
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Build production bundle
+        run: npm run build
+""", encoding='utf-8')
+
+          Path('.github/workflows/dependency-audit.yml').write_text("""name: Dependency audit
+
+on:
+  push:
+    branches:
+      - main
+      - agent/phase-2-hardening-no-design
+      - agent/phase-3-firebase-foundation
+  pull_request:
+    branches:
+      - main
+      - agent/phase-1-no-design
+      - agent/phase-2-hardening-no-design
+  schedule:
+    - cron: '41 9 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+
+      - name: Install application dependencies
+        run: npm ci
+
+      - name: Install Functions dependencies
+        run: npm ci --prefix functions
+
+      - name: Audit application production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Audit Functions production dependencies
+        run: npm audit --prefix functions --omit=dev --audit-level=high
+""", encoding='utf-8')
+
+          Path('.github/workflows/codeql.yml').write_text("""name: CodeQL
+
+on:
+  push:
+    branches:
+      - main
+      - agent/phase-2-hardening-no-design
+      - agent/phase-3-firebase-foundation
+  pull_request:
+    branches:
+      - main
+      - agent/phase-1-no-design
+      - agent/phase-2-hardening-no-design
+  schedule:
+    - cron: '23 8 * * 2'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analyze JavaScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+
+      - name: Build application
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+""", encoding='utf-8')
+
+          Path('.github/dependabot.yml').write_text("""version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Mexico_City
+    open-pull-requests-limit: 5
+    groups:
+      production-dependencies:
+        dependency-type: production
+      development-dependencies:
+        dependency-type: development
+    labels:
+      - dependencies
+
+  - package-ecosystem: npm
+    directory: /functions
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:15"
+      timezone: America/Mexico_City
+    open-pull-requests-limit: 5
+    groups:
+      functions-dependencies:
+        patterns:
+          - "*"
+    labels:
+      - dependencies
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+""", encoding='utf-8')
+
+          Path('docs/GEOAPIFY_USAGE_CONTRACT.md').write_text("""# Contrato de uso de Geoapify
+
+Estas reglas son invariantes de arquitectura y deben conservarse en cualquier refactor o funcionalidad nueva.
+
+## Búsqueda y autocompletado
+
+1. Debounce entre 400 y 500 ms; valor estándar actual: 450 ms.
+2. No realizar peticiones con menos de 5 caracteres normalizados.
+3. Solicitar como máximo 5 resultados.
+4. Usar caché cliente por query normalizada, sin acentos, en minúsculas y con `trim`, con TTL de 30 a 90 días.
+
+## Persistencia y recálculo
+
+5. Guardar permanentemente identificador, coordenadas y datos normalizados de cada lugar. Al reabrir un viaje no se vuelve a geocodificar.
+6. Guardar por tramo la geometría GeoJSON de la ruta, distancia, duración, modo y firma de origen/destino/modo.
+7. Recalcular exclusivamente cuando cambie origen, destino o modo. Cambios en nombre, notas o gastos no invalidan la ruta.
+
+## Backend y consumo
+
+8. Todas las llamadas privadas a Geoapify pasan por el rate limiter oficial `@geoapify/request-rate-limiter`.
+9. Geocoding, places y routing pasan por Firebase; la clave privada nunca se expone al cliente. Firestore comparte resultados de caché entre usuarios.
+10. Routing solicita únicamente geometría, distancia y duración; no se habilitan elevation, traffic ni detalles que no use el producto.
+11. Reverse geocoding se ejecuta solo mediante una acción explícita del usuario.
+12. Las importaciones de varias ubicaciones usan batch geocoding, con un máximo de 1,000 entradas por operación autorizada.
+
+## Estado actual
+
+- Implementado: debounce de 450 ms, mínimo de 5 caracteres, límite de 5, normalización, caché cliente de 60 días, coordenadas persistentes, proxy Firebase, caché compartida, rate limiter, routing sin extras y endpoint batch.
+- Pendiente prioritario: persistir geometría de ruta y su firma en el modelo del tramo; impedir recálculos cuando la firma no cambia; mover la consulta de detalles/imágenes de lugares al proxy para que ninguna llamada privada eluda el rate limiter.
+
+Toda modificación relacionada debe incluir pruebas automatizadas que demuestren que estas invariantes siguen vigentes.
+""", encoding='utf-8')
+          PY
+
+      - name: Regenerate root lockfile
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Commit stabilization
+        shell: bash
+        run: |
+          rm .github/workflows/one-time-stabilize.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Estabiliza CI y contrato de datos"
+          git push origin HEAD:agent/phase-3-firebase-foundation
