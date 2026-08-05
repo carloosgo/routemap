@@ -16,8 +16,11 @@
 }
 
 .calendar-date__trigger:hover,
+.calendar-date__trigger:focus,
+.calendar-date__trigger:focus-visible,
 .calendar-date__trigger.is-open {
-  border-color: #357d94;
+  border-color: #357d94 !important;
+  outline: none;
 }
 
 .calendar-date__trigger svg {
@@ -176,7 +179,7 @@
 
 .calendar-date__day.is-today:not(.is-selected) {
   background: #f4f7f8;
-  color: #357d94;
+  color: var(--atlas-accent);
   font-weight: 700;
 }
 
@@ -185,7 +188,7 @@
 .calendar-date__day.is-selected:focus-visible {
   border: 0;
   outline: 0;
-  background: #357d94;
+  background: var(--atlas-accent);
   color: #ffffff;
   box-shadow: none;
   font-weight: 700;
