@@ -16,6 +16,7 @@ service cloud.firestore {
           'name',
           'currency',
           'segments',
+          'places',
           'notes',
           'checklist',
           'createdAt',
@@ -30,6 +31,8 @@ service cloud.firestore {
         && data.currency.matches('^[A-Z]{3}$')
         && data.segments is list
         && data.segments.size() <= 500
+        && data.places is list
+        && data.places.size() <= 500
         && data.notes is list
         && data.notes.size() <= 50
         && data.checklist is list

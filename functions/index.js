@@ -170,8 +170,8 @@ export const geoapifyPlaceSearch = onCall({ secrets: [GEOAPIFY_API_KEY] }, async
   const query = String(request.data?.query || '').trim();
   const queryKey = normalized(query);
 
-  if (queryKey.length < 3) {
-    throw new HttpsError('invalid-argument', 'La búsqueda requiere al menos 3 caracteres.');
+  if (queryKey.length < 5) {
+    throw new HttpsError('invalid-argument', 'La búsqueda requiere al menos 5 caracteres.');
   }
 
   const limit = Math.min(Math.max(Number(request.data?.limit) || 5, 1), 5);
@@ -196,8 +196,8 @@ export const geoapifyAutocomplete = onCall({ secrets: [GEOAPIFY_API_KEY] }, asyn
   const query = String(request.data?.query || '').trim();
   const queryKey = normalized(query);
 
-  if (queryKey.length < 3) {
-    throw new HttpsError('invalid-argument', 'La búsqueda requiere al menos 3 caracteres.');
+  if (queryKey.length < 5) {
+    throw new HttpsError('invalid-argument', 'La búsqueda requiere al menos 5 caracteres.');
   }
 
   const limit = Math.min(Math.max(Number(request.data?.limit) || 5, 1), 5);
@@ -288,7 +288,7 @@ export const geoapifyBatchGeocode = onCall({
   const tasks = queries.map((query) => async () => {
     const text = String(query || '').trim();
     const key = `batch:${normalized(text)}`;
-    if (normalized(text).length < 3) return null;
+    if (normalized(text).length < 5) return null;
 
     const value = await cached('geocodeCache', key, async () => {
       const params = new URLSearchParams({
