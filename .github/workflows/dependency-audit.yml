@@ -2,9 +2,15 @@ name: Dependency audit
 
 on:
   push:
-    branches: [main, agent/phase-2-hardening-no-design]
+    branches:
+      - main
+      - agent/phase-2-hardening-no-design
+      - agent/phase-3-firebase-foundation
   pull_request:
-    branches: [main, agent/phase-1-no-design]
+    branches:
+      - main
+      - agent/phase-1-no-design
+      - agent/phase-2-hardening-no-design
   schedule:
     - cron: '41 9 * * 1'
 
@@ -14,7 +20,7 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
@@ -23,11 +29,20 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
 
-      - name: Install locked dependencies
+      - name: Install application dependencies
         run: npm ci
 
-      - name: Audit production dependencies
+      - name: Install Functions dependencies
+        run: npm ci --prefix functions
+
+      - name: Audit application production dependencies
         run: npm audit --omit=dev --audit-level=high
+
+      - name: Audit Functions production dependencies
+        run: npm audit --prefix functions --omit=dev --audit-level=high
