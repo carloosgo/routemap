@@ -43,9 +43,16 @@
 .editor-module__tabs .editor-module__nav-tab.is-active,
 .editor-module__tabs .editor-module__nav-tab.is-active:hover {
   background: #ffffff !important;
-  color: #111827;
   box-shadow: none !important;
   outline: none;
+}
+
+/* La opción seleccionada conserva el gris usado originalmente para ese estado. */
+.editor-module__tabs .editor-module__nav-tab.is-active,
+.editor-module__tabs .editor-module__nav-tab.is-active:hover,
+.editor-module__tabs .editor-module__nav-tab.is-active:focus,
+.editor-module__tabs .editor-module__nav-tab.is-active:active {
+  color: #4b5563 !important;
 }
 
 /* Ninguna opción puede volver a recibir iconos mediante pseudo-elementos. */
