@@ -8,6 +8,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
+  flex: 0 0 auto;
   gap: 6px;
   height: 36px;
   min-height: 36px;
@@ -19,7 +20,7 @@
   color: #111827;
   font-family: var(--font-body);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 500 !important;
   font-style: normal;
   line-height: 1;
   letter-spacing: 0;
@@ -95,6 +96,7 @@
 
 .editor-module__tabs .editor-module__tab-label {
   display: inline-block;
+  flex: 0 0 auto;
   font: inherit;
   line-height: 1;
 }
