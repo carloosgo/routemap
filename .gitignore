@@ -4,6 +4,9 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+functions/.env
+functions/.env.*
+!functions/.env.example
 *.log
 .DS_Store
 .vscode/*
