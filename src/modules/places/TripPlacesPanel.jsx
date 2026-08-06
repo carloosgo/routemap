@@ -67,7 +67,6 @@ export function TripPlacesPanel({ places, removePlace, t }) {
                   <span className="trip-place__pin"><IconMapPin size={15} aria-hidden="true" /></span>
                   <span className="trip-place__info">
                     <strong>{place.name}</strong>
-                    <small>{place.category || t('place')}</small>
                   </span>
                   <button
                     type="button"
