@@ -77,6 +77,25 @@ test('un visitante sin autenticar no puede leer ni escribir viajes', async () =>
   await assertFails(setDoc(ref, validTrip));
 });
 
+test('ningún cliente puede leer o escribir colecciones internas del backend', async () => {
+  const alice = testEnv.authenticatedContext('alice').firestore();
+  const internalPaths = [
+    'geocodeCache/cache-1',
+    'placeSearchCache/cache-1',
+    'placeDetailsCache/cache-1',
+    'routeCache/cache-1',
+    'countryBoundaryCache/cache-1',
+    'functionRateLimits/rate-1',
+    'geoapifyBatchJobs/job-1',
+  ];
+
+  for (const path of internalPaths) {
+    const ref = doc(alice, path);
+    await assertFails(getDoc(ref));
+    await assertFails(setDoc(ref, { expiresAt: new Date() }));
+  }
+});
+
 test('las reglas rechazan documentos con campos inesperados', async () => {
   const alice = testEnv.authenticatedContext('alice').firestore();
   await assertFails(setDoc(doc(alice, 'users/alice/trips/trip-invalid'), {
