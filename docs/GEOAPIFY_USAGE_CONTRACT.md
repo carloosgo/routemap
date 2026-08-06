@@ -4,15 +4,19 @@ Estas reglas son invariantes de arquitectura. Tramos y búsqueda general son dos
 
 ## Dominio de Tramos
 
-- El autocompletado de origen y destino busca exclusivamente ciudades y países para construir el itinerario.
+- El autocompletado de origen y destino busca exclusivamente ciudades para construir el itinerario.
 - Vive bajo `CityAutocomplete` y `modules/geocoding`; no importa `usePlaceSearch`, `geoapifyClient`, marcadores de resultados ni componentes de Lugares.
-- Una selección produce únicamente los datos normalizados de la ciudad necesarios para el tramo: nombre, nombre mostrado, país, código de país y coordenadas.
+- Usa el endpoint exclusivo `geoapifyCityAutocomplete`, que fuerza `type=city` en Geoapify.
+- Su política propia es: mínimo 3 caracteres normalizados, debounce de 450 ms, máximo 5 resultados y caché local de 60 días.
+- El backend utiliza la colección independiente `citySearchCache` y la cuota `geoapify-city-autocomplete`.
+- Una selección produce únicamente: identificador del proveedor, nombre, nombre mostrado, país, código de país y coordenadas.
+- La ciudad seleccionada queda persistida en el tramo; al reabrir el viaje no se vuelve a consultar.
 - Los tramos persisten ciudades, fechas, gastos y nota. No contienen lugares guardados, resultados generales ni rutas reales.
 - El mapa de Tramos usa curvas visuales locales, puntos de ciudades, colores y países visitados. No llama al Routing API.
 - Los vuelos siguen representándose con línea punteada; los demás tramos con la curva visual correspondiente.
 - Los viajes antiguos que guardaron lugares dentro de un tramo se migran al arreglo general `trip.places`, pero el modelo actual nunca vuelve a crearlos dentro del tramo.
 
-Si el autocompletado de ciudades cambia de proveedor en el futuro, deberá conservar un cliente, endpoint, caché y pruebas exclusivos para ciudades. No reutilizará el cliente de búsqueda general.
+Aunque Ciudades y Lugares usen la misma cuenta y secreto de Geoapify, conservan clientes, endpoints, cachés, cuotas, modelos y pruebas independientes.
 
 ## Dominio de búsqueda general
 
@@ -47,6 +51,7 @@ Si el autocompletado de ciudades cambia de proveedor en el futuro, deberá conse
 - Todas las llamadas privadas a Geoapify pasan por Firebase y por el rate limiter oficial `@geoapify/request-rate-limiter`.
 - La clave privada nunca se expone al navegador.
 - Firestore comparte resultados de caché entre usuarios sin revelar la consulta en texto claro.
+- Ciudades usa `citySearchCache`; búsqueda general usa `placeSearchCache` y `geocodeCache`.
 - Reverse geocoding se ejecuta únicamente mediante una acción explícita del usuario.
 - Las importaciones de varias ubicaciones usan el Batch Geocoding API asíncrono, con una solicitud de hasta 1,000 entradas por operación autenticada.
 
@@ -72,11 +77,12 @@ Si el autocompletado de ciudades cambia de proveedor en el futuro, deberá conse
 
 ## Estado actual
 
-- Implementado: autocompletado de ciudades independiente para Tramos.
+- Implementado: autocompletado privado de ciudades mediante Firebase y Geoapify `type=city`, con mínimo 3, debounce 450 ms, límite 5, caché local y compartida, cuota propia e identificador persistido.
+- Eliminado: acceso directo del navegador al Nominatim público.
 - Implementado: búsqueda general con debounce de 450 ms, mínimo de 5 caracteres, límite de 5, consulta literal, caché cliente de 60 días, proxy Firebase, detalles de lugares y marcadores propios.
 - Implementado: capas mutuamente excluyentes y migración defensiva de lugares legados fuera de los tramos.
 - Preparado pero desconectado: endpoint backend de routing.
 - Pendiente para una fase posterior: modelo de conexiones entre lugares guardados, selección de transporte, persistencia de rutas y representación propia en la vista Lugares.
-- Pendiente operativo: activar App Check después de observar métricas y configurar políticas TTL de Firestore para `expiresAt`.
+- Pendiente operativo: desplegar `geoapifyCityAutocomplete`, activar App Check después de observar métricas y configurar TTL de Firestore para `citySearchCache.expiresAt` y las demás colecciones internas.
 
 Toda modificación relacionada debe incluir pruebas automatizadas que demuestren que ambos dominios siguen separados.
