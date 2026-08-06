@@ -13,7 +13,7 @@ Estas reglas son invariantes de arquitectura y deben conservarse en cualquier re
 
 5. Guardar permanentemente identificador, coordenadas y datos normalizados de cada lugar. Al reabrir un viaje no se vuelve a geocodificar.
 6. Guardar por tramo la geometría GeoJSON de la ruta, distancia, duración, modo y firma de origen/destino/modo.
-7. Recalcular exclusivamente cuando cambie origen, destino o modo. Cambios en nombre, notas o gastos no invalidan la ruta.
+7. Recalcular exclusivamente cuando cambie origen, destino o modo. Cambios en nombre, notas, fechas y gastos que no alteran el modo de transporte no invalidan la ruta.
 
 ## Backend y consumo
 
@@ -34,9 +34,19 @@ Estas reglas son invariantes de arquitectura y deben conservarse en cualquier re
 - Las claves de caché y las IP no se guardan en texto claro.
 - Las entradas de caché y control de cuota incluyen `expiresAt` para configurar TTL administrado en Firestore.
 
+## Implementación de rutas persistentes
+
+- La firma usa coordenadas de origen, coordenadas de destino y modo con precisión de seis decimales.
+- `drive` se usa por defecto; tren y autobús se traducen a `transit`; los vuelos conservan la curva visual local y no consumen Routing API.
+- Mientras llega una ruta nueva, el mapa mantiene la curva adaptativa anterior como respaldo visual.
+- Al recibir la ruta se guardan `geometry`, `distance`, `duration`, `mode`, `signature`, `calculatedAt` y `source` dentro del tramo.
+- Firestore recibe la geometría GeoJSON serializada como JSON porque no admite arreglos anidados; al leer el viaje se restaura el objeto GeoJSON completo.
+- Modificar notas, fechas, hospedaje, comida, lugares o nombre del viaje conserva la ruta existente.
+- Cambiar cantidades de transporte solo invalida la ruta cuando cambia el modo dominante resultante.
+
 ## Estado actual
 
-- Implementado: debounce de 450 ms, mínimo de 5 caracteres, límite de 5, normalización, caché cliente de 60 días, coordenadas persistentes, proxy Firebase, caché compartida, rate limiter oficial, detalles de lugares por proxy, routing sin extras, App Check preparado, cuotas compartidas y Batch API real.
-- Pendiente prioritario: persistir geometría de ruta y su firma en el modelo del tramo; impedir recálculos cuando la firma no cambia; activar App Check en Firebase después de observar métricas; configurar políticas TTL de Firestore para `expiresAt`.
+- Implementado: debounce de 450 ms, mínimo de 5 caracteres, límite de 5, normalización, caché cliente de 60 días, coordenadas persistentes, geometrías persistentes por tramo, comparación de firma, proxy Firebase, caché compartida, rate limiter oficial, detalles de lugares por proxy, routing sin extras, App Check preparado, cuotas compartidas y Batch API real.
+- Pendiente operativo: activar App Check en Firebase después de observar métricas y configurar políticas TTL de Firestore para `expiresAt`.
 
 Toda modificación relacionada debe incluir pruebas automatizadas que demuestren que estas invariantes siguen vigentes.
