@@ -95,12 +95,12 @@ service cloud.firestore {
       return data.keys().hasOnly([
           'id', 'name', 'currency', 'placeOrderVersion', 'createdAt', 'updatedAt',
           'storageVersion', 'activeRevision', 'segmentCount', 'placeCount',
-          'noteCount', 'checklistCount', 'total'
+          'routeConnectionCount', 'noteCount', 'checklistCount', 'total'
         ])
         && data.keys().hasAll([
           'id', 'name', 'currency', 'placeOrderVersion', 'createdAt', 'updatedAt',
           'storageVersion', 'activeRevision', 'segmentCount', 'placeCount',
-          'noteCount', 'checklistCount', 'total'
+          'routeConnectionCount', 'noteCount', 'checklistCount', 'total'
         ])
         && data.id == tripId
         && data.id is string
@@ -115,11 +115,12 @@ service cloud.firestore {
         && data.createdAt.size() <= 40
         && data.updatedAt is string
         && data.updatedAt.size() <= 40
-        && data.storageVersion == 2
+        && data.storageVersion == 3
         && data.activeRevision is string
         && data.activeRevision.matches('^[a-zA-Z0-9_-]{8,128}$')
         && validCount(data.segmentCount, 500)
         && validCount(data.placeCount, 500)
+        && validCount(data.routeConnectionCount, 200)
         && validCount(data.noteCount, 50)
         && validCount(data.checklistCount, 500)
         && validAmount(data.total);
@@ -128,11 +129,11 @@ service cloud.firestore {
     function validRevision(data, revisionId) {
       return data.keys().hasOnly([
           'id', 'createdAt', 'complete', 'segmentCount', 'placeCount',
-          'noteCount', 'checklistCount'
+          'routeConnectionCount', 'noteCount', 'checklistCount'
         ])
         && data.keys().hasAll([
           'id', 'createdAt', 'complete', 'segmentCount', 'placeCount',
-          'noteCount', 'checklistCount'
+          'routeConnectionCount', 'noteCount', 'checklistCount'
         ])
         && data.id == revisionId
         && data.createdAt is string
@@ -140,6 +141,7 @@ service cloud.firestore {
         && data.complete is bool
         && validCount(data.segmentCount, 500)
         && validCount(data.placeCount, 500)
+        && validCount(data.routeConnectionCount, 200)
         && validCount(data.noteCount, 50)
         && validCount(data.checklistCount, 500);
     }
@@ -203,6 +205,51 @@ service cloud.firestore {
         && data.savedAt.size() <= 40;
     }
 
+    function validRouteGeometry(data) {
+      return data is map
+        && data.keys().hasOnly(['type', 'coordinates'])
+        && data.keys().hasAll(['type', 'coordinates'])
+        && (data.type == 'LineString' || data.type == 'MultiLineString')
+        && data.coordinates is list;
+    }
+
+    function validRouteConnection(data) {
+      return data.keys().hasOnly([
+          'id', 'position', 'fromPlaceId', 'toPlaceId', 'mode', 'visible',
+          'distance', 'duration', 'geometry', 'calculatedAt'
+        ])
+        && data.keys().hasAll([
+          'id', 'position', 'fromPlaceId', 'toPlaceId', 'mode', 'visible',
+          'distance', 'duration', 'geometry', 'calculatedAt'
+        ])
+        && data.id is string
+        && data.id.size() > 0
+        && data.id.size() <= 128
+        && validCount(data.position, 199)
+        && data.fromPlaceId is string
+        && data.fromPlaceId.size() > 0
+        && data.fromPlaceId.size() <= 128
+        && data.toPlaceId is string
+        && data.toPlaceId.size() > 0
+        && data.toPlaceId.size() <= 128
+        && data.fromPlaceId != data.toPlaceId
+        && data.mode is string
+        && (
+          data.mode == 'drive'
+          || data.mode == 'bus'
+          || data.mode == 'bicycle'
+          || data.mode == 'walk'
+          || data.mode == 'transit'
+          || data.mode == 'approximated_transit'
+        )
+        && data.visible is bool
+        && validAmount(data.distance)
+        && validAmount(data.duration)
+        && validRouteGeometry(data.geometry)
+        && data.calculatedAt is string
+        && data.calculatedAt.size() <= 40;
+    }
+
     function validNote(data) {
       return data.keys().hasOnly(['id', 'position', 'title', 'text'])
         && data.keys().hasAll(['id', 'position', 'title', 'text'])
@@ -255,6 +302,7 @@ service cloud.firestore {
             && request.resource.data.createdAt == resource.data.createdAt
             && request.resource.data.segmentCount == resource.data.segmentCount
             && request.resource.data.placeCount == resource.data.placeCount
+            && request.resource.data.routeConnectionCount == resource.data.routeConnectionCount
             && request.resource.data.noteCount == resource.data.noteCount
             && request.resource.data.checklistCount == resource.data.checklistCount;
           allow delete: if ownsUserPath(userId);
@@ -273,6 +321,15 @@ service cloud.firestore {
             allow create: if ownsUserPath(userId)
               && openRevisionExists(userId, tripId, revisionId)
               && validPlace(request.resource.data);
+            allow update: if false;
+            allow delete: if ownsUserPath(userId);
+          }
+
+          match /routeConnections/{documentId} {
+            allow get, list: if ownsUserPath(userId);
+            allow create: if ownsUserPath(userId)
+              && openRevisionExists(userId, tripId, revisionId)
+              && validRouteConnection(request.resource.data);
             allow update: if false;
             allow delete: if ownsUserPath(userId);
           }
