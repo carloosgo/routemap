@@ -106,7 +106,7 @@ export function AppEditorModule({
           <span className="editor-module__tab-icon" aria-hidden="true">
             <IconMap />
           </span>
-          <span className="editor-module__tab-label">{t('segments')}</span>
+          <span className="editor-module__tab-label">{t('itinerary')}</span>
         </button>
         <button
           type="button"
@@ -118,7 +118,7 @@ export function AppEditorModule({
           <span className="editor-module__tab-icon" aria-hidden="true">
             <img src={lugaresIcon} alt="" />
           </span>
-          <span className="editor-module__tab-label">{t('places')}</span>
+          <span className="editor-module__tab-label">{t('myRoutes')}</span>
           {places.length > 0 && <span className="tabbar__badge">{places.length}</span>}
         </button>
         <button
