@@ -20,16 +20,3 @@ export {
   segmentTotal,
   tripTotal,
 } from './tripOperations.js';
-
-export {
-  dominantTransport,
-  isRoutableSegment,
-  normalizeRouteGeometry,
-  normalizeSegmentRoute,
-  parseRouteGeometry,
-  routeGeometryForDisplay,
-  routeModeForSegment,
-  routeSignatureForSegment,
-  serializeRouteGeometry,
-  withSegmentRoutePatch,
-} from './segmentRouteModel.js';
