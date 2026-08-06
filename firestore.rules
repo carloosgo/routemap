@@ -109,40 +109,14 @@ service cloud.firestore {
         && validCount(data.checklistCount, 500);
     }
 
-    function validRoute(data) {
-      return data == null || (
-        data is map
-        && data.keys().hasOnly([
-          'signature', 'mode', 'geometry', 'distance', 'duration', 'calculatedAt'
-        ])
-        && data.keys().hasAll([
-          'signature', 'mode', 'geometry', 'distance', 'duration', 'calculatedAt'
-        ])
-        && data.signature is string
-        && data.signature.size() > 0
-        && data.signature.size() <= 200
-        && data.mode is string
-        && data.mode.matches('^(drive|walk|bicycle|transit|plane)$')
-        && data.geometry is string
-        && data.geometry.size() > 0
-        && data.geometry.size() <= 700000
-        && data.distance is number
-        && data.distance >= 0
-        && data.duration is number
-        && data.duration >= 0
-        && data.calculatedAt is string
-        && data.calculatedAt.size() <= 40
-      );
-    }
-
     function validSegment(data) {
       return data.keys().hasOnly([
           'id', 'position', 'origin', 'destination', 'startDate', 'endDate',
-          'expenses', 'note', 'route'
+          'expenses', 'note'
         ])
         && data.keys().hasAll([
           'id', 'position', 'origin', 'destination', 'startDate', 'endDate',
-          'expenses', 'note', 'route'
+          'expenses', 'note'
         ])
         && data.id is string
         && data.id.size() > 0
@@ -156,8 +130,7 @@ service cloud.firestore {
         && data.endDate.size() <= 10
         && data.expenses is map
         && data.note is string
-        && data.note.size() <= 500
-        && validRoute(data.route);
+        && data.note.size() <= 500;
     }
 
     function validPlace(data) {
