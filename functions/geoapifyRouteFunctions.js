@@ -9,6 +9,7 @@ import {
 } from './geoapifyRuntime.js';
 import {
   limitedFetch,
+  mapPlace,
   requireGeoapifyKey,
   validPoint,
 } from './geoapifySupport.js';
@@ -59,7 +60,7 @@ export const geoapifyReverse = onCall(
       throw new HttpsError('invalid-argument', 'Punto inválido.');
     }
 
-    const key = `reverse:${Number(point.lat).toFixed(6)},${Number(point.lon).toFixed(6)}`;
+    const key = `reverse:v2:${Number(point.lat).toFixed(6)},${Number(point.lon).toFixed(6)}`;
     const cachedResult = await cached('geocodeCache', key, async () => {
       const params = new URLSearchParams({
         lat: String(point.lat),
@@ -71,7 +72,7 @@ export const geoapifyReverse = onCall(
       const payload = await limitedFetch(
         `https://api.geoapify.com/v1/geocode/reverse?${params}`
       );
-      return payload.results?.[0] || null;
+      return mapPlace(payload.results?.[0]) || null;
     });
 
     return { result: cachedResult.result, cacheHit: cachedResult.cacheHit };
