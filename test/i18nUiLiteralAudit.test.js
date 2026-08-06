@@ -24,7 +24,11 @@ const hardcodedAttribute = new RegExp(
   'g'
 );
 const hardcodedTextNode = new RegExp(
-  `(?<![=])>\\s*([${translatedCharacter}][^<>{}\\n]*?)\\s*<(?=\\/|[A-Za-z])`,
+  `>\\s*([${translatedCharacter}][^<>{}\\n]*?)\\s*<(?=\\/)`,
+  'g'
+);
+const hardcodedStringExpression = new RegExp(
+  `\\{\\s*(['"])(?=[^'"\\n]*[${translatedCharacter}])[^'"\\n]*\\1\\s*\\}`,
   'g'
 );
 const hardcodedUiCall = new RegExp(
@@ -79,6 +83,7 @@ test('los atributos y nodos visibles de JSX no contienen texto traducible hardco
     for (const match of [
       ...collectMatches(source, hardcodedAttribute),
       ...collectMatches(source, hardcodedTextNode),
+      ...collectMatches(source, hardcodedStringExpression),
     ]) {
       violations.push(`${fileUrl.pathname}: ${match}`);
     }
