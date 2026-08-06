@@ -20,6 +20,8 @@ export default {
   confirmDelete: 'Delete this trip?',
   loadTrip: 'Open',
   of: 'of',
+  itinerary: 'Itinerary',
+  myRoutes: 'My Routes',
   segments: 'Segments',
   places: 'Places',
   place: 'Place',
