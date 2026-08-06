@@ -37,17 +37,61 @@ test('las traducciones no quedan copiadas entre idiomas salvo términos invarian
   );
 });
 
+test('errores, confirmaciones, placeholders y estados vacíos existen en ambos idiomas', () => {
+  const requiredByCategory = {
+    errors: [
+      'saveValidationError',
+      'savedTripMissing',
+      'openTripError',
+      'citySearchError',
+      'placeSearchError',
+      'signInError',
+    ],
+    confirmations: [
+      'confirmDelete',
+      'confirmDeletePlace',
+      'confirmDeleteSegment',
+      'savePlacePrompt',
+      'confirmImportLocalTrips',
+    ],
+    placeholders: [
+      'tripNamePlaceholder',
+      'datePlaceholder',
+      'segmentNotePlaceholder',
+      'notesPlaceholder',
+      'newChecklistItem',
+      'otherTransportPlaceholder',
+      'itemTypePlaceholder',
+      'searchPlacesPlaceholder',
+    ],
+    emptyStates: [
+      'noSavedTrips',
+      'noSavedPlaces',
+      'noSegments',
+      'noResults',
+      'noLocalTrips',
+    ],
+  };
+
+  for (const [category, keys] of Object.entries(requiredByCategory)) {
+    for (const key of keys) {
+      assert.equal(typeof es[key], 'string', `${category}: falta es.${key}`);
+      assert.equal(typeof en[key], 'string', `${category}: falta en.${key}`);
+      assert.notEqual(es[key].trim(), '', `${category}: es.${key} está vacío`);
+      assert.notEqual(en[key].trim(), '', `${category}: en.${key} está vacío`);
+    }
+  }
+});
+
 test('las claves críticas de operación existen en todos los idiomas', () => {
   const required = [
     'appName',
     'newTrip',
     'saveTrip',
-    'saveValidationError',
     'segments',
     'origin',
     'destination',
     'loading',
-    'noResults',
   ];
 
   for (const key of required) {
