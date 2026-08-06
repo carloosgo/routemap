@@ -1,13 +1,11 @@
 import {
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
   orderBy,
   query,
   runTransaction,
-  setDoc,
 } from 'firebase/firestore';
 import { normalizeTrip } from '../../modules/trips/tripModel.js';
 import {
@@ -42,15 +40,18 @@ function requireTripId(id) {
   return normalized;
 }
 
-function storedVersion(snapshot) {
-  if (!snapshot.exists()) return null;
-  const data = snapshot.data();
+function storedVersionFromData(data) {
+  if (!data) return null;
   return {
-    storageVersion: Number(data?.storageVersion) || 0,
+    storageVersion: Number(data.storageVersion) || 0,
     activeRevision:
-      typeof data?.activeRevision === 'string' ? data.activeRevision : '',
-    updatedAt: typeof data?.updatedAt === 'string' ? data.updatedAt : '',
+      typeof data.activeRevision === 'string' ? data.activeRevision : '',
+    updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : '',
   };
+}
+
+function storedVersion(snapshot) {
+  return snapshot.exists() ? storedVersionFromData(snapshot.data()) : null;
 }
 
 export function sameStoredTripVersion(left, right) {
@@ -78,7 +79,12 @@ export function createFirestoreTripRepository({ db, uid }) {
   if (!db) throw new Error('Se requiere una instancia de Firestore.');
   const ownerId = requireUid(uid);
   const tripsCollection = collection(db, 'users', ownerId, 'trips');
-  let saveQueue = Promise.resolve();
+  const knownVersions = new Map();
+  let mutationQueue = Promise.resolve();
+
+  function rememberSnapshot(snapshot) {
+    knownVersions.set(snapshot.id, storedVersion(snapshot));
+  }
 
   async function saveOnce(rawTrip) {
     const revisionId = createRevisionId();
@@ -86,14 +92,14 @@ export function createFirestoreTripRepository({ db, uid }) {
     const payload = createTripRevisionPayload(rawTrip, revisionId, now);
     const tripRef = doc(tripsCollection, payload.trip.id);
     const revisionRef = revisionRefFor(tripRef, revisionId);
-    const baseVersion = storedVersion(await getDoc(tripRef));
+    const expectedVersion = knownVersions.get(payload.trip.id) ?? null;
 
     await writeRevisionPayload(db, revisionRef, payload);
 
     try {
       await runTransaction(db, async (transaction) => {
         const currentVersion = storedVersion(await transaction.get(tripRef));
-        if (!sameStoredTripVersion(currentVersion, baseVersion)) {
+        if (!sameStoredTripVersion(currentVersion, expectedVersion)) {
           throw saveConflictError();
         }
         transaction.set(tripRef, payload.summary);
@@ -109,8 +115,39 @@ export function createFirestoreTripRepository({ db, uid }) {
       throw error;
     }
 
+    knownVersions.set(payload.trip.id, storedVersionFromData(payload.summary));
     await cleanupOldRevisions(db, tripRef, revisionId);
     return payload.trip;
+  }
+
+  async function removeOnce(id) {
+    const tripId = requireTripId(id);
+    const tripRef = doc(tripsCollection, tripId);
+    const expectedVersion = knownVersions.get(tripId) ?? null;
+    const revisionRefs = await listRevisionRefs(tripRef);
+
+    await runTransaction(db, async (transaction) => {
+      const currentVersion = storedVersion(await transaction.get(tripRef));
+      if (!sameStoredTripVersion(currentVersion, expectedVersion)) {
+        throw saveConflictError();
+      }
+      transaction.delete(tripRef);
+    });
+
+    knownVersions.delete(tripId);
+    for (const revisionRef of revisionRefs) {
+      try {
+        await deleteRevision(db, revisionRef);
+      } catch {
+        // El viaje ya no es visible; una limpieza posterior puede retirar el huérfano.
+      }
+    }
+  }
+
+  function enqueueMutation(operation) {
+    const result = mutationQueue.then(operation, operation);
+    mutationQueue = result.catch(() => undefined);
+    return result;
   }
 
   return {
@@ -118,18 +155,24 @@ export function createFirestoreTripRepository({ db, uid }) {
       const snapshot = await getDocs(
         query(tripsCollection, orderBy('updatedAt', 'desc'))
       );
-      return snapshot.docs.map(
-        (item) =>
+      return snapshot.docs.map((item) => {
+        rememberSnapshot(item);
+        return (
           createVersionedTripListEntry(item.id, item.data()) ||
           normalizeTrip({ id: item.id, ...item.data() })
-      );
+        );
+      });
     },
 
     async get(id) {
       const tripId = requireTripId(id);
       const tripRef = doc(tripsCollection, tripId);
       const snapshot = await getDoc(tripRef);
-      if (!snapshot.exists()) return null;
+      if (!snapshot.exists()) {
+        knownVersions.set(tripId, null);
+        return null;
+      }
+      rememberSnapshot(snapshot);
 
       const stored = { id: snapshot.id, ...snapshot.data() };
       if (!isVersionedTripSummary(stored)) return normalizeTrip(stored);
@@ -145,27 +188,11 @@ export function createFirestoreTripRepository({ db, uid }) {
     },
 
     save(rawTrip) {
-      const operation = saveQueue.then(
-        () => saveOnce(rawTrip),
-        () => saveOnce(rawTrip)
-      );
-      saveQueue = operation.catch(() => undefined);
-      return operation;
+      return enqueueMutation(() => saveOnce(rawTrip));
     },
 
-    async remove(id) {
-      const tripId = requireTripId(id);
-      const tripRef = doc(tripsCollection, tripId);
-      const revisionRefs = await listRevisionRefs(tripRef);
-      await deleteDoc(tripRef);
-
-      for (const revisionRef of revisionRefs) {
-        try {
-          await deleteRevision(db, revisionRef);
-        } catch {
-          // El viaje ya no es visible; una limpieza posterior puede retirar el huérfano.
-        }
-      }
+    remove(id) {
+      return enqueueMutation(() => removeOnce(id));
     },
   };
 }
