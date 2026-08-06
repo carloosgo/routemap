@@ -29,6 +29,7 @@ export default {
   placeAlreadySaved: 'Este lugar ya está guardado.',
   savePlacePrompt: '¿Guardar lugar para tu ruta?',
   deletePlace: 'Eliminar lugar',
+  movePlace: 'Mover lugar',
   confirmDeletePlace: '¿Eliminar “{name}” de tus lugares guardados?',
   noSavedPlaces: 'Aún no hay lugares guardados',
   savedPlacesHint: 'Busca lugares en el mapa y selecciónalos para agregarlos a este viaje.',
