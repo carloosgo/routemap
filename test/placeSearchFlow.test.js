@@ -13,19 +13,26 @@ test('place search preserves the configured minimum and maximum limits', async (
   assert.match(functions, /Math\.min\(Math\.max\(Number\(request\.data\?\.limit\) \|\| 5, 1\), 5\)/);
 });
 
-test('generic one-word searches use route context but specific searches remain literal', async () => {
+test('general search sends the literal query without itinerary context', async () => {
+  const client = await read('src/modules/places/geoapifyClient.js');
+  const search = await read('src/modules/map/usePlaceSearch.js');
+  const routeMap = await read('src/modules/map/RouteMap.jsx');
   const query = await read('src/modules/places/geoapifyQuery.js');
-  assert.match(query, /export function contextualQuery/);
-  assert.match(query, /knownLocations/);
-  assert.match(query, /explicitlyNamesLocation/);
-  assert.match(query, /isGenericSingleTerm/);
-  assert.match(query, /\[base, city, country\]\.filter\(Boolean\)\.join\(', '\)/);
+
+  assert.match(client, /query: cleanQuery/);
+  assert.doesNotMatch(client, /context:|contextualQuery|callableSearchContext|contextKey/);
+  assert.doesNotMatch(search, /searchContext|segments|origin|destination/);
+  assert.doesNotMatch(routeMap, /placeSearchContext|searchContext/);
+  assert.match(query, /export function normalizeSearchKey/);
+  assert.doesNotMatch(query, /contextualQuery|knownLocations|callableSearchContext/);
 });
 
-test('search cache is separated by query and route context', async () => {
+test('search cache is separated only by normalized general query', async () => {
   const client = await read('src/modules/places/geoapifyClient.js');
   const cache = await read('src/modules/places/geoapifyClientCache.js');
-  assert.match(client, /const cacheKey = `\$\{queryKey\}\|\$\{contextKey\(context\)\}`/);
+  assert.match(client, /placeCache\.getFresh\(queryKey,/);
+  assert.match(client, /placeCache\.set\(queryKey, \{ result \}\)/);
+  assert.doesNotMatch(client, /contextKey|cacheKey = `\$\{queryKey\}/);
   assert.match(cache, /PLACE_CACHE_KEY = 'atlas:geoapify-place-cache:v3'/);
 });
 
