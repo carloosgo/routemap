@@ -12,8 +12,8 @@ function normalizedCountryCode(value) {
   return /^[a-z]{2}$/.test(code) ? code : '';
 }
 
-function translated(t, key, fallback, variables) {
-  return typeof t === 'function' ? t(key, variables) : fallback;
+function translated(t, key, variables) {
+  return typeof t === 'function' ? t(key, variables) : key;
 }
 
 export function savedPlacePopup(place, t) {
@@ -21,8 +21,8 @@ export function savedPlacePopup(place, t) {
   wrap.className = 'place-popup';
   const code = normalizedCountryCode(place.countryCode);
   const country = place.country || place.countryCode || '';
-  const placeLabel = translated(t, 'place', 'Lugar');
-  const flagLabel = translated(t, 'flagOf', `Bandera de ${country}`, { country });
+  const placeLabel = translated(t, 'place');
+  const flagLabel = translated(t, 'flagOf', { country });
   const flag = code
     ? `<img class="place-popup__flag" src="https://flagcdn.com/24x18/${code}.png" width="24" height="18" alt="${escaped(
         flagLabel
@@ -43,14 +43,14 @@ export function savePrompt(place, { alreadySaved = false, onSave, onClose, t } =
   wrap.className = 'place-save-prompt';
   const text = document.createElement('span');
   text.textContent = alreadySaved
-    ? translated(t, 'placeAlreadySaved', 'Este lugar ya está guardado.')
-    : translated(t, 'savePlacePrompt', '¿Guardar lugar para tu ruta?');
+    ? translated(t, 'placeAlreadySaved')
+    : translated(t, 'savePlacePrompt');
   wrap.append(text);
 
   if (!alreadySaved) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = translated(t, 'saveTrip', 'Guardar');
+    button.textContent = translated(t, 'saveTrip');
     button.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -81,7 +81,7 @@ export function resultMarkerScale(zoom) {
 }
 
 export function markerElement(place, t) {
-  const placeLabel = translated(t, 'place', 'Lugar');
+  const placeLabel = translated(t, 'place');
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'place-result-marker';
