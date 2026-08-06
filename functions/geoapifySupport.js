@@ -55,10 +55,10 @@ export async function limitedFetch(url, options = {}, serviceName = 'Geoapify') 
   return result;
 }
 
-export function requireGeoapifyKey(secret) {
+export function requireGeoapifyKey(secret, secretName = 'GEOAPIFY_API_KEY') {
   const key = secret.value();
   if (!key) {
-    throw new HttpsError('failed-precondition', 'Falta el secreto GEOAPIFY_API_KEY.');
+    throw new HttpsError('failed-precondition', `Falta el secreto ${secretName}.`);
   }
   return key;
 }
