@@ -3,11 +3,11 @@ import { IconMapPin, IconTrash } from '@tabler/icons-react';
 import { flagImageUrl } from '../flags/flags.js';
 import './TripPlacesPanel.css';
 
-function groupPlaces(places) {
+function groupPlaces(places, t) {
   const groups = new Map();
   (places || []).forEach((place) => {
-    const city = place.city || 'Sin ciudad';
-    const country = place.country || place.countryCode || 'Sin país';
+    const city = place.city || t('noCity');
+    const country = place.country || place.countryCode || t('noCountry');
     const key = `${city}\u0000${country}`;
     if (!groups.has(key)) groups.set(key, { city, country, countryCode: place.countryCode, places: [] });
     groups.get(key).places.push(place);
@@ -31,7 +31,7 @@ function CountryFlag({ countryCode, country }) {
 
 export function TripPlacesPanel({ places, removePlace, t }) {
   const [placeToDelete, setPlaceToDelete] = useState(null);
-  const groups = groupPlaces(places);
+  const groups = groupPlaces(places, t);
 
   function confirmRemovePlace() {
     if (!placeToDelete) return;
@@ -93,7 +93,7 @@ export function TripPlacesPanel({ places, removePlace, t }) {
             onMouseDown={(event) => event.stopPropagation()}
           >
             <p className="confirm__message">
-              {t('confirmDeletePlace').replace('{name}', placeToDelete.name || t('place'))}
+              {t('confirmDeletePlace', { name: placeToDelete.name || t('place') })}
             </p>
             <div className="confirm__actions">
               <button
