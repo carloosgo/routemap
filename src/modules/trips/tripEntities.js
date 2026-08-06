@@ -3,11 +3,13 @@ import {
   createExpenses,
   normalizeExpenses,
 } from '../expenses/expenseModel.js';
+import { normalizeSavedPlaceRoutes } from '../routes/routeModel.js';
 import { groupPlacesByCountry } from './placeOrdering.js';
 
 export const TRIP_LIMITS = Object.freeze({
   segments: 500,
   places: 500,
+  routeConnections: 200,
   placesPerSegment: 200,
   notes: 50,
   checklist: 500,
@@ -181,6 +183,7 @@ export function createTrip(name = '') {
     currency: 'USD',
     segments: [],
     places: [],
+    routeConnections: [],
     placeOrderVersion: PLACE_ORDER_VERSION,
     notes: [createNote()],
     checklist: [],
@@ -208,6 +211,11 @@ export function normalizeTrip(raw) {
   const places = Number(raw.placeOrderVersion) === PLACE_ORDER_VERSION
     ? normalizedPlaces
     : groupPlacesByCountry(normalizedPlaces);
+  const routeConnections = normalizeSavedPlaceRoutes(
+    raw.routeConnections,
+    places,
+    TRIP_LIMITS.routeConnections
+  );
   const rawNotes = Array.isArray(raw.notes)
     ? raw.notes.slice(0, TRIP_LIMITS.notes)
     : null;
@@ -221,6 +229,7 @@ export function normalizeTrip(raw) {
     currency: normalizeCurrency(raw.currency),
     segments: rawSegments.map(createSegment),
     places,
+    routeConnections,
     placeOrderVersion: PLACE_ORDER_VERSION,
     notes: rawNotes?.length
       ? rawNotes.map((note) => ({
