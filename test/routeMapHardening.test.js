@@ -19,10 +19,12 @@ test('RouteMap vuelve a dibujar tramos y lugares cuando cambia el viaje', async 
   assert.match(content, /\[segments, places, mapReady\]/);
 });
 
-test('RouteMap conserva las curvas adaptativas y solo puntea vuelos', async () => {
+test('RouteMap usa geometría persistida, conserva respaldo adaptativo y solo puntea vuelos', async () => {
   const content = await source();
-  assert.match(content, /function adaptiveCurve/);
-  assert.match(content, /dominantTransport\(segment\) === 'plane'/);
+  const model = await read('src/modules/routes/routeModel.js');
+  assert.match(content, /routeGeometryForDisplay\(segment\)/);
+  assert.match(content, /routeModeForSegment\(segment\) === 'plane'/);
+  assert.match(model, /export function adaptiveRouteCoordinates/);
   assert.match(content, /filter: \['==', \['get', 'dashed'\], true\]/);
   assert.match(content, /'line-dasharray': \[5, 4\]/);
 });
@@ -191,8 +193,13 @@ test('RouteMap elimina marcadores, popups y solicitudes al actualizar o desmonta
   assert.match(content, /marker\.remove\(\)/);
 });
 
-test('RouteMap no calcula ni persiste rutas mediante Geoapify', async () => {
+test('las rutas se solicitan, persisten y reutilizan fuera del componente de mapa', async () => {
   const content = await source();
-  assert.doesNotMatch(content, /requestGeoapifyRoute|routeMode|geo-routes|Trazar ruta/);
-  assert.match(content, /searchGeoapifyPlaces/);
+  const hook = await read('src/modules/routes/usePersistentSegmentRoutes.js');
+  const pane = await read('src/app/AppMapPane.jsx');
+  assert.match(content, /routeGeometryForDisplay\(segment\)/);
+  assert.match(hook, /requestGeoapifyRoute/);
+  assert.match(hook, /hasReusableSegmentRoute\(segment\)/);
+  assert.match(hook, /updateSegment\(segment\.id, \{ route \}\)/);
+  assert.match(pane, /usePersistentSegmentRoutes\(trip\.segments, updateSegment\)/);
 });
