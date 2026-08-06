@@ -6,6 +6,7 @@ import {
   getDocs,
   orderBy,
   query,
+  runTransaction,
   setDoc,
 } from 'firebase/firestore';
 import { normalizeTrip } from '../../modules/trips/tripModel.js';
@@ -25,6 +26,8 @@ import {
   writeRevisionPayload,
 } from './firestoreTripRevisionStore.js';
 
+const SAVE_CONFLICT_CODE = 'trip/save-conflict';
+
 function requireUid(uid) {
   const normalized = typeof uid === 'string' ? uid.trim() : '';
   if (!normalized) throw new Error('Se requiere un usuario autenticado.');
@@ -39,10 +42,76 @@ function requireTripId(id) {
   return normalized;
 }
 
+function storedVersion(snapshot) {
+  if (!snapshot.exists()) return null;
+  const data = snapshot.data();
+  return {
+    storageVersion: Number(data?.storageVersion) || 0,
+    activeRevision:
+      typeof data?.activeRevision === 'string' ? data.activeRevision : '',
+    updatedAt: typeof data?.updatedAt === 'string' ? data.updatedAt : '',
+  };
+}
+
+export function sameStoredTripVersion(left, right) {
+  if (left === null || right === null) return left === right;
+  return (
+    left.storageVersion === right.storageVersion
+    && left.activeRevision === right.activeRevision
+    && left.updatedAt === right.updatedAt
+  );
+}
+
+function saveConflictError() {
+  const error = new Error(
+    'El viaje cambió en otra pestaña o dispositivo. Vuelve a abrirlo antes de guardar.'
+  );
+  error.code = SAVE_CONFLICT_CODE;
+  return error;
+}
+
+function isSaveConflict(error) {
+  return error?.code === SAVE_CONFLICT_CODE;
+}
+
 export function createFirestoreTripRepository({ db, uid }) {
   if (!db) throw new Error('Se requiere una instancia de Firestore.');
   const ownerId = requireUid(uid);
   const tripsCollection = collection(db, 'users', ownerId, 'trips');
+  let saveQueue = Promise.resolve();
+
+  async function saveOnce(rawTrip) {
+    const revisionId = createRevisionId();
+    const now = new Date().toISOString();
+    const payload = createTripRevisionPayload(rawTrip, revisionId, now);
+    const tripRef = doc(tripsCollection, payload.trip.id);
+    const revisionRef = revisionRefFor(tripRef, revisionId);
+    const baseVersion = storedVersion(await getDoc(tripRef));
+
+    await writeRevisionPayload(db, revisionRef, payload);
+
+    try {
+      await runTransaction(db, async (transaction) => {
+        const currentVersion = storedVersion(await transaction.get(tripRef));
+        if (!sameStoredTripVersion(currentVersion, baseVersion)) {
+          throw saveConflictError();
+        }
+        transaction.set(tripRef, payload.summary);
+      });
+    } catch (error) {
+      if (isSaveConflict(error)) {
+        try {
+          await deleteRevision(db, revisionRef);
+        } catch {
+          // La revisión nunca fue publicada y puede limpiarse posteriormente.
+        }
+      }
+      throw error;
+    }
+
+    await cleanupOldRevisions(db, tripRef, revisionId);
+    return payload.trip;
+  }
 
   return {
     async list() {
@@ -75,17 +144,13 @@ export function createFirestoreTripRepository({ db, uid }) {
       return hydrateVersionedTrip(stored, revisionCollections);
     },
 
-    async save(rawTrip) {
-      const revisionId = createRevisionId();
-      const now = new Date().toISOString();
-      const payload = createTripRevisionPayload(rawTrip, revisionId, now);
-      const tripRef = doc(tripsCollection, payload.trip.id);
-      const revisionRef = revisionRefFor(tripRef, revisionId);
-
-      await writeRevisionPayload(db, revisionRef, payload);
-      await setDoc(tripRef, payload.summary);
-      await cleanupOldRevisions(db, tripRef, revisionId);
-      return payload.trip;
+    save(rawTrip) {
+      const operation = saveQueue.then(
+        () => saveOnce(rawTrip),
+        () => saveOnce(rawTrip)
+      );
+      saveQueue = operation.catch(() => undefined);
+      return operation;
     },
 
     async remove(id) {
