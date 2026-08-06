@@ -84,6 +84,13 @@ test('errores, confirmaciones, placeholders y estados vacíos existen en ambos i
   }
 });
 
+test('la navegación principal usa etiquetas naturales en ambos idiomas', () => {
+  assert.equal(es.itinerary, 'Itinerario');
+  assert.equal(en.itinerary, 'Itinerary');
+  assert.equal(es.myRoutes, 'Mis Rutas');
+  assert.equal(en.myRoutes, 'My Routes');
+});
+
 test('las claves críticas de operación existen en todos los idiomas', () => {
   const required = [
     'appName',
