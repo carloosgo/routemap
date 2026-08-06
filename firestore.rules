@@ -23,19 +23,8 @@ service cloud.firestore {
         && data.keys().hasOnly([
           'id', 'name', 'displayName', 'country', 'countryCode', 'lat', 'lon'
         ])
-        && data.keys().hasAll([
-          'id', 'name', 'displayName', 'country', 'countryCode', 'lat', 'lon'
-        ])
-        && data.id is string
-        && data.id.size() <= 256
         && data.name is string
         && data.name.size() <= 120
-        && data.displayName is string
-        && data.displayName.size() <= 200
-        && data.country is string
-        && data.country.size() <= 100
-        && data.countryCode is string
-        && data.countryCode.matches('^([A-Z]{2})?$')
         && data.lat is number
         && data.lat >= -90
         && data.lat <= 90
