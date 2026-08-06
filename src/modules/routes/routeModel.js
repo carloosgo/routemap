@@ -10,7 +10,7 @@ export const SAVED_PLACE_ROUTE_MODES = Object.freeze([
 ]);
 
 const ROUTE_MODE_SET = new Set(SAVED_PLACE_ROUTE_MODES);
-const MAX_GEOMETRY_POINTS = 25000;
+const MAX_GEOMETRY_POINTS = 12000;
 const MAX_MULTI_LINES = 256;
 
 function normalizeId(value) {
@@ -41,12 +41,21 @@ function normalizePosition(value) {
   return [lon, lat];
 }
 
+function sampleLine(coordinates, maxPoints) {
+  if (coordinates.length <= maxPoints) return coordinates;
+  if (maxPoints < 2) return [];
+  return Array.from({ length: maxPoints }, (_, index) => {
+    const sourceIndex = Math.round(
+      (index * (coordinates.length - 1)) / (maxPoints - 1)
+    );
+    return coordinates[sourceIndex];
+  });
+}
+
 function normalizeLine(value, maxPoints = MAX_GEOMETRY_POINTS) {
   if (!Array.isArray(value) || maxPoints <= 0) return [];
-  return value
-    .slice(0, maxPoints)
-    .map(normalizePosition)
-    .filter(Boolean);
+  const coordinates = value.map(normalizePosition).filter(Boolean);
+  return sampleLine(coordinates, maxPoints);
 }
 
 export function normalizeRouteGeometry(value) {
