@@ -10,7 +10,7 @@ export const SAVED_PLACE_ROUTE_MODES = Object.freeze([
 ]);
 
 const ROUTE_MODE_SET = new Set(SAVED_PLACE_ROUTE_MODES);
-const MAX_LINE_POINTS = 30000;
+const MAX_GEOMETRY_POINTS = 25000;
 const MAX_MULTI_LINES = 256;
 
 function normalizeId(value) {
@@ -41,10 +41,10 @@ function normalizePosition(value) {
   return [lon, lat];
 }
 
-function normalizeLine(value) {
-  if (!Array.isArray(value)) return [];
+function normalizeLine(value, maxPoints = MAX_GEOMETRY_POINTS) {
+  if (!Array.isArray(value) || maxPoints <= 0) return [];
   return value
-    .slice(0, MAX_LINE_POINTS)
+    .slice(0, maxPoints)
     .map(normalizePosition)
     .filter(Boolean);
 }
@@ -56,10 +56,16 @@ export function normalizeRouteGeometry(value) {
     return coordinates.length >= 2 ? { type: 'LineString', coordinates } : null;
   }
   if (value.type === 'MultiLineString') {
-    const coordinates = (Array.isArray(value.coordinates) ? value.coordinates : [])
-      .slice(0, MAX_MULTI_LINES)
-      .map(normalizeLine)
-      .filter((line) => line.length >= 2);
+    const lines = Array.isArray(value.coordinates) ? value.coordinates : [];
+    const coordinates = [];
+    let remainingPoints = MAX_GEOMETRY_POINTS;
+    for (const rawLine of lines.slice(0, MAX_MULTI_LINES)) {
+      if (remainingPoints < 2) break;
+      const line = normalizeLine(rawLine, remainingPoints);
+      if (line.length < 2) continue;
+      coordinates.push(line);
+      remainingPoints -= line.length;
+    }
     return coordinates.length ? { type: 'MultiLineString', coordinates } : null;
   }
   return null;
