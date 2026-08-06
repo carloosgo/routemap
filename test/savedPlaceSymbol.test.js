@@ -36,15 +36,15 @@ test('saved place pin is a wide transparent SVG in the Atlas accent with an undi
 });
 
 test('saved place popup adds a lazy country flag only for ISO2 codes', async () => {
-  const routeMap = await read('src/modules/map/RouteMap.jsx');
+  const dom = await read('src/modules/map/placeMapDom.js');
   const css = await read('src/modules/map/SavedPlaceSymbol.css');
 
-  assert.match(routeMap, /function normalizedCountryCode/);
-  assert.match(routeMap, /\/\^\[a-z\]\{2\}\$\//);
-  assert.match(routeMap, /https:\/\/flagcdn\.com\/24x18\/\$\{code\}\.png/);
-  assert.match(routeMap, /loading="lazy"/);
-  assert.match(routeMap, /decoding="async"/);
-  assert.match(routeMap, /flagImage\?\.addEventListener\('error'/);
+  assert.match(dom, /function normalizedCountryCode/);
+  assert.match(dom, /\/\^\[a-z\]\{2\}\$\//);
+  assert.match(dom, /https:\/\/flagcdn\.com\/24x18\/\$\{code\}\.png/);
+  assert.match(dom, /loading="lazy"/);
+  assert.match(dom, /decoding="async"/);
+  assert.match(dom, /flagImage\?\.addEventListener\('error'/);
   assert.match(css, /\.place-popup__flag/);
   assert.match(css, /width:24px/);
   assert.match(css, /height:18px/);
