@@ -10,6 +10,10 @@ import {
   reorderPlaces,
   reorderSegments,
 } from './tripModel.js';
+import {
+  createSavedPlaceRoute,
+  savedPlaceRoutePairKey,
+} from '../routes/routeModel.js';
 import { sanitizeText, uid } from '../../shared/utils.js';
 
 export const TRIP_ACTIONS = Object.freeze({
@@ -31,6 +35,10 @@ export const TRIP_ACTIONS = Object.freeze({
   addPlace: 'ADD_PLACE',
   removePlace: 'REMOVE_PLACE',
   reorderPlace: 'REORDER_PLACE',
+  upsertRouteConnection: 'UPSERT_ROUTE_CONNECTION',
+  removeRouteConnection: 'REMOVE_ROUTE_CONNECTION',
+  setRouteConnectionVisibility: 'SET_ROUTE_CONNECTION_VISIBILITY',
+  setAllRouteConnectionsVisibility: 'SET_ALL_ROUTE_CONNECTIONS_VISIBILITY',
 });
 
 function nowISO() {
@@ -162,6 +170,11 @@ export function tripReducer(state, action) {
         places: (state.places || []).filter(
           (place) => place.id !== action.placeId
         ),
+        routeConnections: (state.routeConnections || []).filter(
+          (route) =>
+            route.fromPlaceId !== action.placeId
+            && route.toPlaceId !== action.placeId
+        ),
       });
 
     case TRIP_ACTIONS.reorderPlace:
@@ -171,6 +184,65 @@ export function tripReducer(state, action) {
         action.targetId,
         action.placement
       );
+
+    case TRIP_ACTIONS.upsertRouteConnection: {
+      const route = createSavedPlaceRoute(action.connection);
+      const placeIds = new Set((state.places || []).map((place) => place.id));
+      if (
+        !route.fromPlaceId
+        || !route.toPlaceId
+        || route.fromPlaceId === route.toPlaceId
+        || !placeIds.has(route.fromPlaceId)
+        || !placeIds.has(route.toPlaceId)
+        || !route.geometry
+      ) {
+        return state;
+      }
+
+      const routes = state.routeConnections || [];
+      const pairKey = savedPlaceRoutePairKey(route);
+      const existingIndex = routes.findIndex(
+        (current) => savedPlaceRoutePairKey(current) === pairKey
+      );
+      if (existingIndex < 0 && routes.length >= TRIP_LIMITS.routeConnections) {
+        return state;
+      }
+
+      const nextRoutes = [...routes];
+      if (existingIndex >= 0) {
+        nextRoutes[existingIndex] = {
+          ...route,
+          id: routes[existingIndex].id,
+        };
+      } else {
+        nextRoutes.push(route);
+      }
+      return touch(state, { routeConnections: nextRoutes });
+    }
+
+    case TRIP_ACTIONS.removeRouteConnection:
+      return touch(state, {
+        routeConnections: (state.routeConnections || []).filter(
+          (route) => route.id !== action.routeId
+        ),
+      });
+
+    case TRIP_ACTIONS.setRouteConnectionVisibility:
+      return touch(state, {
+        routeConnections: (state.routeConnections || []).map((route) =>
+          route.id === action.routeId
+            ? { ...route, visible: Boolean(action.visible) }
+            : route
+        ),
+      });
+
+    case TRIP_ACTIONS.setAllRouteConnectionsVisibility:
+      return touch(state, {
+        routeConnections: (state.routeConnections || []).map((route) => ({
+          ...route,
+          visible: Boolean(action.visible),
+        })),
+      });
 
     default:
       return state;
