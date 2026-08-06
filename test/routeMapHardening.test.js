@@ -85,21 +85,16 @@ test('el modelo pinta solo ciudades definidas por los tramos', async () => {
   assert.match(setup, /'circle-color': \['get', 'color'\]/);
 });
 
-test('los resultados se muestran como pestañas DOM con imagen o icono alusivo', async () => {
-  const { dom, markers } = await mapSources();
+test('los resultados del mapa se mantienen textuales y no cargan imágenes o iconos de categoría', async () => {
+  const { dom, markers, route } = await mapSources();
   assert.match(dom, /export function markerElement/);
   assert.match(dom, /place-result-marker/);
+  assert.match(dom, /button\.append\(copy\)/);
   assert.match(markers, /new maplibregl\.Marker/);
   assert.match(markers, /anchor: 'bottom'/);
-  assert.match(markers, /fetchGeoapifyPlaceImage/);
-  assert.match(dom, /addEventListener\('load'/);
-  assert.match(dom, /classList\.add\('is-loaded'\)/);
-  assert.match(dom, /removeAttribute\('src'\)/);
-  assert.match(dom, /export function representativePlaceIcon/);
-  assert.match(dom, /🏛️/);
-  assert.match(dom, /🍽️/);
-  assert.match(dom, /📍/);
-  assert.doesNotMatch(dom, /charAt\(0\)\.toUpperCase/);
+  assert.doesNotMatch(dom, /representativePlaceIcon|place-result-marker__media|place-result-marker__fallback/);
+  assert.doesNotMatch(markers, /fetchGeoapifyPlaceImage|AbortController|image\.src/);
+  assert.doesNotMatch(route, /representativePlaceIcon/);
 });
 
 test('la confirmación se abre solo al pulsar un resultado y guarda datos normalizados', async () => {
