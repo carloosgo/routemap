@@ -176,7 +176,9 @@ test('los marcadores reducen su escala al alejar el mapa y liberan recursos', as
   assert.match(dom, /Math\.max\(0\.52, Math\.min\(1,/);
   assert.match(markers, /map\.on\('zoom', syncResultMarkerScale\)/);
   assert.match(markers, /--place-marker-scale/);
-  assert.match(markers, /controller\.abort\(\)/);
+  assert.match(markers, /map\.off\('zoom', syncResultMarkerScale\)/);
+  assert.match(markers, /activePromptRef\.current\?\.remove\(\)/);
+  assert.match(markers, /clearTimeout\(saveNoticeTimerRef\.current\)/);
   assert.match(markers, /marker\.remove\(\)/);
   assert.match(css, /transform:scale\(var\(--place-marker-scale\)\)/);
 });
