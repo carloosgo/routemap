@@ -3,6 +3,7 @@ import {
   createExpenses,
   normalizeExpenses,
 } from '../expenses/expenseModel.js';
+import { groupPlacesByCountry } from './placeOrdering.js';
 
 export const TRIP_LIMITS = Object.freeze({
   segments: 500,
@@ -16,6 +17,8 @@ export const TRIP_LIMITS = Object.freeze({
   noteText: 2000,
   checklistText: 120,
 });
+
+export const PLACE_ORDER_VERSION = 1;
 
 const LEGACY_SYSTEM_NOTE_TITLES = new Set([
   'Notas generales',
@@ -178,6 +181,7 @@ export function createTrip(name = '') {
     currency: 'USD',
     segments: [],
     places: [],
+    placeOrderVersion: PLACE_ORDER_VERSION,
     notes: [createNote()],
     checklist: [],
     createdAt: now,
@@ -200,6 +204,10 @@ export function normalizeTrip(raw) {
     ? raw.places.slice(0, TRIP_LIMITS.places)
     : [];
   const rawPlaces = [...currentPlaces, ...legacyPlaces];
+  const normalizedPlaces = uniquePlaces(rawPlaces);
+  const places = Number(raw.placeOrderVersion) === PLACE_ORDER_VERSION
+    ? normalizedPlaces
+    : groupPlacesByCountry(normalizedPlaces);
   const rawNotes = Array.isArray(raw.notes)
     ? raw.notes.slice(0, TRIP_LIMITS.notes)
     : null;
@@ -212,7 +220,8 @@ export function normalizeTrip(raw) {
     name: sanitizeText(raw.name || '', TRIP_LIMITS.tripName),
     currency: normalizeCurrency(raw.currency),
     segments: rawSegments.map(createSegment),
-    places: uniquePlaces(rawPlaces),
+    places,
+    placeOrderVersion: PLACE_ORDER_VERSION,
     notes: rawNotes?.length
       ? rawNotes.map((note) => ({
           id: normalizeId(note?.id),
