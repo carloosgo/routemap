@@ -29,8 +29,6 @@ import { usePlaceResultMarkers } from './usePlaceResultMarkers.js';
 import { usePlaceSearch } from './usePlaceSearch.js';
 import './RouteMap.css';
 
-export { representativePlaceIcon } from './placeMapDom.js';
-
 export function RouteMap({ segments, places = [], addPlace, viewMode = 'segments' }) {
   const { t } = useTranslation();
   const mapNode = useRef(null);
