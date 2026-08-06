@@ -3,7 +3,6 @@ import {
   createExpenses,
   normalizeExpenses,
 } from '../expenses/expenseModel.js';
-import { normalizeSegmentRoute } from './segmentRouteModel.js';
 
 export const TRIP_LIMITS = Object.freeze({
   segments: 500,
@@ -34,10 +33,6 @@ function normalizeId(value) {
   return typeof value === 'string' && value.trim()
     ? value.trim().slice(0, 128)
     : uid();
-}
-
-function normalizeExternalId(value) {
-  return typeof value === 'string' ? value.trim().slice(0, 256) : '';
 }
 
 function normalizeCountryCode(value) {
@@ -75,7 +70,6 @@ export function isPlaced(point) {
 export function createCity(partial) {
   if (!partial) return null;
   return {
-    id: normalizeExternalId(partial.id || partial.placeId),
     name: sanitizeText(partial.name || '', 120),
     displayName: sanitizeText(
       partial.displayName || partial.name || '',
@@ -105,7 +99,7 @@ export function createPlace(partial = {}) {
 }
 
 export function createSegment(overrides = {}) {
-  const segment = {
+  return {
     id: normalizeId(overrides.id),
     origin: overrides.origin ? createCity(overrides.origin) : null,
     destination: overrides.destination
@@ -118,10 +112,7 @@ export function createSegment(overrides = {}) {
       : createExpenses(),
     note: sanitizeText(overrides.note || '', TRIP_LIMITS.segmentNote),
     places: [],
-    route: null,
   };
-  segment.route = normalizeSegmentRoute(overrides.route, segment);
-  return segment;
 }
 
 export function createNote(text = '', title = 'Notas generales') {
