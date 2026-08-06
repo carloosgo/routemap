@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createSegment, createTrip } from '../src/modules/trips/tripModel.js';
+import {
+  PLACE_ORDER_VERSION,
+  createSegment,
+  createTrip,
+} from '../src/modules/trips/tripModel.js';
 import {
   TRIP_STORAGE_VERSION,
   createTripRevisionPayload,
@@ -48,6 +52,7 @@ test('el documento principal contiene solo metadatos y conteos', () => {
   );
 
   assert.equal(payload.summary.storageVersion, TRIP_STORAGE_VERSION);
+  assert.equal(payload.summary.placeOrderVersion, PLACE_ORDER_VERSION);
   assert.equal(payload.summary.activeRevision, 'revision0001');
   assert.equal(payload.summary.segmentCount, 1);
   assert.equal(payload.summary.placeCount, 1);
@@ -80,6 +85,7 @@ test('hidratar una revisión restaura el viaje completo y su orden', () => {
   const hydrated = hydrateVersionedTrip(payload.summary, shuffled);
 
   assert.equal(hydrated.id, 'trip-europe');
+  assert.equal(hydrated.placeOrderVersion, PLACE_ORDER_VERSION);
   assert.equal(hydrated.segments[0].id, 'segment-1');
   assert.equal(Object.hasOwn(hydrated.segments[0], 'route'), false);
   assert.equal(hydrated.places[0].id, 'place-1');
@@ -92,6 +98,7 @@ test('la lista usa resúmenes ligeros sin hidratar el contenido', () => {
   const entry = createVersionedTripListEntry(payload.summary.id, payload.summary);
 
   assert.equal(isVersionedTripSummary(entry), true);
+  assert.equal(entry.placeOrderVersion, PLACE_ORDER_VERSION);
   assert.equal(entry.segmentCount, 1);
   assert.equal(entry.placeCount, 1);
   assert.equal(Object.hasOwn(entry, 'segments'), false);
