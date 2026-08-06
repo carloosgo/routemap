@@ -36,6 +36,10 @@ export function AppEditorModule({
     updateExpenses,
     removePlace,
     reorderPlace,
+    upsertRouteConnection,
+    removeRouteConnection,
+    setRouteConnectionVisibility,
+    setAllRouteConnectionsVisibility,
   } = tripStore;
   const {
     total,
@@ -60,9 +64,15 @@ export function AppEditorModule({
   const editorPane = activeTab === 'places' ? (
     <TripPlacesPanel
       places={places}
+      routes={trip.routeConnections || []}
       removePlace={removePlace}
       reorderPlace={reorderPlace}
+      upsertRoute={upsertRouteConnection}
+      removeRoute={removeRouteConnection}
+      setRouteVisibility={setRouteConnectionVisibility}
+      setAllRouteVisibility={setAllRouteConnectionsVisibility}
       t={t}
+      intlLocale={intlLocale}
     />
   ) : (
     <AppEditorPane
