@@ -1,10 +1,18 @@
-import savedPlacePinUrl from '../../assets/map/saved-place-pin.svg';
+import savedPlacePinTemplate from '../../assets/map/saved-place-pin.svg?raw';
+import {
+  DEFAULT_SAVED_PLACE_ICON_ID,
+  savedPlaceMarkerStyles,
+} from './savedPlaceMarkerPalette.js';
 import './SavedPlaceSymbol.css';
 
 const PLACE_SOURCE_ID = 'atlas-saved-places';
 const PLACE_HIT_LAYER_ID = 'atlas-saved-places-layer';
 const PLACE_SYMBOL_LAYER_ID = 'atlas-saved-places-symbol';
-const PLACE_ICON_ID = 'atlas-saved-place-pin';
+
+function savedPlacePinUrl(color) {
+  const svg = savedPlacePinTemplate.replace('#19a5d0', color);
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
 
 function loadImageElement(url) {
   return new Promise((resolve, reject) => {
@@ -28,7 +36,7 @@ function savedPlaceSymbolLayer() {
     type: 'symbol',
     source: PLACE_SOURCE_ID,
     layout: {
-      'icon-image': PLACE_ICON_ID,
+      'icon-image': ['coalesce', ['get', 'iconId'], DEFAULT_SAVED_PLACE_ICON_ID],
       'icon-size': [
         'interpolate',
         ['linear'],
@@ -46,9 +54,6 @@ function savedPlaceSymbolLayer() {
       'icon-rotation-alignment': 'viewport',
       'icon-pitch-alignment': 'viewport',
     },
-    paint: {
-      'icon-color': ['coalesce', ['get', 'color'], '#19a5d0'],
-    },
   };
 }
 
@@ -62,12 +67,19 @@ function keepHitAreaInvisible(map) {
 export function installSavedPlaceSymbolLayer(map) {
   if (!map || map.getLayer(PLACE_SYMBOL_LAYER_ID)) return;
 
-  loadImageElement(savedPlacePinUrl)
-    .then((image) => {
+  Promise.all(
+    savedPlaceMarkerStyles().map(async ({ color, iconId }) => ({
+      iconId,
+      image: await loadImageElement(savedPlacePinUrl(color)),
+    }))
+  )
+    .then((icons) => {
       if (!map.getSource(PLACE_SOURCE_ID)) return;
-      if (!map.hasImage(PLACE_ICON_ID)) {
-        map.addImage(PLACE_ICON_ID, image, { pixelRatio: 2, sdf: true });
-      }
+      icons.forEach(({ iconId, image }) => {
+        if (!map.hasImage(iconId)) {
+          map.addImage(iconId, image, { pixelRatio: 2 });
+        }
+      });
       if (!map.getLayer(PLACE_SYMBOL_LAYER_ID)) {
         map.addLayer(savedPlaceSymbolLayer());
       }
