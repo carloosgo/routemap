@@ -28,6 +28,15 @@ function segmentForStorage(segment) {
   return stored;
 }
 
+function routeConnectionForStorage(route) {
+  const stored = {
+    ...route,
+    geometryJson: JSON.stringify(route.geometry),
+  };
+  delete stored.geometry;
+  return stored;
+}
+
 function withoutPosition(item) {
   if (!item || typeof item !== 'object') return item;
   const stored = { ...item };
@@ -35,10 +44,31 @@ function withoutPosition(item) {
   return stored;
 }
 
+function routeConnectionFromStorage(item) {
+  const stored = withoutPosition(item);
+  if (!stored || typeof stored !== 'object') return stored;
+  let geometry = stored.geometry || null;
+  if (!geometry && typeof stored.geometryJson === 'string') {
+    try {
+      geometry = JSON.parse(stored.geometryJson);
+    } catch {
+      geometry = null;
+    }
+  }
+  delete stored.geometryJson;
+  return { ...stored, geometry };
+}
+
 function ordered(items) {
   return [...(Array.isArray(items) ? items : [])]
     .sort((left, right) => (Number(left?.position) || 0) - (Number(right?.position) || 0))
     .map(withoutPosition);
+}
+
+function orderedRouteConnections(items) {
+  return [...(Array.isArray(items) ? items : [])]
+    .sort((left, right) => (Number(left?.position) || 0) - (Number(right?.position) || 0))
+    .map(routeConnectionFromStorage);
 }
 
 export function isVersionedTripSummary(data) {
@@ -85,7 +115,7 @@ export function createTripRevisionPayload(rawTrip, revisionId, updatedAt = new D
     collections: {
       segments: positioned(trip.segments, segmentForStorage),
       places: positioned(trip.places),
-      routeConnections: positioned(trip.routeConnections),
+      routeConnections: positioned(trip.routeConnections, routeConnectionForStorage),
       notes: positioned(trip.notes),
       checklist: positioned(trip.checklist),
     },
@@ -126,7 +156,7 @@ export function hydrateVersionedTrip(summary, collections) {
     updatedAt: summary.updatedAt,
     segments: ordered(collections?.segments),
     places: ordered(collections?.places),
-    routeConnections: ordered(collections?.routeConnections),
+    routeConnections: orderedRouteConnections(collections?.routeConnections),
     notes: ordered(collections?.notes),
     checklist: ordered(collections?.checklist),
   });
