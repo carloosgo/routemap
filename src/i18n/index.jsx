@@ -10,10 +10,12 @@ import { config } from '../config.js';
 import es from './es.js';
 import en from './en.js';
 
-// Módulo de internacionalización (independiente).
-// Para agregar un idioma: crea xx.js y regístralo aquí. Nada más cambia.
 const dictionaries = { es, en };
 const LOCALE_STORAGE_KEY = 'atlas:locale';
+const localeMetadata = Object.freeze({
+  es: { intlLocale: 'es-MX', label: 'ES' },
+  en: { intlLocale: 'en-US', label: 'EN' },
+});
 
 const I18nContext = createContext(null);
 
@@ -30,6 +32,13 @@ function getInitialLocale() {
   }
 
   return isSupportedLocale(config.defaultLocale) ? config.defaultLocale : 'es';
+}
+
+function interpolate(template, variables) {
+  if (!variables || typeof variables !== 'object') return template;
+  return template.replace(/\{([a-zA-Z0-9_]+)\}/g, (match, key) =>
+    Object.hasOwn(variables, key) ? String(variables[key]) : match
+  );
 }
 
 export function I18nProvider({ children }) {
@@ -52,9 +61,10 @@ export function I18nProvider({ children }) {
   }, [locale]);
 
   const t = useCallback(
-    (key) => {
-      const dict = dictionaries[locale] || dictionaries.es;
-      return dict[key] ?? key;
+    (key, variables) => {
+      const dictionary = dictionaries[locale] || dictionaries.es;
+      const template = dictionary[key] ?? dictionaries.es[key] ?? key;
+      return interpolate(template, variables);
     },
     [locale]
   );
@@ -62,9 +72,11 @@ export function I18nProvider({ children }) {
   const value = useMemo(
     () => ({
       locale,
+      intlLocale: localeMetadata[locale]?.intlLocale || localeMetadata.es.intlLocale,
       setLocale,
       t,
       availableLocales: Object.keys(dictionaries),
+      localeMetadata,
     }),
     [locale, setLocale, t]
   );
