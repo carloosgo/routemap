@@ -25,7 +25,8 @@ export const geoapifyRoute = onCall(
       throw new HttpsError('invalid-argument', 'Origen o destino inválido.');
     }
 
-    const signature = `${Number(origin.lat).toFixed(6)},${Number(origin.lon).toFixed(6)}|${Number(destination.lat).toFixed(6)},${Number(destination.lon).toFixed(6)}|${mode}`;
+    const traffic = mode === 'drive' || mode === 'bus' ? 'approximated' : '';
+    const signature = `route:v2:${Number(origin.lat).toFixed(6)},${Number(origin.lon).toFixed(6)}|${Number(destination.lat).toFixed(6)},${Number(destination.lon).toFixed(6)}|${mode}|${traffic}`;
     const cachedResult = await cached('routeCache', signature, async () => {
       const params = new URLSearchParams({
         waypoints: `${origin.lat},${origin.lon}|${destination.lat},${destination.lon}`,
@@ -33,6 +34,8 @@ export const geoapifyRoute = onCall(
         format: 'geojson',
         apiKey: requireGeoapifyKey(GEOAPIFY_API_KEY),
       });
+      if (traffic) params.set('traffic', traffic);
+
       const payload = await limitedFetch(`https://api.geoapify.com/v1/routing?${params}`);
       const feature = payload.features?.[0];
       if (!feature) throw new Error('Geoapify no devolvió una ruta.');
