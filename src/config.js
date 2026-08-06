@@ -26,10 +26,10 @@ export const config = {
     appCheckSiteKey: cleanString(env.VITE_FIREBASE_APPCHECK_SITE_KEY),
     useEmulators: envBoolean(env.VITE_FIREBASE_USE_EMULATORS),
   },
-  geocoder: allowedValue(env.VITE_GEOCODER, ['nominatim'], 'nominatim'),
-  citySearchMinChars: 5,
+  citySearchMinChars: 3,
   citySearchDebounceMs: 450,
   citySearchLimit: 5,
+  citySearchCacheTtlMs: 60 * 24 * 60 * 60 * 1000,
   geoapify: {
     mapApiKey: cleanString(env.VITE_GEOAPIFY_MAPS_API_KEY),
     mapStyle: allowedValue(env.VITE_GEOAPIFY_MAP_STYLE, ['osm-bright', 'klokantech-basic', 'positron'], 'positron'),
