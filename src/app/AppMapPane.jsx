@@ -1,14 +1,16 @@
 import { IconArrowRight, IconCheck, IconX } from '@tabler/icons-react';
 import { RouteMap } from '../modules/map/RouteMap.jsx';
-import { usePersistentSegmentRoutes } from '../modules/routes/usePersistentSegmentRoutes.js';
 import { colorForIndex } from '../config.js';
 
-export function AppMapPane({ trip, openNoteSegmentId, setOpenNoteSegmentId, updateSegment, addPlace, toast, t }) {
-  usePersistentSegmentRoutes(trip.segments, updateSegment);
-
+export function AppMapPane({ trip, mapView = 'segments', openNoteSegmentId, setOpenNoteSegmentId, updateSegment, addPlace, toast, t }) {
   return (
     <section className="mappane" aria-label={t('mapRegion')}>
-      <RouteMap segments={trip.segments} places={trip.places || []} addPlace={addPlace} />
+      <RouteMap
+        segments={trip.segments}
+        places={trip.places || []}
+        addPlace={addPlace}
+        viewMode={mapView}
+      />
       {openNoteSegmentId && (
         <div aria-hidden="true" style={{ position:'absolute',inset:0,zIndex:10,background:'transparent' }}
           onPointerDown={(event)=>{event.preventDefault();event.stopPropagation();}}
