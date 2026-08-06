@@ -95,7 +95,7 @@ export function usePlaceResultMarkers({
             onSave: (selected) => {
               const savedPlace = {
                 id: selected.id,
-                name: selected.name || t('place'),
+                name: selected.name || '',
                 address: selected.address || selected.formatted || '',
                 city: selected.city || '',
                 country: selected.country || '',
