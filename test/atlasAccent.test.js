@@ -30,7 +30,7 @@ test('the selected Atlas controls retain the exact #19a5d0 accent token', async 
   assert.match(polish, /border-color:\s*var\(--atlas-accent\)/);
 });
 
-test('segments, places, notes and currency use the same real button structure and styles', async () => {
+test('itinerary, routes, notes and language use the same real button structure and styles', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
   const navigation = `${editor}\n${menu}`;
@@ -39,6 +39,10 @@ test('segments, places, notes and currency use the same real button structure an
   assert.equal((navigation.match(/editor-module__nav-tab/g) || []).length, 4);
   assert.equal((navigation.match(/editor-module__tab-icon/g) || []).length, 4);
   assert.equal((navigation.match(/editor-module__tab-label/g) || []).length, 4);
+  assert.match(editor, /t\('itinerary'\)/);
+  assert.match(editor, /t\('myRoutes'\)/);
+  assert.match(menu, /openMenu === 'language'/);
+  assert.doesNotMatch(menu, /openMenu === 'currency'|currencyCoinIcon|setCurrency/);
 
   assert.match(polish, /\.editor-module__tabs \.editor-module__nav-tab,/);
   assert.match(polish, /height:\s*36px;/);
@@ -72,20 +76,20 @@ test('places renders the transparent signpost icon through the existing tab asse
   assert.doesNotMatch(icon, /<image\b/);
 });
 
-test('the desktop navigation remains ordered as segments, places, notes and currency', async () => {
+test('the desktop navigation remains ordered as itinerary, routes, notes and language', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
   const navigation = `${editor}\n${menu}`;
 
-  const segmentIndex = navigation.indexOf("setActiveTab('segments')");
-  const placesIndex = navigation.indexOf("setActiveTab('places')");
+  const itineraryIndex = navigation.indexOf("setActiveTab('segments')");
+  const routesIndex = navigation.indexOf("setActiveTab('places')");
   const notesIndex = navigation.indexOf("setActiveTab('notes')");
-  const currencyIndex = navigation.indexOf("openMenu === 'currency'");
+  const languageIndex = navigation.indexOf("openMenu === 'language'");
 
-  assert.ok(segmentIndex >= 0);
-  assert.ok(segmentIndex < placesIndex);
-  assert.ok(placesIndex < notesIndex);
-  assert.ok(notesIndex < currencyIndex);
+  assert.ok(itineraryIndex >= 0);
+  assert.ok(itineraryIndex < routesIndex);
+  assert.ok(routesIndex < notesIndex);
+  assert.ok(notesIndex < languageIndex);
 });
 
 test('place save popup hides its close icon and dismisses through outside clicks', async () => {
