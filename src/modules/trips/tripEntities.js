@@ -17,6 +17,13 @@ export const TRIP_LIMITS = Object.freeze({
   checklistText: 120,
 });
 
+const LEGACY_SYSTEM_NOTE_TITLES = new Set([
+  'Notas generales',
+  'General notes',
+  'Nueva nota',
+  'New note',
+]);
+
 function nowISO() {
   return new Date().toISOString();
 }
@@ -61,6 +68,11 @@ function normalizeDate(value) {
     : date;
 }
 
+function normalizeNoteTitle(value) {
+  const title = sanitizeText(value || '', TRIP_LIMITS.noteTitle);
+  return LEGACY_SYSTEM_NOTE_TITLES.has(title) ? '' : title;
+}
+
 export function isPlaced(point) {
   return Boolean(
     point &&
@@ -90,7 +102,7 @@ export function createCity(partial) {
 export function createPlace(partial = {}) {
   return {
     id: normalizeId(partial.id),
-    name: sanitizeText(partial.name || 'Lugar', 160),
+    name: sanitizeText(partial.name || '', 160),
     address: sanitizeText(partial.address || '', 260),
     city: sanitizeText(partial.city || '', 120),
     country: sanitizeText(partial.country || '', 100),
@@ -119,10 +131,10 @@ export function createSegment(overrides = {}) {
   };
 }
 
-export function createNote(text = '', title = 'Notas generales') {
+export function createNote(text = '', title = '') {
   return {
     id: uid(),
-    title: sanitizeText(title, TRIP_LIMITS.noteTitle),
+    title: normalizeNoteTitle(title),
     text: sanitizeText(text, TRIP_LIMITS.noteText),
   };
 }
@@ -178,10 +190,7 @@ export function normalizeTrip(raw) {
     notes: rawNotes?.length
       ? rawNotes.map((note) => ({
           id: normalizeId(note?.id),
-          title: sanitizeText(
-            note?.title || 'Notas generales',
-            TRIP_LIMITS.noteTitle
-          ),
+          title: normalizeNoteTitle(note?.title),
           text: sanitizeText(note?.text || '', TRIP_LIMITS.noteText),
         }))
       : typeof raw.notes === 'string'
