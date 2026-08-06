@@ -111,3 +111,26 @@ test('el repositorio Firestore orquesta viajes sin absorber lotes y subcoleccion
     /const revisionRefs = await listRevisionRefs\(tripRef\);[\s\S]*await deleteDoc\(tripRef\);[\s\S]*await deleteRevision\(db, revisionRef\);/
   );
 });
+
+test('geoapifyClient coordina búsquedas sin absorber Firebase, caché ni contexto', async () => {
+  const client = await read('src/modules/places/geoapifyClient.js');
+  const callable = await read('src/modules/places/geoapifyCallable.js');
+  const cache = await read('src/modules/places/geoapifyClientCache.js');
+  const query = await read('src/modules/places/geoapifyQuery.js');
+
+  assert.ok(
+    lineCount(client) <= 90,
+    `geoapifyClient.js volvió a crecer a ${lineCount(client)} líneas`
+  );
+  assert.match(client, /from '\.\/geoapifyCallable\.js'/);
+  assert.match(client, /from '\.\/geoapifyClientCache\.js'/);
+  assert.match(client, /from '\.\/geoapifyQuery\.js'/);
+  assert.doesNotMatch(client, /connectFunctionsEmulator|localStorage|function contextualQuery/);
+
+  assert.match(callable, /connectFunctionsEmulator/);
+  assert.match(callable, /httpsCallable/);
+  assert.match(cache, /export function createPersistentCache/);
+  assert.match(cache, /localStorage/);
+  assert.match(query, /export function contextualQuery/);
+  assert.match(query, /export function callableSearchContext/);
+});
