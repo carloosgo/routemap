@@ -63,7 +63,7 @@ export function tripReducer(state, action) {
       return touch(state, {
         notes: [
           ...(state.notes || []),
-          { id: uid(), title: 'Nueva nota', text: '' },
+          { id: uid(), title: '', text: '' },
         ],
       });
 
