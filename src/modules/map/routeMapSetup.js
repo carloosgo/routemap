@@ -9,6 +9,8 @@ export const ROUTE_SOURCE_ID = 'atlas-routes';
 export const ROUTE_CASING_LAYER_ID = 'atlas-routes-casing';
 export const ROUTE_SOLID_LAYER_ID = 'atlas-routes-solid';
 export const ROUTE_DASHED_LAYER_ID = 'atlas-routes-dashed';
+export const PLACE_ROUTE_SOURCE_ID = 'atlas-saved-place-routes';
+export const PLACE_ROUTE_LAYER_ID = 'atlas-saved-place-routes-layer';
 export const CITY_SOURCE_ID = 'atlas-cities';
 export const CITY_LAYER_ID = 'atlas-cities-layer';
 export const PLACE_SOURCE_ID = 'atlas-saved-places';
@@ -128,6 +130,21 @@ export function addBaseSourcesAndLayers(map) {
       'line-width': 2,
       'line-opacity': 0.95,
       'line-dasharray': [5, 4],
+    },
+  });
+  map.addSource(PLACE_ROUTE_SOURCE_ID, {
+    type: 'geojson',
+    data: emptyFeatureCollection(),
+  });
+  map.addLayer({
+    id: PLACE_ROUTE_LAYER_ID,
+    type: 'line',
+    source: PLACE_ROUTE_SOURCE_ID,
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': '#111111',
+      'line-width': 2,
+      'line-opacity': 0.92,
     },
   });
   map.addSource(CITY_SOURCE_ID, { type: 'geojson', data: emptyFeatureCollection() });
