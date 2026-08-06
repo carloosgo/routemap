@@ -53,3 +53,27 @@ test('RouteMap coordina módulos sin volver a absorber modelo, búsqueda o marca
   assert.match(markers, /new maplibregl\.Marker/);
   assert.match(form, /className="geo-search"/);
 });
+
+test('tripModel conserva una fachada estable sin absorber entidades ni operaciones', async () => {
+  const facade = await read('src/modules/trips/tripModel.js');
+  const entities = await read('src/modules/trips/tripEntities.js');
+  const operations = await read('src/modules/trips/tripOperations.js');
+  const reducer = await read('src/modules/trips/tripReducer.js');
+  const hook = await read('src/modules/trips/useTrip.js');
+
+  assert.ok(
+    lineCount(facade) <= 40,
+    `tripModel.js volvió a crecer a ${lineCount(facade)} líneas`
+  );
+  assert.match(facade, /from '\.\/tripEntities\.js'/);
+  assert.match(facade, /from '\.\/tripOperations\.js'/);
+  assert.doesNotMatch(facade, /sanitizeText|expensesTotal|function nowISO/);
+
+  assert.match(entities, /export function normalizeTrip/);
+  assert.match(entities, /export function createSegment/);
+  assert.match(operations, /export function appendSegment/);
+  assert.match(operations, /export function reorderSegments/);
+  assert.doesNotMatch(`${entities}\n${operations}\n${reducer}`, /from 'react'/);
+  assert.match(hook, /tripReducer/);
+  assert.doesNotMatch(hook, /switch\s*\(action\.type\)/);
+});
