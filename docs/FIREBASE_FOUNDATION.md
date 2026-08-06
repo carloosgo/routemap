@@ -40,6 +40,8 @@
 
 El documento principal del viaje contiene un resumen ligero y apunta a una revisión completa. Tramos, lugares, notas y checklist se guardan en subcolecciones de esa revisión.
 
+Cada tramo puede contener una ruta normalizada con firma, modo, geometría, distancia, duración y fecha de cálculo. La geometría GeoJSON se serializa como JSON antes de escribirla en Firestore porque `LineString` y `MultiLineString` contienen arreglos anidados. Al abrir el viaje se deserializa y se valida antes de incorporarla al estado.
+
 El orden de escritura es:
 
 1. Crear una revisión abierta.
@@ -50,7 +52,7 @@ El orden de escritura es:
 
 Antes de publicar, la transacción comprueba que la versión leída al comenzar el guardado sigue siendo la activa. Un cambio desde otra pestaña o dispositivo produce un conflicto explícito en lugar de sobrescribirlo silenciosamente. Los guardados iniciados desde una misma instancia también se serializan para evitar carreras por doble clic o atajos repetidos.
 
-Los viajes del esquema anterior siguen siendo legibles y se migran al esquema versionado en su siguiente guardado.
+Los viajes del esquema anterior siguen siendo legibles y se migran al esquema versionado en su siguiente guardado. Los tramos anteriores que no contienen `route` se normalizan con ruta nula y se completan cuando el mapa calcula una firma válida.
 
 ## Cambio entre almacenamiento local y nube
 
@@ -124,6 +126,7 @@ Las Functions usan Node 22 y los emuladores de Firestore requieren Java 21.
 - Protección contra respuestas obsoletas al cambiar de sesión.
 - Reglas Firestore, pruebas con emulador, auditoría de dependencias y CodeQL.
 - Infraestructura Geoapify protegida conforme a su contrato de uso.
+- Rutas por tramo con firma estable, invalidación selectiva, GeoJSON serializado y reutilización al reabrir el viaje.
 
 ### Validación manual pendiente
 
@@ -131,6 +134,8 @@ Las Functions usan Node 22 y los emuladores de Firestore requieren Java 21.
 - Cambio de sesión con viajes locales y viajes remotos existentes.
 - Importación sin pérdida ni eliminación de datos locales.
 - Conflicto de edición entre dos pestañas.
+- Cálculo gradual de rutas en un viaje con automóvil, transporte público y vuelos.
+- Reapertura de un viaje sin repetir llamadas de routing ya persistidas.
 - Comportamiento responsive en escritorio y móvil.
 
 ### Pendiente operativo
@@ -144,4 +149,4 @@ Las Functions usan Node 22 y los emuladores de Firestore requieren Java 21.
 
 ### Fase funcional posterior
 
-Las conexiones y rutas reales entre lugares guardados se implementarán en una fase independiente. No forman parte del trazado visual de Tramos.
+Las rutas actuales pertenecen a los tramos entre ciudades. Un modelo independiente para conectar lugares guardados, elegir caminata o bicicleta y construir recorridos internos de cada ciudad se implementará en otra fase.
