@@ -61,6 +61,7 @@ export default function App() {
   const {
     trips,
     loading,
+    getTrip,
     saveTrip,
     deleteTrip,
     importLocalTrips,
@@ -131,6 +132,20 @@ export default function App() {
     setOpenMenu(null);
     showToast(`${t('importedTrips')}: ${imported}`);
   }, [getLocalTripCount, importLocalTrips, showToast, t]);
+
+  const handleOpenSavedTrip = useCallback(async (savedTrip) => {
+    try {
+      const storedTrip = await getTrip(savedTrip.id);
+      if (!storedTrip) {
+        showToast('El viaje guardado ya no existe.', 3000);
+        return;
+      }
+      loadTrip(storedTrip);
+      setOpenMenu(null);
+    } catch {
+      showToast('No fue posible abrir el viaje.', 3000);
+    }
+  }, [getTrip, loadTrip, showToast]);
 
   const closeMenu = useCallback(() => setOpenMenu(null), []);
   const closeSegmentNote = useCallback(() => setOpenNoteSegmentId(null), []);
@@ -344,7 +359,8 @@ export default function App() {
                     <div className="editor-module__menu-empty">{t('noSavedTrips')}</div>
                   ) : (
                     trips.map((savedTrip) => {
-                      const segmentCount = savedTrip.segments?.length || 0;
+                      const segmentCount = savedTrip.segmentCount ?? savedTrip.segments?.length ?? 0;
+                      const savedTotal = savedTrip.total ?? tripTotal(savedTrip);
                       return (
                         <div
                           key={savedTrip.id}
@@ -354,10 +370,7 @@ export default function App() {
                           <button
                             type="button"
                             className="editor-module__saved-open"
-                            onClick={() => {
-                              loadTrip(savedTrip);
-                              setOpenMenu(null);
-                            }}
+                            onClick={() => handleOpenSavedTrip(savedTrip)}
                           >
                             <span className="editor-module__saved-name">
                               {savedTrip.name || t('unnamedTrip')}
@@ -368,7 +381,7 @@ export default function App() {
                                 ? t('segment').toLowerCase()
                                 : t('segmentPlural')}
                               {' · '}
-                              {formatMoney(tripTotal(savedTrip), savedTrip.currency, intlLocale)}
+                              {formatMoney(savedTotal, savedTrip.currency, intlLocale)}
                             </span>
                           </button>
                           <button
