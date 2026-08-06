@@ -1,9 +1,14 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
+import {
+  initializeAppCheck,
+  ReCaptchaEnterpriseProvider,
+} from 'firebase/app-check';
 import { connectAuthEmulator, getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
 import { config } from '../../config.js';
 
 let emulatorsConnected = false;
+let appCheckInitialized = false;
 
 function requireFirebaseConfig() {
   const required = [
@@ -23,8 +28,27 @@ function requireFirebaseConfig() {
   return config.firebase;
 }
 
+function initializeFirebaseAppCheck(app) {
+  if (
+    appCheckInitialized
+    || config.firebase.useEmulators
+    || !config.firebase.appCheckSiteKey
+    || typeof window === 'undefined'
+  ) {
+    return;
+  }
+
+  initializeAppCheck(app, {
+    provider: new ReCaptchaEnterpriseProvider(config.firebase.appCheckSiteKey),
+    isTokenAutoRefreshEnabled: true,
+  });
+  appCheckInitialized = true;
+}
+
 export function getFirebaseServices() {
   const app = getApps().length > 0 ? getApp() : initializeApp(requireFirebaseConfig());
+  initializeFirebaseAppCheck(app);
+
   const auth = getAuth(app);
   const db = getFirestore(app);
 
