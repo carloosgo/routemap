@@ -1,6 +1,5 @@
 import { useReducer, useCallback } from 'react';
 import { createTrip, appendSegment, normalizeTrip, createChecklistItem, createPlace, reorderSegments, TRIP_LIMITS } from './tripModel.js';
-import { invalidateStaleSegmentRoute } from '../routes/routeModel.js';
 import { sanitizeText, uid } from '../../shared/utils.js';
 
 function reducer(state,action){switch(action.type){
@@ -17,8 +16,8 @@ case'REMOVE_CHECKLIST_ITEM':return{...state,checklist:(state.checklist||[]).filt
 case'ADD_SEGMENT':return appendSegment(state);
 case'REMOVE_SEGMENT':return{...state,segments:state.segments.filter(s=>s.id!==action.segmentId),updatedAt:nowISO()};
 case'REORDER_SEGMENT':return reorderSegments(state,action.sourceId,action.targetId,action.placement);
-case'UPDATE_SEGMENT':return{...state,segments:state.segments.map(s=>s.id===action.segmentId?invalidateStaleSegmentRoute({...s,...action.patch}):s),updatedAt:nowISO()};
-case'UPDATE_EXPENSES':return{...state,segments:state.segments.map(s=>s.id===action.segmentId?invalidateStaleSegmentRoute({...s,expenses:action.expenses}):s),updatedAt:nowISO()};
+case'UPDATE_SEGMENT':return{...state,segments:state.segments.map(s=>s.id===action.segmentId?{...s,...action.patch}:s),updatedAt:nowISO()};
+case'UPDATE_EXPENSES':return{...state,segments:state.segments.map(s=>s.id===action.segmentId?{...s,expenses:action.expenses}:s),updatedAt:nowISO()};
 case'ADD_PLACE':{const current=state.places||[];if(current.length>=TRIP_LIMITS.places||current.some(place=>place.id===action.place?.id))return state;return{...state,places:[...current,createPlace(action.place)],updatedAt:nowISO()};}
 case'REMOVE_PLACE':return{...state,places:(state.places||[]).filter(place=>place.id!==action.placeId),updatedAt:nowISO()};
 default:return state;}}
