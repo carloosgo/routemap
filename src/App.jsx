@@ -419,6 +419,7 @@ export default function App() {
   const mapPane = (
     <AppMapPane
       trip={trip}
+      mapView={activeTab === 'places' ? 'places' : 'segments'}
       openNoteSegmentId={openNoteSegmentId}
       setOpenNoteSegmentId={setOpenNoteSegmentId}
       updateSegment={updateSegment}
