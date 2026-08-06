@@ -53,11 +53,11 @@ test('image failure is non-blocking and leaves an icon fallback visible', async 
 });
 
 test('saved places include city, country, type and country flag', async () => {
-  const model = await read('src/modules/trips/tripModel.js');
+  const entities = await read('src/modules/trips/tripEntities.js');
   const panel = await read('src/modules/places/TripPlacesPanel.jsx');
-  assert.match(model, /city:sanitizeText/);
-  assert.match(model, /country:sanitizeText/);
-  assert.match(model, /category:sanitizeText/);
+  assert.match(entities, /city:\s*sanitizeText/);
+  assert.match(entities, /country:\s*sanitizeText/);
+  assert.match(entities, /category:\s*sanitizeText/);
   assert.match(panel, /flagImageUrl/);
   assert.match(panel, /countryCode/);
 });
