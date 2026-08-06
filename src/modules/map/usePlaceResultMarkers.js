@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import { useTranslation } from '../../i18n/index.jsx';
 import { isPlaced } from '../trips/tripModel.js';
-import { fetchGeoapifyPlaceImage } from '../places/geoapifyClient.js';
 import { markerElement, resultMarkerScale, savePrompt } from './placeMapDom.js';
 
 export function usePlaceResultMarkers({
@@ -58,10 +57,7 @@ export function usePlaceResultMarkers({
 
     activePromptRef.current?.remove();
     activePromptRef.current = null;
-    resultMarkersRef.current.forEach(({ marker, controller }) => {
-      controller.abort();
-      marker.remove();
-    });
+    resultMarkersRef.current.forEach(({ marker }) => marker.remove());
     resultMarkersRef.current = [];
 
     const validResults = results.filter(isPlaced);
@@ -123,9 +119,8 @@ export function usePlaceResultMarkers({
     }
 
     validResults.forEach((place) => {
-      const { button, image } = markerElement(place, t);
+      const button = markerElement(place, t);
       button.style.setProperty('--place-marker-scale', String(resultMarkerScale(map.getZoom())));
-      const controller = new AbortController();
       const marker = new maplibregl.Marker({ element: button, anchor: 'bottom' })
         .setLngLat([place.lon, place.lat])
         .addTo(map);
@@ -136,18 +131,7 @@ export function usePlaceResultMarkers({
         openPlace(place);
       });
 
-      fetchGeoapifyPlaceImage(place, { signal: controller.signal })
-        .then((url) => {
-          if (!url || controller.signal.aborted) return;
-          image.src = url;
-        })
-        .catch((imageError) => {
-          if (imageError?.name !== 'AbortError') {
-            console.warn('[Place image] unavailable', imageError);
-          }
-        });
-
-      resultMarkersRef.current.push({ marker, controller, button });
+      resultMarkersRef.current.push({ marker, button });
       bounds.extend([place.lon, place.lat]);
     });
 
@@ -160,10 +144,7 @@ export function usePlaceResultMarkers({
     return () => {
       activePromptRef.current?.remove();
       activePromptRef.current = null;
-      resultMarkersRef.current.forEach(({ marker, controller }) => {
-        controller.abort();
-        marker.remove();
-      });
+      resultMarkersRef.current.forEach(({ marker }) => marker.remove());
       resultMarkersRef.current = [];
     };
   }, [mapReady, mapRef, results, setSaveNotice, t, viewMode]);
