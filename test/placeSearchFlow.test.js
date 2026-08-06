@@ -7,7 +7,7 @@ const read = (path) => readFile(new URL(path, root), 'utf8');
 
 test('place search preserves the configured minimum and maximum limits', async () => {
   const client = await read('src/modules/places/geoapifyClient.js');
-  const functions = await read('functions/index.js');
+  const functions = await read('functions/geoapifyPlaceFunctions.js');
   assert.match(client, /queryKey\.length < config\.geoapify\.searchMinChars/);
   assert.match(client, /limit: config\.geoapify\.searchLimit/);
   assert.match(functions, /Math\.min\(Math\.max\(Number\(request\.data\?\.limit\) \|\| 5, 1\), 5\)/);
@@ -30,7 +30,7 @@ test('search cache is separated by query and route context', async () => {
 
 test('place detail images are cached and fetched through the Firebase proxy', async () => {
   const client = await read('src/modules/places/geoapifyClient.js');
-  const functions = await read('functions/index.js');
+  const functions = await read('functions/geoapifyPlaceFunctions.js');
   assert.match(client, /fetchGeoapifyPlaceImage/);
   assert.match(client, /callable\('geoapifyPlaceDetails'\)/);
   assert.doesNotMatch(client, /https:\/\/api\.geoapify\.com\/v2\/place-details/);
