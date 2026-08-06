@@ -62,17 +62,22 @@ test('la comparación de versiones detecta cambios en revisión y timestamp', ()
   assert.equal(sameStoredTripVersion(version, null), false);
 });
 
-test('Firestore serializa guardados locales y publica solo sobre la versión leída', async () => {
+test('Firestore publica y elimina únicamente la versión que el usuario conocía', async () => {
   const repository = await read(
     'src/infrastructure/firebase/firestoreTripRepository.js'
   );
 
-  assert.match(repository, /let saveQueue = Promise\.resolve\(\)/);
-  assert.match(repository, /const baseVersion = storedVersion\(await getDoc\(tripRef\)\)/);
+  assert.match(repository, /const knownVersions = new Map\(\)/);
+  assert.match(repository, /let mutationQueue = Promise\.resolve\(\)/);
+  assert.match(repository, /rememberSnapshot\(item\)/);
+  assert.match(repository, /rememberSnapshot\(snapshot\)/);
+  assert.match(repository, /const expectedVersion = knownVersions\.get\(payload\.trip\.id\) \?\? null/);
+  assert.match(repository, /const expectedVersion = knownVersions\.get\(tripId\) \?\? null/);
   assert.match(repository, /await runTransaction\(db/);
   assert.match(repository, /const currentVersion = storedVersion\(await transaction\.get\(tripRef\)\)/);
-  assert.match(repository, /sameStoredTripVersion\(currentVersion, baseVersion\)/);
+  assert.match(repository, /sameStoredTripVersion\(currentVersion, expectedVersion\)/);
   assert.match(repository, /transaction\.set\(tripRef, payload\.summary\)/);
-  assert.match(repository, /saveQueue = operation\.catch\(\(\) => undefined\)/);
+  assert.match(repository, /transaction\.delete\(tripRef\)/);
+  assert.match(repository, /mutationQueue = result\.catch\(\(\) => undefined\)/);
   assert.doesNotMatch(repository, /await setDoc\(tripRef, payload\.summary\)/);
 });
