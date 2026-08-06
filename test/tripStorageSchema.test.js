@@ -10,14 +10,6 @@ import {
   isVersionedTripSummary,
 } from '../src/infrastructure/firebase/tripStorageSchema.js';
 
-const ROUTE_GEOMETRY = {
-  type: 'MultiLineString',
-  coordinates: [
-    [[2.3522, 48.8566], [3.1, 49.4]],
-    [[3.1, 49.4], [4.3517, 50.8503]],
-  ],
-};
-
 function sampleTrip() {
   const trip = createTrip('Europa');
   return {
@@ -27,16 +19,8 @@ function sampleTrip() {
     segments: [
       createSegment({
         id: 'segment-1',
-        origin: { id: 'paris', name: 'París', lat: 48.8566, lon: 2.3522 },
-        destination: { id: 'brussels', name: 'Bruselas', lat: 50.8503, lon: 4.3517 },
-        route: {
-          signature: '48.856600,2.352200|50.850300,4.351700|drive',
-          mode: 'drive',
-          geometry: ROUTE_GEOMETRY,
-          distance: 312000,
-          duration: 6600,
-          calculatedAt: '2026-08-05T00:00:00.000Z',
-        },
+        origin: { name: 'París', lat: 48.8566, lon: 2.3522 },
+        destination: { name: 'Bruselas', lat: 50.8503, lon: 4.3517 },
       }),
     ],
     places: [{
@@ -75,20 +59,18 @@ test('el documento principal contiene solo metadatos y conteos', () => {
   assert.equal(Object.hasOwn(payload.summary, 'checklist'), false);
 });
 
-test('cada colección conserva posición y serializa la geometría del tramo', () => {
+test('cada colección conserva posición y el tramo no duplica lugares', () => {
   const payload = createTripRevisionPayload(sampleTrip(), 'revision0002');
-  const storedSegment = payload.collections.segments[0];
 
-  assert.equal(storedSegment.position, 0);
-  assert.equal(Object.hasOwn(storedSegment, 'places'), false);
-  assert.equal(typeof storedSegment.route.geometry, 'string');
-  assert.equal(storedSegment.route.geometry.includes('MultiLineString'), true);
+  assert.equal(payload.collections.segments[0].position, 0);
+  assert.equal(Object.hasOwn(payload.collections.segments[0], 'places'), false);
+  assert.equal(Object.hasOwn(payload.collections.segments[0], 'route'), false);
   assert.equal(payload.collections.places[0].position, 0);
   assert.equal(payload.collections.notes[0].position, 0);
   assert.equal(payload.collections.checklist[0].position, 0);
 });
 
-test('hidratar una revisión restaura viaje, orden y GeoJSON', () => {
+test('hidratar una revisión restaura el viaje completo y su orden', () => {
   const payload = createTripRevisionPayload(sampleTrip(), 'revision0003');
   const shuffled = {
     ...payload.collections,
@@ -99,8 +81,7 @@ test('hidratar una revisión restaura viaje, orden y GeoJSON', () => {
 
   assert.equal(hydrated.id, 'trip-europe');
   assert.equal(hydrated.segments[0].id, 'segment-1');
-  assert.deepEqual(hydrated.segments[0].route.geometry, ROUTE_GEOMETRY);
-  assert.equal(hydrated.segments[0].route.distance, 312000);
+  assert.equal(Object.hasOwn(hydrated.segments[0], 'route'), false);
   assert.equal(hydrated.places[0].id, 'place-1');
   assert.equal(hydrated.notes[0].id, 'note-1');
   assert.equal(hydrated.checklist[0].id, 'item-1');
