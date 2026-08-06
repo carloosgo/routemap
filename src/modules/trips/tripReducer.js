@@ -1,10 +1,13 @@
 import {
+  PLACE_ORDER_VERSION,
   TRIP_LIMITS,
   appendSegment,
   createChecklistItem,
   createPlace,
   createTrip,
+  insertPlaceByCountry,
   normalizeTrip,
+  reorderPlaces,
   reorderSegments,
 } from './tripModel.js';
 import { sanitizeText, uid } from '../../shared/utils.js';
@@ -27,6 +30,7 @@ export const TRIP_ACTIONS = Object.freeze({
   updateExpenses: 'UPDATE_EXPENSES',
   addPlace: 'ADD_PLACE',
   removePlace: 'REMOVE_PLACE',
+  reorderPlace: 'REORDER_PLACE',
 });
 
 function nowISO() {
@@ -141,13 +145,15 @@ export function tripReducer(state, action) {
 
     case TRIP_ACTIONS.addPlace: {
       const places = state.places || [];
+      const place = createPlace(action.place);
       const duplicate = places.some(
-        (place) => place.id === action.place?.id
+        (currentPlace) => currentPlace.id === place.id
       );
       if (places.length >= TRIP_LIMITS.places || duplicate) return state;
 
       return touch(state, {
-        places: [...places, createPlace(action.place)],
+        places: insertPlaceByCountry(places, place),
+        placeOrderVersion: PLACE_ORDER_VERSION,
       });
     }
 
@@ -157,6 +163,14 @@ export function tripReducer(state, action) {
           (place) => place.id !== action.placeId
         ),
       });
+
+    case TRIP_ACTIONS.reorderPlace:
+      return reorderPlaces(
+        state,
+        action.sourceId,
+        action.targetId,
+        action.placement
+      );
 
     default:
       return state;
