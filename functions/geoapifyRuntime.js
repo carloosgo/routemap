@@ -14,6 +14,7 @@ export const ALLOWED_MODES = new Set(['drive', 'walk', 'bicycle', 'transit']);
 export const cached = createSharedCache(db, { ttlMs: CACHE_TTL_MS });
 
 export const QUOTAS = Object.freeze({
+  cityAutocomplete: { scope: 'geoapify-city-autocomplete', maxRequests: 20, windowMs: 60_000 },
   placeSearch: { scope: 'geoapify-place-search', maxRequests: 30, windowMs: 60_000 },
   autocomplete: { scope: 'geoapify-autocomplete', maxRequests: 30, windowMs: 60_000 },
   placeDetails: { scope: 'geoapify-place-details', maxRequests: 30, windowMs: 60_000 },
