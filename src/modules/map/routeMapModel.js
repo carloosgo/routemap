@@ -1,18 +1,8 @@
-import { isPlaced } from '../trips/tripModel.js';
-
-export function dominantTransport(segment) {
-  const transport = segment?.expenses?.transport || {};
-  const candidates = [
-    { type: 'plane', amount: Number(transport.plane) || 0 },
-    { type: 'train', amount: Number(transport.train) || 0 },
-    { type: 'bus', amount: Number(transport.bus) || 0 },
-    { type: 'car', amount: Number(transport.taxiUber) || 0 },
-  ];
-  const top = candidates.reduce((current, candidate) =>
-    candidate.amount > current.amount ? candidate : current
-  );
-  return top.amount > 0 ? top.type : null;
-}
+import {
+  dominantTransport,
+  isPlaced,
+  routeGeometryForDisplay,
+} from '../trips/tripModel.js';
 
 export function adaptiveCurve(origin, destination, steps = 80) {
   const start = [origin.lon, origin.lat];
@@ -94,13 +84,14 @@ export function buildMapFeatureData({ segments, places, viewMode, colorForIndex 
   if (showSegments) {
     segments.forEach((segment, index) => {
       if (!isPlaced(segment.origin) || !isPlaced(segment.destination)) return;
+      const storedGeometry = routeGeometryForDisplay(segment);
       routeFeatures.push({
         type: 'Feature',
         properties: {
           color: colorForIndex(index),
           dashed: dominantTransport(segment) === 'plane',
         },
-        geometry: {
+        geometry: storedGeometry || {
           type: 'LineString',
           coordinates: adaptiveCurve(segment.origin, segment.destination),
         },
