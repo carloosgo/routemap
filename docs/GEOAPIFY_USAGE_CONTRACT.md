@@ -12,8 +12,8 @@ Estas reglas son invariantes de arquitectura y deben conservarse en cualquier re
 ## Persistencia y recálculo
 
 5. Guardar permanentemente identificador, coordenadas y datos normalizados de cada lugar. Al reabrir un viaje no se vuelve a geocodificar.
-6. Guardar por tramo la geometría GeoJSON de la ruta, distancia, duración, modo y firma de origen/destino/modo.
-7. Recalcular exclusivamente cuando cambie origen, destino o modo. Cambios en nombre, notas, fechas y gastos que no alteran el modo de transporte no invalidan la ruta.
+6. En la futura fase de rutas entre lugares guardados, persistir por conexión la geometría GeoJSON, distancia, duración, modo y firma de origen/destino/modo.
+7. Esa futura ruta se recalculará exclusivamente cuando cambie alguno de sus lugares extremos o el modo de transporte. Los cambios en tramos, notas, fechas o gastos no deberán invalidarla.
 
 ## Backend y consumo
 
@@ -22,6 +22,16 @@ Estas reglas son invariantes de arquitectura y deben conservarse en cualquier re
 10. Routing solicita únicamente geometría, distancia y duración; no se habilitan elevation, traffic ni detalles que no use el producto.
 11. Reverse geocoding se ejecuta solo mediante una acción explícita del usuario.
 12. Las importaciones de varias ubicaciones usan el Batch Geocoding API asíncrono de Geoapify, con una sola solicitud de hasta 1,000 entradas por operación autenticada.
+
+## Separación funcional del mapa
+
+- **Tramos** representa el itinerario general de ciudades. Sus puntos y líneas de colores son un trazado visual local y no consumen Routing API.
+- **Lugares** representa los resultados buscados y los lugares guardados por el usuario.
+- Al seleccionar Tramos, el mapa muestra exclusivamente ciudades, países visitados y líneas de colores.
+- Al seleccionar Lugares, el mapa oculta el trazado de Tramos y muestra exclusivamente la búsqueda y los lugares guardados.
+- Las futuras rutas por automóvil, transporte público, caminata u otros modos conectarán lugares guardados; nunca sustituirán ni modificarán el trazado visual de Tramos.
+- No se añadirá una estructura persistente de conexiones entre lugares hasta iniciar formalmente esa fase.
+- El endpoint backend `geoapifyRoute` permanece aislado y sin cliente activo para conservar el endurecimiento de seguridad ya realizado sin activar consumo prematuro.
 
 ## Seguridad y control de costos
 
@@ -34,19 +44,11 @@ Estas reglas son invariantes de arquitectura y deben conservarse en cualquier re
 - Las claves de caché y las IP no se guardan en texto claro.
 - Las entradas de caché y control de cuota incluyen `expiresAt` para configurar TTL administrado en Firestore.
 
-## Implementación de rutas persistentes
-
-- La firma usa coordenadas de origen, coordenadas de destino y modo con precisión de seis decimales.
-- `drive` se usa por defecto; tren y autobús se traducen a `transit`; los vuelos conservan la curva visual local y no consumen Routing API.
-- Mientras llega una ruta nueva, el mapa mantiene la curva adaptativa anterior como respaldo visual.
-- Al recibir la ruta se guardan `geometry`, `distance`, `duration`, `mode`, `signature`, `calculatedAt` y `source` dentro del tramo.
-- Firestore recibe la geometría GeoJSON serializada como JSON porque no admite arreglos anidados; al leer el viaje se restaura el objeto GeoJSON completo.
-- Modificar notas, fechas, hospedaje, comida, lugares o nombre del viaje conserva la ruta existente.
-- Cambiar cantidades de transporte solo invalida la ruta cuando cambia el modo dominante resultante.
-
 ## Estado actual
 
-- Implementado: debounce de 450 ms, mínimo de 5 caracteres, límite de 5, normalización, caché cliente de 60 días, coordenadas persistentes, geometrías persistentes por tramo, comparación de firma, proxy Firebase, caché compartida, rate limiter oficial, detalles de lugares por proxy, routing sin extras, App Check preparado, cuotas compartidas y Batch API real.
+- Implementado: debounce de 450 ms, mínimo de 5 caracteres, límite de 5, normalización, caché cliente de 60 días, coordenadas persistentes, proxy Firebase, caché compartida, rate limiter oficial, detalles de lugares por proxy, App Check preparado, cuotas compartidas, Batch API real y capas independientes de Tramos y Lugares.
+- Preparado pero no conectado: endpoint backend de routing con geometría, distancia y duración.
+- Pendiente para una fase posterior: modelo de conexiones entre lugares guardados, selección de transporte, persistencia de sus rutas y representación propia en el mapa.
 - Pendiente operativo: activar App Check en Firebase después de observar métricas y configurar políticas TTL de Firestore para `expiresAt`.
 
 Toda modificación relacionada debe incluir pruebas automatizadas que demuestren que estas invariantes siguen vigentes.
