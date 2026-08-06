@@ -33,8 +33,8 @@ test('RouteMap muestra de forma declarativa los errores de configuración', asyn
 
 test('RouteMap vuelve a sincronizar las capas cuando cambia el viaje o la vista', async () => {
   const { route, model } = await mapSources();
-  assert.match(route, /buildMapFeatureData\(\{ segments, places, viewMode, colorForIndex \}\)/);
-  assert.match(route, /\[segments, places, viewMode, mapReady\]/);
+  assert.match(route, /buildMapFeatureData\(\{[\s\S]*segments,[\s\S]*places,[\s\S]*routeConnections,[\s\S]*viewMode,[\s\S]*colorForIndex/);
+  assert.match(route, /\[segments, places, routeConnections, viewMode, mapReady\]/);
   assert.match(model, /segments\.forEach\(\(segment, index\)/);
   assert.match(model, /colorForIndex\(index\)/);
 });
@@ -63,6 +63,18 @@ test('Tramos y Lugares son capas independientes y mutuamente excluyentes', async
   assert.match(route, /viewMode === 'places' && \([\s\S]*<PlaceSearchForm/);
   assert.match(app, /mapView=\{activeTab === 'places' \? 'places' : 'segments'\}/);
   assert.match(pane, /viewMode=\{mapView\}/);
+});
+
+test('Mis Rutas dibuja solo conexiones visibles con una línea negra independiente', async () => {
+  const { route, model, setup } = await mapSources();
+  assert.match(model, /export function savedPlaceRouteFeatures/);
+  assert.match(model, /if \(route\?\.visible === false\) return \[\]/);
+  assert.match(model, /normalizeRouteGeometry\(route\?\.geometry\)/);
+  assert.match(route, /sourceData\(map, PLACE_ROUTE_SOURCE_ID/);
+  assert.match(setup, /PLACE_ROUTE_SOURCE_ID = 'atlas-saved-place-routes'/);
+  assert.match(setup, /PLACE_ROUTE_LAYER_ID = 'atlas-saved-place-routes-layer'/);
+  assert.match(setup, /'line-color': '#111111'/);
+  assert.match(setup, /'line-width': 2/);
 });
 
 test('el modelo pinta solo ciudades definidas por los tramos', async () => {
@@ -190,18 +202,19 @@ test('el popup de guardado conserva su área de cierre propia', async () => {
   assert.match(css, /place-save-popup \.maplibregl-popup-close-button\{top:6px;right:6px\}/);
 });
 
-test('Tramos no solicita ni persiste routing real de Geoapify', async () => {
+test('Tramos no solicita ni persiste routing real; Mis Rutas sí usa Geoapify entre lugares guardados', async () => {
   const sources = await mapSources();
-  const client = await read('src/modules/places/geoapifyClient.js');
-  const model = await read('src/modules/trips/tripModel.js');
+  const placeClient = await read('src/modules/places/geoapifyClient.js');
+  const routeClient = await read('src/modules/routes/geoapifyRouteClient.js');
+  const panel = await read('src/modules/places/TripRouteConnections.jsx');
   const entities = await read('src/modules/trips/tripEntities.js');
-  const pane = await read('src/app/AppMapPane.jsx');
-  const combined = Object.values(sources).join('\n');
+  const combined = [sources.model, sources.search, sources.markers, placeClient].join('\n');
 
-  assert.doesNotMatch(combined, /requestGeoapifyRoute|routeGeometryForDisplay|routeModeForSegment/);
-  assert.doesNotMatch(client, /requestGeoapifyRoute|callable\('geoapifyRoute'\)/);
-  assert.doesNotMatch(model, /segmentRoute|routeGeometry|routeSignature/);
-  assert.doesNotMatch(entities, /\broute\s*:/);
-  assert.doesNotMatch(pane, /usePersistentSegmentRoutes/);
+  assert.doesNotMatch(combined, /callable\('geoapifyRoute'\)|firebaseCallable\('geoapifyRoute'\)/);
   assert.match(sources.model, /coordinates: adaptiveCurve\(segment\.origin, segment\.destination\)/);
+  assert.match(routeClient, /firebaseCallable\('geoapifyRoute'\)/);
+  assert.match(routeClient, /origin: \{ lat: origin\.lat, lon: origin\.lon \}/);
+  assert.match(routeClient, /destination: \{ lat: destination\.lat, lon: destination\.lon \}/);
+  assert.match(panel, /requestSavedPlaceRoute\(origin, destination, routeMode\)/);
+  assert.match(entities, /routeConnections: \[\]/);
 });
