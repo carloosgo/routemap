@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { config, colorForIndex } from '../../config.js';
+import { useTranslation } from '../../i18n/index.jsx';
 import { countryFillStyleState } from './countryColoring.js';
 import { resolveOvertureDivisionsPmtilesUrl } from './overtureCountrySource.js';
 import { installSavedPlaceSymbolLayer } from './savedPlaceSymbol.js';
@@ -31,6 +32,7 @@ import './RouteMap.css';
 export { representativePlaceIcon } from './placeMapDom.js';
 
 export function RouteMap({ segments, places = [], addPlace, viewMode = 'segments' }) {
+  const { t } = useTranslation();
   const mapNode = useRef(null);
   const mapRef = useRef(null);
   const lastRouteViewportKeyRef = useRef(null);
@@ -71,7 +73,7 @@ export function RouteMap({ segments, places = [], addPlace, viewMode = 'segments
       setPointer();
       cityPopup
         .setLngLat(feature.geometry.coordinates)
-        .setText(feature.properties?.name || 'Ciudad')
+        .setText(feature.properties?.name || t('city'))
         .addTo(map);
     };
     const clearHover = () => {
@@ -83,7 +85,7 @@ export function RouteMap({ segments, places = [], addPlace, viewMode = 'segments
       if (!feature) return;
       new maplibregl.Popup({ offset: 10 })
         .setLngLat(feature.geometry.coordinates)
-        .setDOMContent(savedPlacePopup(feature.properties))
+        .setDOMContent(savedPlacePopup(feature.properties, t))
         .addTo(map);
     };
 
@@ -121,7 +123,7 @@ export function RouteMap({ segments, places = [], addPlace, viewMode = 'segments
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -177,7 +179,7 @@ export function RouteMap({ segments, places = [], addPlace, viewMode = 'segments
     <div className="geo-map-wrap">
       <div className="geo-map" ref={mapNode}>
         {!config.geoapify.mapApiKey && (
-          <div className="geo-map__missing">Falta VITE_GEOAPIFY_MAPS_API_KEY.</div>
+          <div className="geo-map__missing">{t('mapConfigMissingShort')}</div>
         )}
       </div>
       {viewMode === 'places' && (
