@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { normalizeTrip } from '../src/modules/trips/tripModel.js';
+import { normalizeTrip, TRIP_LIMITS } from '../src/modules/trips/tripModel.js';
 
 const read = (path) => readFile(path, 'utf8');
 
@@ -41,6 +41,33 @@ test('la migración conserva lugares actuales y legados sin duplicarlos', () => 
 
   assert.deepEqual(trip.places.map((place) => place.name), ['Museo', 'Parque']);
   assert.equal(Object.hasOwn(trip.segments[0], 'places'), false);
+});
+
+test('la migración limita el trabajo y el resultado de lugares manipulados', () => {
+  const currentPlaces = Array.from({ length: TRIP_LIMITS.places + 20 }, (_, index) => ({
+    id: `current-${index}`,
+    name: `Lugar actual ${index}`,
+    lat: 19.4326,
+    lon: -99.1332,
+  }));
+  const legacyPlaces = Array.from(
+    { length: TRIP_LIMITS.placesPerSegment + 20 },
+    (_, index) => ({
+      id: `legacy-${index}`,
+      name: `Lugar legado ${index}`,
+      lat: 20.4326,
+      lon: -100.1332,
+    })
+  );
+
+  const trip = normalizeTrip({
+    id: 'trip-bounded-legacy-places',
+    places: currentPlaces,
+    segments: [{ id: 'segment-1', places: legacyPlaces }],
+  });
+
+  assert.equal(trip.places.length, TRIP_LIMITS.places);
+  assert.equal(trip.places.at(-1).name, `Lugar actual ${TRIP_LIMITS.places - 1}`);
 });
 
 test('la documentación y ejemplos reflejan secretos separados y ausencia de Nominatim', async () => {
