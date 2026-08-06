@@ -1,5 +1,6 @@
 import { uid, sanitizeText } from '../../shared/utils.js';
 import { createExpenses, expensesTotal, normalizeExpenses } from '../expenses/expenseModel.js';
+import { normalizeSegmentRoute } from '../routes/routeModel.js';
 
 export const TRIP_LIMITS = Object.freeze({ segments:500, places:500, placesPerSegment:200, notes:50, checklist:500, tripName:120, segmentNote:500, noteTitle:60, noteText:2000, checklistText:120 });
 
@@ -13,7 +14,7 @@ export function createCity(partial){if(!partial)return null;return{name:sanitize
 
 export function createPlace(partial={}){return{id:normalizeId(partial.id),name:sanitizeText(partial.name||'Lugar',160),address:sanitizeText(partial.address||'',260),city:sanitizeText(partial.city||'',120),country:sanitizeText(partial.country||'',100),category:sanitizeText(partial.category||'',80),countryCode:normalizeCountryCode(partial.countryCode),lat:parseCoordinate(partial.lat,-90,90),lon:parseCoordinate(partial.lon,-180,180),savedAt:typeof partial.savedAt==='string'?partial.savedAt:nowISO()};}
 
-export function createSegment(overrides={}){return{id:normalizeId(overrides.id),origin:overrides.origin?createCity(overrides.origin):null,destination:overrides.destination?createCity(overrides.destination):null,startDate:normalizeDate(overrides.startDate),endDate:normalizeDate(overrides.endDate),expenses:overrides.expenses?normalizeExpenses(overrides.expenses):createExpenses(),note:sanitizeText(overrides.note||'',TRIP_LIMITS.segmentNote),places:[]};}
+export function createSegment(overrides={}){return{id:normalizeId(overrides.id),origin:overrides.origin?createCity(overrides.origin):null,destination:overrides.destination?createCity(overrides.destination):null,startDate:normalizeDate(overrides.startDate),endDate:normalizeDate(overrides.endDate),expenses:overrides.expenses?normalizeExpenses(overrides.expenses):createExpenses(),note:sanitizeText(overrides.note||'',TRIP_LIMITS.segmentNote),route:normalizeSegmentRoute(overrides.route),places:[]};}
 export function createNote(text='',title='Notas generales'){return{id:uid(),title:sanitizeText(title,TRIP_LIMITS.noteTitle),text:sanitizeText(text,TRIP_LIMITS.noteText)};}
 export function createChecklistItem(text=''){return{id:uid(),text:sanitizeText(text,TRIP_LIMITS.checklistText),done:false};}
 export function createTrip(name=''){const now=nowISO();return{id:uid(),name:sanitizeText(name,TRIP_LIMITS.tripName),currency:'USD',segments:[],places:[],notes:[createNote()],checklist:[],createdAt:now,updatedAt:now};}
