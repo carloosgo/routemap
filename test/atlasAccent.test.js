@@ -31,12 +31,14 @@ test('the selected Atlas controls retain the exact #19a5d0 accent token', async 
 });
 
 test('segments, places, notes and currency use the same real button structure and styles', async () => {
-  const app = await read('src/App.jsx');
+  const editor = await read('src/app/AppEditorModule.jsx');
+  const menu = await read('src/app/AppWorkspaceMenu.jsx');
+  const navigation = `${editor}\n${menu}`;
   const polish = await read('src/app/FloatingEditorPolish.css');
 
-  assert.equal((app.match(/editor-module__nav-tab/g) || []).length, 4);
-  assert.equal((app.match(/editor-module__tab-icon/g) || []).length, 4);
-  assert.equal((app.match(/editor-module__tab-label/g) || []).length, 4);
+  assert.equal((navigation.match(/editor-module__nav-tab/g) || []).length, 4);
+  assert.equal((navigation.match(/editor-module__tab-icon/g) || []).length, 4);
+  assert.equal((navigation.match(/editor-module__tab-label/g) || []).length, 4);
 
   assert.match(polish, /\.editor-module__tabs \.editor-module__nav-tab,/);
   assert.match(polish, /height:\s*36px;/);
@@ -51,13 +53,13 @@ test('segments, places, notes and currency use the same real button structure an
 });
 
 test('places renders the transparent signpost icon through the existing tab asset', async () => {
-  const app = await read('src/App.jsx');
+  const editor = await read('src/app/AppEditorModule.jsx');
   const polish = await read('src/app/FloatingEditorPolish.css');
   const icon = await read('src/assets/lugares-storefront-v2.svg');
 
-  assert.match(app, /import lugaresIcon from '\.\/assets\/lugares-storefront-v2\.svg'/);
-  assert.match(app, /<img src=\{lugaresIcon\} alt="" \/>/);
-  assert.doesNotMatch(app, /IconMapPin/);
+  assert.match(editor, /import lugaresIcon from '\.\.\/assets\/lugares-storefront-v2\.svg'/);
+  assert.match(editor, /<img src=\{lugaresIcon\} alt="" \/>/);
+  assert.doesNotMatch(editor, /IconMapPin/);
   assert.doesNotMatch(polish, /data-tab-icon='places-map-pin'\]::before/);
   assert.doesNotMatch(polish, /assets\/lugares\.svg/);
   assert.match(icon, /aria-label="Lugares"/);
@@ -71,15 +73,14 @@ test('places renders the transparent signpost icon through the existing tab asse
 });
 
 test('the desktop navigation remains ordered as segments, places, notes and currency', async () => {
-  const app = await read('src/App.jsx');
-  const start = app.indexOf('const editorModule');
-  const end = app.indexOf('const mapPane');
-  const tabs = app.slice(start, end);
+  const editor = await read('src/app/AppEditorModule.jsx');
+  const menu = await read('src/app/AppWorkspaceMenu.jsx');
+  const navigation = `${editor}\n${menu}`;
 
-  const segmentIndex = tabs.indexOf("setActiveTab('segments')");
-  const placesIndex = tabs.indexOf("setActiveTab('places')");
-  const notesIndex = tabs.indexOf("setActiveTab('notes')");
-  const currencyIndex = tabs.indexOf("openMenu === 'currency'");
+  const segmentIndex = navigation.indexOf("setActiveTab('segments')");
+  const placesIndex = navigation.indexOf("setActiveTab('places')");
+  const notesIndex = navigation.indexOf("setActiveTab('notes')");
+  const currencyIndex = navigation.indexOf("openMenu === 'currency'");
 
   assert.ok(segmentIndex >= 0);
   assert.ok(segmentIndex < placesIndex);
