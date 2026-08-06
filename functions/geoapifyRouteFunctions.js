@@ -15,7 +15,11 @@ import {
 } from './geoapifySupport.js';
 
 export const geoapifyRoute = onCall(
-  callableOptions({ secrets: [GEOAPIFY_API_KEY], maxInstances: 6 }),
+  callableOptions({
+    secrets: [GEOAPIFY_API_KEY],
+    maxInstances: 6,
+    invoker: 'public',
+  }),
   async (request) => {
     await enforceQuota(db, request, QUOTAS.route);
     const { origin, destination } = request.data || {};
