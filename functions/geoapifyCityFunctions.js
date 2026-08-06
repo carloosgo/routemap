@@ -79,7 +79,10 @@ async function loadCities(query, limit, language) {
 }
 
 export const geoapifyCityAutocomplete = onCall(
-  callableOptions({ secrets: [GEOAPIFY_API_KEY] }),
+  callableOptions({
+    secrets: [GEOAPIFY_API_KEY],
+    enforceAppCheck: false,
+  }),
   async (request) => {
     const traceId = String(request.rawRequest?.headers?.['x-cloud-trace-context'] || '')
       .split('/')[0]
