@@ -30,6 +30,7 @@ function tripSummary(id, revisionId, overrides = {}) {
     id,
     name: 'Viaje de prueba',
     currency: 'MXN',
+    placeOrderVersion: 1,
     createdAt: CREATED_AT,
     updatedAt: UPDATED_AT,
     storageVersion: 2,
@@ -255,6 +256,9 @@ test('las reglas rechazan resúmenes con campos inesperados o conteos excesivos'
   }));
   await assertFails(setDoc(doc(alice, `users/alice/trips/${tripId}`),
     tripSummary(tripId, revisionId, { placeCount: 501 })
+  ));
+  await assertFails(setDoc(doc(alice, `users/alice/trips/${tripId}`),
+    tripSummary(tripId, revisionId, { placeOrderVersion: 2 })
   ));
 });
 
