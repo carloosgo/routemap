@@ -43,6 +43,19 @@ export function useSavedTrips(user) {
     refresh();
   }, [refresh]);
 
+  const getTrip = useCallback(
+    async (id) => {
+      setError(null);
+      try {
+        return await repository.get(id);
+      } catch (err) {
+        setError(errorMessage(err, 'Error al abrir el viaje'));
+        throw err;
+      }
+    },
+    [repository]
+  );
+
   const saveTrip = useCallback(
     async (trip) => {
       setError(null);
@@ -92,6 +105,7 @@ export function useSavedTrips(user) {
     loading,
     error,
     refresh,
+    getTrip,
     saveTrip,
     deleteTrip,
     importLocalTrips,
