@@ -3,7 +3,7 @@ import { config } from '../../config.js';
 import { isPlaced } from '../trips/tripModel.js';
 import { searchGeoapifyPlaces } from '../places/geoapifyClient.js';
 
-export function usePlaceSearch({ viewMode, searchContext }) {
+export function usePlaceSearch({ viewMode }) {
   const searchAbortRef = useRef(null);
   const autocompleteAbortRef = useRef(null);
   const searchSequenceRef = useRef(0);
@@ -60,7 +60,6 @@ export function usePlaceSearch({ viewMode, searchContext }) {
       try {
         const next = await searchGeoapifyPlaces(text, {
           signal: controller.signal,
-          context: searchContext,
         });
         if (!controller.signal.aborted && sequence === autocompleteSequenceRef.current) {
           setSuggestions(next);
@@ -81,7 +80,7 @@ export function usePlaceSearch({ viewMode, searchContext }) {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query, searchContext, viewMode]);
+  }, [query, viewMode]);
 
   async function submitSearch(event) {
     event?.preventDefault();
@@ -105,7 +104,6 @@ export function usePlaceSearch({ viewMode, searchContext }) {
     try {
       const next = await searchGeoapifyPlaces(text, {
         signal: controller.signal,
-        context: searchContext,
       });
       if (!controller.signal.aborted && sequence === searchSequenceRef.current) {
         setResults(next);
