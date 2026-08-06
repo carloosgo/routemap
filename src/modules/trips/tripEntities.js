@@ -73,24 +73,6 @@ function normalizeNoteTitle(value) {
   return LEGACY_SYSTEM_NOTE_TITLES.has(title) ? '' : title;
 }
 
-function uniquePlaces(rawPlaces) {
-  const seen = new Set();
-  return rawPlaces
-    .map(createPlace)
-    .filter(isPlaced)
-    .filter((place) => {
-      const key = [
-        Number(place.lat).toFixed(6),
-        Number(place.lon).toFixed(6),
-        place.name.trim().toLowerCase(),
-      ].join('|');
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .slice(0, TRIP_LIMITS.places);
-}
-
 export function isPlaced(point) {
   return Boolean(
     point &&
@@ -131,6 +113,29 @@ export function createPlace(partial = {}) {
     savedAt:
       typeof partial.savedAt === 'string' ? partial.savedAt : nowISO(),
   };
+}
+
+function uniquePlaces(rawPlaces) {
+  const seen = new Set();
+  const places = [];
+
+  for (const rawPlace of rawPlaces) {
+    const place = createPlace(rawPlace);
+    if (!isPlaced(place)) continue;
+
+    const key = [
+      Number(place.lat).toFixed(6),
+      Number(place.lon).toFixed(6),
+      place.name.trim().toLowerCase(),
+    ].join('|');
+    if (seen.has(key)) continue;
+
+    seen.add(key);
+    places.push(place);
+    if (places.length >= TRIP_LIMITS.places) break;
+  }
+
+  return places;
 }
 
 export function createSegment(overrides = {}) {
@@ -187,9 +192,13 @@ export function normalizeTrip(raw) {
     ? raw.segments.slice(0, TRIP_LIMITS.segments)
     : [];
   const legacyPlaces = rawSegments.flatMap((segment) =>
-    Array.isArray(segment?.places) ? segment.places : []
+    Array.isArray(segment?.places)
+      ? segment.places.slice(0, TRIP_LIMITS.placesPerSegment)
+      : []
   );
-  const currentPlaces = Array.isArray(raw.places) ? raw.places : [];
+  const currentPlaces = Array.isArray(raw.places)
+    ? raw.places.slice(0, TRIP_LIMITS.places)
+    : [];
   const rawPlaces = [...currentPlaces, ...legacyPlaces];
   const rawNotes = Array.isArray(raw.notes)
     ? raw.notes.slice(0, TRIP_LIMITS.notes)
