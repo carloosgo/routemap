@@ -136,7 +136,7 @@ export function CalendarDateInput({
       }).format(selectedDate)
     : '';
 
-  const placeholder = isEnglish ? 'mm/dd/yyyy' : 'dd/mm/aaaa';
+  const placeholder = t('datePlaceholder');
   const previousMonth = addMonths(viewMonth, -1);
   const previousMonthEnd = new Date(
     previousMonth.getFullYear(),
