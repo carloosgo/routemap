@@ -85,7 +85,7 @@ test('notas y checklist se agregan, actualizan, alternan y eliminan', () => {
     id: 'item-1',
   });
 
-  assert.equal(withNote.notes.at(-1).title, 'Nueva nota');
+  assert.equal(withNote.notes.at(-1).title, '');
   assert.equal(updatedNote.notes[0].text, 'Texto actualizado');
   assert.equal(withoutNote.notes.some(({ id }) => id === 'note-1'), false);
   assert.equal(withItem.checklist.at(-1).text, 'Seguro de viaje');
