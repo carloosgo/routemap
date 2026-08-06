@@ -37,6 +37,15 @@ const staleUiPhrases = [
   'Notas generales',
   'Nueva nota',
 ];
+const legacyMigrationPhrases = new Set([
+  'Notas generales',
+  'Nueva nota',
+]);
+
+function isAllowedLegacyMigration(fileUrl, phrase) {
+  return fileUrl.pathname.endsWith('/modules/trips/tripEntities.js')
+    && legacyMigrationPhrases.has(phrase);
+}
 
 test('los atributos visibles de JSX no contienen texto traducible hardcodeado', async () => {
   const violations = [];
@@ -51,13 +60,15 @@ test('los atributos visibles de JSX no contienen texto traducible hardcodeado', 
   assert.deepEqual(violations, []);
 });
 
-test('los textos de sistema auditados solo viven en los diccionarios', async () => {
+test('los textos de sistema auditados solo viven en diccionarios o migraciones explícitas', async () => {
   const violations = [];
   for (const fileUrl of await sourceFiles(SOURCE_ROOT)) {
     if (fileUrl.pathname.includes('/i18n/')) continue;
     const source = await readFile(fileUrl, 'utf8');
     for (const phrase of staleUiPhrases) {
-      if (source.includes(phrase)) violations.push(`${fileUrl.pathname}: ${phrase}`);
+      if (source.includes(phrase) && !isAllowedLegacyMigration(fileUrl, phrase)) {
+        violations.push(`${fileUrl.pathname}: ${phrase}`);
+      }
     }
   }
   assert.deepEqual(violations, []);
