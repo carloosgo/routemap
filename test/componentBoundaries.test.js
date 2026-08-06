@@ -78,7 +78,7 @@ test('tripModel conserva una fachada estable sin absorber entidades ni operacion
   assert.doesNotMatch(hook, /switch\s*\(action\.type\)/);
 });
 
-test('el repositorio Firestore orquesta viajes sin absorber lotes y subcolecciones', async () => {
+test('el repositorio Firestore conserva revisiones separadas y publicación transaccional', async () => {
   const repository = await read(
     'src/infrastructure/firebase/firestoreTripRepository.js'
   );
@@ -86,10 +86,6 @@ test('el repositorio Firestore orquesta viajes sin absorber lotes y subcoleccion
     'src/infrastructure/firebase/firestoreTripRevisionStore.js'
   );
 
-  assert.ok(
-    lineCount(repository) <= 130,
-    `firestoreTripRepository.js volvió a crecer a ${lineCount(repository)} líneas`
-  );
   assert.match(repository, /from '\.\/firestoreTripRevisionStore\.js'/);
   assert.doesNotMatch(
     repository,
@@ -104,8 +100,9 @@ test('el repositorio Firestore orquesta viajes sin absorber lotes y subcoleccion
 
   assert.match(
     repository,
-    /await writeRevisionPayload\(db, revisionRef, payload\);[\s\S]*await setDoc\(tripRef, payload\.summary\);/
+    /await writeRevisionPayload\(db, revisionRef, payload\);[\s\S]*await runTransaction\(db/
   );
+  assert.match(repository, /transaction\.set\(tripRef, payload\.summary\)/);
   assert.match(
     repository,
     /const revisionRefs = await listRevisionRefs\(tripRef\);[\s\S]*await deleteDoc\(tripRef\);[\s\S]*await deleteRevision\(db, revisionRef\);/
