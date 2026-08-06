@@ -35,6 +35,7 @@ export function AppEditorModule({
     updateSegment,
     updateExpenses,
     removePlace,
+    reorderPlace,
   } = tripStore;
   const {
     total,
@@ -57,7 +58,12 @@ export function AppEditorModule({
   } = editorState;
 
   const editorPane = activeTab === 'places' ? (
-    <TripPlacesPanel places={places} removePlace={removePlace} t={t} />
+    <TripPlacesPanel
+      places={places}
+      removePlace={removePlace}
+      reorderPlace={reorderPlace}
+      t={t}
+    />
   ) : (
     <AppEditorPane
       activeTab={activeTab}
