@@ -150,7 +150,7 @@ export function addBaseSourcesAndLayers(map) {
     source: PLACE_SOURCE_ID,
     paint: {
       'circle-radius': 7,
-      'circle-color': '#2563eb',
+      'circle-color': ['coalesce', ['get', 'color'], '#2563eb'],
       'circle-opacity': 0.95,
       'circle-stroke-color': '#fff',
       'circle-stroke-width': 2,
