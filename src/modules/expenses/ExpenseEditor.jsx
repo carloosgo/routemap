@@ -65,6 +65,7 @@ export function ExpenseEditor({ expenses, currency, locale, onChange }) {
         getIcon={transportOtherIcon}
         typePlaceholder={t('itemTypePlaceholder')}
         addLabel={t('addItem')}
+        removeLabel={t('delete')}
         onAdd={() => onAddItem('transportOthers')}
         onUpdate={(id, field, value) =>
           onUpdateItem('transportOthers', id, field, value)
@@ -77,6 +78,7 @@ export function ExpenseEditor({ expenses, currency, locale, onChange }) {
         getIcon={() => EXPENSE_ICONS.attraction}
         typePlaceholder={t('itemTypePlaceholder')}
         addLabel={t('addItem')}
+        removeLabel={t('delete')}
         onAdd={() => onAddItem('attractions')}
         onUpdate={(id, field, value) => onUpdateItem('attractions', id, field, value)}
         onRemove={(id) => onRemoveItem('attractions', id)}
@@ -87,6 +89,7 @@ export function ExpenseEditor({ expenses, currency, locale, onChange }) {
         getIcon={() => EXPENSE_ICONS.other}
         typePlaceholder={t('itemTypePlaceholder')}
         addLabel={t('addItem')}
+        removeLabel={t('delete')}
         onAdd={() => onAddItem('others')}
         onUpdate={(id, field, value) => onUpdateItem('others', id, field, value)}
         onRemove={(id) => onRemoveItem('others', id)}
