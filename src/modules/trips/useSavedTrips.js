@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   countLocalTrips,
   importLocalTripsIntoRepository,
@@ -19,28 +19,55 @@ export function useSavedTrips(user) {
     () => selectTripRepository({ uid: user?.uid, localRepository }),
     [localRepository, user?.uid]
   );
+  const currentRepositoryRef = useRef(repository);
+  const refreshVersionRef = useRef(0);
+  currentRepositoryRef.current = repository;
 
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const isCurrentRepository = useCallback(
+    () => currentRepositoryRef.current === repository,
+    [repository]
+  );
+
   const refresh = useCallback(async () => {
+    const refreshVersion = ++refreshVersionRef.current;
     setLoading(true);
     setError(null);
     try {
       const list = await listSavedTrips(repository);
-      setTrips(list);
+      if (
+        refreshVersion === refreshVersionRef.current
+        && currentRepositoryRef.current === repository
+      ) {
+        setTrips(list);
+      }
       return list;
     } catch (err) {
-      setError(savedTripErrorMessage(err, 'Error al cargar viajes'));
+      if (
+        refreshVersion === refreshVersionRef.current
+        && currentRepositoryRef.current === repository
+      ) {
+        setError(savedTripErrorMessage(err, 'Error al cargar viajes'));
+      }
       return [];
     } finally {
-      setLoading(false);
+      if (
+        refreshVersion === refreshVersionRef.current
+        && currentRepositoryRef.current === repository
+      ) {
+        setLoading(false);
+      }
     }
   }, [repository]);
 
   useEffect(() => {
     refresh();
+    return () => {
+      refreshVersionRef.current += 1;
+    };
   }, [refresh]);
 
   const getTrip = useCallback(
@@ -49,11 +76,13 @@ export function useSavedTrips(user) {
       try {
         return await openSavedTrip(repository, id);
       } catch (err) {
-        setError(savedTripErrorMessage(err, 'Error al abrir el viaje'));
+        if (isCurrentRepository()) {
+          setError(savedTripErrorMessage(err, 'Error al abrir el viaje'));
+        }
         throw err;
       }
     },
-    [repository]
+    [isCurrentRepository, repository]
   );
 
   const saveTrip = useCallback(
@@ -61,14 +90,16 @@ export function useSavedTrips(user) {
       setError(null);
       try {
         const saved = await persistSavedTrip(repository, trip);
-        await refresh();
+        if (isCurrentRepository()) await refresh();
         return saved;
       } catch (err) {
-        setError(savedTripErrorMessage(err, 'Error al guardar el viaje'));
+        if (isCurrentRepository()) {
+          setError(savedTripErrorMessage(err, 'Error al guardar el viaje'));
+        }
         throw err;
       }
     },
-    [refresh, repository]
+    [isCurrentRepository, refresh, repository]
   );
 
   const deleteTrip = useCallback(
@@ -76,13 +107,15 @@ export function useSavedTrips(user) {
       setError(null);
       try {
         await removeSavedTrip(repository, id);
-        await refresh();
+        if (isCurrentRepository()) await refresh();
       } catch (err) {
-        setError(savedTripErrorMessage(err, 'Error al eliminar el viaje'));
+        if (isCurrentRepository()) {
+          setError(savedTripErrorMessage(err, 'Error al eliminar el viaje'));
+        }
         throw err;
       }
     },
-    [refresh, repository]
+    [isCurrentRepository, refresh, repository]
   );
 
   const importLocalTrips = useCallback(async () => {
@@ -91,9 +124,9 @@ export function useSavedTrips(user) {
       localRepository,
       targetRepository: repository,
     });
-    await refresh();
+    if (isCurrentRepository()) await refresh();
     return importedCount;
-  }, [localRepository, refresh, repository, user?.uid]);
+  }, [isCurrentRepository, localRepository, refresh, repository, user?.uid]);
 
   const getLocalTripCount = useCallback(
     () => countLocalTrips(localRepository),
