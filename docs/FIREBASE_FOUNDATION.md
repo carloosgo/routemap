@@ -36,6 +36,29 @@
 - `functions/sharedCache.js`: caché compartida con TTL e in-flight deduplication.
 - `docs/GEOAPIFY_USAGE_CONTRACT.md`: invariantes de consumo del proveedor.
 
+## Persistencia de viajes
+
+El documento principal del viaje contiene un resumen ligero y apunta a una revisión completa. Tramos, lugares, notas y checklist se guardan en subcolecciones de esa revisión.
+
+El orden de escritura es:
+
+1. Crear una revisión abierta.
+2. Escribir sus colecciones por lotes.
+3. Marcar la revisión como completa e inmutable.
+4. Publicar el resumen mediante una transacción.
+5. Limpiar revisiones anteriores.
+
+Antes de publicar, la transacción comprueba que la versión leída al comenzar el guardado sigue siendo la activa. Un cambio desde otra pestaña o dispositivo produce un conflicto explícito en lugar de sobrescribirlo silenciosamente. Los guardados iniciados desde una misma instancia también se serializan para evitar carreras por doble clic o atajos repetidos.
+
+Los viajes del esquema anterior siguen siendo legibles y se migran al esquema versionado en su siguiente guardado.
+
+## Cambio entre almacenamiento local y nube
+
+- Sin sesión se usa `localStorage`.
+- Con sesión se usa Firestore bajo el UID autenticado.
+- La importación de viajes locales es manual y nunca elimina el origen local.
+- Las respuestas asíncronas de un repositorio anterior se descartan al cambiar la sesión, evitando que una carga local tardía reemplace la lista de Firestore o viceversa.
+
 ## App Check
 
 La app web está preparada para reCAPTCHA Enterprise mediante:
@@ -88,27 +111,37 @@ npm run build
 
 Las Functions usan Node 22 y los emuladores de Firestore requieren Java 21.
 
-## Próximos bloques
+## Estado de la fase
 
-### Persistencia escalable
+### Implementado
 
-- Separar resumen del viaje y colecciones grandes.
-- Añadir `schemaVersion`, versión de escritura y timestamps del servidor.
-- Diseñar migración sin pérdida de viajes existentes.
+- Google Auth y cierre de sesión.
+- Alternancia entre viajes locales y viajes de la cuenta.
+- Importación manual de viajes locales.
+- Persistencia escalable mediante resúmenes y revisiones inmutables.
+- Migración transparente de viajes anteriores.
+- Control transaccional de conflictos entre pestañas o dispositivos.
+- Protección contra respuestas obsoletas al cambiar de sesión.
+- Reglas Firestore, pruebas con emulador, auditoría de dependencias y CodeQL.
+- Infraestructura Geoapify protegida conforme a su contrato de uso.
 
-### Flujo visible — requiere aprobación
+### Validación manual pendiente
 
-- Inicio de sesión con Google.
-- Cierre de sesión.
-- Estado de carga de sesión.
-- Migración de viajes locales a la cuenta.
-- Eliminación de cuenta y datos.
+- Flujo emergente de Google en navegadores reales.
+- Cambio de sesión con viajes locales y viajes remotos existentes.
+- Importación sin pérdida ni eliminación de datos locales.
+- Conflicto de edición entre dos pestañas.
+- Comportamiento responsive en escritorio y móvil.
 
-### Producción
+### Pendiente operativo
 
-- Proyecto `atlas-prod`.
-- App Check con enforcement.
-- Hosting y dominio.
-- Alertas de presupuesto y monitorización.
-- Backups y política de retención.
-- Aviso de privacidad y proceso de eliminación.
+- Subir el proyecto a Blaze para desplegar Functions y usar Secret Manager.
+- Configurar TTL para las colecciones internas.
+- Registrar App Check, observar métricas y activar enforcement.
+- Crear el proyecto separado de producción.
+- Configurar Hosting, dominio, alertas de presupuesto y monitorización.
+- Definir backups, retención, aviso de privacidad y eliminación de cuenta/datos.
+
+### Fase funcional posterior
+
+Las conexiones y rutas reales entre lugares guardados se implementarán en una fase independiente. No forman parte del trazado visual de Tramos.
