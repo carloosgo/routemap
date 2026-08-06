@@ -8,9 +8,6 @@ import {
 } from '@tabler/icons-react';
 import { tripTotal } from '../modules/trips/tripModel.js';
 import { formatMoney } from '../shared/utils.js';
-import currencyCoinIcon from '../assets/currency-coin-menu.svg';
-
-const CURRENCIES = ['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'];
 
 export function AppWorkspaceMenu({
   tripStore,
@@ -25,7 +22,7 @@ export function AppWorkspaceMenu({
   availableLocales,
   t,
 }) {
-  const { trip, resetTrip, setCurrency } = tripStore;
+  const { trip, resetTrip } = tripStore;
   const { trips, loading } = savedTrips;
 
   return (
@@ -34,29 +31,38 @@ export function AppWorkspaceMenu({
         <button
           type="button"
           className={'editor-module__tab editor-module__nav-tab' +
-            (openMenu === 'currency' ? ' is-active' : '')}
-          onClick={() => setOpenMenu(openMenu === 'currency' ? null : 'currency')}
+            (openMenu === 'language' ? ' is-active' : '')}
+          aria-label={t('language')}
+          data-tab-icon="language-selector"
+          onClick={() => setOpenMenu(openMenu === 'language' ? null : 'language')}
         >
-          <span className="editor-module__tab-icon" aria-hidden="true">
-            <img className="editor-module__currency-icon" src={currencyCoinIcon} alt="" />
+          <span
+            className="editor-module__tab-icon"
+            aria-hidden="true"
+            style={{ backgroundImage: 'none' }}
+          >
+            <IconLanguage style={{ display: 'block' }} />
           </span>
-          <span className="editor-module__tab-label">{trip.currency}</span>
+          <span className="editor-module__tab-label">{locale.toUpperCase()}</span>
           <IconChevronDown className="editor-module__tab-chevron" aria-hidden="true" />
         </button>
-        {openMenu === 'currency' && (
-          <div className="editor-module__currency-menu">
-            {CURRENCIES.map((currency) => (
+        {openMenu === 'language' && (
+          <div
+            className="editor-module__currency-menu editor-module__language-menu"
+            aria-label={t('language')}
+          >
+            {availableLocales.map((availableLocale) => (
               <button
                 type="button"
-                key={currency}
-                className={'editor-module__currency-option' +
-                  (currency === trip.currency ? ' is-active' : '')}
+                key={availableLocale}
+                className={'editor-module__currency-option editor-module__language-option' +
+                  (availableLocale === locale ? ' is-active' : '')}
                 onClick={() => {
-                  setCurrency(currency);
+                  setLocale(availableLocale);
                   setOpenMenu(null);
                 }}
               >
-                {currency}
+                {availableLocale.toUpperCase()}
               </button>
             ))}
           </div>
@@ -138,29 +144,6 @@ export function AppWorkspaceMenu({
                   );
                 })
               )}
-            </div>
-
-            <div className="editor-module__menu-separator" />
-
-            <div className="editor-module__menu-heading">
-              <IconLanguage size={17} aria-hidden="true" />
-              <span>{t('language')}</span>
-            </div>
-            <div className="editor-module__language-options">
-              {availableLocales.map((availableLocale) => (
-                <button
-                  type="button"
-                  key={availableLocale}
-                  className={'editor-module__language-option' +
-                    (availableLocale === locale ? ' is-active' : '')}
-                  onClick={() => {
-                    setLocale(availableLocale);
-                    setOpenMenu(null);
-                  }}
-                >
-                  {availableLocale.toUpperCase()}
-                </button>
-              ))}
             </div>
           </div>
         )}
