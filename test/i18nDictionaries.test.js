@@ -3,11 +3,17 @@ import assert from 'node:assert/strict';
 import es from '../src/i18n/es.js';
 import en from '../src/i18n/en.js';
 
+const localeInvariantKeys = new Set([
+  'appName',
+  'taxiUber',
+  'bus',
+]);
+
 function sortedKeys(dictionary) {
   return Object.keys(dictionary).sort();
 }
 
-test('los diccionarios español e inglés contienen las mismas claves', () => {
+test('los diccionarios español e inglés contienen exactamente las mismas claves', () => {
   assert.deepEqual(sortedKeys(en), sortedKeys(es));
 });
 
@@ -18,6 +24,17 @@ test('ninguna traducción registrada está vacía o tiene un tipo inválido', ()
       assert.notEqual(value.trim(), '', `${locale}.${key} no puede estar vacío`);
     }
   }
+});
+
+test('las traducciones no quedan copiadas entre idiomas salvo términos invariantes', () => {
+  const untranslated = sortedKeys(es).filter(
+    (key) => es[key].trim() === en[key].trim() && !localeInvariantKeys.has(key)
+  );
+  assert.deepEqual(
+    untranslated,
+    [],
+    'Estas claves parecen no estar traducidas; agrégalas a localeInvariantKeys solo si deben ser idénticas'
+  );
 });
 
 test('las claves críticas de operación existen en todos los idiomas', () => {
