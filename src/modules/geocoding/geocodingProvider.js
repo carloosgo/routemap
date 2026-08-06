@@ -1,20 +1,11 @@
-// Interfaz y fábrica del proveedor usado exclusivamente para buscar ciudades.
+// Proveedor usado exclusivamente para buscar ciudades del itinerario.
 // Contrato: search(query, { signal, limit }) -> Promise<CityResult[]>
-//
-// CityResult: {
-//   id: string,
-//   name: string,
-//   displayName: string,
-//   countryCode: string,
-//   lat: number,
-//   lon: number,
-// }
 
-import { createNominatimProvider } from './nominatimProvider.js';
+import { createGeoapifyCityProvider } from './citySearchClient.js';
 
 let cached = null;
 
 export function getGeocoder() {
-  if (!cached) cached = createNominatimProvider();
+  if (!cached) cached = createGeoapifyCityProvider();
   return cached;
 }
