@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as maplibregl from 'maplibre-gl';
+import { useTranslation } from '../../i18n/index.jsx';
 import { isPlaced } from '../trips/tripModel.js';
 import { fetchGeoapifyPlaceImage } from '../places/geoapifyClient.js';
 import { markerElement, resultMarkerScale, savePrompt } from './placeMapDom.js';
@@ -13,6 +14,7 @@ export function usePlaceResultMarkers({
   addPlace,
   setSaveNotice,
 }) {
+  const { t } = useTranslation();
   const resultMarkersRef = useRef([]);
   const activePromptRef = useRef(null);
   const saveNoticeTimerRef = useRef(null);
@@ -89,10 +91,11 @@ export function usePlaceResultMarkers({
         .setDOMContent(
           savePrompt(place, {
             alreadySaved,
+            t,
             onSave: (selected) => {
               const savedPlace = {
                 id: selected.id,
-                name: selected.name || 'Lugar',
+                name: selected.name || t('place'),
                 address: selected.address || selected.formatted || '',
                 city: selected.city || '',
                 country: selected.country || '',
@@ -105,7 +108,7 @@ export function usePlaceResultMarkers({
               if (isPlaced(savedPlace)) {
                 addPlaceRef.current?.(savedPlace);
                 clearTimeout(saveNoticeTimerRef.current);
-                setSaveNotice('Lugar guardado');
+                setSaveNotice(t('placeSaved'));
                 saveNoticeTimerRef.current = setTimeout(() => setSaveNotice(''), 2200);
               }
             },
@@ -120,7 +123,7 @@ export function usePlaceResultMarkers({
     }
 
     validResults.forEach((place) => {
-      const { button, image } = markerElement(place);
+      const { button, image } = markerElement(place, t);
       button.style.setProperty('--place-marker-scale', String(resultMarkerScale(map.getZoom())));
       const controller = new AbortController();
       const marker = new maplibregl.Marker({ element: button, anchor: 'bottom' })
@@ -163,5 +166,5 @@ export function usePlaceResultMarkers({
       });
       resultMarkersRef.current = [];
     };
-  }, [mapReady, mapRef, results, setSaveNotice, viewMode]);
+  }, [mapReady, mapRef, results, setSaveNotice, t, viewMode]);
 }
