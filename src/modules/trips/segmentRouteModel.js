@@ -4,6 +4,7 @@ const MAX_ROUTE_POINTS = 20_000;
 const MAX_ROUTE_GEOMETRY_CHARS = 700_000;
 
 function validCoordinate(value, minimum, maximum) {
+  if (value === '' || value == null) return null;
   const number = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(number) && number >= minimum && number <= maximum
     ? number
