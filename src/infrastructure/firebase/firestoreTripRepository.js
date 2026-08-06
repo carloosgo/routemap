@@ -82,7 +82,8 @@ export function createFirestoreTripRepository({ db, uid }) {
   const knownVersions = new Map();
   let mutationQueue = Promise.resolve();
 
-  function rememberSnapshot(snapshot) {
+  function rememberSnapshot(snapshot, { overwrite = true } = {}) {
+    if (!overwrite && knownVersions.has(snapshot.id)) return;
     knownVersions.set(snapshot.id, storedVersion(snapshot));
   }
 
@@ -156,7 +157,7 @@ export function createFirestoreTripRepository({ db, uid }) {
         query(tripsCollection, orderBy('updatedAt', 'desc'))
       );
       return snapshot.docs.map((item) => {
-        rememberSnapshot(item);
+        rememberSnapshot(item, { overwrite: false });
         return (
           createVersionedTripListEntry(item.id, item.data()) ||
           normalizeTrip({ id: item.id, ...item.data() })
