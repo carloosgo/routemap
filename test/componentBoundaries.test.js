@@ -108,11 +108,13 @@ test('el repositorio Firestore conserva revisiones separadas y publicación tran
   assert.match(repository, /await deleteRevision\(db, revisionRef\)/);
 });
 
-test('geoapifyClient coordina búsquedas sin absorber Firebase, caché ni datos de tramos', async () => {
+test('los clientes Geoapify comparten solo infraestructura Firebase', async () => {
   const client = await read('src/modules/places/geoapifyClient.js');
-  const callable = await read('src/modules/places/geoapifyCallable.js');
+  const callableFacade = await read('src/modules/places/geoapifyCallable.js');
+  const callableInfrastructure = await read('src/infrastructure/firebase/callableFunctions.js');
   const cache = await read('src/modules/places/geoapifyClientCache.js');
   const query = await read('src/modules/places/geoapifyQuery.js');
+  const cityClient = await read('src/modules/geocoding/citySearchClient.js');
 
   assert.ok(
     lineCount(client) <= 90,
@@ -121,10 +123,13 @@ test('geoapifyClient coordina búsquedas sin absorber Firebase, caché ni datos 
   assert.match(client, /from '\.\/geoapifyCallable\.js'/);
   assert.match(client, /from '\.\/geoapifyClientCache\.js'/);
   assert.match(client, /from '\.\/geoapifyQuery\.js'/);
-  assert.doesNotMatch(client, /connectFunctionsEmulator|localStorage|contextualQuery|searchContext/);
+  assert.doesNotMatch(client, /connectFunctionsEmulator|localStorage|contextualQuery|searchContext|citySearchClient/);
 
-  assert.match(callable, /connectFunctionsEmulator/);
-  assert.match(callable, /httpsCallable/);
+  assert.match(callableFacade, /firebaseCallable as geoapifyCallable/);
+  assert.match(callableInfrastructure, /connectFunctionsEmulator/);
+  assert.match(callableInfrastructure, /httpsCallable/);
+  assert.match(cityClient, /from '\.\.\/\.\.\/infrastructure\/firebase\/callableFunctions\.js'/);
+  assert.doesNotMatch(cityClient, /modules\/places|geoapifyPlaceSearch/);
   assert.match(cache, /export function createPersistentCache/);
   assert.match(cache, /localStorage/);
   assert.match(query, /export function normalizeSearchKey/);
