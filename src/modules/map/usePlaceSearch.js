@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { config } from '../../config.js';
+import { useTranslation } from '../../i18n/index.jsx';
 import { isPlaced } from '../trips/tripModel.js';
 import { searchGeoapifyPlaces } from '../places/geoapifyClient.js';
 
 export function usePlaceSearch({ viewMode }) {
+  const { t } = useTranslation();
   const searchAbortRef = useRef(null);
   const autocompleteAbortRef = useRef(null);
   const searchSequenceRef = useRef(0);
@@ -86,7 +88,7 @@ export function usePlaceSearch({ viewMode }) {
     event?.preventDefault();
     const text = query.trim();
     if (text.length < config.geoapify.searchMinChars) {
-      setError(`Escribe al menos ${config.geoapify.searchMinChars} caracteres.`);
+      setError(t('minimumSearchCharacters', { count: config.geoapify.searchMinChars }));
       return;
     }
 
@@ -110,7 +112,7 @@ export function usePlaceSearch({ viewMode }) {
       }
     } catch (searchError) {
       if (searchError?.name !== 'AbortError' && sequence === searchSequenceRef.current) {
-        setError(searchError.message || 'No fue posible buscar lugares.');
+        setError(searchError.message || t('placeSearchError'));
       }
     } finally {
       if (!controller.signal.aborted && sequence === searchSequenceRef.current) {
