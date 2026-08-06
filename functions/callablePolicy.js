@@ -22,24 +22,36 @@ function hash(value) {
   return createHash('sha256').update(String(value)).digest('hex');
 }
 
+function firstHeaderValue(value) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return String(raw || '').split(',')[0].trim();
+}
+
 function requestIp(request) {
-  const forwarded = request.rawRequest?.headers?.['x-forwarded-for'];
-  const forwardedIp = Array.isArray(forwarded) ? forwarded[0] : forwarded;
-  return String(forwardedIp || request.rawRequest?.ip || '')
-    .split(',')[0]
-    .trim();
+  const rawRequest = request.rawRequest;
+  const headers = rawRequest?.headers || {};
+  return firstHeaderValue(
+    headers['x-forwarded-for']
+      || headers['x-appengine-user-ip']
+      || headers['fastly-client-ip']
+      || rawRequest?.ip
+      || rawRequest?.socket?.remoteAddress
+      || rawRequest?.connection?.remoteAddress
+  );
+}
+
+function anonymousFingerprint(request) {
+  const headers = request.rawRequest?.headers || {};
+  const userAgent = firstHeaderValue(headers['user-agent']);
+  const language = firstHeaderValue(headers['accept-language']);
+  return hash(`${userAgent}|${language}|anonymous`);
 }
 
 function requestPrincipal(request) {
   if (request.auth?.uid) return `uid:${request.auth.uid}`;
   const ip = requestIp(request);
-  if (!ip) {
-    throw new HttpsError(
-      'unauthenticated',
-      'No fue posible verificar el origen de la solicitud.'
-    );
-  }
-  return `ip:${hash(ip)}`;
+  if (ip) return `ip:${hash(ip)}`;
+  return `anonymous:${anonymousFingerprint(request)}`;
 }
 
 export function callableOptions(overrides = {}) {
