@@ -14,6 +14,80 @@ service cloud.firestore {
       return value is int && value >= 0 && value <= maximum;
     }
 
+    function validAmount(value) {
+      return value is number && value >= 0;
+    }
+
+    function validCity(data) {
+      return data is map
+        && data.keys().hasOnly([
+          'id', 'name', 'displayName', 'country', 'countryCode', 'lat', 'lon'
+        ])
+        && data.keys().hasAll([
+          'id', 'name', 'displayName', 'country', 'countryCode', 'lat', 'lon'
+        ])
+        && data.id is string
+        && data.id.size() <= 256
+        && data.name is string
+        && data.name.size() <= 120
+        && data.displayName is string
+        && data.displayName.size() <= 200
+        && data.country is string
+        && data.country.size() <= 100
+        && data.countryCode is string
+        && data.countryCode.matches('^([A-Z]{2})?$')
+        && data.lat is number
+        && data.lat >= -90
+        && data.lat <= 90
+        && data.lon is number
+        && data.lon >= -180
+        && data.lon <= 180;
+    }
+
+    function validFood(data) {
+      return data is map
+        && data.keys().hasOnly([
+          'mode', 'single', 'breakfast', 'lunch', 'dinner'
+        ])
+        && data.keys().hasAll([
+          'mode', 'single', 'breakfast', 'lunch', 'dinner'
+        ])
+        && (data.mode == 'single' || data.mode == 'detailed')
+        && validAmount(data.single)
+        && validAmount(data.breakfast)
+        && validAmount(data.lunch)
+        && validAmount(data.dinner);
+    }
+
+    function validTransport(data) {
+      return data is map
+        && data.keys().hasOnly(['plane', 'train', 'bus', 'taxiUber'])
+        && data.keys().hasAll(['plane', 'train', 'bus', 'taxiUber'])
+        && validAmount(data.plane)
+        && validAmount(data.train)
+        && validAmount(data.bus)
+        && validAmount(data.taxiUber);
+    }
+
+    function validExpenses(data) {
+      return data is map
+        && data.keys().hasOnly([
+          'lodging', 'food', 'transport', 'transportOthers', 'attractions', 'others'
+        ])
+        && data.keys().hasAll([
+          'lodging', 'food', 'transport', 'transportOthers', 'attractions', 'others'
+        ])
+        && validAmount(data.lodging)
+        && validFood(data.food)
+        && validTransport(data.transport)
+        && data.transportOthers is list
+        && data.transportOthers.size() <= 200
+        && data.attractions is list
+        && data.attractions.size() <= 200
+        && data.others is list
+        && data.others.size() <= 200;
+    }
+
     function revisionPath(userId, tripId, revisionId) {
       return /databases/$(database)/documents/users/$(userId)/trips/$(tripId)/revisions/$(revisionId);
     }
@@ -30,32 +104,14 @@ service cloud.firestore {
 
     function validTripSummary(data, tripId) {
       return data.keys().hasOnly([
-          'id',
-          'name',
-          'currency',
-          'createdAt',
-          'updatedAt',
-          'storageVersion',
-          'activeRevision',
-          'segmentCount',
-          'placeCount',
-          'noteCount',
-          'checklistCount',
-          'total'
+          'id', 'name', 'currency', 'createdAt', 'updatedAt', 'storageVersion',
+          'activeRevision', 'segmentCount', 'placeCount', 'noteCount',
+          'checklistCount', 'total'
         ])
         && data.keys().hasAll([
-          'id',
-          'name',
-          'currency',
-          'createdAt',
-          'updatedAt',
-          'storageVersion',
-          'activeRevision',
-          'segmentCount',
-          'placeCount',
-          'noteCount',
-          'checklistCount',
-          'total'
+          'id', 'name', 'currency', 'createdAt', 'updatedAt', 'storageVersion',
+          'activeRevision', 'segmentCount', 'placeCount', 'noteCount',
+          'checklistCount', 'total'
         ])
         && data.id == tripId
         && data.id is string
@@ -76,28 +132,17 @@ service cloud.firestore {
         && validCount(data.placeCount, 500)
         && validCount(data.noteCount, 50)
         && validCount(data.checklistCount, 500)
-        && data.total is number
-        && data.total >= 0;
+        && validAmount(data.total);
     }
 
     function validRevision(data, revisionId) {
       return data.keys().hasOnly([
-          'id',
-          'createdAt',
-          'complete',
-          'segmentCount',
-          'placeCount',
-          'noteCount',
-          'checklistCount'
+          'id', 'createdAt', 'complete', 'segmentCount', 'placeCount',
+          'noteCount', 'checklistCount'
         ])
         && data.keys().hasAll([
-          'id',
-          'createdAt',
-          'complete',
-          'segmentCount',
-          'placeCount',
-          'noteCount',
-          'checklistCount'
+          'id', 'createdAt', 'complete', 'segmentCount', 'placeCount',
+          'noteCount', 'checklistCount'
         ])
         && data.id == revisionId
         && data.createdAt is string
@@ -122,13 +167,13 @@ service cloud.firestore {
         && data.id.size() > 0
         && data.id.size() <= 128
         && validCount(data.position, 499)
-        && (data.origin == null || data.origin is map)
-        && (data.destination == null || data.destination is map)
+        && (data.origin == null || validCity(data.origin))
+        && (data.destination == null || validCity(data.destination))
         && data.startDate is string
         && data.startDate.size() <= 10
         && data.endDate is string
         && data.endDate.size() <= 10
-        && data.expenses is map
+        && validExpenses(data.expenses)
         && data.note is string
         && data.note.size() <= 500;
     }
