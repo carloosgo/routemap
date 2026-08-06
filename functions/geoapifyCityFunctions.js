@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { error as logError, info as logInfo } from 'firebase-functions/logger';
 import { callableOptions, enforceQuota } from './callablePolicy.js';
 import {
   GEOAPIFY_API_KEY,
@@ -80,22 +81,50 @@ async function loadCities(query, limit, language) {
 export const geoapifyCityAutocomplete = onCall(
   callableOptions({ secrets: [GEOAPIFY_API_KEY] }),
   async (request) => {
-    await enforceQuota(db, request, QUOTAS.cityAutocomplete);
-    const query = String(request.data?.query || '').trim().slice(0, MAX_QUERY_CHARS);
-    const queryKey = normalized(query);
-    if (queryKey.length < MIN_QUERY_CHARS) {
-      throw new HttpsError('invalid-argument', 'La ciudad requiere al menos 3 caracteres.');
+    const traceId = String(request.rawRequest?.headers?.['x-cloud-trace-context'] || '')
+      .split('/')[0]
+      .slice(0, 64);
+
+    logInfo('City autocomplete request started.', {
+      traceId,
+      hasAuth: Boolean(request.auth?.uid),
+      hasAppCheck: Boolean(request.app),
+    });
+
+    try {
+      await enforceQuota(db, request, QUOTAS.cityAutocomplete);
+      logInfo('City autocomplete quota passed.', { traceId });
+
+      const query = String(request.data?.query || '').trim().slice(0, MAX_QUERY_CHARS);
+      const queryKey = normalized(query);
+      if (queryKey.length < MIN_QUERY_CHARS) {
+        throw new HttpsError('invalid-argument', 'La ciudad requiere al menos 3 caracteres.');
+      }
+
+      const limit = requestedLimit(request.data?.limit);
+      const language = requestedLanguage(request.data?.language);
+      const key = `city:${queryKey}:lang=${language}:limit=${limit}`;
+      const cachedResult = await cached(
+        'citySearchCache',
+        key,
+        () => loadCities(query, limit, language)
+      );
+
+      logInfo('City autocomplete request completed.', {
+        traceId,
+        cacheHit: cachedResult.cacheHit,
+        resultCount: Array.isArray(cachedResult.result) ? cachedResult.result.length : 0,
+      });
+
+      return { results: cachedResult.result, cacheHit: cachedResult.cacheHit };
+    } catch (error) {
+      logError('City autocomplete request failed.', {
+        traceId,
+        errorName: error?.name || 'Error',
+        errorCode: error?.code || '',
+        errorMessage: String(error?.message || error || 'Unknown error').slice(0, 240),
+      });
+      throw error;
     }
-
-    const limit = requestedLimit(request.data?.limit);
-    const language = requestedLanguage(request.data?.language);
-    const key = `city:${queryKey}:lang=${language}:limit=${limit}`;
-    const cachedResult = await cached(
-      'citySearchCache',
-      key,
-      () => loadCities(query, limit, language)
-    );
-
-    return { results: cachedResult.result, cacheHit: cachedResult.cacheHit };
   }
 );
