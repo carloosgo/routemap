@@ -62,27 +62,6 @@ export function orderedCities(segments) {
   return cities;
 }
 
-export function placeSearchContext(segments) {
-  const cities = orderedCities(segments);
-  const anchor =
-    [...(segments || [])]
-      .reverse()
-      .flatMap((segment) => [segment.destination, segment.origin])
-      .find(isPlaced) || cities.at(-1);
-
-  if (!anchor) return { knownLocations: [] };
-  return {
-    city: anchor.name || anchor.displayName || '',
-    country: anchor.country || '',
-    countryCode: anchor.countryCode || '',
-    lat: anchor.lat,
-    lon: anchor.lon,
-    knownLocations: cities
-      .flatMap((city) => [city.name, city.displayName, city.country])
-      .filter(Boolean),
-  };
-}
-
 export function buildMapFeatureData({ segments, places, viewMode, colorForIndex }) {
   const showSegments = viewMode === 'segments';
   const showPlaces = viewMode === 'places';
