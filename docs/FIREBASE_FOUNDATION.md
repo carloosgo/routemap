@@ -3,94 +3,92 @@
 ## Entorno actual
 
 - Proyecto Firebase de desarrollo: `atlasmap-dev`
-- Authentication: Google únicamente
-- Firestore: Standard, base `(default)`, modo de producción
-- Ubicación: `northamerica-south1` (Querétaro)
-- Cloud Functions: `us-central1`, región compatible más cercana disponible para Firebase Functions
-- Rama: `agent/phase-3-firebase-foundation`
+- Plan: Blaze
+- Authentication: Google
+- Firestore: Standard, base `(default)`, región `northamerica-south1`
+- Cloud Functions Gen 2: región `us-central1`, runtime Node.js 22
+- Rama activa: `agent/phase-3-firebase-foundation`
 
 ## Principios de arquitectura
 
 1. Desarrollo y producción usan proyectos Firebase distintos.
-2. La configuración Web SDK se carga desde `.env.local`; nunca se incrustan cuentas de servicio.
-3. Los documentos pertenecen al UID indicado por la ruta:
-
-   `users/{uid}/trips/{tripId}`
-
+2. La configuración pública del Web SDK se carga desde `.env.local`; cuentas de servicio y secretos nunca se incrustan en frontend.
+3. Los viajes pertenecen al UID indicado por `users/{uid}/trips/{tripId}`.
 4. El cliente no puede leer ni escribir fuera de su UID.
-5. Las reglas validan forma general, tamaños máximos y campos permitidos.
-6. El repositorio local permanece disponible para desarrollo y recuperación.
-7. Los emuladores se usan para probar Auth y Firestore sin tocar datos reales.
-8. App Check se registra y observa antes de activar enforcement.
-9. Las Functions públicas tienen cuota compartida, límites de instancias y caché con expiración.
-10. Las claves privadas de proveedores viven únicamente en Secret Manager.
+5. Las reglas validan campos permitidos, forma y límites máximos.
+6. El repositorio local permanece disponible para desarrollo, uso sin sesión y recuperación.
+7. App Check se configura y observa antes de activar enforcement.
+8. Las Functions públicas usan cuota compartida, límites de instancias y caché con expiración.
+9. Las claves privadas de proveedores viven únicamente en Firebase Secret Manager.
+10. Tramos y Lugares son dominios independientes y solo comparten el lienzo MapLibre.
 
-## Archivos de infraestructura
+## Secretos de Geoapify
 
-- `.firebaserc`: alias del proyecto de desarrollo.
-- `firebase.json`: Firestore y Emulator Suite.
-- `firestore.rules`: aislamiento y validación de viajes.
-- `firestore.indexes.json`: índices versionados.
-- `.env.example`: variables públicas esperadas.
-- `functions/callablePolicy.js`: App Check, cuotas y límites comunes.
-- `functions/sharedCache.js`: caché compartida con TTL e in-flight deduplication.
-- `docs/GEOAPIFY_USAGE_CONTRACT.md`: separación entre Tramos, búsqueda general y routing futuro.
+Se mantienen dos secretos deliberadamente separados:
+
+- `GEOAPIFY_CITY_API_KEY`: uso exclusivo de `geoapifyCityAutocomplete`.
+- `GEOAPIFY_API_KEY`: búsqueda general, detalles, reverse geocoding, routing y batch.
+
+No deben unificarse, copiarse al frontend, almacenarse en `.env.local`, registrarse en logs ni versionarse.
+
+## Callable Functions actuales
+
+- `geoapifyCityAutocomplete`
+- `geoapifyPlaceSearch`
+- `geoapifyAutocomplete`
+- `geoapifyPlaceDetails`
+- `geoapifyRoute`
+- `geoapifyReverse`
+- `geoapifyBatchGeocode`
+- `geoapifyBatchGeocodeResult`
+- `geoapifyCountryBoundary`
+
+`geoapifyCityAutocomplete` declara `enforceAppCheck: false` de forma explícita mientras termina la activación gradual de App Check. Las demás Functions heredan el parámetro global `ENFORCE_APP_CHECK`, cuyo valor predeterminado es `false`.
 
 ## Persistencia de viajes
 
-El documento principal del viaje contiene un resumen ligero y apunta a una revisión completa. Tramos, lugares, notas y checklist se guardan en subcolecciones de esa revisión.
-
-Los documentos de tramo contienen exclusivamente ciudad de origen, ciudad de destino, fechas, gastos y nota. Las reglas rechazan campos de lugares anidados y campos de routing.
-
-Los lugares confirmados por la búsqueda general se almacenan como documentos independientes en la colección `places` de la revisión. Los viajes legados que guardaron lugares dentro de segmentos se migran al arreglo general durante la normalización.
+El documento principal contiene un resumen ligero y apunta a una revisión completa. Tramos, lugares, notas y checklist se guardan en subcolecciones de la revisión.
 
 El orden de escritura es:
 
 1. Crear una revisión abierta.
-2. Escribir sus colecciones por lotes.
+2. Escribir las subcolecciones por lotes.
 3. Marcar la revisión como completa e inmutable.
 4. Publicar el resumen mediante una transacción.
 5. Limpiar revisiones anteriores.
 
-Antes de publicar, la transacción comprueba que la versión leída al comenzar el guardado sigue siendo la activa. Un cambio desde otra pestaña o dispositivo produce un conflicto explícito en lugar de sobrescribirlo silenciosamente. Los guardados iniciados desde una misma instancia también se serializan para evitar carreras por doble clic o atajos repetidos.
-
-Los viajes del esquema anterior siguen siendo legibles y se migran al esquema versionado en su siguiente guardado.
+La transacción detecta cambios realizados desde otra pestaña o dispositivo y evita sobrescrituras silenciosas. Los viajes legados siguen siendo legibles y se migran al esquema versionado en su siguiente guardado.
 
 ## Cambio entre almacenamiento local y nube
 
 - Sin sesión se usa `localStorage`.
 - Con sesión se usa Firestore bajo el UID autenticado.
-- La importación de viajes locales es manual y nunca elimina el origen local.
-- Las respuestas asíncronas de un repositorio anterior se descartan al cambiar la sesión, evitando que una carga local tardía reemplace la lista de Firestore o viceversa.
+- La importación de viajes locales es manual y no elimina el origen local.
+- Las respuestas asíncronas de un repositorio anterior se descartan al cambiar de sesión.
 
 ## App Check
 
-La app web está preparada para reCAPTCHA Enterprise mediante:
+El frontend está preparado para reCAPTCHA Enterprise mediante:
 
 ```text
 VITE_FIREBASE_APPCHECK_SITE_KEY=<site-key-publica>
 ```
 
-Las callable functions usan el parámetro:
-
-```text
-ENFORCE_APP_CHECK=false
-```
-
 Secuencia segura de activación:
 
-1. Registrar la app web en Firebase App Check con reCAPTCHA Enterprise.
-2. Añadir la clave pública en el entorno del frontend.
+1. Registrar la aplicación web y sus dominios legítimos.
+2. Añadir la clave pública al entorno del frontend.
 3. Desplegar con enforcement desactivado.
-4. Observar métricas de solicitudes verificadas y no verificadas.
-5. Activar `ENFORCE_APP_CHECK=true` cuando el tráfico legítimo esté validado.
+4. Observar solicitudes verificadas y no verificadas.
+5. Activar `ENFORCE_APP_CHECK=true` gradualmente y documentar rollback.
 
-No se debe activar enforcement antes de configurar todos los dominios y clientes legítimos.
+No se debe activar enforcement antes de completar esa secuencia.
 
-## TTL de Firestore
+## Cachés, cuotas y TTL
 
-Las colecciones internas usan el campo `expiresAt`:
+Las colecciones internas incluyen `expiresAt` y el código valida la expiración antes de reutilizar datos:
 
+- `citySearchCache`
 - `placeSearchCache`
 - `geocodeCache`
 - `placeDetailsCache`
@@ -99,9 +97,9 @@ Las colecciones internas usan el campo `expiresAt`:
 - `functionRateLimits`
 - `geoapifyBatchJobs`
 
-La política TTL debe configurarse en cada colección desde Google Cloud o mediante infraestructura como código. El TTL es una limpieza asíncrona; el código siempre valida la expiración antes de reutilizar un documento.
+La eliminación mediante TTL de Firestore es asíncrona y debe configurarse operativamente para cada colección.
 
-## Validación local
+## Validación
 
 Desde la raíz:
 
@@ -113,41 +111,29 @@ npm run lint
 npm run build
 ```
 
-Las Functions usan Node 22 y los emuladores de Firestore requieren Java 21.
+Las Functions usan Node.js 22 y las pruebas del emulador requieren Java 21.
 
 ## Estado de la fase
 
 ### Implementado
 
-- Google Auth y cierre de sesión.
-- Alternancia entre viajes locales y viajes de la cuenta.
-- Importación manual de viajes locales.
-- Persistencia escalable mediante resúmenes y revisiones inmutables.
-- Migración transparente de viajes anteriores.
-- Control transaccional de conflictos entre pestañas o dispositivos.
-- Protección contra respuestas obsoletas al cambiar de sesión.
-- Reglas Firestore, pruebas con emulador, auditoría de dependencias y CodeQL.
-- Infraestructura Geoapify protegida conforme a su contrato de uso.
-- Separación estricta entre autocompletado de ciudades de Tramos y búsqueda general de Lugares.
+- Proyecto Blaze, Firestore y Secret Manager.
+- Google Auth y persistencia local/remota.
+- Resúmenes ligeros y revisiones inmutables.
+- Reglas Firestore y pruebas con emulador.
+- Cuotas, cachés y límites comunes de callable Functions.
+- Autocomplete privado de ciudades con clave exclusiva y `type=city` forzado.
+- Separación estricta entre Tramos y Lugares.
+- Resolución del error 401 del autocomplete mediante override explícito de App Check.
 
-### Validación manual pendiente
+### Pendiente de cierre de auditoría
 
-- Flujo emergente de Google en navegadores reales.
-- Cambio de sesión con viajes locales y viajes remotos existentes.
-- Importación sin pérdida ni eliminación de datos locales.
-- Conflicto de edición entre dos pestañas.
-- Comportamiento responsive en escritorio y móvil.
-- Confirmar en navegador que cambiar entre Tramos y Lugares no conserva capas, resultados o controles del otro dominio.
-
-### Pendiente operativo
-
-- Subir el proyecto a Blaze para desplegar Functions y usar Secret Manager.
-- Configurar TTL para las colecciones internas.
-- Registrar App Check, observar métricas y activar enforcement.
-- Crear el proyecto separado de producción.
-- Configurar Hosting, dominio, alertas de presupuesto y monitorización.
-- Definir backups, retención, aviso de privacidad y eliminación de cuenta/datos.
+- Ejecutar nuevamente pruebas, reglas, lint y build sobre el HEAD final.
+- Confirmar el resultado de Quality checks, CodeQL y Dependency audit.
+- Revisar manualmente los flujos principales en navegador.
+- Configurar TTL de colecciones internas si aún no está activo.
+- Actualizar documentación operativa cuando cambien despliegues o secretos.
 
 ### Fase funcional posterior
 
-Las conexiones y rutas reales se implementarán únicamente entre lugares guardados dentro de la funcionalidad general de Lugares. Tendrán modelo, cliente, persistencia y capas propios; no formarán parte de `segment` ni sustituirán las curvas visuales de Tramos.
+Las conexiones y rutas reales se implementarán únicamente entre lugares guardados dentro de Lugares. Tendrán modelo, persistencia y capas propios; no formarán parte de `segment` ni sustituirán las curvas visuales de Tramos.
