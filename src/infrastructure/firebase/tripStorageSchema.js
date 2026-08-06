@@ -1,9 +1,11 @@
 import { normalizeTrip, tripTotal } from '../../modules/trips/tripModel.js';
 
-export const TRIP_STORAGE_VERSION = 2;
+export const TRIP_STORAGE_VERSION = 3;
+const SUPPORTED_TRIP_STORAGE_VERSIONS = new Set([2, TRIP_STORAGE_VERSION]);
 export const TRIP_REVISION_COLLECTIONS = Object.freeze([
   'segments',
   'places',
+  'routeConnections',
   'notes',
   'checklist',
 ]);
@@ -42,7 +44,7 @@ function ordered(items) {
 export function isVersionedTripSummary(data) {
   return Boolean(
     data
-      && data.storageVersion === TRIP_STORAGE_VERSION
+      && SUPPORTED_TRIP_STORAGE_VERSIONS.has(Number(data.storageVersion))
       && typeof data.activeRevision === 'string'
       && data.activeRevision.trim()
   );
@@ -55,6 +57,7 @@ export function createTripRevisionPayload(rawTrip, revisionId, updatedAt = new D
   const counts = {
     segmentCount: trip.segments.length,
     placeCount: trip.places.length,
+    routeConnectionCount: trip.routeConnections.length,
     noteCount: trip.notes.length,
     checklistCount: trip.checklist.length,
   };
@@ -82,6 +85,7 @@ export function createTripRevisionPayload(rawTrip, revisionId, updatedAt = new D
     collections: {
       segments: positioned(trip.segments, segmentForStorage),
       places: positioned(trip.places),
+      routeConnections: positioned(trip.routeConnections),
       notes: positioned(trip.notes),
       checklist: positioned(trip.checklist),
     },
@@ -97,10 +101,11 @@ export function createVersionedTripListEntry(id, data) {
     placeOrderVersion: Number(data.placeOrderVersion) || 0,
     createdAt: typeof data.createdAt === 'string' ? data.createdAt : '',
     updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : '',
-    storageVersion: TRIP_STORAGE_VERSION,
+    storageVersion: Number(data.storageVersion) || 0,
     activeRevision: data.activeRevision,
     segmentCount: Number(data.segmentCount) || 0,
     placeCount: Number(data.placeCount) || 0,
+    routeConnectionCount: Number(data.routeConnectionCount) || 0,
     noteCount: Number(data.noteCount) || 0,
     checklistCount: Number(data.checklistCount) || 0,
     total: Number(data.total) || 0,
@@ -121,6 +126,7 @@ export function hydrateVersionedTrip(summary, collections) {
     updatedAt: summary.updatedAt,
     segments: ordered(collections?.segments),
     places: ordered(collections?.places),
+    routeConnections: ordered(collections?.routeConnections),
     notes: ordered(collections?.notes),
     checklist: ordered(collections?.checklist),
   });
