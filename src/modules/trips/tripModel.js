@@ -1,4 +1,5 @@
 export {
+  PLACE_ORDER_VERSION,
   TRIP_LIMITS,
   createChecklistItem,
   createCity,
@@ -11,9 +12,18 @@ export {
 } from './tripEntities.js';
 
 export {
+  contiguousPlaceGroups,
+  groupPlacesByCountry,
+  insertPlaceByCountry,
+  placeCountryKey,
+  reorderPlaceList,
+} from './placeOrdering.js';
+
+export {
   appendSegment,
   isTripSavable,
   nextSegmentDefaults,
+  reorderPlaces,
   reorderSegments,
   routeStops,
   segmentCoords,
