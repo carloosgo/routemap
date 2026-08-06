@@ -21,10 +21,12 @@ async function sourceFiles(directoryUrl) {
 }
 
 function translationKeys(source) {
-  return [...source.matchAll(/\bt\(\s*['"]([^'"]+)['"]/g)].map((match) => match[1]);
+  const directCalls = [...source.matchAll(/\bt\(\s*['"]([^'"]+)['"]/g)];
+  const helperCalls = [...source.matchAll(/\btranslated\(\s*t\s*,\s*['"]([^'"]+)['"]/g)];
+  return [...directCalls, ...helperCalls].map((match) => match[1]);
 }
 
-test('cada clave t() usada por el frontend existe en español e inglés', async () => {
+test('cada clave de traducción usada por el frontend existe en español e inglés', async () => {
   const missing = [];
   for (const fileUrl of await sourceFiles(SOURCE_ROOT)) {
     const source = await readFile(fileUrl, 'utf8');
