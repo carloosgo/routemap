@@ -101,6 +101,33 @@ export function useTrip(initialTrip) {
       }),
     []
   );
+  const upsertRouteConnection = useCallback(
+    (connection) =>
+      dispatch({ type: TRIP_ACTIONS.upsertRouteConnection, connection }),
+    []
+  );
+  const removeRouteConnection = useCallback(
+    (routeId) =>
+      dispatch({ type: TRIP_ACTIONS.removeRouteConnection, routeId }),
+    []
+  );
+  const setRouteConnectionVisibility = useCallback(
+    (routeId, visible) =>
+      dispatch({
+        type: TRIP_ACTIONS.setRouteConnectionVisibility,
+        routeId,
+        visible,
+      }),
+    []
+  );
+  const setAllRouteConnectionsVisibility = useCallback(
+    (visible) =>
+      dispatch({
+        type: TRIP_ACTIONS.setAllRouteConnectionsVisibility,
+        visible,
+      }),
+    []
+  );
 
   return {
     trip,
@@ -122,5 +149,9 @@ export function useTrip(initialTrip) {
     addPlace,
     removePlace,
     reorderPlace,
+    upsertRouteConnection,
+    removeRouteConnection,
+    setRouteConnectionVisibility,
+    setAllRouteConnectionsVisibility,
   };
 }
