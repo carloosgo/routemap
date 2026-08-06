@@ -21,9 +21,12 @@ test('each desktop navigation option has one canonical icon source', async () =>
 
   assert.equal((navigation.match(/editor-module__tab-icon/g) || []).length, 4);
   assert.match(editor, /<img src=\{lugaresIcon\} alt="" \/>/);
+  assert.match(menu, /data-tab-icon="language-selector"/);
+  assert.match(menu, /<IconLanguage style=\{\{ display: 'block' \}\} \/>/);
+  assert.match(menu, /style=\{\{ backgroundImage: 'none' \}\}/);
+  assert.doesNotMatch(menu, /currencyCoinIcon|CURRENCIES|setCurrency|openMenu === 'currency'/);
   assert.match(css, /url\('\/icons\/tramos\.svg'\)/);
   assert.match(css, /url\('\/icons\/notas\.svg'\)/);
-  assert.match(css, /url\('\/icons\/moneda\.svg'\)/);
   assert.match(css, /\.editor-module__tab-icon > svg\s*\{\s*display:\s*none;/);
   assert.match(css, /\.editor-module__nav-tab::before,[\s\S]*content:\s*none !important;/);
 });
