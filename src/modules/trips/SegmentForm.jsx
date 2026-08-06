@@ -1,25 +1,29 @@
 import { useState } from 'react';
-import {
-  IconArrowRight,
-  IconCalendar,
-  IconChevronDown,
-  IconChevronUp,
-  IconNote,
-  IconX,
-} from '@tabler/icons-react';
-import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
-import { ConfirmDialog } from '../../components/ConfirmDialog.jsx';
-import { CalendarDateInput } from '../../components/CalendarDateInput.jsx';
-import { ExpenseEditor } from '../expenses/ExpenseEditor.jsx';
-import { useTranslation } from '../../i18n/index.jsx';
-import { colorForIndex } from '../../config.js';
 import { segmentTotal } from './tripModel.js';
+import { SegmentBody } from './SegmentBody.jsx';
+import { SegmentDeleteDialog } from './SegmentDeleteDialog.jsx';
+import { SegmentHeader } from './SegmentHeader.jsx';
+import { formatSegmentAmount, formatSegmentDates } from './segmentFormModel.js';
 
-function formatSegmentAmount(amount, locale) {
-  return new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(Number(amount) || 0);
+function SegmentDropIndicator({ placement }) {
+  if (!placement) return null;
+
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: placement === 'before' ? '-3px' : 'auto',
+        bottom: placement === 'after' ? '-3px' : 'auto',
+        height: '1px',
+        background: 'var(--line-strong)',
+        pointerEvents: 'none',
+        zIndex: 30,
+      }}
+    />
+  );
 }
 
 export function SegmentForm({
@@ -38,28 +42,15 @@ export function SegmentForm({
   onOpenNote,
   onReorderPointerStart,
 }) {
-  const { t } = useTranslation();
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const total = segmentTotal(segment);
   const bodyId = `segment-body-${segment.id}`;
+  const formattedAmount = formatSegmentAmount(segmentTotal(segment), locale);
+  const formattedDates = formatSegmentDates(segment, locale);
 
-  const formattedDates =
-    segment.startDate || segment.endDate
-      ? [
-          segment.startDate
-            ? new Date(`${segment.startDate}T00:00:00`).toLocaleDateString(locale, {
-                day: 'numeric',
-                month: 'short',
-              })
-            : '—',
-          segment.endDate
-            ? new Date(`${segment.endDate}T00:00:00`).toLocaleDateString(locale, {
-                day: 'numeric',
-                month: 'short',
-              })
-            : '—',
-        ].join(' – ')
-      : null;
+  const confirmRemove = () => {
+    setConfirmOpen(false);
+    onRemove();
+  };
 
   return (
     <article
@@ -79,133 +70,37 @@ export function SegmentForm({
           : undefined
       }
     >
-      {dropPlacement && (
-        <span
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: dropPlacement === 'before' ? '-3px' : 'auto',
-            bottom: dropPlacement === 'after' ? '-3px' : 'auto',
-            height: '1px',
-            background: 'var(--line-strong)',
-            pointerEvents: 'none',
-            zIndex: 30,
-          }}
+      <SegmentDropIndicator placement={dropPlacement} />
+
+      <SegmentHeader
+        segment={segment}
+        index={index}
+        formattedDates={formattedDates}
+        formattedAmount={formattedAmount}
+        expanded={expanded}
+        dragging={dragging}
+        bodyId={bodyId}
+        onToggle={onToggle}
+        onUpdate={onUpdate}
+        onOpenNote={onOpenNote}
+        onRemoveRequest={() => setConfirmOpen(true)}
+        onReorderPointerStart={onReorderPointerStart}
+      />
+
+      {expanded && (
+        <SegmentBody
+          segment={segment}
+          currency={currency}
+          locale={locale}
+          bodyId={bodyId}
+          onUpdate={onUpdate}
+          onUpdateExpenses={onUpdateExpenses}
         />
       )}
 
-      <header className="segment__header">
-        <span
-          className="segment__badge"
-          style={{
-            background: colorForIndex(index),
-            cursor: dragging ? 'grabbing' : 'grab',
-            touchAction: 'none',
-            userSelect: 'none',
-          }}
-          onPointerDown={onReorderPointerStart}
-          aria-hidden="true"
-        >
-          {index + 1}
-        </span>
-
-        <div className="segment__route">
-          <CityAutocomplete
-            value={segment.origin}
-            onSelect={(city) => onUpdate({ origin: city })}
-            placeholder={t('origin')}
-          />
-          <IconArrowRight size={12} className="segment__arrow" aria-hidden="true" />
-          <CityAutocomplete
-            value={segment.destination}
-            onSelect={(city) => onUpdate({ destination: city })}
-            placeholder={t('destination')}
-          />
-          {formattedDates && <span className="segment__dates">{formattedDates}</span>}
-        </div>
-
-        <span className="segment__pill">{formatSegmentAmount(total, locale)}</span>
-
-        <button
-          type="button"
-          className={'btn btn--icon segment__note-btn' + (segment.note ? ' has-note' : '')}
-          aria-label={t('segmentNote')}
-          title={t('segmentNote')}
-          onClick={onOpenNote}
-        >
-          <IconNote size={14} aria-hidden="true" />
-        </button>
-
-        <button
-          type="button"
-          className="btn btn--icon segment__toggle"
-          aria-label={expanded ? t('collapse') : t('expand')}
-          aria-expanded={expanded}
-          aria-controls={bodyId}
-          onClick={onToggle}
-        >
-          {expanded ? (
-            <IconChevronUp size={14} aria-hidden="true" />
-          ) : (
-            <IconChevronDown size={14} aria-hidden="true" />
-          )}
-        </button>
-
-        <button
-          type="button"
-          className="btn btn--icon"
-          aria-label={t('removeSegment')}
-          onClick={() => setConfirmOpen(true)}
-        >
-          <IconX size={14} aria-hidden="true" />
-        </button>
-      </header>
-
-      {expanded && (
-        <div className="segment__body" id={bodyId}>
-          <div className="dates">
-            <span className="dates__label">
-              <IconCalendar size={12} aria-hidden="true" /> {t('startDate')} / {t('endDate')}
-            </span>
-            <div className="dates__row">
-              <CalendarDateInput
-                value={segment.startDate}
-                locale={locale}
-                ariaLabel={t('startDate')}
-                onChange={(startDate) => onUpdate({ startDate })}
-              />
-              <IconArrowRight size={13} className="dates__arrow" aria-hidden="true" />
-              <CalendarDateInput
-                value={segment.endDate}
-                min={segment.startDate || undefined}
-                locale={locale}
-                ariaLabel={t('endDate')}
-                align="end"
-                onChange={(endDate) => onUpdate({ endDate })}
-              />
-            </div>
-          </div>
-
-          <ExpenseEditor
-            expenses={segment.expenses}
-            currency={currency}
-            locale={locale}
-            onChange={onUpdateExpenses}
-          />
-        </div>
-      )}
-
-      <ConfirmDialog
+      <SegmentDeleteDialog
         open={confirmOpen}
-        message={t('confirmDeleteSegment')}
-        confirmLabel={t('delete')}
-        cancelLabel={t('cancel')}
-        onConfirm={() => {
-          setConfirmOpen(false);
-          onRemove();
-        }}
+        onConfirm={confirmRemove}
         onCancel={() => setConfirmOpen(false)}
       />
     </article>
