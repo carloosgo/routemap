@@ -91,6 +91,16 @@ export function useTrip(initialTrip) {
     (placeId) => dispatch({ type: TRIP_ACTIONS.removePlace, placeId }),
     []
   );
+  const reorderPlace = useCallback(
+    (sourceId, targetId, placement) =>
+      dispatch({
+        type: TRIP_ACTIONS.reorderPlace,
+        sourceId,
+        targetId,
+        placement,
+      }),
+    []
+  );
 
   return {
     trip,
@@ -111,5 +121,6 @@ export function useTrip(initialTrip) {
     updateExpenses,
     addPlace,
     removePlace,
+    reorderPlace,
   };
 }
