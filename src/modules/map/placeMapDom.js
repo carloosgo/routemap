@@ -32,7 +32,7 @@ export function savedPlacePopup(place, t) {
     place.name || placeLabel
   )}</strong></div><span>${escaped(place.city || '')}${
     place.city && country ? ', ' : ''
-  }${escaped(country)}</span><small>${escaped(place.category || placeLabel)}</small>`;
+  }${escaped(country)}</span>`;
   const flagImage = wrap.querySelector('.place-popup__flag');
   flagImage?.addEventListener('error', () => flagImage.remove(), { once: true });
   return wrap;
@@ -62,18 +62,6 @@ export function savePrompt(place, { alreadySaved = false, onSave, onClose, t } =
   return wrap;
 }
 
-export function representativePlaceIcon(place) {
-  const text = `${place?.category || ''} ${place?.name || ''}`.toLowerCase();
-  if (/museum|museo|gallery|galer/.test(text)) return '🏛️';
-  if (/restaurant|restaurante|food|cafe|coffee|bar|comida/.test(text)) return '🍽️';
-  if (/hotel|hostel|lodging|hosped/.test(text)) return '🛏️';
-  if (/station|estaci|train|metro|airport|aeropuerto/.test(text)) return '🚉';
-  if (/park|parque|garden|jard/.test(text)) return '🌳';
-  if (/church|iglesia|temple|templo|cathedral|catedral/.test(text)) return '⛪';
-  if (/shop|store|tienda|market|mercado/.test(text)) return '🛍️';
-  return '📍';
-}
-
 export function resultMarkerScale(zoom) {
   const value = Number(zoom);
   if (!Number.isFinite(value)) return 1;
@@ -90,22 +78,6 @@ export function markerElement(place, t) {
     `${place.name || placeLabel}, ${place.city || ''}, ${place.country || ''}`
   );
 
-  const media = document.createElement('span');
-  media.className = 'place-result-marker__media';
-  const fallback = document.createElement('span');
-  fallback.className = 'place-result-marker__fallback';
-  fallback.textContent = representativePlaceIcon(place);
-  const image = document.createElement('img');
-  image.alt = '';
-  image.loading = 'lazy';
-  image.referrerPolicy = 'no-referrer';
-  image.addEventListener('load', () => image.classList.add('is-loaded'));
-  image.addEventListener('error', () => {
-    image.classList.remove('is-loaded');
-    image.removeAttribute('src');
-  });
-  media.append(fallback, image);
-
   const copy = document.createElement('span');
   copy.className = 'place-result-marker__copy';
   const name = document.createElement('strong');
@@ -113,6 +85,6 @@ export function markerElement(place, t) {
   const location = document.createElement('small');
   location.textContent = [place.city, place.country || place.countryCode].filter(Boolean).join(', ');
   copy.append(name, location);
-  button.append(media, copy);
-  return { button, image };
+  button.append(copy);
+  return button;
 }
