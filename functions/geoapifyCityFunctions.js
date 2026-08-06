@@ -1,8 +1,8 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { error as logError, info as logInfo } from 'firebase-functions/logger';
+import { error as logError } from 'firebase-functions/logger';
 import { callableOptions, enforceQuota } from './callablePolicy.js';
 import {
-  GEOAPIFY_API_KEY,
+  GEOAPIFY_CITY_API_KEY,
   QUOTAS,
   cached,
   db,
@@ -60,7 +60,7 @@ async function loadCities(query, limit, language) {
     format: 'json',
     lang: language,
     limit: String(limit),
-    apiKey: requireGeoapifyKey(GEOAPIFY_API_KEY),
+    apiKey: requireGeoapifyKey(GEOAPIFY_CITY_API_KEY),
   });
   const payload = await limitedFetch(
     `https://api.geoapify.com/v1/geocode/autocomplete?${params}`
@@ -80,23 +80,12 @@ async function loadCities(query, limit, language) {
 
 export const geoapifyCityAutocomplete = onCall(
   callableOptions({
-    secrets: [GEOAPIFY_API_KEY],
+    secrets: [GEOAPIFY_CITY_API_KEY],
     enforceAppCheck: false,
   }),
   async (request) => {
-    const traceId = String(request.rawRequest?.headers?.['x-cloud-trace-context'] || '')
-      .split('/')[0]
-      .slice(0, 64);
-
-    logInfo('City autocomplete request started.', {
-      traceId,
-      hasAuth: Boolean(request.auth?.uid),
-      hasAppCheck: Boolean(request.app),
-    });
-
     try {
       await enforceQuota(db, request, QUOTAS.cityAutocomplete);
-      logInfo('City autocomplete quota passed.', { traceId });
 
       const query = String(request.data?.query || '').trim().slice(0, MAX_QUERY_CHARS);
       const queryKey = normalized(query);
@@ -113,16 +102,9 @@ export const geoapifyCityAutocomplete = onCall(
         () => loadCities(query, limit, language)
       );
 
-      logInfo('City autocomplete request completed.', {
-        traceId,
-        cacheHit: cachedResult.cacheHit,
-        resultCount: Array.isArray(cachedResult.result) ? cachedResult.result.length : 0,
-      });
-
       return { results: cachedResult.result, cacheHit: cachedResult.cacheHit };
     } catch (error) {
       logError('City autocomplete request failed.', {
-        traceId,
         errorName: error?.name || 'Error',
         errorCode: error?.code || '',
         errorMessage: String(error?.message || error || 'Unknown error').slice(0, 240),
