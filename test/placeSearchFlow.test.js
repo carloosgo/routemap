@@ -41,12 +41,13 @@ test('place detail images are cached and fetched through the Firebase proxy', as
 });
 
 test('image failure is non-blocking and leaves an icon fallback visible', async () => {
-  const map = await read('src/modules/map/RouteMap.jsx');
+  const dom = await read('src/modules/map/placeMapDom.js');
+  const markers = await read('src/modules/map/usePlaceResultMarkers.js');
   const css = await read('src/modules/map/RouteMap.css');
-  assert.match(map, /place-result-marker__fallback/);
-  assert.match(map, /representativePlaceIcon/);
-  assert.match(map, /if \(!url \|\| controller\.signal\.aborted\) return/);
-  assert.match(map, /addEventListener\('error'/);
+  assert.match(dom, /place-result-marker__fallback/);
+  assert.match(dom, /representativePlaceIcon/);
+  assert.match(markers, /if \(!url \|\| controller\.signal\.aborted\) return/);
+  assert.match(dom, /addEventListener\('error'/);
   assert.match(css, /place-result-marker__fallback/);
   assert.match(css, /img\.is-loaded\{display:block\}/);
 });
@@ -62,12 +63,15 @@ test('saved places include city, country, type and country flag', async () => {
 });
 
 test('places, notes and mobile route navigation use distinct icons', async () => {
-  const app = await read('src/App.jsx');
-  assert.match(app, /import lugaresIcon from '\.\/assets\/lugares-storefront-v2\.svg'/);
-  assert.match(app, /data-tab-icon="places-map-pin"[\s\S]*<img src=\{lugaresIcon\} alt="" \/>/);
-  assert.match(app, /data-tab-icon="notes"[\s\S]*<IconNotes \/>/);
-  assert.match(app, /<IconRoute size=\{16\} aria-hidden="true" \/> \{t\('segments'\)\}/);
-  assert.doesNotMatch(app, /IconMapPin|IconNotebook/);
+  const editor = await read('src/app/AppEditorModule.jsx');
+  const workspace = await read('src/app/AppWorkspace.jsx');
+  const navigation = `${editor}\n${workspace}`;
+
+  assert.match(editor, /import lugaresIcon from '\.\.\/assets\/lugares-storefront-v2\.svg'/);
+  assert.match(editor, /data-tab-icon="places-map-pin"[\s\S]*<img src=\{lugaresIcon\} alt="" \/>/);
+  assert.match(editor, /data-tab-icon="notes"[\s\S]*<IconNotes \/>/);
+  assert.match(workspace, /<IconRoute size=\{16\} aria-hidden="true" \/> \{t\('segments'\)\}/);
+  assert.doesNotMatch(navigation, /IconMapPin|IconNotebook/);
 });
 
 test('CSP permits Geoapify details and Wikimedia images only through explicit hosts', async () => {
