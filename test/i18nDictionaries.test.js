@@ -7,6 +7,7 @@ const localeInvariantKeys = new Set([
   'appName',
   'taxiUber',
   'bus',
+  'no',
 ]);
 
 function sortedKeys(dictionary) {
