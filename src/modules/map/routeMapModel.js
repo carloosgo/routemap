@@ -1,4 +1,5 @@
 import { isPlaced } from '../trips/tripModel.js';
+import { normalizeRouteGeometry } from '../routes/routeModel.js';
 import { savedPlaceMarkerStyle } from './savedPlaceMarkerPalette.js';
 
 export function dominantTransport(segment) {
@@ -88,12 +89,37 @@ function placeCountryStyleMap(places) {
   );
 }
 
-export function buildMapFeatureData({ segments, places, viewMode, colorForIndex }) {
+export function savedPlaceRouteFeatures(routeConnections) {
+  return (routeConnections || []).flatMap((route) => {
+    if (route?.visible === false) return [];
+    const geometry = normalizeRouteGeometry(route?.geometry);
+    if (!geometry) return [];
+    return [{
+      type: 'Feature',
+      properties: {
+        id: route.id || '',
+        mode: route.mode || '',
+      },
+      geometry,
+    }];
+  });
+}
+
+export function buildMapFeatureData({
+  segments,
+  places,
+  routeConnections = [],
+  viewMode,
+  colorForIndex,
+}) {
   const showSegments = viewMode === 'segments';
   const showPlaces = viewMode === 'places';
   const routeFeatures = [];
   const cityFeatures = [];
   const placeFeatures = [];
+  const placeRouteFeatures = showPlaces
+    ? savedPlaceRouteFeatures(routeConnections)
+    : [];
   const routeCities = showSegments ? orderedCities(segments) : [];
   const countryStyles = showPlaces ? placeCountryStyleMap(places) : new Map();
 
@@ -152,6 +178,7 @@ export function buildMapFeatureData({ segments, places, viewMode, colorForIndex 
     showSegments,
     showPlaces,
     routeFeatures,
+    placeRouteFeatures,
     cityFeatures,
     placeFeatures,
     routeCities,
