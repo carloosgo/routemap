@@ -64,23 +64,18 @@ test('la caché compartida oculta la consulta y conserva expiración administrab
   assert.match(source, /geoapifyBatchJobs/);
 });
 
-test('routing guarda geometría, distancia, duración, modo y firma sin recalcular cambios irrelevantes', async () => {
+test('el endpoint de routing queda aislado hasta la futura fase de rutas entre lugares', async () => {
   const source = await read('functions/index.js');
   const client = await read('src/modules/places/geoapifyClient.js');
-  const model = await read('src/modules/routes/routeModel.js');
-  const hook = await read('src/modules/routes/usePersistentSegmentRoutes.js');
-  const repository = await read('src/infrastructure/firebase/firestoreTripRepository.js');
-  const tripHook = await read('src/modules/trips/useTrip.js');
+  const tripModel = await read('src/modules/trips/tripModel.js');
+  const map = await read('src/modules/map/RouteMap.jsx');
 
+  assert.match(source, /export const geoapifyRoute/);
   assert.match(source, /geometry: feature\.geometry/);
   assert.match(source, /distance: Number\(feature\.properties\?\.distance\)/);
   assert.match(source, /duration: Number\(feature\.properties\?\.time\)/);
-  assert.match(client, /callable\('geoapifyRoute'\)/);
-  assert.match(model, /export function segmentRouteSignature/);
-  assert.match(model, /export function hasReusableSegmentRoute/);
-  assert.match(hook, /hasReusableSegmentRoute\(segment\)/);
-  assert.match(hook, /requestGeoapifyRoute/);
-  assert.match(repository, /serializeRouteForFirestore/);
-  assert.match(tripHook, /invalidateStaleSegmentRoute/);
   assert.doesNotMatch(source, /elevation|route_details|traffic/);
+  assert.doesNotMatch(client, /callable\('geoapifyRoute'\)/);
+  assert.doesNotMatch(tripModel, /route:/);
+  assert.doesNotMatch(map, /geoapifyRoute|requestGeoapifyRoute/);
 });
