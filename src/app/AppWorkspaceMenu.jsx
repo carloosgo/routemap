@@ -68,7 +68,7 @@ export function AppWorkspaceMenu({
           type="button"
           className={'editor-module__more-button' +
             (openMenu === 'workspace' ? ' is-active' : '')}
-          aria-label="Más opciones"
+          aria-label={t('moreOptions')}
           onClick={() => setOpenMenu(openMenu === 'workspace' ? null : 'workspace')}
         >
           <IconDotsVertical size={18} aria-hidden="true" />
