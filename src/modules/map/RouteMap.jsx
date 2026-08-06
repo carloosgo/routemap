@@ -4,7 +4,6 @@ import { PMTiles, Protocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { config, colorForIndex } from '../../config.js';
 import { isPlaced } from '../trips/tripModel.js';
-import { routeGeometryForDisplay, routeModeForSegment } from '../routes/routeModel.js';
 import { fetchGeoapifyPlaceImage, searchGeoapifyPlaces } from '../places/geoapifyClient.js';
 import { countryFillStyleState } from './countryColoring.js';
 import { resolveOvertureDivisionsPmtilesUrl } from './overtureCountrySource.js';
@@ -31,6 +30,49 @@ function emptyFeatureCollection() {
 function sourceData(map, id, data) {
   const source = map.getSource(id);
   if (source && typeof source.setData === 'function') source.setData(data);
+}
+
+function dominantTransport(segment) {
+  const transport = segment?.expenses?.transport || {};
+  const candidates = [
+    { type: 'plane', amount: Number(transport.plane) || 0 },
+    { type: 'train', amount: Number(transport.train) || 0 },
+    { type: 'bus', amount: Number(transport.bus) || 0 },
+    { type: 'car', amount: Number(transport.taxiUber) || 0 },
+  ];
+  const top = candidates.reduce((current, candidate) =>
+    candidate.amount > current.amount ? candidate : current
+  );
+  return top.amount > 0 ? top.type : null;
+}
+
+function adaptiveCurve(origin, destination, steps = 80) {
+  const start = [origin.lon, origin.lat];
+  const end = [destination.lon, destination.lat];
+  const dx = end[0] - start[0];
+  const dy = end[1] - start[1];
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  if (distance < 1.25 || distance > 24) return [start, end];
+
+  const factor = Math.max(0.06, Math.min(0.2, 0.19 - Math.max(0, distance - 2) * 0.008));
+  const offset = Math.min(distance * factor, 3.25);
+  const middleX = (start[0] + end[0]) / 2;
+  const middleY = (start[1] + end[1]) / 2;
+  const length = distance || 1;
+  const controlX = middleX + (dy / length) * offset;
+  const controlY = middleY + (-dx / length) * offset;
+  const points = [];
+
+  for (let index = 0; index <= steps; index += 1) {
+    const time = index / steps;
+    const remaining = 1 - time;
+    points.push([
+      remaining * remaining * start[0] + 2 * remaining * time * controlX + time * time * end[0],
+      remaining * remaining * start[1] + 2 * remaining * time * controlY + time * time * end[1],
+    ]);
+  }
+
+  return points;
 }
 
 function cityKey(city) {
@@ -316,7 +358,7 @@ function markerElement(place) {
   return { button, image };
 }
 
-export function RouteMap({ segments, places = [], addPlace }) {
+export function RouteMap({ segments, places = [], addPlace, viewMode = 'segments' }) {
   const mapNode = useRef(null);
   const mapRef = useRef(null);
   const searchAbortRef = useRef(null);
@@ -469,34 +511,40 @@ export function RouteMap({ segments, places = [], addPlace }) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady || !countryLayerReady || !map.getLayer(COUNTRY_FILL_LAYER_ID)) return;
-    const { filter, colorExpression } = countryFillStyleState(segments, colorForIndex);
+    const visibleSegments = viewMode === 'segments' ? segments : [];
+    const { filter, colorExpression } = countryFillStyleState(visibleSegments, colorForIndex);
     map.setFilter(COUNTRY_FILL_LAYER_ID, filter);
     map.setPaintProperty(COUNTRY_FILL_LAYER_ID, 'fill-color', colorExpression);
-  }, [segments, mapReady, countryLayerReady]);
+  }, [segments, viewMode, mapReady, countryLayerReady]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
 
+    const showSegments = viewMode === 'segments';
+    const showPlaces = viewMode === 'places';
     const routeFeatures = [];
     const cityFeatures = [];
     const placeFeatures = [];
-    const routeCities = orderedCities(segments);
+    const routeCities = showSegments ? orderedCities(segments) : [];
     const routeBounds = new maplibregl.LngLatBounds();
 
-    segments.forEach((segment, index) => {
-      if (!isPlaced(segment.origin) || !isPlaced(segment.destination)) return;
-      const geometry = routeGeometryForDisplay(segment);
-      if (!geometry) return;
-      routeFeatures.push({
-        type: 'Feature',
-        properties: {
-          color: colorForIndex(index),
-          dashed: routeModeForSegment(segment) === 'plane',
-        },
-        geometry,
+    if (showSegments) {
+      segments.forEach((segment, index) => {
+        if (!isPlaced(segment.origin) || !isPlaced(segment.destination)) return;
+        routeFeatures.push({
+          type: 'Feature',
+          properties: {
+            color: colorForIndex(index),
+            dashed: dominantTransport(segment) === 'plane',
+          },
+          geometry: {
+            type: 'LineString',
+            coordinates: adaptiveCurve(segment.origin, segment.destination),
+          },
+        });
       });
-    });
+    }
 
     routeCities.forEach((city, index) => {
       cityFeatures.push({
@@ -510,40 +558,44 @@ export function RouteMap({ segments, places = [], addPlace }) {
       routeBounds.extend([city.lon, city.lat]);
     });
 
-    places.filter(isPlaced).forEach((place) => {
-      placeFeatures.push({
-        type: 'Feature',
-        properties: {
-          id: place.id,
-          name: place.name || 'Lugar',
-          city: place.city || '',
-          country: place.country || '',
-          countryCode: place.countryCode || '',
-          category: place.category || '',
-          address: place.address || '',
-        },
-        geometry: { type: 'Point', coordinates: [place.lon, place.lat] },
+    if (showPlaces) {
+      places.filter(isPlaced).forEach((place) => {
+        placeFeatures.push({
+          type: 'Feature',
+          properties: {
+            id: place.id,
+            name: place.name || 'Lugar',
+            city: place.city || '',
+            country: place.country || '',
+            countryCode: place.countryCode || '',
+            category: place.category || '',
+            address: place.address || '',
+          },
+          geometry: { type: 'Point', coordinates: [place.lon, place.lat] },
+        });
       });
-    });
+    }
 
     sourceData(map, ROUTE_SOURCE_ID, { type: 'FeatureCollection', features: routeFeatures });
     sourceData(map, CITY_SOURCE_ID, { type: 'FeatureCollection', features: cityFeatures });
     sourceData(map, PLACE_SOURCE_ID, { type: 'FeatureCollection', features: placeFeatures });
 
-    const routeViewportKey = routeCities.map(cityKey).join('|');
+    const routeViewportKey = showSegments
+      ? routeCities.map(cityKey).join('|')
+      : `view:${viewMode}`;
     if (routeViewportKey !== lastRouteViewportKeyRef.current) {
       lastRouteViewportKeyRef.current = routeViewportKey;
-      if (routeCities.length === 1) {
+      if (showSegments && routeCities.length === 1) {
         map.easeTo({ center: routeBounds.getCenter(), zoom: 10, duration: 0 });
-      } else if (routeCities.length > 1) {
+      } else if (showSegments && routeCities.length > 1) {
         map.fitBounds(routeBounds, { padding: 84, maxZoom: 10, duration: 0 });
       }
     }
-  }, [segments, places, mapReady]);
+  }, [segments, places, viewMode, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady) return undefined;
+    if (!map || !mapReady || viewMode !== 'places') return undefined;
 
     activePromptRef.current?.remove();
     activePromptRef.current = null;
@@ -654,10 +706,16 @@ export function RouteMap({ segments, places = [], addPlace }) {
       });
       resultMarkersRef.current = [];
     };
-  }, [results, mapReady]);
+  }, [results, viewMode, mapReady]);
 
   useEffect(() => {
     autocompleteAbortRef.current?.abort();
+    if (viewMode !== 'places') {
+      setSuggestions([]);
+      setSuggesting(false);
+      setShowSuggestions(false);
+      return undefined;
+    }
     if (skipAutocompleteRef.current) {
       skipAutocompleteRef.current = false;
       setSuggestions([]);
@@ -705,7 +763,7 @@ export function RouteMap({ segments, places = [], addPlace }) {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query, searchContext]);
+  }, [query, searchContext, viewMode]);
 
   async function submitSearch(event) {
     event?.preventDefault();
@@ -801,56 +859,58 @@ export function RouteMap({ segments, places = [], addPlace }) {
           <div className="geo-map__missing">Falta VITE_GEOAPIFY_MAPS_API_KEY.</div>
         )}
       </div>
-      <form className="geo-search" onSubmit={submitSearch}>
-        <div className="geo-search__row">
-          <div className="geo-search__input-wrap">
-            <input
-              value={query}
-              onChange={handleQueryChange}
-              onFocus={() => suggestions.length && setShowSuggestions(true)}
-              placeholder="Buscar hotel, restaurante, estación…"
-              aria-label="Buscar lugares"
-              autoComplete="off"
-            />
-            {canClearSearch && (
-              <button
-                type="button"
-                className="geo-search__clear"
-                aria-label="Cerrar búsqueda y quitar resultados"
-                onClick={clearSearch}
-              >
-                <span aria-hidden="true">×</span>
-              </button>
-            )}
+      {viewMode === 'places' && (
+        <form className="geo-search" onSubmit={submitSearch}>
+          <div className="geo-search__row">
+            <div className="geo-search__input-wrap">
+              <input
+                value={query}
+                onChange={handleQueryChange}
+                onFocus={() => suggestions.length && setShowSuggestions(true)}
+                placeholder="Buscar hotel, restaurante, estación…"
+                aria-label="Buscar lugares"
+                autoComplete="off"
+              />
+              {canClearSearch && (
+                <button
+                  type="button"
+                  className="geo-search__clear"
+                  aria-label="Cerrar búsqueda y quitar resultados"
+                  onClick={clearSearch}
+                >
+                  <span aria-hidden="true">×</span>
+                </button>
+              )}
+            </div>
+            <button type="submit" className="geo-search__button" disabled={searching}>
+              {searching ? 'Buscando…' : 'Buscar'}
+            </button>
           </div>
-          <button type="submit" className="geo-search__button" disabled={searching}>
-            {searching ? 'Buscando…' : 'Buscar'}
-          </button>
-        </div>
-        {showSuggestions && suggestions.length > 0 && (
-          <div className="geo-search__suggestions" role="listbox" aria-label="Sugerencias de lugares">
-            {suggestions.map((place) => (
-              <button
-                type="button"
-                className="geo-search__suggestion"
-                key={place.id}
-                role="option"
-                aria-selected="false"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => chooseSuggestion(place)}
-              >
-                <strong>{place.name}</strong>
-                <small>{[place.city, place.country].filter(Boolean).join(', ')}</small>
-              </button>
-            ))}
-          </div>
-        )}
-        {suggesting &&
-          query.trim().length >= config.geoapify.searchMinChars &&
-          !searching && <div className="geo-search__status">Buscando sugerencias…</div>}
-        {error && <div className="geo-search__error">{error}</div>}
-      </form>
-      {saveNotice && (
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="geo-search__suggestions" role="listbox" aria-label="Sugerencias de lugares">
+              {suggestions.map((place) => (
+                <button
+                  type="button"
+                  className="geo-search__suggestion"
+                  key={place.id}
+                  role="option"
+                  aria-selected="false"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => chooseSuggestion(place)}
+                >
+                  <strong>{place.name}</strong>
+                  <small>{[place.city, place.country].filter(Boolean).join(', ')}</small>
+                </button>
+              ))}
+            </div>
+          )}
+          {suggesting &&
+            query.trim().length >= config.geoapify.searchMinChars &&
+            !searching && <div className="geo-search__status">Buscando sugerencias…</div>}
+          {error && <div className="geo-search__error">{error}</div>}
+        </form>
+      )}
+      {viewMode === 'places' && saveNotice && (
         <div className="toast" role="status" aria-live="polite">
           {saveNotice}
         </div>
