@@ -20,9 +20,12 @@ export function usePersistentSegmentRoutes({
   const timerRef = useRef(null);
   const [queueVersion, setQueueVersion] = useState(0);
 
-  useEffect(() => () => {
-    mountedRef.current = false;
-    if (timerRef.current) clearTimeout(timerRef.current);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   useEffect(() => {
