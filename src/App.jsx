@@ -9,6 +9,7 @@ import { AppEditorModule } from './app/AppEditorModule.jsx';
 import { AppMapPane } from './app/AppMapPane.jsx';
 import { AppWorkspace } from './app/AppWorkspace.jsx';
 import { TripDeleteDialog } from './app/TripDeleteDialog.jsx';
+import { useAppEditorState } from './app/useAppEditorState.js';
 import {
   useOutsideClick,
   useOutsideClickSelector,
@@ -22,6 +23,7 @@ export default function App() {
   const auth = useFirebaseAuth();
   const tripStore = useTrip();
   const savedTrips = useSavedTrips(auth.user);
+  const editorState = useAppEditorState(tripStore);
   const { trip, loadTrip, renameTrip, updateSegment, addPlace } = tripStore;
   const {
     getTrip,
@@ -139,6 +141,7 @@ export default function App() {
     <AppEditorModule
       tripStore={tripStore}
       savedTrips={savedTrips}
+      editorState={editorState}
       activeTab={activeTab}
       setActiveTab={setActiveTab}
       openMenu={openMenu}
