@@ -14,11 +14,13 @@ test('legacy header icon injection is no longer loaded', async () => {
 });
 
 test('each desktop navigation option has one canonical icon source', async () => {
-  const app = await read('src/App.jsx');
+  const editor = await read('src/app/AppEditorModule.jsx');
+  const menu = await read('src/app/AppWorkspaceMenu.jsx');
+  const navigation = `${editor}\n${menu}`;
   const css = await read('src/app/EditorNavigationIcons.css');
 
-  assert.equal((app.match(/editor-module__tab-icon/g) || []).length, 4);
-  assert.match(app, /<img src=\{lugaresIcon\} alt="" \/>/);
+  assert.equal((navigation.match(/editor-module__tab-icon/g) || []).length, 4);
+  assert.match(editor, /<img src=\{lugaresIcon\} alt="" \/>/);
   assert.match(css, /url\('\/icons\/tramos\.svg'\)/);
   assert.match(css, /url\('\/icons\/notas\.svg'\)/);
   assert.match(css, /url\('\/icons\/moneda\.svg'\)/);
