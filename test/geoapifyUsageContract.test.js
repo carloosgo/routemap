@@ -8,6 +8,7 @@ const read = (path) => readFile(path, 'utf8');
 
 async function readFunctionModules() {
   const paths = [
+    'functions/geoapifyCityFunctions.js',
     'functions/geoapifyPlaceFunctions.js',
     'functions/geoapifyRouteFunctions.js',
     'functions/geoapifyBatchFunctions.js',
@@ -16,18 +17,34 @@ async function readFunctionModules() {
   return Promise.all(paths.map(read));
 }
 
-test('la búsqueda respeta debounce, longitud mínima, límite y TTL acordados', () => {
-  assert.equal(config.citySearchMinChars, 5);
-  assert.ok(config.citySearchDebounceMs >= 400 && config.citySearchDebounceMs <= 500);
+test('ciudades y búsqueda general conservan políticas independientes', () => {
+  assert.equal(config.citySearchMinChars, 3);
+  assert.equal(config.citySearchDebounceMs, 450);
   assert.equal(config.citySearchLimit, 5);
+  assert.ok(config.citySearchCacheTtlMs >= 30 * DAY_MS);
+  assert.ok(config.citySearchCacheTtlMs <= 90 * DAY_MS);
+
   assert.equal(config.geoapify.searchMinChars, 5);
-  assert.ok(config.geoapify.searchDebounceMs >= 400 && config.geoapify.searchDebounceMs <= 500);
+  assert.equal(config.geoapify.searchDebounceMs, 450);
   assert.equal(config.geoapify.searchLimit, 5);
   assert.ok(config.geoapify.clientCacheTtlMs >= 30 * DAY_MS);
   assert.ok(config.geoapify.clientCacheTtlMs <= 90 * DAY_MS);
 });
 
-test('el backend conserva mínimo de cinco caracteres, límite cinco y rate limiter oficial', async () => {
+test('el backend de ciudades fuerza type city, mínimo tres y límite cinco', async () => {
+  const cityFunctions = await read('functions/geoapifyCityFunctions.js');
+  const runtime = await read('functions/geoapifyRuntime.js');
+
+  assert.match(cityFunctions, /MIN_QUERY_CHARS = 3/);
+  assert.match(cityFunctions, /MAX_RESULTS = 5/);
+  assert.match(cityFunctions, /type: 'city'/);
+  assert.match(cityFunctions, /'citySearchCache'/);
+  assert.match(cityFunctions, /QUOTAS\.cityAutocomplete/);
+  assert.match(runtime, /cityAutocomplete: \{ scope: 'geoapify-city-autocomplete'/);
+  assert.doesNotMatch(cityFunctions, /geoapifyPlaceSearch|placeSearchCache/);
+});
+
+test('el backend general conserva mínimo de cinco y rate limiter oficial', async () => {
   const placeFunctions = await read('functions/geoapifyPlaceFunctions.js');
   const batchFunctions = await read('functions/geoapifyBatchFunctions.js');
   const support = await read('functions/geoapifySupport.js');
@@ -73,14 +90,16 @@ test('App Check, cuotas compartidas y límites de instancias forman parte de tod
 
 test('la caché compartida oculta la consulta y conserva expiración administrable', async () => {
   const cache = await read('functions/sharedCache.js');
+  const cityFunctions = await read('functions/geoapifyCityFunctions.js');
   const placeFunctions = await read('functions/geoapifyPlaceFunctions.js');
   const batchFunctions = await read('functions/geoapifyBatchFunctions.js');
-  const sources = `${placeFunctions}\n${batchFunctions}`;
+  const sources = `${cityFunctions}\n${placeFunctions}\n${batchFunctions}`;
 
   assert.match(cache, /expiresAt: Timestamp\.fromMillis/);
   assert.match(cache, /inFlightLoads/);
   assert.doesNotMatch(cache, /queryKey:/);
   assert.doesNotMatch(sources, /queryKey: key/);
+  assert.match(cityFunctions, /citySearchCache/);
   assert.match(placeFunctions, /placeDetailsCache/);
   assert.match(batchFunctions, /geoapifyBatchJobs/);
 });
@@ -105,10 +124,11 @@ test('el endpoint de routing queda aislado hasta la futura fase de rutas de bús
   assert.doesNotMatch(mapPane, /usePersistentSegmentRoutes|requestGeoapifyRoute/);
 });
 
-test('functions index conserva una fachada con los ocho endpoints públicos', async () => {
+test('functions index conserva una fachada con los nueve endpoints públicos', async () => {
   const index = await read('functions/index.js');
 
   for (const endpoint of [
+    'geoapifyCityAutocomplete',
     'geoapifyPlaceSearch',
     'geoapifyAutocomplete',
     'geoapifyPlaceDetails',
@@ -121,6 +141,6 @@ test('functions index conserva una fachada con los ocho endpoints públicos', as
     assert.match(index, new RegExp(`\\b${endpoint}\\b`));
   }
 
-  assert.ok(index.split('\n').length <= 30);
+  assert.ok(index.split('\n').length <= 32);
   assert.doesNotMatch(index, /onCall|enforceQuota|limitedFetch|initializeApp/);
 });
