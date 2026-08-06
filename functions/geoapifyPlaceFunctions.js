@@ -13,8 +13,21 @@ import {
   requireGeoapifyKey,
 } from './geoapifySupport.js';
 
+const MAX_QUERY_CHARS = 160;
+
 function searchLimit(request) {
   return Math.min(Math.max(Number(request.data?.limit) || 5, 1), 5);
+}
+
+function searchQuery(request) {
+  const raw = String(request.data?.query || '').trim();
+  if (raw.length > MAX_QUERY_CHARS) {
+    throw new HttpsError(
+      'invalid-argument',
+      `La búsqueda no puede superar ${MAX_QUERY_CHARS} caracteres.`
+    );
+  }
+  return raw;
 }
 
 async function loadAutocomplete(query, limit) {
@@ -34,7 +47,7 @@ export const geoapifyPlaceSearch = onCall(
   callableOptions({ secrets: [GEOAPIFY_API_KEY] }),
   async (request) => {
     await enforceQuota(db, request, QUOTAS.placeSearch);
-    const query = String(request.data?.query || '').trim();
+    const query = searchQuery(request);
     const queryKey = normalized(query);
 
     if (queryKey.length < 5) {
@@ -57,7 +70,7 @@ export const geoapifyAutocomplete = onCall(
   callableOptions({ secrets: [GEOAPIFY_API_KEY] }),
   async (request) => {
     await enforceQuota(db, request, QUOTAS.autocomplete);
-    const query = String(request.data?.query || '').trim();
+    const query = searchQuery(request);
     const queryKey = normalized(query);
 
     if (queryKey.length < 5) {
