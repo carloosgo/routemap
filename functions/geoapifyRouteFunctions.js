@@ -14,6 +14,20 @@ import {
   validPoint,
 } from './geoapifySupport.js';
 
+function cachedRouteGeometry(result) {
+  if (result?.geometry && typeof result.geometry === 'object') {
+    return result.geometry;
+  }
+  if (typeof result?.geometryJson !== 'string' || !result.geometryJson) {
+    return null;
+  }
+  try {
+    return JSON.parse(result.geometryJson);
+  } catch {
+    return null;
+  }
+}
+
 export const geoapifyRoute = onCall(
   callableOptions({
     secrets: [GEOAPIFY_API_KEY],
@@ -30,7 +44,7 @@ export const geoapifyRoute = onCall(
     }
 
     const traffic = mode === 'drive' || mode === 'bus' ? 'approximated' : '';
-    const signature = `route:v2:${Number(origin.lat).toFixed(6)},${Number(origin.lon).toFixed(6)}|${Number(destination.lat).toFixed(6)},${Number(destination.lon).toFixed(6)}|${mode}|${traffic}`;
+    const signature = `route:v3:${Number(origin.lat).toFixed(6)},${Number(origin.lon).toFixed(6)}|${Number(destination.lat).toFixed(6)},${Number(destination.lon).toFixed(6)}|${mode}|${traffic}`;
     const cachedResult = await cached('routeCache', signature, async () => {
       const params = new URLSearchParams({
         waypoints: `${origin.lat},${origin.lon}|${destination.lat},${destination.lon}`,
@@ -47,14 +61,27 @@ export const geoapifyRoute = onCall(
       return {
         signature,
         mode,
-        geometry: feature.geometry,
+        geometryJson: JSON.stringify(feature.geometry),
         distance: Number(feature.properties?.distance) || 0,
         duration: Number(feature.properties?.time) || 0,
         calculatedAt: new Date().toISOString(),
       };
     });
 
-    return { ...cachedResult.result, cacheHit: cachedResult.cacheHit };
+    const geometry = cachedRouteGeometry(cachedResult.result);
+    if (!geometry) {
+      throw new HttpsError('internal', 'No fue posible reconstruir la geometría de la ruta.');
+    }
+
+    return {
+      signature: cachedResult.result.signature || signature,
+      mode: cachedResult.result.mode || mode,
+      geometry,
+      distance: Number(cachedResult.result.distance) || 0,
+      duration: Number(cachedResult.result.duration) || 0,
+      calculatedAt: cachedResult.result.calculatedAt || '',
+      cacheHit: cachedResult.cacheHit,
+    };
   }
 );
 
