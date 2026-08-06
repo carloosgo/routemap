@@ -1,16 +1,13 @@
-import { useRef, useState } from 'react';
 import { IconMap, IconNotes } from '@tabler/icons-react';
-import { tripBreakdown } from '../modules/expenses/expenseModel.js';
-import { tripTotal } from '../modules/trips/tripModel.js';
 import { TripPlacesPanel } from '../modules/places/TripPlacesPanel.jsx';
 import { AppEditorPane } from './AppEditorPane.jsx';
 import { AppWorkspaceMenu } from './AppWorkspaceMenu.jsx';
-import { useCollapseSegmentsOnTripChange } from './useAppInteractions.js';
 import lugaresIcon from '../assets/lugares-storefront-v2.svg';
 
 export function AppEditorModule({
   tripStore,
   savedTrips,
+  editorState,
   activeTab,
   setActiveTab,
   openMenu,
@@ -30,7 +27,6 @@ export function AppEditorModule({
     addNote,
     updateNote,
     removeNote,
-    addChecklistItem,
     toggleChecklistItem,
     removeChecklistItem,
     addSegment,
@@ -40,41 +36,25 @@ export function AppEditorModule({
     updateExpenses,
     removePlace,
   } = tripStore;
-  const [expandedSegments, setExpandedSegments] = useState({});
-  const [newItemText, setNewItemText] = useState('');
-  const [confirmDeleteNote, setConfirmDeleteNote] = useState(null);
-  const [showBreakdown, setShowBreakdown] = useState(false);
-  const newItemRef = useRef(null);
-
-  useCollapseSegmentsOnTripChange(trip.id, trip.segments, setExpandedSegments);
-
-  const total = tripTotal(trip);
-  const hasCosts = total > 0;
-  const breakdown = tripBreakdown(trip.segments);
-  const checklist = trip.checklist || [];
-  const doneCount = checklist.filter((item) => item.done).length;
-  const notes = trip.notes || [];
-  const places = trip.places || [];
-
-  function isExpanded(id) {
-    return expandedSegments[id] !== false;
-  }
-
-  function toggleSegment(id) {
-    setExpandedSegments((previous) => ({
-      ...previous,
-      [id]: previous[id] === false,
-    }));
-  }
-
-  function handleAddItem(event) {
-    event.preventDefault();
-    const text = newItemText.trim();
-    if (!text) return;
-    addChecklistItem(text);
-    setNewItemText('');
-    newItemRef.current?.focus();
-  }
+  const {
+    total,
+    hasCosts,
+    breakdown,
+    checklist,
+    doneCount,
+    notes,
+    places,
+    confirmDeleteNote,
+    setConfirmDeleteNote,
+    showBreakdown,
+    setShowBreakdown,
+    isExpanded,
+    toggleSegment,
+    handleAddItem,
+    newItemRef,
+    newItemText,
+    setNewItemText,
+  } = editorState;
 
   const editorPane = activeTab === 'places' ? (
     <TripPlacesPanel places={places} removePlace={removePlace} t={t} />
