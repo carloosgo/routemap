@@ -29,6 +29,7 @@ export default {
   placeAlreadySaved: 'This place is already saved.',
   savePlacePrompt: 'Save this place to your trip?',
   deletePlace: 'Delete place',
+  movePlace: 'Move place',
   confirmDeletePlace: 'Delete “{name}” from your saved places?',
   noSavedPlaces: 'No saved places yet',
   savedPlacesHint: 'Search for places on the map and select them to add them to this trip.',
