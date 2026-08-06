@@ -19,7 +19,7 @@ import './App.css';
 import './app/FloatingEditor.css';
 
 export default function App() {
-  const { t, locale, setLocale, availableLocales } = useTranslation();
+  const { t, locale, intlLocale, setLocale, availableLocales } = useTranslation();
   const auth = useFirebaseAuth();
   const tripStore = useTrip();
   const savedTrips = useSavedTrips(auth.user);
@@ -42,7 +42,6 @@ export default function App() {
   const menuWrapRef = useRef(null);
   const editorMenuRef = useRef(null);
 
-  const intlLocale = locale === 'es' ? 'es-MX' : 'en-US';
   const canSave = isTripSavable(trip);
 
   const showToast = useCallback((message, duration = 2200) => {
@@ -91,15 +90,15 @@ export default function App() {
     try {
       const storedTrip = await getTrip(savedTrip.id);
       if (!storedTrip) {
-        showToast('El viaje guardado ya no existe.', 3000);
+        showToast(t('savedTripMissing'), 3000);
         return;
       }
       loadTrip(storedTrip);
       setOpenMenu(null);
     } catch {
-      showToast('No fue posible abrir el viaje.', 3000);
+      showToast(t('openTripError'), 3000);
     }
-  }, [getTrip, loadTrip, showToast]);
+  }, [getTrip, loadTrip, showToast, t]);
 
   const closeMenu = useCallback(() => setOpenMenu(null), []);
   const closeSegmentNote = useCallback(() => setOpenNoteSegmentId(null), []);
