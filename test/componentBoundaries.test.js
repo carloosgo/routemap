@@ -134,3 +134,28 @@ test('geoapifyClient coordina búsquedas sin absorber Firebase, caché ni contex
   assert.match(query, /export function contextualQuery/);
   assert.match(query, /export function callableSearchContext/);
 });
+
+test('ExpenseEditor coordina vistas sin absorber catálogo ni mutaciones', async () => {
+  const editor = await read('src/modules/expenses/ExpenseEditor.jsx');
+  const operations = await read('src/modules/expenses/expenseEditorOperations.js');
+  const catalog = await read('src/modules/expenses/expenseEditorCatalog.jsx');
+  const fixedCards = await read('src/modules/expenses/FixedExpenseCards.jsx');
+  const lineItems = await read('src/modules/expenses/ExpenseLineItemsGrid.jsx');
+
+  assert.ok(
+    lineCount(editor) <= 150,
+    `ExpenseEditor.jsx volvió a crecer a ${lineCount(editor)} líneas`
+  );
+  assert.match(editor, /<FixedExpenseCards/);
+  assert.match(editor, /<ExpenseLineItemsGrid/);
+  assert.match(editor, /from '\.\/expenseEditorOperations\.js'/);
+  assert.match(editor, /from '\.\/expenseEditorCatalog\.jsx'/);
+  assert.doesNotMatch(editor, /IconPlane|BOAT_KEYWORDS|function LineItemsGrid/);
+
+  assert.doesNotMatch(operations, /from 'react'|@tabler\/icons-react/);
+  assert.match(operations, /export function updateExpenseItem/);
+  assert.match(catalog, /export const EXPENSE_ICONS/);
+  assert.match(catalog, /export function transportOtherIcon/);
+  assert.match(fixedCards, /className="expenses__grid"/);
+  assert.match(lineItems, /moneycard moneycard--lineitem/);
+});
