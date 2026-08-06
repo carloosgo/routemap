@@ -23,6 +23,7 @@ export const config = {
     storageBucket: cleanString(env.VITE_FIREBASE_STORAGE_BUCKET),
     messagingSenderId: cleanString(env.VITE_FIREBASE_MESSAGING_SENDER_ID),
     appId: cleanString(env.VITE_FIREBASE_APP_ID),
+    appCheckSiteKey: cleanString(env.VITE_FIREBASE_APPCHECK_SITE_KEY),
     useEmulators: envBoolean(env.VITE_FIREBASE_USE_EMULATORS),
   },
   geocoder: allowedValue(env.VITE_GEOCODER, ['nominatim'], 'nominatim'),
