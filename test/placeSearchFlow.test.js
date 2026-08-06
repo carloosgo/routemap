@@ -48,7 +48,7 @@ test('map search result markers do not load images or category icons', async () 
   assert.doesNotMatch(routeMap, /representativePlaceIcon/);
 });
 
-test('saved places keep location data but hide category labels from the map and panel', async () => {
+test('saved places keep country and city data but hide category labels', async () => {
   const entities = await read('src/modules/trips/tripEntities.js');
   const panel = await read('src/modules/places/TripPlacesPanel.jsx');
   const dom = await read('src/modules/map/placeMapDom.js');
@@ -57,7 +57,8 @@ test('saved places keep location data but hide category labels from the map and 
   assert.match(entities, /country:\s*sanitizeText/);
   assert.match(panel, /flagImageUrl/);
   assert.match(panel, /countryCode/);
-  assert.doesNotMatch(panel, /place\.category|<small>/);
+  assert.match(panel, /place\.city \|\| t\('noCity'\)/);
+  assert.doesNotMatch(panel, /place\.category/);
   assert.doesNotMatch(dom, /place\.category/);
 });
 
