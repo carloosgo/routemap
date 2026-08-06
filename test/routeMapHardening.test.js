@@ -14,6 +14,8 @@ async function mapSources() {
     form: 'src/modules/map/PlaceSearchForm.jsx',
     search: 'src/modules/map/usePlaceSearch.js',
     markers: 'src/modules/map/usePlaceResultMarkers.js',
+    es: 'src/i18n/es.js',
+    en: 'src/i18n/en.js',
   };
   const entries = await Promise.all(
     Object.entries(paths).map(async ([name, path]) => [name, await read(path)])
@@ -22,9 +24,11 @@ async function mapSources() {
 }
 
 test('RouteMap muestra de forma declarativa los errores de configuración', async () => {
-  const { route } = await mapSources();
+  const { route, es, en } = await mapSources();
   assert.match(route, /geo-map__missing/);
-  assert.match(route, /Falta VITE_GEOAPIFY_MAPS_API_KEY/);
+  assert.match(route, /t\('mapConfigMissingShort'\)/);
+  assert.match(es, /mapConfigMissingShort: 'Falta VITE_GEOAPIFY_MAPS_API_KEY\.'/);
+  assert.match(en, /mapConfigMissingShort: 'VITE_GEOAPIFY_MAPS_API_KEY is missing\.'/);
 });
 
 test('RouteMap vuelve a sincronizar las capas cuando cambia el viaje o la vista', async () => {
@@ -87,10 +91,12 @@ test('los resultados se muestran como pestañas DOM con imagen o icono alusivo',
 });
 
 test('la confirmación se abre solo al pulsar un resultado y guarda datos normalizados', async () => {
-  const { dom, markers } = await mapSources();
+  const { dom, markers, es, en } = await mapSources();
   assert.match(markers, /function openPlace\(place\)/);
   assert.match(markers, /button\.addEventListener\('click',[\s\S]*openPlace\(place\)/);
-  assert.match(dom, /¿Guardar lugar para tu ruta\?/);
+  assert.match(dom, /translated\(t, 'savePlacePrompt'\)/);
+  assert.match(es, /savePlacePrompt: '¿Guardar lugar para tu ruta\?'/);
+  assert.match(en, /savePlacePrompt: 'Save this place to your trip\?'/);
   assert.match(markers, /className: 'place-save-popup'/);
   assert.match(markers, /closeButton: true/);
   assert.match(markers, /setMaxWidth\('320px'\)/);
@@ -104,11 +110,13 @@ test('la confirmación se abre solo al pulsar un resultado y guarda datos normal
 });
 
 test('guardar un lugar confirma la acción sin alterar el viewport de Tramos', async () => {
-  const { route, markers } = await mapSources();
+  const { route, markers, es, en } = await mapSources();
   assert.match(route, /lastRouteViewportKeyRef/);
   assert.match(route, /const routeViewportKey = showSegments/);
   assert.match(route, /if \(routeViewportKey !== lastRouteViewportKeyRef\.current\)/);
-  assert.match(markers, /setSaveNotice\('Lugar guardado'\)/);
+  assert.match(markers, /setSaveNotice\(t\('placeSaved'\)\)/);
+  assert.match(es, /placeSaved: 'Lugar guardado'/);
+  assert.match(en, /placeSaved: 'Place saved'/);
   assert.match(markers, /setTimeout\(\(\) => setSaveNotice\(''\), 2200\)/);
   assert.match(route, /role="status" aria-live="polite"/);
 });
@@ -147,13 +155,15 @@ test('elegir una sugerencia centra un resultado sin lanzar otra búsqueda', asyn
 });
 
 test('cerrar la búsqueda limpia estado, resultados y solicitudes activas', async () => {
-  const { form, search, markers } = await mapSources();
+  const { form, search, markers, es, en } = await mapSources();
   assert.match(search, /function clearSearch\(\)/);
   assert.match(search, /setQuery\(''\)/);
   assert.match(search, /setResults\(\[\]\)/);
   assert.match(search, /setSuggestions\(\[\]\)/);
   assert.match(form, /className="geo-search__clear"/);
-  assert.match(form, /aria-label="Cerrar búsqueda y quitar resultados"/);
+  assert.match(form, /aria-label=\{t\('closePlaceSearch'\)\}/);
+  assert.match(es, /closePlaceSearch: 'Cerrar búsqueda y quitar resultados'/);
+  assert.match(en, /closePlaceSearch: 'Close search and clear results'/);
   assert.match(form, /onClick=\{onClear\}/);
   assert.match(markers, /activePromptRef\.current\?\.remove\(\)/);
   assert.match(markers, /marker\.remove\(\)/);
