@@ -60,7 +60,10 @@ async function loadCities(query, limit, language) {
     format: 'json',
     lang: language,
     limit: String(limit),
-    apiKey: requireGeoapifyKey(GEOAPIFY_CITY_API_KEY),
+    apiKey: requireGeoapifyKey(
+      GEOAPIFY_CITY_API_KEY,
+      'GEOAPIFY_CITY_API_KEY'
+    ),
   });
   const payload = await limitedFetch(
     `https://api.geoapify.com/v1/geocode/autocomplete?${params}`
