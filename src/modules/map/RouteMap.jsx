@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { config, colorForIndex } from '../../config.js';
@@ -10,7 +10,6 @@ import { savedPlacePopup } from './placeMapDom.js';
 import {
   buildMapFeatureData,
   cityKey,
-  placeSearchContext,
 } from './routeMapModel.js';
 import {
   CITY_LAYER_ID,
@@ -30,7 +29,6 @@ import { usePlaceSearch } from './usePlaceSearch.js';
 import './RouteMap.css';
 
 export { representativePlaceIcon } from './placeMapDom.js';
-export { placeSearchContext } from './routeMapModel.js';
 
 export function RouteMap({ segments, places = [], addPlace, viewMode = 'segments' }) {
   const mapNode = useRef(null);
@@ -40,8 +38,7 @@ export function RouteMap({ segments, places = [], addPlace, viewMode = 'segments
   const [countryLayerReady, setCountryLayerReady] = useState(false);
   const [saveNotice, setSaveNotice] = useState('');
 
-  const searchContext = useMemo(() => placeSearchContext(segments), [segments]);
-  const placeSearch = usePlaceSearch({ viewMode, searchContext });
+  const placeSearch = usePlaceSearch({ viewMode });
 
   useEffect(() => {
     if (!mapNode.current || mapRef.current || !config.geoapify.mapApiKey) return undefined;
