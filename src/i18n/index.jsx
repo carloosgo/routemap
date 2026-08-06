@@ -41,6 +41,17 @@ function interpolate(template, variables) {
   );
 }
 
+function translatedValue(locale, key, variables) {
+  const dictionary = dictionaries[locale] || dictionaries.es;
+  const template = dictionary[key] ?? dictionaries.es[key] ?? key;
+  return interpolate(template, variables);
+}
+
+function updateMetaContent(selector, value) {
+  const element = globalThis.document?.querySelector(selector);
+  if (element) element.setAttribute('content', value);
+}
+
 export function I18nProvider({ children }) {
   const [locale, setLocaleState] = useState(getInitialLocale);
 
@@ -57,15 +68,18 @@ export function I18nProvider({ children }) {
 
     if (globalThis.document?.documentElement) {
       globalThis.document.documentElement.lang = locale;
+      globalThis.document.title = translatedValue(locale, 'documentTitle');
+      const description = translatedValue(locale, 'documentDescription');
+      updateMetaContent('meta[name="description"]', description);
+      updateMetaContent('meta[property="og:title"]', translatedValue(locale, 'documentTitle'));
+      updateMetaContent('meta[property="og:description"]', description);
+      updateMetaContent('meta[name="twitter:title"]', translatedValue(locale, 'documentTitle'));
+      updateMetaContent('meta[name="twitter:description"]', description);
     }
   }, [locale]);
 
   const t = useCallback(
-    (key, variables) => {
-      const dictionary = dictionaries[locale] || dictionaries.es;
-      const template = dictionary[key] ?? dictionaries.es[key] ?? key;
-      return interpolate(template, variables);
-    },
+    (key, variables) => translatedValue(locale, key, variables),
     [locale]
   );
 
