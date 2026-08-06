@@ -1,64 +1,82 @@
-# Contrato de uso de Geoapify
+# Contrato de búsqueda, geocodificación y Geoapify
 
-Estas reglas son invariantes de arquitectura y deben conservarse en cualquier refactor o funcionalidad nueva.
+Estas reglas son invariantes de arquitectura. Tramos y búsqueda general son dos dominios independientes que únicamente comparten el lienzo de MapLibre.
 
-## Búsqueda y autocompletado
+## Dominio de Tramos
+
+- El autocompletado de origen y destino busca exclusivamente ciudades y países para construir el itinerario.
+- Vive bajo `CityAutocomplete` y `modules/geocoding`; no importa `usePlaceSearch`, `geoapifyClient`, marcadores de resultados ni componentes de Lugares.
+- Una selección produce únicamente los datos normalizados de la ciudad necesarios para el tramo: nombre, nombre mostrado, país, código de país y coordenadas.
+- Los tramos persisten ciudades, fechas, gastos y nota. No contienen lugares guardados, resultados generales ni rutas reales.
+- El mapa de Tramos usa curvas visuales locales, puntos de ciudades, colores y países visitados. No llama al Routing API.
+- Los vuelos siguen representándose con línea punteada; los demás tramos con la curva visual correspondiente.
+- Los viajes antiguos que guardaron lugares dentro de un tramo se migran al arreglo general `trip.places`, pero el modelo actual nunca vuelve a crearlos dentro del tramo.
+
+Si el autocompletado de ciudades cambia de proveedor en el futuro, deberá conservar un cliente, endpoint, caché y pruebas exclusivos para ciudades. No reutilizará el cliente de búsqueda general.
+
+## Dominio de búsqueda general
+
+- El campo general busca hoteles, restaurantes, estaciones, museos, direcciones y cualquier otro lugar.
+- Vive bajo `PlaceSearchForm`, `usePlaceSearch` y `modules/places`.
+- Solo se muestra y ejecuta cuando la vista activa es Lugares.
+- No lee segmentos, origen, destino, ciudades conocidas ni gastos para modificar o contextualizar la consulta.
+- La consulta enviada es la escrita por el usuario. Si posteriormente se agrega sesgo geográfico, debe provenir del viewport del mapa o de una elección explícita dentro de Lugares, nunca de Tramos.
+- Los resultados, sugerencias, marcadores, imágenes y confirmaciones pertenecen únicamente a búsqueda general.
+- Los lugares confirmados se guardan en `trip.places`; nunca dentro de `segment`.
+
+## Reglas de búsqueda general
 
 1. Debounce entre 400 y 500 ms; valor estándar actual: 450 ms.
 2. No realizar peticiones con menos de 5 caracteres normalizados.
 3. Solicitar como máximo 5 resultados.
-4. Usar caché cliente por query normalizada, sin acentos, en minúsculas y con `trim`, con TTL de 30 a 90 días.
+4. Usar caché cliente por consulta normalizada, sin acentos, en minúsculas y con `trim`, con TTL de 30 a 90 días.
+5. Guardar permanentemente identificador, coordenadas y datos normalizados de cada lugar confirmado. Al reabrir un viaje no se vuelve a geocodificar.
 
-## Persistencia y recálculo
+## Routing futuro
 
-5. Guardar permanentemente identificador del proveedor, coordenadas y datos normalizados de cada ciudad o lugar. Al reabrir un viaje no se vuelve a geocodificar.
-6. Persistir en cada tramo calculado la geometría GeoJSON, distancia, duración, modo, firma de origen/destino/modo y fecha de cálculo.
-7. Una ruta persistida se reutiliza mientras su firma coincida. Se invalida exclusivamente cuando cambian las coordenadas de origen, las coordenadas de destino o el modo derivado de transporte. Notas, fechas y cambios de importe que conservan el mismo modo no la invalidan.
+- El endpoint backend `geoapifyRoute` está protegido y disponible, pero no tiene cliente activo.
+- No existe `segment.route`, hook de rutas de Tramos ni llamada automática al editar origen, destino o gastos.
+- Las futuras rutas conectarán lugares guardados dentro del dominio de búsqueda general.
+- Esas conexiones tendrán un modelo persistente propio, separado de `segments` y de `places`.
+- Por conexión se almacenarán geometría GeoJSON, distancia, duración, modo y firma de extremos/modo.
+- Solo se recalcularán cuando cambie uno de sus lugares extremos o el modo elegido.
+- Routing solicitará únicamente geometría, distancia y duración; no elevation, traffic ni detalles no usados.
 
 ## Backend y consumo
 
-8. Todas las llamadas privadas a Geoapify pasan por el rate limiter oficial `@geoapify/request-rate-limiter`.
-9. Geocoding, places, detalles y routing pasan por Firebase; la clave privada nunca se expone al cliente. Firestore comparte resultados de caché entre usuarios.
-10. Routing solicita únicamente geometría, distancia y duración; no se habilitan elevation, traffic ni detalles que no use el producto.
-11. Reverse geocoding se ejecuta solo mediante una acción explícita del usuario.
-12. Las importaciones de varias ubicaciones usan el Batch Geocoding API asíncrono de Geoapify, con una sola solicitud de hasta 1,000 entradas por operación autenticada.
+- Todas las llamadas privadas a Geoapify pasan por Firebase y por el rate limiter oficial `@geoapify/request-rate-limiter`.
+- La clave privada nunca se expone al navegador.
+- Firestore comparte resultados de caché entre usuarios sin revelar la consulta en texto claro.
+- Reverse geocoding se ejecuta únicamente mediante una acción explícita del usuario.
+- Las importaciones de varias ubicaciones usan el Batch Geocoding API asíncrono, con una solicitud de hasta 1,000 entradas por operación autenticada.
 
-## Rutas de Tramos
+## Separación dentro del mapa
 
-- El modo de routing se deriva del transporte principal registrado en el tramo: tren o autobús usan `transit`; taxi/automóvil y tramos sin transporte definido usan `drive`.
-- Los vuelos no llaman al Routing API porque Geoapify no calcula rutas aéreas. Conservan la curva visual punteada existente.
-- El cliente calcula únicamente rutas terrestres o de transporte público que no tengan una ruta válida para su firma actual.
-- Las solicitudes se procesan una por una y se espacian para proteger la cuota. Una firma fallida no se repite continuamente durante la misma sesión.
-- Dos tramos con la misma firma reutilizan el mismo resultado en memoria; el backend además mantiene una caché compartida en Firestore.
-- El mapa usa primero la geometría persistida. Mientras una ruta falta o se recalcula, conserva la curva visual local como fallback.
-- Firestore recibe la geometría como JSON serializado para evitar arreglos anidados no admitidos. Al hidratar el viaje se restaura y valida como `LineString` o `MultiLineString`.
-- Cada geometría se limita defensivamente a 20,000 puntos y a 700,000 caracteres serializados para mantener el documento por debajo del límite operativo.
-
-## Separación funcional del mapa
-
-- **Tramos** representa el itinerario general de ciudades y puede mostrar sus rutas persistidas.
-- **Lugares** representa los resultados buscados y los lugares guardados por el usuario.
-- Al seleccionar Tramos, el mapa muestra exclusivamente ciudades, países visitados y líneas de colores.
-- Al seleccionar Lugares, el mapa oculta el trazado de Tramos y muestra exclusivamente la búsqueda y los lugares guardados.
-- Las rutas actuales pertenecen a cada tramo de ciudad a ciudad. No existe todavía un modelo de conexiones independientes entre lugares guardados.
+- **Tramos** muestra exclusivamente ciudades, países visitados y líneas visuales del itinerario.
+- **Lugares** oculta las capas de Tramos y muestra exclusivamente búsqueda general, resultados y lugares guardados.
+- `RouteMap` puede recibir ambos conjuntos porque administra el lienzo compartido, pero las operaciones de un dominio no modifican el estado del otro.
+- La búsqueda general no usa las ciudades de Tramos como contexto.
+- Guardar o eliminar un lugar no altera segmentos.
+- Editar un tramo no dispara búsqueda general, detalles de lugares ni routing.
 
 ## Seguridad y control de costos
 
 - Todas las callable functions aceptan activación declarativa de Firebase App Check mediante `ENFORCE_APP_CHECK`.
 - El cliente prepara reCAPTCHA Enterprise mediante `VITE_FIREBASE_APPCHECK_SITE_KEY`.
 - App Check se habilita en modo observación antes de activar enforcement.
-- Cada endpoint aplica una cuota compartida en Firestore por UID o hash de IP.
+- Cada endpoint aplica cuota compartida en Firestore por UID o hash de IP.
 - Las Functions tienen límites explícitos de instancias, concurrencia y tiempo de ejecución.
-- Batch exige sesión autenticada, registra el propietario del job y nunca devuelve la URL del proveedor que contiene la API key.
-- Las claves de caché y las IP no se guardan en texto claro.
-- Las entradas de caché y control de cuota incluyen `expiresAt` para configurar TTL administrado en Firestore.
-- Los documentos de tramo aceptan únicamente los campos de ruta definidos; no guardan respuestas completas del proveedor ni instrucciones de navegación.
+- Batch exige sesión autenticada, registra el propietario del job y nunca devuelve la URL del proveedor con la API key.
+- Las entradas de caché y cuota incluyen `expiresAt` para configurar TTL administrado.
+- Las reglas de Firestore rechazan campos de routing o lugares anidados dentro de documentos de tramo.
 
 ## Estado actual
 
-- Implementado: debounce de 450 ms, mínimo de 5 caracteres, límite de 5, normalización, caché cliente de 60 días, identificadores y coordenadas persistentes, proxy Firebase, caché compartida, rate limiter oficial, detalles de lugares por proxy, App Check preparado, cuotas compartidas, Batch API real y capas independientes de Tramos y Lugares.
-- Implementado: routing por tramo con firma estable, invalidación selectiva, cálculo gradual, reutilización en memoria, persistencia en almacenamiento local y Firestore, serialización segura de GeoJSON y representación de la geometría guardada en MapLibre.
-- Pendiente para una fase posterior: modelo opcional de conexiones entre lugares guardados y selección explícita de modos como caminata o bicicleta.
-- Pendiente operativo: activar App Check en Firebase después de observar métricas y configurar políticas TTL de Firestore para `expiresAt`.
+- Implementado: autocompletado de ciudades independiente para Tramos.
+- Implementado: búsqueda general con debounce de 450 ms, mínimo de 5 caracteres, límite de 5, consulta literal, caché cliente de 60 días, proxy Firebase, detalles de lugares y marcadores propios.
+- Implementado: capas mutuamente excluyentes y migración defensiva de lugares legados fuera de los tramos.
+- Preparado pero desconectado: endpoint backend de routing.
+- Pendiente para una fase posterior: modelo de conexiones entre lugares guardados, selección de transporte, persistencia de rutas y representación propia en la vista Lugares.
+- Pendiente operativo: activar App Check después de observar métricas y configurar políticas TTL de Firestore para `expiresAt`.
 
-Toda modificación relacionada debe incluir pruebas automatizadas que demuestren que estas invariantes siguen vigentes.
+Toda modificación relacionada debe incluir pruebas automatizadas que demuestren que ambos dominios siguen separados.
