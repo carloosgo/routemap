@@ -13,18 +13,22 @@ test('legacy header icon injection is no longer loaded', async () => {
   assert.match(main, /EditorNavigationIcons\.css/);
 });
 
-test('each desktop navigation option has one canonical icon source', async () => {
+test('desktop navigation keeps canonical icons while currency remains icon-free', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
   const navigation = `${editor}\n${menu}`;
   const css = await read('src/app/EditorNavigationIcons.css');
 
-  assert.equal((navigation.match(/editor-module__tab-icon/g) || []).length, 4);
+  assert.equal((navigation.match(/editor-module__tab-icon/g) || []).length, 3);
   assert.match(editor, /<img src=\{lugaresIcon\} alt="" \/>/);
-  assert.match(menu, /data-tab-icon="language-selector"/);
-  assert.match(menu, /<IconLanguage style=\{\{ display: 'block' \}\} \/>/);
-  assert.match(menu, /style=\{\{ backgroundImage: 'none' \}\}/);
-  assert.doesNotMatch(menu, /currencyCoinIcon|CURRENCIES|setCurrency|openMenu === 'currency'/);
+  assert.match(menu, /const CURRENCIES = \['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'\]/);
+  assert.match(menu, /openMenu === 'currency'/);
+  assert.match(menu, /setCurrency\(currency\)/);
+  assert.match(menu, /<span className="editor-module__tab-label">\{trip\.currency\}<\/span>/);
+  assert.match(menu, /<IconLanguage size=\{17\} aria-hidden="true" \/>/);
+  assert.match(menu, /<span>\{t\('language'\)\}<\/span>/);
+  assert.doesNotMatch(menu, /currencyCoinIcon|data-tab-icon="language-selector"/);
+  assert.doesNotMatch(css, /icons\/moneda\.svg/);
   assert.match(css, /url\('\/icons\/tramos\.svg'\)/);
   assert.match(css, /url\('\/icons\/notas\.svg'\)/);
   assert.match(css, /\.editor-module__tab-icon > svg\s*\{\s*display:\s*none;/);
