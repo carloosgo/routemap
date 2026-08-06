@@ -11,7 +11,14 @@ export const GEOAPIFY_CITY_API_KEY = defineSecret('GEOAPIFY_CITY_API_KEY');
 export const CACHE_TTL_MS = 60 * 24 * 60 * 60 * 1000;
 export const BATCH_JOB_TTL_MS = 24 * 60 * 60 * 1000;
 export const COUNTRY_BOUNDARY_CACHE_MAX_BYTES = 850 * 1024;
-export const ALLOWED_MODES = new Set(['drive', 'walk', 'bicycle', 'transit']);
+export const ALLOWED_MODES = new Set([
+  'drive',
+  'bus',
+  'bicycle',
+  'walk',
+  'transit',
+  'approximated_transit',
+]);
 export const cached = createSharedCache(db, { ttlMs: CACHE_TTL_MS });
 
 export const QUOTAS = Object.freeze({
