@@ -21,6 +21,8 @@ import {
   requireGeoapifyKey,
 } from './geoapifySupport.js';
 
+const MAX_BATCH_QUERY_CHARS = 160;
+
 async function cacheCompletedBatchRows(rows, mappedResults) {
   const writer = db.bulkWriter();
   const expiresAt = Timestamp.fromMillis(Date.now() + CACHE_TTL_MS);
@@ -65,6 +67,12 @@ export const geoapifyBatchGeocode = onCall(
       throw new HttpsError(
         'invalid-argument',
         'Cada ubicación del batch requiere al menos 5 caracteres.'
+      );
+    }
+    if (queries.some((query) => query.length > MAX_BATCH_QUERY_CHARS)) {
+      throw new HttpsError(
+        'invalid-argument',
+        `Cada ubicación del batch admite hasta ${MAX_BATCH_QUERY_CHARS} caracteres.`
       );
     }
 
