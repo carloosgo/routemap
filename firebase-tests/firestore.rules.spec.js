@@ -92,10 +92,10 @@ function routeConnectionData(id = 'route-1', position = 0, overrides = {}) {
     visible: true,
     distance: 1234,
     duration: 600,
-    geometry: {
+    geometryJson: JSON.stringify({
       type: 'LineString',
       coordinates: [[-99.1332, 19.4326], [-98.2063, 19.0414]],
-    },
+    }),
     calculatedAt: UPDATED_AT,
     ...overrides,
   };
