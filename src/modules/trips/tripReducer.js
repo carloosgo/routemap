@@ -6,6 +6,7 @@ import {
   createTrip,
   normalizeTrip,
   reorderSegments,
+  withSegmentRoutePatch,
 } from './tripModel.js';
 import { sanitizeText, uid } from '../../shared/utils.js';
 
@@ -125,7 +126,7 @@ export function tripReducer(state, action) {
       return touch(state, {
         segments: state.segments.map((segment) =>
           segment.id === action.segmentId
-            ? { ...segment, ...action.patch }
+            ? withSegmentRoutePatch(segment, action.patch)
             : segment
         ),
       });
@@ -134,7 +135,7 @@ export function tripReducer(state, action) {
       return touch(state, {
         segments: state.segments.map((segment) =>
           segment.id === action.segmentId
-            ? { ...segment, expenses: action.expenses }
+            ? withSegmentRoutePatch(segment, { expenses: action.expenses })
             : segment
         ),
       });
