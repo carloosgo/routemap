@@ -1,13 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="52" height="56" viewBox="0 0 52 56" role="img" aria-label="Lugar guardado">
-  <defs>
-    <mask id="saved-place-pin-mask">
-      <rect width="52" height="56" fill="#ffffff"/>
-      <circle cx="26" cy="22.5" r="3.25" fill="#000000"/>
-    </mask>
-  </defs>
   <path
     d="M10 2h32a9 9 0 0 1 9 9v20a9 9 0 0 1-9 9H32l-4.3 12.1a1.8 1.8 0 0 1-3.4 0L20 40H10a9 9 0 0 1-9-9V11a9 9 0 0 1 9-9Z"
-    fill="#000000"
-    mask="url(#saved-place-pin-mask)"
+    fill="#19a5d0"
   />
+  <circle cx="26" cy="22.5" r="3.25" fill="#ffffff"/>
 </svg>
