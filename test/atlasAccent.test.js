@@ -30,19 +30,21 @@ test('the selected Atlas controls retain the exact #19a5d0 accent token', async 
   assert.match(polish, /border-color:\s*var\(--atlas-accent\)/);
 });
 
-test('itinerary, routes, notes and language use the same real button structure and styles', async () => {
+test('itinerary, routes, notes and currency use the same real button structure and styles', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
   const navigation = `${editor}\n${menu}`;
   const polish = await read('src/app/FloatingEditorPolish.css');
 
   assert.equal((navigation.match(/editor-module__nav-tab/g) || []).length, 4);
-  assert.equal((navigation.match(/editor-module__tab-icon/g) || []).length, 4);
+  assert.equal((navigation.match(/editor-module__tab-icon/g) || []).length, 3);
   assert.equal((navigation.match(/editor-module__tab-label/g) || []).length, 4);
   assert.match(editor, /t\('itinerary'\)/);
   assert.match(editor, /t\('myRoutes'\)/);
-  assert.match(menu, /openMenu === 'language'/);
-  assert.doesNotMatch(menu, /openMenu === 'currency'|currencyCoinIcon|setCurrency/);
+  assert.match(menu, /openMenu === 'currency'/);
+  assert.match(menu, /setCurrency\(currency\)/);
+  assert.match(menu, /<span>\{t\('language'\)\}<\/span>/);
+  assert.doesNotMatch(menu, /currencyCoinIcon|data-tab-icon="language-selector"/);
 
   assert.match(polish, /\.editor-module__tabs \.editor-module__nav-tab,/);
   assert.match(polish, /height:\s*36px;/);
@@ -76,7 +78,7 @@ test('places renders the transparent signpost icon through the existing tab asse
   assert.doesNotMatch(icon, /<image\b/);
 });
 
-test('the desktop navigation remains ordered as itinerary, routes, notes and language', async () => {
+test('the desktop navigation remains ordered as itinerary, routes, notes and currency', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
   const navigation = `${editor}\n${menu}`;
@@ -84,12 +86,12 @@ test('the desktop navigation remains ordered as itinerary, routes, notes and lan
   const itineraryIndex = navigation.indexOf("setActiveTab('segments')");
   const routesIndex = navigation.indexOf("setActiveTab('places')");
   const notesIndex = navigation.indexOf("setActiveTab('notes')");
-  const languageIndex = navigation.indexOf("openMenu === 'language'");
+  const currencyIndex = navigation.indexOf("openMenu === 'currency'");
 
   assert.ok(itineraryIndex >= 0);
   assert.ok(itineraryIndex < routesIndex);
   assert.ok(routesIndex < notesIndex);
-  assert.ok(notesIndex < languageIndex);
+  assert.ok(notesIndex < currencyIndex);
 });
 
 test('place save popup hides its close icon and dismisses through outside clicks', async () => {
