@@ -1,9 +1,11 @@
 import { expensesTotal } from '../expenses/expenseModel.js';
 import {
+  PLACE_ORDER_VERSION,
   TRIP_LIMITS,
   createSegment,
   isPlaced,
 } from './tripEntities.js';
+import { reorderPlaceList } from './placeOrdering.js';
 
 function nowISO() {
   return new Date().toISOString();
@@ -55,6 +57,24 @@ export function reorderSegments(
   return {
     ...trip,
     segments: reordered,
+    updatedAt: nowISO(),
+  };
+}
+
+export function reorderPlaces(
+  trip,
+  sourceId,
+  targetId,
+  placement = 'before'
+) {
+  const places = Array.isArray(trip?.places) ? trip.places : [];
+  const reordered = reorderPlaceList(places, sourceId, targetId, placement);
+  if (reordered === places) return trip;
+
+  return {
+    ...trip,
+    places: reordered,
+    placeOrderVersion: PLACE_ORDER_VERSION,
     updatedAt: nowISO(),
   };
 }
