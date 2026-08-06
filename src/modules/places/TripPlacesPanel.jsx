@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { IconGripVertical, IconMapPin, IconTrash } from '@tabler/icons-react';
 import { contiguousPlaceGroups } from '../trips/tripModel.js';
 import { flagImageUrl } from '../flags/flags.js';
+import { TripRouteConnections } from './TripRouteConnections.jsx';
 import './TripPlacesPanel.css';
 
 function CountryFlag({ countryCode, country }) {
@@ -18,7 +19,18 @@ function CountryFlag({ countryCode, country }) {
   );
 }
 
-export function TripPlacesPanel({ places, removePlace, reorderPlace, t }) {
+export function TripPlacesPanel({
+  places,
+  routes = [],
+  removePlace,
+  reorderPlace,
+  upsertRoute,
+  removeRoute,
+  setRouteVisibility,
+  setAllRouteVisibility,
+  t,
+  intlLocale,
+}) {
   const [placeToDelete, setPlaceToDelete] = useState(null);
   const [dragState, setDragState] = useState(null);
   const panelRef = useRef(null);
@@ -181,6 +193,17 @@ export function TripPlacesPanel({ places, removePlace, reorderPlace, t }) {
   return (
     <>
       <div className="trip-places" ref={panelRef}>
+        <TripRouteConnections
+          places={places}
+          routes={routes}
+          upsertRoute={upsertRoute}
+          removeRoute={removeRoute}
+          setRouteVisibility={setRouteVisibility}
+          setAllRouteVisibility={setAllRouteVisibility}
+          t={t}
+          intlLocale={intlLocale}
+        />
+
         {groups.map((group) => (
           <section className="trip-places__group" key={group.id}>
             <header className="trip-places__group-head">
