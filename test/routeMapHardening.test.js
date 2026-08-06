@@ -14,7 +14,6 @@ async function mapSources() {
     form: 'src/modules/map/PlaceSearchForm.jsx',
     search: 'src/modules/map/usePlaceSearch.js',
     markers: 'src/modules/map/usePlaceResultMarkers.js',
-    persistentRoutes: 'src/modules/map/usePersistentSegmentRoutes.js',
   };
   const entries = await Promise.all(
     Object.entries(paths).map(async ([name, path]) => [name, await read(path)])
@@ -179,19 +178,18 @@ test('el popup de guardado conserva su área de cierre propia', async () => {
   assert.match(css, /place-save-popup \.maplibregl-popup-close-button\{top:6px;right:6px\}/);
 });
 
-test('Tramos calcula una firma una vez y reutiliza la geometría persistida', async () => {
+test('Tramos no solicita ni persiste routing real de Geoapify', async () => {
   const sources = await mapSources();
-  const client = await read('src/modules/trips/segmentRouteClient.js');
-  const model = await read('src/modules/trips/segmentRouteModel.js');
+  const client = await read('src/modules/places/geoapifyClient.js');
+  const model = await read('src/modules/trips/tripModel.js');
+  const entities = await read('src/modules/trips/tripEntities.js');
   const pane = await read('src/app/AppMapPane.jsx');
+  const combined = Object.values(sources).join('\n');
 
-  assert.match(pane, /usePersistentSegmentRoutes/);
-  assert.match(sources.persistentRoutes, /requestGeoapifyRoute\(candidate\)/);
-  assert.match(sources.persistentRoutes, /normalizeSegmentRoute\(segment\.route, segment\)/);
-  assert.match(sources.persistentRoutes, /resolvedRoutesRef/);
-  assert.match(client, /geoapifyCallable\('geoapifyRoute'\)/);
-  assert.match(model, /export function routeSignatureForSegment/);
-  assert.match(model, /export function routeGeometryForDisplay/);
-  assert.match(sources.model, /const storedGeometry = routeGeometryForDisplay\(segment\)/);
-  assert.match(sources.model, /geometry: storedGeometry \|\|/);
+  assert.doesNotMatch(combined, /requestGeoapifyRoute|routeGeometryForDisplay|routeModeForSegment/);
+  assert.doesNotMatch(client, /requestGeoapifyRoute|callable\('geoapifyRoute'\)/);
+  assert.doesNotMatch(model, /segmentRoute|routeGeometry|routeSignature/);
+  assert.doesNotMatch(entities, /\broute\s*:/);
+  assert.doesNotMatch(pane, /usePersistentSegmentRoutes/);
+  assert.match(sources.model, /coordinates: adaptiveCurve\(segment\.origin, segment\.destination\)/);
 });
