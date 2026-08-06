@@ -28,12 +28,16 @@ test('search cache is separated by query and route context', async () => {
   assert.match(client, /PLACE_CACHE_KEY = 'atlas:geoapify-place-cache:v3'/);
 });
 
-test('place detail images are cached and fetched through the official details endpoint', async () => {
+test('place detail images are cached and fetched through the Firebase proxy', async () => {
   const client = await read('src/modules/places/geoapifyClient.js');
+  const functions = await read('functions/index.js');
   assert.match(client, /fetchGeoapifyPlaceImage/);
-  assert.match(client, /https:\/\/api\.geoapify\.com\/v2\/place-details/);
-  assert.match(client, /wiki_and_media\?\.image/);
+  assert.match(client, /callable\('geoapifyPlaceDetails'\)/);
+  assert.doesNotMatch(client, /https:\/\/api\.geoapify\.com\/v2\/place-details/);
   assert.match(client, /DETAIL_CACHE_KEY/);
+  assert.match(functions, /export const geoapifyPlaceDetails/);
+  assert.match(functions, /https:\/\/api\.geoapify\.com\/v2\/place-details/);
+  assert.match(functions, /wiki_and_media\?\.image/);
 });
 
 test('image failure is non-blocking and leaves an icon fallback visible', async () => {
