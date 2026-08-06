@@ -10,18 +10,20 @@ test('el autocompletado de ciudades pertenece exclusivamente a Tramos', async ()
   const cityAutocomplete = await read('src/components/CityAutocomplete.jsx');
   const citySearch = await read('src/modules/geocoding/useCitySearch.js');
   const provider = await read('src/modules/geocoding/geocodingProvider.js');
+  const cityClient = await read('src/modules/geocoding/citySearchClient.js');
 
   assert.match(header, /<CityAutocomplete[\s\S]*segment\.origin/);
   assert.match(header, /<CityAutocomplete[\s\S]*segment\.destination/);
   assert.match(cityAutocomplete, /useCitySearch/);
   assert.match(citySearch, /getGeocoder\(\)\.search/);
-  assert.match(provider, /createNominatimProvider/);
+  assert.match(provider, /createGeoapifyCityProvider/);
+  assert.match(cityClient, /firebaseCallable\('geoapifyCityAutocomplete'\)/);
 
-  const combined = `${cityAutocomplete}\n${citySearch}\n${provider}`;
-  assert.doesNotMatch(combined, /usePlaceSearch|searchGeoapifyPlaces|PlaceSearchForm|TripPlacesPanel/);
+  const combined = `${cityAutocomplete}\n${citySearch}\n${provider}\n${cityClient}`;
+  assert.doesNotMatch(combined, /usePlaceSearch|searchGeoapifyPlaces|PlaceSearchForm|TripPlacesPanel|geoapifyPlaceSearch/);
 });
 
-test('la búsqueda general no lee origen, destino ni contexto de Tramos', async () => {
+test('la búsqueda general no lee origen, destino ni módulos de ciudades', async () => {
   const routeMap = await read('src/modules/map/RouteMap.jsx');
   const placeSearch = await read('src/modules/map/usePlaceSearch.js');
   const placeClient = await read('src/modules/places/geoapifyClient.js');
@@ -31,7 +33,7 @@ test('la búsqueda general no lee origen, destino ni contexto de Tramos', async 
   assert.match(routeMap, /usePlaceSearch\(\{ viewMode \}\)/);
   assert.doesNotMatch(routeMap, /placeSearchContext|searchContext/);
   assert.doesNotMatch(placeSearch, /segments|origin|destination|useCitySearch|getGeocoder/);
-  assert.doesNotMatch(placeClient, /contextualQuery|callableSearchContext|contextKey|searchContext/);
+  assert.doesNotMatch(placeClient, /contextualQuery|callableSearchContext|contextKey|searchContext|citySearchClient|geoapifyCityAutocomplete/);
   assert.doesNotMatch(placeQuery, /knownLocations|city|country|lat|lon/);
 });
 
