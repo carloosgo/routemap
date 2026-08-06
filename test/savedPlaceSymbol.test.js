@@ -3,20 +3,26 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { colorForIndex } from '../src/config.js';
 import { buildMapFeatureData, placeCountryKey } from '../src/modules/map/routeMapModel.js';
+import {
+  SAVED_PLACE_MARKER_COLORS,
+  savedPlaceMarkerStyle,
+} from '../src/modules/map/savedPlaceMarkerPalette.js';
 
 const root = new globalThis.URL('../', import.meta.url);
 const read = (path) => readFile(new globalThis.URL(path, root), 'utf8');
 
-test('saved places use one tintable MapLibre symbol with a country-colored fallback', async () => {
+test('saved places use colored SVG variants with a country-colored fallback', async () => {
   const routeMap = await read('src/modules/map/RouteMap.jsx');
   const symbol = await read('src/modules/map/savedPlaceSymbol.js');
   const setup = await read('src/modules/map/routeMapSetup.js');
 
   assert.match(routeMap, /installSavedPlaceSymbolLayer\(map\)/);
-  assert.match(symbol, /atlas-saved-place-pin/);
-  assert.match(symbol, /atlas-saved-places-symbol/);
-  assert.match(symbol, /map\.addImage\(PLACE_ICON_ID, image, \{ pixelRatio: 2, sdf: true \}\)/);
-  assert.match(symbol, /'icon-color': \['coalesce', \['get', 'color'\], '#19a5d0'\]/);
+  assert.match(symbol, /saved-place-pin\.svg\?raw/);
+  assert.match(symbol, /savedPlacePinTemplate\.replace\('#19a5d0', color\)/);
+  assert.match(symbol, /savedPlaceMarkerStyles\(\)\.map/);
+  assert.match(symbol, /'icon-image': \['coalesce', \['get', 'iconId'\], DEFAULT_SAVED_PLACE_ICON_ID\]/);
+  assert.match(symbol, /map\.addImage\(iconId, image, \{ pixelRatio: 2 \}\)/);
+  assert.doesNotMatch(symbol, /sdf:\s*true|'icon-color'/);
   assert.match(symbol, /image\.width = 52/);
   assert.match(symbol, /image\.height = 56/);
   assert.match(symbol, /type: 'symbol'/);
@@ -28,19 +34,26 @@ test('saved places use one tintable MapLibre symbol with a country-colored fallb
   assert.match(setup, /'circle-color': \['coalesce', \['get', 'color'\], '#2563eb'\]/);
 });
 
-test('saved place pin is a transparent monochrome SVG suitable for SDF tinting', async () => {
+test('saved place pin remains the canonical transparent SVG with a white dot', async () => {
   const icon = await read('src/assets/map/saved-place-pin.svg');
 
   assert.match(icon, /width="52" height="56" viewBox="0 0 52 56"/);
-  assert.match(icon, /<mask id="saved-place-pin-mask">/);
-  assert.match(icon, /<circle[^>]+cx="26"[^>]+cy="22\.5"[^>]+r="3\.25"[^>]+fill="#000000"/);
-  assert.match(icon, /mask="url\(#saved-place-pin-mask\)"/);
-  assert.equal((icon.match(/fill="#000000"/g) || []).length, 2);
-  assert.doesNotMatch(icon, /#19a5d0|#009dcc|#ffeed1|#68807f|#4d4d4d|#dadada/);
+  assert.match(icon, /fill="#19a5d0"/);
+  assert.match(icon, /<circle[^>]+cx="26"[^>]+cy="22\.5"[^>]+r="3\.25"[^>]+fill="#ffffff"/);
+  assert.equal((icon.match(/fill="#19a5d0"/g) || []).length, 1);
+  assert.equal((icon.match(/fill="#ffffff"/g) || []).length, 1);
   assert.doesNotMatch(icon, /<image\b|data:image\/|<metadata>/i);
 });
 
-test('all saved places in one country share a color and different countries use different colors', () => {
+test('the saved place marker palette provides distinct reusable icon variants', () => {
+  assert.ok(SAVED_PLACE_MARKER_COLORS.length >= 16);
+  assert.equal(new Set(SAVED_PLACE_MARKER_COLORS).size, SAVED_PLACE_MARKER_COLORS.length);
+  assert.equal(savedPlaceMarkerStyle(0).color, SAVED_PLACE_MARKER_COLORS[0]);
+  assert.notEqual(savedPlaceMarkerStyle(0).iconId, savedPlaceMarkerStyle(1).iconId);
+  assert.deepEqual(savedPlaceMarkerStyle(SAVED_PLACE_MARKER_COLORS.length), savedPlaceMarkerStyle(0));
+});
+
+test('all saved places in one country share a color and icon while different countries differ', () => {
   const places = [
     { id: 'fr-1', name: 'Louvre', country: 'France', countryCode: 'FR', lat: 48.86, lon: 2.34 },
     { id: 'fr-2', name: 'Versailles', country: 'France', countryCode: 'fr', lat: 48.8, lon: 2.12 },
@@ -61,9 +74,11 @@ test('all saved places in one country share a color and different countries use 
   assert.equal(placeCountryKey(places[0]), 'code:FR');
   assert.equal(placeCountryKey(places[1]), 'code:FR');
   assert.equal(properties['fr-1'].color, properties['fr-2'].color);
+  assert.equal(properties['fr-1'].iconId, properties['fr-2'].iconId);
   assert.notEqual(properties['fr-1'].color, properties['de-1'].color);
   assert.notEqual(properties['fr-1'].color, properties['jp-1'].color);
   assert.notEqual(properties['de-1'].color, properties['jp-1'].color);
+  assert.notEqual(properties['de-1'].iconId, properties['jp-1'].iconId);
 });
 
 test('country names are normalized when a saved place has no ISO country code', () => {
@@ -81,6 +96,7 @@ test('country names are normalized when a saved place has no ISO country code', 
   assert.equal(placeCountryKey(places[0]), 'name:mexico');
   assert.equal(placeCountryKey(places[1]), 'name:mexico');
   assert.equal(placeFeatures[0].properties.color, placeFeatures[1].properties.color);
+  assert.equal(placeFeatures[0].properties.iconId, placeFeatures[1].properties.iconId);
 });
 
 test('saved place popup adds a lazy country flag only for ISO2 codes', async () => {
