@@ -1,3 +1,5 @@
+export { geoapifyCityAutocomplete } from './geoapifyCityFunctions.js';
+
 export {
   geoapifyAutocomplete,
   geoapifyPlaceDetails,
