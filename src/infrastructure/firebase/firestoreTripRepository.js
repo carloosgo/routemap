@@ -148,8 +148,15 @@ export function createFirestoreTripRepository({ db, uid }) {
       const tripId = requireTripId(id);
       const tripRef = doc(tripsCollection, tripId);
       const revisions = await getDocs(collection(tripRef, 'revisions'));
-      for (const revision of revisions.docs) await deleteRevision(db, revision.ref);
       await deleteDoc(tripRef);
+
+      for (const revision of revisions.docs) {
+        try {
+          await deleteRevision(db, revision.ref);
+        } catch {
+          // El viaje ya no es visible; una limpieza posterior puede retirar el huérfano.
+        }
+      }
     },
   };
 }
