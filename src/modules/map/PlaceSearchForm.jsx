@@ -1,3 +1,5 @@
+import { useTranslation } from '../../i18n/index.jsx';
+
 export function PlaceSearchForm({
   query,
   suggestions,
@@ -13,6 +15,8 @@ export function PlaceSearchForm({
   onClear,
   onChooseSuggestion,
 }) {
+  const { t } = useTranslation();
+
   return (
     <form className="geo-search" onSubmit={onSubmit}>
       <div className="geo-search__row">
@@ -21,15 +25,15 @@ export function PlaceSearchForm({
             value={query}
             onChange={onQueryChange}
             onFocus={onFocus}
-            placeholder="Buscar hotel, restaurante, estación…"
-            aria-label="Buscar lugares"
+            placeholder={t('searchPlacesPlaceholder')}
+            aria-label={t('searchPlaces')}
             autoComplete="off"
           />
           {canClearSearch && (
             <button
               type="button"
               className="geo-search__clear"
-              aria-label="Cerrar búsqueda y quitar resultados"
+              aria-label={t('closePlaceSearch')}
               onClick={onClear}
             >
               <span aria-hidden="true">×</span>
@@ -37,11 +41,11 @@ export function PlaceSearchForm({
           )}
         </div>
         <button type="submit" className="geo-search__button" disabled={searching}>
-          {searching ? 'Buscando…' : 'Buscar'}
+          {searching ? t('searching') : t('search')}
         </button>
       </div>
       {showSuggestions && suggestions.length > 0 && (
-        <div className="geo-search__suggestions" role="listbox" aria-label="Sugerencias de lugares">
+        <div className="geo-search__suggestions" role="listbox" aria-label={t('placeSuggestions')}>
           {suggestions.map((place) => (
             <button
               type="button"
@@ -59,7 +63,7 @@ export function PlaceSearchForm({
         </div>
       )}
       {suggesting && query.trim().length >= minChars && !searching && (
-        <div className="geo-search__status">Buscando sugerencias…</div>
+        <div className="geo-search__status">{t('searchingSuggestions')}</div>
       )}
       {error && <div className="geo-search__error">{error}</div>}
     </form>
