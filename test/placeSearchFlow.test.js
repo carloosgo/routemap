@@ -36,39 +36,29 @@ test('search cache is separated only by normalized general query', async () => {
   assert.match(cache, /PLACE_CACHE_KEY = 'atlas:geoapify-place-cache:v3'/);
 });
 
-test('place detail images are cached and fetched through the Firebase proxy', async () => {
-  const client = await read('src/modules/places/geoapifyClient.js');
-  const cache = await read('src/modules/places/geoapifyClientCache.js');
-  const functions = await read('functions/geoapifyPlaceFunctions.js');
-  assert.match(client, /fetchGeoapifyPlaceImage/);
-  assert.match(client, /callable\('geoapifyPlaceDetails'\)/);
-  assert.doesNotMatch(client, /https:\/\/api\.geoapify\.com\/v2\/place-details/);
-  assert.match(cache, /DETAIL_CACHE_KEY/);
-  assert.match(functions, /export const geoapifyPlaceDetails/);
-  assert.match(functions, /https:\/\/api\.geoapify\.com\/v2\/place-details/);
-  assert.match(functions, /wiki_and_media\?\.image/);
-});
-
-test('image failure is non-blocking and leaves an icon fallback visible', async () => {
+test('map search result markers do not load images or category icons', async () => {
   const dom = await read('src/modules/map/placeMapDom.js');
   const markers = await read('src/modules/map/usePlaceResultMarkers.js');
-  const css = await read('src/modules/map/RouteMap.css');
-  assert.match(dom, /place-result-marker__fallback/);
-  assert.match(dom, /representativePlaceIcon/);
-  assert.match(markers, /if \(!url \|\| controller\.signal\.aborted\) return/);
-  assert.match(dom, /addEventListener\('error'/);
-  assert.match(css, /place-result-marker__fallback/);
-  assert.match(css, /img\.is-loaded\{display:block\}/);
+  const routeMap = await read('src/modules/map/RouteMap.jsx');
+
+  assert.match(dom, /button\.append\(copy\)/);
+  assert.doesNotMatch(dom, /representativePlaceIcon|place-result-marker__media|place-result-marker__fallback/);
+  assert.doesNotMatch(dom, /document\.createElement\('img'\)/);
+  assert.doesNotMatch(markers, /fetchGeoapifyPlaceImage|AbortController|image\.src/);
+  assert.doesNotMatch(routeMap, /representativePlaceIcon/);
 });
 
-test('saved places include city, country, type and country flag', async () => {
+test('saved places keep location data but hide category labels from the map and panel', async () => {
   const entities = await read('src/modules/trips/tripEntities.js');
   const panel = await read('src/modules/places/TripPlacesPanel.jsx');
+  const dom = await read('src/modules/map/placeMapDom.js');
+
   assert.match(entities, /city:\s*sanitizeText/);
   assert.match(entities, /country:\s*sanitizeText/);
-  assert.match(entities, /category:\s*sanitizeText/);
   assert.match(panel, /flagImageUrl/);
   assert.match(panel, /countryCode/);
+  assert.doesNotMatch(panel, /place\.category|<small>/);
+  assert.doesNotMatch(dom, /place\.category/);
 });
 
 test('places, notes and mobile itinerary navigation use distinct icons', async () => {
@@ -83,7 +73,7 @@ test('places, notes and mobile itinerary navigation use distinct icons', async (
   assert.doesNotMatch(navigation, /IconMapPin|IconNotebook/);
 });
 
-test('CSP permits Geoapify details and Wikimedia images only through explicit hosts', async () => {
+test('CSP permits Geoapify and explicit image hosts required by remaining map content', async () => {
   const html = await read('index.html');
   assert.match(html, /connect-src[^;]*https:\/\/\*\.geoapify\.com/);
   assert.match(html, /img-src[^;]*https:\/\/upload\.wikimedia\.org/);
