@@ -19,6 +19,7 @@ function revisionData(id, overrides = {}) {
     complete: false,
     segmentCount: 0,
     placeCount: 0,
+    routeConnectionCount: 0,
     noteCount: 0,
     checklistCount: 0,
     ...overrides,
@@ -33,10 +34,11 @@ function tripSummary(id, revisionId, overrides = {}) {
     placeOrderVersion: 1,
     createdAt: CREATED_AT,
     updatedAt: UPDATED_AT,
-    storageVersion: 2,
+    storageVersion: 3,
     activeRevision: revisionId,
     segmentCount: 0,
     placeCount: 0,
+    routeConnectionCount: 0,
     noteCount: 0,
     checklistCount: 0,
     total: 0,
@@ -77,6 +79,25 @@ function placeData(id = 'place-1', position = 0) {
     lat: 19.4326,
     lon: -99.1332,
     savedAt: UPDATED_AT,
+  };
+}
+
+function routeConnectionData(id = 'route-1', position = 0, overrides = {}) {
+  return {
+    id,
+    position,
+    fromPlaceId: 'place-1',
+    toPlaceId: 'place-2',
+    mode: 'drive',
+    visible: true,
+    distance: 1234,
+    duration: 600,
+    geometry: {
+      type: 'LineString',
+      coordinates: [[-99.1332, 19.4326], [-98.2063, 19.0414]],
+    },
+    calculatedAt: UPDATED_AT,
+    ...overrides,
   };
 }
 
@@ -164,6 +185,31 @@ test('los lugares se guardan como documentos independientes de la revisión', as
     tripSummary(tripId, revisionId, { placeCount: 1 })
   ));
   await assertSucceeds(getDoc(placeRef));
+});
+
+test('las conexiones entre lugares aceptan solo modos y geometrías de Geoapify soportados', async () => {
+  const alice = testEnv.authenticatedContext('alice').firestore();
+  const tripId = 'trip-with-route';
+  const revisionId = 'revision012';
+  const revisionRef = doc(alice, `users/alice/trips/${tripId}/revisions/${revisionId}`);
+  const revision = revisionData(revisionId, { routeConnectionCount: 1 });
+  const routeRef = doc(
+    alice,
+    `users/alice/trips/${tripId}/revisions/${revisionId}/routeConnections/000000`
+  );
+
+  await assertSucceeds(setDoc(revisionRef, revision));
+  await assertSucceeds(setDoc(routeRef, routeConnectionData()));
+  await assertFails(setDoc(
+    doc(alice, `users/alice/trips/${tripId}/revisions/${revisionId}/routeConnections/000001`),
+    routeConnectionData('route-2', 1, { mode: 'plane' })
+  ));
+  await assertSucceeds(setDoc(revisionRef, { ...revision, complete: true }));
+  await assertSucceeds(setDoc(
+    doc(alice, `users/alice/trips/${tripId}`),
+    tripSummary(tripId, revisionId, { routeConnectionCount: 1 })
+  ));
+  await assertSucceeds(getDoc(routeRef));
 });
 
 test('un viaje no puede apuntar a una revisión incompleta', async () => {
@@ -259,6 +305,9 @@ test('las reglas rechazan resúmenes con campos inesperados o conteos excesivos'
   ));
   await assertFails(setDoc(doc(alice, `users/alice/trips/${tripId}`),
     tripSummary(tripId, revisionId, { placeOrderVersion: 2 })
+  ));
+  await assertFails(setDoc(doc(alice, `users/alice/trips/${tripId}`),
+    tripSummary(tripId, revisionId, { routeConnectionCount: 201 })
   ));
 });
 
