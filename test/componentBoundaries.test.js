@@ -77,3 +77,37 @@ test('tripModel conserva una fachada estable sin absorber entidades ni operacion
   assert.match(hook, /tripReducer/);
   assert.doesNotMatch(hook, /switch\s*\(action\.type\)/);
 });
+
+test('el repositorio Firestore orquesta viajes sin absorber lotes y subcolecciones', async () => {
+  const repository = await read(
+    'src/infrastructure/firebase/firestoreTripRepository.js'
+  );
+  const revisions = await read(
+    'src/infrastructure/firebase/firestoreTripRevisionStore.js'
+  );
+
+  assert.ok(
+    lineCount(repository) <= 130,
+    `firestoreTripRepository.js volvió a crecer a ${lineCount(repository)} líneas`
+  );
+  assert.match(repository, /from '\.\/firestoreTripRevisionStore\.js'/);
+  assert.doesNotMatch(
+    repository,
+    /writeBatch|WRITE_BATCH_LIMIT|documentIdForPosition|TRIP_REVISION_COLLECTIONS/
+  );
+
+  assert.match(revisions, /const WRITE_BATCH_LIMIT = 400/);
+  assert.match(revisions, /export async function writeRevisionPayload/);
+  assert.match(revisions, /complete: true/);
+  assert.match(revisions, /export async function cleanupOldRevisions/);
+  assert.match(revisions, /export async function listRevisionRefs/);
+
+  assert.match(
+    repository,
+    /await writeRevisionPayload\(db, revisionRef, payload\);[\s\S]*await setDoc\(tripRef, payload\.summary\);/
+  );
+  assert.match(
+    repository,
+    /const revisionRefs = await listRevisionRefs\(tripRef\);[\s\S]*await deleteDoc\(tripRef\);[\s\S]*await deleteRevision\(db, revisionRef\);/
+  );
+});
