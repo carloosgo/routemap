@@ -85,23 +85,37 @@ test('la caché compartida oculta la consulta y conserva expiración administrab
   assert.match(batchFunctions, /geoapifyBatchJobs/);
 });
 
-test('el endpoint de routing queda aislado hasta la futura fase de rutas entre lugares', async () => {
+test('routing persiste solo firma, modo, GeoJSON, distancia y duración', async () => {
   const source = await read('functions/geoapifyRouteFunctions.js');
-  const client = await read('src/modules/places/geoapifyClient.js');
-  const tripModel = await read('src/modules/trips/tripModel.js');
-  const map = await read('src/modules/map/RouteMap.jsx');
+  const client = await read('src/modules/trips/segmentRouteClient.js');
+  const model = await read('src/modules/trips/segmentRouteModel.js');
+  const hook = await read('src/modules/map/usePersistentSegmentRoutes.js');
+  const storage = await read('src/infrastructure/firebase/tripStorageSchema.js');
 
   assert.match(source, /export const geoapifyRoute/);
   assert.match(source, /geometry: feature\.geometry/);
   assert.match(source, /distance: Number\(feature\.properties\?\.distance\)/);
   assert.match(source, /duration: Number\(feature\.properties\?\.time\)/);
   assert.doesNotMatch(source, /elevation|route_details|traffic/);
-  assert.doesNotMatch(client, /callable\('geoapifyRoute'\)/);
-  assert.doesNotMatch(tripModel, /route:/);
-  assert.doesNotMatch(map, /geoapifyRoute|requestGeoapifyRoute/);
+
+  assert.match(client, /geoapifyCallable\('geoapifyRoute'\)/);
+  assert.match(client, /normalizeSegmentRoute\(response\.data, segment\)/);
+  assert.match(model, /routeSignatureForSegment/);
+  assert.match(model, /value\.signature !== signature/);
+  assert.match(model, /value\.mode !== mode/);
+  assert.match(model, /geometry,/);
+  assert.match(model, /distance: nonNegativeMetric/);
+  assert.match(model, /duration: nonNegativeMetric/);
+  assert.match(storage, /serializeRouteGeometry/);
+  assert.match(storage, /parseRouteGeometry/);
+
+  assert.match(hook, /ROUTE_REQUEST_SPACING_MS = 3200/);
+  assert.match(hook, /resolvedRoutesRef/);
+  assert.match(hook, /failedSignaturesRef/);
+  assert.match(hook, /updateSegment\(candidate\.id, \{ route \}\)/);
 });
 
-test('functions index conserva una fachada con los siete endpoints públicos', async () => {
+test('functions index conserva una fachada con los ocho endpoints públicos', async () => {
   const index = await read('functions/index.js');
 
   for (const endpoint of [
