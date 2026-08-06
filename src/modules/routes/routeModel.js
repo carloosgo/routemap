@@ -93,8 +93,14 @@ export function segmentRouteSignature(segment, mode = routeModeForSegment(segmen
 
 export function hasReusableSegmentRoute(segment) {
   const route = normalizeSegmentRoute(segment?.route);
-  const signature = segmentRouteSignature(segment, route?.mode);
-  return Boolean(route && signature && route.signature === signature);
+  const currentMode = routeModeForSegment(segment);
+  const signature = segmentRouteSignature(segment, currentMode);
+  return Boolean(
+    route
+      && route.mode === currentMode
+      && signature
+      && route.signature === signature
+  );
 }
 
 export function invalidateStaleSegmentRoute(segment) {
