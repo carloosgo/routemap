@@ -1,24 +1,24 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { config } from '../../config.js';
-import { getFirebaseServices } from '../../infrastructure/firebase/firebaseClient.js';
-import { createFirestoreTripRepository } from '../../infrastructure/firebase/firestoreTripRepository.js';
-import { createLocalStorageRepository } from '../storage/localStorageRepository.js';
-
-function errorMessage(error, fallback) {
-  return error instanceof Error && error.message ? error.message : fallback;
-}
+import {
+  countLocalTrips,
+  importLocalTripsIntoRepository,
+  listSavedTrips,
+  openSavedTrip,
+  persistSavedTrip,
+  removeSavedTrip,
+  savedTripErrorMessage,
+} from './savedTripOperations.js';
+import {
+  createLocalTripRepository,
+  selectTripRepository,
+} from './tripRepositorySelector.js';
 
 export function useSavedTrips(user) {
-  const localRepository = useMemo(
-    () => createLocalStorageRepository(config.storageKey),
-    []
+  const localRepository = useMemo(() => createLocalTripRepository(), []);
+  const repository = useMemo(
+    () => selectTripRepository({ uid: user?.uid, localRepository }),
+    [localRepository, user?.uid]
   );
-
-  const repository = useMemo(() => {
-    if (!user?.uid) return localRepository;
-    const { db } = getFirebaseServices();
-    return createFirestoreTripRepository({ db, uid: user.uid });
-  }, [localRepository, user?.uid]);
 
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,11 +28,11 @@ export function useSavedTrips(user) {
     setLoading(true);
     setError(null);
     try {
-      const list = await repository.list();
+      const list = await listSavedTrips(repository);
       setTrips(list);
       return list;
     } catch (err) {
-      setError(errorMessage(err, 'Error al cargar viajes'));
+      setError(savedTripErrorMessage(err, 'Error al cargar viajes'));
       return [];
     } finally {
       setLoading(false);
@@ -47,9 +47,9 @@ export function useSavedTrips(user) {
     async (id) => {
       setError(null);
       try {
-        return await repository.get(id);
+        return await openSavedTrip(repository, id);
       } catch (err) {
-        setError(errorMessage(err, 'Error al abrir el viaje'));
+        setError(savedTripErrorMessage(err, 'Error al abrir el viaje'));
         throw err;
       }
     },
@@ -60,11 +60,11 @@ export function useSavedTrips(user) {
     async (trip) => {
       setError(null);
       try {
-        const saved = await repository.save(trip);
+        const saved = await persistSavedTrip(repository, trip);
         await refresh();
         return saved;
       } catch (err) {
-        setError(errorMessage(err, 'Error al guardar el viaje'));
+        setError(savedTripErrorMessage(err, 'Error al guardar el viaje'));
         throw err;
       }
     },
@@ -75,10 +75,10 @@ export function useSavedTrips(user) {
     async (id) => {
       setError(null);
       try {
-        await repository.remove(id);
+        await removeSavedTrip(repository, id);
         await refresh();
       } catch (err) {
-        setError(errorMessage(err, 'Error al eliminar el viaje'));
+        setError(savedTripErrorMessage(err, 'Error al eliminar el viaje'));
         throw err;
       }
     },
@@ -86,17 +86,19 @@ export function useSavedTrips(user) {
   );
 
   const importLocalTrips = useCallback(async () => {
-    if (!user?.uid) throw new Error('Inicia sesión antes de importar viajes.');
-    const localTrips = await localRepository.list();
-    for (const trip of localTrips) await repository.save(trip);
+    const importedCount = await importLocalTripsIntoRepository({
+      uid: user?.uid,
+      localRepository,
+      targetRepository: repository,
+    });
     await refresh();
-    return localTrips.length;
+    return importedCount;
   }, [localRepository, refresh, repository, user?.uid]);
 
-  const getLocalTripCount = useCallback(async () => {
-    const localTrips = await localRepository.list();
-    return localTrips.length;
-  }, [localRepository]);
+  const getLocalTripCount = useCallback(
+    () => countLocalTrips(localRepository),
+    [localRepository]
+  );
 
   const clearError = useCallback(() => setError(null), []);
 
