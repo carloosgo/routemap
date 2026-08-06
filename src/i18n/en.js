@@ -1,6 +1,8 @@
 export default {
   appName: 'Atlas',
   appTagline: 'Travel routes & expenses',
+  documentTitle: 'Atlas · Travel routes',
+  documentDescription: 'Plan international routes and track expenses by segment.',
   newTrip: 'New trip',
   tripName: 'Trip name',
   tripNamePlaceholder: 'e.g. Eurotrip 2026',
