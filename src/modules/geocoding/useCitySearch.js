@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { config } from '../../config.js';
+import { useTranslation } from '../../i18n/index.jsx';
 import { getGeocoder } from './geocodingProvider.js';
 
-// Hook exclusivo para buscar países y ciudades del itinerario.
-// Este flujo es independiente del proveedor usado por el mapa y por la
-// búsqueda de hoteles, restaurantes, estaciones y otros lugares.
 export function useCitySearch(query) {
+  const { t } = useTranslation();
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [hasError, setHasError] = useState(false);
 
   const debounceRef = useRef(null);
   const abortRef = useRef(null);
@@ -22,12 +21,12 @@ export function useCitySearch(query) {
       if (abortRef.current) abortRef.current.abort();
       setResults([]);
       setLoading(false);
-      setError(null);
+      setHasError(false);
       return undefined;
     }
 
     setLoading(true);
-    setError(null);
+    setHasError(false);
 
     debounceRef.current = setTimeout(async () => {
       if (abortRef.current) abortRef.current.abort();
@@ -39,7 +38,7 @@ export function useCitySearch(query) {
         if (abortRef.current === controller) setResults(data);
       } catch (searchError) {
         if (searchError.name !== 'AbortError' && abortRef.current === controller) {
-          setError(searchError.message || 'Error de búsqueda');
+          setHasError(true);
           setResults([]);
         }
       } finally {
@@ -57,5 +56,5 @@ export function useCitySearch(query) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
   }, []);
 
-  return { results, loading, error };
+  return { results, loading, error: hasError ? t('citySearchError') : null };
 }
