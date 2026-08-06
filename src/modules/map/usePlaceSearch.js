@@ -18,7 +18,7 @@ export function usePlaceSearch({ viewMode }) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searching, setSearching] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
-  const [error, setError] = useState('');
+  const [errorState, setErrorState] = useState(null);
 
   useEffect(
     () => () => {
@@ -88,7 +88,10 @@ export function usePlaceSearch({ viewMode }) {
     event?.preventDefault();
     const text = query.trim();
     if (text.length < config.geoapify.searchMinChars) {
-      setError(t('minimumSearchCharacters', { count: config.geoapify.searchMinChars }));
+      setErrorState({
+        key: 'minimumSearchCharacters',
+        variables: { count: config.geoapify.searchMinChars },
+      });
       return;
     }
 
@@ -101,7 +104,7 @@ export function usePlaceSearch({ viewMode }) {
     const controller = new AbortController();
     searchAbortRef.current = controller;
     setSearching(true);
-    setError('');
+    setErrorState(null);
 
     try {
       const next = await searchGeoapifyPlaces(text, {
@@ -112,7 +115,7 @@ export function usePlaceSearch({ viewMode }) {
       }
     } catch (searchError) {
       if (searchError?.name !== 'AbortError' && sequence === searchSequenceRef.current) {
-        setError(searchError.message || t('placeSearchError'));
+        setErrorState({ key: 'placeSearchError' });
       }
     } finally {
       if (!controller.signal.aborted && sequence === searchSequenceRef.current) {
@@ -134,7 +137,7 @@ export function usePlaceSearch({ viewMode }) {
     setShowSuggestions(false);
     setSuggesting(false);
     setSearching(false);
-    setError('');
+    setErrorState(null);
     setResults([place]);
   }
 
@@ -150,7 +153,7 @@ export function usePlaceSearch({ viewMode }) {
     setShowSuggestions(false);
     setSuggesting(false);
     setSearching(false);
-    setError('');
+    setErrorState(null);
   }
 
   function handleQueryChange(event) {
@@ -159,7 +162,7 @@ export function usePlaceSearch({ viewMode }) {
     autocompleteSequenceRef.current += 1;
     setSuggesting(false);
     setQuery(next);
-    setError('');
+    setErrorState(null);
     if (next.trim().length < config.geoapify.searchMinChars) {
       setSuggestions([]);
       setShowSuggestions(false);
@@ -177,8 +180,8 @@ export function usePlaceSearch({ viewMode }) {
     showSuggestions,
     searching,
     suggesting,
-    error,
-    canClearSearch: Boolean(query || results.length > 0 || suggestions.length > 0 || error),
+    error: errorState ? t(errorState.key, errorState.variables) : '',
+    canClearSearch: Boolean(query || results.length > 0 || suggestions.length > 0 || errorState),
     minChars: config.geoapify.searchMinChars,
     submitSearch,
     chooseSuggestion,
