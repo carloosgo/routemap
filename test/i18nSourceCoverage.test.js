@@ -20,10 +20,18 @@ async function sourceFiles(directoryUrl) {
   return nested.flat();
 }
 
+function matches(source, pattern) {
+  return [...source.matchAll(pattern)].map((match) => match[1]);
+}
+
 function translationKeys(source) {
-  const directCalls = [...source.matchAll(/\bt\(\s*['"]([^'"]+)['"]/g)];
-  const helperCalls = [...source.matchAll(/\btranslated\(\s*t\s*,\s*['"]([^'"]+)['"]/g)];
-  return [...directCalls, ...helperCalls].map((match) => match[1]);
+  return [
+    ...matches(source, /\bt\(\s*['"]([^'"]+)['"]/g),
+    ...matches(source, /\btranslated\(\s*t\s*,\s*['"]([^'"]+)['"]/g),
+    ...matches(source, /\btranslatedValue\(\s*[^,]+,\s*['"]([^'"]+)['"]/g),
+    ...matches(source, /\blabelKey:\s*['"]([^'"]+)['"]/g),
+    ...matches(source, /setErrorState\(\{\s*key:\s*['"]([^'"]+)['"]/g),
+  ];
 }
 
 test('cada clave de traducción usada por el frontend existe en español e inglés', async () => {
