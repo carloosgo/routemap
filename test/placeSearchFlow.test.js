@@ -71,7 +71,7 @@ test('saved places include city, country, type and country flag', async () => {
   assert.match(panel, /countryCode/);
 });
 
-test('places, notes and mobile route navigation use distinct icons', async () => {
+test('places, notes and mobile itinerary navigation use distinct icons', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const workspace = await read('src/app/AppWorkspace.jsx');
   const navigation = `${editor}\n${workspace}`;
@@ -79,7 +79,7 @@ test('places, notes and mobile route navigation use distinct icons', async () =>
   assert.match(editor, /import lugaresIcon from '\.\.\/assets\/lugares-storefront-v2\.svg'/);
   assert.match(editor, /data-tab-icon="places-map-pin"[\s\S]*<img src=\{lugaresIcon\} alt="" \/>/);
   assert.match(editor, /data-tab-icon="notes"[\s\S]*<IconNotes \/>/);
-  assert.match(workspace, /<IconRoute size=\{16\} aria-hidden="true" \/> \{t\('segments'\)\}/);
+  assert.match(workspace, /<IconRoute size=\{16\} aria-hidden="true" \/> \{t\('itinerary'\)\}/);
   assert.doesNotMatch(navigation, /IconMapPin|IconNotebook/);
 });
 
