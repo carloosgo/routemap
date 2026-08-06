@@ -14,27 +14,29 @@ test('place search preserves the configured minimum and maximum limits', async (
 });
 
 test('generic one-word searches use route context but specific searches remain literal', async () => {
-  const client = await read('src/modules/places/geoapifyClient.js');
-  assert.match(client, /export function contextualQuery/);
-  assert.match(client, /knownLocations/);
-  assert.match(client, /explicitlyNamesLocation/);
-  assert.match(client, /isGenericSingleTerm/);
-  assert.match(client, /\[base, city, country\]\.filter\(Boolean\)\.join\(', '\)/);
+  const query = await read('src/modules/places/geoapifyQuery.js');
+  assert.match(query, /export function contextualQuery/);
+  assert.match(query, /knownLocations/);
+  assert.match(query, /explicitlyNamesLocation/);
+  assert.match(query, /isGenericSingleTerm/);
+  assert.match(query, /\[base, city, country\]\.filter\(Boolean\)\.join\(', '\)/);
 });
 
 test('search cache is separated by query and route context', async () => {
   const client = await read('src/modules/places/geoapifyClient.js');
+  const cache = await read('src/modules/places/geoapifyClientCache.js');
   assert.match(client, /const cacheKey = `\$\{queryKey\}\|\$\{contextKey\(context\)\}`/);
-  assert.match(client, /PLACE_CACHE_KEY = 'atlas:geoapify-place-cache:v3'/);
+  assert.match(cache, /PLACE_CACHE_KEY = 'atlas:geoapify-place-cache:v3'/);
 });
 
 test('place detail images are cached and fetched through the Firebase proxy', async () => {
   const client = await read('src/modules/places/geoapifyClient.js');
+  const cache = await read('src/modules/places/geoapifyClientCache.js');
   const functions = await read('functions/geoapifyPlaceFunctions.js');
   assert.match(client, /fetchGeoapifyPlaceImage/);
   assert.match(client, /callable\('geoapifyPlaceDetails'\)/);
   assert.doesNotMatch(client, /https:\/\/api\.geoapify\.com\/v2\/place-details/);
-  assert.match(client, /DETAIL_CACHE_KEY/);
+  assert.match(cache, /DETAIL_CACHE_KEY/);
   assert.match(functions, /export const geoapifyPlaceDetails/);
   assert.match(functions, /https:\/\/api\.geoapify\.com\/v2\/place-details/);
   assert.match(functions, /wiki_and_media\?\.image/);
