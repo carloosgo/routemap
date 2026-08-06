@@ -1,1 +1,209 @@
-.trip-places{display:flex;flex:1;min-height:0;flex-direction:column;gap:12px;padding:12px;overflow-x:hidden;overflow-y:auto;scrollbar-gutter:stable}.trip-places--empty{align-items:center;justify-content:center;min-height:220px;color:#64748b;text-align:center}.trip-places--empty strong{color:#334155}.trip-places--empty span{max-width:260px;font-size:12px}.trip-places__group{overflow:hidden;flex:0 0 auto;border:1px solid #e2e8f0;border-radius:12px;background:#fff}.trip-places__group-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0}.trip-places__location{display:flex;align-items:center;gap:7px;min-width:0}.trip-places__flag{flex:0 0 auto;border-radius:2px;object-fit:cover;box-shadow:0 0 0 1px rgba(15,23,42,.12)}.trip-places__group-head strong{font-size:13px;color:#0f172a}.trip-places__group-head>span:last-child{font-size:11px;color:#64748b}.trip-places__list{display:flex;flex-direction:column}.trip-place{display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:1px solid #eef2f7}.trip-place:last-child{border-bottom:0}.trip-place__pin{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#e6f3f6;color:#0d6078}.trip-place__info{display:flex;min-width:0;flex:1;flex-direction:column}.trip-place__info strong{overflow:hidden;font-size:12px;color:#0f172a;text-overflow:ellipsis;white-space:nowrap}.trip-place__info small{font-size:11px;color:#64748b}.trip-place button{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:#b6bbc5;cursor:pointer;padding:0}.trip-place button:hover{background:#fff;color:var(--danger)}
+.trip-places {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.trip-places--empty {
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  color: #64748b;
+  text-align: center;
+}
+
+.trip-places--empty strong {
+  color: #334155;
+}
+
+.trip-places--empty span {
+  max-width: 260px;
+  font-size: 12px;
+}
+
+.trip-places__group {
+  position: relative;
+  overflow: visible;
+  flex: 0 0 auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.trip-places__group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 11px 11px 0 0;
+  background: #f8fafc;
+}
+
+.trip-places__location {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.trip-places__flag {
+  flex: 0 0 auto;
+  border-radius: 2px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, .12);
+}
+
+.trip-places__group-head strong {
+  overflow: hidden;
+  font-size: 13px;
+  color: #0f172a;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-places__group-count {
+  display: inline-flex;
+  min-width: 22px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #e8eef5;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.trip-places__list {
+  display: flex;
+  flex-direction: column;
+}
+
+.trip-place {
+  --trip-place-drag-y: 0px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px 10px 7px;
+  border-bottom: 1px solid #eef2f7;
+  background: #fff;
+}
+
+.trip-place:last-child {
+  border-bottom: 0;
+  border-radius: 0 0 11px 11px;
+}
+
+.trip-place.is-dragging {
+  z-index: 10;
+  transform: translateY(var(--trip-place-drag-y));
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, .18);
+  opacity: .96;
+  pointer-events: none;
+}
+
+.trip-place.is-drop-before::before,
+.trip-place.is-drop-after::after {
+  content: '';
+  position: absolute;
+  z-index: 3;
+  right: 9px;
+  left: 9px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .8);
+}
+
+.trip-place.is-drop-before::before {
+  top: -1px;
+}
+
+.trip-place.is-drop-after::after {
+  bottom: -1px;
+}
+
+.trip-place__pin {
+  display: grid;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e6f3f6;
+  color: #0d6078;
+}
+
+.trip-place__info {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.trip-place__info strong {
+  overflow: hidden;
+  font-size: 12px;
+  color: #0f172a;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-place__info small {
+  overflow: hidden;
+  font-size: 11px;
+  color: #64748b;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-place button {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #b6bbc5;
+}
+
+.trip-place__drag {
+  flex: 0 0 auto;
+  cursor: grab;
+  touch-action: none;
+}
+
+.trip-place__drag:hover,
+.trip-place__drag:focus-visible {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.trip-place__drag:active {
+  cursor: grabbing;
+}
+
+.trip-place__delete {
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.trip-place__delete:hover,
+.trip-place__delete:focus-visible {
+  background: #fff;
+  color: var(--danger);
+}
