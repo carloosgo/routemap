@@ -7,6 +7,7 @@ initializeApp();
 
 export const db = getFirestore();
 export const GEOAPIFY_API_KEY = defineSecret('GEOAPIFY_API_KEY');
+export const GEOAPIFY_CITY_API_KEY = defineSecret('GEOAPIFY_CITY_API_KEY');
 export const CACHE_TTL_MS = 60 * 24 * 60 * 60 * 1000;
 export const BATCH_JOB_TTL_MS = 24 * 60 * 60 * 1000;
 export const COUNTRY_BOUNDARY_CACHE_MAX_BYTES = 850 * 1024;
