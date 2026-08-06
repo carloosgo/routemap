@@ -73,6 +73,24 @@ function normalizeNoteTitle(value) {
   return LEGACY_SYSTEM_NOTE_TITLES.has(title) ? '' : title;
 }
 
+function uniquePlaces(rawPlaces) {
+  const seen = new Set();
+  return rawPlaces
+    .map(createPlace)
+    .filter(isPlaced)
+    .filter((place) => {
+      const key = [
+        Number(place.lat).toFixed(6),
+        Number(place.lon).toFixed(6),
+        place.name.trim().toLowerCase(),
+      ].join('|');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, TRIP_LIMITS.places);
+}
+
 export function isPlaced(point) {
   return Boolean(
     point &&
@@ -171,9 +189,8 @@ export function normalizeTrip(raw) {
   const legacyPlaces = rawSegments.flatMap((segment) =>
     Array.isArray(segment?.places) ? segment.places : []
   );
-  const rawPlaces = (
-    Array.isArray(raw.places) ? raw.places : legacyPlaces
-  ).slice(0, TRIP_LIMITS.places);
+  const currentPlaces = Array.isArray(raw.places) ? raw.places : [];
+  const rawPlaces = [...currentPlaces, ...legacyPlaces];
   const rawNotes = Array.isArray(raw.notes)
     ? raw.notes.slice(0, TRIP_LIMITS.notes)
     : null;
@@ -186,7 +203,7 @@ export function normalizeTrip(raw) {
     name: sanitizeText(raw.name || '', TRIP_LIMITS.tripName),
     currency: normalizeCurrency(raw.currency),
     segments: rawSegments.map(createSegment),
-    places: rawPlaces.map(createPlace).filter(isPlaced),
+    places: uniquePlaces(rawPlaces),
     notes: rawNotes?.length
       ? rawNotes.map((note) => ({
           id: normalizeId(note?.id),
