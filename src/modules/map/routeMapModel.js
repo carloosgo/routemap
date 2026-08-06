@@ -62,6 +62,31 @@ export function orderedCities(segments) {
   return cities;
 }
 
+function normalizedCountryName(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+export function placeCountryKey(place) {
+  const countryCode = String(place?.countryCode || '').trim().toUpperCase();
+  if (/^[A-Z]{2}$/.test(countryCode)) return `code:${countryCode}`;
+  const country = normalizedCountryName(place?.country);
+  return country ? `name:${country}` : 'unknown';
+}
+
+function placeCountryColorMap(places, colorForIndex) {
+  const countryKeys = [
+    ...new Set((places || []).filter(isPlaced).map((place) => placeCountryKey(place))),
+  ].sort();
+  return new Map(
+    countryKeys.map((countryKey, index) => [countryKey, colorForIndex(index)])
+  );
+}
+
 export function buildMapFeatureData({ segments, places, viewMode, colorForIndex }) {
   const showSegments = viewMode === 'segments';
   const showPlaces = viewMode === 'places';
@@ -69,6 +94,9 @@ export function buildMapFeatureData({ segments, places, viewMode, colorForIndex 
   const cityFeatures = [];
   const placeFeatures = [];
   const routeCities = showSegments ? orderedCities(segments) : [];
+  const countryColors = showPlaces
+    ? placeCountryColorMap(places, colorForIndex)
+    : new Map();
 
   if (showSegments) {
     segments.forEach((segment, index) => {
@@ -100,6 +128,7 @@ export function buildMapFeatureData({ segments, places, viewMode, colorForIndex 
 
   if (showPlaces) {
     places.filter(isPlaced).forEach((place) => {
+      const countryKey = placeCountryKey(place);
       placeFeatures.push({
         type: 'Feature',
         properties: {
@@ -110,6 +139,8 @@ export function buildMapFeatureData({ segments, places, viewMode, colorForIndex 
           countryCode: place.countryCode || '',
           category: place.category || '',
           address: place.address || '',
+          countryKey,
+          color: countryColors.get(countryKey) || colorForIndex(0),
         },
         geometry: { type: 'Point', coordinates: [place.lon, place.lat] },
       });
