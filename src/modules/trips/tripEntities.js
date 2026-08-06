@@ -111,7 +111,6 @@ export function createSegment(overrides = {}) {
       ? normalizeExpenses(overrides.expenses)
       : createExpenses(),
     note: sanitizeText(overrides.note || '', TRIP_LIMITS.segmentNote),
-    places: [],
   };
 }
 
