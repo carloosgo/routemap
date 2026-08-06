@@ -10,18 +10,54 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == userId;
     }
 
-    function validTripShape(data) {
+    function validCount(value, maximum) {
+      return value is int && value >= 0 && value <= maximum;
+    }
+
+    function revisionPath(userId, tripId, revisionId) {
+      return /databases/$(database)/documents/users/$(userId)/trips/$(tripId)/revisions/$(revisionId);
+    }
+
+    function completeRevisionExists(userId, tripId, revisionId) {
+      return exists(revisionPath(userId, tripId, revisionId))
+        && get(revisionPath(userId, tripId, revisionId)).data.complete == true;
+    }
+
+    function openRevisionExists(userId, tripId, revisionId) {
+      return exists(revisionPath(userId, tripId, revisionId))
+        && get(revisionPath(userId, tripId, revisionId)).data.complete == false;
+    }
+
+    function validTripSummary(data, tripId) {
       return data.keys().hasOnly([
           'id',
           'name',
           'currency',
-          'segments',
-          'places',
-          'notes',
-          'checklist',
           'createdAt',
-          'updatedAt'
+          'updatedAt',
+          'storageVersion',
+          'activeRevision',
+          'segmentCount',
+          'placeCount',
+          'noteCount',
+          'checklistCount',
+          'total'
         ])
+        && data.keys().hasAll([
+          'id',
+          'name',
+          'currency',
+          'createdAt',
+          'updatedAt',
+          'storageVersion',
+          'activeRevision',
+          'segmentCount',
+          'placeCount',
+          'noteCount',
+          'checklistCount',
+          'total'
+        ])
+        && data.id == tripId
         && data.id is string
         && data.id.size() > 0
         && data.id.size() <= 128
@@ -29,18 +65,132 @@ service cloud.firestore {
         && data.name.size() <= 120
         && data.currency is string
         && data.currency.matches('^[A-Z]{3}$')
-        && data.segments is list
-        && data.segments.size() <= 500
-        && data.places is list
-        && data.places.size() <= 500
-        && data.notes is list
-        && data.notes.size() <= 50
-        && data.checklist is list
-        && data.checklist.size() <= 500
         && data.createdAt is string
         && data.createdAt.size() <= 40
         && data.updatedAt is string
-        && data.updatedAt.size() <= 40;
+        && data.updatedAt.size() <= 40
+        && data.storageVersion == 2
+        && data.activeRevision is string
+        && data.activeRevision.matches('^[a-zA-Z0-9_-]{8,128}$')
+        && validCount(data.segmentCount, 500)
+        && validCount(data.placeCount, 500)
+        && validCount(data.noteCount, 50)
+        && validCount(data.checklistCount, 500)
+        && data.total is number
+        && data.total >= 0;
+    }
+
+    function validRevision(data, revisionId) {
+      return data.keys().hasOnly([
+          'id',
+          'createdAt',
+          'complete',
+          'segmentCount',
+          'placeCount',
+          'noteCount',
+          'checklistCount'
+        ])
+        && data.keys().hasAll([
+          'id',
+          'createdAt',
+          'complete',
+          'segmentCount',
+          'placeCount',
+          'noteCount',
+          'checklistCount'
+        ])
+        && data.id == revisionId
+        && data.createdAt is string
+        && data.createdAt.size() <= 40
+        && data.complete is bool
+        && validCount(data.segmentCount, 500)
+        && validCount(data.placeCount, 500)
+        && validCount(data.noteCount, 50)
+        && validCount(data.checklistCount, 500);
+    }
+
+    function validSegment(data) {
+      return data.keys().hasOnly([
+          'id', 'position', 'origin', 'destination', 'startDate', 'endDate',
+          'expenses', 'note'
+        ])
+        && data.keys().hasAll([
+          'id', 'position', 'origin', 'destination', 'startDate', 'endDate',
+          'expenses', 'note'
+        ])
+        && data.id is string
+        && data.id.size() > 0
+        && data.id.size() <= 128
+        && validCount(data.position, 499)
+        && (data.origin == null || data.origin is map)
+        && (data.destination == null || data.destination is map)
+        && data.startDate is string
+        && data.startDate.size() <= 10
+        && data.endDate is string
+        && data.endDate.size() <= 10
+        && data.expenses is map
+        && data.note is string
+        && data.note.size() <= 500;
+    }
+
+    function validPlace(data) {
+      return data.keys().hasOnly([
+          'id', 'position', 'name', 'address', 'city', 'country', 'category',
+          'countryCode', 'lat', 'lon', 'savedAt'
+        ])
+        && data.keys().hasAll([
+          'id', 'position', 'name', 'address', 'city', 'country', 'category',
+          'countryCode', 'lat', 'lon', 'savedAt'
+        ])
+        && data.id is string
+        && data.id.size() > 0
+        && data.id.size() <= 128
+        && validCount(data.position, 499)
+        && data.name is string
+        && data.name.size() <= 160
+        && data.address is string
+        && data.address.size() <= 260
+        && data.city is string
+        && data.city.size() <= 120
+        && data.country is string
+        && data.country.size() <= 100
+        && data.category is string
+        && data.category.size() <= 80
+        && data.countryCode is string
+        && data.countryCode.matches('^([A-Z]{2})?$')
+        && data.lat is number
+        && data.lat >= -90
+        && data.lat <= 90
+        && data.lon is number
+        && data.lon >= -180
+        && data.lon <= 180
+        && data.savedAt is string
+        && data.savedAt.size() <= 40;
+    }
+
+    function validNote(data) {
+      return data.keys().hasOnly(['id', 'position', 'title', 'text'])
+        && data.keys().hasAll(['id', 'position', 'title', 'text'])
+        && data.id is string
+        && data.id.size() > 0
+        && data.id.size() <= 128
+        && validCount(data.position, 49)
+        && data.title is string
+        && data.title.size() <= 60
+        && data.text is string
+        && data.text.size() <= 2000;
+    }
+
+    function validChecklistItem(data) {
+      return data.keys().hasOnly(['id', 'position', 'text', 'done'])
+        && data.keys().hasAll(['id', 'position', 'text', 'done'])
+        && data.id is string
+        && data.id.size() > 0
+        && data.id.size() <= 128
+        && validCount(data.position, 499)
+        && data.text is string
+        && data.text.size() <= 120
+        && data.done is bool;
     }
 
     match /users/{userId} {
@@ -49,14 +199,67 @@ service cloud.firestore {
       match /trips/{tripId} {
         allow get, list: if ownsUserPath(userId);
         allow create: if ownsUserPath(userId)
-          && request.resource.data.id == tripId
-          && validTripShape(request.resource.data);
+          && validTripSummary(request.resource.data, tripId)
+          && completeRevisionExists(userId, tripId, request.resource.data.activeRevision);
         allow update: if ownsUserPath(userId)
-          && request.resource.data.id == tripId
-          && resource.data.id == tripId
+          && validTripSummary(request.resource.data, tripId)
           && request.resource.data.createdAt == resource.data.createdAt
-          && validTripShape(request.resource.data);
+          && completeRevisionExists(userId, tripId, request.resource.data.activeRevision);
         allow delete: if ownsUserPath(userId);
+
+        match /revisions/{revisionId} {
+          allow get, list: if ownsUserPath(userId);
+          allow create: if ownsUserPath(userId)
+            && validRevision(request.resource.data, revisionId)
+            && request.resource.data.complete == false;
+          allow update: if ownsUserPath(userId)
+            && validRevision(request.resource.data, revisionId)
+            && resource.data.complete == false
+            && request.resource.data.complete == true
+            && request.resource.data.id == resource.data.id
+            && request.resource.data.createdAt == resource.data.createdAt
+            && request.resource.data.segmentCount == resource.data.segmentCount
+            && request.resource.data.placeCount == resource.data.placeCount
+            && request.resource.data.noteCount == resource.data.noteCount
+            && request.resource.data.checklistCount == resource.data.checklistCount;
+          allow delete: if ownsUserPath(userId);
+
+          match /segments/{documentId} {
+            allow get, list: if ownsUserPath(userId);
+            allow create: if ownsUserPath(userId)
+              && openRevisionExists(userId, tripId, revisionId)
+              && validSegment(request.resource.data);
+            allow update: if false;
+            allow delete: if ownsUserPath(userId);
+          }
+
+          match /places/{documentId} {
+            allow get, list: if ownsUserPath(userId);
+            allow create: if ownsUserPath(userId)
+              && openRevisionExists(userId, tripId, revisionId)
+              && validPlace(request.resource.data);
+            allow update: if false;
+            allow delete: if ownsUserPath(userId);
+          }
+
+          match /notes/{documentId} {
+            allow get, list: if ownsUserPath(userId);
+            allow create: if ownsUserPath(userId)
+              && openRevisionExists(userId, tripId, revisionId)
+              && validNote(request.resource.data);
+            allow update: if false;
+            allow delete: if ownsUserPath(userId);
+          }
+
+          match /checklist/{documentId} {
+            allow get, list: if ownsUserPath(userId);
+            allow create: if ownsUserPath(userId)
+              && openRevisionExists(userId, tripId, revisionId)
+              && validChecklistItem(request.resource.data);
+            allow update: if false;
+            allow delete: if ownsUserPath(userId);
+          }
+        }
       }
     }
 
