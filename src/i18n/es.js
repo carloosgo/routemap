@@ -46,6 +46,7 @@ export default {
   citySearchError: 'No fue posible buscar ciudades.',
   startDate: 'Fecha inicio',
   endDate: 'Fecha fin',
+  datePlaceholder: 'dd/mm/aaaa',
   clearDate: 'Limpiar fecha',
   previousMonth: 'Mes anterior',
   nextMonth: 'Mes siguiente',
