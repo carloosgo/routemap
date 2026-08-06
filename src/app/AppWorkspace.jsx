@@ -20,7 +20,7 @@ export function AppWorkspace({ editorModule, mapPane, mobileView, setMobileView,
             className={'mobiletabs__btn' + (mobileView === 'form' ? ' is-active' : '')}
             onClick={() => setMobileView('form')}
           >
-            <IconRoute size={16} aria-hidden="true" /> {t('segments')}
+            <IconRoute size={16} aria-hidden="true" /> {t('itinerary')}
           </button>
           <button
             type="button"
