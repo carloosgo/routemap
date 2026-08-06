@@ -1,4 +1,9 @@
-import { normalizeTrip, tripTotal } from '../../modules/trips/tripModel.js';
+import {
+  normalizeTrip,
+  parseRouteGeometry,
+  serializeRouteGeometry,
+  tripTotal,
+} from '../../modules/trips/tripModel.js';
 
 export const TRIP_STORAGE_VERSION = 2;
 export const TRIP_REVISION_COLLECTIONS = Object.freeze([
@@ -20,8 +25,14 @@ function positioned(items, transform = (item) => item) {
   return items.map((item, position) => ({ ...transform(item), position }));
 }
 
+function routeForStorage(route) {
+  if (!route) return null;
+  const geometry = serializeRouteGeometry(route.geometry);
+  return geometry ? { ...route, geometry } : null;
+}
+
 function segmentForStorage(segment) {
-  const stored = { ...segment };
+  const stored = { ...segment, route: routeForStorage(segment.route) };
   delete stored.places;
   return stored;
 }
@@ -33,10 +44,24 @@ function withoutPosition(item) {
   return stored;
 }
 
-function ordered(items) {
+function segmentFromStorage(segment) {
+  if (!segment?.route || typeof segment.route.geometry !== 'string') {
+    return segment;
+  }
+  return {
+    ...segment,
+    route: {
+      ...segment.route,
+      geometry: parseRouteGeometry(segment.route.geometry),
+    },
+  };
+}
+
+function ordered(items, transform = (item) => item) {
   return [...(Array.isArray(items) ? items : [])]
     .sort((left, right) => (Number(left?.position) || 0) - (Number(right?.position) || 0))
-    .map(withoutPosition);
+    .map(withoutPosition)
+    .map(transform);
 }
 
 export function isVersionedTripSummary(data) {
@@ -116,7 +141,7 @@ export function hydrateVersionedTrip(summary, collections) {
     currency: summary.currency,
     createdAt: summary.createdAt,
     updatedAt: summary.updatedAt,
-    segments: ordered(collections?.segments),
+    segments: ordered(collections?.segments, segmentFromStorage),
     places: ordered(collections?.places),
     notes: ordered(collections?.notes),
     checklist: ordered(collections?.checklist),
