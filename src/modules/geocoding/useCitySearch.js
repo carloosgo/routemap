@@ -4,7 +4,7 @@ import { useTranslation } from '../../i18n/index.jsx';
 import { getGeocoder } from './geocodingProvider.js';
 
 export function useCitySearch(query) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -15,10 +15,16 @@ export function useCitySearch(query) {
   useEffect(() => {
     const q = (query || '').trim();
 
-    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
 
     if (q.length < config.citySearchMinChars) {
-      if (abortRef.current) abortRef.current.abort();
       setResults([]);
       setLoading(false);
       setHasError(false);
@@ -29,12 +35,14 @@ export function useCitySearch(query) {
     setHasError(false);
 
     debounceRef.current = setTimeout(async () => {
-      if (abortRef.current) abortRef.current.abort();
       const controller = new AbortController();
       abortRef.current = controller;
 
       try {
-        const data = await getGeocoder().search(q, { signal: controller.signal });
+        const data = await getGeocoder().search(q, {
+          signal: controller.signal,
+          language: locale,
+        });
         if (abortRef.current === controller) setResults(data);
       } catch (searchError) {
         if (searchError.name !== 'AbortError' && abortRef.current === controller) {
@@ -42,19 +50,24 @@ export function useCitySearch(query) {
           setResults([]);
         }
       } finally {
-        if (abortRef.current === controller) setLoading(false);
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+          setLoading(false);
+        }
       }
     }, config.citySearchDebounceMs);
 
     return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+      if (abortRef.current) {
+        abortRef.current.abort();
+        abortRef.current = null;
+      }
     };
-  }, [query]);
-
-  useEffect(() => () => {
-    if (abortRef.current) abortRef.current.abort();
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-  }, []);
+  }, [query, locale]);
 
   return { results, loading, error: hasError ? t('citySearchError') : null };
 }
