@@ -9,7 +9,6 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import { normalizeTrip } from '../../modules/trips/tripModel.js';
-import { serializeRouteForFirestore } from '../../modules/routes/routeModel.js';
 
 function requireUid(uid) {
   const normalized = typeof uid === 'string' ? uid.trim() : '';
@@ -21,16 +20,6 @@ function requireTripId(id) {
   const normalized = typeof id === 'string' ? id.trim() : '';
   if (!normalized) throw new Error('Se requiere un identificador de viaje válido.');
   return normalized;
-}
-
-export function serializeTripForFirestore(trip) {
-  return {
-    ...trip,
-    segments: (trip.segments || []).map((segment) => ({
-      ...segment,
-      route: segment.route ? serializeRouteForFirestore(segment.route) : null,
-    })),
-  };
 }
 
 export function createFirestoreTripRepository({ db, uid }) {
@@ -59,10 +48,7 @@ export function createFirestoreTripRepository({ db, uid }) {
         updatedAt: now,
       };
 
-      await setDoc(
-        doc(tripsCollection, storedTrip.id),
-        serializeTripForFirestore(storedTrip)
-      );
+      await setDoc(doc(tripsCollection, storedTrip.id), storedTrip);
       return storedTrip;
     },
 
