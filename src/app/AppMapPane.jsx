@@ -8,6 +8,7 @@ export function AppMapPane({ trip, mapView = 'segments', openNoteSegmentId, setO
       <RouteMap
         segments={trip.segments}
         places={trip.places || []}
+        routeConnections={trip.routeConnections || []}
         addPlace={addPlace}
         viewMode={mapView}
       />
