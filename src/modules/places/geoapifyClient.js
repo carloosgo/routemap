@@ -5,14 +5,9 @@ import {
   PLACE_CACHE_KEY,
   createPersistentCache,
 } from './geoapifyClientCache.js';
-import {
-  callableSearchContext,
-  contextKey,
-  contextualQuery,
-  normalizeSearchKey,
-} from './geoapifyQuery.js';
+import { normalizeSearchKey } from './geoapifyQuery.js';
 
-export { contextualQuery, normalizeSearchKey } from './geoapifyQuery.js';
+export { normalizeSearchKey } from './geoapifyQuery.js';
 
 const placeCache = createPersistentCache(PLACE_CACHE_KEY);
 const detailCache = createPersistentCache(DETAIL_CACHE_KEY);
@@ -21,26 +16,24 @@ function throwIfAborted(signal) {
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 }
 
-export async function searchGeoapifyPlaces(query, { signal, context } = {}) {
+export async function searchGeoapifyPlaces(query, { signal } = {}) {
   const cleanQuery = String(query || '').trim();
   const queryKey = normalizeSearchKey(cleanQuery);
   if (queryKey.length < config.geoapify.searchMinChars) return [];
 
-  const cacheKey = `${queryKey}|${contextKey(context)}`;
-  const cached = placeCache.getFresh(cacheKey, config.geoapify.clientCacheTtlMs);
+  const cached = placeCache.getFresh(queryKey, config.geoapify.clientCacheTtlMs);
   if (cached) return cached.result;
 
   throwIfAborted(signal);
   const request = callable('geoapifyPlaceSearch');
   const response = await request({
-    query: contextualQuery(cleanQuery, context),
-    context: callableSearchContext(context),
+    query: cleanQuery,
     limit: config.geoapify.searchLimit,
   });
   throwIfAborted(signal);
 
   const result = Array.isArray(response.data?.results) ? response.data.results : [];
-  placeCache.set(cacheKey, { result });
+  placeCache.set(queryKey, { result });
   return result;
 }
 
