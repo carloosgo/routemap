@@ -145,11 +145,7 @@
   background-image: url('/icons/notas.svg');
 }
 
-.editor-module__settings > .editor-module__menu-anchor:first-child > .editor-module__nav-tab .editor-module__tab-icon {
-  background-image: url('/icons/moneda.svg');
-}
-
-/* Lugares conserva como único icono el recurso entregado por el usuario. */
+/* Mis Rutas conserva como único icono el recurso entregado por el usuario. */
 .editor-module__tabs > .editor-module__nav-tab[data-tab-icon='places-map-pin'] .editor-module__tab-icon {
   background-image: none;
 }
