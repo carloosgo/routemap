@@ -4,7 +4,8 @@ import { colorForIndex, config } from '../src/config.js';
 
 test('config usa valores seguros fuera de Vite', () => {
   assert.equal(config.storageDriver, 'local');
-  assert.equal(config.geocoder, 'nominatim');
+  assert.equal(config.citySearchMinChars, 3);
+  assert.equal(config.citySearchLimit, 5);
   assert.equal(config.defaultLocale, 'es');
   assert.equal(config.apiBaseUrl, '');
   assert.equal(config.geoapify.mapApiKey, '');
