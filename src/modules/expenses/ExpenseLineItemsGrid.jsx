@@ -6,6 +6,7 @@ export function ExpenseLineItemsGrid({
   getIcon,
   typePlaceholder,
   addLabel,
+  removeLabel,
   onAdd,
   onUpdate,
   onRemove,
@@ -60,7 +61,7 @@ export function ExpenseLineItemsGrid({
                   <button
                     type="button"
                     className="moneycard__remove"
-                    aria-label="remove"
+                    aria-label={removeLabel}
                     onClick={() => onRemove(item.id)}
                   >
                     <IconX size={14} aria-hidden="true" />
