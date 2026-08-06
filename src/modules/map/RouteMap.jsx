@@ -17,6 +17,7 @@ import {
   CITY_SOURCE_ID,
   COUNTRY_FILL_LAYER_ID,
   PLACE_LAYER_ID,
+  PLACE_ROUTE_SOURCE_ID,
   PLACE_SOURCE_ID,
   ROUTE_SOURCE_ID,
   addBaseSourcesAndLayers,
@@ -29,7 +30,13 @@ import { usePlaceResultMarkers } from './usePlaceResultMarkers.js';
 import { usePlaceSearch } from './usePlaceSearch.js';
 import './RouteMap.css';
 
-export function RouteMap({ segments, places = [], addPlace, viewMode = 'segments' }) {
+export function RouteMap({
+  segments,
+  places = [],
+  routeConnections = [],
+  addPlace,
+  viewMode = 'segments',
+}) {
   const { t } = useTranslation();
   const mapNode = useRef(null);
   const mapRef = useRef(null);
@@ -139,14 +146,25 @@ export function RouteMap({ segments, places = [], addPlace, viewMode = 'segments
     const {
       showSegments,
       routeFeatures,
+      placeRouteFeatures,
       cityFeatures,
       placeFeatures,
       routeCities,
-    } = buildMapFeatureData({ segments, places, viewMode, colorForIndex });
+    } = buildMapFeatureData({
+      segments,
+      places,
+      routeConnections,
+      viewMode,
+      colorForIndex,
+    });
     const routeBounds = new maplibregl.LngLatBounds();
     routeCities.forEach((city) => routeBounds.extend([city.lon, city.lat]));
 
     sourceData(map, ROUTE_SOURCE_ID, { type: 'FeatureCollection', features: routeFeatures });
+    sourceData(map, PLACE_ROUTE_SOURCE_ID, {
+      type: 'FeatureCollection',
+      features: placeRouteFeatures,
+    });
     sourceData(map, CITY_SOURCE_ID, { type: 'FeatureCollection', features: cityFeatures });
     sourceData(map, PLACE_SOURCE_ID, { type: 'FeatureCollection', features: placeFeatures });
 
@@ -161,7 +179,7 @@ export function RouteMap({ segments, places = [], addPlace, viewMode = 'segments
         map.fitBounds(routeBounds, { padding: 84, maxZoom: 10, duration: 0 });
       }
     }
-  }, [segments, places, viewMode, mapReady]);
+  }, [segments, places, routeConnections, viewMode, mapReady]);
 
   usePlaceResultMarkers({
     mapRef,
