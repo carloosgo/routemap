@@ -12,21 +12,36 @@ test('RouteMap muestra de forma declarativa los errores de configuración', asyn
   assert.match(content, /Falta VITE_GEOAPIFY_MAPS_API_KEY/);
 });
 
-test('RouteMap vuelve a dibujar tramos y lugares cuando cambia el viaje', async () => {
+test('RouteMap vuelve a dibujar las capas cuando cambia el viaje o la vista', async () => {
   const content = await source();
   assert.match(content, /segments\.forEach\(\(segment, index\)/);
   assert.match(content, /colorForIndex\(index\)/);
-  assert.match(content, /\[segments, places, mapReady\]/);
+  assert.match(content, /\[segments, places, viewMode, mapReady\]/);
 });
 
-test('RouteMap usa geometría persistida, conserva respaldo adaptativo y solo puntea vuelos', async () => {
+test('RouteMap conserva las curvas visuales adaptativas y solo puntea vuelos', async () => {
   const content = await source();
-  const model = await read('src/modules/routes/routeModel.js');
-  assert.match(content, /routeGeometryForDisplay\(segment\)/);
-  assert.match(content, /routeModeForSegment\(segment\) === 'plane'/);
-  assert.match(model, /export function adaptiveRouteCoordinates/);
+  assert.match(content, /function adaptiveCurve/);
+  assert.match(content, /dominantTransport\(segment\) === 'plane'/);
+  assert.match(content, /coordinates: adaptiveCurve\(segment\.origin, segment\.destination\)/);
   assert.match(content, /filter: \['==', \['get', 'dashed'\], true\]/);
   assert.match(content, /'line-dasharray': \[5, 4\]/);
+});
+
+test('Tramos y Lugares son capas independientes y mutuamente excluyentes', async () => {
+  const content = await source();
+  const app = await read('src/App.jsx');
+  const pane = await read('src/app/AppMapPane.jsx');
+
+  assert.match(content, /viewMode = 'segments'/);
+  assert.match(content, /const showSegments = viewMode === 'segments'/);
+  assert.match(content, /const showPlaces = viewMode === 'places'/);
+  assert.match(content, /const routeCities = showSegments \? orderedCities\(segments\) : \[\]/);
+  assert.match(content, /if \(showSegments\) \{[\s\S]*segments\.forEach/);
+  assert.match(content, /if \(showPlaces\) \{[\s\S]*places\.filter\(isPlaced\)\.forEach/);
+  assert.match(content, /viewMode === 'places' && \([\s\S]*<form className="geo-search"/);
+  assert.match(app, /mapView=\{activeTab === 'places' \? 'places' : 'segments'\}/);
+  assert.match(pane, /viewMode=\{mapView\}/);
 });
 
 test('RouteMap pinta solo las ciudades definidas por los tramos', async () => {
@@ -96,7 +111,7 @@ test('guardar normaliza el lugar, valida coordenadas y cierra la confirmación',
 test('guardar un lugar confirma la acción sin mover nuevamente la cámara', async () => {
   const content = await source();
   assert.match(content, /lastRouteViewportKeyRef/);
-  assert.match(content, /const routeViewportKey = routeCities\.map\(cityKey\)\.join\('\|'\)/);
+  assert.match(content, /const routeViewportKey = showSegments/);
   assert.match(content, /if \(routeViewportKey !== lastRouteViewportKeyRef\.current\)/);
   assert.match(content, /setSaveNotice\('Lugar guardado'\)/);
   assert.match(content, /setTimeout\(\(\) => setSaveNotice\(''\), 2200\)/);
@@ -193,13 +208,15 @@ test('RouteMap elimina marcadores, popups y solicitudes al actualizar o desmonta
   assert.match(content, /marker\.remove\(\)/);
 });
 
-test('las rutas se solicitan, persisten y reutilizan fuera del componente de mapa', async () => {
+test('Tramos no solicita ni persiste routing real de Geoapify', async () => {
   const content = await source();
-  const hook = await read('src/modules/routes/usePersistentSegmentRoutes.js');
+  const client = await read('src/modules/places/geoapifyClient.js');
+  const model = await read('src/modules/trips/tripModel.js');
   const pane = await read('src/app/AppMapPane.jsx');
-  assert.match(content, /routeGeometryForDisplay\(segment\)/);
-  assert.match(hook, /requestGeoapifyRoute/);
-  assert.match(hook, /hasReusableSegmentRoute\(segment\)/);
-  assert.match(hook, /updateSegment\(segment\.id, \{ route \}\)/);
-  assert.match(pane, /usePersistentSegmentRoutes\(trip\.segments, updateSegment\)/);
+
+  assert.doesNotMatch(content, /requestGeoapifyRoute|routeGeometryForDisplay|routeModeForSegment/);
+  assert.doesNotMatch(client, /requestGeoapifyRoute/);
+  assert.doesNotMatch(model, /route:/);
+  assert.doesNotMatch(pane, /usePersistentSegmentRoutes/);
+  assert.match(content, /coordinates: adaptiveCurve\(segment\.origin, segment\.destination\)/);
 });
