@@ -105,24 +105,18 @@ export async function searchGeoapifyPlaces(query, { signal, context } = {}) {
 
 export async function fetchGeoapifyPlaceImage(place, { signal } = {}) {
   const id = String(place?.id || '').trim();
-  if (!id || !config.geoapify.mapApiKey) return '';
+  if (!id) return '';
   const cached = detailCache.get(id);
   if (cached && Date.now() - cached.timestamp < config.geoapify.clientCacheTtlMs) {
     return cached.image || '';
   }
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 
-  const params = new URLSearchParams({
-    id,
-    features: 'details',
-    apiKey: config.geoapify.mapApiKey,
-  });
-  const response = await fetch(`https://api.geoapify.com/v2/place-details?${params}`, { signal });
-  if (!response.ok) return '';
-  const payload = await response.json();
-  const details = payload.features?.find((feature) => feature.properties?.feature_type === 'details')
-    || payload.features?.[0];
-  const image = String(details?.properties?.wiki_and_media?.image || '').trim();
+  const request = callable('geoapifyPlaceDetails');
+  const response = await request({ placeId: id });
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+
+  const image = String(response.data?.image || '').trim();
   detailCache.set(id, { image, timestamp: Date.now() });
   persistCache(DETAIL_CACHE_KEY, detailCache);
   return image;
