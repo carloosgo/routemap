@@ -1,6 +1,8 @@
 export default {
   appName: 'Atlas',
   appTagline: 'Rutas de viaje y gastos',
+  documentTitle: 'Atlas · Rutas de viaje',
+  documentDescription: 'Planifica rutas internacionales y controla gastos por tramo.',
   newTrip: 'Nuevo viaje',
   tripName: 'Nombre del viaje',
   tripNamePlaceholder: 'Nombre de tu viaje',
