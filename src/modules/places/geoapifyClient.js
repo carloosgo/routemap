@@ -1,6 +1,7 @@
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
 import { getFirebaseServices } from '../../infrastructure/firebase/firebaseClient.js';
 import { config } from '../../config.js';
+import { normalizeSegmentRoute } from '../routes/routeModel.js';
 
 const PLACE_CACHE_KEY = 'atlas:geoapify-place-cache:v3';
 const DETAIL_CACHE_KEY = 'atlas:geoapify-place-detail-cache:v1';
@@ -120,4 +121,18 @@ export async function fetchGeoapifyPlaceImage(place, { signal } = {}) {
   detailCache.set(id, { image, timestamp: Date.now() });
   persistCache(DETAIL_CACHE_KEY, detailCache);
   return image;
+}
+
+export async function requestGeoapifyRoute(
+  { origin, destination, mode },
+  { signal } = {}
+) {
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+  const request = callable('geoapifyRoute');
+  const response = await request({ origin, destination, mode });
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+
+  const route = normalizeSegmentRoute(response.data);
+  if (!route) throw new Error('Geoapify devolvió una ruta inválida.');
+  return route;
 }
