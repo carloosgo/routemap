@@ -1,4 +1,5 @@
 import { isPlaced } from '../trips/tripModel.js';
+import { savedPlaceMarkerStyle } from './savedPlaceMarkerPalette.js';
 
 export function dominantTransport(segment) {
   const transport = segment?.expenses?.transport || {};
@@ -78,12 +79,12 @@ export function placeCountryKey(place) {
   return country ? `name:${country}` : 'unknown';
 }
 
-function placeCountryColorMap(places, colorForIndex) {
+function placeCountryStyleMap(places) {
   const countryKeys = [
     ...new Set((places || []).filter(isPlaced).map((place) => placeCountryKey(place))),
   ].sort();
   return new Map(
-    countryKeys.map((countryKey, index) => [countryKey, colorForIndex(index)])
+    countryKeys.map((countryKey, index) => [countryKey, savedPlaceMarkerStyle(index)])
   );
 }
 
@@ -94,9 +95,7 @@ export function buildMapFeatureData({ segments, places, viewMode, colorForIndex 
   const cityFeatures = [];
   const placeFeatures = [];
   const routeCities = showSegments ? orderedCities(segments) : [];
-  const countryColors = showPlaces
-    ? placeCountryColorMap(places, colorForIndex)
-    : new Map();
+  const countryStyles = showPlaces ? placeCountryStyleMap(places) : new Map();
 
   if (showSegments) {
     segments.forEach((segment, index) => {
@@ -129,6 +128,7 @@ export function buildMapFeatureData({ segments, places, viewMode, colorForIndex 
   if (showPlaces) {
     places.filter(isPlaced).forEach((place) => {
       const countryKey = placeCountryKey(place);
+      const markerStyle = countryStyles.get(countryKey) || savedPlaceMarkerStyle(0);
       placeFeatures.push({
         type: 'Feature',
         properties: {
@@ -140,7 +140,8 @@ export function buildMapFeatureData({ segments, places, viewMode, colorForIndex 
           category: place.category || '',
           address: place.address || '',
           countryKey,
-          color: countryColors.get(countryKey) || colorForIndex(0),
+          color: markerStyle.color,
+          iconId: markerStyle.iconId,
         },
         geometry: { type: 'Point', coordinates: [place.lon, place.lat] },
       });
