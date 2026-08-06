@@ -18,7 +18,24 @@ async function sourceFiles(directoryUrl) {
   return nested.flat();
 }
 
-const hardcodedAttribute = /\b(?:aria-label|placeholder|title)=(['"])(?=[^'"\n]*[A-Za-zÁÉÍÓÚÜÑáéíóúüñ])[^'"\n]*\1/g;
+const translatedCharacter = 'A-Za-zÁÉÍÓÚÜÑáéíóúüñ';
+const hardcodedAttribute = new RegExp(
+  `\\b(?:aria-label|placeholder|title)=(['"])(?=[^'"\\n]*[${translatedCharacter}])[^'"\\n]*\\1`,
+  'g'
+);
+const hardcodedTextNode = new RegExp(
+  `(?<![=])>\\s*([${translatedCharacter}][^<>{}\\n]*?)\\s*<(?=\\/|[A-Za-z])`,
+  'g'
+);
+const hardcodedUiCall = new RegExp(
+  `\\b(?:showToast|alert|confirm)\\(\\s*(['"])(?=[^'"\\n]*[${translatedCharacter}])[^'"\\n]*\\1`,
+  'g'
+);
+const hardcodedDomText = new RegExp(
+  `\\b(?:textContent|innerText|placeholder|ariaLabel|title)\\s*=\\s*(['"])(?=[^'"\\n]*[${translatedCharacter}])[^'"\\n]*\\1`,
+  'g'
+);
+
 const staleUiPhrases = [
   'El viaje guardado ya no existe.',
   'No fue posible abrir el viaje.',
@@ -34,6 +51,8 @@ const staleUiPhrases = [
   '¿Guardar lugar para tu ruta?',
   'Sin ciudad',
   'Sin país',
+  'dd/mm/aaaa',
+  'mm/dd/yyyy',
   'Notas generales',
   'Nueva nota',
 ];
@@ -47,14 +66,36 @@ function isAllowedLegacyMigration(fileUrl, phrase) {
     && legacyMigrationPhrases.has(phrase);
 }
 
-test('los atributos visibles de JSX no contienen texto traducible hardcodeado', async () => {
+function collectMatches(source, pattern) {
+  return [...source.matchAll(pattern)].map((match) => match[0]);
+}
+
+test('los atributos y nodos visibles de JSX no contienen texto traducible hardcodeado', async () => {
+  const violations = [];
+  for (const fileUrl of await sourceFiles(SOURCE_ROOT)) {
+    if (fileUrl.pathname.includes('/i18n/')) continue;
+    if (path.extname(fileUrl.pathname) !== '.jsx') continue;
+    const source = await readFile(fileUrl, 'utf8');
+    for (const match of [
+      ...collectMatches(source, hardcodedAttribute),
+      ...collectMatches(source, hardcodedTextNode),
+    ]) {
+      violations.push(`${fileUrl.pathname}: ${match}`);
+    }
+  }
+  assert.deepEqual(violations, []);
+});
+
+test('toasts, diálogos y asignaciones DOM no usan textos literales visibles', async () => {
   const violations = [];
   for (const fileUrl of await sourceFiles(SOURCE_ROOT)) {
     if (fileUrl.pathname.includes('/i18n/')) continue;
     const source = await readFile(fileUrl, 'utf8');
-    if (path.extname(fileUrl.pathname) !== '.jsx') continue;
-    for (const match of source.matchAll(hardcodedAttribute)) {
-      violations.push(`${fileUrl.pathname}: ${match[0]}`);
+    for (const match of [
+      ...collectMatches(source, hardcodedUiCall),
+      ...collectMatches(source, hardcodedDomText),
+    ]) {
+      violations.push(`${fileUrl.pathname}: ${match}`);
     }
   }
   assert.deepEqual(violations, []);
