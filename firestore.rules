@@ -205,22 +205,14 @@ service cloud.firestore {
         && data.savedAt.size() <= 40;
     }
 
-    function validRouteGeometry(data) {
-      return data is map
-        && data.keys().hasOnly(['type', 'coordinates'])
-        && data.keys().hasAll(['type', 'coordinates'])
-        && (data.type == 'LineString' || data.type == 'MultiLineString')
-        && data.coordinates is list;
-    }
-
     function validRouteConnection(data) {
       return data.keys().hasOnly([
           'id', 'position', 'fromPlaceId', 'toPlaceId', 'mode', 'visible',
-          'distance', 'duration', 'geometry', 'calculatedAt'
+          'distance', 'duration', 'geometryJson', 'calculatedAt'
         ])
         && data.keys().hasAll([
           'id', 'position', 'fromPlaceId', 'toPlaceId', 'mode', 'visible',
-          'distance', 'duration', 'geometry', 'calculatedAt'
+          'distance', 'duration', 'geometryJson', 'calculatedAt'
         ])
         && data.id is string
         && data.id.size() > 0
@@ -245,7 +237,9 @@ service cloud.firestore {
         && data.visible is bool
         && validAmount(data.distance)
         && validAmount(data.duration)
-        && validRouteGeometry(data.geometry)
+        && data.geometryJson is string
+        && data.geometryJson.size() > 0
+        && data.geometryJson.size() <= 800000
         && data.calculatedAt is string
         && data.calculatedAt.size() <= 40;
     }
