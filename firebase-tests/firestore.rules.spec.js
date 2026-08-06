@@ -60,7 +60,6 @@ function segmentData(id = 'segment-1', position = 0) {
       others: [],
     },
     note: '',
-    route: null,
   };
 }
 
@@ -122,35 +121,26 @@ test('un usuario autenticado puede cerrar una revisión y publicar su viaje', as
   await assertSucceeds(getDoc(doc(alice, `users/alice/trips/${tripId}`)));
 });
 
-test('las rutas aceptan solo geometría serializada y métricas esperadas', async () => {
+test('los tramos rechazan campos de routing pertenecientes a otros dominios', async () => {
   const alice = testEnv.authenticatedContext('alice').firestore();
-  const tripId = 'trip-with-route';
+  const tripId = 'trip-route-separated';
   const revisionId = 'revision011';
   const revisionRef = doc(alice, `users/alice/trips/${tripId}/revisions/${revisionId}`);
-  const route = {
-    signature: '19.432600,-99.133200|19.041400,-98.206300|drive',
-    mode: 'drive',
-    geometry: JSON.stringify({
-      type: 'LineString',
-      coordinates: [[-99.1332, 19.4326], [-98.2063, 19.0414]],
-    }),
-    distance: 130000,
-    duration: 7200,
-    calculatedAt: UPDATED_AT,
-  };
 
   await assertSucceeds(setDoc(revisionRef, revisionData(revisionId)));
-  await assertSucceeds(setDoc(
+  await assertFails(setDoc(
     doc(alice, `users/alice/trips/${tripId}/revisions/${revisionId}/segments/000000`),
-    { ...segmentData(), route }
-  ));
-  await assertFails(setDoc(
-    doc(alice, `users/alice/trips/${tripId}/revisions/${revisionId}/segments/000001`),
-    { ...segmentData('segment-2', 1), route: { ...route, geometry: { type: 'LineString' } } }
-  ));
-  await assertFails(setDoc(
-    doc(alice, `users/alice/trips/${tripId}/revisions/${revisionId}/segments/000002`),
-    { ...segmentData('segment-3', 2), route: { ...route, privateProviderPayload: true } }
+    {
+      ...segmentData(),
+      route: {
+        signature: 'foreign-domain-route',
+        mode: 'drive',
+        geometry: '{}',
+        distance: 1,
+        duration: 1,
+        calculatedAt: UPDATED_AT,
+      },
+    }
   ));
 });
 
