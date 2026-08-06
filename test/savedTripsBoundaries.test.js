@@ -69,7 +69,8 @@ test('Firestore publica y elimina únicamente la versión que el usuario conocí
 
   assert.match(repository, /const knownVersions = new Map\(\)/);
   assert.match(repository, /let mutationQueue = Promise\.resolve\(\)/);
-  assert.match(repository, /rememberSnapshot\(item\)/);
+  assert.match(repository, /if \(!overwrite && knownVersions\.has\(snapshot\.id\)\) return/);
+  assert.match(repository, /rememberSnapshot\(item, \{ overwrite: false \}\)/);
   assert.match(repository, /rememberSnapshot\(snapshot\)/);
   assert.match(repository, /const expectedVersion = knownVersions\.get\(payload\.trip\.id\) \?\? null/);
   assert.match(repository, /const expectedVersion = knownVersions\.get\(tripId\) \?\? null/);
