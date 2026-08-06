@@ -8,17 +8,27 @@ import { formatDate, formatMoney } from '../src/shared/utils.js';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('el proveedor reconstruye traducciones y metadatos cuando cambia el idioma', async () => {
+test('el proveedor y los módulos reconstruyen su salida cuando cambia el idioma', async () => {
   const provider = await read('src/i18n/index.jsx');
   const app = await read('src/App.jsx');
+  const editorModule = await read('src/app/AppEditorModule.jsx');
+  const editorPane = await read('src/app/AppEditorPane.jsx');
+  const segmentForm = await read('src/modules/trips/SegmentForm.jsx');
+  const segmentBody = await read('src/modules/trips/SegmentBody.jsx');
 
   assert.match(provider, /const t = useCallback\([\s\S]*?\[locale\]\s*\);/);
   assert.match(provider, /const value = useMemo\([\s\S]*?\[locale, setLocale, t\]\s*\);/);
   assert.match(provider, /document\.documentElement\.lang = locale/);
   assert.match(provider, /document\.title = translatedValue\(locale, 'documentTitle'\)/);
+
   assert.match(app, /const \{ t, locale, intlLocale, setLocale, availableLocales \} = useTranslation\(\)/);
   assert.match(app, /t=\{t\}/);
   assert.match(app, /intlLocale=\{intlLocale\}/);
+  assert.match(editorModule, /intlLocale=\{intlLocale\}/);
+  assert.match(editorPane, /locale=\{intlLocale\}/);
+  assert.match(segmentForm, /locale=\{locale\}/);
+  assert.match(segmentBody, /<CalendarDateInput[\s\S]*?locale=\{locale\}/);
+  assert.match(segmentBody, /<ExpenseEditor[\s\S]*?locale=\{locale\}/);
 });
 
 test('fechas y monedas respetan es-MX y en-US', () => {
