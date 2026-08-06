@@ -103,10 +103,9 @@ test('el repositorio Firestore conserva revisiones separadas y publicación tran
     /await writeRevisionPayload\(db, revisionRef, payload\);[\s\S]*await runTransaction\(db/
   );
   assert.match(repository, /transaction\.set\(tripRef, payload\.summary\)/);
-  assert.match(
-    repository,
-    /const revisionRefs = await listRevisionRefs\(tripRef\);[\s\S]*await deleteDoc\(tripRef\);[\s\S]*await deleteRevision\(db, revisionRef\);/
-  );
+  assert.match(repository, /const revisionRefs = await listRevisionRefs\(tripRef\)/);
+  assert.match(repository, /transaction\.delete\(tripRef\)/);
+  assert.match(repository, /await deleteRevision\(db, revisionRef\)/);
 });
 
 test('geoapifyClient coordina búsquedas sin absorber Firebase, caché ni contexto', async () => {
