@@ -46,6 +46,9 @@ function savedPlaceSymbolLayer() {
       'icon-rotation-alignment': 'viewport',
       'icon-pitch-alignment': 'viewport',
     },
+    paint: {
+      'icon-color': ['coalesce', ['get', 'color'], '#19a5d0'],
+    },
   };
 }
 
@@ -63,7 +66,7 @@ export function installSavedPlaceSymbolLayer(map) {
     .then((image) => {
       if (!map.getSource(PLACE_SOURCE_ID)) return;
       if (!map.hasImage(PLACE_ICON_ID)) {
-        map.addImage(PLACE_ICON_ID, image, { pixelRatio: 2 });
+        map.addImage(PLACE_ICON_ID, image, { pixelRatio: 2, sdf: true });
       }
       if (!map.getLayer(PLACE_SYMBOL_LAYER_ID)) {
         map.addLayer(savedPlaceSymbolLayer());
