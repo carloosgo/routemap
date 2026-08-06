@@ -5,6 +5,7 @@ import {
   IconChevronRight,
   IconX,
 } from '@tabler/icons-react';
+import { useTranslation } from '../i18n/index.jsx';
 import './CalendarDateInput.css';
 
 function parseIsoDate(value) {
@@ -68,6 +69,7 @@ export function CalendarDateInput({
   ariaLabel,
   align = 'start',
 }) {
+  const { t } = useTranslation();
   const rootRef = useRef(null);
   const popupId = useId();
   const selectedDate = useMemo(() => parseIsoDate(value), [value]);
@@ -174,7 +176,7 @@ export function CalendarDateInput({
         <button
           type="button"
           className="calendar-date__clear"
-          aria-label={isEnglish ? 'Clear date' : 'Limpiar fecha'}
+          aria-label={t('clearDate')}
           onClick={(event) => {
             event.stopPropagation();
             onChange('');
@@ -196,7 +198,7 @@ export function CalendarDateInput({
             <button
               type="button"
               className="calendar-date__month-button"
-              aria-label={isEnglish ? 'Previous month' : 'Mes anterior'}
+              aria-label={t('previousMonth')}
               disabled={previousDisabled}
               onClick={() => setViewMonth(previousMonth)}
             >
@@ -206,7 +208,7 @@ export function CalendarDateInput({
             <button
               type="button"
               className="calendar-date__month-button"
-              aria-label={isEnglish ? 'Next month' : 'Mes siguiente'}
+              aria-label={t('nextMonth')}
               onClick={() => setViewMonth(addMonths(viewMonth, 1))}
             >
               <IconChevronRight size={16} aria-hidden="true" />
