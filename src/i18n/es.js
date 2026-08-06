@@ -20,6 +20,8 @@ export default {
   confirmDelete: '¿Eliminar este viaje?',
   loadTrip: 'Abrir',
   of: 'de',
+  itinerary: 'Itinerario',
+  myRoutes: 'Mis Rutas',
   segments: 'Tramos',
   places: 'Lugares',
   place: 'Lugar',
