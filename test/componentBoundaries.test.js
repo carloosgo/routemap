@@ -108,7 +108,7 @@ test('el repositorio Firestore conserva revisiones separadas y publicación tran
   assert.match(repository, /await deleteRevision\(db, revisionRef\)/);
 });
 
-test('geoapifyClient coordina búsquedas sin absorber Firebase, caché ni contexto', async () => {
+test('geoapifyClient coordina búsquedas sin absorber Firebase, caché ni datos de tramos', async () => {
   const client = await read('src/modules/places/geoapifyClient.js');
   const callable = await read('src/modules/places/geoapifyCallable.js');
   const cache = await read('src/modules/places/geoapifyClientCache.js');
@@ -121,14 +121,14 @@ test('geoapifyClient coordina búsquedas sin absorber Firebase, caché ni contex
   assert.match(client, /from '\.\/geoapifyCallable\.js'/);
   assert.match(client, /from '\.\/geoapifyClientCache\.js'/);
   assert.match(client, /from '\.\/geoapifyQuery\.js'/);
-  assert.doesNotMatch(client, /connectFunctionsEmulator|localStorage|function contextualQuery/);
+  assert.doesNotMatch(client, /connectFunctionsEmulator|localStorage|contextualQuery|searchContext/);
 
   assert.match(callable, /connectFunctionsEmulator/);
   assert.match(callable, /httpsCallable/);
   assert.match(cache, /export function createPersistentCache/);
   assert.match(cache, /localStorage/);
-  assert.match(query, /export function contextualQuery/);
-  assert.match(query, /export function callableSearchContext/);
+  assert.match(query, /export function normalizeSearchKey/);
+  assert.doesNotMatch(query, /contextualQuery|callableSearchContext|knownLocations/);
 });
 
 test('ExpenseEditor coordina vistas sin absorber catálogo ni mutaciones', async () => {
