@@ -12,37 +12,45 @@ function normalizedCountryCode(value) {
   return /^[a-z]{2}$/.test(code) ? code : '';
 }
 
-export function savedPlacePopup(place) {
+function translated(t, key, fallback, variables) {
+  return typeof t === 'function' ? t(key, variables) : fallback;
+}
+
+export function savedPlacePopup(place, t) {
   const wrap = document.createElement('div');
   wrap.className = 'place-popup';
   const code = normalizedCountryCode(place.countryCode);
   const country = place.country || place.countryCode || '';
+  const placeLabel = translated(t, 'place', 'Lugar');
+  const flagLabel = translated(t, 'flagOf', `Bandera de ${country}`, { country });
   const flag = code
-    ? `<img class="place-popup__flag" src="https://flagcdn.com/24x18/${code}.png" width="24" height="18" alt="Bandera de ${escaped(
-        country
+    ? `<img class="place-popup__flag" src="https://flagcdn.com/24x18/${code}.png" width="24" height="18" alt="${escaped(
+        flagLabel
       )}" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
     : '';
   wrap.innerHTML = `<div class="place-popup__heading">${flag}<strong>${escaped(
-    place.name || 'Lugar'
+    place.name || placeLabel
   )}</strong></div><span>${escaped(place.city || '')}${
     place.city && country ? ', ' : ''
-  }${escaped(country)}</span><small>${escaped(place.category || 'Lugar')}</small>`;
+  }${escaped(country)}</span><small>${escaped(place.category || placeLabel)}</small>`;
   const flagImage = wrap.querySelector('.place-popup__flag');
   flagImage?.addEventListener('error', () => flagImage.remove(), { once: true });
   return wrap;
 }
 
-export function savePrompt(place, { alreadySaved = false, onSave, onClose } = {}) {
+export function savePrompt(place, { alreadySaved = false, onSave, onClose, t } = {}) {
   const wrap = document.createElement('div');
   wrap.className = 'place-save-prompt';
   const text = document.createElement('span');
-  text.textContent = alreadySaved ? 'Este lugar ya está guardado.' : '¿Guardar lugar para tu ruta?';
+  text.textContent = alreadySaved
+    ? translated(t, 'placeAlreadySaved', 'Este lugar ya está guardado.')
+    : translated(t, 'savePlacePrompt', '¿Guardar lugar para tu ruta?');
   wrap.append(text);
 
   if (!alreadySaved) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = 'Guardar';
+    button.textContent = translated(t, 'saveTrip', 'Guardar');
     button.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -72,13 +80,14 @@ export function resultMarkerScale(zoom) {
   return Math.max(0.52, Math.min(1, 0.52 + ((value - 5) * 0.48) / 7));
 }
 
-export function markerElement(place) {
+export function markerElement(place, t) {
+  const placeLabel = translated(t, 'place', 'Lugar');
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'place-result-marker';
   button.setAttribute(
     'aria-label',
-    `${place.name || 'Lugar'}, ${place.city || ''}, ${place.country || ''}`
+    `${place.name || placeLabel}, ${place.city || ''}, ${place.country || ''}`
   );
 
   const media = document.createElement('span');
@@ -100,7 +109,7 @@ export function markerElement(place) {
   const copy = document.createElement('span');
   copy.className = 'place-result-marker__copy';
   const name = document.createElement('strong');
-  name.textContent = place.name || 'Lugar';
+  name.textContent = place.name || placeLabel;
   const location = document.createElement('small');
   location.textContent = [place.city, place.country || place.countryCode].filter(Boolean).join(', ');
   copy.append(name, location);
