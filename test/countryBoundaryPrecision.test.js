@@ -33,7 +33,7 @@ test('Itinerario pinta países visitados con COUNTRY y resuelve IDs mediante Pla
   const functionsIndex = await read('functions/index.js');
   const config = await read('src/config.js');
 
-  assert.match(googleMap, /visitedCountries\(segments, colorForIndex\)/);
+  assert.match(googleMap, /visitedCountries\(segments, countryColorForIndex\)/);
   assert.match(googleMap, /map\.getFeatureLayer\?\.\('COUNTRY'\)/);
   assert.match(googleMap, /map\.getMapCapabilities\?\.\(\)/);
   assert.match(googleMap, /isDataDrivenStylingAvailable/);
@@ -41,9 +41,13 @@ test('Itinerario pinta países visitados con COUNTRY y resuelve IDs mediante Pla
   assert.match(googleMap, /countryLayer\.isAvailable/);
   assert.match(googleMap, /loadGoogleCountryPlaceIds\(itineraryCountries/);
   assert.match(googleMap, /fillColor: color/);
-  assert.match(googleMap, /fillOpacity: 0\.22/);
+  assert.match(googleMap, /fillOpacity: 0\.16/);
+  assert.match(googleMap, /strokeOpacity: 0/);
+  assert.match(googleMap, /strokeWeight: 0/);
   assert.match(googleMap, /countryLayer\.style = null/);
 
+  assert.match(config, /countryColors:/);
+  assert.match(config, /export function countryColorForIndex/);
   assert.match(client, /firebaseCallable\('googleCountryPlaceIds'\)/);
   assert.match(client, /MAX_COUNTRIES_PER_REQUEST = 10/);
   assert.match(client, /countryPlaceIdCacheKey/);
