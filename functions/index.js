@@ -24,3 +24,5 @@ export {
   googlePlaceSearch,
   googleRoute,
 } from './googleMapsFunctions.js';
+
+export { googleRouteOptimized } from './googleOptimizedRouteFunction.js';
