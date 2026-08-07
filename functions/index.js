@@ -17,3 +17,10 @@ export {
 } from './geoapifyBatchFunctions.js';
 
 export { geoapifyCountryBoundary } from './countryBoundaryFunction.js';
+
+export {
+  googlePlaceAutocomplete,
+  googlePlaceDetails,
+  googlePlaceSearch,
+  googleRoute,
+} from './googleMapsFunctions.js';
