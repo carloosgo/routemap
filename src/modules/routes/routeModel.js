@@ -2,14 +2,17 @@ import { uid } from '../../shared/utils.js';
 
 export const SAVED_PLACE_ROUTE_MODES = Object.freeze([
   'drive',
+  'transit',
+  'train',
   'bus',
   'bicycle',
   'walk',
-  'transit',
-  'approximated_transit',
 ]);
 
 const ROUTE_MODE_SET = new Set(SAVED_PLACE_ROUTE_MODES);
+const LEGACY_ROUTE_MODE_MAP = Object.freeze({
+  approximated_transit: 'transit',
+});
 const MAX_GEOMETRY_POINTS = 12000;
 const MAX_MULTI_LINES = 256;
 
@@ -24,7 +27,11 @@ function normalizePlaceId(value) {
 }
 
 function normalizeTimestamp(value) {
-  return typeof value === 'string' ? value.trim().slice(0, 40) : '';
+  return typeof value === 'string' ? value.trim().slice(0, 48) : '';
+}
+
+function normalizeShortText(value, max = 160) {
+  return typeof value === 'string' ? value.trim().slice(0, max) : '';
 }
 
 function normalizeMetric(value) {
@@ -58,6 +65,27 @@ function normalizeLine(value, maxPoints = MAX_GEOMETRY_POINTS) {
   return sampleLine(coordinates, maxPoints);
 }
 
+function normalizeTransitSteps(value) {
+  return (Array.isArray(value) ? value : [])
+    .slice(0, 24)
+    .map((step) => ({
+      departureStop: normalizeShortText(step?.departureStop),
+      arrivalStop: normalizeShortText(step?.arrivalStop),
+      departureTime: normalizeTimestamp(step?.departureTime),
+      arrivalTime: normalizeTimestamp(step?.arrivalTime),
+      lineName: normalizeShortText(step?.lineName, 120),
+      lineShortName: normalizeShortText(step?.lineShortName, 60),
+      vehicleType: normalizeShortText(step?.vehicleType, 60),
+      agencies: (Array.isArray(step?.agencies) ? step.agencies : [])
+        .map((agency) => normalizeShortText(agency, 120))
+        .filter(Boolean)
+        .slice(0, 4),
+      headsign: normalizeShortText(step?.headsign, 120),
+      stopCount: Math.max(0, Number(step?.stopCount) || 0),
+      tripShortText: normalizeShortText(step?.tripShortText, 80),
+    }));
+}
+
 export function normalizeRouteGeometry(value) {
   if (!value || typeof value !== 'object') return null;
   if (value.type === 'LineString') {
@@ -81,7 +109,8 @@ export function normalizeRouteGeometry(value) {
 }
 
 export function normalizeSavedPlaceRouteMode(value) {
-  return ROUTE_MODE_SET.has(value) ? value : 'drive';
+  const migrated = LEGACY_ROUTE_MODE_MAP[value] || value;
+  return ROUTE_MODE_SET.has(migrated) ? migrated : 'drive';
 }
 
 export function createSavedPlaceRoute(partial = {}) {
@@ -95,6 +124,7 @@ export function createSavedPlaceRoute(partial = {}) {
     duration: normalizeMetric(partial.duration),
     geometry: normalizeRouteGeometry(partial.geometry),
     calculatedAt: normalizeTimestamp(partial.calculatedAt),
+    transitSteps: normalizeTransitSteps(partial.transitSteps),
   };
 }
 
