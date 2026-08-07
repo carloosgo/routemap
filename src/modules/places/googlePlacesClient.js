@@ -2,7 +2,7 @@ import { config } from '../../config.js';
 import { firebaseCallable } from '../../infrastructure/firebase/callableFunctions.js';
 import { isPlaced } from '../trips/tripModel.js';
 
-const memoryCache = new Map();
+const locationMemoryCache = new Map();
 const pendingRequests = new Map();
 
 function now() {
@@ -13,22 +13,22 @@ function cacheKey(kind, value, token = '') {
   return `${kind}:${token}:${String(value || '').trim().toLowerCase()}`;
 }
 
-function getCached(key) {
-  const cached = memoryCache.get(key);
+function getLocationMemoryCache(key) {
+  const cached = locationMemoryCache.get(key);
   if (!cached) return null;
   if (now() - cached.timestamp > config.googleMaps.memoryCacheTtlMs) {
-    memoryCache.delete(key);
+    locationMemoryCache.delete(key);
     return null;
   }
   return cached.value;
 }
 
-function setCached(key, value) {
-  if (memoryCache.size >= 120) {
-    const firstKey = memoryCache.keys().next().value;
-    memoryCache.delete(firstKey);
+function setLocationMemoryCache(key, value) {
+  if (locationMemoryCache.size >= 80) {
+    const firstKey = locationMemoryCache.keys().next().value;
+    locationMemoryCache.delete(firstKey);
   }
-  memoryCache.set(key, { timestamp: now(), value });
+  locationMemoryCache.set(key, { timestamp: now(), value });
 }
 
 function throwIfAborted(signal) {
@@ -165,9 +165,7 @@ export function createGooglePlacesSessionToken() {
 export async function autocompleteGooglePlaces(input, sessionToken, { signal } = {}) {
   const cleanInput = String(input || '').trim();
   if (cleanInput.length < config.googleMaps.searchMinChars || !sessionToken) return [];
-  const key = cacheKey('autocomplete', cleanInput, sessionToken);
-  const cached = getCached(key);
-  if (cached) return cached;
+  const key = cacheKey('autocomplete-inflight', cleanInput, sessionToken);
 
   throwIfAborted(signal);
   const suggestions = await sharedRequest(key, async () => {
@@ -180,7 +178,6 @@ export async function autocompleteGooglePlaces(input, sessionToken, { signal } =
     return Array.isArray(response.data?.suggestions) ? response.data.suggestions : [];
   });
   throwIfAborted(signal);
-  setCached(key, suggestions);
   return suggestions;
 }
 
@@ -197,9 +194,7 @@ export async function resolveGooglePlace(prediction, sessionToken, { signal } = 
 export async function searchGooglePlaces(query, { signal } = {}) {
   const cleanQuery = String(query || '').trim();
   if (cleanQuery.length < config.googleMaps.searchMinChars) return [];
-  const key = cacheKey('search', cleanQuery);
-  const cached = getCached(key);
-  if (cached) return cached;
+  const key = cacheKey('search-inflight', cleanQuery);
 
   throwIfAborted(signal);
   const results = await sharedRequest(key, async () => {
@@ -211,7 +206,6 @@ export async function searchGooglePlaces(query, { signal } = {}) {
   });
   throwIfAborted(signal);
   results.forEach(rememberPlaceLocation);
-  setCached(key, results);
   return results;
 }
 
@@ -239,14 +233,14 @@ export async function loadGooglePlaceLocations(placeIds, { signal } = {}) {
     throwIfAborted(signal);
     const batch = missingIds.slice(index, index + 20);
     const key = cacheKey('locations', [...batch].sort().join('|'));
-    let resolved = getCached(key);
+    let resolved = getLocationMemoryCache(key);
     if (!resolved) {
       resolved = await sharedRequest(key, async () => {
         const request = firebaseCallable('googlePlaceLocations');
         const response = await request({ placeIds: batch });
         return Array.isArray(response.data?.locations) ? response.data.locations : [];
       });
-      setCached(key, resolved);
+      setLocationMemoryCache(key, resolved);
     }
     throwIfAborted(signal);
     resolved.forEach((location) => {
