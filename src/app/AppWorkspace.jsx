@@ -11,6 +11,9 @@ function currentMobileViewport() {
 
 export function AppWorkspace({ editorModule, mapPane, mobileView, setMobileView, t }) {
   const [mobileViewport, setMobileViewport] = useState(currentMobileViewport);
+  const [mobileMapMounted, setMobileMapMounted] = useState(
+    () => !currentMobileViewport() || mobileView === 'map'
+  );
 
   useEffect(() => {
     if (typeof globalThis.matchMedia !== 'function') return undefined;
@@ -20,6 +23,10 @@ export function AppWorkspace({ editorModule, mapPane, mobileView, setMobileView,
     media.addEventListener?.('change', handleChange);
     return () => media.removeEventListener?.('change', handleChange);
   }, []);
+
+  useEffect(() => {
+    if (!mobileViewport || mobileView === 'map') setMobileMapMounted(true);
+  }, [mobileViewport, mobileView]);
 
   return (
     <main className="workspace">
@@ -32,7 +39,7 @@ export function AppWorkspace({ editorModule, mapPane, mobileView, setMobileView,
           {editorModule}
         </div>
         <div className={'mobilepane' + (mobileView === 'map' ? ' is-active' : '')}>
-          {mobileViewport && mapPane}
+          {mobileViewport && mobileMapMounted && mapPane}
         </div>
         <nav className="mobiletabs">
           <button
