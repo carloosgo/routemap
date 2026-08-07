@@ -120,7 +120,7 @@ export function usePlaceSearch({ viewMode }) {
     try {
       const next = await searchGooglePlaces(text, { signal: controller.signal });
       if (!controller.signal.aborted && sequence === searchSequenceRef.current) {
-        setResults(next);
+        setResults(next.map((place) => ({ ...place, userLabel: text })));
         renewSession();
       }
     } catch (searchError) {
@@ -137,6 +137,7 @@ export function usePlaceSearch({ viewMode }) {
   async function chooseSuggestion(prediction) {
     const placeId = String(prediction?.id || '').trim();
     if (!placeId) return;
+    const userLabel = query.trim();
     autocompleteAbortRef.current?.abort();
     autocompleteSequenceRef.current += 1;
     searchAbortRef.current?.abort();
@@ -156,7 +157,7 @@ export function usePlaceSearch({ viewMode }) {
       const location = [place.city, place.country].filter(Boolean).join(', ');
       skipAutocompleteRef.current = true;
       setQuery([place.name, location].filter(Boolean).join(', '));
-      setResults([place]);
+      setResults([{ ...place, userLabel }]);
       renewSession();
     } catch (detailsError) {
       if (detailsError?.name !== 'AbortError') {
