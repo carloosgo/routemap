@@ -33,6 +33,9 @@ test('Itinerario pinta países visitados con la feature layer COUNTRY de Google'
 
   assert.match(googleMap, /visitedCountries\(segments, colorForIndex\)/);
   assert.match(googleMap, /map\.getFeatureLayer\?\.\('COUNTRY'\)/);
+  assert.match(googleMap, /map\.getMapCapabilities\?\.\(\)/);
+  assert.match(googleMap, /isDataDrivenStylingAvailable/);
+  assert.match(googleMap, /map\.addListener\?\.\('mapcapabilities_changed', applyCountryStyle\)/);
   assert.match(googleMap, /countryLayer\.isAvailable/);
   assert.match(googleMap, /loadGoogleCountryPlaceIds\(itineraryCountries/);
   assert.match(googleMap, /fillColor: color/);
