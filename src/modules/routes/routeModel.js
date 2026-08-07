@@ -39,6 +39,10 @@ function normalizeMetric(value) {
   return Number.isFinite(number) && number >= 0 ? number : 0;
 }
 
+function normalizeProvider(value) {
+  return value === 'google' ? 'google' : 'geoapify';
+}
+
 function normalizePosition(value) {
   if (!Array.isArray(value) || value.length < 2) return null;
   const lon = Number(value[0]);
@@ -118,6 +122,7 @@ export function createSavedPlaceRoute(partial = {}) {
     id: normalizeId(partial.id),
     fromPlaceId: normalizePlaceId(partial.fromPlaceId),
     toPlaceId: normalizePlaceId(partial.toPlaceId),
+    provider: normalizeProvider(partial.provider),
     mode: normalizeSavedPlaceRouteMode(partial.mode),
     visible: partial.visible !== false,
     distance: normalizeMetric(partial.distance),
@@ -157,7 +162,6 @@ export function normalizeSavedPlaceRoutes(rawRoutes, places, limit = 200) {
       || route.fromPlaceId === route.toPlaceId
       || !placeIds.has(route.fromPlaceId)
       || !placeIds.has(route.toPlaceId)
-      || !route.geometry
     ) {
       continue;
     }
@@ -175,6 +179,7 @@ export function savedPlaceRouteTotals(routes, { visibleOnly = false } = {}) {
   return (routes || []).reduce(
     (totals, route) => {
       if (visibleOnly && route.visible === false) return totals;
+      if (!route.geometry) return totals;
       totals.distance += normalizeMetric(route.distance);
       totals.duration += normalizeMetric(route.duration);
       totals.count += 1;
