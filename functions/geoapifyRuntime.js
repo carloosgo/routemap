@@ -8,6 +8,7 @@ initializeApp();
 export const db = getFirestore();
 export const GEOAPIFY_API_KEY = defineSecret('GEOAPIFY_API_KEY');
 export const GEOAPIFY_CITY_API_KEY = defineSecret('GEOAPIFY_CITY_API_KEY');
+export const GOOGLE_MAPS_API_KEY = defineSecret('GOOGLE_MAPS_API_KEY');
 export const CACHE_TTL_MS = 60 * 24 * 60 * 60 * 1000;
 export const BATCH_JOB_TTL_MS = 24 * 60 * 60 * 1000;
 export const COUNTRY_BOUNDARY_CACHE_MAX_BYTES = 850 * 1024;
@@ -28,6 +29,10 @@ export const QUOTAS = Object.freeze({
   placeDetails: { scope: 'geoapify-place-details', maxRequests: 30, windowMs: 60_000 },
   route: { scope: 'geoapify-route', maxRequests: 20, windowMs: 60_000 },
   reverse: { scope: 'geoapify-reverse', maxRequests: 20, windowMs: 60_000 },
+  googlePlaceAutocomplete: { scope: 'google-place-autocomplete', maxRequests: 40, windowMs: 60_000 },
+  googlePlaceDetails: { scope: 'google-place-details', maxRequests: 30, windowMs: 60_000 },
+  googlePlaceSearch: { scope: 'google-place-search', maxRequests: 12, windowMs: 60_000 },
+  googleRoute: { scope: 'google-route', maxRequests: 30, windowMs: 60_000 },
   batchSubmit: {
     scope: 'geoapify-batch-submit',
     maxRequests: 2,
