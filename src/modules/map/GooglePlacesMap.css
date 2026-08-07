@@ -60,9 +60,5 @@
   box-shadow:0 2px 7px rgba(15,23,42,.24);
 }
 .google-itinerary-city-marker__dot{
-  display:block;
-  width:5px;
-  height:5px;
-  border-radius:50%;
-  background:#ffffff;
+  display:none;
 }
