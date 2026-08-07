@@ -111,11 +111,12 @@ export function GooglePlacesMap({ places = [], routeConnections = [], addPlace }
   useEffect(() => {
     const map = mapRef.current;
     const AdvancedMarkerElement = map?.__AdvancedMarkerElement;
-    if (!map || !ready || !AdvancedMarkerElement) return undefined;
+    const maps = globalThis.google?.maps;
+    if (!map || !ready || !AdvancedMarkerElement || !maps) return undefined;
 
     markersRef.current.forEach((marker) => { marker.map = null; });
     markersRef.current = [];
-    const bounds = new google.maps.LatLngBounds();
+    const bounds = new maps.LatLngBounds();
 
     places.filter(isPlaced).forEach((place) => {
       const content = savedMarkerContent(place, t);
@@ -193,7 +194,8 @@ export function GooglePlacesMap({ places = [], routeConnections = [], addPlace }
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !ready) return undefined;
+    const maps = globalThis.google?.maps;
+    if (!map || !ready || !maps) return undefined;
     routeLinesRef.current.forEach((line) => line.setMap(null));
     routeLinesRef.current = [];
 
@@ -203,7 +205,7 @@ export function GooglePlacesMap({ places = [], routeConnections = [], addPlace }
       .forEach((coordinates) => {
         const path = toGooglePath(coordinates);
         if (path.length < 2) return;
-        routeLinesRef.current.push(new google.maps.Polyline({
+        routeLinesRef.current.push(new maps.Polyline({
           map,
           path,
           strokeColor: '#111111',
