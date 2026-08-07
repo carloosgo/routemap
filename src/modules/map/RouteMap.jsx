@@ -7,6 +7,7 @@ export function RouteMap({
   places = [],
   routeConnections = [],
   addPlace,
+  updatePlace,
   viewMode = 'segments',
 }) {
   if (viewMode === 'places') {
@@ -15,6 +16,7 @@ export function RouteMap({
         places={places}
         routeConnections={routeConnections}
         addPlace={addPlace}
+        updatePlace={updatePlace}
       />
     );
   }
