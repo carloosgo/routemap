@@ -107,11 +107,14 @@ function writeLocationCache(cache) {
 function rememberGoogleLocation(placeId, value) {
   const id = String(placeId || '').trim();
   if (!id || !validLocation(value)) return;
+  const fetchedAt = Number(value?.fetchedAt) || now();
+  const expiresAt = fetchedAt + config.googleMaps.locationCacheTtlMs;
+  if (expiresAt <= now()) return;
   const cache = readLocationCache();
   cache[id] = {
     lat: Number(value.lat),
     lon: Number(value.lon),
-    expiresAt: now() + config.googleMaps.locationCacheTtlMs,
+    expiresAt,
   };
   writeLocationCache(cache);
 }
@@ -119,7 +122,11 @@ function rememberGoogleLocation(placeId, value) {
 function rememberPlaceLocation(place) {
   const placeId = String(place?.googlePlaceId || place?.id || '').trim();
   if (placeId && isPlaced(place)) {
-    rememberGoogleLocation(placeId, { lat: place.lat, lon: place.lon });
+    rememberGoogleLocation(placeId, {
+      lat: place.lat,
+      lon: place.lon,
+      fetchedAt: now(),
+    });
   }
 }
 
