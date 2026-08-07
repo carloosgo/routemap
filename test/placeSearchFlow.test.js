@@ -85,14 +85,20 @@ test('places, notes and mobile itinerary navigation use distinct icons', async (
   assert.doesNotMatch(navigation, /IconMapPin|IconNotebook/);
 });
 
-test('CSP permits Geoapify for Itinerario and Google Maps hosts for Mis Rutas', async () => {
+test('CSP permite todos los hosts dinámicos requeridos por Google Maps JavaScript', async () => {
   const html = await read('index.html');
   const loader = await read('src/modules/map/googleMapsLoader.js');
 
-  assert.match(html, /connect-src[^;]*https:\/\/\*\.geoapify\.com/);
-  assert.match(html, /connect-src[^;]*https:\/\/maps\.googleapis\.com/);
-  assert.match(html, /script-src[^;]*https:\/\/maps\.googleapis\.com/);
-  assert.match(html, /script-src[^;]*https:\/\/maps\.gstatic\.com/);
-  assert.match(html, /img-src[^;]*https:\/\/maps\.gstatic\.com/);
+  assert.match(html, /img-src[^;]*https:\/\/\*\.googleapis\.com/);
+  assert.match(html, /img-src[^;]*https:\/\/\*\.gstatic\.com/);
+  assert.match(html, /img-src[^;]*https:\/\/\*\.google\.com/);
+  assert.match(html, /img-src[^;]*https:\/\/\*\.googleusercontent\.com/);
+  assert.match(html, /connect-src[^;]*https:\/\/\*\.googleapis\.com/);
+  assert.match(html, /connect-src[^;]*https:\/\/\*\.gstatic\.com/);
+  assert.match(html, /connect-src[^;]*https:\/\/\*\.google\.com/);
+  assert.match(html, /script-src[^;]*'unsafe-eval'/);
+  assert.match(html, /script-src[^;]*https:\/\/\*\.googleapis\.com/);
+  assert.match(html, /script-src[^;]*https:\/\/\*\.gstatic\.com/);
+  assert.match(html, /script-src[^;]*https:\/\/\*\.ggpht\.com/);
   assert.match(loader, /https:\/\/maps\.googleapis\.com\/maps\/api\/js/);
 });
