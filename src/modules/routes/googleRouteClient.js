@@ -34,7 +34,7 @@ export async function requestGooglePlaceRoute(origin, destination, mode = 'drive
   if (pendingRoutes.has(key)) return pendingRoutes.get(key);
 
   const pending = (async () => {
-    const request = firebaseCallable('googleRoute');
+    const request = firebaseCallable('googleRouteOptimized');
     const response = await request({
       origin: originWaypoint,
       destination: destinationWaypoint,
