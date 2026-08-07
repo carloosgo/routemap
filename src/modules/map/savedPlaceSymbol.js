@@ -9,7 +9,7 @@ const PLACE_SOURCE_ID = 'atlas-saved-places';
 const PLACE_HIT_LAYER_ID = 'atlas-saved-places-layer';
 const PLACE_SYMBOL_LAYER_ID = 'atlas-saved-places-symbol';
 
-function savedPlacePinUrl(color) {
+export function savedPlacePinUrl(color) {
   const svg = savedPlacePinTemplate.replace('#19a5d0', color);
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
