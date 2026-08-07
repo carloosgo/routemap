@@ -65,6 +65,25 @@ function clearPolylines(linesRef) {
   linesRef.current = [];
 }
 
+function syncMapElementSize(wrapper, node) {
+  if (!wrapper || !node) return false;
+  const width = Math.floor(wrapper.clientWidth);
+  const height = Math.floor(wrapper.clientHeight);
+  if (width < 2 || height < 2) return false;
+
+  const widthPx = `${width}px`;
+  const heightPx = `${height}px`;
+  if (node.style.width !== widthPx) node.style.width = widthPx;
+  if (node.style.height !== heightPx) node.style.height = heightPx;
+  return true;
+}
+
+function afterLayout() {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
+}
+
 export function GooglePlacesMap({
   segments = [],
   places = [],
@@ -73,6 +92,7 @@ export function GooglePlacesMap({
   viewMode = 'segments',
 }) {
   const { t } = useTranslation();
+  const wrapRef = useRef(null);
   const nodeRef = useRef(null);
   const mapRef = useRef(null);
   const resizeObserverRef = useRef(null);
@@ -159,7 +179,10 @@ export function GooglePlacesMap({
 
   useEffect(() => {
     let disposed = false;
-    if (!nodeRef.current || !mapConfigured) return undefined;
+    let resizeHandler = null;
+    if (!wrapRef.current || !nodeRef.current || !mapConfigured) return undefined;
+
+    syncMapElementSize(wrapRef.current, nodeRef.current);
 
     loadGoogleMaps()
       .then(async (maps) => {
@@ -167,7 +190,10 @@ export function GooglePlacesMap({
           maps.importLibrary('maps'),
           maps.importLibrary('marker'),
         ]);
-        if (disposed || !nodeRef.current) return;
+        await afterLayout();
+        if (disposed || !wrapRef.current || !nodeRef.current) return;
+
+        syncMapElementSize(wrapRef.current, nodeRef.current);
         const map = new Map(nodeRef.current, {
           center: {
             lat: config.map.initialCenter[0],
@@ -186,12 +212,23 @@ export function GooglePlacesMap({
         mapRef.current.__AdvancedMarkerElement = AdvancedMarkerElement;
         infoWindowRef.current = new maps.InfoWindow();
 
+        resizeHandler = () => {
+          if (!syncMapElementSize(wrapRef.current, nodeRef.current)) return;
+          const currentMap = mapRef.current;
+          if (!currentMap) return;
+          const center = currentMap.getCenter();
+          const zoom = currentMap.getZoom();
+          maps.event.trigger(currentMap, 'resize');
+          if (center) currentMap.setCenter(center);
+          if (Number.isFinite(zoom)) currentMap.setZoom(zoom);
+        };
+
         if (typeof ResizeObserver !== 'undefined') {
-          resizeObserverRef.current = new ResizeObserver(() => {
-            if (mapRef.current) maps.event.trigger(mapRef.current, 'resize');
-          });
-          resizeObserverRef.current.observe(nodeRef.current);
+          resizeObserverRef.current = new ResizeObserver(resizeHandler);
+          resizeObserverRef.current.observe(wrapRef.current);
         }
+        globalThis.addEventListener?.('resize', resizeHandler);
+        requestAnimationFrame(resizeHandler);
         setReady(true);
       })
       .catch((error) => {
@@ -203,6 +240,7 @@ export function GooglePlacesMap({
 
     return () => {
       disposed = true;
+      if (resizeHandler) globalThis.removeEventListener?.('resize', resizeHandler);
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;
       clearTimeout(saveNoticeTimerRef.current);
@@ -221,7 +259,12 @@ export function GooglePlacesMap({
     const maps = globalThis.google?.maps;
     if (!map || !ready || !maps) return undefined;
     const frame = requestAnimationFrame(() => {
+      if (!syncMapElementSize(wrapRef.current, nodeRef.current)) return;
+      const center = map.getCenter();
+      const zoom = map.getZoom();
       maps.event.trigger(map, 'resize');
+      if (center) map.setCenter(center);
+      if (Number.isFinite(zoom)) map.setZoom(zoom);
     });
     return () => cancelAnimationFrame(frame);
   }, [ready, viewMode]);
@@ -430,13 +473,12 @@ export function GooglePlacesMap({
   }, [placesActive, ready, routeConnections]);
 
   return (
-    <div className="geo-map-wrap google-map-wrap">
-      <div className="geo-map google-map" ref={nodeRef}>
-        {!mapConfigured && (
-          <div className="geo-map__missing">{t('googleMapConfigMissingShort')}</div>
-        )}
-        {loadError && <div className="geo-map__missing">{loadError}</div>}
-      </div>
+    <div className="geo-map-wrap google-map-wrap" ref={wrapRef}>
+      <div className="geo-map google-map" ref={nodeRef} />
+      {!mapConfigured && (
+        <div className="geo-map__missing">{t('googleMapConfigMissingShort')}</div>
+      )}
+      {loadError && <div className="geo-map__missing">{loadError}</div>}
       {placesActive && mapConfigured && (
         <PlaceSearchForm
           query={placeSearch.query}
