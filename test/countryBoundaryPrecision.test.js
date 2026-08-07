@@ -9,8 +9,8 @@ async function read(relativePath) {
   return readFile(new URL(relativePath, root), 'utf8');
 }
 
-test('MapLibre uses open Overture PMTiles country polygons without Mapbox', async () => {
-  const routeMap = await read('src/modules/map/RouteMap.jsx');
+test('Itinerario MapLibre uses open Overture PMTiles country polygons without Mapbox', async () => {
+  const itineraryMap = await read('src/modules/map/ItineraryRouteMap.jsx');
   const mapSetup = await read('src/modules/map/routeMapSetup.js');
   const countryColoring = await read('src/modules/map/countryColoring.js');
   const overtureSource = await read('src/modules/map/overtureCountrySource.js');
@@ -18,14 +18,14 @@ test('MapLibre uses open Overture PMTiles country polygons without Mapbox', asyn
   const envExample = await read('.env.example');
   const indexHtml = await read('index.html');
   const packageJson = JSON.parse(await read('package.json'));
-  const mapImplementation = `${routeMap}\n${mapSetup}`;
+  const mapImplementation = `${itineraryMap}\n${mapSetup}`;
 
   assert.equal(packageJson.dependencies['maplibre-gl'], '^5.24.0');
   assert.equal(packageJson.dependencies.pmtiles, '^4.4.1');
   assert.equal(packageJson.dependencies.leaflet, undefined);
-  assert.match(routeMap, /from 'maplibre-gl'/);
+  assert.match(itineraryMap, /from 'maplibre-gl'/);
   assert.match(mapSetup, /from 'pmtiles'/);
-  assert.match(routeMap, /resolveOvertureDivisionsPmtilesUrl/);
+  assert.match(itineraryMap, /resolveOvertureDivisionsPmtilesUrl/);
   assert.match(mapSetup, /COUNTRY_BOUNDARY_SOURCE_LAYER = 'division_area'/);
   assert.match(mapSetup, /'source-layer': COUNTRY_BOUNDARY_SOURCE_LAYER/);
   assert.match(mapSetup, /pmtiles:\/\//);
@@ -76,11 +76,11 @@ test('country colors are sequential, distinct and use a brighter fill', () => {
 });
 
 test('country coloring does not download or cache full country GeoJSON', async () => {
-  const routeMap = await read('src/modules/map/RouteMap.jsx');
+  const itineraryMap = await read('src/modules/map/ItineraryRouteMap.jsx');
   const mapSetup = await read('src/modules/map/routeMapSetup.js');
   const geoapifyClient = await read('src/modules/places/geoapifyClient.js');
   const packageJson = JSON.parse(await read('package.json'));
-  const mapImplementation = `${routeMap}\n${mapSetup}`;
+  const mapImplementation = `${itineraryMap}\n${mapSetup}`;
 
   assert.equal(packageJson.scripts['boundaries:build'], undefined);
   assert.doesNotMatch(mapImplementation, /country-boundaries\/v1|\.geojson/);
