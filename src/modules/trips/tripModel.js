@@ -7,8 +7,10 @@ export {
   createPlace,
   createSegment,
   createTrip,
+  isGooglePlaceReference,
   isPlaced,
   normalizeTrip,
+  placeForPersistence,
 } from './tripEntities.js';
 
 export {
