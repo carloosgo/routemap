@@ -23,13 +23,19 @@ after(async () => {
   await testEnv?.cleanup();
 });
 
-test('citySearchCache no es accesible desde el cliente', async () => {
+test('las colecciones internas de caché no son accesibles desde el cliente', async () => {
   const alice = testEnv.authenticatedContext('alice').firestore();
-  const ref = doc(alice, 'citySearchCache/cache-1');
+  const paths = [
+    'citySearchCache/cache-1',
+    'googlePlaceLocationCache/cache-1',
+  ];
 
-  await assertFails(getDoc(ref));
-  await assertFails(setDoc(ref, {
-    result: [],
-    expiresAt: new Date(),
-  }));
+  for (const path of paths) {
+    const ref = doc(alice, path);
+    await assertFails(getDoc(ref));
+    await assertFails(setDoc(ref, {
+      result: [],
+      expiresAt: new Date(),
+    }));
+  }
 });
