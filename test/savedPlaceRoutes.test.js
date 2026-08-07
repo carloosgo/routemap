@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   SAVED_PLACE_ROUTE_MODES,
+  consecutiveSavedPlaceRoutePairs,
   createSavedPlaceRoute,
   normalizeRouteGeometry,
   savedPlaceRouteTotals,
@@ -50,6 +51,13 @@ test('solo expone modos que Geoapify Routing soporta para Mis Rutas', () => {
     'walk',
     'transit',
     'approximated_transit',
+  ]);
+});
+
+test('crea la cadena 1→2, 2→3 según el orden actual de lugares', () => {
+  assert.deepEqual(consecutiveSavedPlaceRoutePairs(placesTrip().places), [
+    { fromPlaceId: 'rome', toPlaceId: 'trevi' },
+    { fromPlaceId: 'trevi', toPlaceId: 'tokyo' },
   ]);
 });
 
