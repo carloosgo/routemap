@@ -228,6 +228,7 @@ service cloud.firestore {
         && data.mode is string
         && (
           data.mode == 'drive'
+          || data.mode == 'train'
           || data.mode == 'bus'
           || data.mode == 'bicycle'
           || data.mode == 'walk'
