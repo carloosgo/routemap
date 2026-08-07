@@ -46,6 +46,83 @@ async function sharedRequest(key, loader) {
   }
 }
 
+function validLocation(value) {
+  const lat = Number(value?.lat);
+  const lon = Number(value?.lon);
+  return Number.isFinite(lat)
+    && Math.abs(lat) <= 90
+    && Number.isFinite(lon)
+    && Math.abs(lon) <= 180;
+}
+
+function locationStorage() {
+  try {
+    return globalThis.localStorage || null;
+  } catch {
+    return null;
+  }
+}
+
+function readLocationCache() {
+  const storage = locationStorage();
+  if (!storage) return {};
+  try {
+    const parsed = JSON.parse(storage.getItem(config.googleMaps.locationCacheKey) || '{}');
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const current = now();
+    const valid = {};
+    let changed = false;
+    Object.entries(parsed).forEach(([placeId, location]) => {
+      if (
+        placeId
+        && validLocation(location)
+        && Number(location?.expiresAt) > current
+      ) {
+        valid[placeId] = {
+          lat: Number(location.lat),
+          lon: Number(location.lon),
+          expiresAt: Number(location.expiresAt),
+        };
+      } else {
+        changed = true;
+      }
+    });
+    if (changed) storage.setItem(config.googleMaps.locationCacheKey, JSON.stringify(valid));
+    return valid;
+  } catch {
+    return {};
+  }
+}
+
+function writeLocationCache(cache) {
+  const storage = locationStorage();
+  if (!storage) return;
+  try {
+    storage.setItem(config.googleMaps.locationCacheKey, JSON.stringify(cache));
+  } catch {
+    // Si el dispositivo no admite almacenamiento, el backend sigue funcionando.
+  }
+}
+
+function rememberGoogleLocation(placeId, value) {
+  const id = String(placeId || '').trim();
+  if (!id || !validLocation(value)) return;
+  const cache = readLocationCache();
+  cache[id] = {
+    lat: Number(value.lat),
+    lon: Number(value.lon),
+    expiresAt: now() + config.googleMaps.locationCacheTtlMs,
+  };
+  writeLocationCache(cache);
+}
+
+function rememberPlaceLocation(place) {
+  const placeId = String(place?.googlePlaceId || place?.id || '').trim();
+  if (placeId && isPlaced(place)) {
+    rememberGoogleLocation(placeId, { lat: place.lat, lon: place.lon });
+  }
+}
+
 async function requestPlaceDetails(
   placeId,
   { name = '', sessionToken = '', includeDisplayName = false, signal } = {}
@@ -75,6 +152,7 @@ async function requestPlaceDetails(
     return resolved;
   });
   throwIfAborted(signal);
+  rememberPlaceLocation(place);
   if (!sessionToken) setCached(key, place);
   return place;
 }
@@ -138,6 +216,7 @@ export async function searchGooglePlaces(query, { signal } = {}) {
       .slice(0, config.googleMaps.searchLimit);
   });
   throwIfAborted(signal);
+  results.forEach(rememberPlaceLocation);
   setCached(key, results);
   return results;
 }
@@ -150,10 +229,21 @@ export async function loadGooglePlaceLocations(placeIds, { signal } = {}) {
   )];
   if (!ids.length) return [];
 
+  const persistent = readLocationCache();
   const locations = [];
-  for (let index = 0; index < ids.length; index += 20) {
+  const missingIds = [];
+  ids.forEach((placeId) => {
+    const cached = persistent[placeId];
+    if (cached && validLocation(cached)) {
+      locations.push({ placeId, lat: cached.lat, lon: cached.lon, localCacheHit: true });
+    } else {
+      missingIds.push(placeId);
+    }
+  });
+
+  for (let index = 0; index < missingIds.length; index += 20) {
     throwIfAborted(signal);
-    const batch = ids.slice(index, index + 20);
+    const batch = missingIds.slice(index, index + 20);
     const key = cacheKey('locations', [...batch].sort().join('|'));
     let resolved = getCached(key);
     if (!resolved) {
@@ -165,7 +255,12 @@ export async function loadGooglePlaceLocations(placeIds, { signal } = {}) {
       setCached(key, resolved);
     }
     throwIfAborted(signal);
-    locations.push(...resolved);
+    resolved.forEach((location) => {
+      if (location?.placeId && validLocation(location)) {
+        rememberGoogleLocation(location.placeId, location);
+        locations.push(location);
+      }
+    });
   }
   return locations;
 }
