@@ -16,12 +16,15 @@ function translated(t, key, variables) {
   return typeof t === 'function' ? t(key, variables) : key;
 }
 
+function placeName(place, t) {
+  return place?.name || place?.userLabel || translated(t, 'place');
+}
+
 export function savedPlacePopup(place, t) {
   const wrap = document.createElement('div');
   wrap.className = 'place-popup';
   const code = normalizedCountryCode(place.countryCode);
   const country = place.country || place.countryCode || '';
-  const placeLabel = translated(t, 'place');
   const flagLabel = translated(t, 'flagOf', { country });
   const flag = code
     ? `<img class="place-popup__flag" src="https://flagcdn.com/24x18/${code}.png" width="24" height="18" alt="${escaped(
@@ -29,7 +32,7 @@ export function savedPlacePopup(place, t) {
       )}" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
     : '';
   wrap.innerHTML = `<div class="place-popup__heading">${flag}<strong>${escaped(
-    place.name || placeLabel
+    placeName(place, t)
   )}</strong></div><span>${escaped(place.city || '')}${
     place.city && country ? ', ' : ''
   }${escaped(country)}</span>`;
@@ -69,19 +72,19 @@ export function resultMarkerScale(zoom) {
 }
 
 export function markerElement(place, t) {
-  const placeLabel = translated(t, 'place');
+  const label = placeName(place, t);
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'place-result-marker';
   button.setAttribute(
     'aria-label',
-    `${place.name || placeLabel}, ${place.city || ''}, ${place.country || ''}`
+    `${label}, ${place.city || ''}, ${place.country || ''}`
   );
 
   const copy = document.createElement('span');
   copy.className = 'place-result-marker__copy';
   const name = document.createElement('strong');
-  name.textContent = place.name || placeLabel;
+  name.textContent = label;
   const location = document.createElement('small');
   location.textContent = [place.city, place.country || place.countryCode].filter(Boolean).join(', ');
   copy.append(name, location);
