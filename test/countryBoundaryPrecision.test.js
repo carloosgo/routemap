@@ -25,11 +25,13 @@ test('el flujo activo de mapas usa Google y ya no monta MapLibre u Overture', as
   assert.doesNotMatch(googleMap, /maplibregl|pmtiles|Overture|createGeoapifyStyleUrl/);
 });
 
-test('Itinerario pinta países visitados con la feature layer COUNTRY de Google', async () => {
+test('Itinerario pinta países visitados con COUNTRY y resuelve IDs por ISO mediante Region Lookup', async () => {
   const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
   const client = await read('src/modules/map/googleCountryBoundariesClient.js');
   const backend = await read('functions/googleCountryPlaceIdsFunction.js');
+  const runtime = await read('functions/geoapifyRuntime.js');
   const functionsIndex = await read('functions/index.js');
+  const config = await read('src/config.js');
 
   assert.match(googleMap, /visitedCountries\(segments, colorForIndex\)/);
   assert.match(googleMap, /map\.getFeatureLayer\?\.\('COUNTRY'\)/);
@@ -41,15 +43,25 @@ test('Itinerario pinta países visitados con la feature layer COUNTRY de Google'
   assert.match(googleMap, /fillColor: color/);
   assert.match(googleMap, /fillOpacity: 0\.22/);
   assert.match(googleMap, /countryLayer\.style = null/);
+
   assert.match(client, /firebaseCallable\('googleCountryPlaceIds'\)/);
+  assert.match(client, /MAX_COUNTRIES_PER_REQUEST = 10/);
   assert.match(client, /countryPlaceIdCacheKey/);
   assert.match(client, /countryPlaceIdCacheTtlMs/);
-  assert.match(backend, /X-Goog-FieldMask': COUNTRY_ID_FIELDS/);
-  assert.match(backend, /const COUNTRY_ID_FIELDS = 'places\.id'/);
-  assert.match(backend, /googleCountryPlaceIdCache/);
+  assert.doesNotMatch(client, /language: config\.defaultLocale/);
+
+  assert.match(runtime, /GOOGLE_REGION_LOOKUP_API_KEY/);
+  assert.match(backend, /regionlookup\.googleapis\.com\/v1alpha:lookupRegion/);
+  assert.match(backend, /secrets: \[GOOGLE_REGION_LOOKUP_API_KEY\]/);
+  assert.match(backend, /unit_code: countryCode/);
+  assert.match(backend, /place_type: 'country'/);
+  assert.match(backend, /googleCountryRegionPlaceIdCache/);
+  assert.match(backend, /COUNTRY_CACHE_KEY_VERSION = 'v2'/);
   assert.match(backend, /330 \* 24 \* 60 \* 60 \* 1000/);
+  assert.doesNotMatch(backend, /places:searchText|GOOGLE_PLACES_API_KEY|X-Goog-FieldMask/);
+
+  assert.match(config, /atlas:google-country-region-place-ids:v2/);
   assert.match(functionsIndex, /googleCountryPlaceIds/);
-  assert.doesNotMatch(backend, /places\.displayName|places\.formattedAddress|places\.location/);
 });
 
 test('la lógica de colores de país conserva orden, distinción y relleno vivo', () => {
