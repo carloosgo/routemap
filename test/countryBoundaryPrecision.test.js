@@ -25,7 +25,7 @@ test('el flujo activo de mapas usa Google y ya no monta MapLibre u Overture', as
   assert.doesNotMatch(googleMap, /maplibregl|pmtiles|Overture|createGeoapifyStyleUrl/);
 });
 
-test('Itinerario pinta países visitados con COUNTRY y resuelve IDs por ISO mediante Region Lookup', async () => {
+test('Itinerario pinta países visitados con COUNTRY y resuelve IDs mediante Places Text Search', async () => {
   const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
   const client = await read('src/modules/map/googleCountryBoundariesClient.js');
   const backend = await read('functions/googleCountryPlaceIdsFunction.js');
@@ -48,19 +48,24 @@ test('Itinerario pinta países visitados con COUNTRY y resuelve IDs por ISO medi
   assert.match(client, /MAX_COUNTRIES_PER_REQUEST = 10/);
   assert.match(client, /countryPlaceIdCacheKey/);
   assert.match(client, /countryPlaceIdCacheTtlMs/);
-  assert.doesNotMatch(client, /language: config\.defaultLocale/);
+  assert.match(client, /language: config\.defaultLocale/);
+  assert.match(client, /country: countryName/);
 
-  assert.match(runtime, /GOOGLE_REGION_LOOKUP_API_KEY/);
-  assert.match(backend, /regionlookup\.googleapis\.com\/v1alpha:lookupRegion/);
-  assert.match(backend, /secrets: \[GOOGLE_REGION_LOOKUP_API_KEY\]/);
-  assert.match(backend, /unit_code: countryCode/);
-  assert.match(backend, /place_type: 'country'/);
-  assert.match(backend, /googleCountryRegionPlaceIdCache/);
-  assert.match(backend, /COUNTRY_CACHE_KEY_VERSION = 'v2'/);
+  assert.match(runtime, /GOOGLE_PLACES_API_KEY/);
+  assert.doesNotMatch(runtime, /GOOGLE_REGION_LOOKUP_API_KEY/);
+  assert.match(backend, /places\.googleapis\.com\/v1/);
+  assert.match(backend, /places:searchText/);
+  assert.match(backend, /secrets: \[GOOGLE_PLACES_API_KEY\]/);
+  assert.match(backend, /const COUNTRY_ID_FIELDS = 'places\.id'/);
+  assert.match(backend, /includedType: 'country'/);
+  assert.match(backend, /strictTypeFiltering: true/);
+  assert.match(backend, /pageSize: 1/);
+  assert.match(backend, /googleCountryPlaceIdCacheV3/);
+  assert.match(backend, /google-country-v3:/);
   assert.match(backend, /330 \* 24 \* 60 \* 60 \* 1000/);
-  assert.doesNotMatch(backend, /places:searchText|GOOGLE_PLACES_API_KEY|X-Goog-FieldMask/);
+  assert.doesNotMatch(backend, /regionlookup\.googleapis\.com|GOOGLE_REGION_LOOKUP_API_KEY/);
 
-  assert.match(config, /atlas:google-country-region-place-ids:v2/);
+  assert.match(config, /atlas:google-country-place-ids:v3/);
   assert.match(functionsIndex, /googleCountryPlaceIds/);
 });
 
