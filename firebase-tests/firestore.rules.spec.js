@@ -70,6 +70,8 @@ function placeData(id = 'place-1', position = 0) {
   return {
     id,
     position,
+    provider: 'geoapify',
+    googlePlaceId: '',
     name: 'Museo de prueba',
     address: '',
     city: 'Ciudad de México',
@@ -78,6 +80,24 @@ function placeData(id = 'place-1', position = 0) {
     countryCode: 'MX',
     lat: 19.4326,
     lon: -99.1332,
+    savedAt: UPDATED_AT,
+  };
+}
+
+function googlePlaceReferenceData(id = 'google-place-1', position = 0) {
+  return {
+    id,
+    position,
+    provider: 'google',
+    googlePlaceId: 'ChIJ-google-place-reference',
+    name: '',
+    address: '',
+    city: '',
+    country: '',
+    category: '',
+    countryCode: '',
+    lat: null,
+    lon: null,
     savedAt: UPDATED_AT,
   };
 }
@@ -187,7 +207,30 @@ test('los lugares se guardan como documentos independientes de la revisión', as
   await assertSucceeds(getDoc(placeRef));
 });
 
-test('las conexiones entre lugares aceptan solo modos y geometrías de Geoapify soportados', async () => {
+test('Google Places solo permite persistir la referencia estable y rechaza contenido derivado', async () => {
+  const alice = testEnv.authenticatedContext('alice').firestore();
+  const tripId = 'trip-google-place-ref';
+  const revisionId = 'revision013';
+  const revisionRef = doc(alice, `users/alice/trips/${tripId}/revisions/${revisionId}`);
+  await assertSucceeds(setDoc(revisionRef, revisionData(revisionId, { placeCount: 1 })));
+
+  const placeRef = doc(
+    alice,
+    `users/alice/trips/${tripId}/revisions/${revisionId}/places/000000`
+  );
+  await assertSucceeds(setDoc(placeRef, googlePlaceReferenceData()));
+  await assertFails(setDoc(
+    doc(alice, `users/alice/trips/${tripId}/revisions/${revisionId}/places/000001`),
+    {
+      ...googlePlaceReferenceData('google-place-2', 1),
+      name: 'Nombre copiado de Google',
+      lat: 48.137,
+      lon: 11.575,
+    }
+  ));
+});
+
+test('las conexiones entre lugares aceptan los modos de Google Routes soportados', async () => {
   const alice = testEnv.authenticatedContext('alice').firestore();
   const tripId = 'trip-with-route';
   const revisionId = 'revision012';
@@ -199,7 +242,7 @@ test('las conexiones entre lugares aceptan solo modos y geometrías de Geoapify 
   );
 
   await assertSucceeds(setDoc(revisionRef, revision));
-  await assertSucceeds(setDoc(routeRef, routeConnectionData()));
+  await assertSucceeds(setDoc(routeRef, routeConnectionData('route-1', 0, { mode: 'train' })));
   await assertFails(setDoc(
     doc(alice, `users/alice/trips/${tripId}/revisions/${revisionId}/routeConnections/000001`),
     routeConnectionData('route-2', 1, { mode: 'plane' })
