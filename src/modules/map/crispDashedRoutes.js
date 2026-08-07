@@ -72,9 +72,6 @@ export function createCrispDashedRoutes({
   maps,
   map,
   routes = [],
-  dashPx = DEFAULT_DASH_PX,
-  gapPx = DEFAULT_GAP_PX,
-  strokeWeight = DEFAULT_STROKE_WEIGHT,
 }) {
   if (!maps?.OverlayView || !maps?.Polyline || !map) {
     return { dispose() {} };
@@ -108,7 +105,7 @@ export function createCrispDashedRoutes({
         .filter(finitePoint)
         .map((point) => ({ x: point.x, y: point.y }));
 
-      pixelDashSegments(pixels, dashPx, gapPx).forEach((pixelSegment) => {
+      pixelDashSegments(pixels, DEFAULT_DASH_PX, DEFAULT_GAP_PX).forEach((pixelSegment) => {
         const dashPath = pixelSegment
           .map((point) => projection.fromDivPixelToLatLng(new maps.Point(point.x, point.y)))
           .filter(Boolean);
@@ -119,7 +116,7 @@ export function createCrispDashedRoutes({
           path: dashPath,
           strokeColor: color,
           strokeOpacity: 1,
-          strokeWeight,
+          strokeWeight: DEFAULT_STROKE_WEIGHT,
           clickable: false,
           geodesic: false,
           zIndex: 2,
