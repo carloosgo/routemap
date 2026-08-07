@@ -28,6 +28,7 @@ test('las colecciones internas de caché no son accesibles desde el cliente', as
   const paths = [
     'citySearchCache/cache-1',
     'googlePlaceLocationCache/cache-1',
+    'googleCountryPlaceIdCache/cache-1',
   ];
 
   for (const path of paths) {
