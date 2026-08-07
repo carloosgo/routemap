@@ -66,7 +66,9 @@ test('legacy places keep country/city while Google persistence keeps only stable
   assert.match(entities, /lat: null/);
   assert.match(entities, /lon: null/);
   assert.match(entities, /userLabel: sanitizeText/);
-  assert.match(panel, /place\.name \|\| place\.userLabel/);
+  assert.match(panel, /function placeLabel\(place, t\)/);
+  assert.match(panel, /place\?\.name \|\| place\?\.userLabel \|\| t\('place'\)/);
+  assert.match(panel, /const label = placeLabel\(place, t\)/);
   assert.doesNotMatch(panel, /place\.category/);
   assert.doesNotMatch(dom, /place\.category/);
 });
