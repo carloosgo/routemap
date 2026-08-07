@@ -25,7 +25,6 @@ const DETAILS_FIELDS = [
   'formattedAddress',
   'location',
   'addressComponents',
-  'primaryType',
 ].join(',');
 const TEXT_SEARCH_FIELDS = [
   'places.id',
