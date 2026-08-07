@@ -1,29 +1,76 @@
 /* Solo cambia el posicionamiento exterior del módulo Tramos / Notas. */
-.workspace__desktop--floating {
+.workspace__desktop--docked {
   position: relative;
+  display: flex;
   height: 100%;
   overflow: hidden;
 }
 
-.workspace__desktop--floating > .mappane {
-  position: absolute;
-  inset: 0;
+.workspace__desktop--docked > .mappane {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+}
+
+.docked-editor-shell {
+  position: relative;
+  z-index: 700;
+  width: 420px;
+  flex: 0 0 420px;
+  height: 100%;
+  transition: width 0.18s ease, flex-basis 0.18s ease;
 }
 
 .floating-editor {
   position: absolute;
-  top: 14px;
-  bottom: 14px;
-  left: 14px;
+  inset: 0 auto 0 0;
   z-index: 700;
   width: 420px;
-  max-width: calc(100% - 28px);
+  max-width: none;
+  height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: var(--bg);
-  border-radius: var(--radius);
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+  border-right: 1px solid var(--line);
+  transition: transform 0.18s ease;
+}
+
+.workspace__desktop--docked.is-panel-collapsed .docked-editor-shell {
+  width: 0;
+  flex-basis: 0;
+}
+
+.workspace__desktop--docked.is-panel-collapsed .floating-editor {
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+
+.docked-editor__toggle {
+  position: absolute;
+  top: 50%;
+  right: -28px;
+  z-index: 702;
+  width: 28px;
+  height: 56px;
+  padding: 0;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e5ea;
+  border-left: 0;
+  border-radius: 0 9px 9px 0;
+  background: #ffffff;
+  color: #6f7785;
+  box-shadow: 3px 1px 8px rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+}
+
+.docked-editor__toggle:hover {
+  background: #f4f5f7;
+  color: #357d94;
 }
 
 .editor-module {
@@ -321,15 +368,14 @@
   min-height: 0;
 }
 
-.workspace__desktop--floating .segnote {
-  position: absolute;
-  top: 14px;
-  left: 448px;
-}
-
 /* Densidad compacta nativa: reproduce la sensación del navegador al 90%
    sin escalar la app ni reducir el área del mapa. Solo afecta al módulo. */
 @media (min-width: 721px) {
+  .docked-editor-shell {
+    width: 390px;
+    flex-basis: 390px;
+  }
+
   .floating-editor {
     width: 390px;
   }
@@ -427,10 +473,6 @@
 
   .floating-editor .total__value {
     font-size: 27px;
-  }
-
-  .workspace__desktop--floating .segnote {
-    left: 418px;
   }
 }
 
