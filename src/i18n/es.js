@@ -43,6 +43,7 @@ export default {
   connectAllRoutes: 'Conectar todos',
   connectingAllRoutes: 'Conectando {current}/{total}…',
   calculatingRoute: 'Calculando…',
+  recalculateRoute: 'Actualizar ruta',
   routeCalculationError: 'No fue posible calcular esta ruta.',
   routeConnectAllPartialError: 'Algunos tramos no pudieron calcularse; los demás se conservaron.',
   showRoute: 'Mostrar ruta',
