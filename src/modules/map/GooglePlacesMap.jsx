@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { config, colorForIndex } from '../../config.js';
+import { config, colorForIndex, countryColorForIndex } from '../../config.js';
 import { useTranslation } from '../../i18n/index.jsx';
 import { loadGooglePlaceLocations } from '../places/googlePlacesClient.js';
 import { isGooglePlaceReference, isPlaced } from '../trips/tripModel.js';
 import { PlaceSearchForm } from './PlaceSearchForm.jsx';
-import { vividCountryColor, visitedCountries } from './countryColoring.js';
+import { visitedCountries } from './countryColoring.js';
 import { loadGoogleCountryPlaceIds } from './googleCountryBoundariesClient.js';
 import { loadGoogleMaps } from './googleMapsLoader.js';
 import { markerElement, savePrompt, savedPlacePopup } from './placeMapDom.js';
@@ -143,7 +143,7 @@ export function GooglePlacesMap({
   }, [locatedPlaces]);
 
   const itineraryCountries = useMemo(
-    () => visitedCountries(segments, colorForIndex)
+    () => visitedCountries(segments, countryColorForIndex)
       .map(({ countryCode, city, color }) => ({
         countryCode,
         country: String(city?.country || '').trim(),
@@ -331,7 +331,7 @@ export function GooglePlacesMap({
         .then((resolvedCountries) => {
           if (disposed || currentController.signal.aborted) return;
           const colorsByCode = new Map(
-            itineraryCountries.map((country) => [country.countryCode, vividCountryColor(country.color)])
+            itineraryCountries.map((country) => [country.countryCode, country.color])
           );
           const colorsByPlaceId = new Map();
           resolvedCountries.forEach((country) => {
@@ -343,10 +343,9 @@ export function GooglePlacesMap({
             if (!color) return null;
             return {
               fillColor: color,
-              fillOpacity: 0.22,
-              strokeColor: color,
-              strokeOpacity: 0.72,
-              strokeWeight: 1.2,
+              fillOpacity: 0.16,
+              strokeOpacity: 0,
+              strokeWeight: 0,
             };
           };
         })
