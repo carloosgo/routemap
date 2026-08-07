@@ -300,53 +300,70 @@ export function GooglePlacesMap({
     const countryLayer = map.getFeatureLayer?.('COUNTRY');
     if (!countryLayer) return undefined;
 
-    if (placesActive || !itineraryCountries.length) {
-      countryLayer.style = null;
-      return undefined;
-    }
+    let disposed = false;
+    let controller = null;
 
-    if (!countryLayer.isAvailable) {
-      countryLayer.style = null;
-      if (!countryLayerWarningRef.current) {
-        countryLayerWarningRef.current = true;
-        console.warn('[Google Maps] COUNTRY feature layer is not enabled for this Map ID style.');
+    const applyCountryStyle = () => {
+      if (disposed) return;
+      controller?.abort();
+      controller = null;
+
+      if (placesActive || !itineraryCountries.length) {
+        countryLayer.style = null;
+        return;
       }
-      return undefined;
-    }
 
-    countryLayerWarningRef.current = false;
-    const controller = new AbortController();
-    loadGoogleCountryPlaceIds(itineraryCountries, { signal: controller.signal })
-      .then((resolvedCountries) => {
-        if (controller.signal.aborted) return;
-        const colorsByCode = new Map(
-          itineraryCountries.map((country) => [country.countryCode, vividCountryColor(country.color)])
-        );
-        const colorsByPlaceId = new Map();
-        resolvedCountries.forEach((country) => {
-          const color = colorsByCode.get(country.countryCode);
-          if (country?.placeId && color) colorsByPlaceId.set(country.placeId, color);
-        });
-        countryLayer.style = ({ feature }) => {
-          const color = colorsByPlaceId.get(feature?.placeId);
-          if (!color) return null;
-          return {
-            fillColor: color,
-            fillOpacity: 0.22,
-            strokeColor: color,
-            strokeOpacity: 0.72,
-            strokeWeight: 1.2,
-          };
-        };
-      })
-      .catch((error) => {
-        if (error?.name !== 'AbortError') {
-          console.warn('[Google Maps] country boundary styling failed', error);
+      const capabilities = map.getMapCapabilities?.();
+      const dataDrivenAvailable = capabilities?.isDataDrivenStylingAvailable !== false;
+      if (!dataDrivenAvailable || !countryLayer.isAvailable) {
+        countryLayer.style = null;
+        if (!countryLayerWarningRef.current) {
+          countryLayerWarningRef.current = true;
+          console.warn('[Google Maps] COUNTRY feature layer is not enabled for this Map ID style.');
         }
-      });
+        return;
+      }
+
+      countryLayerWarningRef.current = false;
+      controller = new AbortController();
+      const currentController = controller;
+      loadGoogleCountryPlaceIds(itineraryCountries, { signal: currentController.signal })
+        .then((resolvedCountries) => {
+          if (disposed || currentController.signal.aborted) return;
+          const colorsByCode = new Map(
+            itineraryCountries.map((country) => [country.countryCode, vividCountryColor(country.color)])
+          );
+          const colorsByPlaceId = new Map();
+          resolvedCountries.forEach((country) => {
+            const color = colorsByCode.get(country.countryCode);
+            if (country?.placeId && color) colorsByPlaceId.set(country.placeId, color);
+          });
+          countryLayer.style = ({ feature }) => {
+            const color = colorsByPlaceId.get(feature?.placeId);
+            if (!color) return null;
+            return {
+              fillColor: color,
+              fillOpacity: 0.22,
+              strokeColor: color,
+              strokeOpacity: 0.72,
+              strokeWeight: 1.2,
+            };
+          };
+        })
+        .catch((error) => {
+          if (error?.name !== 'AbortError') {
+            console.warn('[Google Maps] country boundary styling failed', error);
+          }
+        });
+    };
+
+    applyCountryStyle();
+    const capabilityListener = map.addListener?.('mapcapabilities_changed', applyCountryStyle);
 
     return () => {
-      controller.abort();
+      disposed = true;
+      controller?.abort();
+      capabilityListener?.remove?.();
       countryLayer.style = null;
     };
   }, [itineraryCountries, placesActive, ready]);
