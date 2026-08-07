@@ -21,6 +21,10 @@ function cleanCountryCode(value) {
   return /^[A-Z]{2}$/.test(code) ? code : '';
 }
 
+function cleanCountryName(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 100);
+}
+
 function cleanPlaceId(value) {
   return String(value || '').trim().slice(0, 256);
 }
@@ -75,21 +79,17 @@ function rememberCountry(cache, country) {
   cache[countryCode] = { placeId, expiresAt };
 }
 
-async function loadRemoteBatch(countryCodes, signal) {
-  const key = countryCodes.slice().sort().join('|');
+async function loadRemoteBatch(countries, signal) {
+  const key = countries.map((country) => country.countryCode).sort().join('|');
   let pending = pendingRequests.get(key);
   if (!pending) {
     pending = (async () => {
       const request = firebaseCallable('googleCountryPlaceIds');
       const response = await request({
-        countries: countryCodes.map((countryCode) => ({ countryCode })),
+        countries,
+        language: config.defaultLocale,
       });
-      return {
-        countries: Array.isArray(response.data?.countries) ? response.data.countries : [],
-        unresolvedCountryCodes: Array.isArray(response.data?.unresolvedCountryCodes)
-          ? response.data.unresolvedCountryCodes
-          : [],
-      };
+      return Array.isArray(response.data?.countries) ? response.data.countries : [];
     })();
     pendingRequests.set(key, pending);
   }
@@ -104,22 +104,25 @@ async function loadRemoteBatch(countryCodes, signal) {
 }
 
 export async function loadGoogleCountryPlaceIds(countries, { signal } = {}) {
-  const unique = new Set();
+  const unique = new Map();
   (Array.isArray(countries) ? countries : []).forEach((country) => {
     const countryCode = cleanCountryCode(country?.countryCode);
-    if (countryCode) unique.add(countryCode);
+    const countryName = cleanCountryName(country?.country);
+    if (countryCode && countryName && !unique.has(countryCode)) {
+      unique.set(countryCode, { countryCode, country: countryName });
+    }
   });
   if (!unique.size) return [];
 
   const cache = readCache();
   const resolved = [];
   const missing = [];
-  unique.forEach((countryCode) => {
+  unique.forEach((country, countryCode) => {
     const cached = cache[countryCode];
     if (cached?.placeId) {
       resolved.push({ countryCode, placeId: cached.placeId, localCacheHit: true });
     } else {
-      missing.push(countryCode);
+      missing.push(country);
     }
   });
 
@@ -127,19 +130,13 @@ export async function loadGoogleCountryPlaceIds(countries, { signal } = {}) {
     throwIfAborted(signal);
     const batch = missing.slice(index, index + MAX_COUNTRIES_PER_REQUEST);
     const remote = await loadRemoteBatch(batch, signal);
-    remote.countries.forEach((country) => {
+    remote.forEach((country) => {
       const countryCode = cleanCountryCode(country?.countryCode);
       const placeId = cleanPlaceId(country?.placeId);
       if (!countryCode || !placeId) return;
       rememberCountry(cache, country);
       resolved.push({ ...country, countryCode, placeId });
     });
-    if (remote.unresolvedCountryCodes.length) {
-      console.warn(
-        '[Google Maps] Region Lookup could not resolve country codes:',
-        remote.unresolvedCountryCodes.join(', ')
-      );
-    }
   }
 
   writeCache(cache);
