@@ -45,7 +45,7 @@ async function fetchGoogleLocation(placeId) {
   if (!validCoordinate(lat, -90, 90) || !validCoordinate(lon, -180, 180)) {
     throw new Error('Google Places no devolvió una ubicación válida.');
   }
-  return { placeId, lat, lon };
+  return { placeId, lat, lon, fetchedAt: Date.now() };
 }
 
 export const googlePlaceLocations = onCall(
