@@ -23,6 +23,8 @@ export default [
         URLSearchParams: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
+        requestAnimationFrame: 'readonly',
+        cancelAnimationFrame: 'readonly',
         console: 'readonly',
         crypto: 'readonly',
         navigator: 'readonly',
