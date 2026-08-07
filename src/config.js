@@ -48,7 +48,7 @@ export const config = {
     memoryCacheTtlMs: 5 * 60 * 1000,
     locationCacheKey: 'atlas:google-place-locations:v1',
     locationCacheTtlMs: 29 * 24 * 60 * 60 * 1000,
-    countryPlaceIdCacheKey: 'atlas:google-country-region-place-ids:v2',
+    countryPlaceIdCacheKey: 'atlas:google-country-place-ids:v3',
     countryPlaceIdCacheTtlMs: 330 * 24 * 60 * 60 * 1000,
   },
   defaultLocale: allowedValue(env.VITE_DEFAULT_LOCALE, ['es', 'en'], 'es'),
