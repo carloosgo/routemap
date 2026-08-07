@@ -29,9 +29,13 @@ function segmentForStorage(segment) {
 }
 
 function routeConnectionForStorage(route) {
+  const isGoogleRoute = route?.provider === 'google';
   const stored = {
     ...route,
-    geometryJson: JSON.stringify(route.geometry),
+    distance: isGoogleRoute ? 0 : route.distance,
+    duration: isGoogleRoute ? 0 : route.duration,
+    geometryJson: isGoogleRoute ? 'null' : JSON.stringify(route.geometry),
+    calculatedAt: isGoogleRoute ? '' : route.calculatedAt,
   };
   delete stored.geometry;
   delete stored.transitSteps;
