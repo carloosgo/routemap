@@ -20,10 +20,9 @@ export { geoapifyCountryBoundary } from './countryBoundaryFunction.js';
 
 export {
   googlePlaceAutocomplete,
-  googlePlaceDetails,
   googlePlaceSearch,
-  googleRoute,
 } from './googleMapsFunctions.js';
 
+export { googlePlaceDetailsEssentials } from './googlePlaceDetailsEssentialsFunction.js';
 export { googlePlaceLocations } from './googlePlaceLocationFunction.js';
 export { googleRouteOptimized } from './googleOptimizedRouteFunction.js';
