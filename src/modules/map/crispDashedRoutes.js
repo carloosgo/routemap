@@ -1,6 +1,6 @@
-const DEFAULT_DASH_PX = 6;
-const DEFAULT_GAP_PX = 4;
-const DEFAULT_STROKE_WEIGHT = 3;
+const DEFAULT_DASH_PX = 4;
+const DEFAULT_GAP_PX = 3;
+const DEFAULT_STROKE_WEIGHT = 2;
 
 function finitePoint(point) {
   return Boolean(point && Number.isFinite(point.x) && Number.isFinite(point.y));
