@@ -34,6 +34,8 @@ function routeConnectionForStorage(route) {
     geometryJson: JSON.stringify(route.geometry),
   };
   delete stored.geometry;
+  delete stored.transitSteps;
+  delete stored.provider;
   return stored;
 }
 
