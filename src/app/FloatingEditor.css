@@ -477,6 +477,10 @@
 }
 
 @media (max-width: 720px) {
+  .workspace__desktop--docked {
+    display: none;
+  }
+
   .editor-module {
     width: 100%;
   }
