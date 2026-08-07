@@ -1,5 +1,5 @@
 const DEFAULT_DASH_PX = 4;
-const DEFAULT_GAP_PX = 3;
+const DEFAULT_GAP_PX = 6;
 const DEFAULT_STROKE_WEIGHT = 2;
 
 function finitePoint(point) {
@@ -72,6 +72,9 @@ export function createCrispDashedRoutes({
   maps,
   map,
   routes = [],
+  dashPx = DEFAULT_DASH_PX,
+  gapPx = DEFAULT_GAP_PX,
+  strokeWeight = DEFAULT_STROKE_WEIGHT,
 }) {
   if (!maps?.OverlayView || !maps?.Polyline || !map) {
     return { dispose() {} };
@@ -83,6 +86,7 @@ export function createCrispDashedRoutes({
   let frame = 0;
   let lastRenderedZoom = null;
   let hasRendered = false;
+  let viewportSettled = false;
 
   const clear = () => {
     polylines.forEach((line) => line.setMap(null));
@@ -91,7 +95,7 @@ export function createCrispDashedRoutes({
 
   const redraw = () => {
     frame = 0;
-    if (disposed) return;
+    if (disposed || !viewportSettled) return;
     const projection = overlay.getProjection?.();
     if (!projection) return;
 
@@ -104,7 +108,7 @@ export function createCrispDashedRoutes({
         .filter(finitePoint)
         .map((point) => ({ x: point.x, y: point.y }));
 
-      pixelDashSegments(pixels, DEFAULT_DASH_PX, DEFAULT_GAP_PX).forEach((pixelSegment) => {
+      pixelDashSegments(pixels, dashPx, gapPx).forEach((pixelSegment) => {
         const dashPath = pixelSegment
           .map((point) => projection.fromDivPixelToLatLng(new maps.Point(point.x, point.y)))
           .filter(Boolean);
@@ -115,7 +119,7 @@ export function createCrispDashedRoutes({
           path: dashPath,
           strokeColor: color,
           strokeOpacity: 1,
-          strokeWeight: DEFAULT_STROKE_WEIGHT,
+          strokeWeight,
           clickable: false,
           geodesic: false,
           zIndex: 2,
@@ -128,23 +132,29 @@ export function createCrispDashedRoutes({
   };
 
   const scheduleRedraw = () => {
-    if (disposed || frame) return;
-    frame = requestAnimationFrame(redraw);
+    if (disposed || !viewportSettled || frame) return;
+    frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(redraw);
+    });
   };
 
   overlay.onAdd = () => {};
   overlay.onRemove = clear;
   overlay.draw = () => {
+    if (!viewportSettled || !hasRendered) return;
     const zoom = map.getZoom?.();
-    if (!hasRendered || zoom !== lastRenderedZoom) scheduleRedraw();
+    if (zoom !== lastRenderedZoom) scheduleRedraw();
   };
   overlay.setMap(map);
 
   const zoomListener = map.addListener?.('zoom_changed', () => {
+    viewportSettled = false;
     hasRendered = false;
   });
-  const idleListener = map.addListener?.('idle', scheduleRedraw);
-  scheduleRedraw();
+  const idleListener = map.addListener?.('idle', () => {
+    viewportSettled = true;
+    scheduleRedraw();
+  });
 
   return {
     dispose() {
