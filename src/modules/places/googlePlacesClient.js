@@ -130,28 +130,20 @@ function rememberPlaceLocation(place) {
   }
 }
 
-async function requestPlaceDetails(
-  placeId,
-  { name = '', sessionToken = '', includeDisplayName = false, signal } = {}
-) {
+async function requestPlaceDetails(placeId, { name = '', sessionToken = '', signal } = {}) {
   const cleanPlaceId = String(placeId || '').trim();
-  if (!cleanPlaceId) throw new TypeError('Falta el identificador de Google Places.');
-  const key = sessionToken
-    ? `details-session:${sessionToken}:${cleanPlaceId}`
-    : cacheKey(includeDisplayName ? 'refresh' : 'details', cleanPlaceId);
-  if (!sessionToken) {
-    const cached = getCached(key);
-    if (cached) return cached;
+  if (!cleanPlaceId || !sessionToken) {
+    throw new TypeError('Falta el lugar o la sesión de Google Places.');
   }
+  const key = `details-session:${sessionToken}:${cleanPlaceId}`;
 
   throwIfAborted(signal);
   const place = await sharedRequest(key, async () => {
-    const request = firebaseCallable('googlePlaceDetails');
+    const request = firebaseCallable('googlePlaceDetailsEssentials');
     const response = await request({
       placeId: cleanPlaceId,
       name: String(name || '').trim(),
-      ...(sessionToken ? { sessionToken } : {}),
-      ...(includeDisplayName ? { includeDisplayName: true } : {}),
+      sessionToken,
       language: config.defaultLocale,
     });
     const resolved = response.data?.place || null;
@@ -160,7 +152,6 @@ async function requestPlaceDetails(
   });
   throwIfAborted(signal);
   rememberPlaceLocation(place);
-  if (!sessionToken) setCached(key, place);
   return place;
 }
 
@@ -201,10 +192,6 @@ export async function resolveGooglePlace(prediction, sessionToken, { signal } = 
     sessionToken,
     signal,
   });
-}
-
-export async function refreshGooglePlace(placeId, { signal } = {}) {
-  return requestPlaceDetails(placeId, { includeDisplayName: true, signal });
 }
 
 export async function searchGooglePlaces(query, { signal } = {}) {
