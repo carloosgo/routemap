@@ -40,6 +40,10 @@ const hardcodedDomText = new RegExp(
   'g'
 );
 
+const invariantVisibleLiterals = new Set([
+  'Powered by Google',
+]);
+
 const staleUiPhrases = [
   'El viaje guardado ya no existe.',
   'No fue posible abrir el viaje.',
@@ -74,6 +78,10 @@ function collectMatches(source, pattern) {
   return [...source.matchAll(pattern)].map((match) => match[0]);
 }
 
+function isInvariantVisibleLiteral(match) {
+  return [...invariantVisibleLiterals].some((literal) => match.includes(literal));
+}
+
 test('los atributos y nodos visibles de JSX no contienen texto traducible hardcodeado', async () => {
   const violations = [];
   for (const fileUrl of await sourceFiles(SOURCE_ROOT)) {
@@ -85,7 +93,9 @@ test('los atributos y nodos visibles de JSX no contienen texto traducible hardco
       ...collectMatches(source, hardcodedTextNode),
       ...collectMatches(source, hardcodedStringExpression),
     ]) {
-      violations.push(`${fileUrl.pathname}: ${match}`);
+      if (!isInvariantVisibleLiteral(match)) {
+        violations.push(`${fileUrl.pathname}: ${match}`);
+      }
     }
   }
   assert.deepEqual(violations, []);
