@@ -1,26 +1,27 @@
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { error as logError } from 'firebase-functions/logger';
 import { callableOptions, enforceQuota } from './callablePolicy.js';
-import { GOOGLE_REGION_LOOKUP_API_KEY, QUOTAS, db } from './geoapifyRuntime.js';
+import { GOOGLE_PLACES_API_KEY, QUOTAS, db } from './geoapifyRuntime.js';
 import { limitedFetch, safeError } from './geoapifySupport.js';
-import { cacheId } from './sharedCache.js';
+import { createSharedCache } from './sharedCache.js';
 
-const REGION_LOOKUP_URL = 'https://regionlookup.googleapis.com/v1alpha:lookupRegion';
+const GOOGLE_PLACES_BASE = 'https://places.googleapis.com/v1';
+const COUNTRY_ID_FIELDS = 'places.id';
 const COUNTRY_PLACE_ID_CACHE_TTL_MS = 330 * 24 * 60 * 60 * 1000;
-const COUNTRY_CACHE_COLLECTION = 'googleCountryRegionPlaceIdCache';
-const COUNTRY_CACHE_KEY_VERSION = 'v2';
-const MAX_COUNTRIES_PER_REQUEST = 10;
+const cachedCountryPlaceId = createSharedCache(db, {
+  ttlMs: COUNTRY_PLACE_ID_CACHE_TTL_MS,
+});
 
-function requireRegionLookupKey() {
-  const key = GOOGLE_REGION_LOOKUP_API_KEY.value();
+function requireGooglePlacesKey() {
+  const key = GOOGLE_PLACES_API_KEY.value();
   if (!key) {
-    throw new HttpsError(
-      'failed-precondition',
-      'Falta el secreto GOOGLE_REGION_LOOKUP_API_KEY.'
-    );
+    throw new HttpsError('failed-precondition', 'Falta el secreto GOOGLE_PLACES_API_KEY.');
   }
   return key;
+}
+
+function cleanCountryName(value) {
+  return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').slice(0, 100) : '';
 }
 
 function cleanCountryCode(value) {
@@ -28,136 +29,87 @@ function cleanCountryCode(value) {
   return /^[A-Z]{2}$/.test(code) ? code : '';
 }
 
+function validLanguage(value) {
+  return value === 'en' ? 'en' : 'es';
+}
+
 function cleanPlaceId(value) {
   return typeof value === 'string' ? value.trim().slice(0, 256) : '';
 }
 
-function countryCacheRef(countryCode) {
-  const key = `google-region-country:${COUNTRY_CACHE_KEY_VERSION}:${countryCode}`;
-  return db.collection(COUNTRY_CACHE_COLLECTION).doc(cacheId(key));
-}
-
-async function readCountryCache(countryCodes) {
-  const current = Date.now();
-  const snapshots = await Promise.all(
-    countryCodes.map((countryCode) => countryCacheRef(countryCode).get())
-  );
-  const resolved = [];
-  const missing = [];
-
-  snapshots.forEach((snapshot, index) => {
-    const countryCode = countryCodes[index];
-    const data = snapshot.data();
-    const expiresAt = data?.expiresAt?.toMillis?.() || 0;
-    const placeId = cleanPlaceId(data?.result?.placeId);
-    if (placeId && expiresAt > current) {
-      resolved.push({
-        countryCode,
-        placeId,
-        fetchedAt: Number(data?.result?.fetchedAt) || current,
-        cacheHit: true,
-      });
-    } else {
-      missing.push(countryCode);
-    }
-  });
-
-  return { resolved, missing };
-}
-
-async function writeCountryCache(countries) {
-  if (!countries.length) return;
-  const batch = db.batch();
-  const now = Date.now();
-  countries.forEach((country) => {
-    batch.set(countryCacheRef(country.countryCode), {
-      result: {
-        countryCode: country.countryCode,
-        placeId: country.placeId,
-        fetchedAt: country.fetchedAt,
-      },
-      timestamp: FieldValue.serverTimestamp(),
-      expiresAt: Timestamp.fromMillis(now + COUNTRY_PLACE_ID_CACHE_TTL_MS),
-    });
-  });
-  await batch.commit();
-}
-
-async function lookupCountryPlaceId(countryCode) {
+async function searchCountryPlaceId(textQuery, language) {
   const payload = await limitedFetch(
-    REGION_LOOKUP_URL,
+    `${GOOGLE_PLACES_BASE}/places:searchText`,
     {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Goog-Api-Key': requireRegionLookupKey(),
+        'X-Goog-Api-Key': requireGooglePlacesKey(),
+        'X-Goog-FieldMask': COUNTRY_ID_FIELDS,
       },
       body: JSON.stringify({
-        identifiers: [{
-          unit_code: countryCode,
-          place_type: 'country',
-        }],
+        textQuery,
+        includedType: 'country',
+        strictTypeFiltering: true,
+        languageCode: language,
+        pageSize: 1,
       }),
     },
-    'Google Region Lookup country ID'
+    'Google Places country boundary ID'
   );
-
-  const placeId = cleanPlaceId(payload?.matches?.[0]?.matchedPlaceId);
-  if (!placeId) return null;
-  return {
-    countryCode,
-    placeId,
-    fetchedAt: Date.now(),
-    cacheHit: false,
-  };
+  return cleanPlaceId(payload?.places?.[0]?.id);
 }
 
-async function lookupMissingCountries(countryCodes) {
-  const resolved = [];
-  for (const countryCode of countryCodes) {
-    const country = await lookupCountryPlaceId(countryCode);
-    if (country) resolved.push(country);
+async function fetchCountryPlaceId(country, language) {
+  let placeId = await searchCountryPlaceId(country.country, language);
+  if (!placeId) placeId = await searchCountryPlaceId(country.countryCode, language);
+  if (!placeId) {
+    throw new Error(`Google Places no devolvió un country Place ID para ${country.countryCode}.`);
   }
-  return resolved;
+  return {
+    countryCode: country.countryCode,
+    placeId,
+    fetchedAt: Date.now(),
+  };
 }
 
 export const googleCountryPlaceIds = onCall(
   callableOptions({
-    secrets: [GOOGLE_REGION_LOOKUP_API_KEY],
+    secrets: [GOOGLE_PLACES_API_KEY],
     enforceAppCheck: false,
     maxInstances: 4,
   }),
   async (request) => {
     await enforceQuota(db, request, QUOTAS.googleCountryPlaceIds);
-    const countryCodes = [];
+    const language = validLanguage(request.data?.language);
+    const countries = [];
     const seen = new Set();
 
     for (const item of Array.isArray(request.data?.countries) ? request.data.countries : []) {
       const countryCode = cleanCountryCode(item?.countryCode);
-      if (!countryCode || seen.has(countryCode)) continue;
+      const country = cleanCountryName(item?.country);
+      if (!countryCode || !country || seen.has(countryCode)) continue;
       seen.add(countryCode);
-      countryCodes.push(countryCode);
-      if (countryCodes.length >= MAX_COUNTRIES_PER_REQUEST) break;
+      countries.push({ countryCode, country });
+      if (countries.length >= 10) break;
     }
 
-    if (!countryCodes.length) return { countries: [], unresolvedCountryCodes: [] };
+    if (!countries.length) return { countries: [] };
 
     try {
-      const cached = await readCountryCache(countryCodes);
-      const fresh = cached.missing.length
-        ? await lookupMissingCountries(cached.missing)
-        : [];
-      await writeCountryCache(fresh);
-
-      const resolvedCodes = new Set(
-        [...cached.resolved, ...fresh].map((country) => country.countryCode)
+      const resolved = await Promise.all(
+        countries.map(async (country) => {
+          const cached = await cachedCountryPlaceId(
+            'googleCountryPlaceIdCacheV3',
+            `google-country-v3:${country.countryCode}`,
+            () => fetchCountryPlaceId(country, language)
+          );
+          return { ...cached.result, cacheHit: cached.cacheHit };
+        })
       );
-      return {
-        countries: [...cached.resolved, ...fresh],
-        unresolvedCountryCodes: countryCodes.filter((code) => !resolvedCodes.has(code)),
-      };
+      return { countries: resolved };
     } catch (error) {
-      logError('Google Region Lookup country ID lookup failed.', safeError(error));
+      logError('Google country boundary Place ID lookup failed.', safeError(error));
       throw new HttpsError('internal', 'No fue posible resolver los países para el mapa.');
     }
   }
