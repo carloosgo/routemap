@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { config } from '../../config.js';
 import { useTranslation } from '../../i18n/index.jsx';
-import { refreshGooglePlace } from '../places/googlePlacesClient.js';
+import { loadGooglePlaceLocations } from '../places/googlePlacesClient.js';
 import { isGooglePlaceReference, isPlaced } from '../trips/tripModel.js';
 import { PlaceSearchForm } from './PlaceSearchForm.jsx';
 import { loadGoogleMaps } from './googleMapsLoader.js';
@@ -21,11 +21,15 @@ function toGooglePath(coordinates) {
     .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
 }
 
+function placeLabel(place, t) {
+  return place.name || place.userLabel || t('place');
+}
+
 function savedMarkerContent(place, t) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'google-saved-place-marker';
-  button.setAttribute('aria-label', place.name || t('place'));
+  button.setAttribute('aria-label', placeLabel(place, t));
   const dot = document.createElement('span');
   dot.className = 'google-saved-place-marker__dot';
   button.append(dot);
@@ -36,7 +40,6 @@ export function GooglePlacesMap({
   places = [],
   routeConnections = [],
   addPlace,
-  updatePlace,
 }) {
   const { t } = useTranslation();
   const nodeRef = useRef(null);
@@ -45,7 +48,7 @@ export function GooglePlacesMap({
   const routeLinesRef = useRef([]);
   const infoWindowRef = useRef(null);
   const saveNoticeTimerRef = useRef(null);
-  const hydratingPlaceIdsRef = useRef(new Set());
+  const [cachedLocations, setCachedLocations] = useState({});
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [saveNotice, setSaveNotice] = useState('');
@@ -54,30 +57,50 @@ export function GooglePlacesMap({
     config.googleMaps.webApiKey && config.googleMaps.mapId
   );
 
+  const locatedPlaces = useMemo(
+    () => places.map((place) => {
+      if (isPlaced(place) || !isGooglePlaceReference(place)) return place;
+      const location = cachedLocations[place.googlePlaceId];
+      return location
+        ? { ...place, lat: Number(location.lat), lon: Number(location.lon) }
+        : place;
+    }),
+    [cachedLocations, places]
+  );
+
   useEffect(() => {
     if (!mapConfigured) return undefined;
-    const controller = new AbortController();
-    const unresolved = places.filter(
-      (place) => isGooglePlaceReference(place) && !isPlaced(place)
-    );
+    const placeIds = places
+      .filter((place) => isGooglePlaceReference(place) && !isPlaced(place))
+      .map((place) => place.googlePlaceId)
+      .filter((placeId) => !cachedLocations[placeId]);
+    if (!placeIds.length) return undefined;
 
-    unresolved.forEach((place) => {
-      if (hydratingPlaceIdsRef.current.has(place.id)) return;
-      hydratingPlaceIdsRef.current.add(place.id);
-      refreshGooglePlace(place.googlePlaceId, { signal: controller.signal })
-        .then((hydrated) => {
-          if (!controller.signal.aborted) updatePlace?.(place.id, hydrated);
-        })
-        .catch((error) => {
-          if (error?.name !== 'AbortError') {
-            console.warn('[Google Places] saved place refresh failed', error);
-          }
-        })
-        .finally(() => hydratingPlaceIdsRef.current.delete(place.id));
-    });
+    const controller = new AbortController();
+    loadGooglePlaceLocations(placeIds, { signal: controller.signal })
+      .then((locations) => {
+        if (controller.signal.aborted) return;
+        setCachedLocations((current) => {
+          const next = { ...current };
+          locations.forEach((location) => {
+            if (location?.placeId && Number.isFinite(Number(location.lat)) && Number.isFinite(Number(location.lon))) {
+              next[location.placeId] = {
+                lat: Number(location.lat),
+                lon: Number(location.lon),
+              };
+            }
+          });
+          return next;
+        });
+      })
+      .catch((error) => {
+        if (error?.name !== 'AbortError') {
+          console.warn('[Google Places] cached location lookup failed', error);
+        }
+      });
 
     return () => controller.abort();
-  }, [mapConfigured, places, updatePlace]);
+  }, [cachedLocations, mapConfigured, places]);
 
   useEffect(() => {
     let disposed = false;
@@ -136,12 +159,12 @@ export function GooglePlacesMap({
     markersRef.current = [];
     const bounds = new maps.LatLngBounds();
 
-    places.filter(isPlaced).forEach((place) => {
+    locatedPlaces.filter(isPlaced).forEach((place) => {
       const content = savedMarkerContent(place, t);
       const marker = new AdvancedMarkerElement({
         map,
         position: { lat: place.lat, lng: place.lon },
-        title: place.name || t('place'),
+        title: placeLabel(place, t),
         content,
       });
       content.addEventListener('click', () => {
@@ -158,7 +181,7 @@ export function GooglePlacesMap({
       const marker = new AdvancedMarkerElement({
         map,
         position: { lat: place.lat, lng: place.lon },
-        title: place.name || t('place'),
+        title: placeLabel(place, t),
         content,
         zIndex: 20,
       });
@@ -176,6 +199,7 @@ export function GooglePlacesMap({
               id: selected.id,
               provider: 'google',
               googlePlaceId: selected.googlePlaceId || selected.id,
+              userLabel: selected.userLabel || '',
               name: selected.name || '',
               address: selected.address || '',
               city: selected.city || '',
@@ -206,7 +230,7 @@ export function GooglePlacesMap({
     if (results.length === 1) {
       map.panTo({ lat: results[0].lat, lng: results[0].lon });
       map.setZoom(14);
-    } else if ((places.some(isPlaced) || results.length) && !bounds.isEmpty()) {
+    } else if ((locatedPlaces.some(isPlaced) || results.length) && !bounds.isEmpty()) {
       map.fitBounds(bounds, 84);
     }
 
@@ -214,7 +238,7 @@ export function GooglePlacesMap({
       markersRef.current.forEach((marker) => { marker.map = null; });
       markersRef.current = [];
     };
-  }, [addPlace, placeSearch.results, places, ready, t]);
+  }, [addPlace, locatedPlaces, placeSearch.results, places, ready, t]);
 
   useEffect(() => {
     const map = mapRef.current;
