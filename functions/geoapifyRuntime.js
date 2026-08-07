@@ -10,6 +10,7 @@ export const GEOAPIFY_API_KEY = defineSecret('GEOAPIFY_API_KEY');
 export const GEOAPIFY_CITY_API_KEY = defineSecret('GEOAPIFY_CITY_API_KEY');
 export const GOOGLE_PLACES_API_KEY = defineSecret('GOOGLE_PLACES_API_KEY');
 export const GOOGLE_ROUTES_API_KEY = defineSecret('GOOGLE_ROUTES_API_KEY');
+export const GOOGLE_REGION_LOOKUP_API_KEY = defineSecret('GOOGLE_REGION_LOOKUP_API_KEY');
 export const CACHE_TTL_MS = 60 * 24 * 60 * 60 * 1000;
 export const BATCH_JOB_TTL_MS = 24 * 60 * 60 * 1000;
 export const COUNTRY_BOUNDARY_CACHE_MAX_BYTES = 850 * 1024;
