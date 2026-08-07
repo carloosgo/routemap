@@ -85,6 +85,45 @@ test('Firestore no persiste contenido dinámico devuelto por Google Routes', () 
   assert.equal(hydrated.routeConnections[0].geometry, null);
 });
 
+test('Firestore persiste solo placeId y etiqueta del usuario para Google Places', () => {
+  const trip = createTrip('Múnich');
+  trip.id = 'trip-google-place-storage';
+  trip.places = [createPlace({
+    id: 'ChIJ-google-allianz',
+    provider: 'google',
+    googlePlaceId: 'ChIJ-google-allianz',
+    userLabel: 'allianz arena munich',
+    name: 'Allianz Arena',
+    address: 'Werner-Heisenberg-Allee 25',
+    city: 'München',
+    country: 'Deutschland',
+    countryCode: 'DE',
+    category: 'stadium',
+    lat: 48.2188,
+    lon: 11.6247,
+  })];
+
+  const payload = createTripRevisionPayload(trip, 'revision-place-google-001');
+  const stored = payload.collections.places[0];
+  assert.equal(stored.provider, 'google');
+  assert.equal(stored.googlePlaceId, 'ChIJ-google-allianz');
+  assert.equal(stored.userLabel, 'allianz arena munich');
+  assert.equal(stored.name, '');
+  assert.equal(stored.address, '');
+  assert.equal(stored.city, '');
+  assert.equal(stored.country, '');
+  assert.equal(stored.countryCode, '');
+  assert.equal(stored.category, '');
+  assert.equal(stored.lat, null);
+  assert.equal(stored.lon, null);
+
+  const hydrated = hydrateVersionedTrip(payload.summary, payload.collections);
+  assert.equal(hydrated.places[0].googlePlaceId, 'ChIJ-google-allianz');
+  assert.equal(hydrated.places[0].userLabel, 'allianz arena munich');
+  assert.equal(hydrated.places[0].lat, null);
+  assert.equal(hydrated.places[0].lon, null);
+});
+
 test('el lector mantiene compatibilidad con resúmenes versionados v2', () => {
   assert.equal(isVersionedTripSummary({
     storageVersion: 2,
