@@ -29,28 +29,35 @@ test('App coordina módulos sin contener menús, responsive ni diálogo completo
   assert.match(editorState, /useCollapseSegmentsOnTripChange/);
 });
 
-test('RouteMap coordina módulos sin volver a absorber modelo, búsqueda o marcadores', async () => {
+test('RouteMap coordina proveedores sin volver a absorber implementación de mapas o búsqueda', async () => {
   const routeMap = await read('src/modules/map/RouteMap.jsx');
+  const itineraryMap = await read('src/modules/map/ItineraryRouteMap.jsx');
+  const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
   const model = await read('src/modules/map/routeMapModel.js');
   const setup = await read('src/modules/map/routeMapSetup.js');
   const search = await read('src/modules/map/usePlaceSearch.js');
-  const markers = await read('src/modules/map/usePlaceResultMarkers.js');
   const form = await read('src/modules/map/PlaceSearchForm.jsx');
 
   assert.ok(
-    lineCount(routeMap) <= 280,
+    lineCount(routeMap) <= 90,
     `RouteMap.jsx volvió a crecer a ${lineCount(routeMap)} líneas`
   );
-  assert.match(routeMap, /buildMapFeatureData/);
-  assert.match(routeMap, /usePlaceSearch/);
-  assert.match(routeMap, /usePlaceResultMarkers/);
-  assert.match(routeMap, /<PlaceSearchForm/);
-  assert.doesNotMatch(routeMap, /function adaptiveCurve|function markerElement|async function submitSearch/);
+  assert.match(routeMap, /<ItineraryRouteMap/);
+  assert.match(routeMap, /<GooglePlacesMap/);
+  assert.match(routeMap, /placesMapMounted/);
+  assert.doesNotMatch(
+    routeMap,
+    /buildMapFeatureData|usePlaceSearch|AdvancedMarkerElement|maplibregl|async function submitSearch/
+  );
 
+  assert.match(itineraryMap, /buildMapFeatureData/);
+  assert.match(itineraryMap, /new maplibregl\.Map/);
+  assert.match(googleMap, /usePlaceSearch/);
+  assert.match(googleMap, /AdvancedMarkerElement/);
+  assert.match(googleMap, /<PlaceSearchForm/);
   assert.match(model, /export function adaptiveCurve/);
   assert.match(setup, /export function addBaseSourcesAndLayers/);
   assert.match(search, /async function submitSearch/);
-  assert.match(markers, /new maplibregl\.Marker/);
   assert.match(form, /className="geo-search"/);
 });
 
