@@ -51,8 +51,8 @@
 
 .google-itinerary-city-marker{
   display:grid;
-  width:16px;
-  height:16px;
+  width:15px;
+  height:15px;
   place-items:center;
   border:2px solid #ffffff;
   border-radius:50%;
