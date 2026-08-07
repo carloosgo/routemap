@@ -11,27 +11,22 @@ import {
 const root = new globalThis.URL('../', import.meta.url);
 const read = (path) => readFile(new globalThis.URL(path, root), 'utf8');
 
-test('saved places use colored SVG variants with a country-colored fallback', async () => {
-  const routeMap = await read('src/modules/map/RouteMap.jsx');
+test('saved places keep the canonical colored SVG pin on Google Maps', async () => {
+  const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
   const symbol = await read('src/modules/map/savedPlaceSymbol.js');
-  const setup = await read('src/modules/map/routeMapSetup.js');
+  const css = await read('src/modules/map/GooglePlacesMap.css');
 
-  assert.match(routeMap, /installSavedPlaceSymbolLayer\(map\)/);
   assert.match(symbol, /saved-place-pin\.svg\?raw/);
+  assert.match(symbol, /export function savedPlacePinUrl/);
   assert.match(symbol, /savedPlacePinTemplate\.replace\('#19a5d0', color\)/);
-  assert.match(symbol, /savedPlaceMarkerStyles\(\)\.map/);
-  assert.match(symbol, /'icon-image': \['coalesce', \['get', 'iconId'\], DEFAULT_SAVED_PLACE_ICON_ID\]/);
-  assert.match(symbol, /map\.addImage\(iconId, image, \{ pixelRatio: 2 \}\)/);
-  assert.doesNotMatch(symbol, /sdf:\s*true|'icon-color'/);
-  assert.match(symbol, /image\.width = 52/);
-  assert.match(symbol, /image\.height = 56/);
-  assert.match(symbol, /type: 'symbol'/);
-  assert.match(symbol, /'icon-anchor': 'bottom'/);
-  assert.match(symbol, /'icon-allow-overlap': true/);
-  assert.match(symbol, /'icon-ignore-placement': true/);
-  assert.match(symbol, /circle-opacity', 0\.001/);
-  assert.match(symbol, /circle fallback/);
-  assert.match(setup, /'circle-color': \['coalesce', \['get', 'color'\], '#2563eb'\]/);
+  assert.match(googleMap, /savedPlaceMarkerStyle/);
+  assert.match(googleMap, /savedPlacePinUrl/);
+  assert.match(googleMap, /placeCountryKey/);
+  assert.match(googleMap, /document\.createElement\('img'\)/);
+  assert.match(googleMap, /image\.src = savedPlacePinUrl\(color\)/);
+  assert.match(css, /\.google-saved-place-marker img/);
+  assert.match(css, /width:26px/);
+  assert.match(css, /height:28px/);
 });
 
 test('saved place pin remains the canonical transparent SVG with a white dot', async () => {
