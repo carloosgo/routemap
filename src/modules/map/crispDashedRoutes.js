@@ -93,30 +93,25 @@ export function createCrispDashedRoutes({
   let lastRenderedZoom = null;
   let lastRenderedSize = '';
   let resizeObserver = null;
-  let needsMapCanvasRefresh = true;
 
-  const clear = () => {
-    polylines.forEach((line) => line.setMap(null));
-    polylines = [];
+  const clearLines = (lines) => {
+    lines.forEach((line) => line.setMap(null));
   };
 
-  const refreshMapCanvas = () => {
-    if (disposed || !maps?.event?.trigger) return;
-    const center = map.getCenter?.();
-    const zoom = map.getZoom?.();
-    maps.event.trigger(map, 'resize');
-    if (center) map.setCenter?.(center);
-    if (Number.isFinite(zoom)) map.setZoom?.(zoom);
+  const clear = () => {
+    clearLines(polylines);
+    polylines = [];
   };
 
   const redraw = () => {
     frame = 0;
     if (disposed) return;
+
     const projection = overlay.getProjection?.();
     const size = mapSizeKey(map);
     if (!projection || !size || size === '0x0') return;
 
-    clear();
+    const nextPolylines = [];
     routes.forEach(({ path = [], color = '#111111' }) => {
       const pixels = path
         .map((point) => projection.fromLatLngToDivPixel(
@@ -131,7 +126,7 @@ export function createCrispDashedRoutes({
           .filter(Boolean);
         if (dashPath.length < 2) return;
 
-        polylines.push(new maps.Polyline({
+        nextPolylines.push(new maps.Polyline({
           map,
           path: dashPath,
           strokeColor: color,
@@ -143,6 +138,10 @@ export function createCrispDashedRoutes({
         }));
       });
     });
+
+    const previousPolylines = polylines;
+    polylines = nextPolylines;
+    clearLines(previousPolylines);
 
     lastRenderedZoom = map.getZoom?.();
     lastRenderedSize = size;
@@ -160,42 +159,31 @@ export function createCrispDashedRoutes({
     }, delay);
   };
 
-  const invalidateAndSchedule = () => {
+  const markDirty = () => {
     hasRendered = false;
-    needsMapCanvasRefresh = true;
-    clear();
-    scheduleRedraw();
   };
 
   overlay.onAdd = () => {};
   overlay.onRemove = clear;
   overlay.draw = () => {
-    if (disposed) return;
+    if (disposed || !hasRendered) return;
     const zoom = map.getZoom?.();
     const size = mapSizeKey(map);
-    if (!hasRendered || zoom !== lastRenderedZoom || size !== lastRenderedSize) {
-      scheduleRedraw();
+    if (zoom !== lastRenderedZoom || size !== lastRenderedSize) {
+      markDirty();
     }
   };
   overlay.setMap(map);
 
-  const zoomListener = map.addListener?.('zoom_changed', invalidateAndSchedule);
-  const idleListener = map.addListener?.('idle', () => {
-    if (needsMapCanvasRefresh) {
-      needsMapCanvasRefresh = false;
-      refreshMapCanvas();
-    }
-    scheduleRedraw(80);
-  });
+  const zoomListener = map.addListener?.('zoom_changed', markDirty);
+  const idleListener = map.addListener?.('idle', () => scheduleRedraw());
   const tilesListener = map.addListener?.('tilesloaded', () => scheduleRedraw(80));
 
   const mapNode = map.getDiv?.();
   if (mapNode && typeof globalThis.ResizeObserver !== 'undefined') {
-    resizeObserver = new globalThis.ResizeObserver(invalidateAndSchedule);
+    resizeObserver = new globalThis.ResizeObserver(markDirty);
     resizeObserver.observe(mapNode);
   }
-
-  scheduleRedraw();
 
   return {
     dispose() {
