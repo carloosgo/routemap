@@ -17,21 +17,6 @@
   min-height:100%;
 }
 
-/*
- * Google Maps agrega un nodo raíz con dimensiones inline. En cambios de
- * viewport/zoom del navegador esas dimensiones pueden quedarse con el tamaño
- * anterior aunque el contenedor ya haya crecido. Forzarlo a ocupar el div
- * host evita las franjas grises sin recrear otra instancia facturable del mapa.
- */
-.google-map>div:first-child{
-  position:absolute!important;
-  inset:0!important;
-  width:100%!important;
-  height:100%!important;
-  min-width:100%!important;
-  min-height:100%!important;
-}
-
 .mappane>.route-map-stack{
   position:absolute;
   inset:0;
