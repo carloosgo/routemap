@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { config } from '../../config.js';
+import { config, colorForIndex } from '../../config.js';
 import { useTranslation } from '../../i18n/index.jsx';
 import { loadGooglePlaceLocations } from '../places/googlePlacesClient.js';
 import { isGooglePlaceReference, isPlaced } from '../trips/tripModel.js';
 import { PlaceSearchForm } from './PlaceSearchForm.jsx';
 import { loadGoogleMaps } from './googleMapsLoader.js';
 import { markerElement, savePrompt, savedPlacePopup } from './placeMapDom.js';
-import { placeCountryKey } from './routeMapModel.js';
+import { buildMapFeatureData, cityKey, placeCountryKey } from './routeMapModel.js';
 import { savedPlaceMarkerStyle } from './savedPlaceMarkerPalette.js';
 import { savedPlacePinUrl } from './savedPlaceSymbol.js';
 import { usePlaceSearch } from './usePlaceSearch.js';
@@ -43,24 +43,52 @@ function savedMarkerContent(place, t, color) {
   return button;
 }
 
+function itineraryCityContent(city, color, t) {
+  const marker = document.createElement('div');
+  marker.className = 'google-itinerary-city-marker';
+  marker.style.setProperty('--itinerary-city-color', color);
+  marker.setAttribute('role', 'img');
+  marker.setAttribute('aria-label', city.name || city.displayName || t('city'));
+  const dot = document.createElement('span');
+  dot.className = 'google-itinerary-city-marker__dot';
+  marker.append(dot);
+  return marker;
+}
+
+function clearAdvancedMarkers(markersRef) {
+  markersRef.current.forEach((marker) => { marker.map = null; });
+  markersRef.current = [];
+}
+
+function clearPolylines(linesRef) {
+  linesRef.current.forEach((line) => line.setMap(null));
+  linesRef.current = [];
+}
+
 export function GooglePlacesMap({
+  segments = [],
   places = [],
   routeConnections = [],
   addPlace,
-  active = false,
+  viewMode = 'segments',
 }) {
   const { t } = useTranslation();
   const nodeRef = useRef(null);
   const mapRef = useRef(null);
-  const markersRef = useRef([]);
-  const routeLinesRef = useRef([]);
+  const resizeObserverRef = useRef(null);
+  const placeMarkersRef = useRef([]);
+  const savedRouteLinesRef = useRef([]);
+  const itineraryMarkersRef = useRef([]);
+  const itineraryLinesRef = useRef([]);
   const infoWindowRef = useRef(null);
   const saveNoticeTimerRef = useRef(null);
+  const lastItineraryViewportKeyRef = useRef(null);
   const [cachedLocations, setCachedLocations] = useState({});
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [saveNotice, setSaveNotice] = useState('');
-  const placeSearch = usePlaceSearch({ viewMode: active ? 'places' : 'segments' });
+  const placesActive = viewMode === 'places';
+  const placeSearch = usePlaceSearch({ viewMode });
   const mapConfigured = Boolean(
     config.googleMaps.webApiKey && config.googleMaps.mapId
   );
@@ -92,7 +120,7 @@ export function GooglePlacesMap({
   }, [locatedPlaces]);
 
   useEffect(() => {
-    if (!active || !mapConfigured) return undefined;
+    if (!placesActive || !mapConfigured) return undefined;
     const placeIds = places
       .filter((place) => isGooglePlaceReference(place) && !isPlaced(place))
       .map((place) => place.googlePlaceId)
@@ -106,7 +134,11 @@ export function GooglePlacesMap({
         setCachedLocations((current) => {
           const next = { ...current };
           locations.forEach((location) => {
-            if (location?.placeId && Number.isFinite(Number(location.lat)) && Number.isFinite(Number(location.lon))) {
+            if (
+              location?.placeId
+              && Number.isFinite(Number(location.lat))
+              && Number.isFinite(Number(location.lon))
+            ) {
               next[location.placeId] = {
                 lat: Number(location.lat),
                 lon: Number(location.lon),
@@ -123,7 +155,7 @@ export function GooglePlacesMap({
       });
 
     return () => controller.abort();
-  }, [active, cachedLocations, mapConfigured, places]);
+  }, [placesActive, cachedLocations, mapConfigured, places]);
 
   useEffect(() => {
     let disposed = false;
@@ -137,7 +169,10 @@ export function GooglePlacesMap({
         ]);
         if (disposed || !nodeRef.current) return;
         const map = new Map(nodeRef.current, {
-          center: { lat: config.map.initialCenter[0], lng: config.map.initialCenter[1] },
+          center: {
+            lat: config.map.initialCenter[0],
+            lng: config.map.initialCenter[1],
+          },
           zoom: config.map.initialZoom,
           mapId: config.googleMaps.mapId,
           mapTypeControl: false,
@@ -150,6 +185,13 @@ export function GooglePlacesMap({
         mapRef.current = map;
         mapRef.current.__AdvancedMarkerElement = AdvancedMarkerElement;
         infoWindowRef.current = new maps.InfoWindow();
+
+        if (typeof ResizeObserver !== 'undefined') {
+          resizeObserverRef.current = new ResizeObserver(() => {
+            if (mapRef.current) maps.event.trigger(mapRef.current, 'resize');
+          });
+          resizeObserverRef.current.observe(nodeRef.current);
+        }
         setReady(true);
       })
       .catch((error) => {
@@ -161,12 +203,14 @@ export function GooglePlacesMap({
 
     return () => {
       disposed = true;
+      resizeObserverRef.current?.disconnect();
+      resizeObserverRef.current = null;
       clearTimeout(saveNoticeTimerRef.current);
-      markersRef.current.forEach((marker) => { marker.map = null; });
-      routeLinesRef.current.forEach((line) => line.setMap(null));
+      clearAdvancedMarkers(placeMarkersRef);
+      clearAdvancedMarkers(itineraryMarkersRef);
+      clearPolylines(savedRouteLinesRef);
+      clearPolylines(itineraryLinesRef);
       infoWindowRef.current?.close();
-      markersRef.current = [];
-      routeLinesRef.current = [];
       mapRef.current = null;
       setReady(false);
     };
@@ -174,12 +218,107 @@ export function GooglePlacesMap({
 
   useEffect(() => {
     const map = mapRef.current;
+    const maps = globalThis.google?.maps;
+    if (!map || !ready || !maps) return undefined;
+    const frame = requestAnimationFrame(() => {
+      maps.event.trigger(map, 'resize');
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [ready, viewMode]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     const AdvancedMarkerElement = map?.__AdvancedMarkerElement;
     const maps = globalThis.google?.maps;
-    if (!map || !ready || !AdvancedMarkerElement || !maps) return undefined;
+    clearAdvancedMarkers(itineraryMarkersRef);
+    clearPolylines(itineraryLinesRef);
+    if (!map || !ready || !AdvancedMarkerElement || !maps || placesActive) {
+      return undefined;
+    }
 
-    markersRef.current.forEach((marker) => { marker.map = null; });
-    markersRef.current = [];
+    const { routeFeatures, cityFeatures, routeCities } = buildMapFeatureData({
+      segments,
+      places: [],
+      routeConnections: [],
+      viewMode: 'segments',
+      colorForIndex,
+    });
+
+    routeFeatures.forEach((feature) => {
+      const path = toGooglePath(feature.geometry?.coordinates || []);
+      if (path.length < 2) return;
+      const color = feature.properties?.color || '#111111';
+      const dashed = feature.properties?.dashed === true;
+      const line = new maps.Polyline({
+        map,
+        path,
+        strokeColor: color,
+        strokeOpacity: dashed ? 0 : 0.92,
+        strokeWeight: 3,
+        clickable: false,
+        geodesic: false,
+        icons: dashed
+          ? [{
+              icon: {
+                path: 'M 0,-1 0,1',
+                strokeColor: color,
+                strokeOpacity: 0.95,
+                strokeWeight: 2,
+                scale: 2,
+              },
+              offset: '0',
+              repeat: '12px',
+            }]
+          : undefined,
+      });
+      itineraryLinesRef.current.push(line);
+    });
+
+    const bounds = new maps.LatLngBounds();
+    cityFeatures.forEach((feature) => {
+      const [lng, lat] = feature.geometry?.coordinates || [];
+      if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return;
+      const content = itineraryCityContent(
+        { name: feature.properties?.name },
+        feature.properties?.color || colorForIndex(0),
+        t
+      );
+      const marker = new AdvancedMarkerElement({
+        map,
+        position: { lat: Number(lat), lng: Number(lng) },
+        title: feature.properties?.name || t('city'),
+        content,
+      });
+      itineraryMarkersRef.current.push(marker);
+      bounds.extend({ lat: Number(lat), lng: Number(lng) });
+    });
+
+    const viewportKey = routeCities.map(cityKey).join('|');
+    if (viewportKey !== lastItineraryViewportKeyRef.current) {
+      lastItineraryViewportKeyRef.current = viewportKey;
+      if (routeCities.length === 1) {
+        map.panTo({ lat: routeCities[0].lat, lng: routeCities[0].lon });
+        map.setZoom(10);
+      } else if (routeCities.length > 1 && !bounds.isEmpty()) {
+        map.fitBounds(bounds, 84);
+      }
+    }
+
+    return () => {
+      clearAdvancedMarkers(itineraryMarkersRef);
+      clearPolylines(itineraryLinesRef);
+    };
+  }, [placesActive, ready, segments, t]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const AdvancedMarkerElement = map?.__AdvancedMarkerElement;
+    const maps = globalThis.google?.maps;
+    clearAdvancedMarkers(placeMarkersRef);
+    if (!map || !ready || !AdvancedMarkerElement || !maps || !placesActive) {
+      return undefined;
+    }
+
     const bounds = new maps.LatLngBounds();
 
     locatedPlaces.filter(isPlaced).forEach((place) => {
@@ -198,7 +337,7 @@ export function GooglePlacesMap({
         infoWindowRef.current?.setContent(savedPlacePopup(place, t));
         infoWindowRef.current?.open({ map, anchor: marker });
       });
-      markersRef.current.push(marker);
+      placeMarkersRef.current.push(marker);
       bounds.extend({ lat: place.lat, lng: place.lon });
     });
 
@@ -250,7 +389,7 @@ export function GooglePlacesMap({
         map.panTo({ lat: place.lat, lng: place.lon });
         if ((map.getZoom() || 0) < 14) map.setZoom(14);
       });
-      markersRef.current.push(marker);
+      placeMarkersRef.current.push(marker);
       bounds.extend({ lat: place.lat, lng: place.lon });
     });
 
@@ -261,18 +400,14 @@ export function GooglePlacesMap({
       map.fitBounds(bounds, 84);
     }
 
-    return () => {
-      markersRef.current.forEach((marker) => { marker.map = null; });
-      markersRef.current = [];
-    };
-  }, [addPlace, locatedPlaces, placeSearch.results, places, ready, savedMarkerColors, t]);
+    return () => clearAdvancedMarkers(placeMarkersRef);
+  }, [addPlace, locatedPlaces, placeSearch.results, places, placesActive, ready, savedMarkerColors, t]);
 
   useEffect(() => {
     const map = mapRef.current;
     const maps = globalThis.google?.maps;
-    if (!map || !ready || !maps) return undefined;
-    routeLinesRef.current.forEach((line) => line.setMap(null));
-    routeLinesRef.current = [];
+    clearPolylines(savedRouteLinesRef);
+    if (!map || !ready || !maps || !placesActive) return undefined;
 
     routeConnections
       .filter((route) => route.visible !== false && route.geometry)
@@ -280,7 +415,7 @@ export function GooglePlacesMap({
       .forEach((coordinates) => {
         const path = toGooglePath(coordinates);
         if (path.length < 2) return;
-        routeLinesRef.current.push(new maps.Polyline({
+        savedRouteLinesRef.current.push(new maps.Polyline({
           map,
           path,
           strokeColor: '#111111',
@@ -291,11 +426,8 @@ export function GooglePlacesMap({
         }));
       });
 
-    return () => {
-      routeLinesRef.current.forEach((line) => line.setMap(null));
-      routeLinesRef.current = [];
-    };
-  }, [ready, routeConnections]);
+    return () => clearPolylines(savedRouteLinesRef);
+  }, [placesActive, ready, routeConnections]);
 
   return (
     <div className="geo-map-wrap google-map-wrap">
@@ -305,7 +437,7 @@ export function GooglePlacesMap({
         )}
         {loadError && <div className="geo-map__missing">{loadError}</div>}
       </div>
-      {active && mapConfigured && (
+      {placesActive && mapConfigured && (
         <PlaceSearchForm
           query={placeSearch.query}
           suggestions={placeSearch.suggestions}
@@ -322,7 +454,9 @@ export function GooglePlacesMap({
           onChooseSuggestion={placeSearch.chooseSuggestion}
         />
       )}
-      {routeConnections.some((route) => route.visible !== false && route.geometry) && (
+      {placesActive && routeConnections.some(
+        (route) => route.visible !== false && route.geometry
+      ) && (
         <div className="google-route-attribution">Powered by Google</div>
       )}
       {saveNotice && (
