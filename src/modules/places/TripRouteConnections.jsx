@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { requestSavedPlaceRoute } from '../routes/geoapifyRouteClient.js';
+import { requestGooglePlaceRoute } from '../routes/googleRouteClient.js';
 import {
   SAVED_PLACE_ROUTE_MODES,
   consecutiveSavedPlaceRoutePairs,
@@ -9,11 +9,11 @@ import {
 
 const MODE_LABEL_KEYS = Object.freeze({
   drive: 'routeModeDrive',
+  transit: 'routeModeTransit',
+  train: 'routeModeTrain',
   bus: 'routeModeBus',
   bicycle: 'routeModeBicycle',
   walk: 'routeModeWalk',
-  transit: 'routeModeTransit',
-  approximated_transit: 'routeModeApproximatedTransit',
 });
 
 function formatDistance(value, locale) {
@@ -32,6 +32,23 @@ function formatDuration(value) {
   return remaining ? `${hours} h ${remaining} min` : `${hours} h`;
 }
 
+function formatTransitTime(value, locale) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(date);
+}
+
+function transitStepLabel(step, locale) {
+  if (!step) return '';
+  const line = step.lineShortName || step.lineName || step.tripShortText || '';
+  const agency = step.agencies?.[0] || '';
+  const departure = formatTransitTime(step.departureTime, locale);
+  const arrival = formatTransitTime(step.arrivalTime, locale);
+  const time = departure && arrival ? `${departure}–${arrival}` : '';
+  return [line, agency, time].filter(Boolean).join(' · ');
+}
+
 export function TripRouteConnections({
   places,
   routes,
@@ -44,7 +61,7 @@ export function TripRouteConnections({
 }) {
   const [fromPlaceId, setFromPlaceId] = useState(places[0]?.id || '');
   const [toPlaceId, setToPlaceId] = useState(places[1]?.id || '');
-  const [mode, setMode] = useState('drive');
+  const [mode, setMode] = useState('transit');
   const [loadingKey, setLoadingKey] = useState('');
   const [connectingAll, setConnectingAll] = useState(false);
   const [connectAllProgress, setConnectAllProgress] = useState({ current: 0, total: 0 });
@@ -95,7 +112,7 @@ export function TripRouteConnections({
     if (reportError) setError('');
     setLoadingKey(loadingId || id || 'new');
     try {
-      const calculated = await requestSavedPlaceRoute(origin, destination, routeMode);
+      const calculated = await requestGooglePlaceRoute(origin, destination, routeMode);
       upsertRoute({
         id,
         fromPlaceId: fromId,
@@ -145,7 +162,7 @@ export function TripRouteConnections({
         const calculated = await calculateRoute({
           fromId: pair.fromPlaceId,
           toId: pair.toPlaceId,
-          routeMode: 'drive',
+          routeMode: 'transit',
           visible: true,
           loadingId: `all:${pairKey}`,
           reportError: false,
@@ -256,6 +273,8 @@ export function TripRouteConnections({
             const destination = placeById.get(route.toPlaceId);
             if (!origin || !destination) return null;
             const loading = loadingKey === route.id;
+            const firstTransitStep = route.transitSteps?.[0] || null;
+            const transitLabel = transitStepLabel(firstTransitStep, intlLocale);
             return (
               <div className="trip-route" key={route.id}>
                 <label className="trip-route__visibility">
@@ -283,6 +302,18 @@ export function TripRouteConnections({
                     <span>{loading ? t('calculatingRoute') : formatDuration(route.duration)}</span>
                     <span>{formatDistance(route.distance, intlLocale)}</span>
                   </div>
+                  {transitLabel && (
+                    <div className="trip-route__transit">
+                      <strong>{transitLabel}</strong>
+                      {(firstTransitStep.departureStop || firstTransitStep.arrivalStop) && (
+                        <span>
+                          {[firstTransitStep.departureStop, firstTransitStep.arrivalStop]
+                            .filter(Boolean)
+                            .join(' → ')}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <button
                   type="button"
