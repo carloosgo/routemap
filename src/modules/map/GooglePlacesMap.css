@@ -1,3 +1,46 @@
+.google-map-wrap{
+  position:absolute;
+  inset:0;
+  width:auto;
+  height:auto;
+  min-width:0;
+  min-height:0;
+  overflow:hidden;
+}
+
+.google-map{
+  position:absolute;
+  inset:0;
+  width:auto!important;
+  height:auto!important;
+  min-width:100%;
+  min-height:100%;
+}
+
+/*
+ * Google Maps agrega un nodo raíz con dimensiones inline. En cambios de
+ * viewport/zoom del navegador esas dimensiones pueden quedarse con el tamaño
+ * anterior aunque el contenedor ya haya crecido. Forzarlo a ocupar el div
+ * host evita las franjas grises sin recrear otra instancia facturable del mapa.
+ */
+.google-map>div:first-child{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:100%!important;
+  min-height:100%!important;
+}
+
+.mappane>.route-map-stack{
+  position:absolute;
+  inset:0;
+  width:auto;
+  height:auto;
+  min-width:0;
+  min-height:0;
+}
+
 .google-saved-place-marker{
   display:block;
   width:26px;
@@ -20,19 +63,21 @@
   outline-offset:2px;
   border-radius:8px;
 }
+
 .google-itinerary-city-marker{
   display:grid;
   width:18px;
   height:18px;
   place-items:center;
-  border:2px solid #fff;
+  border:2px solid #ffffff;
   border-radius:50%;
   background:var(--itinerary-city-color,#2563eb);
-  box-shadow:0 2px 7px rgba(15,23,42,.28);
+  box-shadow:0 2px 7px rgba(15,23,42,.24);
 }
 .google-itinerary-city-marker__dot{
+  display:block;
   width:5px;
   height:5px;
   border-radius:50%;
-  background:#fff;
+  background:#ffffff;
 }
