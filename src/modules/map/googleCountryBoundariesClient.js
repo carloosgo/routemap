@@ -2,6 +2,7 @@ import { config } from '../../config.js';
 import { firebaseCallable } from '../../infrastructure/firebase/callableFunctions.js';
 
 const pendingRequests = new Map();
+const MAX_COUNTRIES_PER_REQUEST = 10;
 
 function now() {
   return Date.now();
@@ -74,59 +75,73 @@ function rememberCountry(cache, country) {
   cache[countryCode] = { placeId, expiresAt };
 }
 
+async function loadRemoteBatch(countryCodes, signal) {
+  const key = countryCodes.slice().sort().join('|');
+  let pending = pendingRequests.get(key);
+  if (!pending) {
+    pending = (async () => {
+      const request = firebaseCallable('googleCountryPlaceIds');
+      const response = await request({
+        countries: countryCodes.map((countryCode) => ({ countryCode })),
+      });
+      return {
+        countries: Array.isArray(response.data?.countries) ? response.data.countries : [],
+        unresolvedCountryCodes: Array.isArray(response.data?.unresolvedCountryCodes)
+          ? response.data.unresolvedCountryCodes
+          : [],
+      };
+    })();
+    pendingRequests.set(key, pending);
+  }
+
+  try {
+    const result = await pending;
+    throwIfAborted(signal);
+    return result;
+  } finally {
+    if (pendingRequests.get(key) === pending) pendingRequests.delete(key);
+  }
+}
+
 export async function loadGoogleCountryPlaceIds(countries, { signal } = {}) {
-  const unique = new Map();
+  const unique = new Set();
   (Array.isArray(countries) ? countries : []).forEach((country) => {
     const countryCode = cleanCountryCode(country?.countryCode);
-    const name = String(country?.country || '').trim().slice(0, 100);
-    if (countryCode && name && !unique.has(countryCode)) {
-      unique.set(countryCode, { countryCode, country: name });
-    }
+    if (countryCode) unique.add(countryCode);
   });
   if (!unique.size) return [];
 
   const cache = readCache();
   const resolved = [];
   const missing = [];
-  unique.forEach((country, countryCode) => {
+  unique.forEach((countryCode) => {
     const cached = cache[countryCode];
     if (cached?.placeId) {
       resolved.push({ countryCode, placeId: cached.placeId, localCacheHit: true });
     } else {
-      missing.push(country);
+      missing.push(countryCode);
     }
   });
 
-  if (!missing.length) return resolved;
-  throwIfAborted(signal);
-
-  const key = missing.map((country) => country.countryCode).sort().join('|');
-  let pending = pendingRequests.get(key);
-  if (!pending) {
-    pending = (async () => {
-      const request = firebaseCallable('googleCountryPlaceIds');
-      const response = await request({
-        countries: missing,
-        language: config.defaultLocale,
-      });
-      return Array.isArray(response.data?.countries) ? response.data.countries : [];
-    })();
-    pendingRequests.set(key, pending);
-  }
-
-  try {
-    const remote = await pending;
+  for (let index = 0; index < missing.length; index += MAX_COUNTRIES_PER_REQUEST) {
     throwIfAborted(signal);
-    remote.forEach((country) => {
+    const batch = missing.slice(index, index + MAX_COUNTRIES_PER_REQUEST);
+    const remote = await loadRemoteBatch(batch, signal);
+    remote.countries.forEach((country) => {
       const countryCode = cleanCountryCode(country?.countryCode);
       const placeId = cleanPlaceId(country?.placeId);
       if (!countryCode || !placeId) return;
       rememberCountry(cache, country);
       resolved.push({ ...country, countryCode, placeId });
     });
-    writeCache(cache);
-    return resolved;
-  } finally {
-    if (pendingRequests.get(key) === pending) pendingRequests.delete(key);
+    if (remote.unresolvedCountryCodes.length) {
+      console.warn(
+        '[Google Maps] Region Lookup could not resolve country codes:',
+        remote.unresolvedCountryCodes.join(', ')
+      );
+    }
   }
+
+  writeCache(cache);
+  return resolved;
 }
