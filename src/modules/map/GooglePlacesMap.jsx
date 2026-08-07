@@ -389,28 +389,25 @@ export function GooglePlacesMap({
       const path = toGooglePath(feature.geometry?.coordinates || []);
       if (path.length < 2) return;
       const color = feature.properties?.color || '#111111';
-      const dashed = feature.properties?.dashed === true;
       const line = new maps.Polyline({
         map,
         path,
         strokeColor: color,
-        strokeOpacity: dashed ? 0 : 0.92,
+        strokeOpacity: 0,
         strokeWeight: 3,
         clickable: false,
         geodesic: false,
-        icons: dashed
-          ? [{
-              icon: {
-                path: 'M 0,-1 0,1',
-                strokeColor: color,
-                strokeOpacity: 0.95,
-                strokeWeight: 2,
-                scale: 2,
-              },
-              offset: '0',
-              repeat: '12px',
-            }]
-          : undefined,
+        icons: [{
+          icon: {
+            path: 'M 0,-1 0,1',
+            strokeColor: color,
+            strokeOpacity: 0.95,
+            strokeWeight: 2,
+            scale: 1.7,
+          },
+          offset: '0',
+          repeat: '9px',
+        }],
       });
       itineraryLinesRef.current.push(line);
     });
