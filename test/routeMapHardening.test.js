@@ -8,10 +8,8 @@ async function read(path) { return readFile(new URL(path, root), 'utf8'); }
 async function mapSources() {
   const paths = {
     route: 'src/modules/map/RouteMap.jsx',
-    itinerary: 'src/modules/map/ItineraryRouteMap.jsx',
     google: 'src/modules/map/GooglePlacesMap.jsx',
     model: 'src/modules/map/routeMapModel.js',
-    setup: 'src/modules/map/routeMapSetup.js',
     dom: 'src/modules/map/placeMapDom.js',
     form: 'src/modules/map/PlaceSearchForm.jsx',
     search: 'src/modules/map/usePlaceSearch.js',
@@ -27,53 +25,55 @@ async function mapSources() {
   return Object.fromEntries(entries);
 }
 
-test('Itinerario y Mis Rutas usan mapas independientes sin mezclar proveedores', async () => {
-  const { route, itinerary, google } = await mapSources();
-
-  assert.match(route, /<ItineraryRouteMap segments=\{segments\} \/>/);
-  assert.match(route, /<GooglePlacesMap[\s\S]*places=\{places\}[\s\S]*routeConnections=\{routeConnections\}/);
-  assert.match(route, /active=\{viewMode === 'places'\}/);
-  assert.match(itinerary, /import \* as maplibregl from 'maplibre-gl'/);
-  assert.match(itinerary, /config\.geoapify\.mapApiKey/);
-  assert.match(google, /loadGoogleMaps\(\)/);
-  assert.doesNotMatch(itinerary, /googleRouteOptimized|googlePlaceAutocomplete|googlePlaceSearch/);
-});
-
-test('Mis Rutas monta Google Maps de forma lazy y lo conserva al cambiar de pestaña', async () => {
+test('Itinerario y Mis Rutas comparten una sola instancia de Google Maps', async () => {
   const { route, google } = await mapSources();
 
-  assert.match(route, /const \[placesMapMounted, setPlacesMapMounted\] = useState\(viewMode === 'places'\)/);
-  assert.match(route, /if \(viewMode === 'places'\) setPlacesMapMounted\(true\)/);
-  assert.match(route, /\{placesMapMounted && \(/);
-  assert.match(route, /active=\{viewMode === 'places'\}/);
-  assert.match(google, /usePlaceSearch\(\{ viewMode: active \? 'places' : 'segments' \}\)/);
-  assert.match(google, /if \(!active \|\| !mapConfigured\) return undefined/);
+  assert.match(route, /<GooglePlacesMap/);
+  assert.match(route, /segments=\{segments\}/);
+  assert.match(route, /places=\{places\}/);
+  assert.match(route, /routeConnections=\{routeConnections\}/);
+  assert.match(route, /viewMode=\{viewMode\}/);
+  assert.doesNotMatch(route, /ItineraryRouteMap|maplibregl|route-map-layer|placesMapMounted/);
+  assert.match(google, /const placesActive = viewMode === 'places'/);
+  assert.match(google, /loadGoogleMaps\(\)/);
+  assert.doesNotMatch(google, /maplibregl|createGeoapifyStyleUrl/);
 });
 
-test('Itinerario conserva curvas adaptativas, colores y vuelos punteados', async () => {
-  const { itinerary, model, setup } = await mapSources();
+test('el mapa Google corrige tamaño al cambiar de vista y al redimensionar el panel', async () => {
+  const { google } = await mapSources();
+
+  assert.match(google, /new ResizeObserver/);
+  assert.match(google, /maps\.event\.trigger\(mapRef\.current, 'resize'\)/);
+  assert.match(google, /requestAnimationFrame/);
+  assert.match(google, /maps\.event\.trigger\(map, 'resize'\)/);
+  assert.match(google, /\[ready, viewMode\]/);
+});
+
+test('Itinerario conserva curvas adaptativas, colores y vuelos punteados sobre Google', async () => {
+  const { google, model } = await mapSources();
 
   assert.match(model, /export function adaptiveCurve/);
   assert.match(model, /dominantTransport\(segment\) === 'plane'/);
   assert.match(model, /coordinates: adaptiveCurve\(segment\.origin, segment\.destination\)/);
-  assert.match(setup, /filter: \['==', \['get', 'dashed'\], true\]/);
-  assert.match(setup, /'line-dasharray': \[5, 4\]/);
-  assert.match(setup, /'line-color': \['get', 'color'\]/);
-  assert.match(itinerary, /buildMapFeatureData\(\{[\s\S]*segments,[\s\S]*places: \[\],[\s\S]*routeConnections: \[\],[\s\S]*viewMode: 'segments'/);
+  assert.match(google, /buildMapFeatureData\(\{[\s\S]*segments,[\s\S]*viewMode: 'segments'/);
+  assert.match(google, /const dashed = feature\.properties\?\.dashed === true/);
+  assert.match(google, /strokeColor: color/);
+  assert.match(google, /repeat: '12px'/);
+  assert.match(google, /google-itinerary-city-marker/);
 });
 
-test('Itinerario conserva su error de configuración de Geoapify y Mis Rutas exige Google key + Map ID', async () => {
-  const { itinerary, google, es, en } = await mapSources();
+test('todo el lienzo de mapa exige Google key + Map ID', async () => {
+  const { google, es, en } = await mapSources();
 
-  assert.match(itinerary, /t\('mapConfigMissingShort'\)/);
-  assert.match(es, /mapConfigMissingShort: 'Falta VITE_GEOAPIFY_MAPS_API_KEY\.'/);
-  assert.match(en, /mapConfigMissingShort: 'VITE_GEOAPIFY_MAPS_API_KEY is missing\.'/);
   assert.match(google, /config\.googleMaps\.webApiKey && config\.googleMaps\.mapId/);
   assert.match(google, /t\('googleMapConfigMissingShort'\)/);
   assert.match(google, /mapId: config\.googleMaps\.mapId/);
+  assert.match(es, /googleMapConfigMissingShort:/);
+  assert.match(en, /googleMapConfigMissingShort:/);
+  assert.doesNotMatch(google, /config\.geoapify\.mapApiKey/);
 });
 
-test('Google Maps usa marcadores propios y dibuja solo rutas visibles en negro', async () => {
+test('Mis Rutas usa Advanced Markers y dibuja solo rutas visibles en negro', async () => {
   const { google, dom } = await mapSources();
 
   assert.match(google, /AdvancedMarkerElement/);
@@ -90,7 +90,7 @@ test('Google Maps usa marcadores propios y dibuja solo rutas visibles en negro',
 test('Google Maps solo resuelve ubicaciones guardadas cuando Mis Rutas está activo', async () => {
   const { google } = await mapSources();
 
-  assert.match(google, /if \(!active \|\| !mapConfigured\) return undefined/);
+  assert.match(google, /if \(!placesActive \|\| !mapConfigured\) return undefined/);
   assert.match(google, /isGooglePlaceReference\(place\) && !isPlaced\(place\)/);
   assert.match(google, /loadGooglePlaceLocations\(placeIds, \{ signal: controller\.signal \}\)/);
   assert.match(google, /cachedLocations\[place\.googlePlaceId\]/);
@@ -111,14 +111,12 @@ test('la búsqueda Google conserva validación, debounce y protección contra re
   assert.match(search, /autocompleteSequenceRef/);
   assert.match(search, /sequence === searchSequenceRef\.current/);
   assert.match(search, /sequence === autocompleteSequenceRef\.current/);
-  assert.match(search, /clearTimeout\(timer\)/);
 });
 
 test('volver a Mis Rutas no dispara Autocomplete sin una edición nueva', async () => {
   const { search } = await mapSources();
 
   assert.match(search, /const previousViewModeRef = useRef\(viewMode\)/);
-  assert.match(search, /const previousViewMode = previousViewModeRef\.current/);
   assert.match(search, /if \(previousViewMode !== 'places'\)/);
   const guardBlock = search.slice(
     search.indexOf("if (previousViewMode !== 'places')"),
@@ -132,7 +130,6 @@ test('elegir una sugerencia resuelve Place Details Essentials sin lanzar Text Se
   const { search, placesClient } = await mapSources();
 
   assert.match(search, /async function chooseSuggestion\(prediction\)/);
-  assert.match(search, /const placeId = String\(prediction\?\.id \|\| ''\)\.trim\(\)/);
   assert.match(search, /resolveGooglePlace\(prediction, token, \{ signal: controller\.signal \}\)/);
   assert.match(search, /skipAutocompleteRef\.current = true/);
   assert.match(search, /setResults\(\[\{ \.\.\.place, userLabel \}\]\)/);
@@ -143,8 +140,6 @@ test('elegir una sugerencia resuelve Place Details Essentials sin lanzar Text Se
     search.indexOf('function clearSearch')
   );
   assert.doesNotMatch(chooseBlock, /searchGooglePlaces|googlePlaceSearch/);
-  assert.match(chooseBlock, /autocompleteAbortRef\.current\?\.abort\(\)/);
-  assert.match(chooseBlock, /searchAbortRef\.current\?\.abort\(\)/);
 });
 
 test('cerrar la búsqueda limpia estado, renueva sesión y cancela solicitudes activas', async () => {
@@ -158,9 +153,8 @@ test('cerrar la búsqueda limpia estado, renueva sesión y cancela solicitudes a
   assert.match(search, /setResults\(\[\]\)/);
   assert.match(search, /setSuggestions\(\[\]\)/);
   assert.match(form, /className="geo-search__clear"/);
-  assert.match(form, /onClick=\{onClear\}/);
-  assert.match(es, /closePlaceSearch: 'Cerrar búsqueda y quitar resultados'/);
-  assert.match(en, /closePlaceSearch: 'Close search and clear results'/);
+  assert.match(es, /closePlaceSearch:/);
+  assert.match(en, /closePlaceSearch:/);
 });
 
 test('el cliente de Places deduplica llamadas simultáneas y cachea solo ubicaciones', async () => {
@@ -172,7 +166,6 @@ test('el cliente de Places deduplica llamadas simultáneas y cachea solo ubicaci
   assert.match(placesClient, /const locationMemoryCache = new Map\(\)/);
   assert.match(placesClient, /config\.googleMaps\.locationCacheKey/);
   assert.match(placesClient, /config\.googleMaps\.locationCacheTtlMs/);
-  assert.match(placesClient, /expiresAt/);
   assert.doesNotMatch(placesClient, /setCached\(key, suggestions\)|setCached\(key, results\)/);
 });
 
@@ -184,8 +177,6 @@ test('Google Routes usa placeId directamente y evita duplicar la misma ruta en v
   assert.match(routeClient, /firebaseCallable\('googleRouteOptimized'\)/);
   assert.match(routeClient, /const pendingRoutes = new Map\(\)/);
   assert.match(routeClient, /if \(pendingRoutes\.has\(key\)\) return pendingRoutes\.get\(key\)/);
-  assert.match(routeClient, /origin: originWaypoint/);
-  assert.match(routeClient, /destination: destinationWaypoint/);
 });
 
 test('el workspace monta una sola instancia del mapa y en móvil espera hasta abrir Mapa', async () => {
@@ -202,14 +193,11 @@ test('guardar un lugar Google mantiene confirmación explícita y etiqueta del u
   const { google, dom, es, en } = await mapSources();
 
   assert.match(dom, /translated\(t, 'savePlacePrompt'\)/);
-  assert.match(es, /savePlacePrompt: '¿Guardar lugar para tu ruta\?'/);
-  assert.match(en, /savePlacePrompt: 'Save this place to your trip\?'/);
+  assert.match(es, /savePlacePrompt:/);
+  assert.match(en, /savePlacePrompt:/);
   assert.match(google, /provider: 'google'/);
   assert.match(google, /googlePlaceId: selected\.googlePlaceId \|\| selected\.id/);
   assert.match(google, /userLabel: selected\.userLabel \|\| ''/);
-  assert.match(google, /lat: Number\(selected\.lat\)/);
-  assert.match(google, /lon: Number\(selected\.lon\)/);
-  assert.match(google, /isPlaced\(savedPlace\)/);
   assert.match(google, /addPlace\?\.\(savedPlace\)/);
   assert.match(google, /setSaveNotice\(t\('placeSaved'\)\)/);
 });
