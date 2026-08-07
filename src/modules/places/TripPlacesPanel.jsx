@@ -19,6 +19,10 @@ function CountryFlag({ countryCode, country }) {
   );
 }
 
+function placeLabel(place, t) {
+  return place?.name || place?.userLabel || t('place');
+}
+
 export function TripPlacesPanel({
   places,
   routes = [],
@@ -38,10 +42,16 @@ export function TripPlacesPanel({
   const draggedPlaceId = dragState?.placeId || '';
 
   const groups = useMemo(
-    () => contiguousPlaceGroups(places).map((group) => ({
-      ...group,
-      country: group.country || group.countryCode || t('noCountry'),
-    })),
+    () => contiguousPlaceGroups(places).map((group) => {
+      const unresolvedGoogleGroup = !group.country && !group.countryCode
+        && group.places.every((place) => place.provider === 'google');
+      return {
+        ...group,
+        country: group.country
+          || group.countryCode
+          || (unresolvedGoogleGroup ? t('savedGooglePlaces') : t('noCountry')),
+      };
+    }),
     [places, t]
   );
 
@@ -225,6 +235,7 @@ export function TripPlacesPanel({
                   dropPlacement === 'before' ? 'is-drop-before' : '',
                   dropPlacement === 'after' ? 'is-drop-after' : '',
                 ].filter(Boolean).join(' ');
+                const label = placeLabel(place, t);
 
                 return (
                   <article
@@ -249,8 +260,8 @@ export function TripPlacesPanel({
                       <IconMapPin size={15} aria-hidden="true" />
                     </span>
                     <span className="trip-place__info">
-                      <strong>{place.name}</strong>
-                      <small>{place.city || t('noCity')}</small>
+                      <strong>{label}</strong>
+                      <small>{place.city || (place.provider === 'google' ? t('googlePlaceReference') : t('noCity'))}</small>
                     </span>
                     <button
                       type="button"
@@ -278,7 +289,7 @@ export function TripPlacesPanel({
             onMouseDown={(event) => event.stopPropagation()}
           >
             <p className="confirm__message">
-              {t('confirmDeletePlace', { name: placeToDelete.name || t('place') })}
+              {t('confirmDeletePlace', { name: placeLabel(placeToDelete, t) })}
             </p>
             <div className="confirm__actions">
               <button
