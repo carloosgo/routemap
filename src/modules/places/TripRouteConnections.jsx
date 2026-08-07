@@ -16,6 +16,10 @@ const MODE_LABEL_KEYS = Object.freeze({
   walk: 'routeModeWalk',
 });
 
+function placeLabel(place, t) {
+  return place?.name || place?.userLabel || t('place');
+}
+
 function formatDistance(value, locale) {
   const meters = Math.max(0, Number(value) || 0);
   if (meters < 1000) {
@@ -200,6 +204,8 @@ export function TripRouteConnections({
 
   if (places.length < 2) return null;
 
+  const resolvedRoutes = routes.filter((route) => route.geometry);
+
   return (
     <section className="trip-routes" aria-label={t('routeConnections')}>
       <div className="trip-routes__head">
@@ -219,10 +225,10 @@ export function TripRouteConnections({
             <button
               type="button"
               className="trip-routes__visibility-all"
-              onClick={() => setAllRouteVisibility(visibleTotals.count !== routes.filter((route) => route.geometry).length)}
+              onClick={() => setAllRouteVisibility(visibleTotals.count !== resolvedRoutes.length)}
               disabled={connectingAll}
             >
-              {visibleTotals.count === routes.filter((route) => route.geometry).length
+              {visibleTotals.count === resolvedRoutes.length
                 ? t('hideAllRoutes')
                 : t('showAllRoutes')}
             </button>
@@ -238,7 +244,7 @@ export function TripRouteConnections({
           disabled={connectingAll}
         >
           {places.map((place) => (
-            <option value={place.id} key={place.id}>{place.name}</option>
+            <option value={place.id} key={place.id}>{placeLabel(place, t)}</option>
           ))}
         </select>
         <span aria-hidden="true">→</span>
@@ -249,7 +255,7 @@ export function TripRouteConnections({
           disabled={connectingAll}
         >
           {places.map((place) => (
-            <option value={place.id} key={place.id}>{place.name}</option>
+            <option value={place.id} key={place.id}>{placeLabel(place, t)}</option>
           ))}
         </select>
         <select
@@ -293,7 +299,7 @@ export function TripRouteConnections({
                   />
                 </label>
                 <div className="trip-route__body">
-                  <strong>{origin.name} → {destination.name}</strong>
+                  <strong>{placeLabel(origin, t)} → {placeLabel(destination, t)}</strong>
                   <div className="trip-route__meta">
                     <select
                       value={route.mode}
