@@ -32,7 +32,7 @@ export const geoapifyRoute = onCall(
   callableOptions({
     secrets: [GEOAPIFY_API_KEY],
     maxInstances: 6,
-    invoker: 'public',
+    enforceAppCheck: false,
   }),
   async (request) => {
     await enforceQuota(db, request, QUOTAS.route);
