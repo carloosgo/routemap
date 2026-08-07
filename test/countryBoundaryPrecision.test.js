@@ -50,6 +50,7 @@ test('Itinerario pinta países visitados con COUNTRY y resuelve IDs mediante Pla
   assert.match(client, /countryPlaceIdCacheTtlMs/);
   assert.match(client, /language: config\.defaultLocale/);
   assert.match(client, /country: countryName/);
+  assert.match(client, /\[Google Maps\] COUNTRY Place IDs:/);
 
   assert.match(runtime, /GOOGLE_PLACES_API_KEY/);
   assert.doesNotMatch(runtime, /GOOGLE_REGION_LOOKUP_API_KEY/);
@@ -57,15 +58,14 @@ test('Itinerario pinta países visitados con COUNTRY y resuelve IDs mediante Pla
   assert.match(backend, /places:searchText/);
   assert.match(backend, /secrets: \[GOOGLE_PLACES_API_KEY\]/);
   assert.match(backend, /const COUNTRY_ID_FIELDS = 'places\.id'/);
-  assert.match(backend, /includedType: 'country'/);
-  assert.match(backend, /strictTypeFiltering: true/);
+  assert.doesNotMatch(backend, /includedType|strictTypeFiltering/);
   assert.match(backend, /pageSize: 1/);
-  assert.match(backend, /googleCountryPlaceIdCacheV3/);
-  assert.match(backend, /google-country-v3:/);
+  assert.match(backend, /googleCountryPlaceIdCacheV4/);
+  assert.match(backend, /google-country-v4:/);
   assert.match(backend, /330 \* 24 \* 60 \* 60 \* 1000/);
   assert.doesNotMatch(backend, /regionlookup\.googleapis\.com|GOOGLE_REGION_LOOKUP_API_KEY/);
 
-  assert.match(config, /atlas:google-country-place-ids:v3/);
+  assert.match(config, /atlas:google-country-place-ids:v4/);
   assert.match(functionsIndex, /googleCountryPlaceIds/);
 });
 
