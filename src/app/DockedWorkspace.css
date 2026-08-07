@@ -1,0 +1,113 @@
+/* Escritorio: el editor es una columna estructural, no una tarjeta flotante. */
+.workspace__desktop--column {
+  position: relative;
+  display: grid;
+  grid-template-columns: 412px minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--surface);
+  transition: grid-template-columns 0.18s ease;
+}
+
+.workspace__desktop--column.is-panel-collapsed {
+  grid-template-columns: 22px minmax(0, 1fr);
+}
+
+.workspace-panel {
+  position: relative;
+  z-index: 700;
+  display: grid;
+  grid-template-columns: 390px 22px;
+  width: 412px;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  border-right: 1px solid var(--line);
+  transition: width 0.18s ease, grid-template-columns 0.18s ease;
+}
+
+.workspace__desktop--column.is-panel-collapsed .workspace-panel {
+  grid-template-columns: 0 22px;
+  width: 22px;
+}
+
+/* Mantiene intacto el contenido/densidad del módulo actual, pero elimina
+   por completo su comportamiento exterior de tarjeta flotante. */
+main.workspace .workspace__desktop--column .workspace-panel__content.floating-editor {
+  position: relative !important;
+  inset: auto !important;
+  z-index: auto !important;
+  width: 390px !important;
+  min-width: 390px !important;
+  max-width: none !important;
+  height: 100% !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  background: var(--bg) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+.workspace__desktop--column.is-panel-collapsed .workspace-panel__content {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* La pestaña pertenece físicamente a la columna: es su franja de borde.
+   No flota ni se superpone sobre el mapa. */
+.workspace-panel__rail {
+  position: relative;
+  z-index: 1;
+  width: 22px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fb;
+  border-left: 1px solid var(--line);
+}
+
+.workspace-panel__toggle {
+  width: 100%;
+  height: 54px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-top: 1px solid #e1e4e9;
+  border-bottom: 1px solid #e1e4e9;
+  border-radius: 0;
+  background: #ffffff;
+  color: #6f7785;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.workspace-panel__toggle:hover,
+.workspace-panel__toggle:focus-visible {
+  background: #f1f4f6;
+  color: #357d94;
+  outline: none;
+}
+
+.workspace__desktop--column > .mappane {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+}
+
+@media (max-width: 720px) {
+  .workspace__desktop--column {
+    display: none;
+  }
+}
