@@ -52,16 +52,15 @@ test('el mapa Google corrige tamaño al cambiar de vista y al redimensionar el p
   assert.match(google, /\[ready, viewMode\]/);
 });
 
-test('Itinerario conserva curvas adaptativas, colores y vuelos punteados sobre Google', async () => {
+test('Itinerario conserva curvas adaptativas, colores y trazado discontinuo sobre Google', async () => {
   const { google, model } = await mapSources();
 
   assert.match(model, /export function adaptiveCurve/);
   assert.match(model, /dominantTransport\(segment\) === 'plane'/);
   assert.match(model, /coordinates: adaptiveCurve\(segment\.origin, segment\.destination\)/);
   assert.match(google, /buildMapFeatureData\(\{[\s\S]*segments,[\s\S]*viewMode: 'segments'/);
-  assert.match(google, /const dashed = feature\.properties\?\.dashed === true/);
-  assert.match(google, /strokeColor: color/);
-  assert.match(google, /repeat: '12px'/);
+  assert.match(google, /color: feature\.properties\?\.color \|\| '#111111'/);
+  assert.match(google, /createCrispDashedRoutes\(\{ maps, map, routes \}\)/);
   assert.match(google, /google-itinerary-city-marker/);
 });
 
