@@ -49,8 +49,6 @@ async function searchCountryPlaceId(textQuery, language) {
       },
       body: JSON.stringify({
         textQuery,
-        includedType: 'country',
-        strictTypeFiltering: true,
         languageCode: language,
         pageSize: 1,
       }),
@@ -61,10 +59,20 @@ async function searchCountryPlaceId(textQuery, language) {
 }
 
 async function fetchCountryPlaceId(country, language) {
-  let placeId = await searchCountryPlaceId(country.country, language);
-  if (!placeId) placeId = await searchCountryPlaceId(country.countryCode, language);
+  const queries = [
+    country.country,
+    `${country.country} ${country.countryCode}`,
+    country.countryCode,
+  ].filter(Boolean);
+
+  let placeId = '';
+  for (const query of queries) {
+    placeId = await searchCountryPlaceId(query, language);
+    if (placeId) break;
+  }
+
   if (!placeId) {
-    throw new Error(`Google Places no devolvió un country Place ID para ${country.countryCode}.`);
+    throw new Error(`Google Places no devolvió un Place ID para ${country.countryCode}.`);
   }
   return {
     countryCode: country.countryCode,
@@ -100,8 +108,8 @@ export const googleCountryPlaceIds = onCall(
       const resolved = await Promise.all(
         countries.map(async (country) => {
           const cached = await cachedCountryPlaceId(
-            'googleCountryPlaceIdCacheV3',
-            `google-country-v3:${country.countryCode}`,
+            'googleCountryPlaceIdCacheV4',
+            `google-country-v4:${country.countryCode}`,
             () => fetchCountryPlaceId(country, language)
           );
           return { ...cached.result, cacheHit: cached.cacheHit };
