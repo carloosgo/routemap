@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { error as logError } from 'firebase-functions/logger';
 import { callableOptions, enforceQuota } from './callablePolicy.js';
-import { GOOGLE_MAPS_API_KEY, QUOTAS, db } from './geoapifyRuntime.js';
+import { GOOGLE_ROUTES_API_KEY, QUOTAS, db } from './geoapifyRuntime.js';
 import { limitedFetch, safeError, validPoint } from './geoapifySupport.js';
 
 const GOOGLE_ROUTES_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
@@ -18,10 +18,10 @@ const ROUTE_FIELDS = [
 ].join(',');
 const GOOGLE_ROUTE_MODES = new Set(['drive', 'transit', 'train', 'bus', 'bicycle', 'walk']);
 
-function requireGoogleKey() {
-  const key = GOOGLE_MAPS_API_KEY.value();
+function requireGoogleRoutesKey() {
+  const key = GOOGLE_ROUTES_API_KEY.value();
   if (!key) {
-    throw new HttpsError('failed-precondition', 'Falta el secreto GOOGLE_MAPS_API_KEY.');
+    throw new HttpsError('failed-precondition', 'Falta el secreto GOOGLE_ROUTES_API_KEY.');
   }
   return key;
 }
@@ -37,7 +37,7 @@ function validLanguage(value) {
 function googleHeaders() {
   return {
     'Content-Type': 'application/json',
-    'X-Goog-Api-Key': requireGoogleKey(),
+    'X-Goog-Api-Key': requireGoogleRoutesKey(),
     'X-Goog-FieldMask': ROUTE_FIELDS,
   };
 }
@@ -139,7 +139,7 @@ function transitSummary(route) {
 
 export const googleRouteOptimized = onCall(
   callableOptions({
-    secrets: [GOOGLE_MAPS_API_KEY],
+    secrets: [GOOGLE_ROUTES_API_KEY],
     enforceAppCheck: false,
     maxInstances: 6,
   }),
