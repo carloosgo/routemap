@@ -343,7 +343,7 @@ export function GooglePlacesMap({
             if (!color) return null;
             return {
               fillColor: color,
-              fillOpacity: 0.16,
+              fillOpacity: 0.20,
               strokeOpacity: 0,
               strokeWeight: 0,
             };
