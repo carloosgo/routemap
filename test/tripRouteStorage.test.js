@@ -8,7 +8,7 @@ import {
 } from '../src/infrastructure/firebase/tripStorageSchema.js';
 import { createPlace, createTrip } from '../src/modules/trips/tripModel.js';
 
-function tripWithRoute() {
+function tripWithRoute(overrides = {}) {
   const trip = createTrip('Roma');
   return {
     ...trip,
@@ -30,11 +30,12 @@ function tripWithRoute() {
         coordinates: [[12.4922, 41.8902], [12.4833, 41.9009]],
       },
       calculatedAt: '2026-08-06T20:00:00.000Z',
+      ...overrides,
     }],
   };
 }
 
-test('Firestore serializa la geometría para evitar arrays anidados', () => {
+test('Firestore serializa la geometría heredada para evitar arrays anidados', () => {
   const payload = createTripRevisionPayload(tripWithRoute(), 'revision-route-001');
   const stored = payload.collections.routeConnections[0];
 
@@ -46,7 +47,7 @@ test('Firestore serializa la geometría para evitar arrays anidados', () => {
   assert.deepEqual(JSON.parse(stored.geometryJson), tripWithRoute().routeConnections[0].geometry);
 });
 
-test('hidratar la revisión reconstruye el GeoJSON de la conexión', () => {
+test('hidratar la revisión reconstruye el GeoJSON de una conexión heredada', () => {
   const payload = createTripRevisionPayload(tripWithRoute(), 'revision-route-002');
   const hydrated = hydrateVersionedTrip(payload.summary, payload.collections);
 
@@ -56,6 +57,32 @@ test('hidratar la revisión reconstruye el GeoJSON de la conexión', () => {
     hydrated.routeConnections[0].geometry,
     tripWithRoute().routeConnections[0].geometry
   );
+});
+
+test('Firestore no persiste contenido dinámico devuelto por Google Routes', () => {
+  const trip = tripWithRoute({
+    provider: 'google',
+    mode: 'train',
+    transitSteps: [{
+      lineShortName: 'ICE 1004',
+      agencies: ['Deutsche Bahn'],
+    }],
+  });
+  const payload = createTripRevisionPayload(trip, 'revision-route-google-001');
+  const stored = payload.collections.routeConnections[0];
+
+  assert.equal(stored.mode, 'train');
+  assert.equal(stored.geometryJson, 'null');
+  assert.equal(stored.distance, 0);
+  assert.equal(stored.duration, 0);
+  assert.equal(stored.calculatedAt, '');
+  assert.equal(Object.hasOwn(stored, 'transitSteps'), false);
+  assert.equal(Object.hasOwn(stored, 'provider'), false);
+
+  const hydrated = hydrateVersionedTrip(payload.summary, payload.collections);
+  assert.equal(hydrated.routeConnections.length, 1);
+  assert.equal(hydrated.routeConnections[0].mode, 'train');
+  assert.equal(hydrated.routeConnections[0].geometry, null);
 });
 
 test('el lector mantiene compatibilidad con resúmenes versionados v2', () => {
