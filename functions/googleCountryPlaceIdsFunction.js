@@ -83,7 +83,7 @@ async function writeCountryCache(countries) {
   await batch.commit();
 }
 
-async function lookupCountryPlaceIds(countryCodes) {
+async function lookupCountryPlaceId(countryCode) {
   const payload = await limitedFetch(
     REGION_LOOKUP_URL,
     {
@@ -93,25 +93,32 @@ async function lookupCountryPlaceIds(countryCodes) {
         'X-Goog-Api-Key': requireRegionLookupKey(),
       },
       body: JSON.stringify({
-        identifiers: countryCodes.map((countryCode) => ({
+        identifiers: [{
           unit_code: countryCode,
           place_type: 'country',
-        })),
+        }],
       }),
     },
     'Google Region Lookup country ID'
   );
 
-  const matches = Array.isArray(payload?.matches) ? payload.matches : [];
-  const fetchedAt = Date.now();
-  return countryCodes
-    .map((countryCode, index) => ({
-      countryCode,
-      placeId: cleanPlaceId(matches[index]?.matchedPlaceId),
-      fetchedAt,
-      cacheHit: false,
-    }))
-    .filter((country) => country.placeId);
+  const placeId = cleanPlaceId(payload?.matches?.[0]?.matchedPlaceId);
+  if (!placeId) return null;
+  return {
+    countryCode,
+    placeId,
+    fetchedAt: Date.now(),
+    cacheHit: false,
+  };
+}
+
+async function lookupMissingCountries(countryCodes) {
+  const resolved = [];
+  for (const countryCode of countryCodes) {
+    const country = await lookupCountryPlaceId(countryCode);
+    if (country) resolved.push(country);
+  }
+  return resolved;
 }
 
 export const googleCountryPlaceIds = onCall(
@@ -138,7 +145,7 @@ export const googleCountryPlaceIds = onCall(
     try {
       const cached = await readCountryCache(countryCodes);
       const fresh = cached.missing.length
-        ? await lookupCountryPlaceIds(cached.missing)
+        ? await lookupMissingCountries(cached.missing)
         : [];
       await writeCountryCache(fresh);
 
