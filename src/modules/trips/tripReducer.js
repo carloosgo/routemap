@@ -194,7 +194,6 @@ export function tripReducer(state, action) {
         || route.fromPlaceId === route.toPlaceId
         || !placeIds.has(route.fromPlaceId)
         || !placeIds.has(route.toPlaceId)
-        || !route.geometry
       ) {
         return state;
       }
