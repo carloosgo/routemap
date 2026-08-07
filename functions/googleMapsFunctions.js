@@ -26,6 +26,7 @@ const DETAILS_FIELDS = [
   'location',
   'addressComponents',
 ].join(',');
+const REFRESH_DETAILS_FIELDS = `${DETAILS_FIELDS},displayName`;
 const TEXT_SEARCH_FIELDS = [
   'places.id',
   'places.displayName',
@@ -251,6 +252,7 @@ export const googlePlaceDetails = onCall(
     const placeId = cleanText(request.data?.placeId, 256);
     const sessionToken = validSessionToken(request.data?.sessionToken);
     const fallbackName = cleanText(request.data?.name, 160);
+    const includeDisplayName = request.data?.includeDisplayName === true;
     if (!placeId) {
       throw new HttpsError('invalid-argument', 'El lugar es inválido.');
     }
@@ -262,7 +264,7 @@ export const googlePlaceDetails = onCall(
       if (sessionToken) params.set('sessionToken', sessionToken);
       const payload = await limitedFetch(
         `${GOOGLE_PLACES_BASE}/places/${encodeURIComponent(placeId)}?${params}`,
-        { headers: googleHeaders(DETAILS_FIELDS) },
+        { headers: googleHeaders(includeDisplayName ? REFRESH_DETAILS_FIELDS : DETAILS_FIELDS) },
         'Google Places'
       );
       const place = mapGooglePlace(payload, fallbackName);
