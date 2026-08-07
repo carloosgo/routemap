@@ -1,4 +1,8 @@
-import { normalizeTrip, tripTotal } from '../../modules/trips/tripModel.js';
+import {
+  normalizeTrip,
+  placeForPersistence,
+  tripTotal,
+} from '../../modules/trips/tripModel.js';
 
 export const TRIP_STORAGE_VERSION = 3;
 const SUPPORTED_TRIP_STORAGE_VERSIONS = new Set([2, TRIP_STORAGE_VERSION]);
@@ -120,7 +124,7 @@ export function createTripRevisionPayload(rawTrip, revisionId, updatedAt = new D
     },
     collections: {
       segments: positioned(trip.segments, segmentForStorage),
-      places: positioned(trip.places),
+      places: positioned(trip.places, placeForPersistence),
       routeConnections: positioned(trip.routeConnections, routeConnectionForStorage),
       notes: positioned(trip.notes),
       checklist: positioned(trip.checklist),
