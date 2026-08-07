@@ -6,6 +6,9 @@ import { isGooglePlaceReference, isPlaced } from '../trips/tripModel.js';
 import { PlaceSearchForm } from './PlaceSearchForm.jsx';
 import { loadGoogleMaps } from './googleMapsLoader.js';
 import { markerElement, savePrompt, savedPlacePopup } from './placeMapDom.js';
+import { placeCountryKey } from './routeMapModel.js';
+import { savedPlaceMarkerStyle } from './savedPlaceMarkerPalette.js';
+import { savedPlacePinUrl } from './savedPlaceSymbol.js';
 import { usePlaceSearch } from './usePlaceSearch.js';
 
 function geometryPaths(geometry) {
@@ -25,14 +28,18 @@ function placeLabel(place, t) {
   return place.name || place.userLabel || t('place');
 }
 
-function savedMarkerContent(place, t) {
+function savedMarkerContent(place, t, color) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'google-saved-place-marker';
   button.setAttribute('aria-label', placeLabel(place, t));
-  const dot = document.createElement('span');
-  dot.className = 'google-saved-place-marker__dot';
-  button.append(dot);
+  const image = document.createElement('img');
+  image.src = savedPlacePinUrl(color);
+  image.width = 26;
+  image.height = 28;
+  image.alt = '';
+  image.decoding = 'async';
+  button.append(image);
   return button;
 }
 
@@ -68,6 +75,21 @@ export function GooglePlacesMap({
     }),
     [cachedLocations, places]
   );
+
+  const savedMarkerColors = useMemo(() => {
+    const countryIndexes = new Map();
+    const colors = new Map();
+    let nextCountryIndex = 0;
+    locatedPlaces.forEach((place) => {
+      const countryKey = placeCountryKey(place);
+      if (!countryIndexes.has(countryKey)) {
+        countryIndexes.set(countryKey, nextCountryIndex);
+        nextCountryIndex += 1;
+      }
+      colors.set(place.id, savedPlaceMarkerStyle(countryIndexes.get(countryKey)).color);
+    });
+    return colors;
+  }, [locatedPlaces]);
 
   useEffect(() => {
     if (!active || !mapConfigured) return undefined;
@@ -161,7 +183,11 @@ export function GooglePlacesMap({
     const bounds = new maps.LatLngBounds();
 
     locatedPlaces.filter(isPlaced).forEach((place) => {
-      const content = savedMarkerContent(place, t);
+      const content = savedMarkerContent(
+        place,
+        t,
+        savedMarkerColors.get(place.id) || savedPlaceMarkerStyle(0).color
+      );
       const marker = new AdvancedMarkerElement({
         map,
         position: { lat: place.lat, lng: place.lon },
@@ -239,7 +265,7 @@ export function GooglePlacesMap({
       markersRef.current.forEach((marker) => { marker.map = null; });
       markersRef.current = [];
     };
-  }, [addPlace, locatedPlaces, placeSearch.results, places, ready, t]);
+  }, [addPlace, locatedPlaces, placeSearch.results, places, ready, savedMarkerColors, t]);
 
   useEffect(() => {
     const map = mapRef.current;
