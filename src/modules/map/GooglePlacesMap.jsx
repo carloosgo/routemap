@@ -4,6 +4,8 @@ import { useTranslation } from '../../i18n/index.jsx';
 import { loadGooglePlaceLocations } from '../places/googlePlacesClient.js';
 import { isGooglePlaceReference, isPlaced } from '../trips/tripModel.js';
 import { PlaceSearchForm } from './PlaceSearchForm.jsx';
+import { vividCountryColor, visitedCountries } from './countryColoring.js';
+import { loadGoogleCountryPlaceIds } from './googleCountryBoundariesClient.js';
 import { loadGoogleMaps } from './googleMapsLoader.js';
 import { markerElement, savePrompt, savedPlacePopup } from './placeMapDom.js';
 import { buildMapFeatureData, cityKey, placeCountryKey } from './routeMapModel.js';
@@ -103,6 +105,7 @@ export function GooglePlacesMap({
   const infoWindowRef = useRef(null);
   const saveNoticeTimerRef = useRef(null);
   const lastItineraryViewportKeyRef = useRef(null);
+  const countryLayerWarningRef = useRef(false);
   const [cachedLocations, setCachedLocations] = useState({});
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState('');
@@ -138,6 +141,17 @@ export function GooglePlacesMap({
     });
     return colors;
   }, [locatedPlaces]);
+
+  const itineraryCountries = useMemo(
+    () => visitedCountries(segments, colorForIndex)
+      .map(({ countryCode, city, color }) => ({
+        countryCode,
+        country: String(city?.country || '').trim(),
+        color,
+      }))
+      .filter((country) => country.countryCode && country.country),
+    [segments]
+  );
 
   useEffect(() => {
     if (!placesActive || !mapConfigured) return undefined;
@@ -279,6 +293,63 @@ export function GooglePlacesMap({
     });
     return () => cancelAnimationFrame(frame);
   }, [ready, viewMode]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return undefined;
+    const countryLayer = map.getFeatureLayer?.('COUNTRY');
+    if (!countryLayer) return undefined;
+
+    if (placesActive || !itineraryCountries.length) {
+      countryLayer.style = null;
+      return undefined;
+    }
+
+    if (!countryLayer.isAvailable) {
+      countryLayer.style = null;
+      if (!countryLayerWarningRef.current) {
+        countryLayerWarningRef.current = true;
+        console.warn('[Google Maps] COUNTRY feature layer is not enabled for this Map ID style.');
+      }
+      return undefined;
+    }
+
+    countryLayerWarningRef.current = false;
+    const controller = new AbortController();
+    loadGoogleCountryPlaceIds(itineraryCountries, { signal: controller.signal })
+      .then((resolvedCountries) => {
+        if (controller.signal.aborted) return;
+        const colorsByCode = new Map(
+          itineraryCountries.map((country) => [country.countryCode, vividCountryColor(country.color)])
+        );
+        const colorsByPlaceId = new Map();
+        resolvedCountries.forEach((country) => {
+          const color = colorsByCode.get(country.countryCode);
+          if (country?.placeId && color) colorsByPlaceId.set(country.placeId, color);
+        });
+        countryLayer.style = ({ feature }) => {
+          const color = colorsByPlaceId.get(feature?.placeId);
+          if (!color) return null;
+          return {
+            fillColor: color,
+            fillOpacity: 0.22,
+            strokeColor: color,
+            strokeOpacity: 0.72,
+            strokeWeight: 1.2,
+          };
+        };
+      })
+      .catch((error) => {
+        if (error?.name !== 'AbortError') {
+          console.warn('[Google Maps] country boundary styling failed', error);
+        }
+      });
+
+    return () => {
+      controller.abort();
+      countryLayer.style = null;
+    };
+  }, [itineraryCountries, placesActive, ready]);
 
   useEffect(() => {
     const map = mapRef.current;
