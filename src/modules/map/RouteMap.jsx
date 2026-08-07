@@ -33,6 +33,7 @@ export function RouteMap({
             places={places}
             routeConnections={routeConnections}
             addPlace={addPlace}
+            active={viewMode === 'places'}
           />
         </div>
       )}
