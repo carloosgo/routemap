@@ -50,6 +50,13 @@
   color: #0f172a;
 }
 
+.trip-routes__head-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.trip-routes__connect-all,
 .trip-routes__visibility-all,
 .trip-route__remove {
   padding: 0;
@@ -59,8 +66,21 @@
   cursor: pointer;
 }
 
+.trip-routes__connect-all {
+  color: #0d6078;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .trip-routes__visibility-all {
   font-size: 11px;
+}
+
+.trip-routes__connect-all:disabled,
+.trip-routes__visibility-all:disabled,
+.trip-route__remove:disabled {
+  cursor: default;
+  opacity: .45;
 }
 
 .trip-routes__builder {
