@@ -102,6 +102,18 @@ export function savedPlaceRoutePairKey(route) {
   return `${normalizePlaceId(route?.fromPlaceId)}\u0000${normalizePlaceId(route?.toPlaceId)}`;
 }
 
+export function consecutiveSavedPlaceRoutePairs(places) {
+  const list = Array.isArray(places) ? places : [];
+  const pairs = [];
+  for (let index = 0; index < list.length - 1; index += 1) {
+    const fromPlaceId = normalizePlaceId(list[index]?.id);
+    const toPlaceId = normalizePlaceId(list[index + 1]?.id);
+    if (!fromPlaceId || !toPlaceId || fromPlaceId === toPlaceId) continue;
+    pairs.push({ fromPlaceId, toPlaceId });
+  }
+  return pairs;
+}
+
 export function normalizeSavedPlaceRoutes(rawRoutes, places, limit = 200) {
   const placeIds = new Set((places || []).map((place) => place.id));
   const seenPairs = new Set();
