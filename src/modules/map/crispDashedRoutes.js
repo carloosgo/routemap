@@ -143,8 +143,10 @@ export function createCrispDashedRoutes({
   };
   overlay.setMap(map);
 
-  const zoomListener = map.addListener?.('zoom_changed', scheduleRedraw);
-  const idleListener = maps.event.addListenerOnce?.(map, 'idle', scheduleRedraw);
+  const zoomListener = map.addListener?.('zoom_changed', () => {
+    hasRendered = false;
+  });
+  const idleListener = map.addListener?.('idle', scheduleRedraw);
   scheduleRedraw();
 
   return {
