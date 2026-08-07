@@ -32,6 +32,7 @@ export const QUOTAS = Object.freeze({
   googlePlaceAutocomplete: { scope: 'google-place-autocomplete', maxRequests: 40, windowMs: 60_000 },
   googlePlaceDetails: { scope: 'google-place-details', maxRequests: 30, windowMs: 60_000 },
   googlePlaceSearch: { scope: 'google-place-search', maxRequests: 12, windowMs: 60_000 },
+  googlePlaceLocations: { scope: 'google-place-locations', maxRequests: 12, windowMs: 60_000 },
   googleRoute: { scope: 'google-route', maxRequests: 30, windowMs: 60_000 },
   batchSubmit: {
     scope: 'geoapify-batch-submit',
