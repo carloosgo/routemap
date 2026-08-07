@@ -172,11 +172,11 @@ service cloud.firestore {
 
     function validPlace(data) {
       return data.keys().hasOnly([
-          'id', 'position', 'provider', 'googlePlaceId', 'name', 'address', 'city',
+          'id', 'position', 'provider', 'googlePlaceId', 'userLabel', 'name', 'address', 'city',
           'country', 'category', 'countryCode', 'lat', 'lon', 'savedAt'
         ])
         && data.keys().hasAll([
-          'id', 'position', 'provider', 'googlePlaceId', 'name', 'address', 'city',
+          'id', 'position', 'provider', 'googlePlaceId', 'userLabel', 'name', 'address', 'city',
           'country', 'category', 'countryCode', 'lat', 'lon', 'savedAt'
         ])
         && data.id is string
@@ -187,6 +187,8 @@ service cloud.firestore {
         && (data.provider == 'geoapify' || data.provider == 'google')
         && data.googlePlaceId is string
         && data.googlePlaceId.size() <= 256
+        && data.userLabel is string
+        && data.userLabel.size() <= 160
         && data.name is string
         && data.name.size() <= 160
         && data.address is string
