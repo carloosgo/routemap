@@ -385,20 +385,37 @@ export function GooglePlacesMap({
       viewMode: 'segments',
       colorForIndex,
     });
+    const routes = routeFeatures
+      .map((feature) => ({
+        path: toGooglePath(feature.geometry?.coordinates || []),
+        color: feature.properties?.color || '#111111',
+      }))
+      .filter((route) => route.path.length >= 2);
 
-    const crispRoutes = createCrispDashedRoutes({
-      maps,
-      map,
-      routes: routeFeatures
-        .map((feature) => ({
-          path: toGooglePath(feature.geometry?.coordinates || []),
-          color: feature.properties?.color || '#111111',
-        }))
-        .filter((route) => route.path.length >= 2),
-      dashPx: 6,
-      gapPx: 4,
-      strokeWeight: 3,
-    });
+    let disposed = false;
+    let crispRoutes = { dispose() {} };
+    let viewportIdleListener = null;
+    let routeRefreshFrame = 0;
+
+    const mountRoutes = () => {
+      if (disposed) return;
+      crispRoutes.dispose();
+      crispRoutes = createCrispDashedRoutes({ maps, map, routes });
+    };
+
+    const refreshLikeViewChangeAndMountRoutes = () => {
+      if (disposed) return;
+      routeRefreshFrame = requestAnimationFrame(() => {
+        if (disposed) return;
+        if (!syncMapElementSize(wrapRef.current, nodeRef.current)) return;
+        const center = map.getCenter();
+        const zoom = map.getZoom();
+        maps.event.trigger(map, 'resize');
+        if (center) map.setCenter(center);
+        if (Number.isFinite(zoom)) map.setZoom(zoom);
+        routeRefreshFrame = requestAnimationFrame(mountRoutes);
+      });
+    };
 
     const bounds = new maps.LatLngBounds();
     cityFeatures.forEach((feature) => {
@@ -420,17 +437,32 @@ export function GooglePlacesMap({
     });
 
     const viewportKey = routeCities.map(cityKey).join('|');
-    if (viewportKey !== lastItineraryViewportKeyRef.current) {
+    const viewportChanged = viewportKey !== lastItineraryViewportKeyRef.current;
+    if (viewportChanged) {
       lastItineraryViewportKeyRef.current = viewportKey;
+      viewportIdleListener = map.addListener?.('idle', () => {
+        viewportIdleListener?.remove?.();
+        viewportIdleListener = null;
+        refreshLikeViewChangeAndMountRoutes();
+      });
       if (routeCities.length === 1) {
         map.panTo({ lat: routeCities[0].lat, lng: routeCities[0].lon });
         map.setZoom(10);
       } else if (routeCities.length > 1 && !bounds.isEmpty()) {
         map.fitBounds(bounds, 84);
+      } else {
+        viewportIdleListener?.remove?.();
+        viewportIdleListener = null;
+        mountRoutes();
       }
+    } else {
+      mountRoutes();
     }
 
     return () => {
+      disposed = true;
+      viewportIdleListener?.remove?.();
+      if (routeRefreshFrame) cancelAnimationFrame(routeRefreshFrame);
       crispRoutes.dispose();
       clearAdvancedMarkers(itineraryMarkersRef);
       clearPolylines(itineraryLinesRef);
