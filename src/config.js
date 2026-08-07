@@ -46,6 +46,8 @@ export const config = {
     searchDebounceMs: 450,
     searchLimit: 5,
     memoryCacheTtlMs: 5 * 60 * 1000,
+    locationCacheKey: 'atlas:google-place-locations:v1',
+    locationCacheTtlMs: 29 * 24 * 60 * 60 * 1000,
   },
   defaultLocale: allowedValue(env.VITE_DEFAULT_LOCALE, ['es', 'en'], 'es'),
   map: {
