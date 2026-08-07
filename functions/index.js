@@ -25,4 +25,5 @@ export {
   googleRoute,
 } from './googleMapsFunctions.js';
 
+export { googlePlaceLocations } from './googlePlaceLocationFunction.js';
 export { googleRouteOptimized } from './googleOptimizedRouteFunction.js';
