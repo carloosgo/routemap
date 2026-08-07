@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { error as logError } from 'firebase-functions/logger';
 import { callableOptions, enforceQuota } from './callablePolicy.js';
-import { GOOGLE_MAPS_API_KEY, QUOTAS, db } from './geoapifyRuntime.js';
+import { GOOGLE_PLACES_API_KEY, QUOTAS, db } from './geoapifyRuntime.js';
 import { limitedFetch, safeError } from './geoapifySupport.js';
 
 const GOOGLE_PLACES_BASE = 'https://places.googleapis.com/v1';
@@ -12,10 +12,10 @@ const DETAILS_FIELDS = [
   'addressComponents',
 ].join(',');
 
-function requireGoogleKey() {
-  const key = GOOGLE_MAPS_API_KEY.value();
+function requireGooglePlacesKey() {
+  const key = GOOGLE_PLACES_API_KEY.value();
   if (!key) {
-    throw new HttpsError('failed-precondition', 'Falta el secreto GOOGLE_MAPS_API_KEY.');
+    throw new HttpsError('failed-precondition', 'Falta el secreto GOOGLE_PLACES_API_KEY.');
   }
   return key;
 }
@@ -71,7 +71,7 @@ function mapPlace(place, fallbackName) {
 
 export const googlePlaceDetailsEssentials = onCall(
   callableOptions({
-    secrets: [GOOGLE_MAPS_API_KEY],
+    secrets: [GOOGLE_PLACES_API_KEY],
     enforceAppCheck: false,
     maxInstances: 6,
   }),
@@ -94,7 +94,7 @@ export const googlePlaceDetailsEssentials = onCall(
         {
           headers: {
             'Content-Type': 'application/json',
-            'X-Goog-Api-Key': requireGoogleKey(),
+            'X-Goog-Api-Key': requireGooglePlacesKey(),
             'X-Goog-FieldMask': DETAILS_FIELDS,
           },
         },
