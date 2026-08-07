@@ -21,7 +21,7 @@ test('divide un trazo en guiones de 4px con espacios de 6px', () => {
   );
 });
 
-test('Itinerario usa segmentos Polyline nativos y refresca el canvas antes del redraw', async () => {
+test('Itinerario espera al mapa estable y reemplaza los guiones sin flashes', async () => {
   const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
   const renderer = await read('src/modules/map/crispDashedRoutes.js');
 
@@ -29,11 +29,13 @@ test('Itinerario usa segmentos Polyline nativos y refresca el canvas antes del r
   assert.match(renderer, /DEFAULT_DASH_PX = 4/);
   assert.match(renderer, /DEFAULT_GAP_PX = 6/);
   assert.match(renderer, /DEFAULT_STROKE_WEIGHT = 2/);
-  assert.match(renderer, /needsMapCanvasRefresh = true/);
-  assert.match(renderer, /maps\.event\.trigger\(map, 'resize'\)/);
   assert.match(renderer, /map\.addListener\?\.\('idle'/);
-  assert.match(renderer, /ResizeObserver/);
+  assert.match(renderer, /map\.addListener\?\.\('tilesloaded'/);
+  assert.match(renderer, /const previousPolylines = polylines/);
+  assert.match(renderer, /polylines = nextPolylines/);
+  assert.match(renderer, /clearLines\(previousPolylines\)/);
   assert.match(renderer, /new maps\.Polyline\(/);
   assert.match(renderer, /strokeOpacity: 1/);
+  assert.doesNotMatch(renderer, /maps\.event\.trigger\(map, 'resize'\)/);
   assert.doesNotMatch(renderer, /icons:|repeat:/);
 });
