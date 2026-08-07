@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { GooglePlacesMap } from './GooglePlacesMap.jsx';
 import { ItineraryRouteMap } from './ItineraryRouteMap.jsx';
 import './RouteMap.css';
+import './GooglePlacesMap.css';
 
 export function RouteMap({
   segments,
