@@ -6,29 +6,33 @@ import { config } from '../src/config.js';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const read = (path) => readFile(path, 'utf8');
 
-async function readFunctionModules() {
+async function readCallableModules() {
   const paths = [
     'functions/geoapifyCityFunctions.js',
     'functions/geoapifyPlaceFunctions.js',
     'functions/geoapifyRouteFunctions.js',
     'functions/geoapifyBatchFunctions.js',
     'functions/countryBoundaryFunction.js',
+    'functions/googleMapsFunctions.js',
+    'functions/googlePlaceDetailsEssentialsFunction.js',
+    'functions/googlePlaceLocationFunction.js',
+    'functions/googleOptimizedRouteFunction.js',
   ];
   return Promise.all(paths.map(read));
 }
 
-test('ciudades y búsqueda general conservan políticas independientes', () => {
+test('ciudades Geoapify y búsqueda Google conservan políticas independientes', () => {
   assert.equal(config.citySearchMinChars, 3);
   assert.equal(config.citySearchDebounceMs, 450);
   assert.equal(config.citySearchLimit, 5);
   assert.ok(config.citySearchCacheTtlMs >= 30 * DAY_MS);
   assert.ok(config.citySearchCacheTtlMs <= 90 * DAY_MS);
 
-  assert.equal(config.geoapify.searchMinChars, 5);
-  assert.equal(config.geoapify.searchDebounceMs, 450);
-  assert.equal(config.geoapify.searchLimit, 5);
-  assert.ok(config.geoapify.clientCacheTtlMs >= 30 * DAY_MS);
-  assert.ok(config.geoapify.clientCacheTtlMs <= 90 * DAY_MS);
+  assert.equal(config.googleMaps.searchMinChars, 4);
+  assert.equal(config.googleMaps.searchDebounceMs, 450);
+  assert.equal(config.googleMaps.searchLimit, 5);
+  assert.ok(config.googleMaps.locationCacheTtlMs >= 28 * DAY_MS);
+  assert.ok(config.googleMaps.locationCacheTtlMs < 30 * DAY_MS);
 });
 
 test('el backend de ciudades fuerza type city, mínimo tres y límite cinco', async () => {
@@ -41,10 +45,10 @@ test('el backend de ciudades fuerza type city, mínimo tres y límite cinco', as
   assert.match(cityFunctions, /'citySearchCache'/);
   assert.match(cityFunctions, /QUOTAS\.cityAutocomplete/);
   assert.match(runtime, /cityAutocomplete: \{ scope: 'geoapify-city-autocomplete'/);
-  assert.doesNotMatch(cityFunctions, /geoapifyPlaceSearch|placeSearchCache/);
+  assert.doesNotMatch(cityFunctions, /googlePlaceSearch|googlePlaceAutocomplete/);
 });
 
-test('el backend general conserva mínimo de cinco y rate limiter oficial', async () => {
+test('el backend Geoapify legado conserva mínimo de cinco y rate limiter oficial', async () => {
   const placeFunctions = await read('functions/geoapifyPlaceFunctions.js');
   const batchFunctions = await read('functions/geoapifyBatchFunctions.js');
   const support = await read('functions/geoapifySupport.js');
@@ -56,7 +60,7 @@ test('el backend general conserva mínimo de cinco y rate limiter oficial', asyn
   assert.match(support, /RequestRateLimiter\.rateLimitedRequests/);
 });
 
-test('batch usa una solicitud oficial de hasta mil entradas y exige autenticación', async () => {
+test('batch Geoapify usa una solicitud oficial de hasta mil entradas y exige autenticación', async () => {
   const source = await read('functions/geoapifyBatchFunctions.js');
 
   assert.match(source, /rawQueries\.length > 1000/);
@@ -68,9 +72,9 @@ test('batch usa una solicitud oficial de hasta mil entradas y exige autenticaci�
   assert.doesNotMatch(source, /const tasks = queries\.map/);
 });
 
-test('App Check, cuotas compartidas y límites de instancias forman parte de todas las callable functions', async () => {
+test('App Check, cuotas compartidas y límites de instancias forman parte de las callable functions', async () => {
   const policy = await read('functions/callablePolicy.js');
-  const sources = await readFunctionModules();
+  const sources = await readCallableModules();
   const client = await read('src/infrastructure/firebase/firebaseClient.js');
 
   assert.match(policy, /defineBoolean\('ENFORCE_APP_CHECK'/);
@@ -93,6 +97,7 @@ test('la caché compartida oculta la consulta y conserva expiración administrab
   const cityFunctions = await read('functions/geoapifyCityFunctions.js');
   const placeFunctions = await read('functions/geoapifyPlaceFunctions.js');
   const batchFunctions = await read('functions/geoapifyBatchFunctions.js');
+  const googleLocations = await read('functions/googlePlaceLocationFunction.js');
   const sources = `${cityFunctions}\n${placeFunctions}\n${batchFunctions}`;
 
   assert.match(cache, /expiresAt: Timestamp\.fromMillis/);
@@ -102,29 +107,28 @@ test('la caché compartida oculta la consulta y conserva expiración administrab
   assert.match(cityFunctions, /citySearchCache/);
   assert.match(placeFunctions, /placeDetailsCache/);
   assert.match(batchFunctions, /geoapifyBatchJobs/);
+  assert.match(googleLocations, /googlePlaceLocationCache/);
+  assert.match(googleLocations, /29 \* 24 \* 60 \* 60 \* 1000/);
 });
 
-test('el endpoint de routing queda aislado hasta la futura fase de rutas de búsqueda general', async () => {
-  const source = await read('functions/geoapifyRouteFunctions.js');
-  const client = await read('src/modules/places/geoapifyClient.js');
-  const tripModel = await read('src/modules/trips/tripModel.js');
+test('routing de Mis Rutas usa Google y permanece aislado de Itinerario', async () => {
+  const geoapifyRoute = await read('functions/geoapifyRouteFunctions.js');
+  const googleRoute = await read('functions/googleOptimizedRouteFunction.js');
+  const googleRouteClient = await read('src/modules/routes/googleRouteClient.js');
+  const connections = await read('src/modules/places/TripRouteConnections.jsx');
+  const itineraryMap = await read('src/modules/map/ItineraryRouteMap.jsx');
   const tripEntities = await read('src/modules/trips/tripEntities.js');
-  const map = await read('src/modules/map/RouteMap.jsx');
-  const mapPane = await read('src/app/AppMapPane.jsx');
 
-  assert.match(source, /export const geoapifyRoute/);
-  assert.match(source, /geometry: feature\.geometry/);
-  assert.match(source, /distance: Number\(feature\.properties\?\.distance\)/);
-  assert.match(source, /duration: Number\(feature\.properties\?\.time\)/);
-  assert.doesNotMatch(source, /elevation|route_details|traffic/);
-  assert.doesNotMatch(client, /callable\('geoapifyRoute'\)/);
-  assert.doesNotMatch(tripModel, /segmentRoute|routeGeometry|routeSignature/);
-  assert.doesNotMatch(tripEntities, /\broute\s*:/);
-  assert.doesNotMatch(map, /geoapifyRoute|requestGeoapifyRoute|PersistentSegmentRoutes/);
-  assert.doesNotMatch(mapPane, /usePersistentSegmentRoutes|requestGeoapifyRoute/);
+  assert.match(geoapifyRoute, /export const geoapifyRoute/);
+  assert.match(googleRoute, /export const googleRouteOptimized/);
+  assert.match(googleRouteClient, /firebaseCallable\('googleRouteOptimized'\)/);
+  assert.match(googleRouteClient, /return \{ placeId: place\.googlePlaceId \}/);
+  assert.match(connections, /requestGooglePlaceRoute\(origin, destination, routeMode\)/);
+  assert.doesNotMatch(itineraryMap, /googleRouteOptimized|requestGooglePlaceRoute|geoapifyRoute/);
+  assert.doesNotMatch(tripEntities, /segmentRoute|routeGeometry|routeSignature/);
 });
 
-test('functions index conserva una fachada con los nueve endpoints públicos', async () => {
+test('functions index conserva una fachada y expone los endpoints de ambos proveedores', async () => {
   const index = await read('functions/index.js');
 
   for (const endpoint of [
@@ -137,10 +141,15 @@ test('functions index conserva una fachada con los nueve endpoints públicos', a
     'geoapifyBatchGeocode',
     'geoapifyBatchGeocodeResult',
     'geoapifyCountryBoundary',
+    'googlePlaceAutocomplete',
+    'googlePlaceSearch',
+    'googlePlaceDetailsEssentials',
+    'googlePlaceLocations',
+    'googleRouteOptimized',
   ]) {
     assert.match(index, new RegExp(`\\b${endpoint}\\b`));
   }
 
-  assert.ok(index.split('\n').length <= 32);
+  assert.ok(index.split('\n').length <= 36);
   assert.doesNotMatch(index, /onCall|enforceQuota|limitedFetch|initializeApp/);
 });
