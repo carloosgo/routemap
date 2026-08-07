@@ -5,6 +5,7 @@ import { loadGooglePlaceLocations } from '../places/googlePlacesClient.js';
 import { isGooglePlaceReference, isPlaced } from '../trips/tripModel.js';
 import { PlaceSearchForm } from './PlaceSearchForm.jsx';
 import { visitedCountries } from './countryColoring.js';
+import { createCrispDashedRoutes } from './crispDashedRoutes.js';
 import { loadGoogleCountryPlaceIds } from './googleCountryBoundariesClient.js';
 import { loadGoogleMaps } from './googleMapsLoader.js';
 import { markerElement, savePrompt, savedPlacePopup } from './placeMapDom.js';
@@ -385,31 +386,18 @@ export function GooglePlacesMap({
       colorForIndex,
     });
 
-    routeFeatures.forEach((feature) => {
-      const path = toGooglePath(feature.geometry?.coordinates || []);
-      if (path.length < 2) return;
-      const color = feature.properties?.color || '#111111';
-      const line = new maps.Polyline({
-        map,
-        path,
-        strokeColor: color,
-        strokeOpacity: 0,
-        strokeWeight: 3,
-        clickable: false,
-        geodesic: false,
-        icons: [{
-          icon: {
-            path: 'M 0,-2 0,2',
-            strokeColor: color,
-            strokeOpacity: 1,
-            strokeWeight: 2,
-            scale: 1,
-          },
-          offset: '0',
-          repeat: '9px',
-        }],
-      });
-      itineraryLinesRef.current.push(line);
+    const crispRoutes = createCrispDashedRoutes({
+      maps,
+      map,
+      routes: routeFeatures
+        .map((feature) => ({
+          path: toGooglePath(feature.geometry?.coordinates || []),
+          color: feature.properties?.color || '#111111',
+        }))
+        .filter((route) => route.path.length >= 2),
+      dashPx: 6,
+      gapPx: 4,
+      strokeWeight: 3,
     });
 
     const bounds = new maps.LatLngBounds();
@@ -443,6 +431,7 @@ export function GooglePlacesMap({
     }
 
     return () => {
+      crispRoutes.dispose();
       clearAdvancedMarkers(itineraryMarkersRef);
       clearPolylines(itineraryLinesRef);
     };
