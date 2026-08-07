@@ -22,3 +22,14 @@ test('Google Maps llena el workspace aunque cambie el viewport o el zoom del nav
   assert.match(map, /zoomControl: true/);
   assert.match(map, /<div className="geo-map google-map" ref=\{nodeRef\} \/>/);
 });
+
+test('Google Maps fuerza renderizado vectorial para evitar teselas raster pixeladas', async () => {
+  const map = await read('src/modules/map/GooglePlacesMap.jsx');
+
+  assert.match(map, /\{ Map, RenderingType \}/);
+  assert.match(map, /renderingType: RenderingType\.VECTOR/);
+  assert.match(map, /tiltInteractionEnabled: false/);
+  assert.match(map, /headingInteractionEnabled: false/);
+  assert.match(map, /map\.getRenderingType\?\.\(\)/);
+  assert.match(map, /vector rendering unavailable; browser fell back to raster/);
+});
