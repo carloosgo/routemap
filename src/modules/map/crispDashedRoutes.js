@@ -93,10 +93,20 @@ export function createCrispDashedRoutes({
   let lastRenderedZoom = null;
   let lastRenderedSize = '';
   let resizeObserver = null;
+  let needsMapCanvasRefresh = true;
 
   const clear = () => {
     polylines.forEach((line) => line.setMap(null));
     polylines = [];
+  };
+
+  const refreshMapCanvas = () => {
+    if (disposed || !maps?.event?.trigger) return;
+    const center = map.getCenter?.();
+    const zoom = map.getZoom?.();
+    maps.event.trigger(map, 'resize');
+    if (center) map.setCenter?.(center);
+    if (Number.isFinite(zoom)) map.setZoom?.(zoom);
   };
 
   const redraw = () => {
@@ -152,6 +162,7 @@ export function createCrispDashedRoutes({
 
   const invalidateAndSchedule = () => {
     hasRendered = false;
+    needsMapCanvasRefresh = true;
     clear();
     scheduleRedraw();
   };
@@ -169,7 +180,13 @@ export function createCrispDashedRoutes({
   overlay.setMap(map);
 
   const zoomListener = map.addListener?.('zoom_changed', invalidateAndSchedule);
-  const idleListener = map.addListener?.('idle', () => scheduleRedraw(80));
+  const idleListener = map.addListener?.('idle', () => {
+    if (needsMapCanvasRefresh) {
+      needsMapCanvasRefresh = false;
+      refreshMapCanvas();
+    }
+    scheduleRedraw(80);
+  });
   const tilesListener = map.addListener?.('tilesloaded', () => scheduleRedraw(80));
 
   const mapNode = map.getDiv?.();
