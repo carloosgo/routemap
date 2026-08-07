@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { error as logError } from 'firebase-functions/logger';
 import { callableOptions, enforceQuota } from './callablePolicy.js';
-import { GOOGLE_MAPS_API_KEY, QUOTAS, db } from './geoapifyRuntime.js';
+import { GOOGLE_PLACES_API_KEY, QUOTAS, db } from './geoapifyRuntime.js';
 import { limitedFetch, safeError } from './geoapifySupport.js';
 import { createSharedCache } from './sharedCache.js';
 
@@ -11,10 +11,10 @@ const GOOGLE_LOCATION_FIELDS = 'id,location';
 const GOOGLE_LOCATION_CACHE_TTL_MS = 29 * 24 * 60 * 60 * 1000;
 const cachedGoogleLocation = createSharedCache(db, { ttlMs: GOOGLE_LOCATION_CACHE_TTL_MS });
 
-function requireGoogleKey() {
-  const key = GOOGLE_MAPS_API_KEY.value();
+function requireGooglePlacesKey() {
+  const key = GOOGLE_PLACES_API_KEY.value();
   if (!key) {
-    throw new HttpsError('failed-precondition', 'Falta el secreto GOOGLE_MAPS_API_KEY.');
+    throw new HttpsError('failed-precondition', 'Falta el secreto GOOGLE_PLACES_API_KEY.');
   }
   return key;
 }
@@ -34,7 +34,7 @@ async function fetchGoogleLocation(placeId) {
     {
       headers: {
         'Content-Type': 'application/json',
-        'X-Goog-Api-Key': requireGoogleKey(),
+        'X-Goog-Api-Key': requireGooglePlacesKey(),
         'X-Goog-FieldMask': GOOGLE_LOCATION_FIELDS,
       },
     },
@@ -50,7 +50,7 @@ async function fetchGoogleLocation(placeId) {
 
 export const googlePlaceLocations = onCall(
   callableOptions({
-    secrets: [GOOGLE_MAPS_API_KEY],
+    secrets: [GOOGLE_PLACES_API_KEY],
     enforceAppCheck: false,
     maxInstances: 6,
   }),
