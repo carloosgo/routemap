@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { error as logError } from 'firebase-functions/logger';
 import { callableOptions, enforceQuota } from './callablePolicy.js';
 import {
   ALLOWED_MODES,
@@ -11,6 +12,7 @@ import {
   limitedFetch,
   mapPlace,
   requireGeoapifyKey,
+  safeError,
   validPoint,
 } from './geoapifySupport.js';
 
@@ -35,53 +37,67 @@ export const geoapifyRoute = onCall(
     enforceAppCheck: false,
   }),
   async (request) => {
-    await enforceQuota(db, request, QUOTAS.route);
-    const { origin, destination } = request.data || {};
     const mode = ALLOWED_MODES.has(request.data?.mode) ? request.data.mode : 'drive';
+    try {
+      await enforceQuota(db, request, QUOTAS.route);
+      const { origin, destination } = request.data || {};
 
-    if (!validPoint(origin) || !validPoint(destination)) {
-      throw new HttpsError('invalid-argument', 'Origen o destino inválido.');
-    }
+      if (!validPoint(origin) || !validPoint(destination)) {
+        throw new HttpsError('invalid-argument', 'Origen o destino inválido.');
+      }
 
-    const traffic = mode === 'drive' || mode === 'bus' ? 'approximated' : '';
-    const signature = `route:v3:${Number(origin.lat).toFixed(6)},${Number(origin.lon).toFixed(6)}|${Number(destination.lat).toFixed(6)},${Number(destination.lon).toFixed(6)}|${mode}|${traffic}`;
-    const cachedResult = await cached('routeCache', signature, async () => {
-      const params = new URLSearchParams({
-        waypoints: `${origin.lat},${origin.lon}|${destination.lat},${destination.lon}`,
-        mode,
-        format: 'geojson',
-        apiKey: requireGeoapifyKey(GEOAPIFY_API_KEY),
+      const traffic = mode === 'drive' || mode === 'bus' ? 'approximated' : '';
+      const signature = `route:v3:${Number(origin.lat).toFixed(6)},${Number(origin.lon).toFixed(6)}|${Number(destination.lat).toFixed(6)},${Number(destination.lon).toFixed(6)}|${mode}|${traffic}`;
+      const cachedResult = await cached('routeCache', signature, async () => {
+        const params = new URLSearchParams({
+          waypoints: `${origin.lat},${origin.lon}|${destination.lat},${destination.lon}`,
+          mode,
+          format: 'geojson',
+          apiKey: requireGeoapifyKey(GEOAPIFY_API_KEY),
+        });
+        if (traffic) params.set('traffic', traffic);
+
+        const payload = await limitedFetch(`https://api.geoapify.com/v1/routing?${params}`);
+        const feature = payload.features?.[0];
+        if (!feature) {
+          throw new HttpsError('not-found', 'Geoapify no encontró una ruta para este modo.');
+        }
+
+        return {
+          signature,
+          mode,
+          geometryJson: JSON.stringify(feature.geometry),
+          distance: Number(feature.properties?.distance) || 0,
+          duration: Number(feature.properties?.time) || 0,
+          calculatedAt: new Date().toISOString(),
+        };
       });
-      if (traffic) params.set('traffic', traffic);
 
-      const payload = await limitedFetch(`https://api.geoapify.com/v1/routing?${params}`);
-      const feature = payload.features?.[0];
-      if (!feature) throw new Error('Geoapify no devolvió una ruta.');
+      const geometry = cachedRouteGeometry(cachedResult.result);
+      if (!geometry) {
+        throw new HttpsError('internal', 'No fue posible reconstruir la geometría de la ruta.');
+      }
 
       return {
-        signature,
-        mode,
-        geometryJson: JSON.stringify(feature.geometry),
-        distance: Number(feature.properties?.distance) || 0,
-        duration: Number(feature.properties?.time) || 0,
-        calculatedAt: new Date().toISOString(),
+        signature: cachedResult.result.signature || signature,
+        mode: cachedResult.result.mode || mode,
+        geometry,
+        distance: Number(cachedResult.result.distance) || 0,
+        duration: Number(cachedResult.result.duration) || 0,
+        calculatedAt: cachedResult.result.calculatedAt || '',
+        cacheHit: cachedResult.cacheHit,
       };
-    });
-
-    const geometry = cachedRouteGeometry(cachedResult.result);
-    if (!geometry) {
-      throw new HttpsError('internal', 'No fue posible reconstruir la geometría de la ruta.');
+    } catch (error) {
+      logError('Geoapify route request failed.', {
+        mode,
+        ...safeError(error),
+      });
+      if (error instanceof HttpsError) throw error;
+      throw new HttpsError(
+        'unavailable',
+        'Geoapify no pudo calcular temporalmente esta ruta.'
+      );
     }
-
-    return {
-      signature: cachedResult.result.signature || signature,
-      mode: cachedResult.result.mode || mode,
-      geometry,
-      distance: Number(cachedResult.result.distance) || 0,
-      duration: Number(cachedResult.result.duration) || 0,
-      calculatedAt: cachedResult.result.calculatedAt || '',
-      cacheHit: cachedResult.cacheHit,
-    };
   }
 );
 
