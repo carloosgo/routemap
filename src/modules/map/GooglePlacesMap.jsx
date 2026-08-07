@@ -186,7 +186,7 @@ export function GooglePlacesMap({
 
     loadGoogleMaps()
       .then(async (maps) => {
-        const [{ Map }, { AdvancedMarkerElement }] = await Promise.all([
+        const [{ Map, RenderingType }, { AdvancedMarkerElement }] = await Promise.all([
           maps.importLibrary('maps'),
           maps.importLibrary('marker'),
         ]);
@@ -201,17 +201,27 @@ export function GooglePlacesMap({
           },
           zoom: config.map.initialZoom,
           mapId: config.googleMaps.mapId,
+          renderingType: RenderingType.VECTOR,
           mapTypeControl: false,
           zoomControl: true,
           streetViewControl: false,
           fullscreenControl: false,
           rotateControl: false,
+          tiltInteractionEnabled: false,
+          headingInteractionEnabled: false,
           clickableIcons: false,
           gestureHandling: 'greedy',
         });
         mapRef.current = map;
         mapRef.current.__AdvancedMarkerElement = AdvancedMarkerElement;
         infoWindowRef.current = new maps.InfoWindow();
+
+        maps.event.addListenerOnce(map, 'tilesloaded', () => {
+          const actualRenderingType = map.getRenderingType?.();
+          if (actualRenderingType && actualRenderingType !== RenderingType.VECTOR) {
+            console.warn('[Google Maps] vector rendering unavailable; browser fell back to raster.');
+          }
+        });
 
         resizeHandler = () => {
           if (!syncMapElementSize(wrapRef.current, nodeRef.current)) return;
