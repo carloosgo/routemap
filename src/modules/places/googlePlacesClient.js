@@ -34,6 +34,30 @@ function throwIfAborted(signal) {
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 }
 
+async function requestPlaceDetails(placeId, { name = '', sessionToken = '', signal } = {}) {
+  const cleanPlaceId = String(placeId || '').trim();
+  if (!cleanPlaceId) throw new TypeError('Falta el identificador de Google Places.');
+  const key = sessionToken ? '' : cacheKey('details', cleanPlaceId);
+  if (key) {
+    const cached = getCached(key);
+    if (cached) return cached;
+  }
+
+  throwIfAborted(signal);
+  const request = firebaseCallable('googlePlaceDetails');
+  const response = await request({
+    placeId: cleanPlaceId,
+    name: String(name || '').trim(),
+    ...(sessionToken ? { sessionToken } : {}),
+    language: config.defaultLocale,
+  });
+  throwIfAborted(signal);
+  const place = response.data?.place || null;
+  if (!isPlaced(place)) throw new Error('Google Places no devolvió coordenadas válidas.');
+  if (key) setCached(key, place);
+  return place;
+}
+
 export function createGooglePlacesSessionToken() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`
@@ -60,18 +84,15 @@ export async function autocompleteGooglePlaces(input, sessionToken, { signal } =
 export async function resolveGooglePlace(prediction, sessionToken, { signal } = {}) {
   const placeId = String(prediction?.id || '').trim();
   if (!placeId || !sessionToken) throw new TypeError('Falta el lugar o la sesión de Google Places.');
-  throwIfAborted(signal);
-  const request = firebaseCallable('googlePlaceDetails');
-  const response = await request({
-    placeId,
+  return requestPlaceDetails(placeId, {
     name: String(prediction?.name || '').trim(),
     sessionToken,
-    language: config.defaultLocale,
+    signal,
   });
-  throwIfAborted(signal);
-  const place = response.data?.place || null;
-  if (!isPlaced(place)) throw new Error('Google Places no devolvió coordenadas válidas.');
-  return place;
+}
+
+export async function refreshGooglePlace(placeId, { signal } = {}) {
+  return requestPlaceDetails(placeId, { signal });
 }
 
 export async function searchGooglePlaces(query, { signal } = {}) {
