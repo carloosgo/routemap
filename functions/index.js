@@ -25,4 +25,5 @@ export {
 
 export { googlePlaceDetailsEssentials } from './googlePlaceDetailsEssentialsFunction.js';
 export { googlePlaceLocations } from './googlePlaceLocationFunction.js';
+export { googleCountryPlaceIds } from './googleCountryPlaceIdsFunction.js';
 export { googleRouteOptimized } from './googleOptimizedRouteFunction.js';
