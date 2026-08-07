@@ -72,6 +72,7 @@ function placeData(id = 'place-1', position = 0) {
     position,
     provider: 'geoapify',
     googlePlaceId: '',
+    userLabel: '',
     name: 'Museo de prueba',
     address: '',
     city: 'Ciudad de México',
@@ -90,6 +91,7 @@ function googlePlaceReferenceData(id = 'google-place-1', position = 0) {
     position,
     provider: 'google',
     googlePlaceId: 'ChIJ-google-place-reference',
+    userLabel: 'Allianz Arena',
     name: '',
     address: '',
     city: '',
@@ -207,7 +209,7 @@ test('los lugares se guardan como documentos independientes de la revisión', as
   await assertSucceeds(getDoc(placeRef));
 });
 
-test('Google Places solo permite persistir la referencia estable y rechaza contenido derivado', async () => {
+test('Google Places solo permite persistir referencia y etiqueta del usuario', async () => {
   const alice = testEnv.authenticatedContext('alice').firestore();
   const tripId = 'trip-google-place-ref';
   const revisionId = 'revision013';
@@ -322,6 +324,7 @@ test('ningún cliente puede leer o escribir colecciones internas del backend', a
     'placeDetailsCache/cache-1',
     'routeCache/cache-1',
     'countryBoundaryCache/cache-1',
+    'googlePlaceLocationCache/cache-1',
     'functionRateLimits/rate-1',
     'geoapifyBatchJobs/job-1',
   ];
