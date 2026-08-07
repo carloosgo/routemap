@@ -30,6 +30,7 @@ function route(overrides = {}) {
     id: 'route-1',
     fromPlaceId: 'rome',
     toPlaceId: 'trevi',
+    provider: 'google',
     mode: 'drive',
     visible: true,
     distance: 2100,
@@ -43,14 +44,14 @@ function route(overrides = {}) {
   };
 }
 
-test('solo expone modos que Geoapify Routing soporta para Mis Rutas', () => {
+test('expone los modos de Google Routes usados por Mis Rutas', () => {
   assert.deepEqual(SAVED_PLACE_ROUTE_MODES, [
     'drive',
+    'transit',
+    'train',
     'bus',
     'bicycle',
     'walk',
-    'transit',
-    'approximated_transit',
   ]);
 });
 
@@ -92,7 +93,23 @@ test('el reducer crea una conexión y reemplaza el mismo par al cambiar de modo'
   assert.equal(changed.routeConnections.length, 1);
   assert.equal(changed.routeConnections[0].id, 'route-1');
   assert.equal(changed.routeConnections[0].mode, 'bicycle');
+  assert.equal(changed.routeConnections[0].provider, 'google');
   assert.equal(changed.routeConnections[0].duration, 900);
+});
+
+test('conserva una definición de ruta aunque la respuesta dinámica no tenga geometría', () => {
+  const state = tripReducer(placesTrip(), {
+    type: TRIP_ACTIONS.upsertRouteConnection,
+    connection: route({ geometry: null, distance: 0, duration: 0 }),
+  });
+
+  assert.equal(state.routeConnections.length, 1);
+  assert.equal(state.routeConnections[0].geometry, null);
+  assert.deepEqual(savedPlaceRouteTotals(state.routeConnections), {
+    distance: 0,
+    duration: 0,
+    count: 0,
+  });
 });
 
 test('ocultar rutas cambia el total visible sin alterar el total calculado', () => {
