@@ -399,11 +399,11 @@ export function GooglePlacesMap({
         geodesic: false,
         icons: [{
           icon: {
-            path: 'M 0,-1 0,1',
+            path: 'M 0,-2 0,2',
             strokeColor: color,
-            strokeOpacity: 0.95,
+            strokeOpacity: 1,
             strokeWeight: 2,
-            scale: 1.7,
+            scale: 1,
           },
           offset: '0',
           repeat: '9px',
