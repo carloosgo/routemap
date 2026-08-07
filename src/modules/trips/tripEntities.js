@@ -128,6 +128,7 @@ export function createPlace(partial = {}) {
     id: normalizeId(partial.id || googlePlaceId),
     provider,
     googlePlaceId,
+    userLabel: sanitizeText(partial.userLabel || '', 160),
     name: sanitizeText(partial.name || '', 160),
     address: sanitizeText(partial.address || '', 260),
     city: sanitizeText(partial.city || '', 120),
