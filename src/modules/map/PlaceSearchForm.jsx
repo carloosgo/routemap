@@ -57,7 +57,7 @@ export function PlaceSearchForm({
               onClick={() => onChooseSuggestion(place)}
             >
               <strong>{place.name}</strong>
-              <small>{[place.city, place.country].filter(Boolean).join(', ')}</small>
+              <small>{place.secondaryText || [place.city, place.country].filter(Boolean).join(', ')}</small>
             </button>
           ))}
         </div>
