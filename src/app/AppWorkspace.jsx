@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { IconChevronLeft, IconChevronRight, IconMap, IconRoute } from '@tabler/icons-react';
+import './DockedWorkspace.css';
 
 const MOBILE_MEDIA_QUERY = '(max-width: 720px)';
 
@@ -33,24 +34,26 @@ export function AppWorkspace({ editorModule, mapPane, mobileView, setMobileView,
     <main className="workspace">
       <div
         className={
-          'workspace__desktop workspace__desktop--docked'
+          'workspace__desktop workspace__desktop--column'
           + (desktopPanelCollapsed ? ' is-panel-collapsed' : '')
         }
       >
-        <div className="docked-editor-shell">
-          <div className="floating-editor">{editorModule}</div>
-          <button
-            type="button"
-            className="docked-editor__toggle"
-            aria-label={t(desktopPanelCollapsed ? 'expand' : 'collapse')}
-            aria-expanded={!desktopPanelCollapsed}
-            onClick={() => setDesktopPanelCollapsed((current) => !current)}
-          >
-            {desktopPanelCollapsed
-              ? <IconChevronRight size={18} aria-hidden="true" />
-              : <IconChevronLeft size={18} aria-hidden="true" />}
-          </button>
-        </div>
+        <aside className="workspace-panel">
+          <div className="workspace-panel__content floating-editor">{editorModule}</div>
+          <div className="workspace-panel__rail">
+            <button
+              type="button"
+              className="workspace-panel__toggle"
+              aria-label={t(desktopPanelCollapsed ? 'expand' : 'collapse')}
+              aria-expanded={!desktopPanelCollapsed}
+              onClick={() => setDesktopPanelCollapsed((current) => !current)}
+            >
+              {desktopPanelCollapsed
+                ? <IconChevronRight size={17} aria-hidden="true" />
+                : <IconChevronLeft size={17} aria-hidden="true" />}
+            </button>
+          </div>
+        </aside>
         {!mobileViewport && mapPane}
       </div>
       <div className="workspace__mobile">
