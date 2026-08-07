@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { GooglePlacesMap } from './GooglePlacesMap.jsx';
 import { ItineraryRouteMap } from './ItineraryRouteMap.jsx';
 import './RouteMap.css';
@@ -7,19 +8,34 @@ export function RouteMap({
   places = [],
   routeConnections = [],
   addPlace,
-  updatePlace,
   viewMode = 'segments',
 }) {
-  if (viewMode === 'places') {
-    return (
-      <GooglePlacesMap
-        places={places}
-        routeConnections={routeConnections}
-        addPlace={addPlace}
-        updatePlace={updatePlace}
-      />
-    );
-  }
+  const [placesMapMounted, setPlacesMapMounted] = useState(viewMode === 'places');
 
-  return <ItineraryRouteMap segments={segments} />;
+  useEffect(() => {
+    if (viewMode === 'places') setPlacesMapMounted(true);
+  }, [viewMode]);
+
+  return (
+    <div className="route-map-stack">
+      <div
+        className={`route-map-layer${viewMode === 'segments' ? ' is-active' : ''}`}
+        aria-hidden={viewMode !== 'segments'}
+      >
+        <ItineraryRouteMap segments={segments} />
+      </div>
+      {placesMapMounted && (
+        <div
+          className={`route-map-layer${viewMode === 'places' ? ' is-active' : ''}`}
+          aria-hidden={viewMode !== 'places'}
+        >
+          <GooglePlacesMap
+            places={places}
+            routeConnections={routeConnections}
+            addPlace={addPlace}
+          />
+        </div>
+      )}
+    </div>
+  );
 }
