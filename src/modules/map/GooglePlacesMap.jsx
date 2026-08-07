@@ -40,6 +40,7 @@ export function GooglePlacesMap({
   places = [],
   routeConnections = [],
   addPlace,
+  active = false,
 }) {
   const { t } = useTranslation();
   const nodeRef = useRef(null);
@@ -52,7 +53,7 @@ export function GooglePlacesMap({
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [saveNotice, setSaveNotice] = useState('');
-  const placeSearch = usePlaceSearch({ viewMode: 'places' });
+  const placeSearch = usePlaceSearch({ viewMode: active ? 'places' : 'segments' });
   const mapConfigured = Boolean(
     config.googleMaps.webApiKey && config.googleMaps.mapId
   );
@@ -69,7 +70,7 @@ export function GooglePlacesMap({
   );
 
   useEffect(() => {
-    if (!mapConfigured) return undefined;
+    if (!active || !mapConfigured) return undefined;
     const placeIds = places
       .filter((place) => isGooglePlaceReference(place) && !isPlaced(place))
       .map((place) => place.googlePlaceId)
@@ -100,7 +101,7 @@ export function GooglePlacesMap({
       });
 
     return () => controller.abort();
-  }, [cachedLocations, mapConfigured, places]);
+  }, [active, cachedLocations, mapConfigured, places]);
 
   useEffect(() => {
     let disposed = false;
@@ -278,7 +279,7 @@ export function GooglePlacesMap({
         )}
         {loadError && <div className="geo-map__missing">{loadError}</div>}
       </div>
-      {mapConfigured && (
+      {active && mapConfigured && (
         <PlaceSearchForm
           query={placeSearch.query}
           suggestions={placeSearch.suggestions}
