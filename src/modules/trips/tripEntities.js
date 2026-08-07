@@ -78,6 +78,12 @@ function normalizeNoteTitle(value) {
   return LEGACY_SYSTEM_NOTE_TITLES.has(title) ? '' : title;
 }
 
+function normalizePlaceProvider(partial) {
+  return partial?.provider === 'google' || partial?.googlePlaceId
+    ? 'google'
+    : 'geoapify';
+}
+
 export function isPlaced(point) {
   return Boolean(
     point &&
@@ -85,6 +91,15 @@ export function isPlaced(point) {
       Math.abs(point.lat) <= 90 &&
       Number.isFinite(point.lon) &&
       Math.abs(point.lon) <= 180
+  );
+}
+
+export function isGooglePlaceReference(place) {
+  return Boolean(
+    place
+      && place.provider === 'google'
+      && typeof place.googlePlaceId === 'string'
+      && place.googlePlaceId.trim()
   );
 }
 
@@ -105,8 +120,14 @@ export function createCity(partial) {
 }
 
 export function createPlace(partial = {}) {
+  const provider = normalizePlaceProvider(partial);
+  const googlePlaceId = provider === 'google'
+    ? normalizeExternalId(partial.googlePlaceId || partial.id)
+    : '';
   return {
-    id: normalizeId(partial.id),
+    id: normalizeId(partial.id || googlePlaceId),
+    provider,
+    googlePlaceId,
     name: sanitizeText(partial.name || '', 160),
     address: sanitizeText(partial.address || '', 260),
     city: sanitizeText(partial.city || '', 120),
@@ -120,19 +141,37 @@ export function createPlace(partial = {}) {
   };
 }
 
+export function placeForPersistence(rawPlace) {
+  const place = createPlace(rawPlace);
+  if (!isGooglePlaceReference(place)) return place;
+  return {
+    ...place,
+    name: '',
+    address: '',
+    city: '',
+    country: '',
+    category: '',
+    countryCode: '',
+    lat: null,
+    lon: null,
+  };
+}
+
 function uniquePlaces(rawPlaces) {
   const seen = new Set();
   const places = [];
 
   for (const rawPlace of rawPlaces) {
     const place = createPlace(rawPlace);
-    if (!isPlaced(place)) continue;
+    if (!isPlaced(place) && !isGooglePlaceReference(place)) continue;
 
-    const key = [
-      Number(place.lat).toFixed(6),
-      Number(place.lon).toFixed(6),
-      place.name.trim().toLowerCase(),
-    ].join('|');
+    const key = isGooglePlaceReference(place)
+      ? `google:${place.googlePlaceId}`
+      : [
+          Number(place.lat).toFixed(6),
+          Number(place.lon).toFixed(6),
+          place.name.trim().toLowerCase(),
+        ].join('|');
     if (seen.has(key)) continue;
 
     seen.add(key);
