@@ -30,7 +30,8 @@ test('la búsqueda general Google no lee origen, destino ni módulos de ciudades
   const placeClient = await read('src/modules/places/googlePlacesClient.js');
 
   assert.match(routeMap, /<GooglePlacesMap/);
-  assert.match(googleMap, /usePlaceSearch\(\{ viewMode: active \? 'places' : 'segments' \}\)/);
+  assert.match(googleMap, /usePlaceSearch\(\{ viewMode \}\)/);
+  assert.match(googleMap, /placesActive && mapConfigured/);
   assert.match(googleMap, /<PlaceSearchForm/);
   assert.doesNotMatch(routeMap, /placeSearchContext|searchContext|CityAutocomplete/);
   assert.doesNotMatch(placeSearch, /segments|origin|destination|useCitySearch|getGeocoder/);
@@ -53,15 +54,16 @@ test('el modelo actual nunca guarda lugares ni routing dentro de un tramo', asyn
   assert.doesNotMatch(rules, /'route'/);
 });
 
-test('Tramos y Mis Rutas solo convergen en el coordinador visual del mapa', async () => {
+test('Tramos y Mis Rutas comparten lienzo Google sin compartir lógica de dominio', async () => {
   const pane = await read('src/app/AppMapPane.jsx');
   const routeMap = await read('src/modules/map/RouteMap.jsx');
-  const itineraryMap = await read('src/modules/map/ItineraryRouteMap.jsx');
   const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
 
   assert.match(pane, /<RouteMap[\s\S]*segments=\{trip\.segments\}[\s\S]*places=\{trip\.places \|\| \[\]\}/);
-  assert.match(routeMap, /<ItineraryRouteMap segments=\{segments\} \/>/);
-  assert.match(routeMap, /<GooglePlacesMap/);
-  assert.doesNotMatch(itineraryMap, /usePlaceSearch|googlePlaceSearch|googleRouteOptimized/);
+  assert.match(routeMap, /segments=\{segments\}/);
+  assert.match(routeMap, /places=\{places\}/);
+  assert.match(routeMap, /viewMode=\{viewMode\}/);
+  assert.match(googleMap, /buildMapFeatureData/);
+  assert.match(googleMap, /const placesActive = viewMode === 'places'/);
   assert.doesNotMatch(googleMap, /updateSegment|addSegment|removeSegment|CityAutocomplete|geoapifyCityAutocomplete/);
 });
