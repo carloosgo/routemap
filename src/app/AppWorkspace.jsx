@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { IconMap, IconRoute } from '@tabler/icons-react';
+import { IconChevronLeft, IconChevronRight, IconMap, IconRoute } from '@tabler/icons-react';
 
 const MOBILE_MEDIA_QUERY = '(max-width: 720px)';
 
@@ -14,6 +14,7 @@ export function AppWorkspace({ editorModule, mapPane, mobileView, setMobileView,
   const [mobileMapMounted, setMobileMapMounted] = useState(
     () => !currentMobileViewport() || mobileView === 'map'
   );
+  const [desktopPanelCollapsed, setDesktopPanelCollapsed] = useState(false);
 
   useEffect(() => {
     if (typeof globalThis.matchMedia !== 'function') return undefined;
@@ -30,9 +31,27 @@ export function AppWorkspace({ editorModule, mapPane, mobileView, setMobileView,
 
   return (
     <main className="workspace">
-      <div className="workspace__desktop workspace__desktop--floating">
+      <div
+        className={
+          'workspace__desktop workspace__desktop--docked'
+          + (desktopPanelCollapsed ? ' is-panel-collapsed' : '')
+        }
+      >
+        <div className="docked-editor-shell">
+          <div className="floating-editor">{editorModule}</div>
+          <button
+            type="button"
+            className="docked-editor__toggle"
+            aria-label={t(desktopPanelCollapsed ? 'expand' : 'collapse')}
+            aria-expanded={!desktopPanelCollapsed}
+            onClick={() => setDesktopPanelCollapsed((current) => !current)}
+          >
+            {desktopPanelCollapsed
+              ? <IconChevronRight size={18} aria-hidden="true" />
+              : <IconChevronLeft size={18} aria-hidden="true" />}
+          </button>
+        </div>
         {!mobileViewport && mapPane}
-        <div className="floating-editor">{editorModule}</div>
       </div>
       <div className="workspace__mobile">
         <div className={'mobilepane' + (mobileView === 'form' ? ' is-active' : '')}>
