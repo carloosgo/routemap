@@ -90,6 +90,8 @@ function mapGooglePlace(place, fallbackName = '') {
   const components = place?.addressComponents || [];
   return {
     id: cleanText(place?.id, 256),
+    provider: 'google',
+    googlePlaceId: cleanText(place?.id, 256),
     name: cleanText(place?.displayName?.text || fallbackName || 'Lugar', 160),
     address: cleanText(place?.formattedAddress, 260),
     city: addressPart(components, 'locality', ['postal_town', 'administrative_area_level_2']),
@@ -249,15 +251,15 @@ export const googlePlaceDetails = onCall(
     const placeId = cleanText(request.data?.placeId, 256);
     const sessionToken = validSessionToken(request.data?.sessionToken);
     const fallbackName = cleanText(request.data?.name, 160);
-    if (!placeId || !sessionToken) {
-      throw new HttpsError('invalid-argument', 'El lugar o la sesión son inválidos.');
+    if (!placeId) {
+      throw new HttpsError('invalid-argument', 'El lugar es inválido.');
     }
 
     try {
       const params = new URLSearchParams({
-        sessionToken,
         languageCode: validLanguage(request.data?.language),
       });
+      if (sessionToken) params.set('sessionToken', sessionToken);
       const payload = await limitedFetch(
         `${GOOGLE_PLACES_BASE}/places/${encodeURIComponent(placeId)}?${params}`,
         { headers: googleHeaders(DETAILS_FIELDS) },
