@@ -202,6 +202,7 @@ export function GooglePlacesMap({
           zoom: config.map.initialZoom,
           mapId: config.googleMaps.mapId,
           mapTypeControl: false,
+          zoomControl: true,
           streetViewControl: false,
           fullscreenControl: false,
           rotateControl: false,
