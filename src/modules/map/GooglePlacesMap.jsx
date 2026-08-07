@@ -8,20 +8,6 @@ import { loadGoogleMaps } from './googleMapsLoader.js';
 import { markerElement, savePrompt, savedPlacePopup } from './placeMapDom.js';
 import { usePlaceSearch } from './usePlaceSearch.js';
 
-const FALLBACK_GOOGLE_STYLE = [
-  { elementType: 'geometry', stylers: [{ color: '#f4f4f2' }] },
-  { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#60646c' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#f4f4f2' }] },
-  { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#d8dadd' }] },
-  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#dedfdf' }] },
-  { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#d3d4d5' }] },
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#c8cacc' }] },
-  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#e9eef0' }] },
-];
-
 function geometryPaths(geometry) {
   if (geometry?.type === 'LineString') return [geometry.coordinates || []];
   if (geometry?.type === 'MultiLineString') return geometry.coordinates || [];
@@ -64,8 +50,12 @@ export function GooglePlacesMap({
   const [loadError, setLoadError] = useState('');
   const [saveNotice, setSaveNotice] = useState('');
   const placeSearch = usePlaceSearch({ viewMode: 'places' });
+  const mapConfigured = Boolean(
+    config.googleMaps.webApiKey && config.googleMaps.mapId
+  );
 
   useEffect(() => {
+    if (!mapConfigured) return undefined;
     const controller = new AbortController();
     const unresolved = places.filter(
       (place) => isGooglePlaceReference(place) && !isPlaced(place)
@@ -87,11 +77,11 @@ export function GooglePlacesMap({
     });
 
     return () => controller.abort();
-  }, [places, updatePlace]);
+  }, [mapConfigured, places, updatePlace]);
 
   useEffect(() => {
     let disposed = false;
-    if (!nodeRef.current || !config.googleMaps.webApiKey) return undefined;
+    if (!nodeRef.current || !mapConfigured) return undefined;
 
     loadGoogleMaps()
       .then(async (maps) => {
@@ -100,20 +90,17 @@ export function GooglePlacesMap({
           maps.importLibrary('marker'),
         ]);
         if (disposed || !nodeRef.current) return;
-        const options = {
+        const map = new Map(nodeRef.current, {
           center: { lat: config.map.initialCenter[0], lng: config.map.initialCenter[1] },
           zoom: config.map.initialZoom,
+          mapId: config.googleMaps.mapId,
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false,
           rotateControl: false,
           clickableIcons: false,
           gestureHandling: 'greedy',
-          ...(config.googleMaps.mapId
-            ? { mapId: config.googleMaps.mapId }
-            : { styles: FALLBACK_GOOGLE_STYLE }),
-        };
-        const map = new Map(nodeRef.current, options);
+        });
         mapRef.current = map;
         mapRef.current.__AdvancedMarkerElement = AdvancedMarkerElement;
         infoWindowRef.current = new maps.InfoWindow();
@@ -137,7 +124,7 @@ export function GooglePlacesMap({
       mapRef.current = null;
       setReady(false);
     };
-  }, [t]);
+  }, [mapConfigured, t]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -262,26 +249,28 @@ export function GooglePlacesMap({
   return (
     <div className="geo-map-wrap google-map-wrap">
       <div className="geo-map google-map" ref={nodeRef}>
-        {!config.googleMaps.webApiKey && (
+        {!mapConfigured && (
           <div className="geo-map__missing">{t('googleMapConfigMissingShort')}</div>
         )}
         {loadError && <div className="geo-map__missing">{loadError}</div>}
       </div>
-      <PlaceSearchForm
-        query={placeSearch.query}
-        suggestions={placeSearch.suggestions}
-        showSuggestions={placeSearch.showSuggestions}
-        searching={placeSearch.searching}
-        suggesting={placeSearch.suggesting}
-        error={placeSearch.error}
-        canClearSearch={placeSearch.canClearSearch}
-        minChars={placeSearch.minChars}
-        onSubmit={placeSearch.submitSearch}
-        onQueryChange={placeSearch.handleQueryChange}
-        onFocus={placeSearch.showSuggestionsOnFocus}
-        onClear={placeSearch.clearSearch}
-        onChooseSuggestion={placeSearch.chooseSuggestion}
-      />
+      {mapConfigured && (
+        <PlaceSearchForm
+          query={placeSearch.query}
+          suggestions={placeSearch.suggestions}
+          showSuggestions={placeSearch.showSuggestions}
+          searching={placeSearch.searching}
+          suggesting={placeSearch.suggesting}
+          error={placeSearch.error}
+          canClearSearch={placeSearch.canClearSearch}
+          minChars={placeSearch.minChars}
+          onSubmit={placeSearch.submitSearch}
+          onQueryChange={placeSearch.handleQueryChange}
+          onFocus={placeSearch.showSuggestionsOnFocus}
+          onClear={placeSearch.clearSearch}
+          onChooseSuggestion={placeSearch.chooseSuggestion}
+        />
+      )}
       {routeConnections.some((route) => route.visible !== false && route.geometry) && (
         <div className="google-route-attribution">Powered by Google</div>
       )}
