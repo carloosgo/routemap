@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { config } from '../../config.js';
 import { useTranslation } from '../../i18n/index.jsx';
-import { isPlaced } from '../trips/tripModel.js';
-import { searchGeoapifyPlaces } from '../places/geoapifyClient.js';
+import {
+  autocompleteGooglePlaces,
+  createGooglePlacesSessionToken,
+  resolveGooglePlace,
+  searchGooglePlaces,
+} from '../places/googlePlacesClient.js';
 
 export function usePlaceSearch({ viewMode }) {
   const { t } = useTranslation();
@@ -11,6 +15,7 @@ export function usePlaceSearch({ viewMode }) {
   const searchSequenceRef = useRef(0);
   const autocompleteSequenceRef = useRef(0);
   const skipAutocompleteRef = useRef(false);
+  const sessionTokenRef = useRef(createGooglePlacesSessionToken());
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -19,6 +24,10 @@ export function usePlaceSearch({ viewMode }) {
   const [searching, setSearching] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
   const [errorState, setErrorState] = useState(null);
+
+  function renewSession() {
+    sessionTokenRef.current = createGooglePlacesSessionToken();
+  }
 
   useEffect(
     () => () => {
@@ -48,7 +57,7 @@ export function usePlaceSearch({ viewMode }) {
     const sequence = autocompleteSequenceRef.current + 1;
     autocompleteSequenceRef.current = sequence;
 
-    if (text.length < config.geoapify.searchMinChars) {
+    if (text.length < config.googleMaps.searchMinChars) {
       setSuggestions([]);
       setSuggesting(false);
       setShowSuggestions(false);
@@ -60,23 +69,25 @@ export function usePlaceSearch({ viewMode }) {
     const timer = setTimeout(async () => {
       setSuggesting(true);
       try {
-        const next = await searchGeoapifyPlaces(text, {
-          signal: controller.signal,
-        });
+        const next = await autocompleteGooglePlaces(
+          text,
+          sessionTokenRef.current,
+          { signal: controller.signal }
+        );
         if (!controller.signal.aborted && sequence === autocompleteSequenceRef.current) {
           setSuggestions(next);
           setShowSuggestions(true);
         }
       } catch (suggestionError) {
         if (suggestionError?.name !== 'AbortError') {
-          console.warn('[Place autocomplete] unavailable', suggestionError);
+          console.warn('[Google Places autocomplete] unavailable', suggestionError);
         }
       } finally {
         if (!controller.signal.aborted && sequence === autocompleteSequenceRef.current) {
           setSuggesting(false);
         }
       }
-    }, config.geoapify.searchDebounceMs);
+    }, config.googleMaps.searchDebounceMs);
 
     return () => {
       clearTimeout(timer);
@@ -87,10 +98,10 @@ export function usePlaceSearch({ viewMode }) {
   async function submitSearch(event) {
     event?.preventDefault();
     const text = query.trim();
-    if (text.length < config.geoapify.searchMinChars) {
+    if (text.length < config.googleMaps.searchMinChars) {
       setErrorState({
         key: 'minimumSearchCharacters',
-        variables: { count: config.geoapify.searchMinChars },
+        variables: { count: config.googleMaps.searchMinChars },
       });
       return;
     }
@@ -107,11 +118,10 @@ export function usePlaceSearch({ viewMode }) {
     setErrorState(null);
 
     try {
-      const next = await searchGeoapifyPlaces(text, {
-        signal: controller.signal,
-      });
+      const next = await searchGooglePlaces(text, { signal: controller.signal });
       if (!controller.signal.aborted && sequence === searchSequenceRef.current) {
         setResults(next);
+        renewSession();
       }
     } catch (searchError) {
       if (searchError?.name !== 'AbortError' && sequence === searchSequenceRef.current) {
@@ -124,21 +134,37 @@ export function usePlaceSearch({ viewMode }) {
     }
   }
 
-  function chooseSuggestion(place) {
-    if (!isPlaced(place)) return;
-    const location = [place.city, place.country].filter(Boolean).join(', ');
+  async function chooseSuggestion(prediction) {
+    const placeId = String(prediction?.id || '').trim();
+    if (!placeId) return;
     autocompleteAbortRef.current?.abort();
     autocompleteSequenceRef.current += 1;
     searchAbortRef.current?.abort();
     searchSequenceRef.current += 1;
-    skipAutocompleteRef.current = true;
-    setQuery([place.name, location].filter(Boolean).join(', '));
     setSuggestions([]);
     setShowSuggestions(false);
     setSuggesting(false);
-    setSearching(false);
+    setSearching(true);
     setErrorState(null);
-    setResults([place]);
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+    const token = sessionTokenRef.current;
+
+    try {
+      const place = await resolveGooglePlace(prediction, token, { signal: controller.signal });
+      if (controller.signal.aborted) return;
+      const location = [place.city, place.country].filter(Boolean).join(', ');
+      skipAutocompleteRef.current = true;
+      setQuery([place.name, location].filter(Boolean).join(', '));
+      setResults([place]);
+      renewSession();
+    } catch (detailsError) {
+      if (detailsError?.name !== 'AbortError') {
+        setErrorState({ key: 'placeSearchError' });
+      }
+    } finally {
+      if (!controller.signal.aborted) setSearching(false);
+    }
   }
 
   function clearSearch() {
@@ -147,6 +173,7 @@ export function usePlaceSearch({ viewMode }) {
     searchAbortRef.current?.abort();
     searchSequenceRef.current += 1;
     skipAutocompleteRef.current = false;
+    renewSession();
     setQuery('');
     setResults([]);
     setSuggestions([]);
@@ -163,7 +190,7 @@ export function usePlaceSearch({ viewMode }) {
     setSuggesting(false);
     setQuery(next);
     setErrorState(null);
-    if (next.trim().length < config.geoapify.searchMinChars) {
+    if (next.trim().length < config.googleMaps.searchMinChars) {
       setSuggestions([]);
       setShowSuggestions(false);
     }
@@ -182,7 +209,7 @@ export function usePlaceSearch({ viewMode }) {
     suggesting,
     error: errorState ? t(errorState.key, errorState.variables) : '',
     canClearSearch: Boolean(query || results.length > 0 || suggestions.length > 0 || errorState),
-    minChars: config.geoapify.searchMinChars,
+    minChars: config.googleMaps.searchMinChars,
     submitSearch,
     chooseSuggestion,
     clearSearch,
