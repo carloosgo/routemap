@@ -79,8 +79,11 @@ export function TripRouteConnections({
     () => consecutiveSavedPlaceRoutePairs(places),
     [places]
   );
-  const missingConsecutiveCount = useMemo(
-    () => consecutivePairs.filter((pair) => !routeByPair.has(savedPlaceRoutePairKey(pair))).length,
+  const unresolvedConsecutiveCount = useMemo(
+    () => consecutivePairs.filter((pair) => {
+      const route = routeByPair.get(savedPlaceRoutePairKey(pair));
+      return !route?.geometry;
+    }).length,
     [consecutivePairs, routeByPair]
   );
   const visibleTotals = useMemo(
@@ -154,16 +157,17 @@ export function TripRouteConnections({
         const existing = routeByPair.get(pairKey);
         setConnectAllProgress({ current: index + 1, total: consecutivePairs.length });
 
-        if (existing) {
+        if (existing?.geometry) {
           if (existing.visible === false) setRouteVisibility(existing.id, true);
           continue;
         }
 
         const calculated = await calculateRoute({
+          id: existing?.id,
           fromId: pair.fromPlaceId,
           toId: pair.toPlaceId,
-          routeMode: 'transit',
-          visible: true,
+          routeMode: existing?.mode || 'transit',
+          visible: existing?.visible !== false,
           loadingId: `all:${pairKey}`,
           reportError: false,
         });
@@ -205,7 +209,7 @@ export function TripRouteConnections({
             type="button"
             className="trip-routes__connect-all"
             onClick={handleConnectAll}
-            disabled={connectingAll || Boolean(loadingKey) || missingConsecutiveCount === 0}
+            disabled={connectingAll || Boolean(loadingKey) || unresolvedConsecutiveCount === 0}
           >
             {connectingAll
               ? t('connectingAllRoutes', connectAllProgress)
@@ -215,10 +219,12 @@ export function TripRouteConnections({
             <button
               type="button"
               className="trip-routes__visibility-all"
-              onClick={() => setAllRouteVisibility(visibleTotals.count !== routes.length)}
+              onClick={() => setAllRouteVisibility(visibleTotals.count !== routes.filter((route) => route.geometry).length)}
               disabled={connectingAll}
             >
-              {visibleTotals.count === routes.length ? t('hideAllRoutes') : t('showAllRoutes')}
+              {visibleTotals.count === routes.filter((route) => route.geometry).length
+                ? t('hideAllRoutes')
+                : t('showAllRoutes')}
             </button>
           )}
         </div>
@@ -281,7 +287,7 @@ export function TripRouteConnections({
                   <input
                     type="checkbox"
                     checked={route.visible !== false}
-                    disabled={connectingAll}
+                    disabled={connectingAll || !route.geometry}
                     onChange={(event) => setRouteVisibility(route.id, event.target.checked)}
                     aria-label={t('showRoute')}
                   />
@@ -299,8 +305,21 @@ export function TripRouteConnections({
                         <option value={routeMode} key={routeMode}>{t(MODE_LABEL_KEYS[routeMode])}</option>
                       ))}
                     </select>
-                    <span>{loading ? t('calculatingRoute') : formatDuration(route.duration)}</span>
-                    <span>{formatDistance(route.distance, intlLocale)}</span>
+                    {route.geometry ? (
+                      <>
+                        <span>{loading ? t('calculatingRoute') : formatDuration(route.duration)}</span>
+                        <span>{formatDistance(route.distance, intlLocale)}</span>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        className="trip-route__recalculate"
+                        disabled={loading || connectingAll}
+                        onClick={() => handleModeChange(route, route.mode)}
+                      >
+                        {loading ? t('calculatingRoute') : t('recalculateRoute')}
+                      </button>
+                    )}
                   </div>
                   {transitLabel && (
                     <div className="trip-route__transit">
