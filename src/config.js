@@ -39,6 +39,14 @@ export const config = {
     searchLimit: 5,
     clientCacheTtlMs: 60 * 24 * 60 * 60 * 1000,
   },
+  googleMaps: {
+    webApiKey: cleanString(env.VITE_GOOGLE_MAPS_API_KEY),
+    mapId: cleanString(env.VITE_GOOGLE_MAPS_MAP_ID),
+    searchMinChars: 4,
+    searchDebounceMs: 450,
+    searchLimit: 5,
+    memoryCacheTtlMs: 5 * 60 * 1000,
+  },
   defaultLocale: allowedValue(env.VITE_DEFAULT_LOCALE, ['es', 'en'], 'es'),
   map: {
     initialCenter: [19.4326, -99.1332],
