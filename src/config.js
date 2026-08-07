@@ -60,10 +60,29 @@ export const config = {
     endColor: '#e23b3b',
   },
   segmentColors: ['#e23b3b','#2563eb','#7c3aed','#ea580c','#0891b2','#db2777','#65a30d','#ca8a04'],
+  countryColors: [
+    '#6f8f72',
+    '#c9895b',
+    '#7c79a8',
+    '#5b9e9a',
+    '#c07a92',
+    '#b59a52',
+    '#6e8fb8',
+    '#a06f55',
+    '#7e9b5e',
+    '#8b6f9e',
+  ],
 };
 
-export function colorForIndex(index) {
-  const palette = config.segmentColors;
+function paletteColor(palette, index) {
   const numericIndex = Number.isFinite(Number(index)) ? Math.trunc(Number(index)) : 0;
   return palette[((numericIndex % palette.length) + palette.length) % palette.length];
+}
+
+export function colorForIndex(index) {
+  return paletteColor(config.segmentColors, index);
+}
+
+export function countryColorForIndex(index) {
+  return paletteColor(config.countryColors, index);
 }
