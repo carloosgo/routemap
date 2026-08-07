@@ -29,34 +29,31 @@ test('App coordina módulos sin contener menús, responsive ni diálogo completo
   assert.match(editorState, /useCollapseSegmentsOnTripChange/);
 });
 
-test('RouteMap coordina proveedores sin volver a absorber implementación de mapas o búsqueda', async () => {
+test('RouteMap coordina un solo mapa sin absorber implementación de Google o búsqueda', async () => {
   const routeMap = await read('src/modules/map/RouteMap.jsx');
-  const itineraryMap = await read('src/modules/map/ItineraryRouteMap.jsx');
   const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
   const model = await read('src/modules/map/routeMapModel.js');
-  const setup = await read('src/modules/map/routeMapSetup.js');
   const search = await read('src/modules/map/usePlaceSearch.js');
   const form = await read('src/modules/map/PlaceSearchForm.jsx');
 
   assert.ok(
-    lineCount(routeMap) <= 90,
+    lineCount(routeMap) <= 60,
     `RouteMap.jsx volvió a crecer a ${lineCount(routeMap)} líneas`
   );
-  assert.match(routeMap, /<ItineraryRouteMap/);
   assert.match(routeMap, /<GooglePlacesMap/);
-  assert.match(routeMap, /placesMapMounted/);
+  assert.match(routeMap, /segments=\{segments\}/);
+  assert.match(routeMap, /viewMode=\{viewMode\}/);
   assert.doesNotMatch(
     routeMap,
     /buildMapFeatureData|usePlaceSearch|AdvancedMarkerElement|maplibregl|async function submitSearch/
   );
 
-  assert.match(itineraryMap, /buildMapFeatureData/);
-  assert.match(itineraryMap, /new maplibregl\.Map/);
+  assert.match(googleMap, /buildMapFeatureData/);
   assert.match(googleMap, /usePlaceSearch/);
   assert.match(googleMap, /AdvancedMarkerElement/);
   assert.match(googleMap, /<PlaceSearchForm/);
+  assert.doesNotMatch(googleMap, /maplibregl|createGeoapifyStyleUrl/);
   assert.match(model, /export function adaptiveCurve/);
-  assert.match(setup, /export function addBaseSourcesAndLayers/);
   assert.match(search, /async function submitSearch/);
   assert.match(form, /className="geo-search"/);
 });
