@@ -1,8 +1,8 @@
-/* Escritorio: el editor es una columna estructural, no una tarjeta flotante. */
+/* Escritorio: columna real de editor + divisor discreto + mapa. */
 .workspace__desktop--column {
   position: relative;
   display: grid;
-  grid-template-columns: 412px minmax(0, 1fr);
+  grid-template-columns: var(--workspace-panel-width, 420px) 4px minmax(0, 1fr);
   width: 100%;
   height: 100%;
   min-width: 0;
@@ -12,36 +12,32 @@
 }
 
 .workspace__desktop--column.is-panel-collapsed {
-  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-columns: 0 4px minmax(0, 1fr);
+}
+
+.workspace__desktop--column.is-panel-resizing {
+  transition: none;
+  cursor: col-resize;
+  user-select: none;
 }
 
 .workspace-panel {
   position: relative;
   z-index: 700;
-  display: grid;
-  grid-template-columns: 390px 22px;
-  width: 412px;
+  width: 100%;
   min-width: 0;
   height: 100%;
   overflow: hidden;
   background: var(--bg);
-  border-right: 1px solid var(--line);
-  transition: width 0.18s ease, grid-template-columns 0.18s ease;
 }
 
-.workspace__desktop--column.is-panel-collapsed .workspace-panel {
-  grid-template-columns: 0 22px;
-  width: 22px;
-}
-
-/* Mantiene intacto el contenido/densidad del módulo actual, pero elimina
-   por completo su comportamiento exterior de tarjeta flotante. */
+/* Conserva intacto el contenido del módulo, pero ya no existe como tarjeta. */
 main.workspace .workspace__desktop--column .workspace-panel__content.floating-editor {
   position: relative !important;
   inset: auto !important;
   z-index: auto !important;
-  width: 390px !important;
-  min-width: 390px !important;
+  width: 100% !important;
+  min-width: 0 !important;
   max-width: none !important;
   height: 100% !important;
   margin: 0 !important;
@@ -61,42 +57,65 @@ main.workspace .workspace__desktop--column .workspace-panel__content.floating-ed
   pointer-events: none;
 }
 
-/* La pestaña pertenece físicamente a la columna: es su franja de borde.
-   No flota ni se superpone sobre el mapa. */
-.workspace-panel__rail {
+/* Divisor funcional de 4px; visualmente solo deja una línea de 1px. */
+.workspace-divider {
   position: relative;
-  z-index: 1;
-  width: 22px;
+  z-index: 701;
+  width: 4px;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f8f9fb;
-  border-left: 1px solid var(--line);
+  cursor: col-resize;
+  touch-action: none;
+  background: transparent;
 }
 
+.workspace-divider::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 1px;
+  width: 1px;
+  background: var(--line);
+  transition: background 0.12s ease;
+}
+
+.workspace-divider:hover::before,
+.workspace__desktop--column.is-panel-resizing .workspace-divider::before {
+  background: #b9c1cb;
+}
+
+/* Única pestaña integrada al propio borde; no tiene rail ni barra propia. */
 .workspace-panel__toggle {
-  width: 100%;
-  height: 54px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  width: 20px;
+  height: 44px;
   padding: 0;
+  transform: translate(-50%, -50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 0;
-  border-top: 1px solid #e1e4e9;
-  border-bottom: 1px solid #e1e4e9;
-  border-radius: 0;
+  border: 1px solid #dfe3e8;
+  border-left-color: #eef0f3;
+  border-radius: 0 7px 7px 0;
   background: #ffffff;
-  color: #6f7785;
+  color: #7b8491;
   box-shadow: none;
   cursor: pointer;
 }
 
 .workspace-panel__toggle:hover,
 .workspace-panel__toggle:focus-visible {
-  background: #f1f4f6;
+  background: #f6f7f8;
   color: #357d94;
   outline: none;
+}
+
+.workspace__desktop--column.is-panel-collapsed .workspace-panel__toggle {
+  left: 0;
+  transform: translate(0, -50%);
 }
 
 .workspace__desktop--column > .mappane {
