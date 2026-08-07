@@ -42,9 +42,12 @@ test('Itinerario y Mis Rutas comparten una sola instancia de Google Maps', async
 test('el mapa Google corrige tamaño al cambiar de vista y al redimensionar el panel', async () => {
   const { google } = await mapSources();
 
-  assert.match(google, /new ResizeObserver/);
-  assert.match(google, /maps\.event\.trigger\(mapRef\.current, 'resize'\)/);
-  assert.match(google, /requestAnimationFrame/);
+  assert.match(google, /function syncMapElementSize/);
+  assert.match(google, /new ResizeObserver\(resizeHandler\)/);
+  assert.match(google, /globalThis\.addEventListener\?\.\('resize', resizeHandler\)/);
+  assert.match(google, /requestAnimationFrame\(resizeHandler\)/);
+  assert.match(google, /maps\.event\.trigger\(currentMap, 'resize'\)/);
+  assert.match(google, /requestAnimationFrame\(\(\) => \{/);
   assert.match(google, /maps\.event\.trigger\(map, 'resize'\)/);
   assert.match(google, /\[ready, viewMode\]/);
 });
