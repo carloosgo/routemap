@@ -1,78 +1,38 @@
 const DEFAULT_DASH_PX = 4;
 const DEFAULT_GAP_PX = 6;
 const DEFAULT_STROKE_WEIGHT = 2;
-const SETTLE_DELAY_MS = 140;
+const SVG_NS = 'http://www.w3.org/2000/svg';
 
 function finitePoint(point) {
   return Boolean(point && Number.isFinite(point.x) && Number.isFinite(point.y));
 }
 
-function distance(a, b) {
-  return Math.hypot(b.x - a.x, b.y - a.y);
+function toSvgPath(path, projection, maps) {
+  const points = (path || [])
+    .map((point) => projection.fromLatLngToDivPixel(
+      point instanceof maps.LatLng ? point : new maps.LatLng(point)
+    ))
+    .filter(finitePoint);
+
+  if (points.length < 2) return '';
+
+  return points
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
+    .join(' ');
 }
 
-function pathMetrics(points) {
-  const cumulative = [0];
-  for (let index = 1; index < points.length; index += 1) {
-    cumulative.push(cumulative[index - 1] + distance(points[index - 1], points[index]));
-  }
-  return cumulative;
-}
-
-function pointAtDistance(points, cumulative, target) {
-  if (target <= 0) return points[0];
-  const total = cumulative[cumulative.length - 1];
-  if (target >= total) return points[points.length - 1];
-
-  let index = 1;
-  while (index < cumulative.length && cumulative[index] < target) index += 1;
-
-  const start = points[index - 1];
-  const end = points[index];
-  const segmentStart = cumulative[index - 1];
-  const segmentLength = cumulative[index] - segmentStart;
-  const ratio = segmentLength > 0 ? (target - segmentStart) / segmentLength : 0;
-
-  return {
-    x: start.x + ((end.x - start.x) * ratio),
-    y: start.y + ((end.y - start.y) * ratio),
-  };
-}
-
-export function pixelDashSegments(points, dashPx = DEFAULT_DASH_PX, gapPx = DEFAULT_GAP_PX) {
-  const cleanPoints = (points || []).filter(finitePoint);
-  if (cleanPoints.length < 2) return [];
-
-  const cumulative = pathMetrics(cleanPoints);
-  const total = cumulative[cumulative.length - 1];
-  if (total <= 0) return [];
-
-  const dashLength = Math.max(1, Number(dashPx) || DEFAULT_DASH_PX);
-  const gapLength = Math.max(1, Number(gapPx) || DEFAULT_GAP_PX);
-  const step = dashLength + gapLength;
-  const segments = [];
-
-  for (let startDistance = 0; startDistance < total; startDistance += step) {
-    const endDistance = Math.min(startDistance + dashLength, total);
-    const segment = [pointAtDistance(cleanPoints, cumulative, startDistance)];
-
-    for (let index = 1; index < cleanPoints.length - 1; index += 1) {
-      if (cumulative[index] > startDistance && cumulative[index] < endDistance) {
-        segment.push(cleanPoints[index]);
-      }
-    }
-
-    segment.push(pointAtDistance(cleanPoints, cumulative, endDistance));
-    if (segment.length >= 2) segments.push(segment);
-  }
-
-  return segments;
-}
-
-function mapSizeKey(map) {
-  const node = map?.getDiv?.();
-  if (!node) return '';
-  return `${Math.round(node.clientWidth || 0)}x${Math.round(node.clientHeight || 0)}`;
+function createRoutePath(color) {
+  const path = document.createElementNS(SVG_NS, 'path');
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', color || '#111111');
+  path.setAttribute('stroke-opacity', '1');
+  path.setAttribute('stroke-width', String(DEFAULT_STROKE_WEIGHT));
+  path.setAttribute('stroke-dasharray', `${DEFAULT_DASH_PX} ${DEFAULT_GAP_PX}`);
+  path.setAttribute('stroke-linecap', 'butt');
+  path.setAttribute('stroke-linejoin', 'round');
+  path.setAttribute('vector-effect', 'non-scaling-stroke');
+  path.setAttribute('shape-rendering', 'geometricPrecision');
+  return path;
 }
 
 export function createCrispDashedRoutes({
@@ -80,125 +40,67 @@ export function createCrispDashedRoutes({
   map,
   routes = [],
 }) {
-  if (!maps?.OverlayView || !maps?.Polyline || !map) {
+  if (!maps?.OverlayView || !map) {
     return { dispose() {} };
   }
 
   const overlay = new maps.OverlayView();
-  let polylines = [];
-  let disposed = false;
-  let frame = 0;
-  let settleTimer = 0;
-  let hasRendered = false;
-  let lastRenderedZoom = null;
-  let lastRenderedSize = '';
-  let resizeObserver = null;
+  let svg = null;
+  let routePaths = [];
 
-  const clearLines = (lines) => {
-    lines.forEach((line) => line.setMap(null));
-  };
+  overlay.onAdd = () => {
+    const pane = overlay.getPanes?.()?.overlayLayer;
+    if (!pane) return;
 
-  const clear = () => {
-    clearLines(polylines);
-    polylines = [];
-  };
-
-  const redraw = () => {
-    frame = 0;
-    if (disposed) return;
-
-    const projection = overlay.getProjection?.();
-    const size = mapSizeKey(map);
-    if (!projection || !size || size === '0x0') return;
-
-    const nextPolylines = [];
-    routes.forEach(({ path = [], color = '#111111' }) => {
-      const pixels = path
-        .map((point) => projection.fromLatLngToDivPixel(
-          point instanceof maps.LatLng ? point : new maps.LatLng(point)
-        ))
-        .filter(finitePoint)
-        .map((point) => ({ x: point.x, y: point.y }));
-
-      pixelDashSegments(pixels, DEFAULT_DASH_PX, DEFAULT_GAP_PX).forEach((pixelSegment) => {
-        const dashPath = pixelSegment
-          .map((point) => projection.fromDivPixelToLatLng(new maps.Point(point.x, point.y)))
-          .filter(Boolean);
-        if (dashPath.length < 2) return;
-
-        nextPolylines.push(new maps.Polyline({
-          map,
-          path: dashPath,
-          strokeColor: color,
-          strokeOpacity: 1,
-          strokeWeight: DEFAULT_STROKE_WEIGHT,
-          clickable: false,
-          geodesic: false,
-          zIndex: 2,
-        }));
-      });
+    svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    Object.assign(svg.style, {
+      position: 'absolute',
+      left: '0',
+      top: '0',
+      width: '1px',
+      height: '1px',
+      overflow: 'visible',
+      pointerEvents: 'none',
     });
 
-    const previousPolylines = polylines;
-    polylines = nextPolylines;
-    clearLines(previousPolylines);
+    routePaths = routes.map((route) => {
+      const element = createRoutePath(route.color);
+      svg.append(element);
+      return { element, path: route.path || [] };
+    });
 
-    lastRenderedZoom = map.getZoom?.();
-    lastRenderedSize = size;
-    hasRendered = true;
+    pane.append(svg);
   };
 
-  const scheduleRedraw = (delay = SETTLE_DELAY_MS) => {
-    if (disposed) return;
-    clearTimeout(settleTimer);
-    settleTimer = setTimeout(() => {
-      if (disposed || frame) return;
-      frame = requestAnimationFrame(() => {
-        frame = requestAnimationFrame(redraw);
-      });
-    }, delay);
-  };
-
-  const markDirty = () => {
-    hasRendered = false;
-  };
-
-  overlay.onAdd = () => {};
-  overlay.onRemove = clear;
   overlay.draw = () => {
-    if (disposed || !hasRendered) return;
-    const zoom = map.getZoom?.();
-    const size = mapSizeKey(map);
-    if (zoom !== lastRenderedZoom || size !== lastRenderedSize) {
-      markDirty();
-    }
+    const projection = overlay.getProjection?.();
+    if (!projection) return;
+
+    routePaths.forEach(({ element, path }) => {
+      const d = toSvgPath(path, projection, maps);
+      if (d) {
+        element.setAttribute('d', d);
+        element.style.display = '';
+      } else {
+        element.removeAttribute('d');
+        element.style.display = 'none';
+      }
+    });
   };
+
+  overlay.onRemove = () => {
+    svg?.remove();
+    svg = null;
+    routePaths = [];
+  };
+
   overlay.setMap(map);
-
-  const zoomListener = map.addListener?.('zoom_changed', markDirty);
-  const idleListener = map.addListener?.('idle', () => scheduleRedraw());
-  const tilesListener = map.addListener?.('tilesloaded', () => scheduleRedraw(80));
-
-  const mapNode = map.getDiv?.();
-  if (mapNode && typeof globalThis.ResizeObserver !== 'undefined') {
-    resizeObserver = new globalThis.ResizeObserver(markDirty);
-    resizeObserver.observe(mapNode);
-  }
 
   return {
     dispose() {
-      disposed = true;
-      clearTimeout(settleTimer);
-      settleTimer = 0;
-      if (frame) cancelAnimationFrame(frame);
-      frame = 0;
-      zoomListener?.remove?.();
-      idleListener?.remove?.();
-      tilesListener?.remove?.();
-      resizeObserver?.disconnect();
-      resizeObserver = null;
       overlay.setMap(null);
-      clear();
     },
   };
 }
