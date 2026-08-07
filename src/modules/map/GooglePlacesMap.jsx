@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { config } from '../../config.js';
 import { useTranslation } from '../../i18n/index.jsx';
-import { isPlaced } from '../trips/tripModel.js';
+import { refreshGooglePlace } from '../places/googlePlacesClient.js';
+import { isGooglePlaceReference, isPlaced } from '../trips/tripModel.js';
 import { PlaceSearchForm } from './PlaceSearchForm.jsx';
 import { loadGoogleMaps } from './googleMapsLoader.js';
 import { markerElement, savePrompt, savedPlacePopup } from './placeMapDom.js';
@@ -45,7 +46,12 @@ function savedMarkerContent(place, t) {
   return button;
 }
 
-export function GooglePlacesMap({ places = [], routeConnections = [], addPlace }) {
+export function GooglePlacesMap({
+  places = [],
+  routeConnections = [],
+  addPlace,
+  updatePlace,
+}) {
   const { t } = useTranslation();
   const nodeRef = useRef(null);
   const mapRef = useRef(null);
@@ -53,10 +59,35 @@ export function GooglePlacesMap({ places = [], routeConnections = [], addPlace }
   const routeLinesRef = useRef([]);
   const infoWindowRef = useRef(null);
   const saveNoticeTimerRef = useRef(null);
+  const hydratingPlaceIdsRef = useRef(new Set());
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [saveNotice, setSaveNotice] = useState('');
   const placeSearch = usePlaceSearch({ viewMode: 'places' });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const unresolved = places.filter(
+      (place) => isGooglePlaceReference(place) && !isPlaced(place)
+    );
+
+    unresolved.forEach((place) => {
+      if (hydratingPlaceIdsRef.current.has(place.id)) return;
+      hydratingPlaceIdsRef.current.add(place.id);
+      refreshGooglePlace(place.googlePlaceId, { signal: controller.signal })
+        .then((hydrated) => {
+          if (!controller.signal.aborted) updatePlace?.(place.id, hydrated);
+        })
+        .catch((error) => {
+          if (error?.name !== 'AbortError') {
+            console.warn('[Google Places] saved place refresh failed', error);
+          }
+        })
+        .finally(() => hydratingPlaceIdsRef.current.delete(place.id));
+    });
+
+    return () => controller.abort();
+  }, [places, updatePlace]);
 
   useEffect(() => {
     let disposed = false;
@@ -145,13 +176,19 @@ export function GooglePlacesMap({ places = [], routeConnections = [], addPlace }
         zIndex: 20,
       });
       content.addEventListener('click', () => {
-        const alreadySaved = places.some((saved) => String(saved.id) === String(place.id));
+        const alreadySaved = places.some(
+          (saved) => saved.googlePlaceId
+            ? saved.googlePlaceId === place.googlePlaceId
+            : String(saved.id) === String(place.id)
+        );
         const prompt = savePrompt(place, {
           alreadySaved,
           t,
           onSave: (selected) => {
             const savedPlace = {
               id: selected.id,
+              provider: 'google',
+              googlePlaceId: selected.googlePlaceId || selected.id,
               name: selected.name || '',
               address: selected.address || '',
               city: selected.city || '',
@@ -182,7 +219,7 @@ export function GooglePlacesMap({ places = [], routeConnections = [], addPlace }
     if (results.length === 1) {
       map.panTo({ lat: results[0].lat, lng: results[0].lon });
       map.setZoom(14);
-    } else if ((places.length || results.length) && !bounds.isEmpty()) {
+    } else if ((places.some(isPlaced) || results.length) && !bounds.isEmpty()) {
       map.fitBounds(bounds, 84);
     }
 
