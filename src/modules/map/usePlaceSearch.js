@@ -15,6 +15,7 @@ export function usePlaceSearch({ viewMode }) {
   const searchSequenceRef = useRef(0);
   const autocompleteSequenceRef = useRef(0);
   const skipAutocompleteRef = useRef(false);
+  const previousViewModeRef = useRef(viewMode);
   const sessionTokenRef = useRef(createGooglePlacesSessionToken());
 
   const [query, setQuery] = useState('');
@@ -38,13 +39,26 @@ export function usePlaceSearch({ viewMode }) {
   );
 
   useEffect(() => {
+    const previousViewMode = previousViewModeRef.current;
+    previousViewModeRef.current = viewMode;
     autocompleteAbortRef.current?.abort();
+
     if (viewMode !== 'places') {
       setSuggestions([]);
       setSuggesting(false);
       setShowSuggestions(false);
       return undefined;
     }
+
+    // Volver a Mis Rutas no cuenta como una edición del texto y no debe
+    // generar una solicitud nueva de Autocomplete.
+    if (previousViewMode !== 'places') {
+      setSuggestions([]);
+      setSuggesting(false);
+      setShowSuggestions(false);
+      return undefined;
+    }
+
     if (skipAutocompleteRef.current) {
       skipAutocompleteRef.current = false;
       setSuggestions([]);
