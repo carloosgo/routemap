@@ -20,21 +20,21 @@ test('el autocompletado de ciudades pertenece exclusivamente a Tramos', async ()
   assert.match(cityClient, /firebaseCallable\('geoapifyCityAutocomplete'\)/);
 
   const combined = `${cityAutocomplete}\n${citySearch}\n${provider}\n${cityClient}`;
-  assert.doesNotMatch(combined, /usePlaceSearch|searchGeoapifyPlaces|PlaceSearchForm|TripPlacesPanel|geoapifyPlaceSearch/);
+  assert.doesNotMatch(combined, /usePlaceSearch|searchGooglePlaces|PlaceSearchForm|TripPlacesPanel|googlePlaceSearch/);
 });
 
-test('la búsqueda general no lee origen, destino ni módulos de ciudades', async () => {
+test('la búsqueda general Google no lee origen, destino ni módulos de ciudades', async () => {
   const routeMap = await read('src/modules/map/RouteMap.jsx');
+  const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
   const placeSearch = await read('src/modules/map/usePlaceSearch.js');
-  const placeClient = await read('src/modules/places/geoapifyClient.js');
-  const placeQuery = await read('src/modules/places/geoapifyQuery.js');
+  const placeClient = await read('src/modules/places/googlePlacesClient.js');
 
-  assert.match(routeMap, /viewMode === 'places' && \([\s\S]*<PlaceSearchForm/);
-  assert.match(routeMap, /usePlaceSearch\(\{ viewMode \}\)/);
-  assert.doesNotMatch(routeMap, /placeSearchContext|searchContext/);
+  assert.match(routeMap, /<GooglePlacesMap/);
+  assert.match(googleMap, /usePlaceSearch\(\{ viewMode: active \? 'places' : 'segments' \}\)/);
+  assert.match(googleMap, /<PlaceSearchForm/);
+  assert.doesNotMatch(routeMap, /placeSearchContext|searchContext|CityAutocomplete/);
   assert.doesNotMatch(placeSearch, /segments|origin|destination|useCitySearch|getGeocoder/);
   assert.doesNotMatch(placeClient, /contextualQuery|callableSearchContext|contextKey|searchContext|citySearchClient|geoapifyCityAutocomplete/);
-  assert.doesNotMatch(placeQuery, /knownLocations|city|country|lat|lon/);
 });
 
 test('el modelo actual nunca guarda lugares ni routing dentro de un tramo', async () => {
@@ -53,14 +53,15 @@ test('el modelo actual nunca guarda lugares ni routing dentro de un tramo', asyn
   assert.doesNotMatch(rules, /'route'/);
 });
 
-test('Tramos y búsqueda general solo convergen en el render del mapa', async () => {
+test('Tramos y Mis Rutas solo convergen en el coordinador visual del mapa', async () => {
   const pane = await read('src/app/AppMapPane.jsx');
   const routeMap = await read('src/modules/map/RouteMap.jsx');
-  const model = await read('src/modules/map/routeMapModel.js');
+  const itineraryMap = await read('src/modules/map/ItineraryRouteMap.jsx');
+  const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
 
   assert.match(pane, /<RouteMap[\s\S]*segments=\{trip\.segments\}[\s\S]*places=\{trip\.places \|\| \[\]\}/);
-  assert.match(model, /const showSegments = viewMode === 'segments'/);
-  assert.match(model, /const showPlaces = viewMode === 'places'/);
-  assert.doesNotMatch(model, /placeSearchContext|requestGeoapifyRoute/);
-  assert.doesNotMatch(routeMap, /updateSegment|addSegment|removeSegment|CityAutocomplete/);
+  assert.match(routeMap, /<ItineraryRouteMap segments=\{segments\} \/>/);
+  assert.match(routeMap, /<GooglePlacesMap/);
+  assert.doesNotMatch(itineraryMap, /usePlaceSearch|googlePlaceSearch|googleRouteOptimized/);
+  assert.doesNotMatch(googleMap, /updateSegment|addSegment|removeSegment|CityAutocomplete|geoapifyCityAutocomplete/);
 });
