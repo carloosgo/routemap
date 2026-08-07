@@ -1,6 +1,7 @@
 const DEFAULT_DASH_PX = 4;
 const DEFAULT_GAP_PX = 6;
 const DEFAULT_STROKE_WEIGHT = 2;
+const SETTLE_DELAY_MS = 140;
 
 function finitePoint(point) {
   return Boolean(point && Number.isFinite(point.x) && Number.isFinite(point.y));
@@ -68,6 +69,12 @@ export function pixelDashSegments(points, dashPx = DEFAULT_DASH_PX, gapPx = DEFA
   return segments;
 }
 
+function mapSizeKey(map) {
+  const node = map?.getDiv?.();
+  if (!node) return '';
+  return `${Math.round(node.clientWidth || 0)}x${Math.round(node.clientHeight || 0)}`;
+}
+
 export function createCrispDashedRoutes({
   maps,
   map,
@@ -81,9 +88,11 @@ export function createCrispDashedRoutes({
   let polylines = [];
   let disposed = false;
   let frame = 0;
-  let lastRenderedZoom = null;
+  let settleTimer = 0;
   let hasRendered = false;
-  let viewportSettled = false;
+  let lastRenderedZoom = null;
+  let lastRenderedSize = '';
+  let resizeObserver = null;
 
   const clear = () => {
     polylines.forEach((line) => line.setMap(null));
@@ -92,9 +101,10 @@ export function createCrispDashedRoutes({
 
   const redraw = () => {
     frame = 0;
-    if (disposed || !viewportSettled) return;
+    if (disposed) return;
     const projection = overlay.getProjection?.();
-    if (!projection) return;
+    const size = mapSizeKey(map);
+    if (!projection || !size || size === '0x0') return;
 
     clear();
     routes.forEach(({ path = [], color = '#111111' }) => {
@@ -125,41 +135,63 @@ export function createCrispDashedRoutes({
     });
 
     lastRenderedZoom = map.getZoom?.();
+    lastRenderedSize = size;
     hasRendered = true;
   };
 
-  const scheduleRedraw = () => {
-    if (disposed || !viewportSettled || frame) return;
-    frame = requestAnimationFrame(() => {
-      frame = requestAnimationFrame(redraw);
-    });
+  const scheduleRedraw = (delay = SETTLE_DELAY_MS) => {
+    if (disposed) return;
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => {
+      if (disposed || frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(redraw);
+      });
+    }, delay);
+  };
+
+  const invalidateAndSchedule = () => {
+    hasRendered = false;
+    clear();
+    scheduleRedraw();
   };
 
   overlay.onAdd = () => {};
   overlay.onRemove = clear;
   overlay.draw = () => {
-    if (!viewportSettled || !hasRendered) return;
+    if (disposed) return;
     const zoom = map.getZoom?.();
-    if (zoom !== lastRenderedZoom) scheduleRedraw();
+    const size = mapSizeKey(map);
+    if (!hasRendered || zoom !== lastRenderedZoom || size !== lastRenderedSize) {
+      scheduleRedraw();
+    }
   };
   overlay.setMap(map);
 
-  const zoomListener = map.addListener?.('zoom_changed', () => {
-    viewportSettled = false;
-    hasRendered = false;
-  });
-  const idleListener = map.addListener?.('idle', () => {
-    viewportSettled = true;
-    scheduleRedraw();
-  });
+  const zoomListener = map.addListener?.('zoom_changed', invalidateAndSchedule);
+  const idleListener = map.addListener?.('idle', () => scheduleRedraw(80));
+  const tilesListener = map.addListener?.('tilesloaded', () => scheduleRedraw(80));
+
+  const mapNode = map.getDiv?.();
+  if (mapNode && typeof globalThis.ResizeObserver !== 'undefined') {
+    resizeObserver = new globalThis.ResizeObserver(invalidateAndSchedule);
+    resizeObserver.observe(mapNode);
+  }
+
+  scheduleRedraw();
 
   return {
     dispose() {
       disposed = true;
+      clearTimeout(settleTimer);
+      settleTimer = 0;
       if (frame) cancelAnimationFrame(frame);
       frame = 0;
       zoomListener?.remove?.();
       idleListener?.remove?.();
+      tilesListener?.remove?.();
+      resizeObserver?.disconnect();
+      resizeObserver = null;
       overlay.setMap(null);
       clear();
     },
