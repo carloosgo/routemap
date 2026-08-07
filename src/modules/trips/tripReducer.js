@@ -33,7 +33,6 @@ export const TRIP_ACTIONS = Object.freeze({
   updateSegment: 'UPDATE_SEGMENT',
   updateExpenses: 'UPDATE_EXPENSES',
   addPlace: 'ADD_PLACE',
-  updatePlace: 'UPDATE_PLACE',
   removePlace: 'REMOVE_PLACE',
   reorderPlace: 'REORDER_PLACE',
   upsertRouteConnection: 'UPSERT_ROUTE_CONNECTION',
@@ -164,27 +163,6 @@ export function tripReducer(state, action) {
         places: insertPlaceByCountry(places, place),
         placeOrderVersion: PLACE_ORDER_VERSION,
       });
-    }
-
-    case TRIP_ACTIONS.updatePlace: {
-      const places = state.places || [];
-      const index = places.findIndex((place) => place.id === action.placeId);
-      if (index < 0) return state;
-      const current = places[index];
-      const hydrated = createPlace({
-        ...current,
-        ...(action.patch || {}),
-        id: current.id,
-        provider: current.provider,
-        googlePlaceId: current.googlePlaceId,
-        savedAt: current.savedAt,
-      });
-      const nextPlaces = [...places];
-      nextPlaces[index] = hydrated;
-      return {
-        ...state,
-        places: nextPlaces,
-      };
     }
 
     case TRIP_ACTIONS.removePlace:
