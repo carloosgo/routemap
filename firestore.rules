@@ -172,17 +172,21 @@ service cloud.firestore {
 
     function validPlace(data) {
       return data.keys().hasOnly([
-          'id', 'position', 'name', 'address', 'city', 'country', 'category',
-          'countryCode', 'lat', 'lon', 'savedAt'
+          'id', 'position', 'provider', 'googlePlaceId', 'name', 'address', 'city',
+          'country', 'category', 'countryCode', 'lat', 'lon', 'savedAt'
         ])
         && data.keys().hasAll([
-          'id', 'position', 'name', 'address', 'city', 'country', 'category',
-          'countryCode', 'lat', 'lon', 'savedAt'
+          'id', 'position', 'provider', 'googlePlaceId', 'name', 'address', 'city',
+          'country', 'category', 'countryCode', 'lat', 'lon', 'savedAt'
         ])
         && data.id is string
         && data.id.size() > 0
         && data.id.size() <= 128
         && validCount(data.position, 499)
+        && data.provider is string
+        && (data.provider == 'geoapify' || data.provider == 'google')
+        && data.googlePlaceId is string
+        && data.googlePlaceId.size() <= 256
         && data.name is string
         && data.name.size() <= 160
         && data.address is string
@@ -195,14 +199,33 @@ service cloud.firestore {
         && data.category.size() <= 80
         && data.countryCode is string
         && data.countryCode.matches('^([A-Z]{2})?$')
-        && data.lat is number
-        && data.lat >= -90
-        && data.lat <= 90
-        && data.lon is number
-        && data.lon >= -180
-        && data.lon <= 180
         && data.savedAt is string
-        && data.savedAt.size() <= 40;
+        && data.savedAt.size() <= 40
+        && (
+          (
+            data.provider == 'google'
+            && data.googlePlaceId.size() > 0
+            && data.name == ''
+            && data.address == ''
+            && data.city == ''
+            && data.country == ''
+            && data.category == ''
+            && data.countryCode == ''
+            && data.lat == null
+            && data.lon == null
+          )
+          ||
+          (
+            data.provider == 'geoapify'
+            && data.googlePlaceId == ''
+            && data.lat is number
+            && data.lat >= -90
+            && data.lat <= 90
+            && data.lon is number
+            && data.lon >= -180
+            && data.lon <= 180
+          )
+        );
     }
 
     function validRouteConnection(data) {
