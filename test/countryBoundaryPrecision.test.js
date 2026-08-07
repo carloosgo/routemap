@@ -41,7 +41,7 @@ test('Itinerario pinta países visitados con COUNTRY y resuelve IDs mediante Pla
   assert.match(googleMap, /countryLayer\.isAvailable/);
   assert.match(googleMap, /loadGoogleCountryPlaceIds\(itineraryCountries/);
   assert.match(googleMap, /fillColor: color/);
-  assert.match(googleMap, /fillOpacity: 0\.20/);
+  assert.match(googleMap, /fillOpacity: 0\.21/);
   assert.match(googleMap, /strokeOpacity: 0/);
   assert.match(googleMap, /strokeWeight: 0/);
   assert.match(googleMap, /countryLayer\.style = null/);
