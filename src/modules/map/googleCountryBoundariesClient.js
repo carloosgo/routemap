@@ -140,5 +140,9 @@ export async function loadGoogleCountryPlaceIds(countries, { signal } = {}) {
   }
 
   writeCache(cache);
+  console.info(
+    '[Google Maps] COUNTRY Place IDs:',
+    resolved.map(({ countryCode, placeId }) => `${countryCode}=${placeId}`).join(', ')
+  );
   return resolved;
 }
