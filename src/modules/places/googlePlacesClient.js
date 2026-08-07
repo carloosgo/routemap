@@ -34,10 +34,13 @@ function throwIfAborted(signal) {
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 }
 
-async function requestPlaceDetails(placeId, { name = '', sessionToken = '', signal } = {}) {
+async function requestPlaceDetails(
+  placeId,
+  { name = '', sessionToken = '', includeDisplayName = false, signal } = {}
+) {
   const cleanPlaceId = String(placeId || '').trim();
   if (!cleanPlaceId) throw new TypeError('Falta el identificador de Google Places.');
-  const key = sessionToken ? '' : cacheKey('details', cleanPlaceId);
+  const key = sessionToken ? '' : cacheKey(includeDisplayName ? 'refresh' : 'details', cleanPlaceId);
   if (key) {
     const cached = getCached(key);
     if (cached) return cached;
@@ -49,6 +52,7 @@ async function requestPlaceDetails(placeId, { name = '', sessionToken = '', sign
     placeId: cleanPlaceId,
     name: String(name || '').trim(),
     ...(sessionToken ? { sessionToken } : {}),
+    ...(includeDisplayName ? { includeDisplayName: true } : {}),
     language: config.defaultLocale,
   });
   throwIfAborted(signal);
@@ -92,7 +96,7 @@ export async function resolveGooglePlace(prediction, sessionToken, { signal } = 
 }
 
 export async function refreshGooglePlace(placeId, { signal } = {}) {
-  return requestPlaceDetails(placeId, { signal });
+  return requestPlaceDetails(placeId, { includeDisplayName: true, signal });
 }
 
 export async function searchGooglePlaces(query, { signal } = {}) {
