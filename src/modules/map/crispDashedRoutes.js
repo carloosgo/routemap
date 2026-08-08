@@ -1,24 +1,66 @@
 const DEFAULT_DASH_PX = 4;
 const DEFAULT_GAP_PX = 6;
 const DEFAULT_STROKE_WEIGHT = 2;
+const ARROW_FRACTION = 0.54;
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 function finitePoint(point) {
   return Boolean(point && Number.isFinite(point.x) && Number.isFinite(point.y));
 }
 
-function toSvgPath(path, projection, maps) {
-  const points = (path || [])
+function projectedPoints(path, projection, maps) {
+  return (path || [])
     .map((point) => projection.fromLatLngToDivPixel(
       point instanceof maps.LatLng ? point : new maps.LatLng(point)
     ))
     .filter(finitePoint);
+}
 
+function toSvgPath(points) {
   if (points.length < 2) return '';
 
   return points
     .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
     .join(' ');
+}
+
+function arrowPlacement(points, fraction = ARROW_FRACTION) {
+  if (points.length < 2) return null;
+
+  const segments = [];
+  let totalLength = 0;
+  for (let index = 1; index < points.length; index += 1) {
+    const start = points[index - 1];
+    const end = points[index];
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const length = Math.hypot(dx, dy);
+    if (length <= 0) continue;
+    segments.push({ start, end, dx, dy, length });
+    totalLength += length;
+  }
+  if (!segments.length || totalLength <= 0) return null;
+
+  const target = totalLength * Math.min(1, Math.max(0, fraction));
+  let walked = 0;
+  for (const segment of segments) {
+    if (walked + segment.length >= target) {
+      const ratio = (target - walked) / segment.length;
+      return {
+        x: segment.start.x + segment.dx * ratio,
+        y: segment.start.y + segment.dy * ratio,
+        angle: Math.atan2(segment.dy, segment.dx) * 180 / Math.PI,
+      };
+    }
+    walked += segment.length;
+  }
+
+  const last = segments[segments.length - 1];
+  return {
+    x: last.end.x,
+    y: last.end.y,
+    angle: Math.atan2(last.dy, last.dx) * 180 / Math.PI,
+  };
 }
 
 function createRoutePath(color) {
@@ -33,6 +75,19 @@ function createRoutePath(color) {
   path.setAttribute('vector-effect', 'non-scaling-stroke');
   path.setAttribute('shape-rendering', 'geometricPrecision');
   return path;
+}
+
+function createDirectionArrow() {
+  const arrow = document.createElementNS(SVG_NS, 'path');
+  arrow.setAttribute('d', 'M -4 -3 L 4 0 L -4 3 Z');
+  arrow.setAttribute('fill', '#111111');
+  arrow.setAttribute('stroke', '#ffffff');
+  arrow.setAttribute('stroke-width', '0.9');
+  arrow.setAttribute('stroke-linejoin', 'round');
+  arrow.setAttribute('vector-effect', 'non-scaling-stroke');
+  arrow.setAttribute('shape-rendering', 'geometricPrecision');
+  arrow.style.pointerEvents = 'none';
+  return arrow;
 }
 
 export function createCrispDashedRoutes({
@@ -67,8 +122,9 @@ export function createCrispDashedRoutes({
 
     routePaths = routes.map((route) => {
       const element = createRoutePath(route.color);
-      svg.append(element);
-      return { element, path: route.path || [] };
+      const arrow = createDirectionArrow();
+      svg.append(element, arrow);
+      return { element, arrow, path: route.path || [] };
     });
 
     pane.append(svg);
@@ -78,14 +134,27 @@ export function createCrispDashedRoutes({
     const projection = overlay.getProjection?.();
     if (!projection) return;
 
-    routePaths.forEach(({ element, path }) => {
-      const d = toSvgPath(path, projection, maps);
+    routePaths.forEach(({ element, arrow, path }) => {
+      const points = projectedPoints(path, projection, maps);
+      const d = toSvgPath(points);
       if (d) {
         element.setAttribute('d', d);
         element.style.display = '';
       } else {
         element.removeAttribute('d');
         element.style.display = 'none';
+      }
+
+      const placement = arrowPlacement(points);
+      if (placement) {
+        arrow.setAttribute(
+          'transform',
+          `translate(${placement.x.toFixed(2)} ${placement.y.toFixed(2)}) rotate(${placement.angle.toFixed(2)})`
+        );
+        arrow.style.display = '';
+      } else {
+        arrow.removeAttribute('transform');
+        arrow.style.display = 'none';
       }
     });
   };
