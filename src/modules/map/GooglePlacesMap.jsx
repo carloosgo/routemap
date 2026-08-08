@@ -46,14 +46,16 @@ function savedMarkerContent(place, t, color) {
   return button;
 }
 
-function itineraryCityContent(city, color, t) {
+function itineraryCityContent(city, color, t, { endpoint = false, number = null } = {}) {
   const marker = document.createElement('div');
-  marker.className = 'google-itinerary-city-marker';
+  marker.className = 'google-itinerary-city-marker' + (endpoint ? ' is-endpoint' : '');
   marker.style.setProperty('--itinerary-city-color', color);
   marker.setAttribute('role', 'img');
-  marker.setAttribute('aria-label', city.name || city.displayName || t('city'));
+  const cityName = city.name || city.displayName || t('city');
+  marker.setAttribute('aria-label', endpoint ? `${number}. ${cityName}` : cityName);
   const dot = document.createElement('span');
   dot.className = 'google-itinerary-city-marker__dot';
+  if (endpoint) dot.textContent = String(number);
   marker.append(dot);
   return marker;
 }
@@ -418,13 +420,15 @@ export function GooglePlacesMap({
     };
 
     const bounds = new maps.LatLngBounds();
-    cityFeatures.forEach((feature) => {
+    cityFeatures.forEach((feature, index) => {
       const [lng, lat] = feature.geometry?.coordinates || [];
       if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return;
+      const endpoint = index === 0 || index === cityFeatures.length - 1;
       const content = itineraryCityContent(
         { name: feature.properties?.name },
         feature.properties?.color || colorForIndex(0),
-        t
+        t,
+        { endpoint, number: index + 1 }
       );
       const marker = new AdvancedMarkerElement({
         map,
