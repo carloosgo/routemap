@@ -1,7 +1,9 @@
 const DEFAULT_DASH_PX = 4;
 const DEFAULT_GAP_PX = 6;
 const DEFAULT_STROKE_WEIGHT = 2;
-const ARROW_FRACTIONS = [0.24, 0.5, 0.76];
+const DASH_CYCLE_PX = DEFAULT_DASH_PX + DEFAULT_GAP_PX;
+const DASH_GAP_CENTER_PX = DEFAULT_DASH_PX + (DEFAULT_GAP_PX / 2);
+const ARROW_FRACTIONS = [0.33, 0.67];
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 function finitePoint(point) {
@@ -24,6 +26,16 @@ function toSvgPath(points) {
     .join(' ');
 }
 
+function snapToDashGap(target, totalLength) {
+  if (totalLength <= DASH_CYCLE_PX) return target;
+
+  const cycleIndex = Math.round((target - DASH_GAP_CENTER_PX) / DASH_CYCLE_PX);
+  const snapped = DASH_GAP_CENTER_PX + (cycleIndex * DASH_CYCLE_PX);
+  const minDistance = DASH_GAP_CENTER_PX;
+  const maxDistance = Math.max(minDistance, totalLength - (DEFAULT_GAP_PX / 2));
+  return Math.min(maxDistance, Math.max(minDistance, snapped));
+}
+
 function arrowPlacement(points, fraction) {
   if (points.length < 2) return null;
 
@@ -41,7 +53,8 @@ function arrowPlacement(points, fraction) {
   }
   if (!segments.length || totalLength <= 0) return null;
 
-  const target = totalLength * Math.min(1, Math.max(0, fraction));
+  const rawTarget = totalLength * Math.min(1, Math.max(0, fraction));
+  const target = snapToDashGap(rawTarget, totalLength);
   let walked = 0;
   for (const segment of segments) {
     if (walked + segment.length >= target) {
@@ -79,10 +92,10 @@ function createRoutePath(color) {
 
 function createDirectionArrow() {
   const arrow = document.createElementNS(SVG_NS, 'path');
-  arrow.setAttribute('d', 'M -3.6 -2.7 L 1 0 L -3.6 2.7');
+  arrow.setAttribute('d', 'M -2.2 -1.65 L 0.6 0 L -2.2 1.65');
   arrow.setAttribute('fill', 'none');
   arrow.setAttribute('stroke', '#000000');
-  arrow.setAttribute('stroke-width', '1.35');
+  arrow.setAttribute('stroke-width', '1.7');
   arrow.setAttribute('stroke-linecap', 'round');
   arrow.setAttribute('stroke-linejoin', 'round');
   arrow.setAttribute('vector-effect', 'non-scaling-stroke');
