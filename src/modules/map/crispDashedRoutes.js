@@ -6,6 +6,8 @@ const DASH_GAP_CENTER_PX = DEFAULT_DASH_PX + (DEFAULT_GAP_PX / 2);
 const ARROW_FRACTIONS = [0.33, 0.67];
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
+let overlaySequence = 0;
+
 function finitePoint(point) {
   return Boolean(point && Number.isFinite(point.x) && Number.isFinite(point.y));
 }
@@ -104,6 +106,39 @@ function createDirectionArrow() {
   return arrow;
 }
 
+function createArrowCutout() {
+  const cutout = document.createElementNS(SVG_NS, 'path');
+  cutout.setAttribute('d', 'M -3.1 0 L 1.5 0');
+  cutout.setAttribute('fill', 'none');
+  cutout.setAttribute('stroke', '#000000');
+  cutout.setAttribute('stroke-width', '4.4');
+  cutout.setAttribute('stroke-linecap', 'round');
+  return cutout;
+}
+
+function createRouteMask(defs, maskId) {
+  const mask = document.createElementNS(SVG_NS, 'mask');
+  mask.setAttribute('id', maskId);
+  mask.setAttribute('maskUnits', 'userSpaceOnUse');
+  mask.setAttribute('maskContentUnits', 'userSpaceOnUse');
+  mask.setAttribute('x', '-100000');
+  mask.setAttribute('y', '-100000');
+  mask.setAttribute('width', '200000');
+  mask.setAttribute('height', '200000');
+
+  const visibleArea = document.createElementNS(SVG_NS, 'rect');
+  visibleArea.setAttribute('x', '-100000');
+  visibleArea.setAttribute('y', '-100000');
+  visibleArea.setAttribute('width', '200000');
+  visibleArea.setAttribute('height', '200000');
+  visibleArea.setAttribute('fill', '#ffffff');
+
+  const cutouts = ARROW_FRACTIONS.map(() => createArrowCutout());
+  mask.append(visibleArea, ...cutouts);
+  defs.append(mask);
+  return cutouts;
+}
+
 export function createCrispDashedRoutes({
   maps,
   map,
@@ -114,6 +149,7 @@ export function createCrispDashedRoutes({
   }
 
   const overlay = new maps.OverlayView();
+  const overlayId = overlaySequence += 1;
   let svg = null;
   let routePaths = [];
 
@@ -134,11 +170,17 @@ export function createCrispDashedRoutes({
       pointerEvents: 'none',
     });
 
-    routePaths = routes.map((route) => {
+    const defs = document.createElementNS(SVG_NS, 'defs');
+    svg.append(defs);
+
+    routePaths = routes.map((route, routeIndex) => {
       const element = createRoutePath(route.color);
+      const maskId = `atlas-route-arrow-mask-${overlayId}-${routeIndex}`;
+      const cutouts = createRouteMask(defs, maskId);
       const arrows = ARROW_FRACTIONS.map(() => createDirectionArrow());
+      element.setAttribute('mask', `url(#${maskId})`);
       svg.append(element, ...arrows);
-      return { element, arrows, path: route.path || [] };
+      return { element, arrows, cutouts, path: route.path || [] };
     });
 
     pane.append(svg);
@@ -148,7 +190,7 @@ export function createCrispDashedRoutes({
     const projection = overlay.getProjection?.();
     if (!projection) return;
 
-    routePaths.forEach(({ element, arrows, path }) => {
+    routePaths.forEach(({ element, arrows, cutouts, path }) => {
       const points = projectedPoints(path, projection, maps);
       const d = toSvgPath(points);
       if (d) {
@@ -160,16 +202,19 @@ export function createCrispDashedRoutes({
       }
 
       arrows.forEach((arrow, index) => {
+        const cutout = cutouts[index];
         const placement = arrowPlacement(points, ARROW_FRACTIONS[index]);
         if (placement) {
-          arrow.setAttribute(
-            'transform',
-            `translate(${placement.x.toFixed(2)} ${placement.y.toFixed(2)}) rotate(${placement.angle.toFixed(2)})`
-          );
+          const transform = `translate(${placement.x.toFixed(2)} ${placement.y.toFixed(2)}) rotate(${placement.angle.toFixed(2)})`;
+          arrow.setAttribute('transform', transform);
+          cutout.setAttribute('transform', transform);
           arrow.style.display = '';
+          cutout.style.display = '';
         } else {
           arrow.removeAttribute('transform');
+          cutout.removeAttribute('transform');
           arrow.style.display = 'none';
+          cutout.style.display = 'none';
         }
       });
     });
