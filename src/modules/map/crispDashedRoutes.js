@@ -79,10 +79,9 @@ function createRoutePath(color) {
 
 function createDirectionArrow() {
   const arrow = document.createElementNS(SVG_NS, 'path');
-  arrow.setAttribute('d', 'M -4 -3 L 4 0 L -4 3 Z');
-  arrow.setAttribute('fill', '#111111');
-  arrow.setAttribute('stroke', '#ffffff');
-  arrow.setAttribute('stroke-width', '0.9');
+  arrow.setAttribute('d', 'M -4.2 -2.8 L 4.2 0 L -4.2 2.8 L -2.15 0 Z');
+  arrow.setAttribute('fill', '#000000');
+  arrow.setAttribute('stroke', 'none');
   arrow.setAttribute('stroke-linejoin', 'round');
   arrow.setAttribute('vector-effect', 'non-scaling-stroke');
   arrow.setAttribute('shape-rendering', 'geometricPrecision');
