@@ -1,12 +1,12 @@
 # Contrato de preservación visual
 
-Visual delta: none
+Visual delta: marcador final del itinerario aprobado
 
 La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atlas debe permanecer intacto. Los controles añadidos reutilizan componentes, dimensiones, espaciados, iconografía y estados ya existentes.
 
 ## Invariantes
 
-- No cambiar paleta, tipografías, tamaños, radios, sombras ni espaciados existentes.
+- No cambiar paleta, tipografías, tamaños, radios, sombras ni espaciados existentes fuera de cambios visuales solicitados explícitamente.
 - No mover, ocultar, eliminar ni redimensionar controles actuales.
 - No cambiar la jerarquía visual ni el comportamiento responsive existente.
 - No renombrar clases sin conservar reglas y especificidad equivalentes.
@@ -19,7 +19,7 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Selector `KM / MI`: reutiliza `topmenu`, `topitem`, `dropdown` y `dropdown__opt`.
 - Instalación PWA: reutiliza `topitem` y solo aparece cuando el navegador emite `beforeinstallprompt`.
 - Búsqueda de lugares: conserva los componentes visuales existentes; la sugerencia seleccionada ahora se enfoca directamente y la confirmación permanece anclada a su marcador.
-- No se añadieron colores, tamaños, bordes, sombras o animaciones nuevos.
+- Marcador final del itinerario: sustituye únicamente el último endpoint numerado por un banderín SVG de 18 × 18 px, usando la paleta de iconos del sistema (`#11c7dc`, `#14394b`, `#fff3d6`). El marcador inicial numerado y los marcadores intermedios no cambian.
 
 ## Validación requerida
 
