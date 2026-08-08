@@ -1,7 +1,7 @@
 const DEFAULT_DASH_PX = 4;
 const DEFAULT_GAP_PX = 6;
 const DEFAULT_STROKE_WEIGHT = 2;
-const ARROW_FRACTION = 0.54;
+const ARROW_FRACTIONS = [0.24, 0.5, 0.76];
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 function finitePoint(point) {
@@ -24,7 +24,7 @@ function toSvgPath(points) {
     .join(' ');
 }
 
-function arrowPlacement(points, fraction = ARROW_FRACTION) {
+function arrowPlacement(points, fraction) {
   if (points.length < 2) return null;
 
   const segments = [];
@@ -79,9 +79,11 @@ function createRoutePath(color) {
 
 function createDirectionArrow() {
   const arrow = document.createElementNS(SVG_NS, 'path');
-  arrow.setAttribute('d', 'M -4.2 -2.8 L 4.2 0 L -4.2 2.8 L -2.15 0 Z');
-  arrow.setAttribute('fill', '#000000');
-  arrow.setAttribute('stroke', 'none');
+  arrow.setAttribute('d', 'M -3.6 -2.7 L 1 0 L -3.6 2.7');
+  arrow.setAttribute('fill', 'none');
+  arrow.setAttribute('stroke', '#000000');
+  arrow.setAttribute('stroke-width', '1.35');
+  arrow.setAttribute('stroke-linecap', 'round');
   arrow.setAttribute('stroke-linejoin', 'round');
   arrow.setAttribute('vector-effect', 'non-scaling-stroke');
   arrow.setAttribute('shape-rendering', 'geometricPrecision');
@@ -121,9 +123,9 @@ export function createCrispDashedRoutes({
 
     routePaths = routes.map((route) => {
       const element = createRoutePath(route.color);
-      const arrow = createDirectionArrow();
-      svg.append(element, arrow);
-      return { element, arrow, path: route.path || [] };
+      const arrows = ARROW_FRACTIONS.map(() => createDirectionArrow());
+      svg.append(element, ...arrows);
+      return { element, arrows, path: route.path || [] };
     });
 
     pane.append(svg);
@@ -133,7 +135,7 @@ export function createCrispDashedRoutes({
     const projection = overlay.getProjection?.();
     if (!projection) return;
 
-    routePaths.forEach(({ element, arrow, path }) => {
+    routePaths.forEach(({ element, arrows, path }) => {
       const points = projectedPoints(path, projection, maps);
       const d = toSvgPath(points);
       if (d) {
@@ -144,17 +146,19 @@ export function createCrispDashedRoutes({
         element.style.display = 'none';
       }
 
-      const placement = arrowPlacement(points);
-      if (placement) {
-        arrow.setAttribute(
-          'transform',
-          `translate(${placement.x.toFixed(2)} ${placement.y.toFixed(2)}) rotate(${placement.angle.toFixed(2)})`
-        );
-        arrow.style.display = '';
-      } else {
-        arrow.removeAttribute('transform');
-        arrow.style.display = 'none';
-      }
+      arrows.forEach((arrow, index) => {
+        const placement = arrowPlacement(points, ARROW_FRACTIONS[index]);
+        if (placement) {
+          arrow.setAttribute(
+            'transform',
+            `translate(${placement.x.toFixed(2)} ${placement.y.toFixed(2)}) rotate(${placement.angle.toFixed(2)})`
+          );
+          arrow.style.display = '';
+        } else {
+          arrow.removeAttribute('transform');
+          arrow.style.display = 'none';
+        }
+      });
     });
   };
 
