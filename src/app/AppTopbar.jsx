@@ -7,6 +7,7 @@ export function AppTopbar({
   trip,
   renameTrip,
   handleSave,
+  desktopPanelCollapsed = false,
 }) {
   const [saveOpen, setSaveOpen] = useState(false);
   const [draftName, setDraftName] = useState(trip.name || '');
@@ -24,6 +25,10 @@ export function AppTopbar({
   useEffect(() => {
     if (saveOpen) inputRef.current?.focus();
   }, [saveOpen]);
+
+  useEffect(() => {
+    if (desktopPanelCollapsed) setSaveOpen(false);
+  }, [desktopPanelCollapsed]);
 
   function submitSave(event) {
     event.preventDefault();
@@ -47,20 +52,22 @@ export function AppTopbar({
         <span className="topbar__brand-name">{t('appName')}</span>
       </div>
 
-      <button
-        type="button"
-        className="topbar__save"
-        onClick={() => {
-          setDraftName(trip.name || '');
-          setSaveOpen((open) => !open);
-        }}
-        aria-label={t('saveTrip')}
-        title={t('saveTrip')}
-      >
-        <IconDeviceFloppy size={22} aria-hidden="true" />
-      </button>
+      {!desktopPanelCollapsed && (
+        <button
+          type="button"
+          className="topbar__save"
+          onClick={() => {
+            setDraftName(trip.name || '');
+            setSaveOpen((open) => !open);
+          }}
+          aria-label={t('saveTrip')}
+          title={t('saveTrip')}
+        >
+          <IconDeviceFloppy size={22} aria-hidden="true" />
+        </button>
+      )}
 
-      {saveOpen && (
+      {!desktopPanelCollapsed && saveOpen && (
         <form className="trip-save-popover" onSubmit={submitSave}>
           <div className="trip-save-popover__head">
             <span>{t('tripName')}</span>
