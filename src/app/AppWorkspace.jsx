@@ -10,12 +10,19 @@ function currentMobileViewport() {
     : false;
 }
 
-export function AppWorkspace({ editorModule, mapPane, mobileView, setMobileView, t }) {
+export function AppWorkspace({
+  editorModule,
+  mapPane,
+  mobileView,
+  setMobileView,
+  desktopPanelCollapsed,
+  setDesktopPanelCollapsed,
+  t,
+}) {
   const [mobileViewport, setMobileViewport] = useState(currentMobileViewport);
   const [mobileMapMounted, setMobileMapMounted] = useState(
     () => !currentMobileViewport() || mobileView === 'map'
   );
-  const [desktopPanelCollapsed, setDesktopPanelCollapsed] = useState(false);
 
   useEffect(() => {
     if (typeof globalThis.matchMedia !== 'function') return undefined;
