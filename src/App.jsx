@@ -39,6 +39,7 @@ export default function App() {
   const [tripToDelete, setTripToDelete] = useState(null);
   const [openMenu, setOpenMenu] = useState(null);
   const [openNoteSegmentId, setOpenNoteSegmentId] = useState(null);
+  const [desktopPanelCollapsed, setDesktopPanelCollapsed] = useState(false);
   const menuWrapRef = useRef(null);
   const editorMenuRef = useRef(null);
 
@@ -133,6 +134,7 @@ export default function App() {
       onGoogleSignIn={handleGoogleSignIn}
       onSignOut={handleSignOut}
       onImportLocalTrips={handleImportLocalTrips}
+      desktopPanelCollapsed={desktopPanelCollapsed}
     />
   );
 
@@ -178,6 +180,8 @@ export default function App() {
         mapPane={mapPane}
         mobileView={mobileView}
         setMobileView={setMobileView}
+        desktopPanelCollapsed={desktopPanelCollapsed}
+        setDesktopPanelCollapsed={setDesktopPanelCollapsed}
         t={t}
       />
       <TripDeleteDialog
