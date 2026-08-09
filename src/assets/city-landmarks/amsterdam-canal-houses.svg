@@ -1,17 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 96 96" role="img" aria-label="Casas de canal de Ámsterdam">
-  <g stroke="#14394b" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M7 72V29l11-11 11 11v43z" fill="#df725f" stroke-width="2"/>
-    <path d="M26 72V22l10-11 10 11v50z" fill="#f4e6c9" stroke-width="2"/>
-    <path d="M43 72V27l11-13 11 13v45z" fill="#c9d8de" stroke-width="2"/>
-    <path d="M62 72V31l10-9 10 9v41z" fill="#df725f" stroke-width="2"/>
-
-    <path d="M11 34h14M11 44h14M11 54h14M30 29h12M30 39h12M30 49h12M47 34h14M47 44h14M47 54h14M66 37h12M66 47h12M66 57h12" fill="none" stroke-width="1.25"/>
-    <path d="M14 72V60h8v12M32 72V58h8v14M50 72V60h8v12M68 72V61h8v11" fill="#11c7dc" stroke-width="1.4"/>
-    <path d="M12 24h12M31 17h10M48 21h12M67 27h10" fill="none" stroke="#11c7dc" stroke-width="1.8"/>
-    <path d="M5 73h78" fill="none" stroke-width="2.1"/>
-
-    <path d="M12 79h72l-7 9H19z" fill="#c6966d" stroke-width="1.8"/>
-    <path d="M18 79c3-5 8-7 13-7s10 2 13 7M50 79c3-4.5 8-6.5 13-6.5S73 74.5 76 79" fill="#f4e6c9" stroke-width="1.5"/>
-    <path d="M12 89h72" fill="none" stroke="#11c7dc" stroke-width="2.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 128 128" role="img" aria-label="Casas de canal de Ámsterdam">
+  <g stroke="#14394b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 105h100" fill="none"/>
+    <path d="M20 51 31 39l11 12v50H20z" fill="#fff3d6"/>
+    <path d="M24 51h14M27 44h8" fill="none"/>
+    <path d="M42 42h25v59H42z" fill="#c8dadd"/>
+    <path d="M42 42 49 31h11l7 11" fill="#c8dadd"/>
+    <path d="M48 31h13" fill="none"/>
+    <path d="M67 48 79 35l12 13v53H67z" fill="#fff3d6"/>
+    <path d="M72 48h14M75 41h8" fill="none"/>
+    <path d="M91 54h18v47H91z" fill="#c8dadd"/>
+    <path d="M91 54 100 44l9 10" fill="#c8dadd"/>
+    <g fill="#ff746d" stroke-width="1.55">
+      <rect x="25" y="59" width="5" height="8" rx="1"/><rect x="33" y="59" width="5" height="8" rx="1"/>
+      <rect x="25" y="73" width="5" height="8" rx="1"/><rect x="33" y="73" width="5" height="8" rx="1"/>
+      <rect x="48" y="51" width="5" height="8" rx="1"/><rect x="57" y="51" width="5" height="8" rx="1"/>
+      <rect x="48" y="66" width="5" height="8" rx="1"/><rect x="57" y="66" width="5" height="8" rx="1"/>
+      <rect x="73" y="57" width="5" height="8" rx="1"/><rect x="81" y="57" width="5" height="8" rx="1"/>
+      <rect x="73" y="72" width="5" height="8" rx="1"/><rect x="81" y="72" width="5" height="8" rx="1"/>
+      <rect x="96" y="63" width="4" height="7" rx="1"/><rect x="103" y="63" width="4" height="7" rx="1"/>
+    </g>
+    <path d="M28 101V88h7v13M51 101V82h8v19M76 101V87h7v14M97 101V84h6v17" fill="#ff746d"/>
+    <path d="M15 108h98" fill="none" stroke="#11c7dc" stroke-width="2"/>
   </g>
 </svg>
