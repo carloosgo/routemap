@@ -1,8 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Skyline de Fráncfort">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" role="img" aria-label="Skyline de Fráncfort">
   <g stroke="#14394b" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M3.2 27.2V16.4h5.2v10.8M9.8 27.2V10.8h5.3v16.4M16.7 27.2V14.2h4.5v13M22.7 27.2V7.4l2.6-2.5 2.4 2.5v19.8" fill="#fff3d6" stroke-width="1.7"/>
-    <path d="M10.7 11.6h3.5v15.6h-3.5zM23.6 8.2h3.2v19h-3.2z" fill="#11c7dc" stroke-width="1.35"/>
-    <path d="M4.7 19.1h2.2m-2.2 3.2h2.2m6-7.4h1.2m-1.2 3.1h1.2m4.2-.4h1.4m-1.4 3.2h1.4m5.1-8.7h1.1m-1.1 3.2h1.1m-1.1 3.2h1.1" fill="none" stroke-width="1.3"/>
-    <path d="M2.3 27.4h27.4M3.3 29.4c4.2-1.1 8.1-1.1 11.7 0 4.4 1.3 8.9 1.3 13.5 0" fill="none" stroke-width="1.4"/>
+    <path d="M3.5 35.5h33" fill="none" stroke="#fff" stroke-width="4"/>
+    <path d="M3.5 35.5h33" fill="none" stroke-width="1.35"/>
+
+    <path d="M5.2 34.8V23.2h5.5v11.6z" fill="#fff3d6" stroke-width="1.25"/>
+    <path d="M6.4 21.7 8 17.3l1.6 4.4v13.1H6.4z" fill="#ff6b6b" stroke-width="1.2"/>
+    <path d="M8 17.3v-2.6" fill="none" stroke-width="1.1"/>
+
+    <path d="M12.4 34.8V12.2h7.4v22.6z" fill="#d8e4e7" stroke-width="1.35"/>
+    <path d="M13.7 12.2 16.1 8l2.4 4.2" fill="#11c7dc" stroke-width="1.25"/>
+    <path d="M16.1 8V4.5" fill="none" stroke-width="1.15"/>
+    <path d="M14.2 16h3.8M14.2 19.2h3.8M14.2 22.4h3.8M14.2 25.6h3.8M14.2 28.8h3.8" fill="none" stroke="#14394b" stroke-width=".82"/>
+
+    <path d="M20.8 34.8V8.5h7.2v26.3z" fill="#fff3d6" stroke-width="1.35"/>
+    <path d="M22 8.5h4.8l1.3-2.3h-7.4z" fill="#11c7dc" stroke-width="1.2"/>
+    <path d="M24.4 6.2V2.7" fill="none" stroke-width="1.1"/>
+    <circle cx="24.4" cy="2.3" r=".75" fill="#ff6b6b" stroke-width=".85"/>
+    <path d="M22.4 12.4h4M22.4 16h4M22.4 19.6h4M22.4 23.2h4M22.4 26.8h4M22.4 30.4h4" fill="none" stroke="#11c7dc" stroke-width=".9"/>
+
+    <path d="M29.4 34.8V16.4h5.2v18.4z" fill="#d8e4e7" stroke-width="1.25"/>
+    <path d="M30.6 19.5h2.8M30.6 23h2.8M30.6 26.5h2.8M30.6 30h2.8" fill="none" stroke-width=".8"/>
+
+    <path d="M4.5 37.4c4.7-1.1 9.1-1.1 13.3 0 5 1.3 10.4 1.3 16.2 0" fill="none" stroke="#11c7dc" stroke-width="1.15"/>
   </g>
 </svg>
