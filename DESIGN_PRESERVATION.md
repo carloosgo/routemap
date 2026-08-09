@@ -21,25 +21,28 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Búsqueda de lugares: conserva los componentes visuales existentes; la sugerencia seleccionada ahora se enfoca directamente y la confirmación permanece anclada a su marcador.
 - Marcador final del itinerario: sustituye únicamente el último endpoint numerado por un banderín SVG de 18 × 18 px, usando la paleta de iconos del sistema (`#11c7dc`, `#14394b`, `#fff3d6`). El marcador inicial numerado se conserva.
 - Marcadores intermedios del itinerario: mantienen un núcleo visual de 7 × 7 px más borde fino para disminuir saturación sin perder la codificación cromática de cada tramo.
-- Landmarks editoriales del itinerario: se muestran únicamente en la vista `segments` porque reutilizan el mismo `AdvancedMarkerElement` de las ciudades del itinerario. No se añaden markers separados ni se modifica la vista `places`.
+- Landmarks editoriales del itinerario: se muestran únicamente en la vista `segments` mediante una sola `WebGLOverlayView`; dejan de formar parte del DOM/CSS de los `AdvancedMarkerElement` de ciudad.
 - Primera colección curada: París/Torre Eiffel, Fráncfort/skyline, Múnich/Frauenkirche, Berlín/Puerta de Brandeburgo, Ámsterdam/casas de canal, Bruselas/Atomium y Barcelona/Sagrada Familia.
-- Los landmarks son mini-ilustraciones SVG de 64 × 64 de origen, con rellenos, contornos, detalles arquitectónicos y sombreado vectorial simple. Se renderizan a 42 × 42 px en escritorio, 36 × 36 px hasta 720 px y 32 × 32 px hasta 420 px.
-- Los offsets se ajustan por ciudad para reducir colisiones con la línea de ruta, el marcador inicial/final y el clúster Benelux. En pantallas de hasta 560 px se ocultan Fráncfort y Bruselas para preservar legibilidad; las ciudades principales restantes siguen visibles desde la vista inicial.
-- Google Maps puede seguir mostrando sus `Illustrated landmark style` nativos cuando el nivel de zoom lo permita; la capa Atlas cubre específicamente la vista general del itinerario donde esos landmarks nativos todavía no aparecen.
+- Los SVG se redibujan con siluetas arquitectónicas reconocibles, masas visuales y espacios negativos legibles a tamaño de mapa. Cada recurso declara una superficie vectorial cuadrada y se rasteriza a textura de 256 × 256 px para el renderer, conservando el SVG como fuente.
+- El renderer mantiene el landmark en tamaño de pantalla independiente del zoom: base de 46 px en escritorio, 40 px en tablet/móvil y 36 px en pantallas estrechas, con un incremento pequeño al acercarse.
+- La capa aplica prioridad editorial y detección de colisiones en pantalla. Cuando dos ilustraciones se pisan, conserva la de mayor prioridad en lugar de superponerlas.
+- La capa Atlas permanece visible en la vista general y realiza un handoff gradual entre zoom 12.25 y 13.5; a partir de ahí desaparece para dejar espacio a los `Illustrated landmark style` nativos de Google cuando estén disponibles.
 
 ## Rendimiento
 
-- Se mantiene un único `AdvancedMarkerElement` por ciudad; el landmark se pinta como parte visual del mismo marker y no duplica objetos del mapa.
-- Los siete SVG pesan aproximadamente 1–2 KB cada uno y se sirven como assets locales del bundle, sin solicitudes a Places, Routes, Geocoding ni proveedores externos.
-- Los SVG no usan animaciones ni filtros internos pesados; solo gradientes vectoriales simples. La separación del fondo usa una `drop-shadow` CSS pequeña.
-- No se añaden listeners, timers ni cálculos por frame para la capa de landmarks.
-- La colección es explícita y curada: una ciudad sin landmark registrado conserva únicamente su punto pequeño, permitiendo ampliar cobertura internacional de forma controlada.
-- En móvil se aplica reducción de tamaño y supresión de landmarks secundarios para evitar saturación y reducir trabajo de pintura.
+- Se mantiene un único `AdvancedMarkerElement` por ciudad para puntos, inicio y final. Los landmarks no crean markers ni nodos DOM adicionales.
+- Todos los landmarks se dibujan como quads en una única `WebGLOverlayView`, compartiendo el contexto WebGL del mapa vectorial que expone Google Maps Platform.
+- Cada asset visible crea como máximo una textura WebGL cacheada; se reutiliza mientras viva el mapa y usa mipmaps para mantener definición al reducirse.
+- El tamaño se calcula en píxeles CSS y se convierte al `devicePixelRatio` real del framebuffer, evitando que pantallas Retina/iOS/Android dibujen la ilustración a baja resolución.
+- La detección de colisiones trabaja únicamente sobre la colección curada visible y su coste es despreciable para decenas de landmarks.
+- Los SVG son assets locales; no se añaden solicitudes a Places, Routes, Geocoding ni proveedores externos para renderizarlos.
+- Una ciudad sin landmark registrado conserva únicamente su punto pequeño, permitiendo ampliar cobertura internacional de forma controlada.
 
 ## Configuración de Google Maps
 
-- El `Map ID` puede mantener asociado un Cloud-based Map Style con `Landmarks → Illustrated`; esos POI ilustrados siguen siendo propiedad del basemap y aparecen cuando Google lo permite por zoom y disponibilidad.
-- La capa Atlas no intenta descargar, copiar ni reutilizar assets gráficos internos de Google Maps.
+- El `Map ID` debe utilizar rendering vectorial para que `WebGLOverlayView` pueda compartir el contexto gráfico del basemap.
+- El Cloud-based Map Style puede mantener `Landmarks → Illustrated`; los POI ilustrados de Google aparecen cuando Google lo permite por zoom y disponibilidad.
+- La capa Atlas no descarga, copia ni reutiliza assets internos de Google Maps; reproduce el enfoque técnico de renderizado en una capa propia con recursos originales.
 
 ## Validación requerida
 
