@@ -1,25 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 96 96" role="img" aria-label="Skyline de Fráncfort">
-  <g stroke="#14394b" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M5 83h86" fill="none" stroke-width="2.2"/>
-    <path d="M9 82V55h14v27z" fill="#f6ead3" stroke-width="1.8"/>
-    <path d="M11 55 16 43l5 12" fill="#ff6b6b" stroke-width="1.7"/>
-    <path d="M16 43v-5" fill="none" stroke-width="1.5"/>
-
-    <path d="M25 82V33h18v49z" fill="#c9d8de" stroke-width="1.9"/>
-    <path d="M27 33 34 21l7 12" fill="#11c7dc" stroke-width="1.7"/>
-    <path d="M34 21v-8" fill="none" stroke-width="1.6"/>
-    <path d="M29 41h10M29 48h10M29 55h10M29 62h10M29 69h10M29 76h10" fill="none" stroke-width="1.15"/>
-
-    <path d="M45 82V25h23v57z" fill="#eef2f3" stroke-width="2"/>
-    <path d="M48 25h17l3-6H45z" fill="#11c7dc" stroke-width="1.7"/>
-    <path d="M56.5 19V8" fill="none" stroke-width="1.7"/>
-    <circle cx="56.5" cy="6.6" r="1.6" fill="#ff6b6b" stroke-width="1.1"/>
-    <path d="M50 34h13M50 42h13M50 50h13M50 58h13M50 66h13M50 74h13" fill="none" stroke="#6b8793" stroke-width="1.1"/>
-    <path d="M53 25v57M60 25v57" fill="none" stroke="#b5c8cf" stroke-width="1"/>
-
-    <path d="M71 82V45h13v37z" fill="#c9d8de" stroke-width="1.8"/>
-    <path d="M73.5 53h8M73.5 60h8M73.5 67h8M73.5 74h8" fill="none" stroke-width="1.1"/>
-    <path d="M7 87c12-3 23-3 33 0 15 4 31 4 49 0" fill="none" stroke="#11c7dc" stroke-width="2"/>
-    <path d="M6 82c2-5 6-7 10-4 2-5 8-6 12-2M67 81c2-4 6-6 10-3 3-4 8-3 11 1" fill="#6fbb72" stroke-width="1.3"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 128 128" role="img" aria-label="Skyline de Fráncfort">
+  <g stroke="#14394b" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M13 105h102" fill="none"/>
+    <path d="M20 105V61h18v44z" fill="#fff3d6"/>
+    <path d="M24 61V50h10v11" fill="#c8dadd"/>
+    <path d="M42 105V36h24v69z" fill="#c8dadd"/>
+    <path d="M42 36 54 20l12 16" fill="#fff3d6"/>
+    <path d="M54 20V12" fill="none"/>
+    <path d="M70 105V49h18v56z" fill="#fff3d6"/>
+    <path d="M75 49V39h8v10" fill="#c8dadd"/>
+    <path d="M92 105V67h17v38z" fill="#c8dadd"/>
+    <g fill="none" stroke="#ff746d" stroke-width="1.55">
+      <path d="M24 70h10M24 79h10M24 88h10M47 46h14M47 57h14M47 68h14M47 79h14M47 90h14M74 59h10M74 69h10M74 79h10M74 89h10M96 77h9M96 86h9M96 95h9"/>
+    </g>
+    <path d="M48 36h12" fill="none" stroke="#11c7dc" stroke-width="2"/>
   </g>
 </svg>
