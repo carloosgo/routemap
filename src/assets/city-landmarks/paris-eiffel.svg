@@ -1,1 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="m" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eef3f4"/><stop offset="1" stop-color="#9fb5bd"/></linearGradient><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#72c17a"/><stop offset="1" stop-color="#4f9f61"/></linearGradient></defs><g stroke="#14394b" stroke-linecap="round" stroke-linejoin="round"><path d="M32 3.5 28.7 18 25.8 29.5 18.7 55.5H12l9-26.5 5.4-20.8h11.2L43 29l9 26.5h-6.7l-7.1-26L35.3 18 32 3.5Z" fill="url(#m)" stroke-width="1.7"/><path d="M27.8 18h8.4M24.9 29.2h14.2M20.7 43.6h22.6" fill="none" stroke="#ff6b6b" stroke-width="2.4"/><path d="M23 55.2c1-8.9 4.4-14.2 9-14.2s8 5.3 9 14.2" fill="#fff" stroke-width="1.65"/><path d="M25.8 30 32 41m6.2-11L32 41M23.5 35.2l17 6.6M40.5 35.2l-17 6.6M26.5 21.5l11 4.8M37.5 21.5l-11 4.8" fill="none" stroke-width="1" opacity=".9"/><path d="M30.1 8.3h3.8M29.2 12.6h5.6" fill="none" stroke="#11c7dc" stroke-width="1.6"/><circle cx="32" cy="3.5" r="1.6" fill="#11c7dc" stroke-width="1.1"/><path d="M8.5 56c1.1-4.1 4.1-6.6 7.3-6.1 1.4-3.8 5.5-4.8 8.5-2.4 1.3 1 2 2.5 2.3 4.2M55.5 56c-1.1-4.1-4.1-6.6-7.3-6.1-1.4-3.8-5.5-4.8-8.5-2.4-1.3 1-2 2.5-2.3 4.2" fill="url(#g)" stroke-width="1.2"/><path d="M7 56.5h50" fill="none" stroke-width="1.7"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 96 96" role="img" aria-label="Torre Eiffel">
+  <g stroke="#14394b" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M48 4v5" fill="none" stroke-width="2"/>
+    <circle cx="48" cy="3.7" r="1.7" fill="#11c7dc" stroke-width="1.4"/>
+    <path d="M45.3 9h5.4l2.1 12H43.2z" fill="#dfe9ed" stroke-width="2"/>
+    <path d="M43 15h10M42 21h12" fill="none" stroke-width="1.5"/>
+    <path d="M40 22h16v4H40z" fill="#ff6b6b" stroke-width="1.8"/>
+
+    <path d="M42.5 26h5.1c-.8 10.6-3.3 23.4-7.4 35.8L30.5 88H16.8l15.6-31.7C37.8 45.4 40.6 34.5 42.5 26Z" fill="#f7edd7" stroke-width="2.1"/>
+    <path d="M53.5 26h-5.1c.8 10.6 3.3 23.4 7.4 35.8L65.5 88h13.7L63.6 56.3C58.2 45.4 55.4 34.5 53.5 26Z" fill="#f7edd7" stroke-width="2.1"/>
+
+    <path d="M35.7 37h24.6v4.8H35.7z" fill="#11c7dc" stroke-width="1.8"/>
+    <path d="M29.8 56h36.4v5H29.8z" fill="#ff6b6b" stroke-width="1.9"/>
+    <path d="M22.4 73h51.2v4.6H22.4z" fill="#dfe9ed" stroke-width="1.8"/>
+
+    <path d="M32 87.6c1.7-11.5 7.7-19.2 16-19.2s14.3 7.7 16 19.2" fill="none" stroke-width="2"/>
+    <path d="M41.5 27 48 37m6.5-10L48 37M37 42l22 13M59 42 37 55M32.5 61 48 69m15.5-8L48 69M27.5 77 39 87m29.5-10L57 87" fill="none" stroke-width="1.35" opacity=".9"/>
+    <path d="M36.2 31h23.6M33.2 48h29.6M25.5 66h45" fill="none" stroke="#14394b" stroke-width="1.25" opacity=".8"/>
+
+    <path d="M13.5 87.8c1.2-5.6 5.8-8.6 10-5.8 1.8-4.2 6.9-5.1 10-1.8M82.5 87.8c-1.2-5.6-5.8-8.6-10-5.8-1.8-4.2-6.9-5.1-10-1.8" fill="#6fbb72" stroke-width="1.4"/>
+    <path d="M11 89h74" fill="none" stroke-width="2.2"/>
+  </g>
+</svg>
