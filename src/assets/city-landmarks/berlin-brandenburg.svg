@@ -1,16 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 96 96" role="img" aria-label="Puerta de Brandeburgo">
-  <g stroke="#14394b" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M11 80V41h74v39z" fill="#f3e4c8" stroke-width="2"/>
-    <path d="M8 35h80L80 22H16z" fill="#e8d6b5" stroke-width="2"/>
-    <path d="M12 41h72M10 80h76M15 35h66" fill="none" stroke-width="2"/>
-    <path d="M18 43v34M30 43v34M42 43v34M54 43v34M66 43v34M78 43v34" fill="none" stroke-width="3.2"/>
-    <path d="M18 50h60M18 70h60" fill="none" stroke="#11c7dc" stroke-width="1.5"/>
-    <path d="M18 44h60" fill="none" stroke="#fff3d6" stroke-width="1.3"/>
-    <path d="M31 22c4-5 9-7.8 14-8.2M65 22c-4-5-9-7.8-14-8.2M48 13.8V8.5" fill="none" stroke-width="1.7"/>
-    <path d="M38 18.5 48 24l10-5.5" fill="none" stroke="#6b7f58" stroke-width="2"/>
-    <path d="M42 13.4c2.6-2.8 5-4.2 7-4.2 2 0 4.3 1.4 6.8 4.2" fill="none" stroke-width="1.4"/>
-    <circle cx="48" cy="7.2" r="1.8" fill="#11c7dc" stroke-width="1.1"/>
-    <path d="M7 81c2-5 7-7 12-3M89 81c-2-5-7-7-12-3" fill="#6fbb72" stroke-width="1.3"/>
-    <path d="M7 83h82" fill="none" stroke-width="2.2"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 128 128" role="img" aria-label="Puerta de Brandeburgo">
+  <g stroke="#14394b" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M18 101h92" fill="none"/>
+    <path d="M22 45h84v12H22z" fill="#c8dadd"/>
+    <path d="M27 57h74v38H27z" fill="#fff3d6"/>
+    <path d="M19 40h90l-9-12H28z" fill="#fff3d6"/>
+    <path d="M29 28h70" fill="none"/>
+    <path d="M31 57v38M43 57v38M55 57v38M73 57v38M85 57v38M97 57v38" fill="none" stroke-width="3"/>
+    <path d="M31 64h66M31 86h66" fill="none" stroke="#ff746d" stroke-width="1.5"/>
+    <path d="M50 27c3-5 7-8 14-8s11 3 14 8" fill="#c8dadd"/>
+    <path d="M55 19c2-3 4.7-5 9-5s7 2 9 5M64 14V9" fill="none"/>
+    <path d="M58 12 64 8l6 4" fill="#ff746d"/>
+    <circle cx="64" cy="7" r="1.8" fill="#11c7dc"/>
+    <path d="M25 95h78v6H25z" fill="#fff3d6"/>
   </g>
 </svg>
