@@ -28,7 +28,7 @@
   cursor:pointer!important;
 }
 
-/* Zoom nativo de Google: bloque completo compacto y con el azul de Buscar. */
+/* Zoom nativo de Google: bloque completo compacto y con el azul real de Buscar. */
 .google-map .gm-bundled-control{
   width:24px!important;
   height:49px!important;
@@ -43,7 +43,7 @@
   padding:0!important;
   overflow:hidden!important;
   border-radius:7px!important;
-  background:#0d6078!important;
+  background:var(--atlas-accent)!important;
   box-shadow:0 2px 7px rgba(15,23,42,.2)!important;
 }
 .google-map .gm-bundled-control .gmnoprint>div>button.gm-control-active{
@@ -56,12 +56,12 @@
   margin:0!important;
   padding:0!important;
   border:0!important;
-  background:#0d6078!important;
+  background:var(--atlas-accent)!important;
   box-shadow:none!important;
 }
 .google-map .gm-bundled-control .gmnoprint>div>button.gm-control-active:hover,
 .google-map .gm-bundled-control .gmnoprint>div>button.gm-control-active:focus-visible{
-  background:#0d6078!important;
+  background:var(--atlas-accent)!important;
   outline:none!important;
 }
 .google-map .gm-bundled-control .gmnoprint>div>button.gm-control-active img{
