@@ -1,11 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Frauenkirche de Múnich">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" role="img" aria-label="Frauenkirche de Múnich">
   <g stroke="#14394b" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M5.1 27.4V12h7.2v15.4m7.4 0V12h7.2v15.4M12.3 18h7.4v9.4H12.3z" fill="#fff3d6" stroke-width="1.75"/>
-    <path d="M6.4 12c0-3 1.2-5.6 2.3-7.6 1.7 1.9 2.3 4.5 2.3 7.6H6.4Zm14.6 0c0-3 1.2-5.6 2.3-7.6 1.7 1.9 2.3 4.5 2.3 7.6H21Z" fill="#11c7dc" stroke-width="1.65"/>
-    <path d="M7.5 15.3h2.4m-2.4 3.5h2.4m-2.4 3.5h2.4m14.6-7h-2.4m2.4 3.5h-2.4m2.4 3.5h-2.4" fill="none" stroke-width="1.25"/>
-    <path d="M14.2 27.4v-4.9c0-1.4.8-2.4 1.8-2.4s1.8 1 1.8 2.4v4.9" fill="#11c7dc" stroke-width="1.3"/>
-    <path d="M3.8 27.6h24.4" fill="none" stroke-width="1.5"/>
-    <circle cx="8.7" cy="4.3" r=".8" fill="#fff3d6" stroke-width="1"/>
-    <circle cx="23.3" cy="4.3" r=".8" fill="#fff3d6" stroke-width="1"/>
+    <path d="M4 35.6h32" fill="none" stroke="#fff" stroke-width="4"/>
+    <path d="M4 35.6h32" fill="none" stroke-width="1.35"/>
+
+    <path d="M6.4 34.8V13.8h8v21zM25.6 34.8v-21h8v21z" fill="#e6b48d" stroke-width="1.3"/>
+    <path d="M7.2 13.8c0-3.4 1.4-6.5 3.2-8.7 1.8 2.2 3.2 5.3 3.2 8.7zM26.4 13.8c0-3.4 1.4-6.5 3.2-8.7 1.8 2.2 3.2 5.3 3.2 8.7z" fill="#7fb9ad" stroke-width="1.25"/>
+    <path d="M8.4 10.4h4M27.6 10.4h4" fill="none" stroke="#fff3d6" stroke-width="1"/>
+    <circle cx="10.4" cy="17.7" r="1.5" fill="#fff3d6" stroke-width="1.1"/>
+    <circle cx="29.6" cy="17.7" r="1.5" fill="#fff3d6" stroke-width="1.1"/>
+    <path d="M8.5 21.5h3.8M8.5 25h3.8M8.5 28.5h3.8M27.7 21.5h3.8M27.7 25h3.8M27.7 28.5h3.8" fill="none" stroke-width=".85"/>
+
+    <path d="M13.2 34.8V20.4h13.6v14.4z" fill="#fff3d6" stroke-width="1.35"/>
+    <path d="M12.3 20.4 15 17h10l2.7 3.4z" fill="#ff6b6b" stroke-width="1.25"/>
+    <path d="M15.1 24.1h2.1v3.5h-2.1zM22.8 24.1h2.1v3.5h-2.1z" fill="#11c7dc" stroke-width=".9"/>
+    <path d="M18.1 34.8v-5.4c0-1.7.8-2.9 1.9-2.9s1.9 1.2 1.9 2.9v5.4z" fill="#11c7dc" stroke-width="1.05"/>
+
+    <path d="M10.4 5.1V3.4M29.6 5.1V3.4" fill="none" stroke-width="1.05"/>
+    <circle cx="10.4" cy="3" r=".7" fill="#ff6b6b" stroke-width=".8"/>
+    <circle cx="29.6" cy="3" r=".7" fill="#ff6b6b" stroke-width=".8"/>
   </g>
 </svg>
