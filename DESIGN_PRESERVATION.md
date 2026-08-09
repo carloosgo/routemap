@@ -21,9 +21,10 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Búsqueda de lugares: conserva los componentes visuales existentes; la sugerencia seleccionada ahora se enfoca directamente y la confirmación permanece anclada a su marcador.
 - Marcador final del itinerario: sustituye únicamente el último endpoint numerado por un banderín SVG de 18 × 18 px, usando la paleta de iconos del sistema (`#11c7dc`, `#14394b`, `#fff3d6`). El marcador inicial numerado se conserva.
 - Marcadores intermedios del itinerario: reducen su núcleo visual a 7 × 7 px más borde fino para disminuir saturación sin perder la codificación cromática de cada tramo.
-- Landmarks de ciudades principales: se renderizan como SVG locales de 18 × 18 px dentro del mismo `AdvancedMarkerElement` existente mediante pseudo-elemento CSS; no crean markers, listeners ni llamadas de red adicionales a Google Maps.
+- Landmarks de ciudades principales: se renderizan como SVG locales dentro del mismo `AdvancedMarkerElement` existente mediante pseudo-elemento CSS; no crean markers, listeners ni llamadas de red adicionales a Google Maps.
+- Los landmarks principales se rediseñaron como mini-ilustraciones vectoriales de mayor definición, con silueta arquitectónica reconocible, rellenos crema/cian, contorno azul oscuro y detalles interiores. La caja visual es de 28 × 28 px en escritorio y 24 × 24 px hasta 720 px de ancho.
 - Primera colección curada: París/Torre Eiffel, Fráncfort/skyline, Múnich/Frauenkirche, Berlín/Puerta de Brandeburgo, Ámsterdam/casas de canal, Bruselas/Atomium y Barcelona/Sagrada Familia.
-- Reglas responsive de densidad: hasta 720 px los landmarks bajan a 16 × 16 px y se ocultan Fráncfort y Bruselas; hasta 480 px también se oculta Múnich. París, Berlín, Ámsterdam y Barcelona conservan identidad visual en los tamaños más estrechos.
+- Reglas responsive de densidad: hasta 720 px se ocultan Fráncfort y Bruselas; hasta 480 px también se oculta Múnich. París, Berlín, Ámsterdam y Barcelona conservan identidad visual en los tamaños más estrechos.
 - Los offsets se ajustan por ciudad para reducir colisiones visuales con marcadores cercanos, incluido el clúster Benelux y el banderín final de Barcelona.
 
 ## Rendimiento
