@@ -1,23 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 96 96" role="img" aria-label="Torre Eiffel">
-  <g stroke="#14394b" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M48 4v5" fill="none" stroke-width="2"/>
-    <circle cx="48" cy="3.7" r="1.7" fill="#11c7dc" stroke-width="1.4"/>
-    <path d="M45.3 9h5.4l2.1 12H43.2z" fill="#dfe9ed" stroke-width="2"/>
-    <path d="M43 15h10M42 21h12" fill="none" stroke-width="1.5"/>
-    <path d="M40 22h16v4H40z" fill="#ff6b6b" stroke-width="1.8"/>
-
-    <path d="M42.5 26h5.1c-.8 10.6-3.3 23.4-7.4 35.8L30.5 88H16.8l15.6-31.7C37.8 45.4 40.6 34.5 42.5 26Z" fill="#f7edd7" stroke-width="2.1"/>
-    <path d="M53.5 26h-5.1c.8 10.6 3.3 23.4 7.4 35.8L65.5 88h13.7L63.6 56.3C58.2 45.4 55.4 34.5 53.5 26Z" fill="#f7edd7" stroke-width="2.1"/>
-
-    <path d="M35.7 37h24.6v4.8H35.7z" fill="#11c7dc" stroke-width="1.8"/>
-    <path d="M29.8 56h36.4v5H29.8z" fill="#ff6b6b" stroke-width="1.9"/>
-    <path d="M22.4 73h51.2v4.6H22.4z" fill="#dfe9ed" stroke-width="1.8"/>
-
-    <path d="M32 87.6c1.7-11.5 7.7-19.2 16-19.2s14.3 7.7 16 19.2" fill="none" stroke-width="2"/>
-    <path d="M41.5 27 48 37m6.5-10L48 37M37 42l22 13M59 42 37 55M32.5 61 48 69m15.5-8L48 69M27.5 77 39 87m29.5-10L57 87" fill="none" stroke-width="1.35" opacity=".9"/>
-    <path d="M36.2 31h23.6M33.2 48h29.6M25.5 66h45" fill="none" stroke="#14394b" stroke-width="1.25" opacity=".8"/>
-
-    <path d="M13.5 87.8c1.2-5.6 5.8-8.6 10-5.8 1.8-4.2 6.9-5.1 10-1.8M82.5 87.8c-1.2-5.6-5.8-8.6-10-5.8-1.8-4.2-6.9-5.1-10-1.8" fill="#6fbb72" stroke-width="1.4"/>
-    <path d="M11 89h74" fill="none" stroke-width="2.2"/>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path fill="#14394b" fill-rule="evenodd" d="M48 3.5 45.8 11h-3.2l1 5.5h1.1L42.8 28h-4.5l.9 5.4h2.7L37.8 50h-5.6l1.2 6.1h2.8L24.4 84H15l-2 7h26l1-5.4H31.8l7.9-23.8h16.6l7.9 23.8H56l1 5.4h26l-2-7h-9.4L59.8 56.1h2.8l1.2-6.1h-5.6l-4.1-16.6h2.7l.9-5.4h-4.5l-1.9-11.5h1.1l1-5.5h-3.2L48 3.5Zm0 19.5-1.1 5h2.2L48 23Zm-2.7 11-3.4 16h12.2l-3.4-16h-5.4Zm-5.1 22-2.4 7.2h20.4L55.8 56H40.2Zm7.8 8.5c-5.5 0-9.1 7.7-10.4 19.5h20.8C57.1 72.2 53.5 64.5 48 64.5Z"/>
+    <rect x="39.3" y="27.2" width="17.4" height="4.2" rx="1" fill="#11c7dc" stroke="#14394b" stroke-width="1.1"/>
+    <rect x="32" y="49.2" width="32" height="5.5" rx="1" fill="#ff6b6b" stroke="#14394b" stroke-width="1.1"/>
+    <path d="M43.4 17h9.2M40.5 39h15M27 85.2h42" fill="none" stroke="#fff3d6" stroke-width="1.6" opacity=".9"/>
+    <circle cx="48" cy="3.5" r="1.8" fill="#11c7dc" stroke="#14394b" stroke-width="1"/>
   </g>
 </svg>
