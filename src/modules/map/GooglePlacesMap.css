@@ -28,6 +28,35 @@
   cursor:pointer!important;
 }
 
+/* Zoom nativo de Google: compacto y alineado con el botón Buscar de Atlas. */
+.google-map .gm-bundled-control{
+  width:30px!important;
+}
+.google-map .gm-bundled-control .gmnoprint>div{
+  width:30px!important;
+  overflow:hidden!important;
+  border-radius:8px!important;
+  background:#0d6078!important;
+  box-shadow:0 2px 8px rgba(15,23,42,.2)!important;
+}
+.google-map .gm-bundled-control .gm-control-active{
+  width:30px!important;
+  height:30px!important;
+  min-width:30px!important;
+  min-height:30px!important;
+  background:#0d6078!important;
+}
+.google-map .gm-bundled-control .gm-control-active:hover,
+.google-map .gm-bundled-control .gm-control-active:focus-visible{
+  background:#0a4d61!important;
+}
+.google-map .gm-bundled-control .gm-control-active img{
+  width:14px!important;
+  height:14px!important;
+  margin:8px!important;
+  filter:brightness(0) invert(1)!important;
+}
+
 .mappane>.route-map-stack{
   position:absolute;
   inset:0;
