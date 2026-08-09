@@ -28,33 +28,75 @@
   cursor:pointer!important;
 }
 
-/* Zoom nativo de Google: compacto y alineado con el botón Buscar de Atlas. */
+/* Zoom nativo de Google: bloque completo compacto y con el azul de Buscar. */
 .google-map .gm-bundled-control{
-  width:30px!important;
+  width:24px!important;
+  height:49px!important;
+}
+.google-map .gm-bundled-control .gmnoprint{
+  width:24px!important;
+  height:49px!important;
 }
 .google-map .gm-bundled-control .gmnoprint>div{
-  width:30px!important;
+  width:24px!important;
+  height:49px!important;
+  padding:0!important;
   overflow:hidden!important;
-  border-radius:8px!important;
+  border-radius:7px!important;
   background:#0d6078!important;
-  box-shadow:0 2px 8px rgba(15,23,42,.2)!important;
+  box-shadow:0 2px 7px rgba(15,23,42,.2)!important;
 }
-.google-map .gm-bundled-control .gm-control-active{
-  width:30px!important;
-  height:30px!important;
-  min-width:30px!important;
-  min-height:30px!important;
+.google-map .gm-bundled-control .gmnoprint>div>button.gm-control-active{
+  position:relative!important;
+  display:block!important;
+  width:24px!important;
+  height:24px!important;
+  min-width:24px!important;
+  min-height:24px!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
   background:#0d6078!important;
+  box-shadow:none!important;
 }
-.google-map .gm-bundled-control .gm-control-active:hover,
-.google-map .gm-bundled-control .gm-control-active:focus-visible{
-  background:#0a4d61!important;
+.google-map .gm-bundled-control .gmnoprint>div>button.gm-control-active:hover,
+.google-map .gm-bundled-control .gmnoprint>div>button.gm-control-active:focus-visible{
+  background:#0d6078!important;
+  outline:none!important;
 }
-.google-map .gm-bundled-control .gm-control-active img{
-  width:14px!important;
-  height:14px!important;
-  margin:8px!important;
-  filter:brightness(0) invert(1)!important;
+.google-map .gm-bundled-control .gmnoprint>div>button.gm-control-active img{
+  width:0!important;
+  height:0!important;
+  margin:0!important;
+  opacity:0!important;
+}
+.google-map .gm-bundled-control .gmnoprint>div>button.gm-control-active::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:10px;
+  height:1.5px;
+  border-radius:999px;
+  background:#ffffff;
+  transform:translate(-50%,-50%);
+}
+.google-map .gm-bundled-control .gmnoprint>div>button.gm-control-active:first-of-type::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:1.5px;
+  height:10px;
+  border-radius:999px;
+  background:#ffffff;
+  transform:translate(-50%,-50%);
+}
+.google-map .gm-bundled-control .gmnoprint>div>div{
+  width:16px!important;
+  height:1px!important;
+  margin:0 4px!important;
+  background:rgba(255,255,255,.28)!important;
 }
 
 .mappane>.route-map-stack{
