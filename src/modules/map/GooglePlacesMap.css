@@ -17,6 +17,17 @@
   min-height:100%;
 }
 
+.google-map .gm-style,
+.google-map .gm-style *{
+  cursor:default!important;
+}
+.google-map .gm-style button,
+.google-map .gm-style a,
+.google-map .gm-style [role="button"],
+.google-map .google-saved-place-marker{
+  cursor:pointer!important;
+}
+
 .mappane>.route-map-stack{
   position:absolute;
   inset:0;
