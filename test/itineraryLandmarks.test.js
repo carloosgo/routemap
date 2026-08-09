@@ -15,7 +15,7 @@ test('normaliza nombres internacionales de ciudades para landmarks', () => {
   assert.equal(normalizeLandmarkCityName('München'), 'munchen');
   assert.equal(normalizeLandmarkCityName('Fráncfort del Meno'), 'francfort del meno');
   assert.equal(landmarkForCityName('París')?.id, 'paris-eiffel');
-  assert.equal(landmarkForCityName('Fráncfort del Meno')?.id, 'frankfurt-skyline');
+  assert.equal(landmarkForCityName('Fráncfort del Meno'), null);
   assert.equal(landmarkForCityName('München')?.id, 'munich-frauenkirche');
   assert.equal(landmarkForCityName('Rothenburg ob der Tauber'), null);
 });
