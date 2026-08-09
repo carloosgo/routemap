@@ -1,1 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="b" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#dfe9ed"/><stop offset="1" stop-color="#8db4c5"/></linearGradient><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#72c17a"/><stop offset="1" stop-color="#4f9f61"/></linearGradient></defs><g stroke="#14394b" stroke-linecap="round" stroke-linejoin="round"><path d="M6 53V31h10v22M17.5 53V20h12v33M31 53V26h9v27M41.5 53V13h11v40M54 53V35h5v18" fill="url(#b)" stroke-width="1.5"/><path d="M19.5 20 23.5 13h4L29.5 20M43.5 13 47 8l3.5 5" fill="#11c7dc" stroke-width="1.35"/><path d="M47 8V4.8" fill="none" stroke-width="1.3"/><circle cx="47" cy="3.8" r="1.4" fill="#ff6b6b" stroke-width="1"/><g stroke-width="1" fill="none"><path d="M9 36h4M9 41h4M9 46h4M20.5 27h6M20.5 33h6M20.5 39h6M20.5 45h6M33.5 32h4M33.5 38h4M33.5 44h4M44.5 20h5M44.5 26h5M44.5 32h5M44.5 38h5M44.5 44h5"/></g><path d="M4 54h56" fill="none" stroke-width="1.7"/><path d="M4 58c8-2.2 14-2.2 21 0 8 2.4 20 2.4 35 0" fill="none" stroke="#11c7dc" stroke-width="1.5"/><path d="M5 53c1-3 3-4.5 5-4 1-3 5-4.5 8-1.2M46 52c1.2-3 4.2-4.5 6.5-2.7 1.6-2.4 5-2 6.5.7" fill="url(#g)" stroke-width="1.1"/><path d="M7 31h9" stroke="#ff6b6b" stroke-width="2"/><path d="M32 26h8" stroke="#ff6b6b" stroke-width="2"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 96 96" role="img" aria-label="Skyline de Fráncfort">
+  <g stroke="#14394b" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 83h86" fill="none" stroke-width="2.2"/>
+    <path d="M9 82V55h14v27z" fill="#f6ead3" stroke-width="1.8"/>
+    <path d="M11 55 16 43l5 12" fill="#ff6b6b" stroke-width="1.7"/>
+    <path d="M16 43v-5" fill="none" stroke-width="1.5"/>
+
+    <path d="M25 82V33h18v49z" fill="#c9d8de" stroke-width="1.9"/>
+    <path d="M27 33 34 21l7 12" fill="#11c7dc" stroke-width="1.7"/>
+    <path d="M34 21v-8" fill="none" stroke-width="1.6"/>
+    <path d="M29 41h10M29 48h10M29 55h10M29 62h10M29 69h10M29 76h10" fill="none" stroke-width="1.15"/>
+
+    <path d="M45 82V25h23v57z" fill="#eef2f3" stroke-width="2"/>
+    <path d="M48 25h17l3-6H45z" fill="#11c7dc" stroke-width="1.7"/>
+    <path d="M56.5 19V8" fill="none" stroke-width="1.7"/>
+    <circle cx="56.5" cy="6.6" r="1.6" fill="#ff6b6b" stroke-width="1.1"/>
+    <path d="M50 34h13M50 42h13M50 50h13M50 58h13M50 66h13M50 74h13" fill="none" stroke="#6b8793" stroke-width="1.1"/>
+    <path d="M53 25v57M60 25v57" fill="none" stroke="#b5c8cf" stroke-width="1"/>
+
+    <path d="M71 82V45h13v37z" fill="#c9d8de" stroke-width="1.8"/>
+    <path d="M73.5 53h8M73.5 60h8M73.5 67h8M73.5 74h8" fill="none" stroke-width="1.1"/>
+    <path d="M7 87c12-3 23-3 33 0 15 4 31 4 49 0" fill="none" stroke="#11c7dc" stroke-width="2"/>
+    <path d="M6 82c2-5 6-7 10-4 2-5 8-6 12-2M67 81c2-4 6-6 10-3 3-4 8-3 11 1" fill="#6fbb72" stroke-width="1.3"/>
+  </g>
+</svg>
