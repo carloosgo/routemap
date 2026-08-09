@@ -50,17 +50,91 @@
 }
 
 .google-itinerary-city-marker{
+  position:relative;
   display:grid;
   width:7px;
   height:7px;
   place-items:center;
+  overflow:visible;
   border:1.3px solid #ffffff;
   border-radius:50%;
   background:var(--itinerary-city-color,#2563eb);
   box-shadow:0 1px 4px rgba(15,23,42,.22);
 }
+.google-itinerary-city-marker::after{
+  content:'';
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:42px;
+  height:42px;
+  background-image:var(--itinerary-landmark-image,none);
+  background-position:center;
+  background-repeat:no-repeat;
+  background-size:contain;
+  opacity:var(--itinerary-landmark-opacity,0);
+  transform:translate(var(--itinerary-landmark-x,8px),var(--itinerary-landmark-y,-48px));
+  transform-origin:center;
+  filter:drop-shadow(0 1px 0 rgba(255,255,255,.95)) drop-shadow(0 1px 1px rgba(20,57,75,.16));
+  pointer-events:none;
+}
 .google-itinerary-city-marker__dot{
+  position:relative;
+  z-index:1;
   display:none;
+}
+
+.google-itinerary-city-marker[aria-label*="París"],
+.google-itinerary-city-marker[aria-label*="Paris"]{
+  --itinerary-landmark-image:url("../../assets/city-landmarks/paris-eiffel.svg");
+  --itinerary-landmark-opacity:1;
+  --itinerary-landmark-x:8px;
+  --itinerary-landmark-y:-49px;
+}
+.google-itinerary-city-marker[aria-label*="Fráncfort"],
+.google-itinerary-city-marker[aria-label*="Francfort"],
+.google-itinerary-city-marker[aria-label*="Frankfurt"]{
+  --itinerary-landmark-image:url("../../assets/city-landmarks/frankfurt-skyline.svg");
+  --itinerary-landmark-opacity:1;
+  --itinerary-landmark-x:9px;
+  --itinerary-landmark-y:-47px;
+}
+.google-itinerary-city-marker[aria-label*="Múnich"],
+.google-itinerary-city-marker[aria-label*="Munich"],
+.google-itinerary-city-marker[aria-label*="München"]{
+  --itinerary-landmark-image:url("../../assets/city-landmarks/munich-frauenkirche.svg");
+  --itinerary-landmark-opacity:1;
+  --itinerary-landmark-x:9px;
+  --itinerary-landmark-y:-47px;
+}
+.google-itinerary-city-marker[aria-label*="Berlín"],
+.google-itinerary-city-marker[aria-label*="Berlin"]{
+  --itinerary-landmark-image:url("../../assets/city-landmarks/berlin-brandenburg.svg");
+  --itinerary-landmark-opacity:1;
+  --itinerary-landmark-x:9px;
+  --itinerary-landmark-y:-47px;
+}
+.google-itinerary-city-marker[aria-label*="Ámsterdam"],
+.google-itinerary-city-marker[aria-label*="Amsterdam"]{
+  --itinerary-landmark-image:url("../../assets/city-landmarks/amsterdam-canal-houses.svg");
+  --itinerary-landmark-opacity:1;
+  --itinerary-landmark-x:-50px;
+  --itinerary-landmark-y:-47px;
+}
+.google-itinerary-city-marker[aria-label*="Bruselas"],
+.google-itinerary-city-marker[aria-label*="Brussels"],
+.google-itinerary-city-marker[aria-label*="Bruxelles"],
+.google-itinerary-city-marker[aria-label*="Brussel"]{
+  --itinerary-landmark-image:url("../../assets/city-landmarks/brussels-atomium.svg");
+  --itinerary-landmark-opacity:1;
+  --itinerary-landmark-x:9px;
+  --itinerary-landmark-y:7px;
+}
+.google-itinerary-city-marker[aria-label*="Barcelona"]{
+  --itinerary-landmark-image:url("../../assets/city-landmarks/barcelona-sagrada.svg");
+  --itinerary-landmark-opacity:1;
+  --itinerary-landmark-x:-52px;
+  --itinerary-landmark-y:-46px;
 }
 
 .google-itinerary-city-marker.is-endpoint{
@@ -91,4 +165,30 @@
   width:100%;
   height:100%;
   place-items:center;
+}
+
+@media (max-width:720px){
+  .google-itinerary-city-marker::after{
+    width:36px;
+    height:36px;
+  }
+}
+
+@media (max-width:560px){
+  .google-itinerary-city-marker[aria-label*="Fráncfort"],
+  .google-itinerary-city-marker[aria-label*="Francfort"],
+  .google-itinerary-city-marker[aria-label*="Frankfurt"],
+  .google-itinerary-city-marker[aria-label*="Bruselas"],
+  .google-itinerary-city-marker[aria-label*="Brussels"],
+  .google-itinerary-city-marker[aria-label*="Bruxelles"],
+  .google-itinerary-city-marker[aria-label*="Brussel"]{
+    --itinerary-landmark-opacity:0;
+  }
+}
+
+@media (max-width:420px){
+  .google-itinerary-city-marker::after{
+    width:32px;
+    height:32px;
+  }
 }
