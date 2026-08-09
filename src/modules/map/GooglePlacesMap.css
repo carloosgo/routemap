@@ -28,7 +28,12 @@
   cursor:pointer!important;
 }
 
-/* Zoom nativo de Google: bloque completo compacto y con el azul real de Buscar. */
+/* El control circular de cámara/paneo de Google no forma parte de la UI de Atlas. */
+.google-map gmp-internal-camera-control{
+  display:none!important;
+}
+
+/* Zoom nativo de Google: bloque completo compacto y con el azul de Buscar. */
 .google-map .gm-bundled-control{
   width:24px!important;
   height:49px!important;
