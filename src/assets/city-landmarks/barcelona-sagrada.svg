@@ -1,1 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="s" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f5d3a9"/><stop offset="1" stop-color="#c78d63"/></linearGradient><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#72c17a"/><stop offset="1" stop-color="#4f9f61"/></linearGradient></defs><g stroke="#14394b" stroke-linecap="round" stroke-linejoin="round"><path d="M10 55V29h8v26M20 55V18h8v37M29 55V13h8v42M38 55V20h8v35M48 55V31h7v24" fill="url(#s)" stroke-width="1.45"/><path d="M11 29 14 17l3 12M21 18 24 6l3 12M30 13 33 3l3 10M39 20 42 8l3 12M49 31l2.5-10L54 31" fill="#11c7dc" stroke-width="1.35"/><path d="M14 17v-3M24 6V3M33 3V1.4M42 8V5M51.5 21v-3" fill="none" stroke-width="1.2"/><circle cx="14" cy="13.2" r="1" fill="#ff6b6b" stroke-width=".8"/><circle cx="24" cy="2.5" r="1" fill="#ff6b6b" stroke-width=".8"/><circle cx="33" cy="1.2" r="1" fill="#ff6b6b" stroke-width=".8"/><circle cx="42" cy="4.5" r="1" fill="#ff6b6b" stroke-width=".8"/><circle cx="51.5" cy="17.5" r="1" fill="#ff6b6b" stroke-width=".8"/><path d="M13 35h2M13 41h2M13 47h2M23 24h2M23 31h2M23 38h2M23 45h2M32 20h2M32 27h2M32 34h2M32 41h2M41 27h2M41 34h2M41 41h2M50.5 37h2M50.5 44h2" fill="none" stroke-width="1"/><path d="M24 55V44c0-5.5 3.4-9 8-9s8 3.5 8 9v11" fill="#fff3d6" stroke-width="1.4"/><path d="M27 43h10M29 48h6" stroke="#ff6b6b" stroke-width="1.2"/><path d="M6 56c2-5 7-7 11-3 2-4 6-5 9-2M58 56c-2-5-7-7-11-3-2-4-6-5-9-2" fill="url(#g)" stroke-width="1.1"/><path d="M6 57h52" stroke-width="1.6"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 96 96" role="img" aria-label="Sagrada Familia de Barcelona">
+  <g stroke="#14394b" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 84V47h13v37M25 84V30h14v54M41 84V23h14v61M57 84V33h14v51M73 84V49h13v35" fill="#d7a678" stroke-width="2"/>
+    <path d="M12 47 16.5 28 21 47M27 30 32 10l5 20M43 23 48 5l5 18M59 33 64 13l5 20M75 49l4.5-17L84 49" fill="#c58c62" stroke-width="1.8"/>
+    <path d="M16.5 28v-5M32 10V6M48 5V2M64 13V9M79.5 32v-5" fill="none" stroke-width="1.5"/>
+    <circle cx="16.5" cy="22" r="1.5" fill="#11c7dc" stroke-width="1"/>
+    <circle cx="32" cy="5" r="1.5" fill="#11c7dc" stroke-width="1"/>
+    <circle cx="48" cy="2" r="1.5" fill="#ff6b6b" stroke-width="1"/>
+    <circle cx="64" cy="8" r="1.5" fill="#11c7dc" stroke-width="1"/>
+    <circle cx="79.5" cy="26" r="1.5" fill="#11c7dc" stroke-width="1"/>
+
+    <path d="M14 55h5M14 63h5M14 71h5M29 39h6M29 48h6M29 57h6M29 66h6M45 32h6M45 41h6M45 50h6M45 59h6M61 42h6M61 51h6M61 60h6M77 57h5M77 65h5M77 73h5" fill="none" stroke="#6d584a" stroke-width="1.15"/>
+    <path d="M31 84V66c0-10 7-16 17-16s17 6 17 16v18" fill="#f6ead3" stroke-width="1.9"/>
+    <path d="M36 65h24M38 73h20" fill="none" stroke="#ff6b6b" stroke-width="1.6"/>
+    <path d="M42 84V69c0-4 2.5-7 6-7s6 3 6 7v15" fill="#c9d8de" stroke-width="1.5"/>
+    <path d="M8 85c2-6 8-9 14-5 3-5 9-6 14-2M88 85c-2-6-8-9-14-5-3-5-9-6-14-2" fill="#6fbb72" stroke-width="1.4"/>
+    <path d="M7 87h82" fill="none" stroke-width="2.2"/>
+  </g>
+</svg>
