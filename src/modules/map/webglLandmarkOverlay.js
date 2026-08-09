@@ -174,7 +174,7 @@ function programLocations(gl, program) {
 }
 
 function loadImage(url, onReady) {
-  const image = new Image();
+  const image = new globalThis.Image();
   const record = { image, ready: false, failed: false };
   image.decoding = 'async';
   image.onload = () => {
