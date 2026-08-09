@@ -206,10 +206,12 @@ export function GooglePlacesMap({
 
     loadGoogleMaps()
       .then(async (maps) => {
-        const [{ Map, RenderingType, WebGLOverlayView }, { AdvancedMarkerElement }] = await Promise.all([
+        const [mapsLibrary, { AdvancedMarkerElement }] = await Promise.all([
           maps.importLibrary('maps'),
           maps.importLibrary('marker'),
         ]);
+        const { Map, RenderingType } = mapsLibrary;
+        const { WebGLOverlayView } = mapsLibrary;
         await afterLayout();
         if (disposed || !wrapRef.current || !nodeRef.current) return;
 
