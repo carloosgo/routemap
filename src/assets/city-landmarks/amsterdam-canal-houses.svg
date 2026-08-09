@@ -1,1 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="r" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f68d75"/><stop offset="1" stop-color="#d95f50"/></linearGradient><linearGradient id="n" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#e8f0f2"/><stop offset="1" stop-color="#bfd2d8"/></linearGradient></defs><g stroke="#14394b" stroke-linecap="round" stroke-linejoin="round"><path d="M5 50V19l7-7 7 7v31z" fill="url(#r)" stroke-width="1.5"/><path d="M18 50V14l6-6 6 6v36z" fill="#fff3d6" stroke-width="1.5"/><path d="M29 50V18l7-8 7 8v32z" fill="url(#n)" stroke-width="1.5"/><path d="M42 50V20l7-6 7 6v30z" fill="url(#r)" stroke-width="1.5"/><path d="M9 23h6M9 30h6M9 37h6M21.5 19h5M21.5 26h5M21.5 33h5M32.5 23h7M32.5 30h7M32.5 37h7M45.5 25h7M45.5 32h7M45.5 39h7" fill="none" stroke="#14394b" stroke-width="1"/><path d="M10 50v-7h4v7M23 50v-8h3.8v8M34 50v-7h4v7M48 50v-7h4v7" fill="#11c7dc" stroke-width="1.1"/><path d="M8.2 15h7.6M21 10.7h6M32 14.2h8M45.3 16.8h7.4" fill="none" stroke="#11c7dc" stroke-width="1.4"/><path d="M4 51h56" stroke-width="1.6"/><path d="M8 55h48l-5 5H13z" fill="#c8976e" stroke-width="1.4"/><path d="M12 55c2.2-3.5 5.3-5.2 9.2-5.2S28.4 51.5 30 55M34 55c2-3 4.8-4.5 8.3-4.5S49 52 51 55" fill="none" stroke="#14394b" stroke-width="1.2"/><path d="M7 61h50" stroke="#11c7dc" stroke-width="2"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 96 96" role="img" aria-label="Casas de canal de Ámsterdam">
+  <g stroke="#14394b" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 72V29l11-11 11 11v43z" fill="#df725f" stroke-width="2"/>
+    <path d="M26 72V22l10-11 10 11v50z" fill="#f4e6c9" stroke-width="2"/>
+    <path d="M43 72V27l11-13 11 13v45z" fill="#c9d8de" stroke-width="2"/>
+    <path d="M62 72V31l10-9 10 9v41z" fill="#df725f" stroke-width="2"/>
+
+    <path d="M11 34h14M11 44h14M11 54h14M30 29h12M30 39h12M30 49h12M47 34h14M47 44h14M47 54h14M66 37h12M66 47h12M66 57h12" fill="none" stroke-width="1.25"/>
+    <path d="M14 72V60h8v12M32 72V58h8v14M50 72V60h8v12M68 72V61h8v11" fill="#11c7dc" stroke-width="1.4"/>
+    <path d="M12 24h12M31 17h10M48 21h12M67 27h10" fill="none" stroke="#11c7dc" stroke-width="1.8"/>
+    <path d="M5 73h78" fill="none" stroke-width="2.1"/>
+
+    <path d="M12 79h72l-7 9H19z" fill="#c6966d" stroke-width="1.8"/>
+    <path d="M18 79c3-5 8-7 13-7s10 2 13 7M50 79c3-4.5 8-6.5 13-6.5S73 74.5 76 79" fill="#f4e6c9" stroke-width="1.5"/>
+    <path d="M12 89h72" fill="none" stroke="#11c7dc" stroke-width="2.5"/>
+  </g>
+</svg>
