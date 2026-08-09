@@ -1,19 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 96 96" role="img" aria-label="Sagrada Familia de Barcelona">
-  <g stroke="#14394b" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M10 84V47h13v37M25 84V30h14v54M41 84V23h14v61M57 84V33h14v51M73 84V49h13v35" fill="#d7a678" stroke-width="2"/>
-    <path d="M12 47 16.5 28 21 47M27 30 32 10l5 20M43 23 48 5l5 18M59 33 64 13l5 20M75 49l4.5-17L84 49" fill="#c58c62" stroke-width="1.8"/>
-    <path d="M16.5 28v-5M32 10V6M48 5V2M64 13V9M79.5 32v-5" fill="none" stroke-width="1.5"/>
-    <circle cx="16.5" cy="22" r="1.5" fill="#11c7dc" stroke-width="1"/>
-    <circle cx="32" cy="5" r="1.5" fill="#11c7dc" stroke-width="1"/>
-    <circle cx="48" cy="2" r="1.5" fill="#ff6b6b" stroke-width="1"/>
-    <circle cx="64" cy="8" r="1.5" fill="#11c7dc" stroke-width="1"/>
-    <circle cx="79.5" cy="26" r="1.5" fill="#11c7dc" stroke-width="1"/>
-
-    <path d="M14 55h5M14 63h5M14 71h5M29 39h6M29 48h6M29 57h6M29 66h6M45 32h6M45 41h6M45 50h6M45 59h6M61 42h6M61 51h6M61 60h6M77 57h5M77 65h5M77 73h5" fill="none" stroke="#6d584a" stroke-width="1.15"/>
-    <path d="M31 84V66c0-10 7-16 17-16s17 6 17 16v18" fill="#f6ead3" stroke-width="1.9"/>
-    <path d="M36 65h24M38 73h20" fill="none" stroke="#ff6b6b" stroke-width="1.6"/>
-    <path d="M42 84V69c0-4 2.5-7 6-7s6 3 6 7v15" fill="#c9d8de" stroke-width="1.5"/>
-    <path d="M8 85c2-6 8-9 14-5 3-5 9-6 14-2M88 85c-2-6-8-9-14-5-3-5-9-6-14-2" fill="#6fbb72" stroke-width="1.4"/>
-    <path d="M7 87h82" fill="none" stroke-width="2.2"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 128 128" role="img" aria-label="Sagrada Familia de Barcelona">
+<g stroke="#14394b" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+<path d="M22 105V52h16v53M43 105V37h16v68M69 105V39h16v66M90 105V55h16v50" fill="#fff3d6"/>
+<path d="M24 52 30 29l6 23M45 37 51 13l6 24M71 39 77 15l6 24M92 55l6-21 6 21" fill="#c8dadd"/>
+<path d="M30 29v-6M51 13V8M77 15V10M98 34v-6" fill="none"/>
+<circle cx="30" cy="21.5" r="2" fill="#11c7dc"/><circle cx="51" cy="6.5" r="2" fill="#ff746d"/><circle cx="77" cy="8.5" r="2" fill="#ff746d"/><circle cx="98" cy="26.5" r="2" fill="#11c7dc"/>
+<path d="M38 105V70c0-14 10-24 26-24s26 10 26 24v35" fill="#fff3d6"/>
+<path d="M44 71h40M47 82h34" fill="none" stroke="#ff746d" stroke-width="1.55"/>
+<path d="M55 105V79c0-7 4-12 9-12s9 5 9 12v26" fill="#c8dadd"/>
+<g fill="#ff746d" stroke-width="1.35"><rect x="26" y="61" width="8" height="8" rx="1"/><rect x="26" y="76" width="8" height="8" rx="1"/><rect x="47" y="48" width="8" height="8" rx="1"/><rect x="73" y="50" width="8" height="8" rx="1"/><rect x="94" y="64" width="8" height="8" rx="1"/><rect x="94" y="79" width="8" height="8" rx="1"/></g>
+<path d="M16 106h96" fill="none"/>
+</g></svg>
