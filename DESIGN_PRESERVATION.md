@@ -21,21 +21,25 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Búsqueda de lugares: conserva los componentes visuales existentes; la sugerencia seleccionada ahora se enfoca directamente y la confirmación permanece anclada a su marcador.
 - Marcador final del itinerario: sustituye únicamente el último endpoint numerado por un banderín SVG de 18 × 18 px, usando la paleta de iconos del sistema (`#11c7dc`, `#14394b`, `#fff3d6`). El marcador inicial numerado se conserva.
 - Marcadores intermedios del itinerario: mantienen un núcleo visual de 7 × 7 px más borde fino para disminuir saturación sin perder la codificación cromática de cada tramo.
-- Los landmarks personalizados de ciudades se eliminan del código y de los assets. El mapa deja de añadir ilustraciones propias junto a cada ciudad.
-- Los monumentos y lugares prominentes se delegan al sistema nativo de Google Maps mediante `Illustrated landmark style` en el Cloud-based Map Style asociado al Map ID. La disponibilidad de una ilustración depende de que Google tenga un illustrated icon asociado a ese POI.
+- Landmarks editoriales del itinerario: se muestran únicamente en la vista `segments` porque reutilizan el mismo `AdvancedMarkerElement` de las ciudades del itinerario. No se añaden markers separados ni se modifica la vista `places`.
+- Primera colección curada: París/Torre Eiffel, Fráncfort/skyline, Múnich/Frauenkirche, Berlín/Puerta de Brandeburgo, Ámsterdam/casas de canal, Bruselas/Atomium y Barcelona/Sagrada Familia.
+- Los landmarks son mini-ilustraciones SVG de 64 × 64 de origen, con rellenos, contornos, detalles arquitectónicos y sombreado vectorial simple. Se renderizan a 42 × 42 px en escritorio, 36 × 36 px hasta 720 px y 32 × 32 px hasta 420 px.
+- Los offsets se ajustan por ciudad para reducir colisiones con la línea de ruta, el marcador inicial/final y el clúster Benelux. En pantallas de hasta 560 px se ocultan Fráncfort y Bruselas para preservar legibilidad; las ciudades principales restantes siguen visibles desde la vista inicial.
+- Google Maps puede seguir mostrando sus `Illustrated landmark style` nativos cuando el nivel de zoom lo permita; la capa Atlas cubre específicamente la vista general del itinerario donde esos landmarks nativos todavía no aparecen.
 
 ## Rendimiento
 
-- Se mantiene un único `AdvancedMarkerElement` por ciudad para la capa propia de Atlas.
-- No se añaden imágenes, pseudo-elementos, listeners ni markers adicionales para landmarks.
-- No se añaden solicitudes a Places, Routes, Geocoding ni otros proveedores para mostrar monumentos ilustrados.
-- Los Illustrated Landmarks forman parte del basemap y del estilo de Google Maps; Atlas no mantiene un catálogo mundial de monumentos.
+- Se mantiene un único `AdvancedMarkerElement` por ciudad; el landmark se pinta como parte visual del mismo marker y no duplica objetos del mapa.
+- Los siete SVG pesan aproximadamente 1–2 KB cada uno y se sirven como assets locales del bundle, sin solicitudes a Places, Routes, Geocoding ni proveedores externos.
+- Los SVG no usan animaciones ni filtros internos pesados; solo gradientes vectoriales simples. La separación del fondo usa una `drop-shadow` CSS pequeña.
+- No se añaden listeners, timers ni cálculos por frame para la capa de landmarks.
+- La colección es explícita y curada: una ciudad sin landmark registrado conserva únicamente su punto pequeño, permitiendo ampliar cobertura internacional de forma controlada.
+- En móvil se aplica reducción de tamaño y supresión de landmarks secundarios para evitar saturación y reducir trabajo de pintura.
 
 ## Configuración de Google Maps
 
-- El `Map ID` debe tener asociado un Cloud-based Map Style publicado.
-- En el editor del estilo, `Landmarks` debe configurarse con `Illustrated landmark style` para que Google muestre sus illustrated POI icons cuando estén disponibles.
-- Esta configuración pertenece al estilo administrado en Google Cloud y no requiere lógica adicional en `GooglePlacesMap.jsx`.
+- El `Map ID` puede mantener asociado un Cloud-based Map Style con `Landmarks → Illustrated`; esos POI ilustrados siguen siendo propiedad del basemap y aparecen cuando Google lo permite por zoom y disponibilidad.
+- La capa Atlas no intenta descargar, copiar ni reutilizar assets gráficos internos de Google Maps.
 
 ## Validación requerida
 
