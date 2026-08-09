@@ -1,22 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 96 96" role="img" aria-label="Atomium de Bruselas">
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 128 128" role="img" aria-label="Atomium de Bruselas">
   <g stroke="#14394b" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M26 22 48 45 70 22M26 22h44M48 45 29 70M48 45l19 25M26 22l3 48M70 22l-3 48M29 70h38" fill="none" stroke="#7899a8" stroke-width="5"/>
-    <path d="M34 31 62 59M62 31 34 59" fill="none" stroke="#11c7dc" stroke-width="3"/>
-    <g fill="#d7e4ea" stroke-width="1.9">
-      <circle cx="26" cy="22" r="9"/>
-      <circle cx="70" cy="22" r="9"/>
-      <circle cx="48" cy="45" r="10" fill="#b8d1dc"/>
-      <circle cx="29" cy="70" r="8.5"/>
-      <circle cx="67" cy="70" r="8.5"/>
-      <circle cx="48" cy="11" r="7"/>
-      <circle cx="15" cy="46" r="7"/>
-      <circle cx="81" cy="46" r="7"/>
-      <circle cx="48" cy="82" r="7"/>
+    <g stroke-width="5" fill="none">
+      <path d="M34 88 49 64 64 37 81 61 94 87M49 64l32-3M49 64l20 25M81 61 69 89M64 37 34 88M64 37 94 87M34 88h60"/>
     </g>
-    <g fill="none" stroke="#fff" stroke-width="2" opacity=".85">
-      <path d="M21 18c2-3 5-4 8-3M65 18c2-3 5-4 8-3M42 40c3-3 7-4 11-2"/>
+    <g fill="#c8dadd" stroke-width="2.3">
+      <circle cx="64" cy="37" r="10"/><circle cx="49" cy="64" r="10"/><circle cx="81" cy="61" r="10"/>
+      <circle cx="34" cy="88" r="10"/><circle cx="69" cy="89" r="10"/><circle cx="94" cy="87" r="10"/>
     </g>
-    <path d="M12 88c3-6 9-8 15-4 3-6 11-7 17-2 4-5 11-5 16 0 6-5 14-4 17 2 6-4 12-2 15 4" fill="#6fbb72" stroke-width="1.5"/>
-    <path d="M10 89h76" fill="none" stroke-width="2.2"/>
+    <g fill="#ff746d" stroke-width="1.55">
+      <circle cx="64" cy="37" r="4.2"/><circle cx="49" cy="64" r="4.2"/><circle cx="81" cy="61" r="4.2"/>
+      <circle cx="34" cy="88" r="4.2"/><circle cx="69" cy="89" r="4.2"/><circle cx="94" cy="87" r="4.2"/>
+    </g>
+    <path d="M20 105h88" fill="none" stroke-width="2.3"/>
   </g>
 </svg>
