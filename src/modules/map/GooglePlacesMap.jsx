@@ -8,11 +8,13 @@ import { visitedCountries } from './countryColoring.js';
 import { createCrispDashedRoutes } from './crispDashedRoutes.js';
 import { loadGoogleCountryPlaceIds } from './googleCountryBoundariesClient.js';
 import { loadGoogleMaps } from './googleMapsLoader.js';
+import { itineraryLandmarksFromFeatures } from './itineraryLandmarkCatalog.js';
 import { markerElement, savePrompt, savedPlacePopup } from './placeMapDom.js';
 import { buildMapFeatureData, cityKey, placeCountryKey } from './routeMapModel.js';
 import { savedPlaceMarkerStyle } from './savedPlaceMarkerPalette.js';
 import { savedPlacePinUrl } from './savedPlaceSymbol.js';
 import { usePlaceSearch } from './usePlaceSearch.js';
+import { createWebglLandmarkOverlay } from './webglLandmarkOverlay.js';
 
 function geometryPaths(geometry) {
   if (geometry?.type === 'LineString') return [geometry.coordinates || []];
@@ -105,6 +107,7 @@ export function GooglePlacesMap({
   const savedRouteLinesRef = useRef([]);
   const itineraryMarkersRef = useRef([]);
   const itineraryLinesRef = useRef([]);
+  const itineraryLandmarkOverlayRef = useRef(null);
   const infoWindowRef = useRef(null);
   const saveNoticeTimerRef = useRef(null);
   const lastItineraryViewportKeyRef = useRef(null);
@@ -203,7 +206,7 @@ export function GooglePlacesMap({
 
     loadGoogleMaps()
       .then(async (maps) => {
-        const [{ Map, RenderingType }, { AdvancedMarkerElement }] = await Promise.all([
+        const [{ Map, RenderingType, WebGLOverlayView }, { AdvancedMarkerElement }] = await Promise.all([
           maps.importLibrary('maps'),
           maps.importLibrary('marker'),
         ]);
@@ -231,6 +234,10 @@ export function GooglePlacesMap({
         });
         mapRef.current = map;
         mapRef.current.__AdvancedMarkerElement = AdvancedMarkerElement;
+        itineraryLandmarkOverlayRef.current = createWebglLandmarkOverlay({
+          WebGLOverlayView,
+          map,
+        });
         infoWindowRef.current = new maps.InfoWindow();
 
         maps.event.addListenerOnce(map, 'tilesloaded', () => {
@@ -276,6 +283,8 @@ export function GooglePlacesMap({
       clearAdvancedMarkers(itineraryMarkersRef);
       clearPolylines(savedRouteLinesRef);
       clearPolylines(itineraryLinesRef);
+      itineraryLandmarkOverlayRef.current?.dispose();
+      itineraryLandmarkOverlayRef.current = null;
       infoWindowRef.current?.close();
       mapRef.current = null;
       setReady(false);
@@ -374,9 +383,11 @@ export function GooglePlacesMap({
     const map = mapRef.current;
     const AdvancedMarkerElement = map?.__AdvancedMarkerElement;
     const maps = globalThis.google?.maps;
+    const landmarkOverlay = itineraryLandmarkOverlayRef.current;
     clearAdvancedMarkers(itineraryMarkersRef);
     clearPolylines(itineraryLinesRef);
     if (!map || !ready || !AdvancedMarkerElement || !maps || placesActive) {
+      landmarkOverlay?.setLandmarks([]);
       return undefined;
     }
 
@@ -387,6 +398,7 @@ export function GooglePlacesMap({
       viewMode: 'segments',
       colorForIndex,
     });
+    landmarkOverlay?.setLandmarks(itineraryLandmarksFromFeatures(cityFeatures));
     const routes = routeFeatures
       .map((feature) => ({
         path: toGooglePath(feature.geometry?.coordinates || []),
@@ -468,6 +480,7 @@ export function GooglePlacesMap({
       viewportIdleListener?.remove?.();
       if (routeRefreshFrame) cancelAnimationFrame(routeRefreshFrame);
       crispRoutes.dispose();
+      landmarkOverlay?.setLandmarks([]);
       clearAdvancedMarkers(itineraryMarkersRef);
       clearPolylines(itineraryLinesRef);
     };
