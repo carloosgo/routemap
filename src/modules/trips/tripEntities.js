@@ -84,14 +84,6 @@ function normalizePlaceProvider(partial) {
     : 'geoapify';
 }
 
-function withoutPlaceEnrichment(place) {
-  const persisted = { ...place };
-  delete persisted.website;
-  delete persisted.openingHours;
-  delete persisted.geoapifyDetailsAt;
-  return persisted;
-}
-
 export function isPlaced(point) {
   return Boolean(
     point &&
@@ -143,9 +135,6 @@ export function createPlace(partial = {}) {
     country: sanitizeText(partial.country || '', 100),
     category: sanitizeText(partial.category || '', 80),
     countryCode: normalizeCountryCode(partial.countryCode),
-    website: sanitizeText(partial.website || '', 500),
-    openingHours: sanitizeText(partial.openingHours || '', 500),
-    geoapifyDetailsAt: sanitizeText(partial.geoapifyDetailsAt || '', 40),
     lat: parseCoordinate(partial.lat, -90, 90),
     lon: parseCoordinate(partial.lon, -180, 180),
     savedAt:
@@ -155,10 +144,9 @@ export function createPlace(partial = {}) {
 
 export function placeForPersistence(rawPlace) {
   const place = createPlace(rawPlace);
-  const persistable = withoutPlaceEnrichment(place);
-  if (!isGooglePlaceReference(place)) return persistable;
+  if (!isGooglePlaceReference(place)) return place;
   return {
-    ...persistable,
+    ...place,
     name: '',
     address: '',
     city: '',
