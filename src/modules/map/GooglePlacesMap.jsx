@@ -9,7 +9,7 @@ import { createCrispDashedRoutes } from './crispDashedRoutes.js';
 import { loadGoogleCountryPlaceIds } from './googleCountryBoundariesClient.js';
 import { loadGoogleMaps } from './googleMapsLoader.js';
 import { itineraryLandmarksFromFeatures } from './itineraryLandmarkCatalog.js';
-import { markerElement, savePrompt, savedPlacePopup } from './placeMapDom.js';
+import { markerElement, savedPlacePopup } from './placeMapDom.js';
 import { buildMapFeatureData, cityKey, placeCountryKey } from './routeMapModel.js';
 import { savedPlaceMarkerStyle } from './savedPlaceMarkerPalette.js';
 import { savedPlacePinUrl } from './savedPlaceSymbol.js';
@@ -89,6 +89,31 @@ function afterLayout() {
   return new Promise((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(resolve));
   });
+}
+
+function sameSavedPlace(saved, result) {
+  if (saved?.googlePlaceId && result?.googlePlaceId) {
+    return saved.googlePlaceId === result.googlePlaceId;
+  }
+  return String(saved?.id || '') === String(result?.id || '');
+}
+
+function placeForSaving(selected) {
+  return {
+    id: selected.id,
+    provider: 'google',
+    googlePlaceId: selected.googlePlaceId || selected.id,
+    userLabel: selected.userLabel || '',
+    name: selected.name || '',
+    address: selected.address || '',
+    city: selected.city || '',
+    country: selected.country || '',
+    countryCode: selected.countryCode || '',
+    category: selected.category || '',
+    lat: Number(selected.lat),
+    lon: Number(selected.lon),
+    savedAt: new Date().toISOString(),
+  };
 }
 
 export function GooglePlacesMap({
@@ -240,7 +265,10 @@ export function GooglePlacesMap({
           WebGLOverlayView,
           map,
         });
-        infoWindowRef.current = new maps.InfoWindow();
+        infoWindowRef.current = new maps.InfoWindow({
+          headerDisabled: true,
+          disableAutoPan: true,
+        });
 
         maps.event.addListenerOnce(map, 'tilesloaded', () => {
           const actualRenderingType = map.getRenderingType?.();
@@ -497,7 +525,10 @@ export function GooglePlacesMap({
       return undefined;
     }
 
-    const bounds = new maps.LatLngBounds();
+    const mapClickListener = map.addListener?.('click', () => {
+      infoWindowRef.current?.close();
+      placeSearch.dismissResults();
+    });
 
     locatedPlaces.filter(isPlaced).forEach((place) => {
       const content = savedMarkerContent(
@@ -511,17 +542,33 @@ export function GooglePlacesMap({
         title: placeLabel(place, t),
         content,
       });
-      content.addEventListener('click', () => {
+      content.addEventListener('click', (event) => {
+        event.stopPropagation();
         infoWindowRef.current?.setContent(savedPlacePopup(place, t));
-        infoWindowRef.current?.open({ map, anchor: marker });
+        infoWindowRef.current?.open({
+          map,
+          anchor: marker,
+          shouldFocus: false,
+        });
       });
       placeMarkersRef.current.push(marker);
-      bounds.extend({ lat: place.lat, lng: place.lon });
     });
 
     const results = placeSearch.results.filter(isPlaced);
+    const resultBounds = new maps.LatLngBounds();
     results.forEach((place) => {
-      const content = markerElement(place, t);
+      const alreadySaved = places.some((saved) => sameSavedPlace(saved, place));
+      const content = markerElement(place, t, {
+        alreadySaved,
+        onSave: (selected) => {
+          const savedPlace = placeForSaving(selected);
+          if (!isPlaced(savedPlace)) return;
+          addPlace?.(savedPlace);
+          clearTimeout(saveNoticeTimerRef.current);
+          setSaveNotice(t('placeSaved'));
+          saveNoticeTimerRef.current = setTimeout(() => setSaveNotice(''), 2200);
+        },
+      });
       const marker = new AdvancedMarkerElement({
         map,
         position: { lat: place.lat, lng: place.lon },
@@ -529,57 +576,32 @@ export function GooglePlacesMap({
         content,
         zIndex: 20,
       });
-      content.addEventListener('click', () => {
-        const alreadySaved = places.some(
-          (saved) => saved.googlePlaceId
-            ? saved.googlePlaceId === place.googlePlaceId
-            : String(saved.id) === String(place.id)
-        );
-        const prompt = savePrompt(place, {
-          alreadySaved,
-          t,
-          onSave: (selected) => {
-            const savedPlace = {
-              id: selected.id,
-              provider: 'google',
-              googlePlaceId: selected.googlePlaceId || selected.id,
-              userLabel: selected.userLabel || '',
-              name: selected.name || '',
-              address: selected.address || '',
-              city: selected.city || '',
-              country: selected.country || '',
-              countryCode: selected.countryCode || '',
-              category: selected.category || '',
-              lat: Number(selected.lat),
-              lon: Number(selected.lon),
-              savedAt: new Date().toISOString(),
-            };
-            if (!isPlaced(savedPlace)) return;
-            addPlace?.(savedPlace);
-            clearTimeout(saveNoticeTimerRef.current);
-            setSaveNotice(t('placeSaved'));
-            saveNoticeTimerRef.current = setTimeout(() => setSaveNotice(''), 2200);
-          },
-          onClose: () => infoWindowRef.current?.close(),
-        });
-        infoWindowRef.current?.setContent(prompt);
-        infoWindowRef.current?.open({ map, anchor: marker });
-        map.panTo({ lat: place.lat, lng: place.lon });
-        if ((map.getZoom() || 0) < 14) map.setZoom(14);
-      });
       placeMarkersRef.current.push(marker);
-      bounds.extend({ lat: place.lat, lng: place.lon });
+      resultBounds.extend({ lat: place.lat, lng: place.lon });
     });
 
     if (results.length === 1) {
       map.panTo({ lat: results[0].lat, lng: results[0].lon });
       map.setZoom(14);
-    } else if ((locatedPlaces.some(isPlaced) || results.length) && !bounds.isEmpty()) {
-      map.fitBounds(bounds, 84);
+    } else if (results.length > 1 && !resultBounds.isEmpty()) {
+      map.fitBounds(resultBounds, 84);
     }
 
-    return () => clearAdvancedMarkers(placeMarkersRef);
-  }, [addPlace, locatedPlaces, placeSearch.results, places, placesActive, ready, savedMarkerColors, t]);
+    return () => {
+      mapClickListener?.remove?.();
+      clearAdvancedMarkers(placeMarkersRef);
+    };
+  }, [
+    addPlace,
+    locatedPlaces,
+    placeSearch.dismissResults,
+    placeSearch.results,
+    places,
+    placesActive,
+    ready,
+    savedMarkerColors,
+    t,
+  ]);
 
   useEffect(() => {
     const map = mapRef.current;
