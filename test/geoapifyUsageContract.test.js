@@ -111,7 +111,7 @@ test('la caché compartida oculta la consulta y conserva expiración administrab
   assert.match(googleLocations, /29 \* 24 \* 60 \* 60 \* 1000/);
 });
 
-test('routing de Mis Rutas usa Google y permanece aislado de Itinerario', async () => {
+test('routing de Mis Rutas usa Geoapify para estimar y Google al seleccionar un modo', async () => {
   const geoapifyRoute = await read('functions/geoapifyRouteFunctions.js');
   const googleRoute = await read('functions/googleOptimizedRouteFunction.js');
   const googleRouteClient = await read('src/modules/routes/googleRouteClient.js');
@@ -123,7 +123,9 @@ test('routing de Mis Rutas usa Google y permanece aislado de Itinerario', async 
   assert.match(googleRoute, /export const googleRouteOptimized/);
   assert.match(googleRouteClient, /firebaseCallable\('googleRouteOptimized'\)/);
   assert.match(googleRouteClient, /return \{ placeId: place\.googlePlaceId \}/);
-  assert.match(connections, /requestGooglePlaceRoute\(origin, destination, routeMode\)/);
+  assert.match(connections, /requestSavedPlaceRoute\(origin, destination, mode\)/);
+  assert.match(connections, /requestGooglePlaceRoute\(/);
+  assert.match(connections, /departureTime: mode === 'transit'/);
   assert.doesNotMatch(itineraryMap, /googleRouteOptimized|requestGooglePlaceRoute|geoapifyRoute/);
   assert.doesNotMatch(tripEntities, /segmentRoute|routeGeometry|routeSignature/);
 });
