@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { error as logError } from 'firebase-functions/logger';
 import { callableOptions, enforceQuota } from './callablePolicy.js';
+import { createSharedCache } from './sharedCache.js';
 import {
   ALLOWED_MODES,
   GEOAPIFY_API_KEY,
@@ -16,6 +17,9 @@ import {
   validPoint,
 } from './geoapifySupport.js';
 
+const ROUTE_ESTIMATE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const cachedRouteEstimate = createSharedCache(db, { ttlMs: ROUTE_ESTIMATE_TTL_MS });
+
 function cachedRouteGeometry(result) {
   if (result?.geometry && typeof result.geometry === 'object') {
     return result.geometry;
@@ -30,6 +34,49 @@ function cachedRouteGeometry(result) {
   }
 }
 
+function estimateProviderMode(mode) {
+  return mode === 'transit' ? 'approximated_transit' : mode;
+}
+
+function matrixMetrics(payload) {
+  const row = Array.isArray(payload?.sources_to_targets)
+    ? payload.sources_to_targets[0]
+    : null;
+  const cell = Array.isArray(row) ? row[0] : null;
+  if (!cell) return null;
+
+  const distance = Number(cell.distance);
+  const duration = Number(cell.time);
+  if (!Number.isFinite(distance) || !Number.isFinite(duration)) return null;
+  return {
+    distance: Math.max(0, distance),
+    duration: Math.max(0, duration),
+  };
+}
+
+async function loadRouteEstimate(origin, destination, mode) {
+  const providerMode = estimateProviderMode(mode);
+  const params = new URLSearchParams({
+    apiKey: requireGeoapifyKey(GEOAPIFY_API_KEY),
+  });
+  const body = {
+    mode: providerMode,
+    sources: [{ location: [Number(origin.lon), Number(origin.lat)] }],
+    targets: [{ location: [Number(destination.lon), Number(destination.lat)] }],
+  };
+  if (mode === 'drive') body.traffic = 'approximated';
+
+  const payload = await limitedFetch(
+    `https://api.geoapify.com/v1/routematrix?${params}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }
+  );
+  return matrixMetrics(payload);
+}
+
 export const geoapifyRoute = onCall(
   callableOptions({
     secrets: [GEOAPIFY_API_KEY],
@@ -38,12 +85,52 @@ export const geoapifyRoute = onCall(
   }),
   async (request) => {
     const mode = ALLOWED_MODES.has(request.data?.mode) ? request.data.mode : 'drive';
+    const estimateOnly = request.data?.estimateOnly === true;
     try {
       await enforceQuota(db, request, QUOTAS.route);
       const { origin, destination } = request.data || {};
 
       if (!validPoint(origin) || !validPoint(destination)) {
         throw new HttpsError('invalid-argument', 'Origen o destino inválido.');
+      }
+
+      if (estimateOnly) {
+        const signature = `route-estimate:v1:${Number(origin.lat).toFixed(5)},${Number(origin.lon).toFixed(5)}|${Number(destination.lat).toFixed(5)},${Number(destination.lon).toFixed(5)}|${mode}`;
+        try {
+          const cachedResult = await cachedRouteEstimate(
+            'routeEstimateCache',
+            signature,
+            async () => {
+              const metrics = await loadRouteEstimate(origin, destination, mode);
+              return {
+                signature,
+                mode,
+                available: Boolean(metrics),
+                distance: metrics?.distance || 0,
+                duration: metrics?.duration || 0,
+                calculatedAt: new Date().toISOString(),
+              };
+            }
+          );
+          return {
+            ...cachedResult.result,
+            cacheHit: cachedResult.cacheHit,
+          };
+        } catch (error) {
+          logError('Geoapify route estimate unavailable.', {
+            mode,
+            ...safeError(error),
+          });
+          return {
+            signature,
+            mode,
+            available: false,
+            distance: 0,
+            duration: 0,
+            calculatedAt: new Date().toISOString(),
+            cacheHit: false,
+          };
+        }
       }
 
       const traffic = mode === 'drive' || mode === 'bus' ? 'approximated' : '';
@@ -66,6 +153,7 @@ export const geoapifyRoute = onCall(
         return {
           signature,
           mode,
+          available: true,
           geometryJson: JSON.stringify(feature.geometry),
           distance: Number(feature.properties?.distance) || 0,
           duration: Number(feature.properties?.time) || 0,
@@ -81,6 +169,7 @@ export const geoapifyRoute = onCall(
       return {
         signature: cachedResult.result.signature || signature,
         mode: cachedResult.result.mode || mode,
+        available: true,
         geometry,
         distance: Number(cachedResult.result.distance) || 0,
         duration: Number(cachedResult.result.duration) || 0,
