@@ -147,9 +147,15 @@ export function createPlace(partial = {}) {
 
 export function placeForPersistence(rawPlace) {
   const place = createPlace(rawPlace);
-  if (!isGooglePlaceReference(place)) return place;
+  const {
+    website: _website,
+    openingHours: _openingHours,
+    geoapifyDetailsAt: _geoapifyDetailsAt,
+    ...persistable
+  } = place;
+  if (!isGooglePlaceReference(place)) return persistable;
   return {
-    ...place,
+    ...persistable,
     name: '',
     address: '',
     city: '',
