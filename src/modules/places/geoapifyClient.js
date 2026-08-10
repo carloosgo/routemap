@@ -52,6 +52,9 @@ export async function fetchGeoapifyPlaceEnrichment(place, { signal } = {}) {
   if (!isPlaced(located)) throw new Error('No hay coordenadas para enriquecer este lugar.');
 
   const key = enrichmentKey(located);
+  const cacheKey = `enrichment:${key}`;
+  const cached = detailCache.getFresh(cacheKey, PLACE_ENRICHMENT_TTL_MS);
+  if (cached) return cached;
   if (enrichmentPending.has(key)) return enrichmentPending.get(key);
 
   const pending = (async () => {
@@ -63,11 +66,13 @@ export async function fetchGeoapifyPlaceEnrichment(place, { signal } = {}) {
       language: config.defaultLocale,
     });
     throwIfAborted(signal);
-    return {
+    const result = {
       website: String(response.data?.website || '').trim().slice(0, 500),
       openingHours: String(response.data?.openingHours || '').trim().slice(0, 500),
       geoapifyDetailsAt: String(response.data?.fetchedAt || new Date().toISOString()).slice(0, 40),
     };
+    detailCache.set(cacheKey, result);
+    return result;
   })();
 
   enrichmentPending.set(key, pending);
