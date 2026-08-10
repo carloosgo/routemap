@@ -29,20 +29,7 @@ export function groupPlacesByCountry(places) {
 
 export function insertPlaceByCountry(places, place) {
   const currentPlaces = Array.isArray(places) ? places : [];
-  const countryKey = placeCountryKey(place);
-  let lastCountryIndex = -1;
-
-  currentPlaces.forEach((currentPlace, index) => {
-    if (placeCountryKey(currentPlace) === countryKey) lastCountryIndex = index;
-  });
-
-  if (lastCountryIndex < 0) return [...currentPlaces, place];
-
-  return [
-    ...currentPlaces.slice(0, lastCountryIndex + 1),
-    place,
-    ...currentPlaces.slice(lastCountryIndex + 1),
-  ];
+  return [...currentPlaces, place];
 }
 
 export function contiguousPlaceGroups(places) {
