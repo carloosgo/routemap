@@ -2,11 +2,11 @@ import {
   IconArrowRight,
   IconChevronDown,
   IconChevronUp,
+  IconGripVertical,
   IconNote,
   IconX,
 } from '@tabler/icons-react';
 import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
-import { colorForIndex } from '../../config.js';
 import { useTranslation } from '../../i18n/index.jsx';
 
 export function SegmentHeader({
@@ -28,9 +28,8 @@ export function SegmentHeader({
   return (
     <header className="segment__header">
       <span
-        className="segment__badge"
+        className="segment__drag-handle"
         style={{
-          background: colorForIndex(index),
           cursor: dragging ? 'grabbing' : 'grab',
           touchAction: 'none',
           userSelect: 'none',
@@ -38,7 +37,7 @@ export function SegmentHeader({
         onPointerDown={onReorderPointerStart}
         aria-hidden="true"
       >
-        {index + 1}
+        <IconGripVertical size={14} stroke={1.8} />
       </span>
 
       <div className="segment__route">
