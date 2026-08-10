@@ -135,6 +135,9 @@ export function createPlace(partial = {}) {
     country: sanitizeText(partial.country || '', 100),
     category: sanitizeText(partial.category || '', 80),
     countryCode: normalizeCountryCode(partial.countryCode),
+    website: sanitizeText(partial.website || '', 500),
+    openingHours: sanitizeText(partial.openingHours || '', 500),
+    geoapifyDetailsAt: sanitizeText(partial.geoapifyDetailsAt || '', 40),
     lat: parseCoordinate(partial.lat, -90, 90),
     lon: parseCoordinate(partial.lon, -180, 180),
     savedAt:
