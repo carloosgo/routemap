@@ -41,6 +41,8 @@ export function savedPlacePopup(place, t) {
   return wrap;
 }
 
+// Se conserva para compatibilidad con código legado MapLibre, pero Google Maps
+// ya guarda directamente desde la tarjeta del resultado.
 export function savePrompt(place, { alreadySaved = false, onSave, onClose, t } = {}) {
   const wrap = document.createElement('div');
   wrap.className = 'place-save-prompt';
@@ -71,12 +73,23 @@ export function resultMarkerScale(zoom) {
   return Math.max(0.52, Math.min(1, 0.52 + ((value - 5) * 0.48) / 7));
 }
 
-export function markerElement(place, t) {
+function savedResultAction(t) {
+  const saved = document.createElement('span');
+  saved.className = 'place-result-marker__saved';
+  saved.textContent = translated(t, 'savedShort');
+  return saved;
+}
+
+export function markerElement(
+  place,
+  t,
+  { alreadySaved = false, onSave } = {}
+) {
   const label = placeName(place, t);
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'place-result-marker';
-  button.setAttribute(
+  const wrap = document.createElement('div');
+  wrap.className = 'place-result-marker';
+  wrap.setAttribute('role', 'group');
+  wrap.setAttribute(
     'aria-label',
     `${label}, ${place.city || ''}, ${place.country || ''}`
   );
@@ -86,8 +99,31 @@ export function markerElement(place, t) {
   const name = document.createElement('strong');
   name.textContent = label;
   const location = document.createElement('small');
-  location.textContent = [place.city, place.country || place.countryCode].filter(Boolean).join(', ');
+  location.textContent = [place.city, place.country || place.countryCode]
+    .filter(Boolean)
+    .join(', ');
   copy.append(name, location);
-  button.append(copy);
-  return button;
+
+  const action = document.createElement('span');
+  action.className = 'place-result-marker__action';
+  if (alreadySaved) {
+    action.append(savedResultAction(t));
+  } else {
+    const save = document.createElement('button');
+    save.type = 'button';
+    save.className = 'place-result-marker__save';
+    save.textContent = translated(t, 'saveTrip');
+    save.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (save.disabled) return;
+      save.disabled = true;
+      onSave?.(place);
+      action.replaceChildren(savedResultAction(t));
+    });
+    action.append(save);
+  }
+
+  wrap.append(copy, action);
+  return wrap;
 }
