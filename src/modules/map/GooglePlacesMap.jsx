@@ -128,7 +128,8 @@ export function GooglePlacesMap({
   const nodeRef = useRef(null);
   const mapRef = useRef(null);
   const resizeObserverRef = useRef(null);
-  const placeMarkersRef = useRef([]);
+  const savedPlaceMarkersRef = useRef([]);
+  const resultPlaceMarkersRef = useRef([]);
   const savedRouteLinesRef = useRef([]);
   const itineraryMarkersRef = useRef([]);
   const itineraryLinesRef = useRef([]);
@@ -313,7 +314,8 @@ export function GooglePlacesMap({
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;
       clearTimeout(saveNoticeTimerRef.current);
-      clearAdvancedMarkers(placeMarkersRef);
+      clearAdvancedMarkers(savedPlaceMarkersRef);
+      clearAdvancedMarkers(resultPlaceMarkersRef);
       clearAdvancedMarkers(itineraryMarkersRef);
       clearPolylines(savedRouteLinesRef);
       clearPolylines(itineraryLinesRef);
@@ -521,13 +523,7 @@ export function GooglePlacesMap({
   }, [placesActive, ready, segments, t]);
 
   useEffect(() => {
-    const map = mapRef.current;
-    const AdvancedMarkerElement = map?.__AdvancedMarkerElement;
-    const maps = globalThis.google?.maps;
-    clearAdvancedMarkers(placeMarkersRef);
-    if (!map || !ready || !AdvancedMarkerElement || !maps || !placesActive) {
-      return undefined;
-    }
+    if (!ready || !placesActive) return undefined;
 
     const dismissPlaceInfo = (event) => {
       const target = event.target;
@@ -536,9 +532,21 @@ export function GooglePlacesMap({
         return;
       }
       infoWindowRef.current?.close();
-      dismissPlaceSearchResults();
+      if (!target.closest('.geo-search')) {
+        dismissPlaceSearchResults();
+      }
     };
     document.addEventListener('pointerdown', dismissPlaceInfo);
+    return () => document.removeEventListener('pointerdown', dismissPlaceInfo);
+  }, [dismissPlaceSearchResults, placesActive, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const AdvancedMarkerElement = map?.__AdvancedMarkerElement;
+    clearAdvancedMarkers(savedPlaceMarkersRef);
+    if (!map || !ready || !AdvancedMarkerElement || !placesActive) {
+      return undefined;
+    }
 
     locatedPlaces.filter(isPlaced).forEach((place) => {
       const content = savedMarkerContent(
@@ -561,8 +569,20 @@ export function GooglePlacesMap({
           shouldFocus: false,
         });
       });
-      placeMarkersRef.current.push(marker);
+      savedPlaceMarkersRef.current.push(marker);
     });
+
+    return () => clearAdvancedMarkers(savedPlaceMarkersRef);
+  }, [locatedPlaces, placesActive, ready, savedMarkerColors, t]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const AdvancedMarkerElement = map?.__AdvancedMarkerElement;
+    const maps = globalThis.google?.maps;
+    clearAdvancedMarkers(resultPlaceMarkersRef);
+    if (!map || !ready || !AdvancedMarkerElement || !maps || !placesActive) {
+      return undefined;
+    }
 
     const results = placeSearchResults.filter(isPlaced);
     const resultBounds = new maps.LatLngBounds();
@@ -586,7 +606,7 @@ export function GooglePlacesMap({
         content,
         zIndex: 20,
       });
-      placeMarkersRef.current.push(marker);
+      resultPlaceMarkersRef.current.push(marker);
       resultBounds.extend({ lat: place.lat, lng: place.lon });
     });
 
@@ -597,19 +617,13 @@ export function GooglePlacesMap({
       map.fitBounds(resultBounds, 84);
     }
 
-    return () => {
-      document.removeEventListener('pointerdown', dismissPlaceInfo);
-      clearAdvancedMarkers(placeMarkersRef);
-    };
+    return () => clearAdvancedMarkers(resultPlaceMarkersRef);
   }, [
     addPlace,
-    dismissPlaceSearchResults,
-    locatedPlaces,
     placeSearchResults,
     places,
     placesActive,
     ready,
-    savedMarkerColors,
     t,
   ]);
 
