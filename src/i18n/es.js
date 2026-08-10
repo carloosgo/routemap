@@ -96,6 +96,7 @@ export default {
   routeSummary: 'Resumen de la ruta',
   notes: 'Notas',
   noteTitle: 'Título de la nota',
+  noteTitlePlaceholder: 'Título de la nota…',
   deleteNote: 'Eliminar nota',
   deleteQuestion: '¿Eliminar?',
   yes: 'Sí',
