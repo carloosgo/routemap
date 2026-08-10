@@ -140,7 +140,7 @@ export function GooglePlacesMap({
   const countryLayerWarningRef = useRef(false);
   const [cachedLocations, setCachedLocations] = useState({});
   const [ready, setReady] = useState(false);
-  const [loadError, setLoadError] = useState('');
+  const [loadErrorKey, setLoadErrorKey] = useState('');
   const [saveNotice, setSaveNotice] = useState('');
   const placesActive = viewMode === 'places';
   const placeSearch = usePlaceSearch({ viewMode });
@@ -304,7 +304,7 @@ export function GooglePlacesMap({
       .catch((error) => {
         if (!disposed) {
           console.error('[Google Maps] failed to load', error);
-          setLoadError(t('googleMapLoadError'));
+          setLoadErrorKey('googleMapLoadError');
         }
       });
 
@@ -325,7 +325,7 @@ export function GooglePlacesMap({
       mapRef.current = null;
       setReady(false);
     };
-  }, [mapConfigured, t]);
+  }, [mapConfigured]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -659,7 +659,7 @@ export function GooglePlacesMap({
       {!mapConfigured && (
         <div className="geo-map__missing">{t('googleMapConfigMissingShort')}</div>
       )}
-      {loadError && <div className="geo-map__missing">{loadError}</div>}
+      {loadErrorKey && <div className="geo-map__missing">{t(loadErrorKey)}</div>}
       {placesActive && mapConfigured && (
         <PlaceSearchForm
           query={placeSearch.query}
