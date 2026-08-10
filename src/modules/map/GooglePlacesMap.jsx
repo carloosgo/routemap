@@ -525,10 +525,16 @@ export function GooglePlacesMap({
       return undefined;
     }
 
-    const mapClickListener = map.addListener?.('click', () => {
+    const dismissPlaceInfo = (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest('.place-result-marker, .google-saved-place-marker, .gm-style-iw-c')) {
+        return;
+      }
       infoWindowRef.current?.close();
       placeSearch.dismissResults();
-    });
+    };
+    document.addEventListener('pointerdown', dismissPlaceInfo);
 
     locatedPlaces.filter(isPlaced).forEach((place) => {
       const content = savedMarkerContent(
@@ -588,7 +594,7 @@ export function GooglePlacesMap({
     }
 
     return () => {
-      mapClickListener?.remove?.();
+      document.removeEventListener('pointerdown', dismissPlaceInfo);
       clearAdvancedMarkers(placeMarkersRef);
     };
   }, [
