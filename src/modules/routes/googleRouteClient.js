@@ -22,7 +22,12 @@ function waypointKey(waypoint) {
   return '';
 }
 
-export async function requestGooglePlaceRoute(origin, destination, mode = 'drive') {
+export async function requestGooglePlaceRoute(
+  origin,
+  destination,
+  mode = 'drive',
+  { departureTime = '' } = {}
+) {
   const originWaypoint = waypointFor(origin);
   const destinationWaypoint = waypointFor(destination);
   if (!originWaypoint || !destinationWaypoint) {
@@ -30,7 +35,8 @@ export async function requestGooglePlaceRoute(origin, destination, mode = 'drive
   }
 
   const normalizedMode = normalizeSavedPlaceRouteMode(mode);
-  const key = `${waypointKey(originWaypoint)}>${waypointKey(destinationWaypoint)}:${normalizedMode}`;
+  const transitDeparture = normalizedMode === 'transit' ? String(departureTime || '') : '';
+  const key = `${waypointKey(originWaypoint)}>${waypointKey(destinationWaypoint)}:${normalizedMode}:${transitDeparture}`;
   if (pendingRoutes.has(key)) return pendingRoutes.get(key);
 
   const pending = (async () => {
@@ -39,6 +45,7 @@ export async function requestGooglePlaceRoute(origin, destination, mode = 'drive
       origin: originWaypoint,
       destination: destinationWaypoint,
       mode: normalizedMode,
+      departureTime: transitDeparture,
     });
     const route = response.data || {};
     if (!route.geometry) throw new Error('Google Routes no devolvió geometría para la ruta.');
