@@ -143,6 +143,10 @@ export function GooglePlacesMap({
   const [saveNotice, setSaveNotice] = useState('');
   const placesActive = viewMode === 'places';
   const placeSearch = usePlaceSearch({ viewMode });
+  const {
+    dismissResults: dismissPlaceSearchResults,
+    results: placeSearchResults,
+  } = placeSearch;
   const mapConfigured = Boolean(
     config.googleMaps.webApiKey && config.googleMaps.mapId
   );
@@ -527,12 +531,12 @@ export function GooglePlacesMap({
 
     const dismissPlaceInfo = (event) => {
       const target = event.target;
-      if (!(target instanceof Element)) return;
+      if (!target || typeof target.closest !== 'function') return;
       if (target.closest('.place-result-marker, .google-saved-place-marker, .gm-style-iw-c')) {
         return;
       }
       infoWindowRef.current?.close();
-      placeSearch.dismissResults();
+      dismissPlaceSearchResults();
     };
     document.addEventListener('pointerdown', dismissPlaceInfo);
 
@@ -560,7 +564,7 @@ export function GooglePlacesMap({
       placeMarkersRef.current.push(marker);
     });
 
-    const results = placeSearch.results.filter(isPlaced);
+    const results = placeSearchResults.filter(isPlaced);
     const resultBounds = new maps.LatLngBounds();
     results.forEach((place) => {
       const alreadySaved = places.some((saved) => sameSavedPlace(saved, place));
@@ -599,9 +603,9 @@ export function GooglePlacesMap({
     };
   }, [
     addPlace,
+    dismissPlaceSearchResults,
     locatedPlaces,
-    placeSearch.dismissResults,
-    placeSearch.results,
+    placeSearchResults,
     places,
     placesActive,
     ready,
