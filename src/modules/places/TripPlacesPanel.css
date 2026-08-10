@@ -143,6 +143,49 @@
   white-space: nowrap;
 }
 
+.trip-place__details {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+  padding-top: 2px;
+  color: #64748b;
+  font-size: 9.5px;
+  line-height: 1.2;
+}
+.trip-place__hours,
+.trip-place__website {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 3px;
+}
+.trip-place__hours {
+  overflow: hidden;
+  flex: 1 1 auto;
+}
+.trip-place__hours > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trip-place__hours svg,
+.trip-place__website svg {
+  flex: 0 0 auto;
+}
+.trip-place__website {
+  flex: 0 0 auto;
+  color: #23647a;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.trip-place__website:hover,
+.trip-place__website:focus-visible {
+  color: #0f536b;
+  text-decoration: underline;
+  outline: none;
+}
+
 .trip-place__delete {
   flex: 0 0 auto;
   cursor: pointer;
@@ -277,6 +320,7 @@
 @media (max-width: 560px) {
   .trip-places { padding: 9px; }
   .trip-place { min-height: 56px; }
+  .trip-place__details { gap: 5px; }
   .trip-connection { padding-inline: 4px; }
   .trip-connection__modes,
   .trip-connection__transit { width: 100%; }
