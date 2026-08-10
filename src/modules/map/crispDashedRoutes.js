@@ -6,26 +6,33 @@ const DASH_GAP_CENTER_PX = DEFAULT_DASH_PX + (DEFAULT_GAP_PX / 2);
 const ARROW_FRACTIONS = [0.33, 0.67];
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-let overlaySequence = 0;
-
 function finitePoint(point) {
   return Boolean(point && Number.isFinite(point.x) && Number.isFinite(point.y));
 }
 
-function projectedPoints(path, projection, maps) {
-  return (path || [])
-    .map((point) => projection.fromLatLngToDivPixel(
-      point instanceof maps.LatLng ? point : new maps.LatLng(point)
-    ))
-    .filter(finitePoint);
+function normalizedLatLngPath(path, maps) {
+  return (path || []).map((point) => (
+    point instanceof maps.LatLng ? point : new maps.LatLng(point)
+  ));
+}
+
+function projectedPoints(path, projection) {
+  const points = [];
+  for (const point of path) {
+    const projected = projection.fromLatLngToDivPixel(point);
+    if (finitePoint(projected)) points.push(projected);
+  }
+  return points;
 }
 
 function toSvgPath(points) {
   if (points.length < 2) return '';
 
-  return points
-    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
-    .join(' ');
+  let value = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+  for (let index = 1; index < points.length; index += 1) {
+    value += ` L ${points[index].x.toFixed(2)} ${points[index].y.toFixed(2)}`;
+  }
+  return value;
 }
 
 function snapToDashGap(target, totalLength) {
@@ -41,40 +48,45 @@ function snapToDashGap(target, totalLength) {
 function arrowPlacement(points, fraction) {
   if (points.length < 2) return null;
 
-  const segments = [];
   let totalLength = 0;
+  const lengths = new Array(points.length - 1);
   for (let index = 1; index < points.length; index += 1) {
     const start = points[index - 1];
     const end = points[index];
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
-    const length = Math.hypot(dx, dy);
-    if (length <= 0) continue;
-    segments.push({ start, end, dx, dy, length });
+    const length = Math.hypot(end.x - start.x, end.y - start.y);
+    lengths[index - 1] = length;
     totalLength += length;
   }
-  if (!segments.length || totalLength <= 0) return null;
+  if (totalLength <= 0) return null;
 
   const rawTarget = totalLength * Math.min(1, Math.max(0, fraction));
   const target = snapToDashGap(rawTarget, totalLength);
   let walked = 0;
-  for (const segment of segments) {
-    if (walked + segment.length >= target) {
-      const ratio = (target - walked) / segment.length;
+  for (let index = 1; index < points.length; index += 1) {
+    const length = lengths[index - 1];
+    if (length <= 0) continue;
+    const start = points[index - 1];
+    const end = points[index];
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    if (walked + length >= target) {
+      const ratio = (target - walked) / length;
       return {
-        x: segment.start.x + segment.dx * ratio,
-        y: segment.start.y + segment.dy * ratio,
-        angle: Math.atan2(segment.dy, segment.dx) * 180 / Math.PI,
+        x: start.x + dx * ratio,
+        y: start.y + dy * ratio,
+        angle: Math.atan2(dy, dx) * 180 / Math.PI,
       };
     }
-    walked += segment.length;
+    walked += length;
   }
 
-  const last = segments[segments.length - 1];
+  const lastIndex = points.length - 1;
+  const start = points[lastIndex - 1];
+  const end = points[lastIndex];
   return {
-    x: last.end.x,
-    y: last.end.y,
-    angle: Math.atan2(last.dy, last.dx) * 180 / Math.PI,
+    x: end.x,
+    y: end.y,
+    angle: Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI,
   };
 }
 
@@ -106,39 +118,6 @@ function createDirectionArrow() {
   return arrow;
 }
 
-function createArrowCutout() {
-  const cutout = document.createElementNS(SVG_NS, 'path');
-  cutout.setAttribute('d', 'M -3.1 0 L 1.5 0');
-  cutout.setAttribute('fill', 'none');
-  cutout.setAttribute('stroke', '#000000');
-  cutout.setAttribute('stroke-width', '4.4');
-  cutout.setAttribute('stroke-linecap', 'round');
-  return cutout;
-}
-
-function createRouteMask(defs, maskId) {
-  const mask = document.createElementNS(SVG_NS, 'mask');
-  mask.setAttribute('id', maskId);
-  mask.setAttribute('maskUnits', 'userSpaceOnUse');
-  mask.setAttribute('maskContentUnits', 'userSpaceOnUse');
-  mask.setAttribute('x', '-100000');
-  mask.setAttribute('y', '-100000');
-  mask.setAttribute('width', '200000');
-  mask.setAttribute('height', '200000');
-
-  const visibleArea = document.createElementNS(SVG_NS, 'rect');
-  visibleArea.setAttribute('x', '-100000');
-  visibleArea.setAttribute('y', '-100000');
-  visibleArea.setAttribute('width', '200000');
-  visibleArea.setAttribute('height', '200000');
-  visibleArea.setAttribute('fill', '#ffffff');
-
-  const cutouts = ARROW_FRACTIONS.map(() => createArrowCutout());
-  mask.append(visibleArea, ...cutouts);
-  defs.append(mask);
-  return cutouts;
-}
-
 export function createCrispDashedRoutes({
   maps,
   map,
@@ -148,14 +127,19 @@ export function createCrispDashedRoutes({
     return { dispose() {} };
   }
 
+  const preparedRoutes = routes.map((route) => ({
+    ...route,
+    path: normalizedLatLngPath(route.path, maps),
+  }));
   const overlay = new maps.OverlayView();
-  const overlayId = overlaySequence += 1;
   let svg = null;
   let routePaths = [];
+  let drawFrame = 0;
+  let disposed = false;
 
   overlay.onAdd = () => {
     const pane = overlay.getPanes?.()?.overlayLayer;
-    if (!pane) return;
+    if (!pane || disposed) return;
 
     svg = document.createElementNS(SVG_NS, 'svg');
     svg.setAttribute('aria-hidden', 'true');
@@ -170,57 +154,74 @@ export function createCrispDashedRoutes({
       pointerEvents: 'none',
     });
 
-    const defs = document.createElementNS(SVG_NS, 'defs');
-    svg.append(defs);
-
-    routePaths = routes.map((route, routeIndex) => {
+    routePaths = preparedRoutes.map((route) => {
       const element = createRoutePath();
-      const maskId = `atlas-route-arrow-mask-${overlayId}-${routeIndex}`;
-      const cutouts = createRouteMask(defs, maskId);
       const arrows = ARROW_FRACTIONS.map(() => createDirectionArrow());
-      element.setAttribute('mask', `url(#${maskId})`);
       svg.append(element, ...arrows);
-      return { element, arrows, cutouts, path: route.path || [] };
+      return {
+        element,
+        arrows,
+        path: route.path,
+        lastPathValue: '',
+        lastArrowTransforms: ['', ''],
+      };
     });
 
     pane.append(svg);
   };
 
-  overlay.draw = () => {
+  const render = () => {
+    drawFrame = 0;
+    if (disposed || !svg) return;
     const projection = overlay.getProjection?.();
     if (!projection) return;
 
-    routePaths.forEach(({ element, arrows, cutouts, path }) => {
-      const points = projectedPoints(path, projection, maps);
+    routePaths.forEach((routePath) => {
+      const { element, arrows, path } = routePath;
+      const points = projectedPoints(path, projection);
       const d = toSvgPath(points);
       if (d) {
-        element.setAttribute('d', d);
+        if (routePath.lastPathValue !== d) {
+          element.setAttribute('d', d);
+          routePath.lastPathValue = d;
+        }
         element.style.display = '';
       } else {
-        element.removeAttribute('d');
+        if (routePath.lastPathValue) {
+          element.removeAttribute('d');
+          routePath.lastPathValue = '';
+        }
         element.style.display = 'none';
       }
 
       arrows.forEach((arrow, index) => {
-        const cutout = cutouts[index];
         const placement = arrowPlacement(points, ARROW_FRACTIONS[index]);
         if (placement) {
           const transform = `translate(${placement.x.toFixed(2)} ${placement.y.toFixed(2)}) rotate(${placement.angle.toFixed(2)})`;
-          arrow.setAttribute('transform', transform);
-          cutout.setAttribute('transform', transform);
+          if (routePath.lastArrowTransforms[index] !== transform) {
+            arrow.setAttribute('transform', transform);
+            routePath.lastArrowTransforms[index] = transform;
+          }
           arrow.style.display = '';
-          cutout.style.display = '';
         } else {
-          arrow.removeAttribute('transform');
-          cutout.removeAttribute('transform');
+          if (routePath.lastArrowTransforms[index]) {
+            arrow.removeAttribute('transform');
+            routePath.lastArrowTransforms[index] = '';
+          }
           arrow.style.display = 'none';
-          cutout.style.display = 'none';
         }
       });
     });
   };
 
+  overlay.draw = () => {
+    if (disposed || drawFrame) return;
+    drawFrame = requestAnimationFrame(render);
+  };
+
   overlay.onRemove = () => {
+    if (drawFrame) cancelAnimationFrame(drawFrame);
+    drawFrame = 0;
     svg?.remove();
     svg = null;
     routePaths = [];
@@ -230,6 +231,10 @@ export function createCrispDashedRoutes({
 
   return {
     dispose() {
+      if (disposed) return;
+      disposed = true;
+      if (drawFrame) cancelAnimationFrame(drawFrame);
+      drawFrame = 0;
       overlay.setMap(null);
     },
   };
