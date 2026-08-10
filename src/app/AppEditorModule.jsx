@@ -34,6 +34,7 @@ export function AppEditorModule({
     reorderSegment,
     updateSegment,
     updateExpenses,
+    updatePlaceDetails,
     removePlace,
     reorderPlace,
     upsertRouteConnection,
@@ -65,6 +66,7 @@ export function AppEditorModule({
     <TripPlacesPanel
       places={places}
       routes={trip.routeConnections || []}
+      updatePlaceDetails={updatePlaceDetails}
       removePlace={removePlace}
       reorderPlace={reorderPlace}
       upsertRoute={upsertRouteConnection}
