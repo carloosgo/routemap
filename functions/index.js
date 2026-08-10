@@ -3,6 +3,7 @@ export { geoapifyCityAutocomplete } from './geoapifyCityFunctions.js';
 export {
   geoapifyAutocomplete,
   geoapifyPlaceDetails,
+  geoapifyPlaceEnrichment,
   geoapifyPlaceSearch,
 } from './geoapifyPlaceFunctions.js';
 
