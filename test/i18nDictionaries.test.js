@@ -91,6 +91,18 @@ test('la navegación principal usa etiquetas naturales en ambos idiomas', () => 
   assert.equal(en.myRoutes, 'My Routes');
 });
 
+test('la interfaz usa trayecto en español y leg en inglés sin términos anteriores', () => {
+  const spanishUi = Object.values(es).join('\n');
+  const englishUi = Object.values(en).join('\n');
+
+  assert.doesNotMatch(spanishUi, /\btramos?\b/i);
+  assert.doesNotMatch(englishUi, /\bsegments?\b/i);
+  assert.equal(es.addSegment, 'Agregar trayecto');
+  assert.equal(es.segmentPlural, 'trayectos');
+  assert.equal(en.addSegment, 'Add leg');
+  assert.equal(en.segmentPlural, 'legs');
+});
+
 test('las claves críticas de operación existen en todos los idiomas', () => {
   const required = [
     'appName',
