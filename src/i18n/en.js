@@ -35,6 +35,8 @@ export default {
   savedPlacesHint: 'Search for places on the map and select them to add them to this trip.',
   savedGooglePlaces: 'Saved places',
   googlePlaceReference: 'Saved location',
+  openingHours: 'Opening hours',
+  officialWebsite: 'Official website',
   noCity: 'No city',
   noCountry: 'No country',
   routeConnections: 'Connections',
