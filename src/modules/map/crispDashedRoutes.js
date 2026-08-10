@@ -78,10 +78,10 @@ function arrowPlacement(points, fraction) {
   };
 }
 
-function createRoutePath(color) {
+function createRoutePath() {
   const path = document.createElementNS(SVG_NS, 'path');
   path.setAttribute('fill', 'none');
-  path.setAttribute('stroke', color || '#111111');
+  path.setAttribute('stroke', '#111111');
   path.setAttribute('stroke-opacity', '1');
   path.setAttribute('stroke-width', String(DEFAULT_STROKE_WEIGHT));
   path.setAttribute('stroke-dasharray', `${DEFAULT_DASH_PX} ${DEFAULT_GAP_PX}`);
@@ -174,7 +174,7 @@ export function createCrispDashedRoutes({
     svg.append(defs);
 
     routePaths = routes.map((route, routeIndex) => {
-      const element = createRoutePath(route.color);
+      const element = createRoutePath();
       const maskId = `atlas-route-arrow-mask-${overlayId}-${routeIndex}`;
       const cutouts = createRouteMask(defs, maskId);
       const arrows = ARROW_FRACTIONS.map(() => createDirectionArrow());
