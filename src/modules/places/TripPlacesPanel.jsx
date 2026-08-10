@@ -11,7 +11,7 @@ import { savedPlaceRoutePairKey } from '../routes/routeModel.js';
 import {
   fetchGeoapifyPlaceEnrichment,
   placeEnrichmentIsFresh,
-} from './geoapifyClient.js';
+} from './geoapifyPlaceEnrichmentClient.js';
 import { TripRouteConnections } from './TripRouteConnections.jsx';
 import './TripPlacesPanel.css';
 
