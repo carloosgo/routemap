@@ -8,10 +8,7 @@ import {
 } from '@tabler/icons-react';
 import { flagImageUrl } from '../flags/flags.js';
 import { savedPlaceRoutePairKey } from '../routes/routeModel.js';
-import {
-  fetchGeoapifyPlaceEnrichment,
-  placeEnrichmentIsFresh,
-} from './geoapifyPlaceEnrichmentClient.js';
+import { fetchGeoapifyPlaceEnrichment } from './geoapifyPlaceEnrichmentClient.js';
 import { TripRouteConnections } from './TripRouteConnections.jsx';
 import './TripPlacesPanel.css';
 
@@ -51,17 +48,15 @@ function formattedOpeningHours(value, intlLocale) {
   Object.entries(DAY_LABELS[language]).forEach(([token, label]) => {
     text = text.replace(new RegExp(`\\b${token}\\b`, 'g'), label);
   });
-  text = text
+  return text
     .replace(/\s*;\s*/g, ' · ')
     .replace(/\boff\b/gi, language === 'en' ? 'closed' : 'cerrado')
     .replace(/\s+/g, ' ');
-  return text;
 }
 
 export function TripPlacesPanel({
   places,
   routes = [],
-  updatePlaceDetails,
   removePlace,
   reorderPlace,
   upsertRoute,
@@ -72,9 +67,11 @@ export function TripPlacesPanel({
 }) {
   const [placeToDelete, setPlaceToDelete] = useState(null);
   const [dragState, setDragState] = useState(null);
+  const [placeDetails, setPlaceDetails] = useState({});
   const panelRef = useRef(null);
   const dragStateRef = useRef(null);
   const enrichmentInFlightRef = useRef(new Set());
+  const enrichmentLoadedRef = useRef(new Set());
   const draggedPlaceId = dragState?.placeId || '';
 
   const routeByPair = useMemo(
@@ -173,25 +170,21 @@ export function TripPlacesPanel({
 
   useEffect(() => {
     const panel = panelRef.current;
-    if (!panel || typeof updatePlaceDetails !== 'function') return undefined;
+    if (!panel) return undefined;
     const placesById = new Map(places.map((place) => [place.id, place]));
     const candidates = Array.from(panel.querySelectorAll('[data-place-id]'))
-      .filter((element) => {
-        const place = placesById.get(element.dataset.placeId);
-        return place && !placeEnrichmentIsFresh(place);
-      });
+      .filter((element) => !enrichmentLoadedRef.current.has(element.dataset.placeId));
     if (!candidates.length) return undefined;
 
     const loadDetails = async (element) => {
       const placeId = element.dataset.placeId;
       const place = placesById.get(placeId);
-      if (!place || placeEnrichmentIsFresh(place) || enrichmentInFlightRef.current.has(placeId)) {
-        return;
-      }
+      if (!place || enrichmentInFlightRef.current.has(placeId)) return;
       enrichmentInFlightRef.current.add(placeId);
       try {
         const details = await fetchGeoapifyPlaceEnrichment(place);
-        updatePlaceDetails(placeId, details);
+        enrichmentLoadedRef.current.add(placeId);
+        setPlaceDetails((current) => ({ ...current, [placeId]: details }));
       } catch (error) {
         if (error?.name !== 'AbortError') {
           console.warn('[Geoapify Place Details] enrichment unavailable', error);
@@ -219,7 +212,7 @@ export function TripPlacesPanel({
     );
     candidates.forEach((element) => observer.observe(element));
     return () => observer.disconnect();
-  }, [places, updatePlaceDetails]);
+  }, [places]);
 
   function confirmRemovePlace() {
     if (!placeToDelete) return;
@@ -279,7 +272,8 @@ export function TripPlacesPanel({
               dropPlacement === 'after' ? 'is-drop-after' : '',
             ].filter(Boolean).join(' ');
             const label = placeLabel(place, t);
-            const hours = formattedOpeningHours(place.openingHours, intlLocale);
+            const details = placeDetails[place.id] || {};
+            const hours = formattedOpeningHours(details.openingHours, intlLocale);
             const nextPlace = places[index + 1] || null;
             const pairKey = nextPlace ? `${place.id}\u0000${nextPlace.id}` : '';
             const route = pairKey ? routeByPair.get(pairKey) : null;
@@ -309,7 +303,7 @@ export function TripPlacesPanel({
                   <span className="trip-place__info">
                     <strong>{label}</strong>
                     <small>{place.city || (place.provider === 'google' ? t('googlePlaceReference') : t('noCity'))}</small>
-                    {(hours || place.website) && (
+                    {(hours || details.website) && (
                       <span className="trip-place__details">
                         {hours && (
                           <span className="trip-place__hours" title={t('openingHours')}>
@@ -317,10 +311,10 @@ export function TripPlacesPanel({
                             <span>{hours}</span>
                           </span>
                         )}
-                        {place.website && (
+                        {details.website && (
                           <a
                             className="trip-place__website"
-                            href={place.website}
+                            href={details.website}
                             target="_blank"
                             rel="noreferrer"
                             title={t('officialWebsite')}
