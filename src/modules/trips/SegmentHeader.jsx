@@ -12,7 +12,6 @@ import './SegmentHeader.css';
 
 export function SegmentHeader({
   segment,
-  index,
   formattedDates,
   formattedAmount,
   expanded,
