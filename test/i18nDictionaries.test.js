@@ -59,6 +59,7 @@ test('errores, confirmaciones, placeholders y estados vacíos existen en ambos i
       'tripNamePlaceholder',
       'datePlaceholder',
       'segmentNotePlaceholder',
+      'noteTitlePlaceholder',
       'notesPlaceholder',
       'newChecklistItem',
       'otherTransportPlaceholder',
