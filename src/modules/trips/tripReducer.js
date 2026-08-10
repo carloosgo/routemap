@@ -33,7 +33,6 @@ export const TRIP_ACTIONS = Object.freeze({
   updateSegment: 'UPDATE_SEGMENT',
   updateExpenses: 'UPDATE_EXPENSES',
   addPlace: 'ADD_PLACE',
-  updatePlaceDetails: 'UPDATE_PLACE_DETAILS',
   removePlace: 'REMOVE_PLACE',
   reorderPlace: 'REORDER_PLACE',
   upsertRouteConnection: 'UPSERT_ROUTE_CONNECTION',
@@ -164,24 +163,6 @@ export function tripReducer(state, action) {
         places: insertPlaceByCountry(places, place),
         placeOrderVersion: PLACE_ORDER_VERSION,
       });
-    }
-
-    case TRIP_ACTIONS.updatePlaceDetails: {
-      let changed = false;
-      const places = (state.places || []).map((place) => {
-        if (place.id !== action.placeId) return place;
-        const next = createPlace({
-          ...place,
-          website: action.details?.website,
-          openingHours: action.details?.openingHours,
-          geoapifyDetailsAt: action.details?.geoapifyDetailsAt,
-        });
-        changed = next.website !== place.website
-          || next.openingHours !== place.openingHours
-          || next.geoapifyDetailsAt !== place.geoapifyDetailsAt;
-        return next;
-      });
-      return changed ? touch(state, { places }) : state;
     }
 
     case TRIP_ACTIONS.removePlace:
