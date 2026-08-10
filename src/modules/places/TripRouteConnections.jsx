@@ -1,368 +1,302 @@
-import { useEffect, useMemo, useState } from 'react';
-import { requestGooglePlaceRoute } from '../routes/googleRouteClient.js';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  SAVED_PLACE_ROUTE_MODES,
-  consecutiveSavedPlaceRoutePairs,
-  savedPlaceRoutePairKey,
-  savedPlaceRouteTotals,
-} from '../routes/routeModel.js';
+  IconBike,
+  IconBus,
+  IconCar,
+  IconWalk,
+} from '@tabler/icons-react';
+import { loadGooglePlaceLocations } from './googlePlacesClient.js';
+import { requestGooglePlaceRoute } from '../routes/googleRouteClient.js';
+import { requestSavedPlaceRoute } from '../routes/geoapifyRouteClient.js';
+import { isGooglePlaceReference, isPlaced } from '../trips/tripModel.js';
 
-const MODE_LABEL_KEYS = Object.freeze({
-  drive: 'routeModeDrive',
-  transit: 'routeModeTransit',
-  train: 'routeModeTrain',
-  bus: 'routeModeBus',
-  bicycle: 'routeModeBicycle',
-  walk: 'routeModeWalk',
-});
+const QUICK_MODES = Object.freeze([
+  { id: 'drive', labelKey: 'routeModeDrive', Icon: IconCar },
+  { id: 'transit', labelKey: 'routeModeTransit', Icon: IconBus },
+  { id: 'bicycle', labelKey: 'routeModeBicycle', Icon: IconBike },
+  { id: 'walk', labelKey: 'routeModeWalk', Icon: IconWalk },
+]);
 
-function placeLabel(place, t) {
-  return place?.name || place?.userLabel || t('place');
-}
-
-function formatDistance(value, locale) {
-  const meters = Math.max(0, Number(value) || 0);
-  if (meters < 1000) {
-    return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(meters)} m`;
-  }
-  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(meters / 1000)} km`;
-}
+const estimateCache = new Map();
+const pendingEstimateCache = new Map();
 
 function formatDuration(value) {
   const minutes = Math.max(0, Math.round((Number(value) || 0) / 60));
+  if (!minutes) return '—';
   if (minutes < 60) return `${minutes} min`;
   const hours = Math.floor(minutes / 60);
   const remaining = minutes % 60;
-  return remaining ? `${hours} h ${remaining} min` : `${hours} h`;
+  if (hours < 24) return remaining ? `${hours} h ${remaining} min` : `${hours} h`;
+  const days = Math.floor(hours / 24);
+  const remainingHours = hours % 24;
+  return remainingHours ? `${days} d ${remainingHours} h` : `${days} d`;
 }
 
 function formatTransitTime(value, locale) {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(date);
+  return new Intl.DateTimeFormat(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
 }
 
-function transitStepLabel(step, locale) {
-  if (!step) return '';
-  const line = step.lineShortName || step.lineName || step.tripShortText || '';
-  const agency = step.agencies?.[0] || '';
-  const departure = formatTransitTime(step.departureTime, locale);
-  const arrival = formatTransitTime(step.arrivalTime, locale);
-  const time = departure && arrival ? `${departure}–${arrival}` : '';
-  return [line, agency, time].filter(Boolean).join(' · ');
+function estimateKey(origin, destination, mode) {
+  return `${origin.id}>${destination.id}:${mode}`;
+}
+
+async function cachedEstimate(origin, destination, mode) {
+  const key = estimateKey(origin, destination, mode);
+  if (estimateCache.has(key)) return estimateCache.get(key);
+  if (pendingEstimateCache.has(key)) return pendingEstimateCache.get(key);
+
+  const pending = requestSavedPlaceRoute(origin, destination, mode)
+    .then((result) => {
+      const estimate = {
+        duration: Number(result.duration) || 0,
+        distance: Number(result.distance) || 0,
+      };
+      estimateCache.set(key, estimate);
+      return estimate;
+    })
+    .finally(() => pendingEstimateCache.delete(key));
+
+  pendingEstimateCache.set(key, pending);
+  return pending;
+}
+
+function googlePlaceId(place) {
+  return isGooglePlaceReference(place) ? place.googlePlaceId : '';
+}
+
+async function resolveEstimatePair(origin, destination, signal) {
+  if (isPlaced(origin) && isPlaced(destination)) return { origin, destination };
+
+  const ids = [googlePlaceId(origin), googlePlaceId(destination)].filter(Boolean);
+  if (!ids.length) throw new Error('No hay coordenadas para estimar este tramo.');
+
+  const locations = await loadGooglePlaceLocations(ids, { signal });
+  const byId = new Map(locations.map((location) => [location.placeId, location]));
+  const locatedOrigin = isPlaced(origin)
+    ? origin
+    : { ...origin, ...byId.get(googlePlaceId(origin)) };
+  const locatedDestination = isPlaced(destination)
+    ? destination
+    : { ...destination, ...byId.get(googlePlaceId(destination)) };
+
+  if (!isPlaced(locatedOrigin) || !isPlaced(locatedDestination)) {
+    throw new Error('No fue posible ubicar ambos lugares.');
+  }
+  return { origin: locatedOrigin, destination: locatedDestination };
+}
+
+function routeIsFresh(route, mode) {
+  if (!route?.geometry || route.mode !== mode) return false;
+  const calculatedAt = new Date(route.calculatedAt || '').getTime();
+  if (!Number.isFinite(calculatedAt)) return false;
+  const age = Date.now() - calculatedAt;
+  const ttl = mode === 'transit'
+    ? 30 * 60 * 1000
+    : 7 * 24 * 60 * 60 * 1000;
+  return age >= 0 && age <= ttl;
+}
+
+function TransitDetails({ route, locale }) {
+  const steps = Array.isArray(route?.transitSteps) ? route.transitSteps : [];
+  if (!steps.length) return null;
+
+  return (
+    <div className="trip-connection__transit">
+      {steps.slice(0, 5).map((step, index) => {
+        const line = step.lineShortName || step.lineName || step.tripShortText || step.vehicleType || '';
+        const departure = formatTransitTime(step.departureTime, locale);
+        const arrival = formatTransitTime(step.arrivalTime, locale);
+        const stops = [step.departureStop, step.arrivalStop].filter(Boolean).join(' → ');
+        return (
+          <div className="trip-connection__transit-step" key={`${line}:${index}`}>
+            <strong>{[line, departure && arrival ? `${departure}–${arrival}` : ''].filter(Boolean).join(' · ')}</strong>
+            {stops && <span>{stops}</span>}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export function TripRouteConnections({
-  places,
-  routes,
+  origin,
+  destination,
+  route,
   upsertRoute,
-  removeRoute,
   setRouteVisibility,
   setAllRouteVisibility,
   t,
   intlLocale,
 }) {
-  const [fromPlaceId, setFromPlaceId] = useState(places[0]?.id || '');
-  const [toPlaceId, setToPlaceId] = useState(places[1]?.id || '');
-  const [mode, setMode] = useState('transit');
-  const [loadingKey, setLoadingKey] = useState('');
-  const [connectingAll, setConnectingAll] = useState(false);
-  const [connectAllProgress, setConnectAllProgress] = useState({ current: 0, total: 0 });
-  const [error, setError] = useState('');
+  const rootRef = useRef(null);
+  const [shouldEstimate, setShouldEstimate] = useState(false);
+  const [estimates, setEstimates] = useState({});
+  const [estimating, setEstimating] = useState(false);
+  const [estimateError, setEstimateError] = useState(false);
+  const [selectedMode, setSelectedMode] = useState(
+    route?.visible !== false && QUICK_MODES.some((item) => item.id === route?.mode)
+      ? route.mode
+      : ''
+  );
+  const [loadingMode, setLoadingMode] = useState('');
+  const [routeError, setRouteError] = useState(false);
+  const [liveRoute, setLiveRoute] = useState(route || null);
 
-  const placeById = useMemo(
-    () => new Map(places.map((place) => [place.id, place])),
-    [places]
-  );
-  const routeByPair = useMemo(
-    () => new Map(routes.map((route) => [savedPlaceRoutePairKey(route), route])),
-    [routes]
-  );
-  const consecutivePairs = useMemo(
-    () => consecutiveSavedPlaceRoutePairs(places),
-    [places]
-  );
-  const unresolvedConsecutiveCount = useMemo(
-    () => consecutivePairs.filter((pair) => {
-      const route = routeByPair.get(savedPlaceRoutePairKey(pair));
-      return !route?.geometry;
-    }).length,
-    [consecutivePairs, routeByPair]
-  );
-  const visibleTotals = useMemo(
-    () => savedPlaceRouteTotals(routes, { visibleOnly: true }),
-    [routes]
-  );
+  const pairKey = `${origin.id}>${destination.id}`;
 
   useEffect(() => {
-    const ids = new Set(places.map((place) => place.id));
-    if (!ids.has(fromPlaceId)) setFromPlaceId(places[0]?.id || '');
-    if (!ids.has(toPlaceId) || toPlaceId === fromPlaceId) {
-      setToPlaceId(places.find((place) => place.id !== fromPlaceId)?.id || '');
+    setLiveRoute(route || null);
+    if (route?.visible !== false && QUICK_MODES.some((item) => item.id === route?.mode)) {
+      setSelectedMode(route.mode);
     }
-  }, [places, fromPlaceId, toPlaceId]);
+  }, [route]);
 
-  async function calculateRoute({
-    id,
-    fromId,
-    toId,
-    routeMode,
-    visible = true,
-    loadingId,
-    reportError = true,
-  }) {
-    const origin = placeById.get(fromId);
-    const destination = placeById.get(toId);
-    if (!origin || !destination || fromId === toId) return false;
-
-    if (reportError) setError('');
-    setLoadingKey(loadingId || id || 'new');
-    try {
-      const calculated = await requestGooglePlaceRoute(origin, destination, routeMode);
-      upsertRoute({
-        id,
-        fromPlaceId: fromId,
-        toPlaceId: toId,
-        visible,
-        ...calculated,
-      });
-      return true;
-    } catch {
-      if (reportError) setError(t('routeCalculationError'));
-      return false;
-    } finally {
-      setLoadingKey('');
+  useEffect(() => {
+    const node = rootRef.current;
+    if (!node || shouldEstimate) return undefined;
+    if (typeof IntersectionObserver === 'undefined') {
+      setShouldEstimate(true);
+      return undefined;
     }
-  }
 
-  async function handleCreateRoute(event) {
-    event.preventDefault();
-    await calculateRoute({
-      fromId: fromPlaceId,
-      toId: toPlaceId,
-      routeMode: mode,
-      visible: true,
-      loadingId: 'new',
-    });
-  }
-
-  async function handleConnectAll() {
-    if (connectingAll || consecutivePairs.length === 0) return;
-    setError('');
-    setConnectingAll(true);
-    setConnectAllProgress({ current: 0, total: consecutivePairs.length });
-    let failures = 0;
-
-    try {
-      for (let index = 0; index < consecutivePairs.length; index += 1) {
-        const pair = consecutivePairs[index];
-        const pairKey = savedPlaceRoutePairKey(pair);
-        const existing = routeByPair.get(pairKey);
-        setConnectAllProgress({ current: index + 1, total: consecutivePairs.length });
-
-        if (existing?.geometry) {
-          if (existing.visible === false) setRouteVisibility(existing.id, true);
-          continue;
+    let timer = 0;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.some((entry) => entry.isIntersecting);
+        if (visible) {
+          if (!timer) {
+            timer = globalThis.setTimeout(() => setShouldEstimate(true), 320);
+          }
+        } else if (timer) {
+          globalThis.clearTimeout(timer);
+          timer = 0;
         }
+      },
+      { rootMargin: '120px 0px', threshold: 0.05 }
+    );
+    observer.observe(node);
+    return () => {
+      if (timer) globalThis.clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [shouldEstimate, pairKey]);
 
-        const calculated = await calculateRoute({
-          id: existing?.id,
-          fromId: pair.fromPlaceId,
-          toId: pair.toPlaceId,
-          routeMode: existing?.mode || 'transit',
-          visible: existing?.visible !== false,
-          loadingId: `all:${pairKey}`,
-          reportError: false,
+  useEffect(() => {
+    if (!shouldEstimate) return undefined;
+    const controller = new AbortController();
+    setEstimating(true);
+    setEstimateError(false);
+
+    resolveEstimatePair(origin, destination, controller.signal)
+      .then(async (resolved) => {
+        const results = await Promise.allSettled(
+          QUICK_MODES.map(async ({ id }) => [
+            id,
+            await cachedEstimate(resolved.origin, resolved.destination, id),
+          ])
+        );
+        if (controller.signal.aborted) return;
+        const next = {};
+        results.forEach((result) => {
+          if (result.status === 'fulfilled') {
+            const [mode, estimate] = result.value;
+            next[mode] = estimate;
+          }
         });
-        if (!calculated) failures += 1;
-      }
+        setEstimates(next);
+        setEstimateError(Object.keys(next).length === 0);
+      })
+      .catch((error) => {
+        if (error?.name !== 'AbortError') setEstimateError(true);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setEstimating(false);
+      });
+
+    return () => controller.abort();
+  }, [destination, origin, pairKey, shouldEstimate]);
+
+  async function selectMode(mode) {
+    if (loadingMode) return;
+    setSelectedMode(mode);
+    setRouteError(false);
+    setAllRouteVisibility?.(false);
+
+    if (routeIsFresh(route, mode)) {
+      setRouteVisibility?.(route.id, true);
+      setLiveRoute(route);
+      return;
+    }
+
+    setLoadingMode(mode);
+    try {
+      const calculated = await requestGooglePlaceRoute(origin, destination, mode);
+      const nextRoute = {
+        id: route?.id,
+        fromPlaceId: origin.id,
+        toPlaceId: destination.id,
+        visible: true,
+        ...calculated,
+      };
+      setLiveRoute(nextRoute);
+      upsertRoute?.(nextRoute);
+    } catch {
+      setRouteError(true);
     } finally {
-      setConnectingAll(false);
-      setConnectAllProgress({ current: 0, total: 0 });
-    }
-
-    if (failures > 0) {
-      setError(
-        failures === consecutivePairs.length
-          ? t('routeCalculationError')
-          : t('routeConnectAllPartialError')
-      );
+      setLoadingMode('');
     }
   }
 
-  async function handleModeChange(route, nextMode) {
-    await calculateRoute({
-      id: route.id,
-      fromId: route.fromPlaceId,
-      toId: route.toPlaceId,
-      routeMode: nextMode,
-      visible: route.visible,
-      loadingId: route.id,
-    });
-  }
-
-  if (places.length < 2) return null;
-
-  const resolvedRoutes = routes.filter((route) => route.geometry);
+  const selectedRoute = useMemo(() => {
+    if (!liveRoute || liveRoute.fromPlaceId !== origin.id || liveRoute.toPlaceId !== destination.id) {
+      return null;
+    }
+    return liveRoute;
+  }, [destination.id, liveRoute, origin.id]);
 
   return (
-    <section className="trip-routes" aria-label={t('routeConnections')}>
-      <div className="trip-routes__head">
-        <strong>{t('routeConnections')}</strong>
-        <div className="trip-routes__head-actions">
-          <button
-            type="button"
-            className="trip-routes__connect-all"
-            onClick={handleConnectAll}
-            disabled={connectingAll || Boolean(loadingKey) || unresolvedConsecutiveCount === 0}
-          >
-            {connectingAll
-              ? t('connectingAllRoutes', connectAllProgress)
-              : t('connectAllRoutes')}
-          </button>
-          {routes.length > 0 && (
+    <div className="trip-connection" ref={rootRef} data-route-pair={pairKey}>
+      <div className="trip-connection__rail" aria-hidden="true" />
+      <div className="trip-connection__modes" aria-label={t('routeMode')}>
+        {QUICK_MODES.map(({ id, labelKey, Icon }) => {
+          const estimate = estimates[id];
+          const active = selectedMode === id;
+          const loading = loadingMode === id;
+          return (
             <button
               type="button"
-              className="trip-routes__visibility-all"
-              onClick={() => setAllRouteVisibility(visibleTotals.count !== resolvedRoutes.length)}
-              disabled={connectingAll}
+              className={`trip-connection__mode${active ? ' is-active' : ''}`}
+              key={id}
+              onClick={() => selectMode(id)}
+              disabled={Boolean(loadingMode)}
+              aria-pressed={active}
+              aria-label={t(labelKey)}
+              title={t(labelKey)}
             >
-              {visibleTotals.count === resolvedRoutes.length
-                ? t('hideAllRoutes')
-                : t('showAllRoutes')}
+              <Icon size={16} stroke={1.8} aria-hidden="true" />
+              <span>{loading ? '…' : estimating && !estimate ? '…' : formatDuration(estimate?.duration)}</span>
             </button>
-          )}
-        </div>
+          );
+        })}
       </div>
 
-      <form className="trip-routes__builder" onSubmit={handleCreateRoute}>
-        <select
-          value={fromPlaceId}
-          onChange={(event) => setFromPlaceId(event.target.value)}
-          aria-label={t('routeFrom')}
-          disabled={connectingAll}
-        >
-          {places.map((place) => (
-            <option value={place.id} key={place.id}>{placeLabel(place, t)}</option>
-          ))}
-        </select>
-        <span aria-hidden="true">→</span>
-        <select
-          value={toPlaceId}
-          onChange={(event) => setToPlaceId(event.target.value)}
-          aria-label={t('routeTo')}
-          disabled={connectingAll}
-        >
-          {places.map((place) => (
-            <option value={place.id} key={place.id}>{placeLabel(place, t)}</option>
-          ))}
-        </select>
-        <select
-          value={mode}
-          onChange={(event) => setMode(event.target.value)}
-          aria-label={t('routeMode')}
-          disabled={connectingAll}
-        >
-          {SAVED_PLACE_ROUTE_MODES.map((routeMode) => (
-            <option value={routeMode} key={routeMode}>{t(MODE_LABEL_KEYS[routeMode])}</option>
-          ))}
-        </select>
-        <button
-          type="submit"
-          disabled={!fromPlaceId || !toPlaceId || fromPlaceId === toPlaceId || Boolean(loadingKey) || connectingAll}
-        >
-          {loadingKey === 'new' ? t('calculatingRoute') : t('connectPlaces')}
-        </button>
-      </form>
-
-      {error && <div className="trip-routes__error" role="status">{error}</div>}
-
-      {routes.length > 0 && (
-        <div className="trip-routes__list">
-          {routes.map((route) => {
-            const origin = placeById.get(route.fromPlaceId);
-            const destination = placeById.get(route.toPlaceId);
-            if (!origin || !destination) return null;
-            const loading = loadingKey === route.id;
-            const firstTransitStep = route.transitSteps?.[0] || null;
-            const transitLabel = transitStepLabel(firstTransitStep, intlLocale);
-            return (
-              <div className="trip-route" key={route.id}>
-                <label className="trip-route__visibility">
-                  <input
-                    type="checkbox"
-                    checked={route.visible !== false}
-                    disabled={connectingAll || !route.geometry}
-                    onChange={(event) => setRouteVisibility(route.id, event.target.checked)}
-                    aria-label={t('showRoute')}
-                  />
-                </label>
-                <div className="trip-route__body">
-                  <strong>{placeLabel(origin, t)} → {placeLabel(destination, t)}</strong>
-                  <div className="trip-route__meta">
-                    <select
-                      value={route.mode}
-                      disabled={loading || connectingAll}
-                      onChange={(event) => handleModeChange(route, event.target.value)}
-                      aria-label={t('routeMode')}
-                    >
-                      {SAVED_PLACE_ROUTE_MODES.map((routeMode) => (
-                        <option value={routeMode} key={routeMode}>{t(MODE_LABEL_KEYS[routeMode])}</option>
-                      ))}
-                    </select>
-                    {route.geometry ? (
-                      <>
-                        <span>{loading ? t('calculatingRoute') : formatDuration(route.duration)}</span>
-                        <span>{formatDistance(route.distance, intlLocale)}</span>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        className="trip-route__recalculate"
-                        disabled={loading || connectingAll}
-                        onClick={() => handleModeChange(route, route.mode)}
-                      >
-                        {loading ? t('calculatingRoute') : t('recalculateRoute')}
-                      </button>
-                    )}
-                  </div>
-                  {transitLabel && (
-                    <div className="trip-route__transit">
-                      <strong>{transitLabel}</strong>
-                      {(firstTransitStep.departureStop || firstTransitStep.arrivalStop) && (
-                        <span>
-                          {[firstTransitStep.departureStop, firstTransitStep.arrivalStop]
-                            .filter(Boolean)
-                            .join(' → ')}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className="trip-route__remove"
-                  disabled={connectingAll}
-                  onClick={() => removeRoute(route.id)}
-                  aria-label={t('deleteRoute')}
-                >
-                  ×
-                </button>
-              </div>
-            );
-          })}
-        </div>
+      {estimateError && !estimating && (
+        <span className="trip-connection__status">{t('routeCalculationError')}</span>
       )}
-
-      {visibleTotals.count > 0 && (
-        <div className="trip-routes__total">
-          <span>{t('visibleRoutesTotal')}</span>
-          <strong>
-            {formatDuration(visibleTotals.duration)} · {formatDistance(visibleTotals.distance, intlLocale)}
-          </strong>
-        </div>
+      {routeError && (
+        <span className="trip-connection__status trip-connection__status--error">
+          {t('routeCalculationError')}
+        </span>
       )}
-    </section>
+      {selectedMode === 'transit' && selectedRoute?.mode === 'transit' && (
+        <TransitDetails route={selectedRoute} locale={intlLocale} />
+      )}
+    </div>
   );
 }
