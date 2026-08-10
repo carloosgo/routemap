@@ -87,6 +87,11 @@ export function useTrip(initialTrip) {
     (place) => dispatch({ type: TRIP_ACTIONS.addPlace, place }),
     []
   );
+  const updatePlaceDetails = useCallback(
+    (placeId, details) =>
+      dispatch({ type: TRIP_ACTIONS.updatePlaceDetails, placeId, details }),
+    []
+  );
   const removePlace = useCallback(
     (placeId) => dispatch({ type: TRIP_ACTIONS.removePlace, placeId }),
     []
@@ -147,6 +152,7 @@ export function useTrip(initialTrip) {
     updateSegment,
     updateExpenses,
     addPlace,
+    updatePlaceDetails,
     removePlace,
     reorderPlace,
     upsertRouteConnection,
