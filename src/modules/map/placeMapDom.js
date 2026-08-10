@@ -27,7 +27,7 @@ export function savedPlacePopup(place, t) {
   const country = place.country || place.countryCode || '';
   const flagLabel = translated(t, 'flagOf', { country });
   const flag = code
-    ? `<img class="place-popup__flag" src="https://flagcdn.com/24x18/${code}.png" width="24" height="18" alt="${escaped(
+    ? `<img class="place-popup__flag" src="https://flagcdn.com/24x18/${code}.png" width="16" height="12" alt="${escaped(
         flagLabel
       )}" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
     : '';
