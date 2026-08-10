@@ -8,6 +8,7 @@ import {
 } from '@tabler/icons-react';
 import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
+import './SegmentHeader.css';
 
 export function SegmentHeader({
   segment,
