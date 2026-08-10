@@ -28,3 +28,12 @@ test('el overlay SVG evita máscaras gigantes y limita draw a un frame de navega
   assert.match(source, /if \(disposed \|\| drawFrame\) return/);
   assert.doesNotMatch(source, /createRouteMask|maskUnits|maskContentUnits|200000|100000/);
 });
+
+test('cambiar idioma no destruye ni reinicializa la instancia de Google Maps', async () => {
+  const source = await read('src/modules/map/GooglePlacesMap.jsx');
+
+  assert.match(source, /setLoadErrorKey\('googleMapLoadError'\)/);
+  assert.match(source, /\}, \[mapConfigured\]\);/);
+  assert.doesNotMatch(source, /\[mapConfigured,\s*t\]/);
+  assert.match(source, /loadErrorKey && <div className="geo-map__missing">\{t\(loadErrorKey\)\}<\/div>/);
+});
