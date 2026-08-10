@@ -166,6 +166,17 @@
   display:none;
 }
 
+.google-itinerary-city-marker.is-endpoint[aria-label^="1. "]{
+  border:0;
+  border-radius:0;
+  background:transparent url("../../assets/itinerary-start-flag.svg") center/18px 18px no-repeat;
+  box-shadow:none;
+  transform:translateX(4px);
+}
+.google-itinerary-city-marker.is-endpoint[aria-label^="1. "]::before{
+  content:none;
+}
+
 .google-itinerary-city-marker.is-endpoint:not([aria-label^="1. "]){
   border:0;
   border-radius:0;
