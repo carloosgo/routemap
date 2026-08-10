@@ -41,11 +41,14 @@ test('general search deduplicates only in-flight requests and does not persist G
   assert.match(client, /config\.googleMaps\.locationCacheKey/);
 });
 
-test('map search result markers do not load photos or category icons', async () => {
+test('map search result markers use one card with inline save and no photos or category icons', async () => {
   const dom = await read('src/modules/map/placeMapDom.js');
   const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
 
-  assert.match(dom, /button\.append\(copy\)/);
+  assert.match(dom, /wrap\.append\(copy, action\)/);
+  assert.match(dom, /place-result-marker__save/);
+  assert.match(dom, /place-result-marker__saved/);
+  assert.match(googleMap, /markerElement\(place, t, \{/);
   assert.doesNotMatch(dom, /representativePlaceIcon|place-result-marker__media|place-result-marker__fallback/);
   assert.doesNotMatch(googleMap, /fetchGooglePlacePhoto|photoUri|photos\[/);
   assert.doesNotMatch(googleMap, /representativePlaceIcon/);
