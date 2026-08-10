@@ -133,10 +133,95 @@
   height:28px;
   pointer-events:none;
 }
-.google-saved-place-marker:hover,.google-saved-place-marker:focus-visible{
-  outline:2px solid rgba(13,96,120,.28);
-  outline-offset:2px;
-  border-radius:8px;
+.google-map .google-saved-place-marker:hover,
+.google-map .google-saved-place-marker:focus,
+.google-map .google-saved-place-marker:focus-visible{
+  border:0!important;
+  border-radius:0!important;
+  outline:0!important;
+  outline-offset:0!important;
+  box-shadow:none!important;
+}
+
+/* Resultado de búsqueda: guardar ocurre dentro de la misma tarjeta. */
+.google-map-wrap .place-result-marker{
+  width:214px;
+  min-height:48px;
+  padding:6px 7px 6px 9px;
+  gap:8px;
+  cursor:default;
+}
+.google-map-wrap .place-result-marker__action{
+  display:flex;
+  flex:0 0 auto;
+  align-items:center;
+  justify-content:flex-end;
+}
+.google-map-wrap .place-result-marker__save{
+  min-width:54px;
+  height:28px;
+  padding:0 9px;
+  border:0;
+  border-radius:7px;
+  background:var(--atlas-accent);
+  color:#fff;
+  font:inherit;
+  font-size:10px;
+  font-weight:750;
+  cursor:pointer;
+}
+.google-map-wrap .place-result-marker__save:hover,
+.google-map-wrap .place-result-marker__save:focus-visible{
+  filter:brightness(.94);
+  outline:none;
+}
+.google-map-wrap .place-result-marker__save:disabled{
+  cursor:default;
+  opacity:.7;
+}
+.google-map-wrap .place-result-marker__saved{
+  display:inline-flex;
+  min-width:54px;
+  justify-content:center;
+  color:#64748b;
+  font-size:10px;
+  font-weight:700;
+}
+
+/* Info de un lugar ya guardado: compacta, sin halo ni borde de bandera. */
+.google-map-wrap .place-popup{
+  min-width:0;
+  max-width:230px;
+  gap:2px;
+  padding:0;
+  margin:0;
+  font-family:inherit;
+}
+.google-map-wrap .place-popup__heading{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+}
+.google-map-wrap .place-popup__heading strong{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.google-map-wrap .place-popup__flag{
+  display:block;
+  flex:0 0 auto;
+  border:0!important;
+  border-radius:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+}
+.google-map .gm-style .gm-style-iw-c{
+  padding:9px 11px!important;
+}
+.google-map .gm-style .gm-style-iw-d{
+  overflow:hidden!important;
+  padding:0!important;
 }
 
 .google-itinerary-city-marker{
@@ -186,4 +271,14 @@
 }
 .google-itinerary-city-marker.is-endpoint:not([aria-label^="1. "])::before{
   content:none;
+}
+
+@media(max-width:800px){
+  .google-map-wrap .place-result-marker{
+    width:190px;
+  }
+  .google-map-wrap .place-result-marker__save,
+  .google-map-wrap .place-result-marker__saved{
+    min-width:50px;
+  }
 }
