@@ -84,6 +84,14 @@ function normalizePlaceProvider(partial) {
     : 'geoapify';
 }
 
+function withoutPlaceEnrichment(place) {
+  const persisted = { ...place };
+  delete persisted.website;
+  delete persisted.openingHours;
+  delete persisted.geoapifyDetailsAt;
+  return persisted;
+}
+
 export function isPlaced(point) {
   return Boolean(
     point &&
@@ -147,12 +155,7 @@ export function createPlace(partial = {}) {
 
 export function placeForPersistence(rawPlace) {
   const place = createPlace(rawPlace);
-  const {
-    website: _website,
-    openingHours: _openingHours,
-    geoapifyDetailsAt: _geoapifyDetailsAt,
-    ...persistable
-  } = place;
+  const persistable = withoutPlaceEnrichment(place);
   if (!isGooglePlaceReference(place)) return persistable;
   return {
     ...persistable,
