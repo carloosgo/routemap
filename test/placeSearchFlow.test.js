@@ -54,7 +54,7 @@ test('map search result markers use one card with inline save and no photos or c
   assert.doesNotMatch(googleMap, /representativePlaceIcon/);
 });
 
-test('place persistence keeps stable references and excludes Geoapify enrichment', async () => {
+test('legacy places keep country/city while Google persistence keeps only stable reference and user label', async () => {
   const entities = await read('src/modules/trips/tripEntities.js');
   const panel = await read('src/modules/places/TripPlacesPanel.jsx');
   const dom = await read('src/modules/map/placeMapDom.js');
@@ -62,10 +62,7 @@ test('place persistence keeps stable references and excludes Geoapify enrichment
   assert.match(entities, /city:\s*sanitizeText/);
   assert.match(entities, /country:\s*sanitizeText/);
   assert.match(entities, /export function placeForPersistence/);
-  assert.match(entities, /withoutPlaceEnrichment\(place\)/);
-  assert.match(entities, /delete persisted\.website/);
-  assert.match(entities, /delete persisted\.openingHours/);
-  assert.match(entities, /delete persisted\.geoapifyDetailsAt/);
+  assert.match(entities, /if \(!isGooglePlaceReference\(place\)\) return place/);
   assert.match(entities, /name: ''/);
   assert.match(entities, /city: ''/);
   assert.match(entities, /country: ''/);
