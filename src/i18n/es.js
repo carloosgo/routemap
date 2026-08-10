@@ -35,6 +35,8 @@ export default {
   savedPlacesHint: 'Busca lugares en el mapa y selecciónalos para agregarlos a este viaje.',
   savedGooglePlaces: 'Lugares guardados',
   googlePlaceReference: 'Ubicación guardada',
+  openingHours: 'Horario',
+  officialWebsite: 'Sitio oficial',
   noCity: 'Sin ciudad',
   noCountry: 'Sin país',
   routeConnections: 'Conexiones',
