@@ -1,9 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { IconGripVertical, IconMapPin, IconTrash } from '@tabler/icons-react';
+import {
+  IconClock,
+  IconExternalLink,
+  IconGripVertical,
+  IconMapPin,
+  IconTrash,
+} from '@tabler/icons-react';
 import { flagImageUrl } from '../flags/flags.js';
 import { savedPlaceRoutePairKey } from '../routes/routeModel.js';
+import {
+  fetchGeoapifyPlaceEnrichment,
+  placeEnrichmentIsFresh,
+} from './geoapifyClient.js';
 import { TripRouteConnections } from './TripRouteConnections.jsx';
 import './TripPlacesPanel.css';
+
+const DAY_LABELS = Object.freeze({
+  es: { Mo: 'Lun', Tu: 'Mar', We: 'Mié', Th: 'Jue', Fr: 'Vie', Sa: 'Sáb', Su: 'Dom', PH: 'Festivos' },
+  en: { Mo: 'Mon', Tu: 'Tue', We: 'Wed', Th: 'Thu', Fr: 'Fri', Sa: 'Sat', Su: 'Sun', PH: 'Holidays' },
+});
 
 function CountryFlag({ place }) {
   if (!place?.countryCode) {
@@ -29,9 +44,24 @@ function placeLabel(place, t) {
   return place?.name || place?.userLabel || t('place');
 }
 
+function formattedOpeningHours(value, intlLocale) {
+  let text = String(value || '').trim();
+  if (!text) return '';
+  const language = String(intlLocale || '').toLowerCase().startsWith('en') ? 'en' : 'es';
+  Object.entries(DAY_LABELS[language]).forEach(([token, label]) => {
+    text = text.replace(new RegExp(`\\b${token}\\b`, 'g'), label);
+  });
+  text = text
+    .replace(/\s*;\s*/g, ' · ')
+    .replace(/\boff\b/gi, language === 'en' ? 'closed' : 'cerrado')
+    .replace(/\s+/g, ' ');
+  return text;
+}
+
 export function TripPlacesPanel({
   places,
   routes = [],
+  updatePlaceDetails,
   removePlace,
   reorderPlace,
   upsertRoute,
@@ -44,6 +74,7 @@ export function TripPlacesPanel({
   const [dragState, setDragState] = useState(null);
   const panelRef = useRef(null);
   const dragStateRef = useRef(null);
+  const enrichmentInFlightRef = useRef(new Set());
   const draggedPlaceId = dragState?.placeId || '';
 
   const routeByPair = useMemo(
@@ -140,6 +171,56 @@ export function TripPlacesPanel({
     };
   }, [draggedPlaceId, reorderPlace]);
 
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel || typeof updatePlaceDetails !== 'function') return undefined;
+    const placesById = new Map(places.map((place) => [place.id, place]));
+    const candidates = Array.from(panel.querySelectorAll('[data-place-id]'))
+      .filter((element) => {
+        const place = placesById.get(element.dataset.placeId);
+        return place && !placeEnrichmentIsFresh(place);
+      });
+    if (!candidates.length) return undefined;
+
+    const loadDetails = async (element) => {
+      const placeId = element.dataset.placeId;
+      const place = placesById.get(placeId);
+      if (!place || placeEnrichmentIsFresh(place) || enrichmentInFlightRef.current.has(placeId)) {
+        return;
+      }
+      enrichmentInFlightRef.current.add(placeId);
+      try {
+        const details = await fetchGeoapifyPlaceEnrichment(place);
+        updatePlaceDetails(placeId, details);
+      } catch (error) {
+        if (error?.name !== 'AbortError') {
+          console.warn('[Geoapify Place Details] enrichment unavailable', error);
+        }
+      } finally {
+        enrichmentInFlightRef.current.delete(placeId);
+      }
+    };
+
+    const Observer = globalThis.IntersectionObserver;
+    if (typeof Observer !== 'function') {
+      candidates.slice(0, 3).forEach(loadDetails);
+      return undefined;
+    }
+
+    const observer = new Observer(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          observer.unobserve(entry.target);
+          loadDetails(entry.target);
+        });
+      },
+      { root: panel, rootMargin: '180px 0px', threshold: 0.01 }
+    );
+    candidates.forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, [places, updatePlaceDetails]);
+
   function confirmRemovePlace() {
     if (!placeToDelete) return;
     removePlace(placeToDelete.id);
@@ -198,6 +279,7 @@ export function TripPlacesPanel({
               dropPlacement === 'after' ? 'is-drop-after' : '',
             ].filter(Boolean).join(' ');
             const label = placeLabel(place, t);
+            const hours = formattedOpeningHours(place.openingHours, intlLocale);
             const nextPlace = places[index + 1] || null;
             const pairKey = nextPlace ? `${place.id}\u0000${nextPlace.id}` : '';
             const route = pairKey ? routeByPair.get(pairKey) : null;
@@ -227,6 +309,28 @@ export function TripPlacesPanel({
                   <span className="trip-place__info">
                     <strong>{label}</strong>
                     <small>{place.city || (place.provider === 'google' ? t('googlePlaceReference') : t('noCity'))}</small>
+                    {(hours || place.website) && (
+                      <span className="trip-place__details">
+                        {hours && (
+                          <span className="trip-place__hours" title={t('openingHours')}>
+                            <IconClock size={11} stroke={1.8} aria-hidden="true" />
+                            <span>{hours}</span>
+                          </span>
+                        )}
+                        {place.website && (
+                          <a
+                            className="trip-place__website"
+                            href={place.website}
+                            target="_blank"
+                            rel="noreferrer"
+                            title={t('officialWebsite')}
+                          >
+                            <IconExternalLink size={11} stroke={1.8} aria-hidden="true" />
+                            <span>{t('officialWebsite')}</span>
+                          </a>
+                        )}
+                      </span>
+                    )}
                   </span>
                   <button
                     type="button"
