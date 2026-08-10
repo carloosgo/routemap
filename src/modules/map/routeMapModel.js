@@ -16,7 +16,7 @@ export function dominantTransport(segment) {
   return top.amount > 0 ? top.type : null;
 }
 
-export function adaptiveCurve(origin, destination, steps = 80) {
+export function adaptiveCurve(origin, destination, steps = 32) {
   const start = [origin.lon, origin.lat];
   const end = [destination.lon, destination.lat];
   const dx = end[0] - start[0];
