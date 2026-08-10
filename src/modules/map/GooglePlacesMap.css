@@ -21,6 +21,9 @@
 .google-map .gm-style *{
   cursor:default!important;
 }
+.google-map .gm-style{
+  counter-reset:itinerary-city;
+}
 .google-map .gm-style button,
 .google-map .gm-style a,
 .google-map .gm-style [role="button"],
@@ -137,32 +140,32 @@
 }
 
 .google-itinerary-city-marker{
+  counter-increment:itinerary-city;
   display:grid;
-  width:7px;
-  height:7px;
+  width:18px;
+  height:18px;
   place-items:center;
   border:1.3px solid #ffffff;
   border-radius:50%;
-  background:var(--itinerary-city-color,#2563eb);
-  box-shadow:0 1px 4px rgba(15,23,42,.22);
-}
-.google-itinerary-city-marker__dot{
-  display:none;
-}
-
-.google-itinerary-city-marker.is-endpoint{
-  width:18px;
-  height:18px;
+  background:#111111;
   color:#ffffff;
   font-size:9px;
   font-weight:800;
   line-height:1;
   font-variant-numeric:tabular-nums;
-}
-.google-itinerary-city-marker.is-endpoint[aria-label^="1. "]{
-  background:#111111;
   box-shadow:0 2px 8px rgba(15,23,42,.3);
 }
+.google-itinerary-city-marker::before{
+  content:counter(itinerary-city);
+  display:grid;
+  width:100%;
+  height:100%;
+  place-items:center;
+}
+.google-itinerary-city-marker__dot{
+  display:none;
+}
+
 .google-itinerary-city-marker.is-endpoint:not([aria-label^="1. "]){
   border:0;
   border-radius:0;
@@ -170,12 +173,6 @@
   box-shadow:none;
   transform:translateX(4px);
 }
-.google-itinerary-city-marker.is-endpoint .google-itinerary-city-marker__dot{
-  display:none;
-}
-.google-itinerary-city-marker.is-endpoint[aria-label^="1. "] .google-itinerary-city-marker__dot{
-  display:grid;
-  width:100%;
-  height:100%;
-  place-items:center;
+.google-itinerary-city-marker.is-endpoint:not([aria-label^="1. "])::before{
+  content:none;
 }
