@@ -289,6 +289,7 @@ export function AppEditorPane({
                         className="notes-title-input"
                         value={note.title}
                         maxLength={60}
+                        placeholder={t('noteTitlePlaceholder')}
                         onChange={(event) => updateNote(note.id, 'title', event.target.value)}
                         aria-label={t('noteTitle')}
                       />
