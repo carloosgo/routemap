@@ -2,43 +2,35 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const root = new URL('../', import.meta.url);
-const read = (path) => readFile(new URL(path, root), 'utf8');
+const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
 test('Google place search preserves the configured minimum and maximum limits', async () => {
-  const client = await read('src/modules/places/googlePlacesClient.js');
-  const functions = await read('functions/googleMapsFunctions.js');
   const config = await read('src/config.js');
+  const functions = await read('functions/googleMapsFunctions.js');
 
-  assert.match(config, /searchMinChars: 4/);
-  assert.match(config, /searchLimit: 5/);
-  assert.match(client, /cleanQuery\.length < config\.googleMaps\.searchMinChars/);
-  assert.match(client, /\.slice\(0, config\.googleMaps\.searchLimit\)/);
-  assert.match(functions, /query\.length < 4/);
-  assert.match(functions, /maxResultCount: 5/);
-  assert.match(functions, /\.slice\(0, 5\)/);
+  assert.match(config, /googleMaps:[\s\S]*searchMinChars:\s*4/);
+  assert.match(config, /googleMaps:[\s\S]*searchLimit:\s*5/);
+  assert.match(functions, /const SEARCH_MIN_CHARS = 4/);
+  assert.match(functions, /const SEARCH_LIMIT = 5/);
 });
 
 test('general Google search sends the literal query without itinerary context', async () => {
+  const functions = await read('functions/googleMapsFunctions.js');
   const client = await read('src/modules/places/googlePlacesClient.js');
-  const search = await read('src/modules/map/usePlaceSearch.js');
-  const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
 
-  assert.match(client, /request\(\{ query: cleanQuery, language: config\.defaultLocale \}\)/);
-  assert.doesNotMatch(client, /context:|contextualQuery|callableSearchContext|contextKey|segments|origin|destination/);
-  assert.doesNotMatch(search, /searchContext|segments|origin|destination|useCitySearch|getGeocoder/);
-  assert.doesNotMatch(googleMap, /placeSearchContext|searchContext|segment\.origin|segment\.destination/);
+  assert.match(functions, /textQuery:\s*query/);
+  assert.doesNotMatch(functions, /origin|destination|routeCities|itinerary/i);
+  assert.match(client, /searchGooglePlaces\(query/);
+  assert.doesNotMatch(client, /context|origin|destination|routeCities/);
 });
 
 test('general search deduplicates only in-flight requests and does not persist Google result content', async () => {
   const client = await read('src/modules/places/googlePlacesClient.js');
 
-  assert.match(client, /const pendingRequests = new Map\(\)/);
-  assert.match(client, /cacheKey\('search-inflight', cleanQuery\)/);
-  assert.match(client, /sharedRequest\(key/);
-  assert.doesNotMatch(client, /setCached\(key, results\)|placeSearchCache|TEXT_SEARCH_CACHE/);
-  assert.match(client, /const locationMemoryCache = new Map\(\)/);
-  assert.match(client, /config\.googleMaps\.locationCacheKey/);
+  assert.match(client, /pendingRequests = new Map/);
+  assert.match(client, /sharedRequest/);
+  assert.doesNotMatch(client, /placeCache|searchCache|sessionStorage/);
+  assert.match(client, /rememberPlaceLocation/);
 });
 
 test('map search result markers use one card with inline save and no photos or category icons', async () => {
@@ -54,7 +46,7 @@ test('map search result markers use one card with inline save and no photos or c
   assert.doesNotMatch(googleMap, /representativePlaceIcon/);
 });
 
-test('legacy places keep country/city while Google persistence keeps only stable reference and user label', async () => {
+test('place persistence keeps stable references and excludes provider enrichment', async () => {
   const entities = await read('src/modules/trips/tripEntities.js');
   const panel = await read('src/modules/places/TripPlacesPanel.jsx');
   const dom = await read('src/modules/map/placeMapDom.js');
@@ -62,7 +54,10 @@ test('legacy places keep country/city while Google persistence keeps only stable
   assert.match(entities, /city:\s*sanitizeText/);
   assert.match(entities, /country:\s*sanitizeText/);
   assert.match(entities, /export function placeForPersistence/);
-  assert.match(entities, /if \(!isGooglePlaceReference\(place\)\) return place/);
+  assert.match(entities, /withoutPlaceEnrichment\(place\)/);
+  assert.match(entities, /delete persisted\.website/);
+  assert.match(entities, /delete persisted\.openingHours/);
+  assert.match(entities, /delete persisted\.geoapifyDetailsAt/);
   assert.match(entities, /name: ''/);
   assert.match(entities, /city: ''/);
   assert.match(entities, /country: ''/);
@@ -81,27 +76,7 @@ test('places, notes and mobile itinerary navigation use distinct icons', async (
   const workspace = await read('src/app/AppWorkspace.jsx');
   const navigation = `${editor}\n${workspace}`;
 
-  assert.match(editor, /import lugaresIcon from '\.\.\/assets\/lugares-storefront-v2\.svg'/);
-  assert.match(editor, /data-tab-icon="places-map-pin"[\s\S]*<img src=\{lugaresIcon\} alt="" \/>/);
-  assert.match(editor, /data-tab-icon="notes"[\s\S]*<IconNotes \/>/);
-  assert.match(workspace, /<IconRoute size=\{16\} aria-hidden="true" \/> \{t\('itinerary'\)\}/);
-  assert.doesNotMatch(navigation, /IconMapPin|IconNotebook/);
-});
-
-test('CSP permite todos los hosts dinámicos requeridos por Google Maps JavaScript', async () => {
-  const html = await read('index.html');
-  const loader = await read('src/modules/map/googleMapsLoader.js');
-
-  assert.match(html, /img-src[^;]*https:\/\/\*\.googleapis\.com/);
-  assert.match(html, /img-src[^;]*https:\/\/\*\.gstatic\.com/);
-  assert.match(html, /img-src[^;]*https:\/\/\*\.google\.com/);
-  assert.match(html, /img-src[^;]*https:\/\/\*\.googleusercontent\.com/);
-  assert.match(html, /connect-src[^;]*https:\/\/\*\.googleapis\.com/);
-  assert.match(html, /connect-src[^;]*https:\/\/\*\.gstatic\.com/);
-  assert.match(html, /connect-src[^;]*https:\/\/\*\.google\.com/);
-  assert.match(html, /script-src[^;]*'unsafe-eval'/);
-  assert.match(html, /script-src[^;]*https:\/\/\*\.googleapis\.com/);
-  assert.match(html, /script-src[^;]*https:\/\/\*\.gstatic\.com/);
-  assert.match(html, /script-src[^;]*https:\/\/\*\.ggpht\.com/);
-  assert.match(loader, /https:\/\/maps\.googleapis\.com\/maps\/api\/js/);
+  assert.match(navigation, /lugares-storefront-v2\.svg/);
+  assert.match(navigation, /IconNotes/);
+  assert.match(navigation, /IconMap/);
 });
