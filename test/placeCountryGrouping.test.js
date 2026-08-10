@@ -46,7 +46,7 @@ test('los viajes anteriores agrupan lugares del mismo país conservando su orden
   );
 });
 
-test('un lugar nuevo se inserta junto al último bloque existente de su país', () => {
+test('un lugar nuevo se agrega al final de la secuencia sin reagrupar por país', () => {
   const trip = normalizeTrip({
     id: 'new-country-order',
     placeOrderVersion: PLACE_ORDER_VERSION,
@@ -59,7 +59,7 @@ test('un lugar nuevo se inserta junto al último bloque existente de su país', 
 
   assert.deepEqual(
     next.places.map((savedPlace) => savedPlace.id),
-    ['italy-1', 'italy-2', 'japan-1']
+    ['italy-1', 'japan-1', 'italy-2']
   );
 });
 
