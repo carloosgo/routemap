@@ -12,15 +12,16 @@ export async function requestSavedPlaceRoute(origin, destination, mode = 'drive'
     origin: { lat: origin.lat, lon: origin.lon },
     destination: { lat: destination.lat, lon: destination.lon },
     mode: normalizeSavedPlaceRouteMode(mode),
+    estimateOnly: true,
   });
   const route = response.data || {};
-  if (!route.geometry) throw new Error('Geoapify no devolvió geometría para la ruta.');
 
   return {
+    available: route.available !== false,
     mode: normalizeSavedPlaceRouteMode(route.mode || mode),
     distance: Number(route.distance) || 0,
     duration: Number(route.duration) || 0,
-    geometry: route.geometry,
+    geometry: route.geometry || null,
     calculatedAt: String(route.calculatedAt || ''),
   };
 }
