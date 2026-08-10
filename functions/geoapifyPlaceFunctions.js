@@ -145,7 +145,11 @@ export const geoapifyPlaceDetails = onCall(
 );
 
 export const geoapifyPlaceEnrichment = onCall(
-  callableOptions({ secrets: [GEOAPIFY_API_KEY] }),
+  callableOptions({
+    secrets: [GEOAPIFY_API_KEY],
+    enforceAppCheck: false,
+    maxInstances: 6,
+  }),
   async (request) => {
     await enforceQuota(db, request, QUOTAS.placeDetails);
     const input = enrichmentInput(request);
