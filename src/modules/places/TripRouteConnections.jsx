@@ -160,13 +160,13 @@ export function TripRouteConnections({
   useEffect(() => {
     const node = rootRef.current;
     if (!node || shouldEstimate) return undefined;
-    if (typeof IntersectionObserver === 'undefined') {
+    if (typeof globalThis.IntersectionObserver === 'undefined') {
       setShouldEstimate(true);
       return undefined;
     }
 
     let timer = 0;
-    const observer = new IntersectionObserver(
+    const observer = new globalThis.IntersectionObserver(
       (entries) => {
         const visible = entries.some((entry) => entry.isIntersecting);
         if (visible) {
