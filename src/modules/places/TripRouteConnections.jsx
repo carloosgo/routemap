@@ -92,7 +92,7 @@ async function resolveEstimatePair(origin, destination, signal) {
 }
 
 function routeIsFresh(route, mode) {
-  if (!route?.geometry || route.mode !== mode) return false;
+  if (route?.provider !== 'google' || !route.geometry || route.mode !== mode) return false;
   const calculatedAt = new Date(route.calculatedAt || '').getTime();
   if (!Number.isFinite(calculatedAt)) return false;
   const age = Date.now() - calculatedAt;
@@ -170,9 +170,7 @@ export function TripRouteConnections({
       (entries) => {
         const visible = entries.some((entry) => entry.isIntersecting);
         if (visible) {
-          if (!timer) {
-            timer = globalThis.setTimeout(() => setShouldEstimate(true), 320);
-          }
+          if (!timer) timer = globalThis.setTimeout(() => setShouldEstimate(true), 320);
         } else if (timer) {
           globalThis.clearTimeout(timer);
           timer = 0;
@@ -236,7 +234,12 @@ export function TripRouteConnections({
 
     setLoadingMode(mode);
     try {
-      const calculated = await requestGooglePlaceRoute(origin, destination, mode);
+      const calculated = await requestGooglePlaceRoute(
+        origin,
+        destination,
+        mode,
+        { departureTime: mode === 'transit' ? new Date().toISOString() : '' }
+      );
       const nextRoute = {
         id: route?.id,
         fromPlaceId: origin.id,
