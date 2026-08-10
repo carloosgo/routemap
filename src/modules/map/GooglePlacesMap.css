@@ -200,7 +200,7 @@
 .google-map-wrap .place-popup__heading{
   display:flex;
   align-items:center;
-  gap:7px;
+  gap:5px;
   min-width:0;
 }
 .google-map-wrap .place-popup__heading strong{
@@ -210,7 +210,10 @@
 }
 .google-map-wrap .place-popup__flag{
   display:block;
-  flex:0 0 auto;
+  flex:0 0 16px;
+  width:16px!important;
+  height:12px!important;
+  object-fit:cover;
   border:0!important;
   border-radius:0!important;
   outline:0!important;
