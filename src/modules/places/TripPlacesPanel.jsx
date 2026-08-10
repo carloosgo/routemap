@@ -1,17 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { IconGripVertical, IconMapPin, IconTrash } from '@tabler/icons-react';
-import { contiguousPlaceGroups } from '../trips/tripModel.js';
 import { flagImageUrl } from '../flags/flags.js';
+import { savedPlaceRoutePairKey } from '../routes/routeModel.js';
 import { TripRouteConnections } from './TripRouteConnections.jsx';
 import './TripPlacesPanel.css';
 
-function CountryFlag({ countryCode, country }) {
-  if (!countryCode) return null;
+function CountryFlag({ place }) {
+  if (!place?.countryCode) {
+    return (
+      <span className="trip-place__flag-fallback" aria-hidden="true">
+        <IconMapPin size={15} />
+      </span>
+    );
+  }
   return (
     <img
       className="trip-places__flag"
-      src={flagImageUrl(countryCode, 24)}
-      alt={country || countryCode}
+      src={flagImageUrl(place.countryCode, 24)}
+      alt={place.country || place.countryCode}
       width={24}
       height={16}
       loading="lazy"
@@ -29,7 +35,6 @@ export function TripPlacesPanel({
   removePlace,
   reorderPlace,
   upsertRoute,
-  removeRoute,
   setRouteVisibility,
   setAllRouteVisibility,
   t,
@@ -41,18 +46,9 @@ export function TripPlacesPanel({
   const dragStateRef = useRef(null);
   const draggedPlaceId = dragState?.placeId || '';
 
-  const groups = useMemo(
-    () => contiguousPlaceGroups(places).map((group) => {
-      const unresolvedGoogleGroup = !group.country && !group.countryCode
-        && group.places.every((place) => place.provider === 'google');
-      return {
-        ...group,
-        country: group.country
-          || group.countryCode
-          || (unresolvedGoogleGroup ? t('savedGooglePlaces') : t('noCountry')),
-      };
-    }),
-    [places, t]
+  const routeByPair = useMemo(
+    () => new Map(routes.map((route) => [savedPlaceRoutePairKey(route), route])),
+    [routes]
   );
 
   useEffect(() => {
@@ -79,11 +75,10 @@ export function TripPlacesPanel({
     function resolveDropTarget(event) {
       const candidates = visibleDropCandidates();
       if (candidates.length === 0) return { targetId: null, placement: null };
-
-      const samePaneCandidates = candidates.filter(
+      const samePane = candidates.filter(
         ({ bounds }) => event.clientX >= bounds.left && event.clientX <= bounds.right
       );
-      const available = samePaneCandidates.length > 0 ? samePaneCandidates : candidates;
+      const available = samePane.length > 0 ? samePane : candidates;
       const first = available[0];
       const last = available[available.length - 1];
 
@@ -97,17 +92,14 @@ export function TripPlacesPanel({
       const nearest = available.reduce((best, candidate) => {
         const midpoint = candidate.bounds.top + candidate.bounds.height / 2;
         const distance = Math.abs(event.clientY - midpoint);
-        return !best || distance < best.distance
-          ? { candidate, distance }
-          : best;
+        return !best || distance < best.distance ? { candidate, distance } : best;
       }, null).candidate;
 
       return {
         targetId: nearest.id,
-        placement:
-          event.clientY >= nearest.bounds.top + nearest.bounds.height / 2
-            ? 'after'
-            : 'before',
+        placement: event.clientY >= nearest.bounds.top + nearest.bounds.height / 2
+          ? 'after'
+          : 'before',
       };
     }
 
@@ -130,24 +122,14 @@ export function TripPlacesPanel({
     function finishDrag(commit) {
       const current = dragStateRef.current;
       if (commit && current?.targetId && current.placement) {
-        reorderPlace?.(
-          current.placeId,
-          current.targetId,
-          current.placement
-        );
+        reorderPlace?.(current.placeId, current.targetId, current.placement);
       }
       dragStateRef.current = null;
       setDragState(null);
     }
 
-    function handlePointerUp() {
-      finishDrag(true);
-    }
-
-    function handlePointerCancel() {
-      finishDrag(false);
-    }
-
+    const handlePointerUp = () => finishDrag(true);
+    const handlePointerCancel = () => finishDrag(false);
     document.addEventListener('pointermove', handlePointerMove, { passive: false });
     document.addEventListener('pointerup', handlePointerUp);
     document.addEventListener('pointercancel', handlePointerCancel);
@@ -190,7 +172,7 @@ export function TripPlacesPanel({
     }
   }
 
-  if (!groups.length) {
+  if (!places.length) {
     return (
       <div className="trip-places trip-places--empty">
         <IconMapPin size={22} aria-hidden="true" />
@@ -203,80 +185,75 @@ export function TripPlacesPanel({
   return (
     <>
       <div className="trip-places" ref={panelRef}>
-        <TripRouteConnections
-          places={places}
-          routes={routes}
-          upsertRoute={upsertRoute}
-          removeRoute={removeRoute}
-          setRouteVisibility={setRouteVisibility}
-          setAllRouteVisibility={setAllRouteVisibility}
-          t={t}
-          intlLocale={intlLocale}
-        />
+        <div className="trip-places__sequence">
+          {places.map((place, index) => {
+            const dragging = dragState?.placeId === place.id;
+            const dropPlacement = dragState?.targetId === place.id
+              ? dragState.placement
+              : null;
+            const className = [
+              'trip-place',
+              dragging ? 'is-dragging' : '',
+              dropPlacement === 'before' ? 'is-drop-before' : '',
+              dropPlacement === 'after' ? 'is-drop-after' : '',
+            ].filter(Boolean).join(' ');
+            const label = placeLabel(place, t);
+            const nextPlace = places[index + 1] || null;
+            const pairKey = nextPlace ? `${place.id}\u0000${nextPlace.id}` : '';
+            const route = pairKey ? routeByPair.get(pairKey) : null;
 
-        {groups.map((group) => (
-          <section className="trip-places__group" key={group.id}>
-            <header className="trip-places__group-head">
-              <span className="trip-places__location">
-                <CountryFlag countryCode={group.countryCode} country={group.country} />
-                <strong>{group.country}</strong>
-              </span>
-              <span className="trip-places__group-count">{group.places.length}</span>
-            </header>
-            <div className="trip-places__list">
-              {group.places.map((place) => {
-                const dragging = dragState?.placeId === place.id;
-                const dropPlacement = dragState?.targetId === place.id
-                  ? dragState.placement
-                  : null;
-                const className = [
-                  'trip-place',
-                  dragging ? 'is-dragging' : '',
-                  dropPlacement === 'before' ? 'is-drop-before' : '',
-                  dropPlacement === 'after' ? 'is-drop-after' : '',
-                ].filter(Boolean).join(' ');
-                const label = placeLabel(place, t);
-
-                return (
-                  <article
-                    className={className}
-                    key={place.id}
-                    data-place-id={place.id}
-                    style={dragging
-                      ? { '--trip-place-drag-y': `${dragState.offsetY}px` }
-                      : undefined}
+            return (
+              <div className="trip-place-block" key={place.id}>
+                <article
+                  className={className}
+                  data-place-id={place.id}
+                  style={dragging
+                    ? { '--trip-place-drag-y': `${dragState.offsetY}px` }
+                    : undefined}
+                >
+                  <button
+                    type="button"
+                    className="trip-place__drag"
+                    onPointerDown={(event) => startPlaceDrag(event, place.id)}
+                    onKeyDown={(event) => handleMoveKeyDown(event, place.id)}
+                    aria-label={t('movePlace')}
+                    title={t('movePlace')}
                   >
-                    <button
-                      type="button"
-                      className="trip-place__drag"
-                      onPointerDown={(event) => startPlaceDrag(event, place.id)}
-                      onKeyDown={(event) => handleMoveKeyDown(event, place.id)}
-                      aria-label={t('movePlace')}
-                      title={t('movePlace')}
-                    >
-                      <IconGripVertical size={15} aria-hidden="true" />
-                    </button>
-                    <span className="trip-place__pin">
-                      <IconMapPin size={15} aria-hidden="true" />
-                    </span>
-                    <span className="trip-place__info">
-                      <strong>{label}</strong>
-                      <small>{place.city || (place.provider === 'google' ? t('googlePlaceReference') : t('noCity'))}</small>
-                    </span>
-                    <button
-                      type="button"
-                      className="trip-place__delete"
-                      onClick={() => setPlaceToDelete(place)}
-                      aria-label={t('delete')}
-                    >
-                      <IconTrash size={14} aria-hidden="true" />
-                    </button>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-        ))}
+                    <IconGripVertical size={15} aria-hidden="true" />
+                  </button>
+                  <span className="trip-place__flag-wrap">
+                    <CountryFlag place={place} />
+                  </span>
+                  <span className="trip-place__info">
+                    <strong>{label}</strong>
+                    <small>{place.city || (place.provider === 'google' ? t('googlePlaceReference') : t('noCity'))}</small>
+                  </span>
+                  <button
+                    type="button"
+                    className="trip-place__delete"
+                    onClick={() => setPlaceToDelete(place)}
+                    aria-label={t('delete')}
+                  >
+                    <IconTrash size={14} aria-hidden="true" />
+                  </button>
+                </article>
+
+                {nextPlace && (
+                  <TripRouteConnections
+                    origin={place}
+                    destination={nextPlace}
+                    route={route}
+                    upsertRoute={upsertRoute}
+                    setRouteVisibility={setRouteVisibility}
+                    setAllRouteVisibility={setAllRouteVisibility}
+                    t={t}
+                    intlLocale={intlLocale}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {placeToDelete && (
@@ -292,18 +269,10 @@ export function TripPlacesPanel({
               {t('confirmDeletePlace', { name: placeLabel(placeToDelete, t) })}
             </p>
             <div className="confirm__actions">
-              <button
-                type="button"
-                className="btn btn--ghost btn--sm"
-                onClick={() => setPlaceToDelete(null)}
-              >
+              <button type="button" className="btn btn--ghost btn--sm" onClick={() => setPlaceToDelete(null)}>
                 {t('cancel')}
               </button>
-              <button
-                type="button"
-                className="btn btn--danger btn--sm"
-                onClick={confirmRemovePlace}
-              >
+              <button type="button" className="btn btn--danger btn--sm" onClick={confirmRemovePlace}>
                 {t('delete')}
               </button>
             </div>
