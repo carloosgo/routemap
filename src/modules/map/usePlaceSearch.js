@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { config } from '../../config.js';
 import { useTranslation } from '../../i18n/index.jsx';
 import {
@@ -182,6 +182,12 @@ export function usePlaceSearch({ viewMode }) {
     }
   }
 
+  const dismissResults = useCallback(() => {
+    setResults([]);
+    setSuggestions([]);
+    setShowSuggestions(false);
+  }, []);
+
   function clearSearch() {
     autocompleteAbortRef.current?.abort();
     autocompleteSequenceRef.current += 1;
@@ -227,6 +233,7 @@ export function usePlaceSearch({ viewMode }) {
     minChars: config.googleMaps.searchMinChars,
     submitSearch,
     chooseSuggestion,
+    dismissResults,
     clearSearch,
     handleQueryChange,
     showSuggestionsOnFocus,
