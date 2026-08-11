@@ -85,6 +85,37 @@ test('dashboard Phase K cubre telemetria, Firestore y Cloud Run sin tocar produc
   assert.doesNotMatch(serialized, /atlasmap-prod|production-project|prod-project/i);
 });
 
+test('dashboard calcula sync success ratio solo sobre eventos flush', async () => {
+  const dashboard = await readJson(new URL('dashboard.json', observabilityRoot));
+  const widget = dashboard.gridLayout.widgets.find(
+    (candidate) => candidate.title === 'Sync flush success ratio'
+  );
+  assert.ok(widget);
+
+  const ratio = widget.xyChart.dataSets[0].timeSeriesQuery.timeSeriesFilterRatio;
+  assert.ok(ratio.numerator.filter.includes('metric.labels.event="flush"'));
+  assert.ok(ratio.numerator.filter.includes('metric.labels.outcome="success"'));
+  assert.ok(ratio.denominator.filter.includes('metric.labels.event="flush"'));
+  assert.equal(ratio.denominator.filter.includes('metric.labels.outcome='), false);
+});
+
+test('dashboard expone p50 p95 p99 para latencia de repositorio', async () => {
+  const dashboard = await readJson(new URL('dashboard.json', observabilityRoot));
+  const widget = dashboard.gridLayout.widgets.find(
+    (candidate) => candidate.title === 'Repository latency percentiles'
+  );
+  assert.ok(widget);
+
+  const aligners = widget.xyChart.dataSets.map(
+    (dataSet) => dataSet.timeSeriesQuery.timeSeriesFilter.aggregation.perSeriesAligner
+  );
+  assert.deepEqual(aligners, [
+    'ALIGN_PERCENTILE_50',
+    'ALIGN_PERCENTILE_95',
+    'ALIGN_PERCENTILE_99',
+  ]);
+});
+
 test('alert templates Phase K nacen deshabilitados y sin canales', async () => {
   const files = await jsonFiles(alertsRoot);
   assert.equal(files.length, 3);
