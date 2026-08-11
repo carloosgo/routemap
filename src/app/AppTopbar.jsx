@@ -1,12 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
-import { IconDeviceFloppy, IconMap2, IconX } from '@tabler/icons-react';
+import {
+  IconCloudUpload,
+  IconDeviceFloppy,
+  IconLogin2,
+  IconLogout,
+  IconMap2,
+  IconUserCircle,
+  IconX,
+} from '@tabler/icons-react';
 
 export function AppTopbar({
   menuWrapRef,
   t,
   trip,
   renameTrip,
+  openMenu,
+  setOpenMenu,
   handleSave,
+  authUser,
+  authLoading,
+  onGoogleSignIn,
+  onSignOut,
+  onImportLocalTrips,
   desktopPanelCollapsed = false,
 }) {
   const [saveOpen, setSaveOpen] = useState(false);
@@ -42,6 +57,10 @@ export function AppTopbar({
     setSaveOpen(false);
     setTimeout(() => latestSaveRef.current(), 0);
   }
+
+  const accountLabel = authLoading
+    ? t('loading')
+    : authUser?.displayName || authUser?.email || t('account');
 
   return (
     <header className="topbar topbar--floating-only" ref={menuWrapRef}>
@@ -98,6 +117,65 @@ export function AppTopbar({
       )}
 
       {trip.name?.trim() && <div className="trip-name-pill">{trip.name}</div>}
+
+      <div className="topbar__spacer" />
+
+      <div className="topmenu">
+        <button
+          type="button"
+          className="topitem"
+          onClick={() => setOpenMenu(openMenu === 'account' ? null : 'account')}
+          disabled={authLoading}
+          aria-expanded={openMenu === 'account'}
+          aria-haspopup="menu"
+        >
+          <IconUserCircle size={20} aria-hidden="true" />
+          <span className="topitem__val">{accountLabel}</span>
+        </button>
+
+        {openMenu === 'account' && (
+          <div className="dropdown dropdown--trips" role="menu">
+            {authUser ? (
+              <>
+                <div className="dropdown__label">
+                  {authUser.displayName || authUser.email || t('account')}
+                </div>
+                {authUser.displayName && authUser.email && (
+                  <div className="dropdown__label">{authUser.email}</div>
+                )}
+                <button
+                  type="button"
+                  className="dropdown__opt"
+                  onClick={onImportLocalTrips}
+                  role="menuitem"
+                >
+                  <IconCloudUpload size={16} aria-hidden="true" />{' '}
+                  {t('importLocalTrips')}
+                </button>
+                <button
+                  type="button"
+                  className="dropdown__opt"
+                  onClick={onSignOut}
+                  role="menuitem"
+                >
+                  <IconLogout size={16} aria-hidden="true" />{' '}
+                  {t('signOut')}
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="dropdown__opt"
+                onClick={onGoogleSignIn}
+                role="menuitem"
+              >
+                <IconLogin2 size={16} aria-hidden="true" />{' '}
+                {t('continueWithGoogle')}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </header>
   );
 }
