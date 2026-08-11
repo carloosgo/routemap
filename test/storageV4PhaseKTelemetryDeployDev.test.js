@@ -7,20 +7,27 @@ const scriptPath = new URL('../scripts/deployStorageV4PhaseKTelemetryDev.mjs', i
 test('telemetry deploy de Phase K queda bloqueado a atlasmap-dev', async () => {
   const source = await readFile(scriptPath, 'utf8');
 
-  assert.match(source, /const PROJECT = 'atlasmap-dev'/);
-  assert.match(source, /'storageV4SyncTelemetry'/);
-  assert.match(source, /'geoapifyCityAutocomplete'/);
-  assert.match(source, /'--only'/);
-  assert.match(source, /'--project'/);
-  assert.match(source, /'--non-interactive'/);
-  assert.match(source, /includes\('--apply'\)/);
+  assert.ok(source.includes("const PROJECT = 'atlasmap-dev'"));
+  assert.ok(source.includes("'storageV4SyncTelemetry'"));
+  assert.ok(source.includes("'geoapifyCityAutocomplete'"));
+  assert.ok(source.includes("'--only'"));
+  assert.ok(source.includes("'--project'"));
+  assert.ok(source.includes("'--non-interactive'"));
+  assert.ok(source.includes("includes('--apply')"));
   assert.doesNotMatch(source, /atlasmap-prod|production-project|functions:v4Trip|functions:v4Aggregate/i);
 });
 
-test('telemetry deploy no habilita write v4 ni despliega migración o lifecycle', async () => {
+test('telemetry deploy no habilita write v4 ni despliega migracion o lifecycle', async () => {
   const source = await readFile(scriptPath, 'utf8');
 
-  assert.match(source, /enablesStorageV4Write: false/);
-  assert.match(source, /touchesProduction: false/);
-  assert.doesNotMatch(source, /storageV4Migration|storageV4Purge|storageV4Lifecycle|storageV4Aggregate/);
+  assert.ok(source.includes('enablesStorageV4Write: false'));
+  assert.ok(source.includes('touchesProduction: false'));
+  for (const forbidden of [
+    'storageV4Migration',
+    'storageV4Purge',
+    'storageV4Lifecycle',
+    'storageV4Aggregate',
+  ]) {
+    assert.equal(source.includes(forbidden), false);
+  }
 });
