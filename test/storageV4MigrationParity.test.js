@@ -83,7 +83,7 @@ test('materializador backend produce exactamente el mismo estado canónico v4 qu
   assert.equal(segmentContribution.valueContribution, 123);
 });
 
-test('materializador backend falla cerrado ante counts o total v3 inconsistentes', () => {
+test('materializador backend falla cerrado ante counts o total legacy inconsistentes', () => {
   const rawTrip = fixture();
   const persisted = createTripRevisionPayload(rawTrip, 'revision_parity_02', rawTrip.updatedAt);
   const input = {
@@ -91,11 +91,11 @@ test('materializador backend falla cerrado ante counts o total v3 inconsistentes
     revision: { ...persisted.revision, complete: true },
     collections: persisted.collections,
   };
-  assert.throws(() => materializePersistedV3ToV4(input), /total v3 declarado/);
+  assert.throws(() => materializePersistedV3ToV4(input), /total legacy declarado/);
 
   const badCount = {
     ...input,
     summary: { ...persisted.summary, segmentCount: 2 },
   };
-  assert.throws(() => materializePersistedV3ToV4(badCount), /segmentCount v3 no coincide/);
+  assert.throws(() => materializePersistedV3ToV4(badCount), /segmentCount legacy no coincide/);
 });
