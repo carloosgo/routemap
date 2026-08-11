@@ -29,6 +29,12 @@ function Get-HttpStatusCode {
   return $null
 }
 
+function Get-GcloudAccessToken {
+  $token = (& gcloud auth print-access-token 2>$null).Trim()
+  if (-not $token) { return $null }
+  return $token
+}
+
 function Invoke-FirestoreBackupScheduleRest {
   param(
     [string]$ProjectId,
@@ -36,7 +42,7 @@ function Invoke-FirestoreBackupScheduleRest {
     [string]$LocationId
   )
 
-  $token = (& gcloud auth print-access-token 2>$null).Trim()
+  $token = Get-GcloudAccessToken
   if (-not $token) {
     return [pscustomobject]@{
       schedules = @()
@@ -46,9 +52,6 @@ function Invoke-FirestoreBackupScheduleRest {
     }
   }
 
-  # Firestore documenta endpoint global y endpoints regionales del tipo
-  # firestore.<region>.rep.googleapis.com. Probamos primero el regional de la
-  # propia base; ambos intentos son exclusivamente GET.
   $hosts = @()
   if ($LocationId) {
     $hosts += "firestore.$LocationId.rep.googleapis.com"
@@ -57,7 +60,6 @@ function Invoke-FirestoreBackupScheduleRest {
 
   $lastStatus = $null
   foreach ($hostName in @($hosts | Select-Object -Unique)) {
-    # '(default)' es el ID oficial de la base predeterminada de Firestore.
     $uri = "https://$hostName/v1/projects/$ProjectId/databases/$DatabaseId/backupSchedules"
     try {
       $response = Invoke-RestMethod -Method Get -Uri $uri -Headers @{
@@ -75,13 +77,50 @@ function Invoke-FirestoreBackupScheduleRest {
     }
   }
 
-  # Que el endpoint de schedules no esté disponible no debe impedir observar
-  # PITR, billing, budgets ni telemetría. No inferimos que no existan schedules.
   return [pscustomobject]@{
     schedules = @()
     source = 'firestore-rest'
     status = 'unavailable'
     httpStatus = $lastStatus
+  }
+}
+
+function Invoke-ProjectBudgetRest {
+  param(
+    [string]$ProjectId,
+    [string]$BillingAccountName
+  )
+
+  $token = Get-GcloudAccessToken
+  if (-not $token -or -not $BillingAccountName -or $BillingAccountName -notmatch '^billingAccounts/') {
+    return [pscustomobject]@{
+      budgets = @()
+      source = 'billing-rest-project-scope'
+      status = 'unavailable'
+      httpStatus = $null
+    }
+  }
+
+  $scope = [Uri]::EscapeDataString("projects/$ProjectId")
+  $uri = "https://billingbudgets.googleapis.com/v1/$BillingAccountName/budgets?scope=$scope"
+  try {
+    $response = Invoke-RestMethod -Method Get -Uri $uri -Headers @{
+      Authorization = "Bearer $token"
+    }
+    $budgets = if ($null -eq $response.budgets) { @() } else { @($response.budgets) }
+    return [pscustomobject]@{
+      budgets = $budgets
+      source = 'billing-rest-project-scope'
+      status = 'ok'
+      httpStatus = 200
+    }
+  } catch {
+    return [pscustomobject]@{
+      budgets = @()
+      source = 'billing-rest-project-scope'
+      status = 'unavailable'
+      httpStatus = Get-HttpStatusCode $_
+    }
   }
 }
 
@@ -126,8 +165,12 @@ $billing = Invoke-GcloudJson @(
 )
 
 $billingEnabled = [bool]$billing.billingEnabled
-$budgetCount = $null
 $billingAccountName = [string]$billing.billingAccountName
+$budgetCount = $null
+$budgetProbeStatus = if ($billingEnabled) { 'unavailable' } else { 'not-applicable' }
+$budgetProbeSource = $null
+$budgetProbeHttpStatus = $null
+
 if ($billingEnabled -and $billingAccountName -match '^billingAccounts/(.+)$') {
   $billingAccountId = $Matches[1]
   try {
@@ -136,9 +179,18 @@ if ($billingEnabled -and $billingAccountName -match '^billingAccounts/(.+)$') {
       "--billing-account=$billingAccountId"
     )
     $budgetCount = @($budgets).Count
+    $budgetProbeStatus = 'ok'
+    $budgetProbeSource = 'gcloud'
   } catch {
-    # El acceso a budgets puede requerir permisos adicionales; no bloquea el resto del preflight.
-    $budgetCount = $null
+    # Si la cuenta no concede billing.budgets.list, intentamos la lectura
+    # project-scoped documentada por Cloud Billing. Sigue siendo exclusivamente GET.
+    $budgetProbe = Invoke-ProjectBudgetRest -ProjectId $Project -BillingAccountName $billingAccountName
+    $budgetProbeStatus = [string]$budgetProbe.status
+    $budgetProbeSource = [string]$budgetProbe.source
+    $budgetProbeHttpStatus = $budgetProbe.httpStatus
+    if ($budgetProbeStatus -eq 'ok') {
+      $budgetCount = @($budgetProbe.budgets).Count
+    }
   }
 }
 
@@ -158,6 +210,9 @@ $result = [ordered]@{
   backupScheduleSource = $backupScheduleSource
   backupSchedules = if ($backupScheduleProbeStatus -eq 'ok') { @($backupSchedules) } else { @() }
   billingEnabled = $billingEnabled
+  budgetProbeStatus = $budgetProbeStatus
+  budgetProbeSource = $budgetProbeSource
+  budgetProbeHttpStatus = $budgetProbeHttpStatus
   budgetCount = $budgetCount
 }
 
