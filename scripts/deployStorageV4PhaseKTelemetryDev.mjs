@@ -1,5 +1,5 @@
 /* global process, console */
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -12,13 +12,30 @@ const FUNCTIONS = Object.freeze([
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(here);
-const firebaseBinary = join(
-  repoRoot,
-  'node_modules',
-  '.bin',
-  process.platform === 'win32' ? 'firebase.cmd' : 'firebase'
-);
 const apply = process.argv.slice(2).includes('--apply');
+
+function resolveFirebaseCliScript() {
+  const packageJsonPath = join(
+    repoRoot,
+    'node_modules',
+    'firebase-tools',
+    'package.json'
+  );
+  if (!existsSync(packageJsonPath)) return null;
+
+  try {
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+    const binEntry = typeof packageJson.bin === 'string'
+      ? packageJson.bin
+      : packageJson.bin?.firebase;
+    if (!binEntry) return null;
+
+    const cliScript = join(dirname(packageJsonPath), binEntry);
+    return existsSync(cliScript) ? cliScript : null;
+  } catch {
+    return null;
+  }
+}
 
 const plan = {
   project: PROJECT,
@@ -36,15 +53,17 @@ if (!apply) {
   process.exit(0);
 }
 
-if (!existsSync(firebaseBinary)) {
+const firebaseCliScript = resolveFirebaseCliScript();
+if (!firebaseCliScript) {
   console.error('No se encontró Firebase CLI local. Ejecuta npm install en la raíz del proyecto.');
   process.exit(1);
 }
 
 const only = FUNCTIONS.map((name) => `functions:${name}`).join(',');
 const result = spawnSync(
-  firebaseBinary,
+  process.execPath,
   [
+    firebaseCliScript,
     'deploy',
     '--only',
     only,
