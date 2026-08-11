@@ -1,27 +1,13 @@
-import {
-  V4_MUTATION_OPERATIONS,
-  isV4EntityType,
-} from './storageV4Contract.js';
+import { V4_MUTATION_OPERATIONS } from './storageV4Contract.js';
+import { v4EntityKey } from './entityKeyModel.js';
 
 const VALID_OPERATIONS = new Set(Object.values(V4_MUTATION_OPERATIONS));
 
-function requiredText(value, field) {
-  const normalized = typeof value === 'string' ? value.trim() : '';
-  if (!normalized) throw new TypeError(`${field} es obligatorio.`);
-  return normalized;
-}
-
 export function mutationEntityKey(mutation) {
-  const userId = requiredText(mutation?.userId, 'userId');
-  const tripId = requiredText(mutation?.tripId, 'tripId');
-  const entityId = requiredText(mutation?.entityId, 'entityId');
-  if (!isV4EntityType(mutation?.entityType)) {
-    throw new TypeError('entityType no pertenece al contrato v4.');
-  }
   if (!VALID_OPERATIONS.has(mutation?.operation)) {
     throw new TypeError('operation no pertenece al contrato v4.');
   }
-  return `${userId}/${tripId}/${mutation.entityType}/${entityId}`;
+  return v4EntityKey(mutation);
 }
 
 function safeMergedOperation(first, next) {
