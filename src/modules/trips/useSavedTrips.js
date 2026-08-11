@@ -13,17 +13,20 @@ import {
   selectTripRepository,
 } from './tripRepositorySelector.js';
 import { useGateGRolloutConfig } from '../../infrastructure/firebase/useGateGRolloutConfig.js';
+import { useGateGRolloutTelemetry } from '../../infrastructure/firebase/useGateGRolloutTelemetry.js';
 
 export function useSavedTrips(user) {
   const localRepository = useMemo(() => createLocalTripRepository(), []);
   const rolloutConfig = useGateGRolloutConfig();
+  const emitTelemetry = useGateGRolloutTelemetry();
   const repository = useMemo(
     () => selectTripRepository({
       uid: user?.uid,
       localRepository,
       rolloutConfig,
+      emitTelemetry,
     }),
-    [localRepository, rolloutConfig, user?.uid]
+    [emitTelemetry, localRepository, rolloutConfig, user?.uid]
   );
   const currentRepositoryRef = useRef(repository);
   const refreshVersionRef = useRef(0);
