@@ -120,7 +120,10 @@ export function AppTopbar({
 
       <div className="topbar__spacer" />
 
-      <div className="topmenu">
+      <div
+        className="topmenu"
+        style={{ position: 'fixed', top: 7, right: 78, zIndex: 902 }}
+      >
         <button
           type="button"
           className="topitem"
