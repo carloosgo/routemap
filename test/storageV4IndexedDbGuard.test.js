@@ -17,9 +17,10 @@ test('IndexedDB v4 mantiene stores separados y operaciones críticas readwrite',
   for (const store of ['drafts', 'entities', 'mutations', 'meta']) {
     assert.match(source, new RegExp(`['\"]${store}['\"]`));
   }
+  assert.match(source, /keyPath: 'entityKey'/);
   assert.match(source, /transaction\('mutations', 'readwrite'\)/);
   assert.match(source, /transaction\('meta', 'readwrite'\)/);
-  assert.match(source, /deleteMutationIfMatch/);
+  assert.match(source, /deleteMutationIfRevision/);
   assert.match(source, /tryAcquireSyncLease/);
   assert.doesNotMatch(source, /localStorage|sessionStorage/);
 });
