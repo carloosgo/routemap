@@ -12,12 +12,18 @@ import {
   createLocalTripRepository,
   selectTripRepository,
 } from './tripRepositorySelector.js';
+import { useGateGRolloutConfig } from '../../infrastructure/firebase/useGateGRolloutConfig.js';
 
 export function useSavedTrips(user) {
   const localRepository = useMemo(() => createLocalTripRepository(), []);
+  const rolloutConfig = useGateGRolloutConfig();
   const repository = useMemo(
-    () => selectTripRepository({ uid: user?.uid, localRepository }),
-    [localRepository, user?.uid]
+    () => selectTripRepository({
+      uid: user?.uid,
+      localRepository,
+      rolloutConfig,
+    }),
+    [localRepository, rolloutConfig, user?.uid]
   );
   const currentRepositoryRef = useRef(repository);
   const refreshVersionRef = useRef(0);
