@@ -7,6 +7,8 @@ import {
   acquireOrRenewLease,
   leaseStillOwned,
 } from './crossContextLeaseModel.js';
+import { planLocalEntityIntent } from './localIntentModel.js';
+import { v4EntityKey } from './entityKeyModel.js';
 import { planSyncAcknowledgement } from './syncAckModel.js';
 import { planSyncConflict, planSyncRetry } from './syncOutcomeModel.js';
 
@@ -120,6 +122,66 @@ function atomicLeaseUpdate(dbPromise, decide) {
       if (decision.write === false) return;
       if (decision.value == null) store.delete(LEASE_KEY);
       else store.put({ key: LEASE_KEY, value: decision.value });
+    };
+  }));
+}
+
+function atomicLocalIntent(dbPromise, input) {
+  const entityKey = v4EntityKey(input?.intent);
+  return dbPromise.then((db) => new Promise((resolve, reject) => {
+    const transaction = db.transaction(['entities', 'mutations'], 'readwrite');
+    const entities = transaction.objectStore('entities');
+    const mutations = transaction.objectStore('mutations');
+    let result = null;
+    let failure = null;
+
+    transaction.onerror = () => {
+      if (!failure) failure = transaction.error || new Error('Local intent transaction failed.');
+    };
+    transaction.onabort = () => reject(
+      failure || transaction.error || new Error('Local intent transaction aborted.')
+    );
+    transaction.oncomplete = () => resolve(result);
+
+    const entityRead = entities.get(entityKey);
+    entityRead.onerror = () => transaction.abort();
+    entityRead.onsuccess = () => {
+      const mutationRead = mutations.get(entityKey);
+      mutationRead.onerror = () => transaction.abort();
+      mutationRead.onsuccess = () => {
+        try {
+          const decision = planLocalEntityIntent({
+            currentEntity: entityRead.result || null,
+            currentMutation: mutationRead.result || null,
+            intent: input.intent,
+            nowMs: input.nowMs,
+          });
+          result = decision;
+          if (decision.discarded) {
+            entities.delete(entityKey);
+            mutations.delete(entityKey);
+            return;
+          }
+
+          const nextEntity = normalizeLocalEntityRecord(decision.entity);
+          entities.put(nextEntity);
+          if (decision.mutation) {
+            mutations.put(normalizeMutationRecord(decision.mutation));
+          } else {
+            mutations.delete(entityKey);
+          }
+          result = {
+            ...decision,
+            entity: nextEntity,
+            mutation: decision.mutation
+              ? normalizeMutationRecord(decision.mutation)
+              : null,
+          };
+        } catch (error) {
+          failure = error;
+          transaction.abort();
+        }
+      };
     };
   }));
 }
@@ -245,6 +307,9 @@ export function createIndexedDbV4LocalPersistence({
           }
         };
       });
+    },
+    async commitLocalIntent(input) {
+      return atomicLocalIntent(dbPromise, input);
     },
     async acknowledgeSyncedMutation(input) {
       return atomicSyncDecision(dbPromise, input, planSyncAcknowledgement);
