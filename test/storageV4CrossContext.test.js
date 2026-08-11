@@ -24,7 +24,9 @@ class FakeBroadcastChannel {
 
   postMessage(data) {
     for (const channel of FakeBroadcastChannel.channels.get(this.name) || []) {
-      queueMicrotask(() => channel.listeners.forEach((listener) => listener({ data })));
+      globalThis.queueMicrotask(() => {
+        channel.listeners.forEach((listener) => listener({ data }));
+      });
     }
   }
 
@@ -50,7 +52,7 @@ test('pestañas reciben avisos ajenos y nunca sus propios mensajes', async () =>
   tabB.subscribe((message) => receivedB.push(message));
 
   tabA.publish('mutation-added', { mutationId: 'm1' });
-  await new Promise((resolve) => setImmediate(resolve));
+  await Promise.resolve();
 
   assert.equal(receivedA.length, 0);
   assert.equal(receivedB.length, 1);
