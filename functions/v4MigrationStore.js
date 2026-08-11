@@ -48,12 +48,16 @@ function normalizeForDigest(value) {
   return value;
 }
 
+function normalizedJson(value) {
+  return JSON.stringify(normalizeForDigest(value));
+}
+
 export function v4MigrationDigest(materialized) {
-  const canonical = JSON.stringify(normalizeForDigest({
+  const canonical = normalizedJson({
     root: materialized.root,
     collections: materialized.collections,
     contributions: materialized.contributions,
-  }));
+  });
   return createHash('sha256').update(canonical).digest('hex');
 }
 
@@ -294,32 +298,45 @@ export async function migrateV3TripToV4(input = {}) {
 export async function rollbackFreshV4Migration({ db, userId, tripId } = {}) {
   if (!db) throw new TypeError('Se requiere Firestore Admin.');
   const { tripRef, checkpointRef } = tripRefs(db, userId, tripId);
-  const entitySnapshots = await Promise.all(
-    V4_COLLECTIONS.map((name) => tripRef.collection(name).get())
-  );
-  for (const snapshot of entitySnapshots) {
-    for (const document of snapshot.docs) {
-      const data = document.data();
-      if (data.version !== 1 || data.status !== 'active') {
-        throw new V4MigrationError('rollback-unsafe', 'Existen cambios v4 posteriores a la migración.');
-      }
-    }
+  const [rootSnapshot, checkpointSnapshot, staged] = await Promise.all([
+    tripRef.get(),
+    checkpointRef.get(),
+    readStagedV4(tripRef),
+  ]);
+  if (!rootSnapshot.exists || !checkpointSnapshot.exists) {
+    throw new V4MigrationError('rollback-unavailable', 'No existe migración completa para rollback.');
   }
+  const preflightRoot = rootSnapshot.data();
+  const checkpoint = checkpointSnapshot.data();
+  if (checkpoint.state !== 'complete' || preflightRoot.schemaVersion !== 4 || preflightRoot.version !== 1) {
+    throw new V4MigrationError('rollback-unsafe', 'El viaje ya no está en el estado fresco de migración.');
+  }
+  const currentDigest = stagedDigest(preflightRoot, staged);
+  if (currentDigest !== checkpoint.expectedDigest) {
+    throw new V4MigrationError('rollback-unsafe', 'El estado v4 cambió después de la migración.');
+  }
+  const preflightRootJson = normalizedJson(preflightRoot);
 
   return db.runTransaction(async (transaction) => {
-    const [rootSnapshot, checkpointSnapshot] = await Promise.all([
+    const [currentRootSnapshot, currentCheckpointSnapshot] = await Promise.all([
       transaction.get(tripRef),
       transaction.get(checkpointRef),
     ]);
-    if (!rootSnapshot.exists || !checkpointSnapshot.exists) {
-      throw new V4MigrationError('rollback-unavailable', 'No existe migración completa para rollback.');
+    if (!currentRootSnapshot.exists || !currentCheckpointSnapshot.exists) {
+      throw new V4MigrationError('rollback-unavailable', 'La migración dejó de estar disponible para rollback.');
     }
-    const root = rootSnapshot.data();
-    const checkpoint = checkpointSnapshot.data();
-    if (checkpoint.state !== 'complete' || root.schemaVersion !== 4 || root.version !== 1) {
-      throw new V4MigrationError('rollback-unsafe', 'El viaje ya no está en el estado fresco de migración.');
+    const currentRoot = currentRootSnapshot.data();
+    const currentCheckpoint = currentCheckpointSnapshot.data();
+    if (
+      currentCheckpoint.state !== 'complete'
+      || currentCheckpoint.expectedDigest !== checkpoint.expectedDigest
+      || currentRoot.schemaVersion !== 4
+      || currentRoot.version !== 1
+      || normalizedJson(currentRoot) !== preflightRootJson
+    ) {
+      throw new V4MigrationError('rollback-unsafe', 'El estado v4 cambió durante el preflight de rollback.');
     }
-    transaction.set(tripRef, checkpoint.sourceSummary);
+    transaction.set(tripRef, currentCheckpoint.sourceSummary);
     transaction.update(checkpointRef, {
       state: 'rolled-back',
       rolledBackAt: FieldValue.serverTimestamp(),
