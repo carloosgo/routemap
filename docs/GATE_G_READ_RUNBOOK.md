@@ -10,7 +10,7 @@ Fuera de alcance:
 
 - activar `pilot`;
 - conectar el runtime de escritura v4;
-- exportar/activar Functions administrativas v4;
+- exportar/activar Functions administrativas v4 distintas de la callable de telemetría READ;
 - migrar viajes en producción;
 - cambiar secretos;
 - desplegar sin un checkpoint explícito de autorización.
@@ -26,6 +26,7 @@ VITE_STORAGE_V4_MODE=off
 VITE_STORAGE_V4_COHORT_PERCENT=0
 VITE_STORAGE_V4_READ_RULES_READY=false
 VITE_STORAGE_V4_REMOTE_CONFIG_ENABLED=false
+VITE_STORAGE_V4_TELEMETRY_ENABLED=false
 ```
 
 `firebase.json` debe continuar apuntando a `firestore.rules`.
@@ -38,7 +39,7 @@ El archivo `firestore-gate-g-read.rules` se genera a partir de las Rules v3 acti
 
 Gate G READ dispone de un canal runtime opt-in mediante Firebase Remote Config.
 
-Una build de rollout debe habilitar únicamente:
+Una build de rollout debe habilitar:
 
 ```text
 VITE_STORAGE_V4_REMOTE_CONFIG_ENABLED=true
@@ -75,6 +76,30 @@ Los valores iniciales deben ser fail-closed.
 Antes de depender del apagado remoto, verificar que la Firebase Remote Config Realtime API esté habilitada en el proyecto objetivo y hacer una prueba real de actualización realtime en una build de staging/desarrollo.
 
 No activar una cohorte productiva si la actualización realtime no ha sido verificada.
+
+## Telemetría de rollout
+
+Gate G dispone de una callable candidata llamada `storageV4RolloutTelemetry` y de un buffer cliente best-effort.
+
+La callable acepta únicamente métricas agregadas de operación, modo de repositorio, resultado, latencia, conteos y códigos de error acotados. El modelo rechaza campos desconocidos para impedir que entren IDs de viaje, UID, nombres, textos o payloads arbitrarios.
+
+La callable no escribe las métricas en Firestore; emite logs estructurados para observabilidad.
+
+El cliente mantiene la telemetría apagada con:
+
+```text
+VITE_STORAGE_V4_TELEMETRY_ENABLED=false
+```
+
+No habilitar ese flag hasta que `storageV4RolloutTelemetry` haya sido exportada deliberadamente desde `functions/index.js`, desplegada por separado y verificada. Mientras la callable permanezca sin exportar, el test de frontera debe seguir garantizando que un deploy general de Functions no la incluya accidentalmente.
+
+Una vez verificada, una build de rollout puede usar:
+
+```text
+VITE_STORAGE_V4_TELEMETRY_ENABLED=true
+```
+
+El fallo del sink de métricas nunca debe bloquear ni convertir en error una operación del viaje.
 
 ## Prechecks obligatorios
 
@@ -147,7 +172,20 @@ Este comando es un checkpoint remoto y NO forma parte de la preparación automá
 
 No seguir si esta prueba no funciona.
 
-### 2. Rules READ
+### 2. Preparar telemetría
+
+1. Revisar nuevamente `v4RolloutTelemetryModel` y sus tests de privacidad.
+2. Exportar `storageV4RolloutTelemetry` desde `functions/index.js` en un commit separado y explícito.
+3. Ejecutar unit, lint, build y auditorías.
+4. Verificar el proyecto Firebase objetivo.
+5. Obtener autorización explícita.
+6. Desplegar únicamente esa Function.
+7. Invocarla con un usuario de prueba y confirmar logs estructurados sin PII.
+8. Confirmar que un error deliberado del sink no afecta operaciones del viaje.
+
+Solo después puede habilitarse `VITE_STORAGE_V4_TELEMETRY_ENABLED=true` en la build de rollout.
+
+### 3. Rules READ
 
 1. Confirmar HEAD y CI verde.
 2. Generar `firestore-gate-g-read.rules`.
@@ -159,9 +197,9 @@ No seguir si esta prueba no funciona.
 
 No avanzar si v3 presenta regresiones.
 
-### 3. Build cliente de rollout
+### 4. Build cliente de rollout
 
-La build candidata debe mantener el rollout local apagado y habilitar solo el canal remoto:
+La build candidata debe mantener el rollout local apagado y habilitar únicamente los canales operativos que ya hayan sido verificados:
 
 ```text
 VITE_STORAGE_V4_ENABLED=false
@@ -170,13 +208,16 @@ VITE_STORAGE_V4_MODE=off
 VITE_STORAGE_V4_COHORT_PERCENT=0
 VITE_STORAGE_V4_READ_RULES_READY=false
 VITE_STORAGE_V4_REMOTE_CONFIG_ENABLED=true
+VITE_STORAGE_V4_TELEMETRY_ENABLED=true
 ```
+
+Si la callable de telemetría no se ha desplegado/verificado, mantener `VITE_STORAGE_V4_TELEMETRY_ENABLED=false`.
 
 Esto evita que una build se active por sí sola; Remote Config es la autoridad operacional del rollout READ.
 
-### 4. Activar cohorte remota
+### 5. Activar cohorte remota
 
-Solo después de confirmar Rules READ y la build de rollout:
+Solo después de confirmar Remote Config, telemetría, Rules READ y la build de rollout:
 
 ```text
 storage_v4_enabled            true
@@ -222,12 +263,23 @@ La build de rollout debe recibir ese cambio mediante Remote Config realtime y vo
 
 Verificar efectivamente el retorno a v3 antes de tocar Rules.
 
+### Rollback de telemetría
+
+La telemetría es independiente del modo READ. Ante problemas del sink, publicar una build con:
+
+```text
+VITE_STORAGE_V4_TELEMETRY_ENABLED=false
+```
+
+No es necesario alterar datos ni Rules para apagar telemetría.
+
 ### Rollback de build
 
 Si Remote Config realtime presenta un incidente, publicar una build con:
 
 ```text
 VITE_STORAGE_V4_REMOTE_CONFIG_ENABLED=false
+VITE_STORAGE_V4_TELEMETRY_ENABLED=false
 ```
 
 Los defaults locales mantienen Gate G en OFF.
