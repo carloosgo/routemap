@@ -17,31 +17,75 @@ function Invoke-GcloudJson {
   return $text | ConvertFrom-Json
 }
 
+function Get-HttpStatusCode {
+  param($ErrorRecord)
+  try {
+    if ($null -ne $ErrorRecord.Exception.Response.StatusCode) {
+      return [int]$ErrorRecord.Exception.Response.StatusCode
+    }
+  } catch {
+    return $null
+  }
+  return $null
+}
+
 function Invoke-FirestoreBackupScheduleRest {
   param(
     [string]$ProjectId,
-    [string]$DatabaseId
+    [string]$DatabaseId,
+    [string]$LocationId
   )
 
   $token = (& gcloud auth print-access-token 2>$null).Trim()
   if (-not $token) {
-    throw 'No se pudo obtener un access token de gcloud para consultar backup schedules.'
-  }
-
-  $encodedProject = [Uri]::EscapeDataString($ProjectId)
-  $encodedDatabase = [Uri]::EscapeDataString($DatabaseId)
-  $uri = "https://firestore.googleapis.com/v1/projects/$encodedProject/databases/$encodedDatabase/backupSchedules"
-
-  try {
-    $response = Invoke-RestMethod -Method Get -Uri $uri -Headers @{
-      Authorization = "Bearer $token"
+    return [pscustomobject]@{
+      schedules = @()
+      source = 'firestore-rest'
+      status = 'unavailable'
+      httpStatus = $null
     }
-  } catch {
-    throw "Firestore BackupSchedule REST fallo: $($_.Exception.Message)"
   }
 
-  if ($null -eq $response.backupSchedules) { return @() }
-  return @($response.backupSchedules)
+  # Firestore documenta endpoint global y endpoints regionales del tipo
+  # firestore.<region>.rep.googleapis.com. Probamos primero el regional de la
+  # propia base para evitar fallos de ruteo del endpoint global observados en
+  # Cloud SDK/REST; ambos intentos son exclusivamente GET.
+  $hosts = @()
+  if ($LocationId) {
+    $hosts += "firestore.$LocationId.rep.googleapis.com"
+  }
+  $hosts += 'firestore.googleapis.com'
+
+  $lastStatus = $null
+  foreach ($hostName in @($hosts | Select-Object -Unique)) {
+    # Database IDs de Firestore son segmentos de ruta; '(default)' es el ID
+    # oficial para la base predeterminada y puede aparecer literalmente.
+    $uri = "https://$hostName/v1/projects/$ProjectId/databases/$DatabaseId/backupSchedules"
+    try {
+      $response = Invoke-RestMethod -Method Get -Uri $uri -Headers @{
+        Authorization = "Bearer $token"
+      }
+      $schedules = if ($null -eq $response.backupSchedules) { @() } else { @($response.backupSchedules) }
+      return [pscustomobject]@{
+        schedules = $schedules
+        source = "firestore-rest:$hostName"
+        status = 'ok'
+        httpStatus = 200
+      }
+    } catch {
+      $lastStatus = Get-HttpStatusCode $_
+    }
+  }
+
+  # Que el endpoint de schedules no esté disponible no debe impedir observar
+  # PITR, billing, budgets ni telemetría. El preflight reporta el probe como
+  # unavailable sin inferir que no existan schedules.
+  return [pscustomobject]@{
+    schedules = @()
+    source = 'firestore-rest'
+    status = 'unavailable'
+    httpStatus = $lastStatus
+  }
 }
 
 if (-not (Get-Command gcloud -ErrorAction SilentlyContinue)) {
@@ -60,6 +104,8 @@ $database = Invoke-GcloudJson @(
 )
 
 $backupScheduleSource = 'gcloud'
+$backupScheduleProbeStatus = 'ok'
+$backupScheduleHttpStatus = $null
 try {
   $backupSchedules = Invoke-GcloudJson @(
     'firestore', 'backups', 'schedules', 'list',
@@ -67,11 +113,14 @@ try {
     "--project=$Project"
   )
 } catch {
-  if ($_.Exception.Message -notmatch 'HTTPError 404') { throw }
-  # Cloud SDK 580 puede devolver 404 HTML en este subcomando aunque la API REST
-  # de Firestore exponga el recurso. El fallback sigue siendo estrictamente GET.
-  $backupSchedules = Invoke-FirestoreBackupScheduleRest -ProjectId $Project -DatabaseId $Database
-  $backupScheduleSource = 'firestore-rest'
+  $restProbe = Invoke-FirestoreBackupScheduleRest \
+    -ProjectId $Project \
+    -DatabaseId $Database \
+    -LocationId ([string]$database.locationId)
+  $backupSchedules = @($restProbe.schedules)
+  $backupScheduleSource = [string]$restProbe.source
+  $backupScheduleProbeStatus = [string]$restProbe.status
+  $backupScheduleHttpStatus = $restProbe.httpStatus
 }
 
 $billing = Invoke-GcloudJson @(
@@ -106,9 +155,11 @@ $result = [ordered]@{
   versionRetentionPeriod = $database.versionRetentionPeriod
   earliestVersionTime = $database.earliestVersionTime
   deleteProtectionState = $database.deleteProtectionState
-  backupScheduleCount = @($backupSchedules).Count
+  backupScheduleProbeStatus = $backupScheduleProbeStatus
+  backupScheduleHttpStatus = $backupScheduleHttpStatus
+  backupScheduleCount = if ($backupScheduleProbeStatus -eq 'ok') { @($backupSchedules).Count } else { $null }
   backupScheduleSource = $backupScheduleSource
-  backupSchedules = @($backupSchedules)
+  backupSchedules = if ($backupScheduleProbeStatus -eq 'ok') { @($backupSchedules) } else { @() }
   billingEnabled = $billingEnabled
   budgetCount = $budgetCount
 }
