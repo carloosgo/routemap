@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { error as logError } from 'firebase-functions/logger';
 import { callableOptions, enforceQuota } from './callablePolicy.js';
-import { GOOGLE_PLACES_API_KEY, QUOTAS, db } from './geoapifyRuntime.js';
+import { GOOGLE_PLACES_API_KEY, QUOTAS, cacheDb, db } from './geoapifyRuntime.js';
 import { limitedFetch, safeError } from './geoapifySupport.js';
 import { createSharedCache } from './sharedCache.js';
 
@@ -9,7 +9,7 @@ const GOOGLE_PLACES_BASE = 'https://places.googleapis.com/v1';
 const GOOGLE_LOCATION_FIELDS = 'id,location';
 // Google permite cachear lat/lon hasta 30 días. Usamos 29 días como margen operativo.
 const GOOGLE_LOCATION_CACHE_TTL_MS = 29 * 24 * 60 * 60 * 1000;
-const cachedGoogleLocation = createSharedCache(db, { ttlMs: GOOGLE_LOCATION_CACHE_TTL_MS });
+const cachedGoogleLocation = createSharedCache(cacheDb, { ttlMs: GOOGLE_LOCATION_CACHE_TTL_MS });
 
 function requireGooglePlacesKey() {
   const key = GOOGLE_PLACES_API_KEY.value();
