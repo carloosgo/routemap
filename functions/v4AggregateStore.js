@@ -52,7 +52,20 @@ export async function applyV4AggregateEvent({
   const contributionRef = tripRef.collection('__aggregateContributions').doc(contributionId);
 
   return db.runTransaction(async (transaction) => {
-    const contributionSnapshot = await transaction.get(contributionRef);
+    const [tripSnapshot, contributionSnapshot] = await Promise.all([
+      transaction.get(tripRef),
+      transaction.get(contributionRef),
+    ]);
+
+    if (!tripSnapshot.exists || tripSnapshot.data()?.schemaVersion !== 4) {
+      return {
+        applied: false,
+        skipped: true,
+        reason: 'trip-not-v4',
+        targetVersion: target.version,
+      };
+    }
+
     const current = contributionSnapshot.exists ? contributionSnapshot.data() : null;
     const delta = aggregateDeltaFromContribution(current, target);
     if (!delta.apply) return { applied: false, ...delta };
