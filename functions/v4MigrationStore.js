@@ -310,8 +310,14 @@ export async function migrateV3TripToV4(input = {}) {
   return { ...finalized, digest: staged.digest };
 }
 
-async function completeRollbackCleanup({ db, tripRef, checkpointRef } = {}) {
-  await cleanupV4MigrationData(db, tripRef);
+async function completeRollbackCleanup({
+  db,
+  tripRef,
+  checkpointRef,
+  cleanup = cleanupV4MigrationData,
+} = {}) {
+  if (typeof cleanup !== 'function') throw new TypeError('cleanup debe ser función.');
+  await cleanup(db, tripRef);
   return db.runTransaction(async (transaction) => {
     const [rootSnapshot, checkpointSnapshot] = await Promise.all([
       transaction.get(tripRef),
@@ -334,8 +340,14 @@ async function completeRollbackCleanup({ db, tripRef, checkpointRef } = {}) {
   });
 }
 
-export async function rollbackFreshV4Migration({ db, userId, tripId } = {}) {
+export async function rollbackFreshV4Migration({
+  db,
+  userId,
+  tripId,
+  cleanup = cleanupV4MigrationData,
+} = {}) {
   if (!db) throw new TypeError('Se requiere Firestore Admin.');
+  if (typeof cleanup !== 'function') throw new TypeError('cleanup debe ser función.');
   const { tripRef, checkpointRef } = tripRefs(db, userId, tripId);
   const [rootSnapshot, checkpointSnapshot] = await Promise.all([
     tripRef.get(),
@@ -351,7 +363,7 @@ export async function rollbackFreshV4Migration({ db, userId, tripId } = {}) {
     return { state: 'rolled-back', idempotentReplay: true };
   }
   if (checkpoint.state === 'rollback-cleanup' && Number(root.storageVersion) === 3) {
-    return completeRollbackCleanup({ db, tripRef, checkpointRef });
+    return completeRollbackCleanup({ db, tripRef, checkpointRef, cleanup });
   }
   if (checkpoint.state !== 'complete' || root.schemaVersion !== 4 || root.version !== 1) {
     throw new V4MigrationError('rollback-unsafe', 'El viaje ya no está en el estado fresco de migración.');
@@ -391,5 +403,5 @@ export async function rollbackFreshV4Migration({ db, userId, tripId } = {}) {
     });
   });
 
-  return completeRollbackCleanup({ db, tripRef, checkpointRef });
+  return completeRollbackCleanup({ db, tripRef, checkpointRef, cleanup });
 }
