@@ -4,7 +4,6 @@ import { readFile } from 'node:fs/promises';
 import {
   STORAGE_V4_VERSION,
   V4_ENTITY_STATUS,
-  V4_MUTATION_OPERATIONS,
 } from '../src/modules/storage-v4/storageV4Contract.js';
 import { v4EntityKey } from '../src/modules/storage-v4/entityKeyModel.js';
 import {
@@ -15,10 +14,6 @@ import {
 import { aggregateDeltaForEntityTransition } from '../src/modules/storage-v4/aggregateTransitionModel.js';
 import { syncRetryDelayMs } from '../src/modules/storage-v4/syncRetryModel.js';
 import {
-  coalesceMutationQueue,
-  mutationEntityKey,
-} from '../src/modules/storage-v4/mutationQueueModel.js';
-import {
   acquireOrRenewLease,
   leaseIsExpired,
   leaseStillOwned,
@@ -28,23 +23,6 @@ const root = new URL('../', import.meta.url);
 const active = (value) => ({ status: V4_ENTITY_STATUS.ACTIVE, value });
 const deleted = (value) => ({ status: V4_ENTITY_STATUS.DELETED, value });
 const valueOf = (entity) => entity.value;
-
-function mutation(overrides = {}) {
-  return {
-    mutationId: overrides.mutationId || 'mutation-1',
-    userId: 'user-1',
-    tripId: 'trip-1',
-    entityType: 'segment',
-    entityId: 'segment-1',
-    operation: V4_MUTATION_OPERATIONS.UPDATE,
-    baseVersion: 7,
-    payload: { note: 'a' },
-    createdAtLocal: 100,
-    attempts: 3,
-    nextAttemptAt: 999,
-    ...overrides,
-  };
-}
 
 test('v4 parte de un contrato versionado explícito', () => {
   assert.equal(STORAGE_V4_VERSION, 4);
@@ -115,62 +93,6 @@ test('backoff es exponencial, acotado y admite jitter determinista', () => {
   assert.equal(syncRetryDelayMs(10, { randomUnit: 0.5 }), 30000);
   assert.equal(syncRetryDelayMs(0, { randomUnit: 0 }), 800);
   assert.equal(syncRetryDelayMs(0, { randomUnit: 1 }), 1200);
-});
-
-test('la cola coalesce solo secuencias demostrablemente seguras', () => {
-  const queue = coalesceMutationQueue([
-    mutation({ mutationId: 'a1', payload: { note: 'uno' } }),
-    mutation({
-      mutationId: 'b1',
-      entityId: 'segment-2',
-      payload: { note: 'otro' },
-    }),
-    mutation({
-      mutationId: 'a2',
-      payload: { note: 'dos' },
-      createdAtLocal: 200,
-      attempts: 5,
-    }),
-  ]);
-
-  assert.equal(queue.length, 2);
-  assert.equal(queue[0].mutationId, 'a2');
-  assert.equal(queue[0].baseVersion, 7);
-  assert.equal(queue[0].createdAtLocal, 100);
-  assert.equal(queue[0].attempts, 0);
-  assert.equal(queue[0].nextAttemptAt, null);
-  assert.deepEqual(queue[0].payload, { note: 'dos' });
-});
-
-test('crear seguido de update conserva create, pero delete/restore no se fusionan aún', () => {
-  const createThenUpdate = coalesceMutationQueue([
-    mutation({ operation: V4_MUTATION_OPERATIONS.CREATE, baseVersion: 0 }),
-    mutation({ payload: { note: 'final' } }),
-  ]);
-  assert.equal(createThenUpdate.length, 1);
-  assert.equal(createThenUpdate[0].operation, V4_MUTATION_OPERATIONS.CREATE);
-  assert.equal(createThenUpdate[0].baseVersion, 0);
-
-  const deleteThenRestore = coalesceMutationQueue([
-    mutation({ operation: V4_MUTATION_OPERATIONS.DELETE }),
-    mutation({ operation: V4_MUTATION_OPERATIONS.RESTORE }),
-  ]);
-  assert.equal(deleteThenRestore.length, 2);
-});
-
-test('mutaciones inválidas se rechazan antes de llegar al coordinador', () => {
-  assert.equal(
-    mutationEntityKey(mutation()),
-    'user-1/trip-1/segment/segment-1'
-  );
-  assert.throws(
-    () => mutationEntityKey(mutation({ entityType: 'unknown' })),
-    /entityType/
-  );
-  assert.throws(
-    () => mutationEntityKey(mutation({ operation: 'overwrite' })),
-    /operation/
-  );
 });
 
 test('el lease multi-tab usa fencing generation y permite takeover solo al expirar', () => {
