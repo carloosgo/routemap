@@ -6,6 +6,7 @@ import {
   V4_ENTITY_STATUS,
   V4_MUTATION_OPERATIONS,
 } from '../src/modules/storage-v4/storageV4Contract.js';
+import { v4EntityKey } from '../src/modules/storage-v4/entityKeyModel.js';
 import {
   isStaleBaseVersion,
   isValidVersionAdvance,
@@ -17,6 +18,11 @@ import {
   coalesceMutationQueue,
   mutationEntityKey,
 } from '../src/modules/storage-v4/mutationQueueModel.js';
+import {
+  acquireOrRenewLease,
+  leaseIsExpired,
+  leaseStillOwned,
+} from '../src/modules/storage-v4/crossContextLeaseModel.js';
 
 const root = new URL('../', import.meta.url);
 const active = (value) => ({ status: V4_ENTITY_STATUS.ACTIVE, value });
@@ -50,6 +56,27 @@ test('v4 parte de un contrato versionado explícito', () => {
   assert.equal(isStaleBaseVersion(17, 18), true);
   assert.equal(isStaleBaseVersion(18, 18), false);
   assert.throws(() => nextEntityVersion(-1), TypeError);
+});
+
+test('la clave local de entidad es estable y no admite componentes ambiguos', () => {
+  assert.equal(
+    v4EntityKey({
+      userId: 'user-1',
+      tripId: 'trip-1',
+      entityType: 'segment',
+      entityId: 'segment-1',
+    }),
+    'user-1/trip-1/segment/segment-1'
+  );
+  assert.throws(
+    () => v4EntityKey({
+      userId: 'user/escape',
+      tripId: 'trip-1',
+      entityType: 'segment',
+      entityId: 'segment-1',
+    }),
+    /no puede contener/
+  );
 });
 
 test('transiciones de agregados implementan soft delete sin doble descuento', () => {
@@ -144,6 +171,48 @@ test('mutaciones inválidas se rechazan antes de llegar al coordinador', () => {
     () => mutationEntityKey(mutation({ operation: 'overwrite' })),
     /operation/
   );
+});
+
+test('el lease multi-tab usa fencing generation y permite takeover solo al expirar', () => {
+  const tabA = acquireOrRenewLease({ contextId: 'tab-a', nowMs: 1000, ttlMs: 8000 });
+  assert.equal(tabA.generation, 1);
+  assert.equal(leaseIsExpired(tabA, 8999), false);
+  assert.equal(
+    acquireOrRenewLease({ currentLease: tabA, contextId: 'tab-b', nowMs: 5000 }),
+    null
+  );
+
+  const renewedA = acquireOrRenewLease({
+    currentLease: tabA,
+    contextId: 'tab-a',
+    nowMs: 5000,
+    ttlMs: 8000,
+  });
+  assert.equal(renewedA.generation, 1);
+  assert.equal(renewedA.acquiredAt, 1000);
+  assert.equal(leaseStillOwned(renewedA, {
+    contextId: 'tab-a',
+    generation: 1,
+    nowMs: 6000,
+  }), true);
+
+  const tabB = acquireOrRenewLease({
+    currentLease: renewedA,
+    contextId: 'tab-b',
+    nowMs: 13000,
+    ttlMs: 8000,
+  });
+  assert.equal(tabB.generation, 2);
+  assert.equal(leaseStillOwned(tabB, {
+    contextId: 'tab-a',
+    generation: 1,
+    nowMs: 13001,
+  }), false);
+  assert.equal(leaseStillOwned(tabB, {
+    contextId: 'tab-b',
+    generation: 2,
+    nowMs: 13001,
+  }), true);
 });
 
 test('Gate A no activa v4 accidentalmente en el selector productivo', async () => {
