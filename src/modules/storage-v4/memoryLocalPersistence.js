@@ -8,6 +8,7 @@ import {
   leaseStillOwned,
 } from './crossContextLeaseModel.js';
 import { planSyncAcknowledgement } from './syncAckModel.js';
+import { planSyncConflict, planSyncRetry } from './syncOutcomeModel.js';
 
 function copy(value) {
   if (value == null) return value;
@@ -22,6 +23,34 @@ export function createMemoryV4LocalPersistence() {
   const entities = new Map();
   const mutations = new Map();
   let syncLease = null;
+
+  function syncSnapshot(input) {
+    const sentMutation = normalizeMutationRecord(input?.sentMutation);
+    return {
+      sentMutation,
+      lease: syncLease,
+      currentEntity: entities.get(sentMutation.entityKey) || null,
+      currentMutation: mutations.get(sentMutation.entityKey) || null,
+    };
+  }
+
+  function applySyncDecision(decision, entityKey) {
+    if (!decision.apply) return copy(decision);
+    const nextEntity = normalizeLocalEntityRecord(decision.entity);
+    entities.set(nextEntity.key, copy(nextEntity));
+    let nextMutation = null;
+    if (decision.mutation) {
+      nextMutation = normalizeMutationRecord(decision.mutation);
+      mutations.set(nextMutation.entityKey, copy(nextMutation));
+    } else {
+      mutations.delete(entityKey);
+    }
+    return copy({
+      ...decision,
+      entity: nextEntity,
+      mutation: nextMutation,
+    });
+  }
 
   return {
     async getDraft(key) {
@@ -81,31 +110,30 @@ export function createMemoryV4LocalPersistence() {
     },
 
     async acknowledgeSyncedMutation(input) {
-      const sentMutation = normalizeMutationRecord(input?.sentMutation);
+      const snapshot = syncSnapshot(input);
       const decision = planSyncAcknowledgement({
         ...input,
-        sentMutation,
-        lease: syncLease,
-        currentEntity: entities.get(sentMutation.entityKey) || null,
-        currentMutation: mutations.get(sentMutation.entityKey) || null,
+        ...snapshot,
       });
-      if (!decision.apply) return copy(decision);
+      return applySyncDecision(decision, snapshot.sentMutation.entityKey);
+    },
 
-      const nextEntity = normalizeLocalEntityRecord(decision.entity);
-      entities.set(nextEntity.key, copy(nextEntity));
-      if (decision.mutation) {
-        const nextMutation = normalizeMutationRecord(decision.mutation);
-        mutations.set(nextMutation.entityKey, copy(nextMutation));
-      } else {
-        mutations.delete(sentMutation.entityKey);
-      }
-      return copy({
-        ...decision,
-        entity: nextEntity,
-        mutation: decision.mutation
-          ? mutations.get(sentMutation.entityKey)
-          : null,
+    async recordSyncFailure(input) {
+      const snapshot = syncSnapshot(input);
+      const decision = planSyncRetry({
+        ...input,
+        ...snapshot,
       });
+      return applySyncDecision(decision, snapshot.sentMutation.entityKey);
+    },
+
+    async recordSyncConflict(input) {
+      const snapshot = syncSnapshot(input);
+      const decision = planSyncConflict({
+        ...input,
+        ...snapshot,
+      });
+      return applySyncDecision(decision, snapshot.sentMutation.entityKey);
     },
 
     async tryAcquireSyncLease({ contextId, nowMs, ttlMs }) {
