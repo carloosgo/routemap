@@ -43,6 +43,8 @@ Conclusión de recovery en desarrollo: **baseline de PITR + scheduled backup cum
 
 ## Telemetría
 
+### Baseline antes del despliegue acotado
+
 Evidencia capturada a las `2026-08-11T21:52:01Z`, ventana de 7 días:
 
 | stream | seen | latest |
@@ -52,16 +54,25 @@ Evidencia capturada a las `2026-08-11T21:52:01Z`, ventana de 7 días:
 | `storage_v4_provider_cache_metric` | no | — |
 | `storage_v4_provider_request_metric` | no | — |
 
+### Despliegue controlado de telemetría
+
+Evidencia capturada a las `2026-08-11T23:06:53Z` después de un deploy selectivo en `atlasmap-dev`:
+
+- `geoapifyCityAutocomplete`: existe, `ACTIVE`, ingress `ALLOW_ALL`, Cloud Run invoker público presente y preflight CORS desde `http://localhost:5173` responde `204` con método `POST` permitido;
+- `storageV4SyncTelemetry`: existe, `ACTIVE`, ingress `ALLOW_ALL`, Cloud Run invoker público presente y preflight CORS desde `http://localhost:5173` responde `204` con método `POST` permitido;
+- el deploy fue acotado a esas dos Functions y no habilitó Storage v4 WRITE, migración, aggregates, lifecycle ni purge;
+- el error CORS previo de `storageV4SyncTelemetry` quedó explicado por ausencia de la función antes del deploy, no por una política CORS defectuosa.
+
 Interpretación:
 
-- la señal de rollout conserva evidencia E2E real;
-- las señales de sync/cache/provider están preparadas en código pero todavía no tienen evidencia cloud observada;
-- la ausencia de esas señales no se interpreta como fallo funcional mientras sus caminos todavía no hayan sido desplegados/ejercitados en el entorno controlado.
+- la infraestructura necesaria para observar `storage_v4_sync_metric` ya está desplegada y accesible desde el cliente autenticado;
+- `geoapifyCityAutocomplete` ya está desplegada con la instrumentación de provider cache/request;
+- todavía falta ejercitar ambos caminos y volver a consultar Logging antes de declarar observados `storage_v4_sync_metric`, `storage_v4_provider_cache_metric` y `storage_v4_provider_request_metric`.
 
 ## Próximos checkpoints de Phase K
 
-1. desplegar de forma acotada la telemetría nueva y ejercitar provider cache/request en `atlasmap-dev`;
-2. obtener evidencia de `storage_v4_sync_metric` sin activar Storage v4 WRITE globalmente;
+1. ejercitar en `atlasmap-dev` una llamada de city autocomplete con cache miss y una llamada autenticada de `storageV4SyncTelemetry`;
+2. repetir el preflight y registrar evidencia Cloud de los tres streams nuevos;
 3. resolver permisos/visibilidad de budget y configurar alertas de costo;
 4. dashboard + alertas operacionales;
 5. restore drill;
