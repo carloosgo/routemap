@@ -1,7 +1,7 @@
 import { after, before, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { initializeTestEnvironment } from '@firebase/rules-unit-testing';
-import { collection, doc, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc } from 'firebase/firestore';
 import { readFile } from 'node:fs/promises';
 import {
   UNKNOWN_TRIP_STORAGE_CODE,
@@ -161,8 +161,8 @@ test('save revalida root y bloquea v3 stale si backend migró el viaje a v4', as
     hybrid.save({ ...raw, name: 'No debe sobrescribir v4' }),
     (error) => error?.code === V4_WRITE_NOT_ENABLED_CODE
   );
-  const root = await testEnv.withSecurityRulesDisabled(async (context) =>
-    context.firestore().doc(`users/alice/trips/${raw.id}`).get()
+  const root = await testEnv.withSecurityRulesDisabled((context) =>
+    getDoc(doc(context.firestore(), 'users', 'alice', 'trips', raw.id))
   );
   assert.equal(root.data().schemaVersion, 4);
   assert.equal(root.data().name, raw.name);
@@ -192,8 +192,8 @@ test('remove revalida root y nunca borra un viaje ya migrado a v4', async () => 
     hybrid.remove(raw.id),
     (error) => error?.code === V4_WRITE_NOT_ENABLED_CODE
   );
-  const root = await testEnv.withSecurityRulesDisabled(async (context) =>
-    context.firestore().doc(`users/alice/trips/${raw.id}`).get()
+  const root = await testEnv.withSecurityRulesDisabled((context) =>
+    getDoc(doc(context.firestore(), 'users', 'alice', 'trips', raw.id))
   );
   assert.equal(root.exists(), true);
   assert.equal(root.data().schemaVersion, 4);
