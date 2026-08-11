@@ -11,6 +11,9 @@ test('Phase K preflight es estrictamente read-only', async () => {
   assert.match(source, /firestore', 'backups', 'schedules', 'list'/);
   assert.match(source, /billing', 'projects', 'describe'/);
   assert.match(source, /billing', 'budgets', 'list'/);
+  assert.match(source, /Invoke-RestMethod -Method Get/);
+  assert.match(source, /databases\/\$encodedDatabase\/backupSchedules/);
+  assert.doesNotMatch(source, /Invoke-RestMethod -Method (Post|Put|Patch|Delete)/i);
   assert.doesNotMatch(source, /firestore['", ]+databases['", ]+update/i);
   assert.doesNotMatch(source, /backups['", ]+schedules['", ]+create/i);
   assert.doesNotMatch(source, /backups['", ]+schedules['", ]+delete/i);
