@@ -29,6 +29,7 @@ export { googlePlaceLocations } from './googlePlaceLocationFunction.js';
 export { googleCountryPlaceIds } from './googleCountryPlaceIdsFunction.js';
 export { googleRouteOptimized } from './googleOptimizedRouteFunction.js';
 
-// Gate G READ: observability only. This callable does not enable v4 writes,
+// Observability-only callables. These exports do not enable v4 writes,
 // migrations, aggregates, lifecycle or purge functions.
 export { storageV4RolloutTelemetry } from './v4RolloutTelemetryFunction.js';
+export { storageV4SyncTelemetry } from './v4SyncTelemetryFunction.js';
