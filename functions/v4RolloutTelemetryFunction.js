@@ -10,6 +10,12 @@ export const storageV4RolloutTelemetry = onCall(
     concurrency: 40,
   }),
   async (request) => {
+    logInfo('storage_v4_rollout_auth_state', {
+      hasAuth: Boolean(request.auth),
+      hasUid: Boolean(request.auth?.uid),
+      hasAppCheck: Boolean(request.app),
+    });
+
     requireAuthenticated(request);
 
     let events;
