@@ -11,11 +11,22 @@ function envBoolean(value, fallback = false) {
   if (value === false || value === 'false') return false;
   return fallback;
 }
+function envNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
 
 export const config = {
   storageDriver: allowedValue(env.VITE_STORAGE_DRIVER, ['local', 'api'], 'local'),
   apiBaseUrl: cleanString(env.VITE_API_BASE_URL),
   storageKey: 'atlas:trips:v1',
+  storageV4Rollout: {
+    enabled: envBoolean(env.VITE_STORAGE_V4_ENABLED, false),
+    killSwitch: envBoolean(env.VITE_STORAGE_V4_KILL_SWITCH, true),
+    mode: allowedValue(env.VITE_STORAGE_V4_MODE, ['off', 'read', 'pilot'], 'off'),
+    cohortPercent: envNumber(env.VITE_STORAGE_V4_COHORT_PERCENT, 0),
+    salt: cleanString(env.VITE_STORAGE_V4_COHORT_SALT) || 'atlas-storage-v4',
+  },
   firebase: {
     apiKey: cleanString(env.VITE_FIREBASE_API_KEY),
     authDomain: cleanString(env.VITE_FIREBASE_AUTH_DOMAIN),
