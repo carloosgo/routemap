@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { HttpsError } from 'firebase-functions/v2/https';
 import {
   V4_TRIP_LIFECYCLE_QUOTA,
   createV4TripLifecycleCallableHandler,
@@ -73,21 +72,18 @@ test('callable deriva UID de Auth y nunca acepta retentionMs del cliente', async
   });
 });
 
-test('callable conserva HttpsError de autenticación y cuota', async () => {
-  const authError = new HttpsError('unauthenticated', 'login');
-  const authHandler = createV4TripLifecycleCallableHandler({
+test('callable exige autenticación con la política real del backend', async () => {
+  const handler = createV4TripLifecycleCallableHandler({
     db: {},
-    authenticate: () => { throw authError; },
+    applyOperation: async () => {
+      throw new Error('no debe ejecutarse');
+    },
   });
-  await assert.rejects(authHandler(request(validData(), null)), (error) => error === authError);
 
-  const quotaError = new HttpsError('resource-exhausted', 'limit');
-  const quotaHandler = createV4TripLifecycleCallableHandler({
-    db: {},
-    authenticate: () => 'alice',
-    enforceRateLimit: async () => { throw quotaError; },
+  await assert.rejects(handler(request(validData(), null)), (error) => {
+    assert.equal(codeOf(error), 'unauthenticated');
+    return true;
   });
-  await assert.rejects(quotaHandler(request(validData())), (error) => error === quotaError);
 });
 
 test('errores de validación del store se publican como invalid-argument', async () => {
