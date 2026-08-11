@@ -5,6 +5,7 @@ import { v4SegmentAggregateValue } from './v4SegmentAggregateValue.js';
 const RADIX = 36;
 const RANK_WIDTH = 10;
 const RANK_STEP = 1_000_000;
+const SUPPORTED_SOURCE_VERSIONS = new Set([2, 3]);
 const COLLECTION_SPECS = Object.freeze([
   ['segments', 'segments', 'segment'],
   ['places', 'places', 'place'],
@@ -29,7 +30,7 @@ function timestampFromIso(value, field) {
 }
 
 function initialRank(position) {
-  if (!Number.isInteger(position) || position < 0) throw new TypeError('position v3 inválida.');
+  if (!Number.isInteger(position) || position < 0) throw new TypeError('position legacy inválida.');
   return ((position + 1) * RANK_STEP).toString(RADIX).padStart(RANK_WIDTH, '0');
 }
 
@@ -155,11 +156,19 @@ function materializeEntity(type, raw, rank, createdAt, updatedAt) {
   throw new TypeError('Tipo de entidad de migración desconocido.');
 }
 
-function expectedCount(summary, revision, field) {
+function expectedCount(summary, revision, field, sourceVersion) {
+  if (field === 'routeConnectionCount' && sourceVersion === 2) {
+    const summaryValue = summary?.[field] == null ? 0 : Number(summary[field]);
+    const revisionValue = revision?.[field] == null ? 0 : Number(revision[field]);
+    if (summaryValue !== 0 || revisionValue !== 0) {
+      throw new TypeError('storageVersion 2 no puede declarar routeConnections.');
+    }
+    return 0;
+  }
   const summaryValue = Number(summary?.[field]);
   const revisionValue = Number(revision?.[field]);
   if (!Number.isInteger(summaryValue) || summaryValue < 0 || summaryValue !== revisionValue) {
-    throw new TypeError(`${field} v3 no coincide entre summary y revision.`);
+    throw new TypeError(`${field} legacy no coincide entre summary y revision.`);
   }
   return summaryValue;
 }
@@ -167,26 +176,29 @@ function expectedCount(summary, revision, field) {
 export function materializePersistedV3ToV4({ summary, revision, collections } = {}) {
   const tripId = requiredText(summary?.id, 'summary.id');
   const activeRevision = requiredText(summary?.activeRevision, 'summary.activeRevision');
-  if (Number(summary?.storageVersion) !== 3) throw new TypeError('Solo storageVersion 3 puede migrarse a v4.');
+  const sourceVersion = Number(summary?.storageVersion);
+  if (!SUPPORTED_SOURCE_VERSIONS.has(sourceVersion)) {
+    throw new TypeError('Solo storageVersion 2 o 3 puede migrarse a v4.');
+  }
   if (revision?.id !== activeRevision || revision?.complete !== true) {
-    throw new TypeError('La revisión v3 activa no está completa o no coincide con el summary.');
+    throw new TypeError('La revisión legacy activa no está completa o no coincide con el summary.');
   }
 
   const createdAt = timestampFromIso(summary.createdAt, 'summary.createdAt');
   const updatedAt = timestampFromIso(summary.updatedAt, 'summary.updatedAt');
   const expectedCounts = {
-    segments: expectedCount(summary, revision, 'segmentCount'),
-    places: expectedCount(summary, revision, 'placeCount'),
-    routeConnections: expectedCount(summary, revision, 'routeConnectionCount'),
-    notes: expectedCount(summary, revision, 'noteCount'),
-    checklist: expectedCount(summary, revision, 'checklistCount'),
+    segments: expectedCount(summary, revision, 'segmentCount', sourceVersion),
+    places: expectedCount(summary, revision, 'placeCount', sourceVersion),
+    routeConnections: expectedCount(summary, revision, 'routeConnectionCount', sourceVersion),
+    notes: expectedCount(summary, revision, 'noteCount', sourceVersion),
+    checklist: expectedCount(summary, revision, 'checklistCount', sourceVersion),
   };
 
   const outputCollections = {};
   for (const [sourceName, targetName, entityType] of COLLECTION_SPECS) {
     const source = ordered(collections?.[sourceName], sourceName);
     if (source.length !== expectedCounts[sourceName]) {
-      throw new TypeError(`${sourceName} v3 no coincide con su count declarado.`);
+      throw new TypeError(`${sourceName} legacy no coincide con su count declarado.`);
     }
     outputCollections[targetName] = source.map((item, index) => materializeEntity(
       entityType,
@@ -200,7 +212,7 @@ export function materializePersistedV3ToV4({ summary, revision, collections } = 
   const placeIds = new Set(outputCollections.places.map((item) => item.id));
   for (const connection of outputCollections.connections) {
     if (!placeIds.has(connection.fromPlaceId) || !placeIds.has(connection.toPlaceId)) {
-      throw new TypeError('Una conexión v3 referencia un lugar inexistente.');
+      throw new TypeError('Una conexión legacy referencia un lugar inexistente.');
     }
   }
 
@@ -208,7 +220,7 @@ export function materializePersistedV3ToV4({ summary, revision, collections } = 
     .reduce((sum, segment) => sum + v4SegmentAggregateValue(segment), 0);
   const declaredTotal = Number(summary.total);
   if (!Number.isFinite(declaredTotal) || Math.abs(declaredTotal - computedTotal) > 0.000001) {
-    throw new TypeError('El total v3 declarado no coincide con los trayectos persistidos.');
+    throw new TypeError('El total legacy declarado no coincide con los trayectos persistidos.');
   }
 
   const root = {
@@ -253,7 +265,7 @@ export function materializePersistedV3ToV4({ summary, revision, collections } = 
   return {
     source: {
       tripId,
-      storageVersion: 3,
+      storageVersion: sourceVersion,
       activeRevision,
       sourceUpdatedAt: summary.updatedAt,
     },
