@@ -33,6 +33,7 @@ export function createSyncScheduleState({
     lastDirtyAt: null,
     dirtyGeneration: 0,
     immediateReason: null,
+    notBefore: null,
   };
 }
 
@@ -43,6 +44,7 @@ export function markScheduleDirty(state, nowMs) {
     dirtySince: state.dirtySince ?? now,
     lastDirtyAt: now,
     dirtyGeneration: state.dirtyGeneration + 1,
+    notBefore: null,
   };
 }
 
@@ -100,16 +102,22 @@ export function nextScheduledFlush(
 
   const debounceDue = state.lastDirtyAt + debounce;
   const maxAgeDue = state.dirtySince + maxAge;
-  if (maxAgeDue <= debounceDue) {
-    return { dueAt: maxAgeDue, reason: V4_FLUSH_REASON.MAX_DIRTY_AGE };
-  }
-  return { dueAt: debounceDue, reason: V4_FLUSH_REASON.DEBOUNCE };
+  const policyDue = Math.min(debounceDue, maxAgeDue);
+  const dueAt = state.notBefore == null
+    ? policyDue
+    : Math.max(policyDue, state.notBefore);
+  return {
+    dueAt,
+    reason: maxAgeDue <= debounceDue
+      ? V4_FLUSH_REASON.MAX_DIRTY_AGE
+      : V4_FLUSH_REASON.DEBOUNCE,
+  };
 }
 
 export function beginScheduledFlush(state) {
   if (state.dirtySince == null) return { state, generation: null };
   return {
-    state: { ...state, immediateReason: null },
+    state: { ...state, immediateReason: null, notBefore: null },
     generation: state.dirtyGeneration,
   };
 }
@@ -119,6 +127,7 @@ export function completeScheduledFlush(
   {
     flushedGeneration,
     hasPending,
+    nextAttemptAt = null,
     nowMs,
   }
 ) {
@@ -126,6 +135,7 @@ export function completeScheduledFlush(
   if (!Number.isInteger(flushedGeneration) || flushedGeneration < 1) {
     throw new TypeError('flushedGeneration debe ser un entero positivo.');
   }
+  if (nextAttemptAt != null) requireTime(nextAttemptAt, 'nextAttemptAt');
 
   const editedDuringFlight = state.dirtyGeneration !== flushedGeneration;
   if (!hasPending && !editedDuringFlight) {
@@ -134,14 +144,20 @@ export function completeScheduledFlush(
       dirtySince: null,
       lastDirtyAt: null,
       immediateReason: null,
+      notBefore: null,
     };
   }
 
+  const retryScheduled = hasPending
+    && Number.isFinite(nextAttemptAt)
+    && nextAttemptAt > now;
   return {
     ...state,
     dirtySince: state.dirtySince ?? now,
-    immediateReason: editedDuringFlight
+    lastDirtyAt: editedDuringFlight ? state.lastDirtyAt : now,
+    immediateReason: editedDuringFlight || (hasPending && !retryScheduled)
       ? V4_FLUSH_REASON.FOLLOW_UP
-      : state.immediateReason,
+      : null,
+    notBefore: retryScheduled ? nextAttemptAt : null,
   };
 }
