@@ -18,7 +18,7 @@ Este documento distingue el **roadmap original A–L** de los **rollout gates**.
 | H — concurrency/conflicts | Implementado en contrato/tests | Entity-level conflict en v4.0; no merge complejo campo-a-campo. |
 | I — migration | Implementado en código/tests | Materializer/verifier/rollback existentes; migración productiva no ejecutada. |
 | J — provider cache separation | Preparado lógicamente; separación física pendiente | `cacheDb` centraliza temporales, `expiresAt` y resiliencia probados. `atlas-cache` físico espera acceso server-side aprobado para named DB. |
-| K — monitoring/backups/load | En progreso avanzado | Preflight real ya ejecutado en `atlasmap-dev`; recovery aún incompleto y nuevas señales aún no observadas en Cloud. |
+| K — monitoring/backups/load | En progreso avanzado | Recovery base ya activo y verificado en `atlasmap-dev`: PITR 7d + un scheduled backup diario con retención 7d. Observabilidad/costos/restore/load todavía incompletos. |
 | L — production | Preparado, no iniciado | Runbook L0–L7 creado. Producción no se toca hasta completar recovery/cost/security gates. |
 
 ## Rollout Gate G READ
@@ -62,11 +62,11 @@ Evidencia `atlasmap-dev` del 2026-08-11:
 
 - database `(default)` en `northamerica-south1`;
 - billing habilitado;
-- PITR **deshabilitado**;
-- retención de versiones `3600s`;
+- PITR **habilitado**;
+- retención de versiones `604800s` (7 días);
 - delete protection deshabilitado;
-- backup schedule probe exitoso y **0 schedules**;
-- budget todavía no demostrado con la identidad actual; se añadió probe project-scoped para el siguiente preflight;
+- un scheduled backup diario activo, creado `2026-08-11T21:51:35.104231Z`, con retención `604800s` (7 días);
+- budget todavía no demostrado: el probe project-scoped obtuvo HTTP 403 con la identidad actual; no se interpreta como ausencia de budget;
 - `storage_v4_rollout_metric` visible en Cloud;
 - `storage_v4_sync_metric`, `storage_v4_provider_cache_metric` y `storage_v4_provider_request_metric` todavía sin evidencia Cloud.
 
@@ -74,12 +74,11 @@ La evidencia completa está en `docs/STORAGE_V4_PHASE_K_EVIDENCE_2026-08-11.md`.
 
 Todavía falta para cerrar K:
 
-- habilitar PITR y scheduled backup en entorno controlado y verificarlo;
 - desplegar/observar `storage_v4_sync_metric`, `storage_v4_provider_cache_metric` y `storage_v4_provider_request_metric`;
 - dashboard;
 - alertas;
 - budget configurado y observable;
-- restore drill;
+- restore drill real usando recovery controlado;
 - provider outage E2E;
 - multidevice E2E de navegador/dispositivos reales además de la simulación determinista;
 - carga/reconnect E2E y medición de SLO;
