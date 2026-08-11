@@ -11,6 +11,7 @@ export function selectTripRepository({
   uid,
   localRepository,
   rolloutConfig = config.storageV4Rollout,
+  emitTelemetry = null,
 }) {
   if (!uid) return localRepository;
 
@@ -19,5 +20,6 @@ export function selectTripRepository({
     db,
     uid,
     rolloutConfig,
+    emitTelemetry,
   }).repository;
 }
