@@ -248,6 +248,7 @@ export function materializePersistedV3ToV4({ summary, revision, collections } = 
       updatedAt,
     });
   }
+  contributions.sort((left, right) => left.id.localeCompare(right.id));
 
   return {
     source: {
