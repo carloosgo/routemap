@@ -16,6 +16,7 @@ test('config usa valores seguros fuera de Vite', () => {
     mode: 'off',
     cohortPercent: 0,
     salt: 'atlas-storage-v4',
+    readRulesReady: false,
   });
 });
 
