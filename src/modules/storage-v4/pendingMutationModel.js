@@ -98,7 +98,7 @@ export function upsertPendingMutation({ previous = null, intent, nowMs }) {
 
 export function rebasePendingMutation(record, { serverVersion, serverStatus, nowMs }) {
   if (!record) return null;
-  return upsertPendingMutation({
+  const rebased = upsertPendingMutation({
     intent: {
       ...record,
       baseVersion: requireVersion(serverVersion),
@@ -106,4 +106,9 @@ export function rebasePendingMutation(record, { serverVersion, serverStatus, now
     },
     nowMs,
   });
+  if (!rebased) return null;
+  return {
+    ...rebased,
+    createdAtLocal: record.createdAtLocal ?? rebased.createdAtLocal,
+  };
 }
