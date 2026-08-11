@@ -87,6 +87,12 @@ export function createFirestoreTripRepository({ db, uid }) {
     knownVersions.set(snapshot.id, storedVersion(snapshot));
   }
 
+  function rememberSummary(id, data, { overwrite = false } = {}) {
+    const tripId = requireTripId(id);
+    if (!overwrite && knownVersions.has(tripId)) return;
+    knownVersions.set(tripId, storedVersionFromData(data));
+  }
+
   async function saveOnce(rawTrip) {
     const revisionId = createRevisionId();
     const now = new Date().toISOString();
@@ -152,6 +158,8 @@ export function createFirestoreTripRepository({ db, uid }) {
   }
 
   return {
+    rememberSummary,
+
     async list() {
       const snapshot = await getDocs(
         query(tripsCollection, orderBy('updatedAt', 'desc'))
