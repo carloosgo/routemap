@@ -20,7 +20,17 @@
 7. App Check se configura y observa antes de activar enforcement.
 8. Las Functions públicas usan cuota compartida, límites de instancias y caché con expiración.
 9. Las claves privadas de proveedores viven únicamente en Firebase Secret Manager.
-10. Tramos y Lugares son dominios independientes y solo comparten el lienzo MapLibre.
+10. Trayectos y Lugares son dominios independientes y solo comparten el lienzo de mapa.
+
+## Persistencia: estado actual y arquitectura objetivo
+
+El almacenamiento activo sigue siendo **v3**. No se ha conectado v4 al selector de repositorio productivo.
+
+El contrato objetivo de persistencia incremental, local-first, multi-dispositivo y preparado para web/iOS/Android está definido en:
+
+- `docs/STORAGE_ARCHITECTURE_V4.md`
+
+La activación v4 es por gates. No se permite sustituir v3 hasta que las pruebas de la fase correspondiente, reglas de Emulator, rollback y telemetría requeridos por ese documento hayan pasado.
 
 ## Secretos de Geoapify
 
@@ -45,9 +55,9 @@ No deben unificarse, copiarse al frontend, almacenarse en `.env.local`, registra
 
 `geoapifyCityAutocomplete` declara `enforceAppCheck: false` de forma explícita mientras termina la activación gradual de App Check. Las demás Functions heredan el parámetro global `ENFORCE_APP_CHECK`, cuyo valor predeterminado es `false`.
 
-## Persistencia de viajes
+## Persistencia de viajes v3 (activa)
 
-El documento principal contiene un resumen ligero y apunta a una revisión completa. Tramos, lugares, notas y checklist se guardan en subcolecciones de la revisión.
+El documento principal contiene un resumen ligero y apunta a una revisión completa. Trayectos, lugares, notas y checklist se guardan en subcolecciones de la revisión.
 
 El orden de escritura es:
 
@@ -119,12 +129,13 @@ Las Functions usan Node.js 22 y las pruebas del emulador requieren Java 21.
 
 - Proyecto Blaze, Firestore y Secret Manager.
 - Google Auth y persistencia local/remota.
-- Resúmenes ligeros y revisiones inmutables.
+- Resúmenes ligeros y revisiones inmutables v3.
 - Reglas Firestore y pruebas con emulador.
 - Cuotas, cachés y límites comunes de callable Functions.
 - Autocomplete privado de ciudades con clave exclusiva y `type=city` forzado.
-- Separación estricta entre Tramos y Lugares.
+- Separación estricta entre Trayectos y Lugares.
 - Resolución del error 401 del autocomplete mediante override explícito de App Check.
+- Contrato de arquitectura Storage v4 y modelos puros iniciales sin activación productiva.
 
 ### Pendiente de cierre de auditoría
 
@@ -136,4 +147,4 @@ Las Functions usan Node.js 22 y las pruebas del emulador requieren Java 21.
 
 ### Fase funcional posterior
 
-Las conexiones y rutas reales se implementarán únicamente entre lugares guardados dentro de Lugares. Tendrán modelo, persistencia y capas propios; no formarán parte de `segment` ni sustituirán las curvas visuales de Tramos.
+Las conexiones y rutas reales se implementan únicamente entre lugares guardados dentro de Lugares. Tienen modelo, persistencia y capas propios; no forman parte de `segment` ni sustituyen las curvas visuales de Trayectos.
