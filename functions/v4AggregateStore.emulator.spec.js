@@ -51,28 +51,29 @@ after(async () => {
 
 test('agregado de segmento converge aunque eventos lleguen duplicados y fuera de orden', async () => {
   const tripId = 'trip-aggregate';
+  const entityId = 'segment-1';
   await seedTrip(tripId);
 
-  const v1 = segment('segment-1', 1, 100);
+  const v1 = segment(entityId, 1, 100);
   await applyV4AggregateEvent({
-    db, userId: 'alice', tripId, entityType: 'segment', after: v1,
+    db, userId: 'alice', tripId, entityId, entityType: 'segment', after: v1,
   });
   let trip = (await db.doc(`users/alice/trips/${tripId}`).get()).data();
   assert.equal(trip.segmentCount, 1);
   assert.equal(trip.total, 100);
 
   const duplicate = await applyV4AggregateEvent({
-    db, userId: 'alice', tripId, entityType: 'segment', after: v1,
+    db, userId: 'alice', tripId, entityId, entityType: 'segment', after: v1,
   });
   assert.equal(duplicate.applied, false);
 
-  const v2 = segment('segment-1', 2, 120);
-  const v3 = segment('segment-1', 3, 140);
+  const v2 = segment(entityId, 2, 120);
+  const v3 = segment(entityId, 3, 140);
   await applyV4AggregateEvent({
-    db, userId: 'alice', tripId, entityType: 'segment', before: v2, after: v3,
+    db, userId: 'alice', tripId, entityId, entityType: 'segment', before: v2, after: v3,
   });
   const lateV2 = await applyV4AggregateEvent({
-    db, userId: 'alice', tripId, entityType: 'segment', before: v1, after: v2,
+    db, userId: 'alice', tripId, entityId, entityType: 'segment', before: v1, after: v2,
   });
   assert.equal(lateV2.applied, false);
 
@@ -83,17 +84,19 @@ test('agregado de segmento converge aunque eventos lleguen duplicados y fuera de
 
 test('tombstone descuenta una sola vez y restore vuelve a aportar', async () => {
   const tripId = 'trip-delete-restore';
+  const entityId = 'segment-1';
   await seedTrip(tripId);
-  const activeV1 = segment('segment-1', 1, 80);
+  const activeV1 = segment(entityId, 1, 80);
   await applyV4AggregateEvent({
-    db, userId: 'alice', tripId, entityType: 'segment', after: activeV1,
+    db, userId: 'alice', tripId, entityId, entityType: 'segment', after: activeV1,
   });
 
-  const deletedV2 = segment('segment-1', 2, 80, 'deleted');
+  const deletedV2 = segment(entityId, 2, 80, 'deleted');
   await applyV4AggregateEvent({
     db,
     userId: 'alice',
     tripId,
+    entityId,
     entityType: 'segment',
     before: activeV1,
     after: deletedV2,
@@ -102,6 +105,7 @@ test('tombstone descuenta una sola vez y restore vuelve a aportar', async () => 
     db,
     userId: 'alice',
     tripId,
+    entityId,
     entityType: 'segment',
     before: deletedV2,
     after: null,
@@ -111,11 +115,12 @@ test('tombstone descuenta una sola vez y restore vuelve a aportar', async () => 
   assert.equal(trip.segmentCount, 0);
   assert.equal(trip.total, 0);
 
-  const restoredV3 = segment('segment-1', 3, 90);
+  const restoredV3 = segment(entityId, 3, 90);
   await applyV4AggregateEvent({
     db,
     userId: 'alice',
     tripId,
+    entityId,
     entityType: 'segment',
     before: deletedV2,
     after: restoredV3,
@@ -127,13 +132,35 @@ test('tombstone descuenta una sola vez y restore vuelve a aportar', async () => 
 
 test('places modifican placeCount pero nunca el total monetario', async () => {
   const tripId = 'trip-place-aggregate';
+  const entityId = 'place-1';
   await seedTrip(tripId);
-  const place = { id: 'place-1', version: 1, status: 'active' };
+  const place = { id: entityId, version: 1, status: 'active' };
   await applyV4AggregateEvent({
-    db, userId: 'alice', tripId, entityType: 'place', after: place,
+    db, userId: 'alice', tripId, entityId, entityType: 'place', after: place,
   });
   const trip = (await db.doc(`users/alice/trips/${tripId}`).get()).data();
   assert.equal(trip.placeCount, 1);
+  assert.equal(trip.segmentCount, 0);
+  assert.equal(trip.total, 0);
+});
+
+test('store rechaza un payload cuyo id no coincide con la ruta autoritativa del evento', async () => {
+  const tripId = 'trip-identity';
+  await seedTrip(tripId);
+
+  await assert.rejects(
+    applyV4AggregateEvent({
+      db,
+      userId: 'alice',
+      tripId,
+      entityId: 'segment-path',
+      entityType: 'segment',
+      after: segment('segment-payload', 1, 50),
+    }),
+    /no coincide con la ruta del evento/
+  );
+
+  const trip = (await db.doc(`users/alice/trips/${tripId}`).get()).data();
   assert.equal(trip.segmentCount, 0);
   assert.equal(trip.total, 0);
 });
