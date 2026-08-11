@@ -41,7 +41,9 @@ function oneOf(value, allowed, field) {
 
 function clonePayload(payload) {
   if (payload === undefined || payload === null) return null;
-  if (typeof structuredClone === 'function') return structuredClone(payload);
+  if (typeof globalThis.structuredClone === 'function') {
+    return globalThis.structuredClone(payload);
+  }
   return JSON.parse(JSON.stringify(payload));
 }
 
