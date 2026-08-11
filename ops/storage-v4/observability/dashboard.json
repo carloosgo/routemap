@@ -1,1 +1,575 @@
-{"displayName":"Atlas Storage v4 — dev","labels":{"system":"atlas-storage-v4","environment":"dev"},"gridLayout":{"columns":"2","widgets":[{"text":{"content":"## Atlas Storage v4 — dev\nObservabilidad operacional de Storage v4 en `atlasmap-dev`. Las métricas personalizadas provienen de telemetría allowlist sin contenido de viaje ni identificadores de usuario. Los objetivos son internos y se deben recalibrar con tráfico real.","format":"MARKDOWN"}},{"title":"Eventos Storage v4 recientes","logsPanel":{"filter":"jsonPayload.message=(\"storage_v4_rollout_metric\" OR \"storage_v4_sync_metric\" OR \"storage_v4_provider_cache_metric\" OR \"storage_v4_provider_request_metric\")","resourceNames":["projects/atlasmap-dev"]}},{"title":"Rollout events","xyChart":{"dataSets":[{"timeSeriesQuery":{"timeSeriesFilter":{"filter":"metric.type=\"logging.googleapis.com/user/atlas_storage_v4_rollout_events\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_DELTA","crossSeriesReducer":"REDUCE_SUM","groupByFields":["metric.labels.operation"]}}},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"{{metric.labels.operation}} / {{metric.labels.outcome}}"}],"timeshiftDuration":"0s","yAxis":{"label":"events/min","scale":"LINEAR"},"chartOptions":{"mode":"COLOR"}}},{"title":"Sync events","xyChart":{"dataSets":[{"timeSeriesQuery":{"timeSeriesFilter":{"filter":"metric.type=\"logging.googleapis.com/user/atlas_storage_v4_sync_events\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_DELTA","crossSeriesReducer":"REDUCE_SUM","groupByFields":["metric.labels.event"]}}},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"{{metric.labels.event}} / {{metric.labels.outcome}}"}],"timeshiftDuration":"0s","yAxis":{"label":"events/min","scale":"LINEAR"},"chartOptions":{"mode":"COLOR"}}},{"title":"Provider cache events","xyChart":{"dataSets":[{"timeSeriesQuery":{"timeSeriesFilter":{"filter":"metric.type=\"logging.googleapis.com/user/atlas_storage_v4_provider_cache_events\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_DELTA","crossSeriesReducer":"REDUCE_SUM","groupByFields":["metric.labels.outcome"]}}},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"{{metric.labels.outcome}}"}],"timeshiftDuration":"0s","yAxis":{"label":"events/min","scale":"LINEAR"},"chartOptions":{"mode":"COLOR"}}},{"title":"Provider request events","xyChart":{"dataSets":[{"timeSeriesQuery":{"timeSeriesFilter":{"filter":"metric.type=\"logging.googleapis.com/user/atlas_storage_v4_provider_request_events\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_DELTA","crossSeriesReducer":"REDUCE_SUM","groupByFields":["metric.labels.provider"]}}},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"{{metric.labels.provider}} / {{metric.labels.operation}} / {{metric.labels.outcome}}"}],"timeshiftDuration":"0s","yAxis":{"label":"events/min","scale":"LINEAR"},"chartOptions":{"mode":"COLOR"}}},{"title":"Repository success ratio","xyChart":{"dataSets":[{"timeSeriesQuery":{"timeSeriesFilterRatio":{"numerator":{"filter":"metric.type=\"logging.googleapis.com/user/atlas_storage_v4_rollout_events\" AND metric.labels.outcome=\"success\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_DELTA","crossSeriesReducer":"REDUCE_SUM"}},"denominator":{"filter":"metric.type=\"logging.googleapis.com/user/atlas_storage_v4_rollout_events\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_DELTA","crossSeriesReducer":"REDUCE_SUM"}}},"unitOverride":"10^2.%"},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"ratio"}],"timeshiftDuration":"0s","yAxis":{"label":"%","scale":"LINEAR"},"chartOptions":{"mode":"COLOR"}}},{"title":"Sync flush success ratio","xyChart":{"dataSets":[{"timeSeriesQuery":{"timeSeriesFilterRatio":{"numerator":{"filter":"metric.type=\"logging.googleapis.com/user/atlas_storage_v4_sync_events\" AND metric.labels.event=\"flush\" AND metric.labels.outcome=\"success\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_DELTA","crossSeriesReducer":"REDUCE_SUM"}},"denominator":{"filter":"metric.type=\"logging.googleapis.com/user/atlas_storage_v4_sync_events\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_DELTA","crossSeriesReducer":"REDUCE_SUM"}}},"unitOverride":"10^2.%"},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"ratio"}],"timeshiftDuration":"0s","yAxis":{"label":"%","scale":"LINEAR"},"chartOptions":{"mode":"COLOR"}}},{"title":"Provider success ratio","xyChart":{"dataSets":[{"timeSeriesQuery":{"timeSeriesFilterRatio":{"numerator":{"filter":"metric.type=\"logging.googleapis.com/user/atlas_storage_v4_provider_request_events\" AND metric.labels.outcome=\"success\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_DELTA","crossSeriesReducer":"REDUCE_SUM"}},"denominator":{"filter":"metric.type=\"logging.googleapis.com/user/atlas_storage_v4_provider_request_events\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_DELTA","crossSeriesReducer":"REDUCE_SUM"}}},"unitOverride":"10^2.%"},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"ratio"}],"timeshiftDuration":"0s","yAxis":{"label":"%","scale":"LINEAR"},"chartOptions":{"mode":"COLOR"}}},{"title":"Provider cache hit ratio","xyChart":{"dataSets":[{"timeSeriesQuery":{"timeSeriesFilterRatio":{"numerator":{"filter":"metric.type=\"logging.googleapis.com/user/atlas_storage_v4_provider_cache_events\" AND metric.labels.outcome=\"hit\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_DELTA","crossSeriesReducer":"REDUCE_SUM"}},"denominator":{"filter":"metric.type=\"logging.googleapis.com/user/atlas_storage_v4_provider_cache_events\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_DELTA","crossSeriesReducer":"REDUCE_SUM"}}},"unitOverride":"10^2.%"},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"ratio"}],"timeshiftDuration":"0s","yAxis":{"label":"%","scale":"LINEAR"},"chartOptions":{"mode":"COLOR"}}},{"title":"Repository p95 latency","xyChart":{"dataSets":[{"timeSeriesQuery":{"timeSeriesFilter":{"filter":"metric.type=\"logging.googleapis.com/user/atlas_storage_v4_rollout_latency_ms\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_PERCENTILE_95","crossSeriesReducer":"REDUCE_PERCENTILE_95"}},"unitOverride":"ms"},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"p95"}],"timeshiftDuration":"0s","yAxis":{"label":"ms","scale":"LINEAR"},"chartOptions":{"mode":"COLOR"}}},{"title":"Sync p95 latency","xyChart":{"dataSets":[{"timeSeriesQuery":{"timeSeriesFilter":{"filter":"metric.type=\"logging.googleapis.com/user/atlas_storage_v4_sync_latency_ms\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_PERCENTILE_95","crossSeriesReducer":"REDUCE_PERCENTILE_95"}},"unitOverride":"ms"},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"p95"}],"timeshiftDuration":"0s","yAxis":{"label":"ms","scale":"LINEAR"},"chartOptions":{"mode":"COLOR"}}},{"title":"Provider p95 latency","xyChart":{"dataSets":[{"timeSeriesQuery":{"timeSeriesFilter":{"filter":"metric.type=\"logging.googleapis.com/user/atlas_storage_v4_provider_latency_ms\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_PERCENTILE_95","crossSeriesReducer":"REDUCE_PERCENTILE_95"}},"unitOverride":"ms"},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"p95"}],"timeshiftDuration":"0s","yAxis":{"label":"ms","scale":"LINEAR"},"chartOptions":{"mode":"COLOR"}}},{"title":"Firestore document operations","xyChart":{"dataSets":[{"timeSeriesQuery":{"timeSeriesFilter":{"filter":"metric.type=\"firestore.googleapis.com/document/read_ops_count\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_DELTA","crossSeriesReducer":"REDUCE_SUM"}}},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"reads"},{"timeSeriesQuery":{"timeSeriesFilter":{"filter":"metric.type=\"firestore.googleapis.com/document/write_ops_count\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_DELTA","crossSeriesReducer":"REDUCE_SUM"}}},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"writes"},{"timeSeriesQuery":{"timeSeriesFilter":{"filter":"metric.type=\"firestore.googleapis.com/document/delete_ops_count\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_DELTA","crossSeriesReducer":"REDUCE_SUM"}}},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"deletes"}],"timeshiftDuration":"0s","yAxis":{"label":"ops/min","scale":"LINEAR"},"chartOptions":{"mode":"COLOR"}}},{"title":"Firestore storage","xyChart":{"dataSets":[{"timeSeriesQuery":{"timeSeriesFilter":{"filter":"metric.type=\"firestore.googleapis.com/storage/data_and_index_storage_bytes\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_MEAN","crossSeriesReducer":"REDUCE_SUM"}},"unitOverride":"By"},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"data+indexes"},{"timeSeriesQuery":{"timeSeriesFilter":{"filter":"metric.type=\"firestore.googleapis.com/storage/pitr_storage_bytes\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_MEAN","crossSeriesReducer":"REDUCE_SUM"}},"unitOverride":"By"},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"PITR"},{"timeSeriesQuery":{"timeSeriesFilter":{"filter":"metric.type=\"firestore.googleapis.com/storage/backups_storage_bytes\"","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_MEAN","crossSeriesReducer":"REDUCE_SUM"}},"unitOverride":"By"},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"backups"}],"timeshiftDuration":"0s","yAxis":{"label":"bytes","scale":"LINEAR"},"chartOptions":{"mode":"COLOR"}}},{"title":"Cloud Run requests","xyChart":{"dataSets":[{"timeSeriesQuery":{"timeSeriesFilter":{"filter":"metric.type=\"run.googleapis.com/request_count\" AND resource.type=\"cloud_run_revision\" AND (resource.labels.service_name=\"storagev4synctelemetry\" OR resource.labels.service_name=\"geoapifycityautocomplete\")","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_DELTA","crossSeriesReducer":"REDUCE_SUM","groupByFields":["resource.labels.service_name"]}}},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"{{resource.labels.service_name}}"}],"timeshiftDuration":"0s","yAxis":{"label":"requests/min","scale":"LINEAR"},"chartOptions":{"mode":"COLOR"}}},{"title":"Cloud Run p95 request latency","xyChart":{"dataSets":[{"timeSeriesQuery":{"timeSeriesFilter":{"filter":"metric.type=\"run.googleapis.com/request_latencies\" AND resource.type=\"cloud_run_revision\" AND (resource.labels.service_name=\"storagev4synctelemetry\" OR resource.labels.service_name=\"geoapifycityautocomplete\")","aggregation":{"alignmentPeriod":"60s","perSeriesAligner":"ALIGN_PERCENTILE_95","crossSeriesReducer":"REDUCE_PERCENTILE_95","groupByFields":["resource.labels.service_name"]}},"unitOverride":"ms"},"plotType":"LINE","minAlignmentPeriod":"60s","legendTemplate":"{{resource.labels.service_name}}"}],"timeshiftDuration":"0s","yAxis":{"label":"ms","scale":"LINEAR"},"chartOptions":{"mode":"COLOR"}}}]}}
+{
+  "displayName": "Atlas Storage v4 — dev",
+  "labels": {
+    "system": "atlas-storage-v4",
+    "environment": "dev"
+  },
+  "gridLayout": {
+    "columns": "2",
+    "widgets": [
+      {
+        "text": {
+          "content": "## Atlas Storage v4 — dev\nObservabilidad operacional de Storage v4 en `atlasmap-dev`. Las métricas personalizadas provienen de telemetría allowlist sin contenido de viaje ni identificadores de usuario. Los objetivos son internos y se deben recalibrar con tráfico real.",
+          "format": "MARKDOWN"
+        }
+      },
+      {
+        "title": "Eventos Storage v4 recientes",
+        "logsPanel": {
+          "filter": "jsonPayload.message=(\"storage_v4_rollout_metric\" OR \"storage_v4_sync_metric\" OR \"storage_v4_provider_cache_metric\" OR \"storage_v4_provider_request_metric\")",
+          "resourceNames": ["projects/atlasmap-dev"]
+        }
+      },
+      {
+        "title": "Rollout events",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_rollout_events\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_DELTA",
+                    "crossSeriesReducer": "REDUCE_SUM",
+                    "groupByFields": ["metric.labels.operation"]
+                  }
+                }
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "{{metric.labels.operation}} / {{metric.labels.outcome}}"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": { "label": "events/min", "scale": "LINEAR" },
+          "chartOptions": { "mode": "COLOR" }
+        }
+      },
+      {
+        "title": "Schemas leídos",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_rollout_events\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_DELTA",
+                    "crossSeriesReducer": "REDUCE_SUM",
+                    "groupByFields": ["metric.labels.result_schema"]
+                  }
+                }
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "{{metric.labels.result_schema}}"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": { "label": "events/min", "scale": "LINEAR" },
+          "chartOptions": { "mode": "COLOR" }
+        }
+      },
+      {
+        "title": "Sync events",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_sync_events\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_DELTA",
+                    "crossSeriesReducer": "REDUCE_SUM",
+                    "groupByFields": ["metric.labels.event"]
+                  }
+                }
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "{{metric.labels.event}} / {{metric.labels.outcome}}"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": { "label": "events/min", "scale": "LINEAR" },
+          "chartOptions": { "mode": "COLOR" }
+        }
+      },
+      {
+        "title": "Provider cache events",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_provider_cache_events\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_DELTA",
+                    "crossSeriesReducer": "REDUCE_SUM",
+                    "groupByFields": ["metric.labels.outcome"]
+                  }
+                }
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "{{metric.labels.outcome}}"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": { "label": "events/min", "scale": "LINEAR" },
+          "chartOptions": { "mode": "COLOR" }
+        }
+      },
+      {
+        "title": "Provider request events",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_provider_request_events\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_DELTA",
+                    "crossSeriesReducer": "REDUCE_SUM",
+                    "groupByFields": ["metric.labels.provider"]
+                  }
+                }
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "{{metric.labels.provider}} / {{metric.labels.operation}} / {{metric.labels.outcome}}"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": { "label": "events/min", "scale": "LINEAR" },
+          "chartOptions": { "mode": "COLOR" }
+        }
+      },
+      {
+        "title": "Repository success ratio",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilterRatio": {
+                  "numerator": {
+                    "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_rollout_events\" AND metric.labels.outcome=\"success\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  },
+                  "denominator": {
+                    "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_rollout_events\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  }
+                },
+                "unitOverride": "10^2.%"
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "ratio"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": { "label": "%", "scale": "LINEAR" },
+          "chartOptions": { "mode": "COLOR" }
+        }
+      },
+      {
+        "title": "Sync flush success ratio",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilterRatio": {
+                  "numerator": {
+                    "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_sync_events\" AND metric.labels.event=\"flush\" AND metric.labels.outcome=\"success\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  },
+                  "denominator": {
+                    "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_sync_events\" AND metric.labels.event=\"flush\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  }
+                },
+                "unitOverride": "10^2.%"
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "ratio"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": { "label": "%", "scale": "LINEAR" },
+          "chartOptions": { "mode": "COLOR" }
+        }
+      },
+      {
+        "title": "Provider success ratio",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilterRatio": {
+                  "numerator": {
+                    "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_provider_request_events\" AND metric.labels.outcome=\"success\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  },
+                  "denominator": {
+                    "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_provider_request_events\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  }
+                },
+                "unitOverride": "10^2.%"
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "ratio"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": { "label": "%", "scale": "LINEAR" },
+          "chartOptions": { "mode": "COLOR" }
+        }
+      },
+      {
+        "title": "Provider cache hit ratio",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilterRatio": {
+                  "numerator": {
+                    "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_provider_cache_events\" AND metric.labels.outcome=\"hit\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  },
+                  "denominator": {
+                    "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_provider_cache_events\"",
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  }
+                },
+                "unitOverride": "10^2.%"
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "ratio"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": { "label": "%", "scale": "LINEAR" },
+          "chartOptions": { "mode": "COLOR" }
+        }
+      },
+      {
+        "title": "Repository latency percentiles",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_rollout_latency_ms\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_PERCENTILE_50",
+                    "crossSeriesReducer": "REDUCE_PERCENTILE_50"
+                  }
+                },
+                "unitOverride": "ms"
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "p50"
+            },
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_rollout_latency_ms\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_PERCENTILE_95",
+                    "crossSeriesReducer": "REDUCE_PERCENTILE_95"
+                  }
+                },
+                "unitOverride": "ms"
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "p95"
+            },
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_rollout_latency_ms\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_PERCENTILE_99",
+                    "crossSeriesReducer": "REDUCE_PERCENTILE_99"
+                  }
+                },
+                "unitOverride": "ms"
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "p99"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": { "label": "ms", "scale": "LINEAR" },
+          "chartOptions": { "mode": "COLOR" }
+        }
+      },
+      {
+        "title": "Sync p95 latency",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_sync_latency_ms\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_PERCENTILE_95",
+                    "crossSeriesReducer": "REDUCE_PERCENTILE_95"
+                  }
+                },
+                "unitOverride": "ms"
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "p95"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": { "label": "ms", "scale": "LINEAR" },
+          "chartOptions": { "mode": "COLOR" }
+        }
+      },
+      {
+        "title": "Provider p95 latency",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_provider_latency_ms\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_PERCENTILE_95",
+                    "crossSeriesReducer": "REDUCE_PERCENTILE_95"
+                  }
+                },
+                "unitOverride": "ms"
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "p95"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": { "label": "ms", "scale": "LINEAR" },
+          "chartOptions": { "mode": "COLOR" }
+        }
+      },
+      {
+        "title": "Firestore document operations",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"firestore.googleapis.com/document/read_ops_count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_DELTA",
+                    "crossSeriesReducer": "REDUCE_SUM"
+                  }
+                }
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "reads"
+            },
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"firestore.googleapis.com/document/write_ops_count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_DELTA",
+                    "crossSeriesReducer": "REDUCE_SUM"
+                  }
+                }
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "writes"
+            },
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"firestore.googleapis.com/document/delete_ops_count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_DELTA",
+                    "crossSeriesReducer": "REDUCE_SUM"
+                  }
+                }
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "deletes"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": { "label": "ops/min", "scale": "LINEAR" },
+          "chartOptions": { "mode": "COLOR" }
+        }
+      },
+      {
+        "title": "Firestore storage",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"firestore.googleapis.com/storage/data_and_index_storage_bytes\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_MEAN",
+                    "crossSeriesReducer": "REDUCE_SUM"
+                  }
+                },
+                "unitOverride": "By"
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "data+indexes"
+            },
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"firestore.googleapis.com/storage/pitr_storage_bytes\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_MEAN",
+                    "crossSeriesReducer": "REDUCE_SUM"
+                  }
+                },
+                "unitOverride": "By"
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "PITR"
+            },
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"firestore.googleapis.com/storage/backups_storage_bytes\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_MEAN",
+                    "crossSeriesReducer": "REDUCE_SUM"
+                  }
+                },
+                "unitOverride": "By"
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "backups"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": { "label": "bytes", "scale": "LINEAR" },
+          "chartOptions": { "mode": "COLOR" }
+        }
+      },
+      {
+        "title": "Cloud Run requests",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"run.googleapis.com/request_count\" AND resource.type=\"cloud_run_revision\" AND (resource.labels.service_name=\"storagev4synctelemetry\" OR resource.labels.service_name=\"geoapifycityautocomplete\")",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_DELTA",
+                    "crossSeriesReducer": "REDUCE_SUM",
+                    "groupByFields": ["resource.labels.service_name"]
+                  }
+                }
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "{{resource.labels.service_name}}"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": { "label": "requests/min", "scale": "LINEAR" },
+          "chartOptions": { "mode": "COLOR" }
+        }
+      },
+      {
+        "title": "Cloud Run p95 request latency",
+        "xyChart": {
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "metric.type=\"run.googleapis.com/request_latencies\" AND resource.type=\"cloud_run_revision\" AND (resource.labels.service_name=\"storagev4synctelemetry\" OR resource.labels.service_name=\"geoapifycityautocomplete\")",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_PERCENTILE_95",
+                    "crossSeriesReducer": "REDUCE_PERCENTILE_95",
+                    "groupByFields": ["resource.labels.service_name"]
+                  }
+                },
+                "unitOverride": "ms"
+              },
+              "plotType": "LINE",
+              "minAlignmentPeriod": "60s",
+              "legendTemplate": "{{resource.labels.service_name}}"
+            }
+          ],
+          "timeshiftDuration": "0s",
+          "yAxis": { "label": "ms", "scale": "LINEAR" },
+          "chartOptions": { "mode": "COLOR" }
+        }
+      }
+    ]
+  }
+}
