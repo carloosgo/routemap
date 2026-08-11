@@ -79,16 +79,19 @@ if (-not $Apply) {
 }
 
 if ($needsPitr) {
-  & gcloud firestore databases update \
-    "--database=$DatabaseId" \
-    "--project=$Project" \
-    --enable-pitr \
-    --quiet
+  $pitrArgs = @(
+    'firestore', 'databases', 'update',
+    "--database=$DatabaseId",
+    "--project=$Project",
+    '--enable-pitr',
+    '--quiet'
+  )
+  & gcloud @pitrArgs
   if ($LASTEXITCODE -ne 0) { throw 'No se pudo habilitar PITR.' }
 }
 
 if ($needsBackupSchedule) {
-  $args = @(
+  $backupArgs = @(
     'firestore', 'backups', 'schedules', 'create',
     "--database=$DatabaseId",
     "--project=$Project",
@@ -97,9 +100,9 @@ if ($needsBackupSchedule) {
     '--quiet'
   )
   if ($Recurrence -eq 'weekly') {
-    $args += "--day-of-week=$DayOfWeek"
+    $backupArgs += "--day-of-week=$DayOfWeek"
   }
-  & gcloud @args
+  & gcloud @backupArgs
   if ($LASTEXITCODE -ne 0) { throw 'No se pudo crear el scheduled backup.' }
 }
 
