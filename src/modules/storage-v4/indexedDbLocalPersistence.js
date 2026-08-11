@@ -45,9 +45,8 @@ function upgradeDatabase(db, transaction) {
 
   const mutations = db.objectStoreNames.contains('mutations')
     ? transaction.objectStore('mutations')
-    : db.createObjectStore('mutations', { keyPath: 'mutationId' });
+    : db.createObjectStore('mutations', { keyPath: 'entityKey' });
   ensureIndex(mutations, 'userId', 'userId');
-  ensureIndex(mutations, 'entityKey', 'entityKey');
 
   if (!db.objectStoreNames.contains('meta')) {
     db.createObjectStore('meta', { keyPath: 'key' });
@@ -161,8 +160,8 @@ export function createIndexedDbV4LocalPersistence({
     async listEntities({ userId, tripId = null } = {}) {
       return listByUser(dbPromise, 'entities', userId, tripId);
     },
-    async getMutation(mutationId) {
-      return readOne(dbPromise, 'mutations', mutationId);
+    async getMutation(entityKey) {
+      return readOne(dbPromise, 'mutations', entityKey);
     },
     async putMutation(record) {
       return putOne(dbPromise, 'mutations', normalizeMutationRecord(record));
@@ -171,7 +170,7 @@ export function createIndexedDbV4LocalPersistence({
       const rows = await listByUser(dbPromise, 'mutations', userId, tripId);
       return rows.sort((left, right) => left.createdAtLocal - right.createdAtLocal);
     },
-    async deleteMutationIfMatch(mutationId, expectedEntityKey, expectedCreatedAtLocal) {
+    async deleteMutationIfRevision(entityKey, expectedLocalRevision) {
       const db = await dbPromise;
       return new Promise((resolve, reject) => {
         const transaction = db.transaction('mutations', 'readwrite');
@@ -180,15 +179,12 @@ export function createIndexedDbV4LocalPersistence({
         transaction.onerror = () => reject(transaction.error || new Error('Mutation ack failed.'));
         transaction.onabort = () => reject(transaction.error || new Error('Mutation ack aborted.'));
         transaction.oncomplete = () => resolve(deleted);
-        const read = store.get(mutationId);
+        const read = store.get(entityKey);
         read.onerror = () => transaction.abort();
         read.onsuccess = () => {
           const current = read.result;
-          if (
-            current?.entityKey === expectedEntityKey
-            && current?.createdAtLocal === expectedCreatedAtLocal
-          ) {
-            store.delete(mutationId);
+          if (current?.localRevision === expectedLocalRevision) {
+            store.delete(entityKey);
             deleted = true;
           }
         };
