@@ -20,6 +20,7 @@ import {
   CACHE_TTL_MS,
   COUNTRY_BOUNDARY_CACHE_MAX_BYTES,
   QUOTAS,
+  cacheDb,
   db,
 } from './geoapifyRuntime.js';
 import {
@@ -30,7 +31,7 @@ import {
 import { iso2ToIso3 } from './isoCountryCodes.js';
 
 async function cachedCountryBoundary(key, loader) {
-  const ref = db.collection('countryBoundaryCache').doc(cacheId(key));
+  const ref = cacheDb.collection('countryBoundaryCache').doc(cacheId(key));
   const snapshot = await ref.get();
   const data = snapshot.data();
   const timestamp = data?.timestamp?.toMillis?.() || 0;
