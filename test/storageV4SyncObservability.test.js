@@ -16,7 +16,15 @@ test('sync observability: flush exitoso emite solo datos operacionales agregados
   const clock = timers();
   const metrics = [];
   const controller = createV4SyncLifecycleController({
-    flush: async () => ({ leader: true, pending: 2, nextAttemptAt: 9000 }),
+    flush: async () => ({
+      leader: true,
+      attempted: 5,
+      synced: 3,
+      retried: 1,
+      conflicts: 1,
+      pending: 2,
+      nextAttemptAt: 9000,
+    }),
     now: clock.now,
     setTimer: clock.setTimer,
     clearTimer: clock.clearTimer,
@@ -34,6 +42,10 @@ test('sync observability: flush exitoso emite solo datos operacionales agregados
     durationMs: 0,
     pending: 2,
     retryScheduled: true,
+    attempted: 5,
+    synced: 3,
+    retried: 1,
+    conflicts: 1,
   }]);
   const serialized = JSON.stringify(metrics);
   assert.doesNotMatch(serialized, /userId|tripId|entityId|entityKey|payload|uid/i);
