@@ -113,10 +113,7 @@ try {
     "--project=$Project"
   )
 } catch {
-  $restProbe = Invoke-FirestoreBackupScheduleRest \
-    -ProjectId $Project \
-    -DatabaseId $Database \
-    -LocationId ([string]$database.locationId)
+  $restProbe = Invoke-FirestoreBackupScheduleRest -ProjectId $Project -DatabaseId $Database -LocationId ([string]$database.locationId)
   $backupSchedules = @($restProbe.schedules)
   $backupScheduleSource = [string]$restProbe.source
   $backupScheduleProbeStatus = [string]$restProbe.status
