@@ -11,6 +11,7 @@ import {
   CACHE_TTL_MS,
   GEOAPIFY_API_KEY,
   QUOTAS,
+  cacheDb,
   db,
 } from './geoapifyRuntime.js';
 import {
@@ -24,7 +25,7 @@ import {
 const MAX_BATCH_QUERY_CHARS = 160;
 
 async function cacheCompletedBatchRows(rows, mappedResults) {
-  const writer = db.bulkWriter();
+  const writer = cacheDb.bulkWriter();
   const expiresAt = Timestamp.fromMillis(Date.now() + CACHE_TTL_MS);
 
   rows.forEach((row, index) => {
@@ -32,7 +33,7 @@ async function cacheCompletedBatchRows(rows, mappedResults) {
     const result = mappedResults[index];
     if (queryKey.length < 5 || !result) return;
 
-    const ref = db.collection('geocodeCache').doc(cacheId(`batch:${queryKey}`));
+    const ref = cacheDb.collection('geocodeCache').doc(cacheId(`batch:${queryKey}`));
     writer.set(ref, {
       result,
       timestamp: FieldValue.serverTimestamp(),
@@ -94,7 +95,7 @@ export const geoapifyBatchGeocode = onCall(
     if (!jobId) throw new Error('Geoapify no devolvió un identificador de batch.');
 
     const now = Date.now();
-    await db.collection('geoapifyBatchJobs').doc(cacheId(jobId)).set({
+    await cacheDb.collection('geoapifyBatchJobs').doc(cacheId(jobId)).set({
       ownerUid: uid,
       providerJobId: jobId,
       queryCount: queries.length,
@@ -125,7 +126,7 @@ export const geoapifyBatchGeocodeResult = onCall(
       throw new HttpsError('invalid-argument', 'Identificador de batch inválido.');
     }
 
-    const jobSnapshot = await db.collection('geoapifyBatchJobs').doc(cacheId(jobId)).get();
+    const jobSnapshot = await cacheDb.collection('geoapifyBatchJobs').doc(cacheId(jobId)).get();
     const job = jobSnapshot.data();
     if (!job || job.ownerUid !== uid || job.providerJobId !== jobId) {
       throw new HttpsError('not-found', 'No existe un batch accesible con ese identificador.');
