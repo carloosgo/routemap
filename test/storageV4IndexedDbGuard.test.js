@@ -25,6 +25,18 @@ test('IndexedDB v4 mantiene stores separados y operaciones críticas readwrite',
   assert.doesNotMatch(source, /localStorage|sessionStorage/);
 });
 
+test('intención local IndexedDB actualiza entidad y cola en una sola transacción', async () => {
+  const source = await readFile(sourceUrl, 'utf8');
+  assert.match(source, /commitLocalIntent/);
+  assert.match(
+    source,
+    /transaction\(\['entities', 'mutations'\], 'readwrite'\)/
+  );
+  assert.match(source, /planLocalEntityIntent/);
+  assert.match(source, /entities\.get\(entityKey\)/);
+  assert.match(source, /mutations\.get\(entityKey\)/);
+});
+
 test('ack IndexedDB comprueba lease, entidad y mutación dentro de una sola transacción', async () => {
   const source = await readFile(sourceUrl, 'utf8');
   assert.match(source, /acknowledgeSyncedMutation/);
