@@ -16,7 +16,9 @@
     "phase-k:telemetry:deploy-dev": "node scripts/deployStorageV4PhaseKTelemetryDev.mjs",
     "phase-k:telemetry:diagnose-dev": "node scripts/runStorageV4PhaseKTelemetryDiagnoseDev.mjs",
     "phase-k:observability:preflight": "node scripts/runStorageV4PhaseKObservabilityPreflight.mjs",
-    "phase-k:observability:apply-dev": "node scripts/runStorageV4PhaseKObservabilityApplyDev.mjs"
+    "phase-k:observability:apply-dev": "node scripts/runStorageV4PhaseKObservabilityApplyDev.mjs",
+    "phase-k:restore:preflight": "node scripts/runStorageV4PhaseKRestorePreflight.mjs",
+    "phase-k:restore:drill-dev": "node scripts/runStorageV4PhaseKRestoreDrillDev.mjs"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.44.0",
