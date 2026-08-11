@@ -102,8 +102,10 @@ export async function applyV4TripLifecycleOperation({
   const retention = validateRetentionMs(retentionMs);
   if (typeof now !== 'function') throw new TypeError('now debe ser función.');
 
-  const tripRef = db.doc(`users/${ownerId}/trips/${safeTripId}`);
+  const userRef = db.doc(`users/${ownerId}`);
+  const tripRef = userRef.collection('trips').doc(safeTripId);
   const operationRef = tripRef.collection('__lifecycleOperations').doc(safeOperationId);
+  const purgeJobRef = userRef.collection('__tripPurgeJobs').doc(safeTripId);
 
   return db.runTransaction(async (transaction) => {
     const [operationSnapshot, tripSnapshot] = await Promise.all([
@@ -169,6 +171,18 @@ export async function applyV4TripLifecycleOperation({
       deletedAt,
       purgeAfter,
     });
+    if (deleting) {
+      transaction.set(purgeJobRef, {
+        userId: ownerId,
+        tripId: safeTripId,
+        state: 'scheduled',
+        dueAt: purgeAfter,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      });
+    } else {
+      transaction.delete(purgeJobRef);
+    }
     transaction.set(operationRef, {
       operationId: safeOperationId,
       userId: ownerId,
