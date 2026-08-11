@@ -18,6 +18,8 @@ function entity(overrides = {}) {
     entityId: 'segment-1',
     payload: { note: 'Borrador' },
     serverVersion: 3,
+    serverStatus: 'active',
+    desiredStatus: 'active',
     localRevision: 4,
     state: V4_LOCAL_STATES.DIRTY,
     lastModifiedLocal: 1000,
@@ -27,15 +29,18 @@ function entity(overrides = {}) {
 
 function mutation(overrides = {}) {
   return {
-    mutationId: 'mutation-1',
     userId: 'alice',
     tripId: 'trip-1',
     entityType: 'segment',
     entityId: 'segment-1',
     operation: V4_MUTATION_OPERATIONS.UPDATE,
     baseVersion: 3,
+    baseStatus: 'active',
+    desiredStatus: 'active',
+    localRevision: 4,
     payload: { note: 'Borrador' },
     createdAtLocal: 1000,
+    updatedAtLocal: 1000,
     attempts: 0,
     nextAttemptAt: null,
     ...overrides,
@@ -75,48 +80,50 @@ test('adaptador local de referencia persiste draft, entidad y mutación sin comp
 
   const savedMutation = await store.putMutation(mutation());
   savedMutation.payload.note = 'Mutación externa';
-  assert.equal((await store.getMutation('mutation-1')).payload.note, 'Borrador');
+  assert.equal(
+    (await store.getMutation('alice/trip-1/segment/segment-1')).payload.note,
+    'Borrador'
+  );
 });
 
-test('la cola local se ordena por creación y se puede filtrar por viaje', async () => {
+test('solo existe una intención durable por entidad y la lista se ordena por creación', async () => {
   const store = createMemoryV4LocalPersistence();
-  await store.putMutation(mutation({ mutationId: 'later', createdAtLocal: 300 }));
   await store.putMutation(mutation({
-    mutationId: 'other-trip',
-    tripId: 'trip-2',
-    entityId: 'segment-2',
-    createdAtLocal: 50,
+    entityId: 'segment-1',
+    localRevision: 1,
+    payload: { note: 'vieja' },
+    createdAtLocal: 300,
+    updatedAtLocal: 300,
   }));
-  await store.putMutation(mutation({ mutationId: 'earlier', createdAtLocal: 100 }));
+  await store.putMutation(mutation({
+    entityId: 'segment-2',
+    localRevision: 1,
+    createdAtLocal: 100,
+    updatedAtLocal: 100,
+  }));
+  await store.putMutation(mutation({
+    entityId: 'segment-1',
+    localRevision: 2,
+    payload: { note: 'nueva' },
+    createdAtLocal: 300,
+    updatedAtLocal: 400,
+  }));
 
-  assert.deepEqual(
-    (await store.listMutations({ userId: 'alice', tripId: 'trip-1' }))
-      .map((item) => item.mutationId),
-    ['earlier', 'later']
-  );
+  const pending = await store.listMutations({ userId: 'alice', tripId: 'trip-1' });
+  assert.equal(pending.length, 2);
+  assert.deepEqual(pending.map((item) => item.entityId), ['segment-2', 'segment-1']);
+  assert.equal(pending[1].payload.note, 'nueva');
+  assert.equal(pending[1].localRevision, 2);
 });
 
-test('ack de mutación usa compare-and-delete para no borrar trabajo reemplazado', async () => {
+test('ack usa compare-and-delete por revisión para no borrar una edición más nueva', async () => {
   const store = createMemoryV4LocalPersistence();
-  await store.putMutation(mutation());
-  assert.equal(
-    await store.deleteMutationIfMatch(
-      'mutation-1',
-      'alice/trip-1/segment/segment-1',
-      999
-    ),
-    false
-  );
-  assert.ok(await store.getMutation('mutation-1'));
-  assert.equal(
-    await store.deleteMutationIfMatch(
-      'mutation-1',
-      'alice/trip-1/segment/segment-1',
-      1000
-    ),
-    true
-  );
-  assert.equal(await store.getMutation('mutation-1'), null);
+  const key = 'alice/trip-1/segment/segment-1';
+  await store.putMutation(mutation({ localRevision: 4 }));
+  assert.equal(await store.deleteMutationIfRevision(key, 3), false);
+  assert.ok(await store.getMutation(key));
+  assert.equal(await store.deleteMutationIfRevision(key, 4), true);
+  assert.equal(await store.getMutation(key), null);
 });
 
 test('lease local evita dos líderes simultáneos y usa fencing al tomar control', async () => {
@@ -145,7 +152,6 @@ test('clearUserData no borra datos locales pertenecientes a otro usuario', async
   await store.putEntity(entity({ userId: 'bob', entityId: 'segment-bob' }));
   await store.putMutation(mutation());
   await store.putMutation(mutation({
-    mutationId: 'mutation-bob',
     userId: 'bob',
     entityId: 'segment-bob',
   }));
