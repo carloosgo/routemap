@@ -5,7 +5,7 @@ import {
   acquireOrRenewLease,
   leaseStillOwned,
 } from '../src/modules/storage-v4/crossContextLeaseModel.js';
-import { aggregateTransition } from '../src/modules/storage-v4/aggregateTransitionModel.js';
+import { aggregateDeltaForEntityTransition } from '../src/modules/storage-v4/aggregateTransitionModel.js';
 import { syncRetryDelayMs } from '../src/modules/storage-v4/syncRetryModel.js';
 import { v4EntityKey } from '../src/modules/storage-v4/entityKeyModel.js';
 import {
@@ -14,6 +14,8 @@ import {
 } from '../src/modules/storage-v4/storageV4Contract.js';
 
 const root = new URL('../', import.meta.url);
+const valued = (status, value) => ({ status, value });
+const valueOf = (entity) => entity.value;
 
 test('v4 parte de un contrato versionado explícito', () => {
   assert.equal(STORAGE_V4_VERSION, 4);
@@ -35,50 +37,43 @@ test('la clave local de entidad es estable y no admite componentes ambiguos', ()
 });
 
 test('transiciones de agregados implementan soft delete sin doble descuento', () => {
-  assert.deepEqual(aggregateTransition({
-    beforeStatus: null,
-    afterStatus: V4_ENTITY_STATUS.ACTIVE,
-    beforeValue: 0,
-    afterValue: 25,
+  assert.deepEqual(aggregateDeltaForEntityTransition({
+    before: null,
+    after: valued(V4_ENTITY_STATUS.ACTIVE, 25),
+    valueOf,
   }), { countDelta: 1, valueDelta: 25 });
-  assert.deepEqual(aggregateTransition({
-    beforeStatus: V4_ENTITY_STATUS.ACTIVE,
-    afterStatus: V4_ENTITY_STATUS.ACTIVE,
-    beforeValue: 25,
-    afterValue: 30,
+  assert.deepEqual(aggregateDeltaForEntityTransition({
+    before: valued(V4_ENTITY_STATUS.ACTIVE, 25),
+    after: valued(V4_ENTITY_STATUS.ACTIVE, 30),
+    valueOf,
   }), { countDelta: 0, valueDelta: 5 });
-  assert.deepEqual(aggregateTransition({
-    beforeStatus: V4_ENTITY_STATUS.ACTIVE,
-    afterStatus: V4_ENTITY_STATUS.DELETED,
-    beforeValue: 30,
-    afterValue: 30,
+  assert.deepEqual(aggregateDeltaForEntityTransition({
+    before: valued(V4_ENTITY_STATUS.ACTIVE, 30),
+    after: valued(V4_ENTITY_STATUS.DELETED, 30),
+    valueOf,
   }), { countDelta: -1, valueDelta: -30 });
-  assert.deepEqual(aggregateTransition({
-    beforeStatus: V4_ENTITY_STATUS.DELETED,
-    afterStatus: V4_ENTITY_STATUS.ACTIVE,
-    beforeValue: 30,
-    afterValue: 35,
+  assert.deepEqual(aggregateDeltaForEntityTransition({
+    before: valued(V4_ENTITY_STATUS.DELETED, 30),
+    after: valued(V4_ENTITY_STATUS.ACTIVE, 35),
+    valueOf,
   }), { countDelta: 1, valueDelta: 35 });
-  assert.deepEqual(aggregateTransition({
-    beforeStatus: V4_ENTITY_STATUS.DELETED,
-    afterStatus: V4_ENTITY_STATUS.DELETED,
-    beforeValue: 35,
-    afterValue: 35,
+  assert.deepEqual(aggregateDeltaForEntityTransition({
+    before: valued(V4_ENTITY_STATUS.DELETED, 35),
+    after: valued(V4_ENTITY_STATUS.DELETED, 35),
+    valueOf,
   }), { countDelta: 0, valueDelta: 0 });
-  assert.deepEqual(aggregateTransition({
-    beforeStatus: V4_ENTITY_STATUS.DELETED,
-    afterStatus: null,
-    beforeValue: 35,
-    afterValue: 0,
+  assert.deepEqual(aggregateDeltaForEntityTransition({
+    before: valued(V4_ENTITY_STATUS.DELETED, 35),
+    after: null,
+    valueOf,
   }), { countDelta: 0, valueDelta: 0 });
 });
 
 test('una purga física de entidad activa viola el contrato v4', () => {
-  assert.throws(() => aggregateTransition({
-    beforeStatus: V4_ENTITY_STATUS.ACTIVE,
-    afterStatus: null,
-    beforeValue: 20,
-    afterValue: 0,
+  assert.throws(() => aggregateDeltaForEntityTransition({
+    before: valued(V4_ENTITY_STATUS.ACTIVE, 20),
+    after: null,
+    valueOf,
   }));
 });
 
