@@ -52,13 +52,13 @@ export function createMemoryV4LocalPersistence() {
         .map(copy);
     },
 
-    async getMutation(mutationId) {
-      return copy(mutations.get(mutationId) || null);
+    async getMutation(entityKey) {
+      return copy(mutations.get(entityKey) || null);
     },
 
     async putMutation(record) {
       const normalized = normalizeMutationRecord(record);
-      mutations.set(normalized.mutationId, copy(normalized));
+      mutations.set(normalized.entityKey, copy(normalized));
       return copy(normalized);
     },
 
@@ -70,16 +70,10 @@ export function createMemoryV4LocalPersistence() {
         .map(copy);
     },
 
-    async deleteMutationIfMatch(mutationId, expectedEntityKey, expectedCreatedAtLocal) {
-      const current = mutations.get(mutationId);
-      if (!current) return false;
-      if (
-        current.entityKey !== expectedEntityKey
-        || current.createdAtLocal !== expectedCreatedAtLocal
-      ) {
-        return false;
-      }
-      mutations.delete(mutationId);
+    async deleteMutationIfRevision(entityKey, expectedLocalRevision) {
+      const current = mutations.get(entityKey);
+      if (!current || current.localRevision !== expectedLocalRevision) return false;
+      mutations.delete(entityKey);
       return true;
     },
 
