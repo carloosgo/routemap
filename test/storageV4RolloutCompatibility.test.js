@@ -100,9 +100,11 @@ test('repositorio híbrido revalida el root remoto antes de save/remove y no aut
   assert.match(removeBody[1], /STORED_TRIP_KIND\.V4/);
 });
 
-test('Gate G sigue desactivado: selector productivo no importa ni crea el repositorio híbrido', async () => {
-  const source = await readFile('src/modules/trips/tripRepositorySelector.js', 'utf8');
-  assert.doesNotMatch(source, /firestoreHybridTripRepository/);
-  assert.doesNotMatch(source, /createFirestoreHybridTripRepository/);
-  assert.match(source, /createFirestoreTripRepository/);
+test('Gate G selector queda conectado pero fail-closed por configuración', async () => {
+  const selectorSource = await readFile('src/modules/trips/tripRepositorySelector.js', 'utf8');
+  const configSource = await readFile('src/config.js', 'utf8');
+  assert.match(selectorSource, /createGateGTripRepository/);
+  assert.match(selectorSource, /config\.storageV4Rollout/);
+  assert.match(configSource, /VITE_STORAGE_V4_KILL_SWITCH, true/);
+  assert.match(configSource, /VITE_STORAGE_V4_READ_RULES_READY, false/);
 });
