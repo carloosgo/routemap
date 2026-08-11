@@ -145,6 +145,25 @@ function stagedDigest(root, staged) {
   return v4MigrationDigest({ root, ...staged });
 }
 
+async function completedMigrationReplay({ db, userId, tripId } = {}) {
+  if (!db) throw new TypeError('Se requiere Firestore Admin.');
+  const { tripRef, checkpointRef } = tripRefs(db, userId, tripId);
+  const [rootSnapshot, checkpointSnapshot] = await Promise.all([
+    tripRef.get(),
+    checkpointRef.get(),
+  ]);
+  if (!rootSnapshot.exists || !checkpointSnapshot.exists) return null;
+  const root = rootSnapshot.data();
+  const checkpoint = checkpointSnapshot.data();
+  if (root.schemaVersion !== 4 || checkpoint.state !== 'complete') return null;
+  return {
+    state: 'complete',
+    idempotentReplay: true,
+    version: root.version,
+    digest: checkpoint.expectedDigest,
+  };
+}
+
 export async function stageV3TripMigration({ db, userId, tripId } = {}) {
   if (!db) throw new TypeError('Se requiere Firestore Admin.');
   const { ownerId, safeTripId, tripRef, checkpointRef } = tripRefs(db, userId, tripId);
@@ -233,6 +252,9 @@ export async function finalizeV3TripMigration({ db, userId, tripId, materialized
     const root = rootSnapshot.data();
     const checkpoint = checkpointSnapshot.data();
     if (checkpoint.state === 'complete' && root.schemaVersion === 4) {
+      if (checkpoint.expectedDigest !== digest || !checkpointMatchesSource(checkpoint, materialized)) {
+        throw new V4MigrationError('replay-mismatch', 'El replay de migración no coincide con la migración completada.');
+      }
       return { state: 'complete', idempotentReplay: true, version: root.version };
     }
     if (checkpoint.state !== 'verified'
@@ -258,6 +280,8 @@ export async function finalizeV3TripMigration({ db, userId, tripId, materialized
 }
 
 export async function migrateV3TripToV4(input = {}) {
+  const completed = await completedMigrationReplay(input);
+  if (completed) return completed;
   const staged = await stageV3TripMigration(input);
   const finalized = await finalizeV3TripMigration({
     ...input,
