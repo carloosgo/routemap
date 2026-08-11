@@ -29,6 +29,25 @@ function normalizeNotifier(notifier) {
   return notifier;
 }
 
+function safeMetricEmitter(onMetric) {
+  if (typeof onMetric !== 'function') return () => {};
+  return (metric) => {
+    try {
+      onMetric(metric);
+    } catch {
+      // La recuperación local no depende de que la telemetría esté disponible.
+    }
+  };
+}
+
+function oldestPendingAgeMs(pending, nowMs) {
+  const created = pending
+    .map((mutation) => Number(mutation?.createdAtLocal))
+    .filter((value) => Number.isFinite(value) && value >= 0);
+  if (!created.length) return 0;
+  return Math.max(0, nowMs - Math.min(...created));
+}
+
 export function createV4SyncRuntime({
   userId,
   localPersistence,
@@ -41,6 +60,7 @@ export function createV4SyncRuntime({
   const local = assertLocalPersistenceAdapter(localPersistence);
   const coordinator = requireCoordinator(syncCoordinator);
   const notifier = normalizeNotifier(crossContextNotifier);
+  const emitMetric = safeMetricEmitter(lifecycleOptions?.onMetric);
   let stopped = false;
 
   const lifecycle = createV4SyncLifecycleController({
@@ -59,6 +79,12 @@ export function createV4SyncRuntime({
     async recoverPending() {
       if (stopped) return 0;
       const pending = await local.listMutations({ userId: ownerId });
+      const recoveredAt = now();
+      emitMetric({
+        event: 'queue-recovery',
+        pending: pending.length,
+        oldestPendingAgeMs: oldestPendingAgeMs(pending, recoveredAt),
+      });
       if (pending.length) lifecycle.markDirty();
       return pending.length;
     },
