@@ -18,7 +18,7 @@ Este documento distingue el **roadmap original A–L** de los **rollout gates**.
 | H — concurrency/conflicts | Implementado en contrato/tests | Entity-level conflict en v4.0; no merge complejo campo-a-campo. |
 | I — migration | Implementado en código/tests | Materializer/verifier/rollback existentes; migración productiva no ejecutada. |
 | J — provider cache separation | Preparado lógicamente; separación física pendiente | `cacheDb` centraliza temporales, `expiresAt` y resiliencia probados. `atlas-cache` físico espera acceso server-side aprobado para named DB. |
-| K — monitoring/backups/load | En progreso avanzado | Recovery activo/verificado en dev. Telemetría nueva ya desplegada de forma acotada; falta ejercitar/observar tres streams, además de budgets/dashboard/alerts/restore/load. |
+| K — monitoring/backups/load | En progreso avanzado | Recovery dev activo/verificado y 4/4 streams operacionales observados E2E. Faltan budget/dashboard/alerts/restore/load/resilience/SLOs. |
 | L — production | Preparado, no iniciado | Runbook L0–L7 creado. Producción no se toca hasta completar recovery/cost/security gates. |
 
 ## Rollout Gate G READ
@@ -47,17 +47,17 @@ No activar `atlas-cache` físicamente hasta disponer de un acceso server-side a 
 
 Código/preparación:
 
-- `storage_v4_rollout_metric` para comparación del repositorio READ ya validada E2E;
-- `storage_v4_provider_cache_metric` preparado para hit/miss/read-error/write-error sin key/query/result/UID;
-- `storage_v4_provider_request_metric` preparado para provider/operation/outcome/status/latencia sin URL, query string, API key, body ni respuesta;
+- `storage_v4_rollout_metric` para comparación del repositorio READ validada E2E;
+- `storage_v4_provider_cache_metric` para hit/miss/read-error/write-error sin key/query/result/UID;
+- `storage_v4_provider_request_metric` para provider/operation/outcome/status/latencia sin URL, query string, API key, body ni respuesta;
 - provider cache fail-soft ante errores de lectura/escritura y coalescing concurrente probados;
 - lifecycle de sync expone métricas agregadas de flush y recuperación de cola sin IDs/payloads;
-- callable `storageV4SyncTelemetry` + cliente bufferizado preparados con contrato allowlist y rechazo de campos sensibles;
-- modelo de capacidad parametrizable para 1k/10k/50k/100k usuarios preparado sin fijar precios unitarios en código;
+- callable `storageV4SyncTelemetry` + cliente bufferizado con contrato allowlist y rechazo de campos sensibles;
+- modelo de capacidad parametrizable para 1k/10k/50k/100k usuarios sin fijar precios unitarios en código;
 - simulación multidevice de conflicto entity-level preserva la edición perdedora explícitamente y evita pérdida silenciosa;
 - runbook define SLOs iniciales, señales, alertas, dashboard, costos, PITR/backups, restore drill y pruebas de resiliencia;
-- preflight read-only de recovery/billing/telemetría preparado, incluyendo fallback project-scoped para budgets;
-- helper de deploy selectivo bloqueado a `atlasmap-dev` y diagnóstico read-only de Cloud Functions/Cloud Run/CORS preparados.
+- preflight read-only de recovery/billing/telemetría con fallback project-scoped para budgets;
+- helper de deploy selectivo bloqueado a `atlasmap-dev` y diagnóstico read-only de Cloud Functions/Cloud Run/CORS.
 
 Evidencia `atlasmap-dev` del 2026-08-11:
 
@@ -68,20 +68,24 @@ Evidencia `atlasmap-dev` del 2026-08-11:
 - delete protection deshabilitado;
 - un scheduled backup diario activo, creado `2026-08-11T21:51:35.104231Z`, con retención `604800s` (7 días);
 - budget todavía no demostrado: el probe project-scoped obtuvo HTTP 403 con la identidad actual; no se interpreta como ausencia de budget;
-- `storage_v4_rollout_metric` visible en Cloud;
 - `storageV4SyncTelemetry` desplegada, `ACTIVE`, ingress `ALLOW_ALL`, Cloud Run invoker público y preflight CORS localhost `204`;
 - `geoapifyCityAutocomplete` revalidada `ACTIVE` con la misma accesibilidad y con instrumentación provider cache/request desplegada;
-- `storage_v4_sync_metric`, `storage_v4_provider_cache_metric` y `storage_v4_provider_request_metric` todavía requieren una llamada real y nueva lectura de Logging para considerarse observados.
+- prueba real de city autocomplete produjo `cacheHit=false`, `results=1`;
+- prueba autenticada de sync telemetry produjo `syncOk=true` sin activar Storage v4 WRITE;
+- preflight de Cloud Logging a `2026-08-11T23:16:33Z`: **4/4 streams observados**;
+- `storage_v4_rollout_metric` latest `2026-08-11T23:12:44.459781Z`;
+- `storage_v4_sync_metric` latest `2026-08-11T23:13:12.100196Z`;
+- `storage_v4_provider_cache_metric` latest `2026-08-11T23:13:11.223825Z`;
+- `storage_v4_provider_request_metric` latest `2026-08-11T23:13:11.715676Z`.
 
 La evidencia completa está en `docs/STORAGE_V4_PHASE_K_EVIDENCE_2026-08-11.md`.
 
 Todavía falta para cerrar K:
 
-- ejercitar/observar `storage_v4_sync_metric`, `storage_v4_provider_cache_metric` y `storage_v4_provider_request_metric`;
 - dashboard;
 - alertas;
 - budget configurado y observable;
-- restore drill real usando recovery controlado;
+- restore drill real usando un backup disponible;
 - provider outage E2E;
 - multidevice E2E de navegador/dispositivos reales además de la simulación determinista;
 - carga/reconnect E2E y medición de SLO;
