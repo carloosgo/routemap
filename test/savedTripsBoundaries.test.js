@@ -25,7 +25,9 @@ test('useSavedTrips coordina estado sin absorber selección ni operaciones', asy
 
   assert.match(selector, /export function createLocalTripRepository/);
   assert.match(selector, /export function selectTripRepository/);
-  assert.match(selector, /createFirestoreTripRepository/);
+  assert.match(selector, /createGateGTripRepository/);
+  assert.match(selector, /config\.storageV4Rollout/);
+  assert.doesNotMatch(selector, /createV4WebSyncComposition|createFirestoreV4SyncGateway/);
   assert.match(operations, /export async function importLocalTripsIntoRepository/);
   assert.match(operations, /for \(const trip of localTrips\)/);
   assert.doesNotMatch(operations, /from 'react'/);
