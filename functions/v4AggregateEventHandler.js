@@ -12,10 +12,17 @@ function snapshotData(snapshot) {
   return snapshot.data() || null;
 }
 
-export function createV4AggregateEventHandler({ db, entityType } = {}) {
+export function createV4AggregateEventHandler({
+  db,
+  entityType,
+  applyEvent = applyV4AggregateEvent,
+} = {}) {
   if (!db) throw new TypeError('Se requiere Firestore Admin.');
   if (entityType !== 'segment' && entityType !== 'place') {
     throw new TypeError('entityType de agregado v4 inválido.');
+  }
+  if (typeof applyEvent !== 'function') {
+    throw new TypeError('applyEvent debe ser función.');
   }
 
   return async function handleV4AggregateEvent(event) {
@@ -28,7 +35,7 @@ export function createV4AggregateEventHandler({ db, entityType } = {}) {
       throw new TypeError('El evento de agregado v4 no contiene before ni after.');
     }
 
-    return applyV4AggregateEvent({
+    return applyEvent({
       db,
       userId,
       tripId,
