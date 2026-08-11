@@ -27,6 +27,7 @@ export const config = {
     cohortPercent: envNumber(env.VITE_STORAGE_V4_COHORT_PERCENT, 0),
     salt: cleanString(env.VITE_STORAGE_V4_COHORT_SALT) || 'atlas-storage-v4',
     readRulesReady: envBoolean(env.VITE_STORAGE_V4_READ_RULES_READY, false),
+    remoteConfigEnabled: envBoolean(env.VITE_STORAGE_V4_REMOTE_CONFIG_ENABLED, false),
   },
   firebase: {
     apiKey: cleanString(env.VITE_FIREBASE_API_KEY),
