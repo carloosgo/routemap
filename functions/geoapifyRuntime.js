@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { defineSecret } from 'firebase-functions/params';
+import { info as logInfo } from 'firebase-functions/logger';
 import { createSharedCache } from './sharedCache.js';
 
 initializeApp();
@@ -26,7 +27,15 @@ export const ALLOWED_MODES = new Set([
   'transit',
   'approximated_transit',
 ]);
-export const cached = createSharedCache(cacheDb, { ttlMs: CACHE_TTL_MS });
+
+function reportProviderCacheMetric(metric) {
+  logInfo('storage_v4_provider_cache_metric', metric);
+}
+
+export const cached = createSharedCache(cacheDb, {
+  ttlMs: CACHE_TTL_MS,
+  onCacheMetric: reportProviderCacheMetric,
+});
 
 export const QUOTAS = Object.freeze({
   cityAutocomplete: { scope: 'geoapify-city-autocomplete', maxRequests: 20, windowMs: 60_000 },
