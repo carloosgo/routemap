@@ -112,6 +112,27 @@ test('la caché compartida oculta la consulta y conserva expiración administrab
   assert.match(googleLocations, /29 \* 24 \* 60 \* 60 \* 1000/);
 });
 
+test('los datos temporales de proveedor pasan por una frontera cacheDb única', async () => {
+  const runtime = await read('functions/geoapifyRuntime.js');
+  const placeFunctions = await read('functions/geoapifyPlaceFunctions.js');
+  const batchFunctions = await read('functions/geoapifyBatchFunctions.js');
+  const countryBoundary = await read('functions/countryBoundaryFunction.js');
+  const googleLocations = await read('functions/googlePlaceLocationFunction.js');
+
+  assert.match(runtime, /export const cacheDb = db/);
+  assert.match(runtime, /createSharedCache\(cacheDb/);
+  assert.match(placeFunctions, /createSharedCache\(cacheDb/);
+  assert.match(batchFunctions, /cacheDb\.bulkWriter\(\)/);
+  assert.match(batchFunctions, /cacheDb\.collection\('geocodeCache'\)/);
+  assert.match(batchFunctions, /cacheDb\.collection\('geoapifyBatchJobs'\)/);
+  assert.match(countryBoundary, /cacheDb\.collection\('countryBoundaryCache'\)/);
+  assert.match(googleLocations, /createSharedCache\(cacheDb/);
+
+  assert.doesNotMatch(batchFunctions, /db\.collection\('(geocodeCache|geoapifyBatchJobs)'\)/);
+  assert.doesNotMatch(countryBoundary, /db\.collection\('countryBoundaryCache'\)/);
+  assert.doesNotMatch(googleLocations, /createSharedCache\(db/);
+});
+
 test('routing de Mis Rutas usa Geoapify para estimar y Google al seleccionar un modo', async () => {
   const geoapifyRoute = await read('functions/geoapifyRouteFunctions.js');
   const googleRoute = await read('functions/googleOptimizedRouteFunction.js');
