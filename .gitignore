@@ -13,3 +13,4 @@ functions/.env.*
 !.vscode/extensions.json
 !.vscode/settings.json
 coverage
+firestore-gate-g-read.rules
