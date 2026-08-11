@@ -10,6 +10,13 @@ test('config usa valores seguros fuera de Vite', () => {
   assert.equal(config.apiBaseUrl, '');
   assert.equal(config.geoapify.mapApiKey, '');
   assert.equal(config.firebase.projectId, '');
+  assert.deepEqual(config.storageV4Rollout, {
+    enabled: false,
+    killSwitch: true,
+    mode: 'off',
+    cohortPercent: 0,
+    salt: 'atlas-storage-v4',
+  });
 });
 
 test('colorForIndex cicla la paleta y tolera índices inválidos', () => {
