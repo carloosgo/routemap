@@ -24,20 +24,25 @@ function fakeTimerHarness(start = 1000) {
 }
 
 function createNotifierBus() {
-  const listeners = new Set();
+  const subscriptions = new Set();
   const messages = [];
   return {
     messages,
-    notifier: {
-      publish(type, payload) {
-        const message = { type, payload };
-        messages.push(message);
-        for (const listener of listeners) listener(message);
-      },
-      subscribe(listener) {
-        listeners.add(listener);
-        return () => listeners.delete(listener);
-      },
+    notifierFor(contextId) {
+      return {
+        publish(type, payload) {
+          const message = { type, payload, sourceContextId: contextId };
+          messages.push(message);
+          for (const subscription of subscriptions) {
+            if (subscription.contextId !== contextId) subscription.listener(message);
+          }
+        },
+        subscribe(listener) {
+          const subscription = { contextId, listener };
+          subscriptions.add(subscription);
+          return () => subscriptions.delete(subscription);
+        },
+      };
     },
   };
 }
@@ -84,7 +89,11 @@ test('commitIntent persiste primero y luego agenda sync sin escribir por campo',
   const store = createMemoryV4LocalPersistence();
   const timers = fakeTimerHarness();
   const bus = createNotifierBus();
-  const runtime = createRuntimeHarness({ store, timers, notifier: bus.notifier });
+  const runtime = createRuntimeHarness({
+    store,
+    timers,
+    notifier: bus.notifierFor('tab-a'),
+  });
 
   const result = await runtime.commitIntent(createIntent());
   assert.equal(result.entity.localRevision, 1);
@@ -110,9 +119,13 @@ test('notificación de otra pestaña despierta scheduling para el mismo usuario'
   const store = createMemoryV4LocalPersistence();
   const timers = fakeTimerHarness(1000);
   const bus = createNotifierBus();
-  const runtime = createRuntimeHarness({ store, timers, notifier: bus.notifier });
+  const runtime = createRuntimeHarness({
+    store,
+    timers,
+    notifier: bus.notifierFor('tab-a'),
+  });
 
-  bus.notifier.publish('v4-mutation-dirty', {
+  bus.notifierFor('tab-b').publish('v4-mutation-dirty', {
     userId: 'alice',
     tripId: 'trip-2',
     entityKey: 'alice/trip-2/note/note-1',
@@ -125,9 +138,13 @@ test('notificación de otro usuario no contamina el runtime actual', () => {
   const store = createMemoryV4LocalPersistence();
   const timers = fakeTimerHarness(1000);
   const bus = createNotifierBus();
-  const runtime = createRuntimeHarness({ store, timers, notifier: bus.notifier });
+  const runtime = createRuntimeHarness({
+    store,
+    timers,
+    notifier: bus.notifierFor('tab-a'),
+  });
 
-  bus.notifier.publish('v4-mutation-dirty', {
+  bus.notifierFor('tab-b').publish('v4-mutation-dirty', {
     userId: 'bob',
     tripId: 'trip-x',
   });
