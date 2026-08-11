@@ -20,7 +20,7 @@ Evidencia capturada a las `2026-08-11T21:25:07Z`:
 
 ### Evidencia después de recovery dev
 
-Evidencia capturada a las `2026-08-11T21:51:49Z`:
+Evidencia capturada a las `2026-08-11T21:51:49Z` y reconfirmada a las `2026-08-11T23:16:24Z`:
 
 - database: `(default)`;
 - location: `northamerica-south1`;
@@ -63,21 +63,33 @@ Evidencia capturada a las `2026-08-11T23:06:53Z` después de un deploy selectivo
 - el deploy fue acotado a esas dos Functions y no habilitó Storage v4 WRITE, migración, aggregates, lifecycle ni purge;
 - el error CORS previo de `storageV4SyncTelemetry` quedó explicado por ausencia de la función antes del deploy, no por una política CORS defectuosa.
 
-Interpretación:
+### Evidencia E2E de los cuatro streams
 
-- la infraestructura necesaria para observar `storage_v4_sync_metric` ya está desplegada y accesible desde el cliente autenticado;
-- `geoapifyCityAutocomplete` ya está desplegada con la instrumentación de provider cache/request;
-- todavía falta ejercitar ambos caminos y volver a consultar Logging antes de declarar observados `storage_v4_sync_metric`, `storage_v4_provider_cache_metric` y `storage_v4_provider_request_metric`.
+Prueba controlada desde el cliente autenticado:
+
+- city autocomplete: `cacheHit=false`, `results=1`, suficiente para recorrer cache miss + request real de proveedor;
+- sync telemetry: `syncOk=true` con evento operacional `queue-recovery`, sin activar Storage v4 WRITE.
+
+Preflight de Logging capturado a las `2026-08-11T23:16:33Z`, ventana de 7 días:
+
+| stream | seen | latest |
+|---|---:|---|
+| `storage_v4_rollout_metric` | sí | `2026-08-11T23:12:44.459781Z` |
+| `storage_v4_sync_metric` | sí | `2026-08-11T23:13:12.100196Z` |
+| `storage_v4_provider_cache_metric` | sí | `2026-08-11T23:13:11.223825Z` |
+| `storage_v4_provider_request_metric` | sí | `2026-08-11T23:13:11.715676Z` |
+
+Conclusión de observabilidad base en desarrollo: **4/4 streams estructurados observados en Cloud Logging con evidencia real**. Este checkpoint valida presencia y recorrido E2E de las señales; no sustituye todavía dashboard, alertas, carga sostenida ni medición de SLO bajo tráfico representativo.
 
 ## Próximos checkpoints de Phase K
 
-1. ejercitar en `atlasmap-dev` una llamada de city autocomplete con cache miss y una llamada autenticada de `storageV4SyncTelemetry`;
-2. repetir el preflight y registrar evidencia Cloud de los tres streams nuevos;
-3. resolver permisos/visibilidad de budget y configurar alertas de costo;
-4. dashboard + alertas operacionales;
-5. restore drill;
-6. provider outage, multidevice y load/reconnect E2E;
-7. medir SLOs y completar el modelo de costos con supuestos medidos y precios vigentes.
+1. resolver permisos/visibilidad de budget y configurar alertas de costo;
+2. dashboard + alertas operacionales sobre las señales ya observadas;
+3. restore drill usando un backup real cuando exista un backup disponible para restauración;
+4. provider outage E2E;
+5. multidevice E2E en navegadores/dispositivos reales;
+6. load/reconnect E2E y medición de SLOs;
+7. completar el modelo de costos con supuestos medidos y precios vigentes.
 
 ## Límites
 
@@ -86,3 +98,4 @@ Interpretación:
 - No se ejecutó migración.
 - No se creó `atlas-cache` físico.
 - No se infiere que exista o no exista un budget mientras el probe no lo pueda demostrar.
+- La existencia de un scheduled backup no implica que ya exista un backup restaurable; el restore drill queda pendiente hasta verificar uno disponible.
