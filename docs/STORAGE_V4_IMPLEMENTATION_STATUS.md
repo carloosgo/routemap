@@ -18,7 +18,7 @@ Este documento distingue el **roadmap original A–L** de los **rollout gates**.
 | H — concurrency/conflicts | Implementado en contrato/tests | Entity-level conflict en v4.0; no merge complejo campo-a-campo. |
 | I — migration | Implementado en código/tests | Materializer/verifier/rollback existentes; migración productiva no ejecutada. |
 | J — provider cache separation | Preparado lógicamente; separación física pendiente | `cacheDb` centraliza temporales, `expiresAt` y resiliencia probados. `atlas-cache` físico espera acceso server-side aprobado para named DB. |
-| K — monitoring/backups/load | En progreso | Runbook creado; telemetría Gate G validada; provider-cache y sync hooks agregados. Cloud dashboards/alerts/budget/PITR/backups/restore/load E2E aún requieren entorno. |
+| K — monitoring/backups/load | En progreso avanzado de código | Runbook, modelo de capacidad y señales repo/sync/cache/provider preparados. Cloud dashboards/alerts/budget/PITR/backups/restore/load E2E aún requieren entorno. |
 | L — production | Preparado, no iniciado | Runbook L0–L7 creado. Producción no se toca hasta completar recovery/cost/security gates. |
 
 ## Rollout Gate G READ
@@ -47,13 +47,16 @@ No activar `atlas-cache` físicamente hasta disponer de un acceso server-side a 
 
 - `storage_v4_rollout_metric` para comparación del repositorio READ ya validada E2E;
 - `storage_v4_provider_cache_metric` preparado para hit/miss/read-error/write-error sin key/query/result/UID;
+- `storage_v4_provider_request_metric` preparado para provider/operation/outcome/status/latencia sin URL, query string, API key, body ni respuesta;
 - provider cache fail-soft ante errores de lectura/escritura y coalescing concurrente probados;
-- lifecycle de sync expone hook best-effort de métricas agregadas de flush sin IDs/payloads;
+- lifecycle de sync expone métricas agregadas de flush y recuperación de cola sin IDs/payloads;
+- callable `storageV4SyncTelemetry` + cliente bufferizado preparados con contrato allowlist y rechazo de campos sensibles;
+- modelo de capacidad parametrizable para 1k/10k/50k/100k usuarios preparado sin fijar precios unitarios en código;
 - runbook define SLOs iniciales, señales, alertas, dashboard, costos, PITR/backups, restore drill y pruebas de resiliencia.
 
 Todavía falta evidencia real del entorno para cerrar K:
 
-- desplegar/observar las nuevas métricas en un entorno controlado;
+- desplegar/observar `storage_v4_sync_metric`, `storage_v4_provider_cache_metric` y `storage_v4_provider_request_metric` en un entorno controlado;
 - dashboard;
 - alertas;
 - budgets;
@@ -62,7 +65,7 @@ Todavía falta evidencia real del entorno para cerrar K:
 - provider outage E2E;
 - multidevice E2E;
 - carga/reconnect E2E y medición de SLO;
-- modelo de costos con precios vigentes y supuestos aprobados.
+- aplicar precios vigentes y supuestos aprobados al modelo de costos.
 
 ## Phase L — regla de avance
 
