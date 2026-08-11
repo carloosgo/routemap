@@ -44,7 +44,19 @@ test('Gate G solo envuelve el repositorio con telemetría cuando se inyecta un e
   assert.equal(emitted[0].outcome, 'success');
 });
 
-test('callable Gate G de telemetría permanece fuera de functions/index hasta el checkpoint remoto', async () => {
+test('functions/index exporta solo la callable observacional de Gate G READ', async () => {
   const indexSource = await readFile('functions/index.js', 'utf8');
-  assert.doesNotMatch(indexSource, /storageV4RolloutTelemetry/);
+  assert.match(
+    indexSource,
+    /export\s*\{\s*storageV4RolloutTelemetry\s*\}\s*from\s*['"]\.\/v4RolloutTelemetryFunction\.js['"]/,
+  );
+
+  for (const forbiddenModule of [
+    'v4AggregateTriggers',
+    'v4TripLifecycleFunction',
+    'v4TripPurgeScheduler',
+    'v4MigrationStore',
+  ]) {
+    assert.doesNotMatch(indexSource, new RegExp(forbiddenModule));
+  }
 });
