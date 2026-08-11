@@ -26,6 +26,7 @@ export const config = {
     mode: allowedValue(env.VITE_STORAGE_V4_MODE, ['off', 'read', 'pilot'], 'off'),
     cohortPercent: envNumber(env.VITE_STORAGE_V4_COHORT_PERCENT, 0),
     salt: cleanString(env.VITE_STORAGE_V4_COHORT_SALT) || 'atlas-storage-v4',
+    readRulesReady: envBoolean(env.VITE_STORAGE_V4_READ_RULES_READY, false),
   },
   firebase: {
     apiKey: cleanString(env.VITE_FIREBASE_API_KEY),
