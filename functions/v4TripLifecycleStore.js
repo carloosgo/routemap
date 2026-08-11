@@ -108,9 +108,10 @@ export async function applyV4TripLifecycleOperation({
   const purgeJobRef = userRef.collection('__tripPurgeJobs').doc(safeTripId);
 
   return db.runTransaction(async (transaction) => {
-    const [operationSnapshot, tripSnapshot] = await Promise.all([
+    const [operationSnapshot, tripSnapshot, purgeJobSnapshot] = await Promise.all([
       transaction.get(operationRef),
       transaction.get(tripRef),
+      transaction.get(purgeJobRef),
     ]);
 
     if (operationSnapshot.exists) {
@@ -139,6 +140,14 @@ export async function applyV4TripLifecycleOperation({
       throw new V4TripLifecycleError(
         'version-conflict',
         'El viaje cambió desde la versión conocida por el cliente.'
+      );
+    }
+
+    const purgeJob = purgeJobSnapshot.exists ? purgeJobSnapshot.data() : null;
+    if (purgeJob?.state === 'claimed') {
+      throw new V4TripLifecycleError(
+        'purge-in-progress',
+        'La eliminación definitiva del viaje ya está en curso.'
       );
     }
 
