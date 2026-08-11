@@ -16,12 +16,12 @@ test('Phase K preflight es estrictamente read-only', async () => {
   assert.match(source, /databases\/\$DatabaseId\/backupSchedules/);
   assert.match(source, /billingbudgets\.googleapis\.com\/v1\/\$BillingAccountName\/budgets\?scope=\$scope/);
   assert.doesNotMatch(source, /Invoke-RestMethod -Method (Post|Put|Patch|Delete)/i);
-  assert.doesNotMatch(source, /firestore['\", ]+databases['\", ]+update/i);
-  assert.doesNotMatch(source, /backups['\", ]+schedules['\", ]+create/i);
-  assert.doesNotMatch(source, /backups['\", ]+schedules['\", ]+delete/i);
-  assert.doesNotMatch(source, /billing['\", ]+budgets['\", ]+create/i);
-  assert.doesNotMatch(source, /billing['\", ]+budgets['\", ]+delete/i);
-  assert.doesNotMatch(source, /databases['\", ]+delete/i);
+  assert.doesNotMatch(source, /firestore['", ]+databases['", ]+update/i);
+  assert.doesNotMatch(source, /backups['", ]+schedules['", ]+create/i);
+  assert.doesNotMatch(source, /backups['", ]+schedules['", ]+delete/i);
+  assert.doesNotMatch(source, /billing['", ]+budgets['", ]+create/i);
+  assert.doesNotMatch(source, /billing['", ]+budgets['", ]+delete/i);
+  assert.doesNotMatch(source, /databases['", ]+delete/i);
 });
 
 test('Phase K preflight no bloquea el resto si backup schedules no responde', async () => {
