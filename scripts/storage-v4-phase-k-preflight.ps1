@@ -38,6 +38,28 @@ $backupSchedules = Invoke-GcloudJson @(
   "--project=$Project"
 )
 
+$billing = Invoke-GcloudJson @(
+  'billing', 'projects', 'describe',
+  $Project
+)
+
+$billingEnabled = [bool]$billing.billingEnabled
+$budgetCount = $null
+$billingAccountName = [string]$billing.billingAccountName
+if ($billingEnabled -and $billingAccountName -match '^billingAccounts/(.+)$') {
+  $billingAccountId = $Matches[1]
+  try {
+    $budgets = Invoke-GcloudJson @(
+      'billing', 'budgets', 'list',
+      "--billing-account=$billingAccountId"
+    )
+    $budgetCount = @($budgets).Count
+  } catch {
+    # El acceso a budgets puede requerir permisos adicionales; no bloquea el resto del preflight.
+    $budgetCount = $null
+  }
+}
+
 $result = [ordered]@{
   collectedAtUtc = [DateTime]::UtcNow.ToString('o')
   project = $Project
@@ -48,7 +70,10 @@ $result = [ordered]@{
   versionRetentionPeriod = $database.versionRetentionPeriod
   earliestVersionTime = $database.earliestVersionTime
   deleteProtectionState = $database.deleteProtectionState
+  backupScheduleCount = @($backupSchedules).Count
   backupSchedules = @($backupSchedules)
+  billingEnabled = $billingEnabled
+  budgetCount = $budgetCount
 }
 
 $json = $result | ConvertTo-Json -Depth 12
