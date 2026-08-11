@@ -105,6 +105,7 @@ test('conflicto de versión usa aborted y precondiciones no se confunden con err
     ['version-conflict', 'aborted'],
     ['failed-precondition', 'failed-precondition'],
     ['operation-id-reused', 'failed-precondition'],
+    ['purge-in-progress', 'failed-precondition'],
     ['not-found', 'not-found'],
   ];
 
