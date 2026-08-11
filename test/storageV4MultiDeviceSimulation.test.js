@@ -10,6 +10,10 @@ import { V4_LOCAL_STATES } from '../src/modules/storage-v4/storageV4Contract.js'
 
 const entityKey = 'alice/trip-1/segment/segment-1';
 
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
 async function seedDevice(store, note) {
   await store.putEntity({
     userId: 'alice',
@@ -56,13 +60,13 @@ function sharedVersionedGateway() {
           throw new V4RemoteSyncError(
             V4_REMOTE_ERROR_KIND.CONFLICT,
             'version conflict',
-            { remoteEntity: structuredClone(remote) }
+            { remoteEntity: clone(remote) }
           );
         }
         remote = {
           serverVersion: remote.serverVersion + 1,
           serverStatus: mutation.desiredStatus,
-          payload: structuredClone(mutation.payload),
+          payload: clone(mutation.payload),
         };
         return {
           serverVersion: remote.serverVersion,
@@ -70,7 +74,7 @@ function sharedVersionedGateway() {
         };
       },
     },
-    snapshot: () => structuredClone(remote),
+    snapshot: () => clone(remote),
   };
 }
 
