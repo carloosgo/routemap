@@ -41,7 +41,11 @@ function mappedLifecycleError(error) {
     if (error.code === 'version-conflict') {
       return new HttpsError('aborted', error.message);
     }
-    if (error.code === 'failed-precondition' || error.code === 'operation-id-reused') {
+    if (
+      error.code === 'failed-precondition'
+      || error.code === 'operation-id-reused'
+      || error.code === 'purge-in-progress'
+    ) {
       return new HttpsError('failed-precondition', error.message);
     }
   }
