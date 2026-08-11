@@ -21,10 +21,24 @@ function nonNegativeInteger(value, field) {
 }
 
 function clonePayload(payload) {
-  if (payload === undefined) return null;
-  if (payload === null) return null;
+  if (payload === undefined || payload === null) return null;
   if (typeof structuredClone === 'function') return structuredClone(payload);
   return JSON.parse(JSON.stringify(payload));
+}
+
+export function normalizeDraftRecord(record) {
+  const scopeId = requiredText(record?.scopeId, 'scopeId');
+  const draftId = requiredText(record?.draftId, 'draftId');
+  return {
+    key: `${scopeId}/${draftId}`,
+    scopeId,
+    draftId,
+    payload: clonePayload(record.payload),
+    lastModifiedLocal: nonNegativeInteger(
+      record.lastModifiedLocal ?? 0,
+      'lastModifiedLocal'
+    ),
+  };
 }
 
 export function normalizeLocalEntityRecord(record) {
@@ -75,6 +89,9 @@ export function normalizeMutationRecord(record) {
 
 export function assertLocalPersistenceAdapter(adapter) {
   const methods = [
+    'getDraft',
+    'putDraft',
+    'deleteDraft',
     'getEntity',
     'putEntity',
     'listEntities',
