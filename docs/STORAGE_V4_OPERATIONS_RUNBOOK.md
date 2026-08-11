@@ -19,7 +19,7 @@ Medir de forma agregada y sin contenido de viaje:
 
 Nunca registrar UID, tripId, entityId, nombres, notas, búsquedas, coordenadas privadas ni payloads de mutación en la telemetría operacional.
 
-El runtime expone eventos agregados de `flush` y `queue-recovery`. La callable `storageV4SyncTelemetry` aplica un contrato allowlist antes de emitir `storage_v4_sync_metric`; rechaza campos desconocidos y no admite UID, tripId, entityId, entityKey ni payload. Su cliente es best-effort, con buffer acotado, y todavía no se considera evidencia E2E hasta desplegarlo/observarlo en un entorno controlado.
+El runtime expone eventos agregados de `flush` y `queue-recovery`. La callable `storageV4SyncTelemetry` aplica un contrato allowlist antes de emitir `storage_v4_sync_metric`; rechaza campos desconocidos y no admite UID, tripId, entityId, entityKey ni payload. Su cliente es best-effort, con buffer acotado. La señal ya fue desplegada y observada E2E en `atlasmap-dev` sin activar Storage v4 WRITE.
 
 ### Firestore / backend
 
@@ -48,6 +48,8 @@ Por proveedor y operación, sin consulta cruda:
 El backend emite `storage_v4_provider_cache_metric` como señal agregada del cache compartido. Sus outcomes actuales son `hit`, `miss`, `read-error` y `write-error`. El evento solo puede incluir nombre de colección y, cuando existe un error, `errorName`/`errorCode` saneados; nunca debe incluir key, query, documentId, UID, resultado del proveedor ni contenido del viaje. El sink es best-effort y una falla de observabilidad no puede convertir un hit/miss en fallo funcional.
 
 Las llamadas salientes realizadas mediante `limitedFetch` emiten `storage_v4_provider_request_metric` con etiquetas estáticas `provider`/`operation`, outcome (`success`, `http-error`, `network-error`, `parse-error`), HTTP status y duración. La clasificación consume internamente la URL para producir etiquetas permitidas, pero la URL, query string, API key, body y respuesta nunca forman parte del evento.
+
+Los cuatro streams estructurados —rollout, sync, provider cache y provider request— ya tienen evidencia E2E real en Cloud Logging de `atlasmap-dev`.
 
 ## 2. SLO inicial de Atlas Storage
 
@@ -86,6 +88,8 @@ Prioridad media:
 - proveedor devuelve 429/5xx por encima del baseline;
 - incremento anormal de reintentos/reconexiones.
 
+El repositorio contiene templates de desarrollo para errores de repositorio, `unexpected-error` de sync y fallos de proveedor. Nacen **deshabilitados**, sin notification channels, y no deben habilitarse hasta validar server-side las métricas, medir baseline y aprobar owner/canal. El threshold de proveedor es provisional y no constituye un SLO ni una decisión operativa final.
+
 ## 4. Dashboard mínimo
 
 Un dashboard de Storage v4 debe mostrar en una sola vista:
@@ -101,7 +105,7 @@ Un dashboard de Storage v4 debe mostrar en una sola vista:
 9. cache hit ratio y errores por proveedor;
 10. gasto actual y forecast contra presupuesto.
 
-Fuentes estructuradas preparadas en código:
+Fuentes estructuradas validadas E2E en `atlasmap-dev`:
 
 ```text
 storage_v4_rollout_metric
@@ -110,7 +114,16 @@ storage_v4_provider_cache_metric
 storage_v4_provider_request_metric
 ```
 
-`storage_v4_rollout_metric` ya fue validada E2E en `atlasmap-dev`; las restantes deben considerarse preparadas en código hasta que exista evidencia de despliegue/observación.
+El bundle declarativo `ops/storage-v4/observability/` prepara:
+
+- counters de rollout/sync/provider cache/provider request;
+- distribuciones de latencia p95 para rollout/sync/provider;
+- panel de logs de los cuatro streams;
+- ratios de éxito y cache hit;
+- operaciones y storage de Firestore;
+- request count y p95 de los servicios Cloud Run observados.
+
+La definición existe en repo pero no se considera dashboard operativo hasta pasar validación server-side y crear/verificar el recurso en `atlasmap-dev`.
 
 ## 5. Modelo de capacidad/costos
 
@@ -151,6 +164,8 @@ Antes de producción:
 - documentar owner de recuperación;
 - verificar que la política también cubre cualquier base nombrada que pase a ser operacionalmente necesaria.
 
+En `atlasmap-dev`, PITR ya está habilitado con retención de 7 días y existe un scheduled backup diario con retención de 7 días. Esto valida configuración, no recuperación efectiva.
+
 Firestore PITR conserva una ventana de hasta siete días cuando está habilitado. Los scheduled backups pueden ser diarios o semanales y se restauran a una base nueva. Las políticas TTL no viajan dentro del backup, por lo que deben reaplicarse/verificarse tras un restore.
 
 ## 7. Restore drill obligatorio
@@ -173,6 +188,14 @@ Procedimiento:
 12. eliminar la base de drill cuando el procedimiento de retención lo permita.
 
 Resultado aceptable: restore reproducible, datos hidratables y sin pérdida/inconsistencia no explicada.
+
+Reglas de seguridad del drill:
+
+- nunca restaurar encima de `(default)`;
+- destino nuevo, aislado y explícitamente identificado como drill;
+- ninguna limpieza destructiva debe formar parte del mismo comando de restore;
+- la creación del destino es cost-bearing y requiere un checkpoint `-Apply` explícito;
+- no forzar APIs preview de acceso server-side a named databases solo para cerrar la evidencia.
 
 ## 8. Pruebas de carga y resiliencia
 
@@ -220,6 +243,8 @@ Configurar un budget por proyecto (dev y producción separados) y alertas de gas
 
 Los umbrales concretos deben fijarse con el presupuesto operativo aprobado del proyecto. Como mínimo, usar múltiples escalones para advertencia temprana y crítica, y definir el responsable que actúa ante cada uno.
 
+El probe actual de `atlasmap-dev` recibe HTTP 403 para budgets. Ese resultado significa **visibilidad insuficiente / estado desconocido**, nunca prueba de ausencia de budget. No crear ni fijar un monto por inferencia.
+
 ## 10. Criterio de cierre de Phase K
 
 Phase K queda cerrada solo con evidencia de:
@@ -234,4 +259,4 @@ Phase K queda cerrada solo con evidencia de:
 - SLOs medidos contra resultados reales;
 - CI completo verde.
 
-Los documentos y tests del repositorio preparan esos controles, pero los checkpoints de Cloud Console/Firestore requieren evidencia del entorno objetivo.
+Los cuatro streams y recovery dev ya tienen evidencia real. El bundle de observabilidad y los tests del repositorio preparan controles adicionales, pero los checkpoints de Cloud Monitoring/Billing/Firestore que requieran mutación o identidad autenticada siguen necesitando evidencia explícita del entorno objetivo.
