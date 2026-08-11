@@ -13,11 +13,12 @@ function requiredText(value, field) {
 }
 
 /**
- * Candidate Gate G repository factory.
+ * Gate G repository factory.
  *
- * IMPORTANT: this module is not imported by the production selector yet.
- * READ cohorts can use the hybrid repository once the coexistence ruleset is
- * ready; PILOT writes remain fail-closed in planTripRepositoryRollout().
+ * The production selector can reach this factory, but rollout policy remains
+ * fail-closed by default. READ cohorts use the hybrid repository only after
+ * the coexistence ruleset is ready; PILOT writes remain fail-closed in
+ * planTripRepositoryRollout().
  */
 export function createGateGTripRepository({
   db,
