@@ -47,6 +47,20 @@ function isKnownRemoteError(error) {
     && Object.values(V4_REMOTE_ERROR_KIND).includes(error.kind);
 }
 
+function pendingSchedule(mutations, nowMs) {
+  if (!mutations.length) return { pending: 0, nextAttemptAt: null };
+  if (mutations.some((mutation) => dueMutation(mutation, nowMs))) {
+    return { pending: mutations.length, nextAttemptAt: null };
+  }
+  const scheduled = mutations
+    .map((mutation) => mutation.nextAttemptAt)
+    .filter((value) => Number.isFinite(value));
+  return {
+    pending: mutations.length,
+    nextAttemptAt: scheduled.length ? Math.min(...scheduled) : null,
+  };
+}
+
 export function createV4SyncCoordinator({
   localPersistence,
   remoteGateway,
@@ -76,7 +90,15 @@ export function createV4SyncCoordinator({
       const ownerId = requiredText(userId, 'userId');
       let lease = await renewLease();
       if (!lease) {
-        return { leader: false, attempted: 0, synced: 0, retried: 0, conflicts: 0 };
+        return {
+          leader: false,
+          attempted: 0,
+          synced: 0,
+          retried: 0,
+          conflicts: 0,
+          pending: null,
+          nextAttemptAt: null,
+        };
       }
 
       const summary = {
@@ -85,6 +107,8 @@ export function createV4SyncCoordinator({
         synced: 0,
         retried: 0,
         conflicts: 0,
+        pending: 0,
+        nextAttemptAt: null,
       };
 
       try {
@@ -148,6 +172,15 @@ export function createV4SyncCoordinator({
           }
         }
 
+        if (lease) {
+          Object.assign(
+            summary,
+            pendingSchedule(
+              await local.listMutations({ userId: ownerId, tripId }),
+              now()
+            )
+          );
+        }
         return summary;
       } finally {
         if (lease) {
