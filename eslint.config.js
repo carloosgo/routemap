@@ -13,6 +13,7 @@ export default [
       sourceType: 'module',
       parserOptions: { ecmaFeatures: { jsx: true } },
       globals: {
+        globalThis: 'readonly',
         window: 'readonly',
         document: 'readonly',
         localStorage: 'readonly',
