@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "test": "node --test",
     "generate:rules:gate-g-read": "node scripts/generateFirestoreGateGReadRules.mjs",
-    "test:rules": "firebase emulators:exec --only firestore \"node --test --test-concurrency=1 firebase-tests/firestore.rules.spec.js firebase-tests/internalCollections.rules.spec.js firebase-tests/firestore.v4.rules.spec.js firebase-tests/firestore.v4.internal.rules.spec.js firebase-tests/firestore.v4.repository.spec.js firebase-tests/firestore.v4.sync.spec.js firebase-tests/firestore.hybrid.rollout.spec.js firebase-tests/firestore.gate-g-read.rules.spec.js functions/v4AggregateStore.emulator.spec.js functions/v4TripLifecycleStore.emulator.spec.js functions/v4TripPurgeStore.emulator.spec.js functions/v4MigrationStore.emulator.spec.js functions/v4MigrationRollback.emulator.spec.js functions/v4MigrationLegacyV2.emulator.spec.js\""
+    "test:rules": "firebase emulators:exec --only firestore \"node --test --test-concurrency=1 firebase-tests/firestore.rules.spec.js firebase-tests/internalCollections.rules.spec.js firebase-tests/firestore.v4.rules.spec.js firebase-tests/firestore.v4.internal.rules.spec.js firebase-tests/firestore.v4.repository.spec.js firebase-tests/firestore.v4.sync.spec.js firebase-tests/firestore.hybrid.rollout.spec.js firebase-tests/firestore.gate-g-read.rules.spec.js functions/v4AggregateStore.emulator.spec.js functions/v4TripLifecycleStore.emulator.spec.js functions/v4TripPurgeStore.emulator.spec.js functions/v4MigrationStore.emulator.spec.js functions/v4MigrationRollback.emulator.spec.js functions/v4MigrationLegacyV2.emulator.spec.js\"",
+    "phase-k:preflight": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/storage-v4-phase-k-preflight.ps1"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.44.0",
