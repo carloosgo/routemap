@@ -33,7 +33,9 @@ function requireStatus(value, label) {
 
 function clone(value) {
   if (value == null) return null;
-  if (typeof structuredClone === 'function') return structuredClone(value);
+  if (typeof globalThis.structuredClone === 'function') {
+    return globalThis.structuredClone(value);
+  }
   return JSON.parse(JSON.stringify(value));
 }
 
