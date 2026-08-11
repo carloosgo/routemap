@@ -62,6 +62,28 @@ function assertJobIdentity(job, userId, tripId) {
   }
 }
 
+function assertPurgeState(job) {
+  if (job?.state !== 'scheduled' && job?.state !== 'claimed') {
+    throw new V4TripPurgeError('invalid-job', 'Estado de job de purga v4 inválido.');
+  }
+}
+
+function assertTripMatchesJob(trip, jobDueAt, nowMs) {
+  const tripDueAt = dueMillis(trip?.purgeAfter);
+  return trip?.schemaVersion === 4
+    && trip?.status === 'deleted'
+    && tripDueAt !== null
+    && tripDueAt === jobDueAt
+    && tripDueAt <= nowMs;
+}
+
+async function deleteTripDescendants(tripRef, deleteTree) {
+  const collections = await tripRef.listCollections();
+  for (const collectionRef of collections) {
+    await deleteTree(collectionRef);
+  }
+}
+
 export async function purgeV4TripJob({
   db,
   userId,
@@ -75,6 +97,7 @@ export async function purgeV4TripJob({
   if (typeof now !== 'function') throw new TypeError('now debe ser función.');
 
   const timestamp = timestampValue(now(), 'now()');
+  const nowMs = timestamp.toMillis();
   const { ownerId, safeTripId, tripRef, jobRef } = purgeRefs(db, userId, tripId);
 
   const claim = await db.runTransaction(async (transaction) => {
@@ -86,42 +109,33 @@ export async function purgeV4TripJob({
 
     const job = jobSnapshot.data();
     assertJobIdentity(job, ownerId, safeTripId);
-    const jobDueAt = dueMillis(job?.dueAt);
+    assertPurgeState(job);
+    const jobDueAt = dueMillis(job.dueAt);
     if (jobDueAt === null) {
       throw new V4TripPurgeError('invalid-job', 'El job de purga no tiene dueAt válido.');
     }
-    if (jobDueAt > timestamp.toMillis()) return { action: 'not-due' };
-
+    if (jobDueAt > nowMs) return { action: 'not-due' };
     if (!tripSnapshot.exists) {
-      transaction.set(jobRef, {
-        ...job,
-        state: 'claimed',
-        claimedAt: job.claimedAt || timestamp,
-        updatedAt: timestamp,
-      });
-      return { action: 'cleanup', rootAlreadyMissing: true };
+      throw new V4TripPurgeError(
+        'missing-trip-root',
+        'El job de purga conserva trabajo pero la raíz del viaje no existe.'
+      );
     }
 
     const trip = tripSnapshot.data();
-    const tripDueAt = dueMillis(trip?.purgeAfter);
-    if (
-      trip.schemaVersion !== 4
-      || trip.status !== 'deleted'
-      || tripDueAt === null
-      || tripDueAt !== jobDueAt
-      || tripDueAt > timestamp.toMillis()
-    ) {
+    if (!assertTripMatchesJob(trip, jobDueAt, nowMs)) {
       return { action: 'stale-job' };
     }
 
-    transaction.set(jobRef, {
-      ...job,
-      state: 'claimed',
-      claimedAt: timestamp,
-      updatedAt: timestamp,
-    });
-    transaction.delete(tripRef);
-    return { action: 'cleanup', rootAlreadyMissing: false };
+    if (job.state === 'scheduled') {
+      transaction.set(jobRef, {
+        ...job,
+        state: 'claimed',
+        claimedAt: timestamp,
+        updatedAt: timestamp,
+      });
+    }
+    return { action: 'cleanup', resumed: job.state === 'claimed' };
   });
 
   if (claim.action !== 'cleanup') {
@@ -133,13 +147,47 @@ export async function purgeV4TripJob({
     };
   }
 
-  await deleteTree(tripRef);
-  await jobRef.delete();
+  await deleteTripDescendants(tripRef, deleteTree);
+
+  const finalized = await db.runTransaction(async (transaction) => {
+    const [jobSnapshot, tripSnapshot] = await Promise.all([
+      transaction.get(jobRef),
+      transaction.get(tripRef),
+    ]);
+    if (!jobSnapshot.exists && !tripSnapshot.exists) return true;
+    if (!jobSnapshot.exists || !tripSnapshot.exists) {
+      throw new V4TripPurgeError(
+        'inconsistent-finalization',
+        'La finalización de purga encontró estado parcial inesperado.'
+      );
+    }
+
+    const job = jobSnapshot.data();
+    assertJobIdentity(job, ownerId, safeTripId);
+    assertPurgeState(job);
+    if (job.state !== 'claimed') {
+      throw new V4TripPurgeError('not-claimed', 'El job ya no está reclamado para purga.');
+    }
+    const jobDueAt = dueMillis(job.dueAt);
+    const trip = tripSnapshot.data();
+    if (jobDueAt === null || !assertTripMatchesJob(trip, jobDueAt, nowMs)) {
+      throw new V4TripPurgeError(
+        'purge-fence-lost',
+        'El viaje cambió mientras se limpiaban sus descendientes.'
+      );
+    }
+
+    transaction.delete(tripRef);
+    transaction.delete(jobRef);
+    return false;
+  });
+
   return {
     userId: ownerId,
     tripId: safeTripId,
     purged: true,
-    resumed: Boolean(claim.rootAlreadyMissing),
+    resumed: Boolean(claim.resumed),
+    alreadyFinalized: finalized,
   };
 }
 
