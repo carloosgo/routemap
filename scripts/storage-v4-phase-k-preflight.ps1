@@ -1,6 +1,6 @@
 param(
   [string]$Project = 'atlasmap-dev',
-  [string]$Database = '(default)',
+  [string]$DatabaseId = '(default)',
   [string]$OutputPath = ''
 )
 
@@ -48,8 +48,7 @@ function Invoke-FirestoreBackupScheduleRest {
 
   # Firestore documenta endpoint global y endpoints regionales del tipo
   # firestore.<region>.rep.googleapis.com. Probamos primero el regional de la
-  # propia base para evitar fallos de ruteo del endpoint global observados en
-  # Cloud SDK/REST; ambos intentos son exclusivamente GET.
+  # propia base; ambos intentos son exclusivamente GET.
   $hosts = @()
   if ($LocationId) {
     $hosts += "firestore.$LocationId.rep.googleapis.com"
@@ -58,8 +57,7 @@ function Invoke-FirestoreBackupScheduleRest {
 
   $lastStatus = $null
   foreach ($hostName in @($hosts | Select-Object -Unique)) {
-    # Database IDs de Firestore son segmentos de ruta; '(default)' es el ID
-    # oficial para la base predeterminada y puede aparecer literalmente.
+    # '(default)' es el ID oficial de la base predeterminada de Firestore.
     $uri = "https://$hostName/v1/projects/$ProjectId/databases/$DatabaseId/backupSchedules"
     try {
       $response = Invoke-RestMethod -Method Get -Uri $uri -Headers @{
@@ -78,8 +76,7 @@ function Invoke-FirestoreBackupScheduleRest {
   }
 
   # Que el endpoint de schedules no esté disponible no debe impedir observar
-  # PITR, billing, budgets ni telemetría. El preflight reporta el probe como
-  # unavailable sin inferir que no existan schedules.
+  # PITR, billing, budgets ni telemetría. No inferimos que no existan schedules.
   return [pscustomobject]@{
     schedules = @()
     source = 'firestore-rest'
@@ -97,9 +94,12 @@ if (-not $account -or $account -eq '(unset)') {
   throw 'gcloud no tiene una cuenta autenticada activa.'
 }
 
-$database = Invoke-GcloudJson @(
+# PowerShell no distingue mayúsculas/minúsculas en nombres de variables.
+# Mantener DatabaseId (string de entrada) separado de databaseInfo (respuesta)
+# evita sobrescribir el ID '(default)' con el objeto devuelto por gcloud.
+$databaseInfo = Invoke-GcloudJson @(
   'firestore', 'databases', 'describe',
-  "--database=$Database",
+  "--database=$DatabaseId",
   "--project=$Project"
 )
 
@@ -109,11 +109,11 @@ $backupScheduleHttpStatus = $null
 try {
   $backupSchedules = Invoke-GcloudJson @(
     'firestore', 'backups', 'schedules', 'list',
-    "--database=$Database",
+    "--database=$DatabaseId",
     "--project=$Project"
   )
 } catch {
-  $restProbe = Invoke-FirestoreBackupScheduleRest -ProjectId $Project -DatabaseId $Database -LocationId ([string]$database.locationId)
+  $restProbe = Invoke-FirestoreBackupScheduleRest -ProjectId $Project -DatabaseId $DatabaseId -LocationId ([string]$databaseInfo.locationId)
   $backupSchedules = @($restProbe.schedules)
   $backupScheduleSource = [string]$restProbe.source
   $backupScheduleProbeStatus = [string]$restProbe.status
@@ -145,13 +145,13 @@ if ($billingEnabled -and $billingAccountName -match '^billingAccounts/(.+)$') {
 $result = [ordered]@{
   collectedAtUtc = [DateTime]::UtcNow.ToString('o')
   project = $Project
-  database = $Database
+  database = $DatabaseId
   activeAccountPresent = $true
-  locationId = $database.locationId
-  pointInTimeRecoveryEnablement = $database.pointInTimeRecoveryEnablement
-  versionRetentionPeriod = $database.versionRetentionPeriod
-  earliestVersionTime = $database.earliestVersionTime
-  deleteProtectionState = $database.deleteProtectionState
+  locationId = $databaseInfo.locationId
+  pointInTimeRecoveryEnablement = $databaseInfo.pointInTimeRecoveryEnablement
+  versionRetentionPeriod = $databaseInfo.versionRetentionPeriod
+  earliestVersionTime = $databaseInfo.earliestVersionTime
+  deleteProtectionState = $databaseInfo.deleteProtectionState
   backupScheduleProbeStatus = $backupScheduleProbeStatus
   backupScheduleHttpStatus = $backupScheduleHttpStatus
   backupScheduleCount = if ($backupScheduleProbeStatus -eq 'ok') { @($backupSchedules).Count } else { $null }
