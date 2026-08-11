@@ -94,8 +94,12 @@ export function createV4SyncCoordinator({
           .slice(0, maxMutationsPerFlush);
 
         for (const sentMutation of eligible) {
-          lease = await renewLease();
-          if (!lease) break;
+          const renewedLease = await renewLease();
+          if (!renewedLease) {
+            lease = null;
+            break;
+          }
+          lease = renewedLease;
           summary.attempted += 1;
 
           try {
@@ -146,11 +150,13 @@ export function createV4SyncCoordinator({
 
         return summary;
       } finally {
-        await local.releaseSyncLeaseIfOwned({
-          contextId: ownerContextId,
-          generation: lease.generation,
-          nowMs: now(),
-        });
+        if (lease) {
+          await local.releaseSyncLeaseIfOwned({
+            contextId: ownerContextId,
+            generation: lease.generation,
+            nowMs: now(),
+          });
+        }
       }
     },
   };
