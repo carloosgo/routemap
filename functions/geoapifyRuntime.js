@@ -5,7 +5,12 @@ import { createSharedCache } from './sharedCache.js';
 
 initializeApp();
 
+// Datos canónicos/internos del backend. La separación física del cache se activa
+// únicamente cuando la topología atlas-cache tenga un acceso server-side estable.
 export const db = getFirestore();
+// Punto único de inyección para el cache de proveedores. Hoy conserva compatibilidad
+// con (default); todos los callsites de cache deben depender de cacheDb y no de db.
+export const cacheDb = db;
 export const GEOAPIFY_API_KEY = defineSecret('GEOAPIFY_API_KEY');
 export const GEOAPIFY_CITY_API_KEY = defineSecret('GEOAPIFY_CITY_API_KEY');
 export const GOOGLE_PLACES_API_KEY = defineSecret('GOOGLE_PLACES_API_KEY');
@@ -21,7 +26,7 @@ export const ALLOWED_MODES = new Set([
   'transit',
   'approximated_transit',
 ]);
-export const cached = createSharedCache(db, { ttlMs: CACHE_TTL_MS });
+export const cached = createSharedCache(cacheDb, { ttlMs: CACHE_TTL_MS });
 
 export const QUOTAS = Object.freeze({
   cityAutocomplete: { scope: 'geoapify-city-autocomplete', maxRequests: 20, windowMs: 60_000 },
