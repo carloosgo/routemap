@@ -11,14 +11,35 @@ function hasOwnResult(data) {
   return Boolean(data) && Object.prototype.hasOwnProperty.call(data, 'result');
 }
 
-export function createSharedCache(db, { ttlMs }) {
+function reportCacheError(onCacheError, { phase, collection, error }) {
+  if (typeof onCacheError !== 'function') return;
+  try {
+    onCacheError({
+      phase,
+      collection,
+      errorName: error?.name || 'Error',
+      errorCode: typeof error?.code === 'string' ? error.code : '',
+    });
+  } catch {
+    // La observabilidad nunca debe convertir un miss de cache en un fallo funcional.
+  }
+}
+
+export function createSharedCache(db, { ttlMs, onCacheError } = {}) {
   const safeTtlMs = Math.max(60_000, Math.trunc(Number(ttlMs) || 0));
 
   return async function cached(collection, key, loader) {
     const documentId = cacheId(key);
     const ref = db.collection(collection).doc(documentId);
-    const snapshot = await ref.get();
-    const data = snapshot.data();
+    let data = null;
+
+    try {
+      const snapshot = await ref.get();
+      data = snapshot.data();
+    } catch (error) {
+      reportCacheError(onCacheError, { phase: 'read', collection, error });
+    }
+
     const timestamp = data?.timestamp?.toMillis?.() || 0;
     const expiresAt = data?.expiresAt?.toMillis?.() || (timestamp + safeTtlMs);
 
@@ -32,11 +53,15 @@ export function createSharedCache(db, { ttlMs }) {
     const pending = (async () => {
       const result = await loader();
       const now = Date.now();
-      await ref.set({
-        result,
-        timestamp: FieldValue.serverTimestamp(),
-        expiresAt: Timestamp.fromMillis(now + safeTtlMs),
-      });
+      try {
+        await ref.set({
+          result,
+          timestamp: FieldValue.serverTimestamp(),
+          expiresAt: Timestamp.fromMillis(now + safeTtlMs),
+        });
+      } catch (error) {
+        reportCacheError(onCacheError, { phase: 'write', collection, error });
+      }
       return { result, cacheHit: false };
     })();
 
