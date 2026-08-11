@@ -11,7 +11,7 @@ const ENFORCE_APP_CHECK = defineBoolean('ENFORCE_APP_CHECK', {
 
 const BASE_CALLABLE_OPTIONS = Object.freeze({
   region: 'us-central1',
-  enforceAppCheck: ENFORCE_APP_CHECK,
+  enforceAppCheck: false,
   memory: '256MiB',
   timeoutSeconds: 30,
   maxInstances: 10,
