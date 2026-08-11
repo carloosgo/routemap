@@ -28,6 +28,7 @@ export const config = {
     salt: cleanString(env.VITE_STORAGE_V4_COHORT_SALT) || 'atlas-storage-v4',
     readRulesReady: envBoolean(env.VITE_STORAGE_V4_READ_RULES_READY, false),
     remoteConfigEnabled: envBoolean(env.VITE_STORAGE_V4_REMOTE_CONFIG_ENABLED, false),
+    telemetryEnabled: envBoolean(env.VITE_STORAGE_V4_TELEMETRY_ENABLED, false),
   },
   firebase: {
     apiKey: cleanString(env.VITE_FIREBASE_API_KEY),
