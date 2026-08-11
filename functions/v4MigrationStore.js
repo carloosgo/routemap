@@ -8,6 +8,7 @@ const V3_COLLECTIONS = Object.freeze([
 const V4_COLLECTIONS = Object.freeze([
   'segments', 'places', 'connections', 'notes', 'checklist',
 ]);
+const SUPPORTED_SOURCE_VERSIONS = new Set([2, 3]);
 
 export class V4MigrationError extends Error {
   constructor(code, message) {
@@ -21,6 +22,14 @@ function requiredText(value, field) {
   const text = typeof value === 'string' ? value.trim() : '';
   if (!text) throw new TypeError(`${field} es obligatorio.`);
   return text;
+}
+
+function sourceVersion(value) {
+  const version = Number(value);
+  if (!SUPPORTED_SOURCE_VERSIONS.has(version)) {
+    throw new V4MigrationError('not-legacy', 'El viaje no usa storageVersion 2 o 3.');
+  }
+  return version;
 }
 
 function tripRefs(db, userId, tripId) {
@@ -75,11 +84,9 @@ export async function readPersistedV3MigrationSource({ db, userId, tripId } = {}
   if (!db) throw new TypeError('Se requiere Firestore Admin.');
   const { tripRef } = tripRefs(db, userId, tripId);
   const rootSnapshot = await tripRef.get();
-  if (!rootSnapshot.exists) throw new V4MigrationError('not-found', 'El viaje v3 no existe.');
+  if (!rootSnapshot.exists) throw new V4MigrationError('not-found', 'El viaje legacy no existe.');
   const summary = rootSnapshot.data();
-  if (Number(summary?.storageVersion) !== 3) {
-    throw new V4MigrationError('not-v3', 'El viaje no está en storageVersion 3.');
-  }
+  sourceVersion(summary?.storageVersion);
   const revisionId = requiredText(summary.activeRevision, 'activeRevision');
   const revisionRef = tripRef.collection('revisions').doc(revisionId);
   const [revisionSnapshot, collections] = await Promise.all([
@@ -87,7 +94,7 @@ export async function readPersistedV3MigrationSource({ db, userId, tripId } = {}
     readV3Collections(revisionRef),
   ]);
   if (!revisionSnapshot.exists) {
-    throw new V4MigrationError('source-missing', 'La revisión v3 activa no existe.');
+    throw new V4MigrationError('source-missing', 'La revisión legacy activa no existe.');
   }
   return {
     summary: { id: tripRef.id, ...summary },
@@ -97,7 +104,8 @@ export async function readPersistedV3MigrationSource({ db, userId, tripId } = {}
 }
 
 function checkpointMatchesSource(checkpoint, materialized) {
-  return checkpoint?.sourceRevision === materialized.source.activeRevision
+  return checkpoint?.sourceStorageVersion === materialized.source.storageVersion
+    && checkpoint?.sourceRevision === materialized.source.activeRevision
     && checkpoint?.sourceUpdatedAt === materialized.source.sourceUpdatedAt;
 }
 
@@ -195,17 +203,17 @@ export async function stageV3TripMigration({ db, userId, tripId } = {}) {
     if (!rootSnapshot.exists) throw new V4MigrationError('source-changed', 'El viaje desapareció durante la migración.');
     const current = rootSnapshot.data();
     if (
-      Number(current.storageVersion) !== 3
+      Number(current.storageVersion) !== materialized.source.storageVersion
       || current.activeRevision !== materialized.source.activeRevision
       || current.updatedAt !== materialized.source.sourceUpdatedAt
     ) {
-      throw new V4MigrationError('source-changed', 'El viaje v3 cambió durante la preparación de la migración.');
+      throw new V4MigrationError('source-changed', 'El viaje legacy cambió durante la preparación de la migración.');
     }
     transaction.set(checkpointRef, {
       userId: ownerId,
       tripId: safeTripId,
       state: 'staging',
-      sourceStorageVersion: 3,
+      sourceStorageVersion: materialized.source.storageVersion,
       sourceRevision: materialized.source.activeRevision,
       sourceUpdatedAt: materialized.source.sourceUpdatedAt,
       sourceSummary: current,
@@ -240,10 +248,10 @@ export async function stageV3TripMigration({ db, userId, tripId } = {}) {
     const checkpoint = checkpointSnapshot.data();
     if (!checkpointMatchesSource(checkpoint, materialized)
       || checkpoint.expectedDigest !== digest
-      || Number(current.storageVersion) !== 3
+      || Number(current.storageVersion) !== materialized.source.storageVersion
       || current.activeRevision !== materialized.source.activeRevision
       || current.updatedAt !== materialized.source.sourceUpdatedAt) {
-      throw new V4MigrationError('source-changed', 'El viaje v3 cambió antes de verificar staging.');
+      throw new V4MigrationError('source-changed', 'El viaje legacy cambió antes de verificar staging.');
     }
     transaction.update(checkpointRef, {
       state: 'verified',
@@ -281,10 +289,10 @@ export async function finalizeV3TripMigration({ db, userId, tripId, materialized
       || !checkpointMatchesSource(checkpoint, materialized)) {
       throw new V4MigrationError('not-ready', 'La migración todavía no está verificada para commit.');
     }
-    if (Number(root.storageVersion) !== 3
+    if (Number(root.storageVersion) !== materialized.source.storageVersion
       || root.activeRevision !== materialized.source.activeRevision
       || root.updatedAt !== materialized.source.sourceUpdatedAt) {
-      throw new V4MigrationError('source-changed', 'El viaje v3 cambió antes del commit final.');
+      throw new V4MigrationError('source-changed', 'El viaje legacy cambió antes del commit final.');
     }
 
     transaction.set(tripRef, materialized.root);
@@ -328,7 +336,10 @@ async function completeRollbackCleanup({
     }
     const root = rootSnapshot.data();
     const checkpoint = checkpointSnapshot.data();
-    if (Number(root.storageVersion) !== 3 || checkpoint.state !== 'rollback-cleanup') {
+    if (
+      Number(root.storageVersion) !== Number(checkpoint.sourceStorageVersion)
+      || checkpoint.state !== 'rollback-cleanup'
+    ) {
       throw new V4MigrationError('rollback-unsafe', 'El estado cambió durante la limpieza del rollback.');
     }
     transaction.update(checkpointRef, {
@@ -358,11 +369,12 @@ export async function rollbackFreshV4Migration({
   }
   const root = rootSnapshot.data();
   const checkpoint = checkpointSnapshot.data();
+  const originalStorageVersion = Number(checkpoint.sourceStorageVersion);
 
-  if (checkpoint.state === 'rolled-back' && Number(root.storageVersion) === 3) {
+  if (checkpoint.state === 'rolled-back' && Number(root.storageVersion) === originalStorageVersion) {
     return { state: 'rolled-back', idempotentReplay: true };
   }
-  if (checkpoint.state === 'rollback-cleanup' && Number(root.storageVersion) === 3) {
+  if (checkpoint.state === 'rollback-cleanup' && Number(root.storageVersion) === originalStorageVersion) {
     return completeRollbackCleanup({ db, tripRef, checkpointRef, cleanup });
   }
   if (checkpoint.state !== 'complete' || root.schemaVersion !== 4 || root.version !== 1) {
@@ -389,6 +401,7 @@ export async function rollbackFreshV4Migration({
     if (
       currentCheckpoint.state !== 'complete'
       || currentCheckpoint.expectedDigest !== checkpoint.expectedDigest
+      || currentCheckpoint.sourceStorageVersion !== checkpoint.sourceStorageVersion
       || currentRoot.schemaVersion !== 4
       || currentRoot.version !== 1
       || normalizedJson(currentRoot) !== preflightRootJson
