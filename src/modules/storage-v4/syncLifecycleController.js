@@ -34,6 +34,12 @@ function safeMetricEmitter(onMetric) {
   };
 }
 
+function optionalMetricCount(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0) return undefined;
+  return Math.min(100_000, Math.trunc(number));
+}
+
 export function createV4SyncLifecycleController({
   flush,
   now = () => Date.now(),
@@ -130,14 +136,19 @@ export function createV4SyncLifecycleController({
         nextAttemptAt: result?.nextAttemptAt ?? null,
         nowMs: finishedAt,
       });
-      emitMetric({
+      const metric = {
         event: 'flush',
         outcome: 'success',
         reason,
         durationMs: Math.max(0, finishedAt - startedAt),
         pending,
         retryScheduled: result?.nextAttemptAt != null,
-      });
+      };
+      for (const key of ['attempted', 'synced', 'retried', 'conflicts']) {
+        const count = optionalMetricCount(result?.[key]);
+        if (count !== undefined) metric[key] = count;
+      }
+      emitMetric(metric);
       return result;
     } catch (error) {
       const failedAt = clock();
