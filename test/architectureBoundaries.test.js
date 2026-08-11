@@ -10,6 +10,7 @@ const PURE_MODULES = [
   'src/modules/storage/apiRepository.js',
   'src/modules/storage/localStorageRepository.js',
   'src/modules/geocoding/citySearchCache.js',
+  'src/modules/storage-v4/gateGRuntimeConfigModel.js',
 ];
 
 const FORBIDDEN_IMPORTS = [
