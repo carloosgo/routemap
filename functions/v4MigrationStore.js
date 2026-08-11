@@ -128,6 +128,21 @@ async function writeContributionsExactly(db, tripRef, contributions) {
   await writer.close();
 }
 
+async function deleteCollectionDocuments(db, collectionRef) {
+  const snapshot = await collectionRef.get();
+  if (snapshot.empty) return;
+  const writer = db.bulkWriter();
+  for (const document of snapshot.docs) writer.delete(document.ref);
+  await writer.close();
+}
+
+async function cleanupV4MigrationData(db, tripRef) {
+  for (const name of V4_COLLECTIONS) {
+    await deleteCollectionDocuments(db, tripRef.collection(name));
+  }
+  await deleteCollectionDocuments(db, tripRef.collection('__aggregateContributions'));
+}
+
 async function readStagedV4(tripRef) {
   const snapshots = await Promise.all(
     V4_COLLECTIONS.map((name) => tripRef.collection(name).get())
@@ -295,29 +310,61 @@ export async function migrateV3TripToV4(input = {}) {
   return { ...finalized, digest: staged.digest };
 }
 
+async function completeRollbackCleanup({ db, tripRef, checkpointRef } = {}) {
+  await cleanupV4MigrationData(db, tripRef);
+  return db.runTransaction(async (transaction) => {
+    const [rootSnapshot, checkpointSnapshot] = await Promise.all([
+      transaction.get(tripRef),
+      transaction.get(checkpointRef),
+    ]);
+    if (!rootSnapshot.exists || !checkpointSnapshot.exists) {
+      throw new V4MigrationError('rollback-unavailable', 'El rollback perdió su root o checkpoint.');
+    }
+    const root = rootSnapshot.data();
+    const checkpoint = checkpointSnapshot.data();
+    if (Number(root.storageVersion) !== 3 || checkpoint.state !== 'rollback-cleanup') {
+      throw new V4MigrationError('rollback-unsafe', 'El estado cambió durante la limpieza del rollback.');
+    }
+    transaction.update(checkpointRef, {
+      state: 'rolled-back',
+      rolledBackAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    return { state: 'rolled-back', idempotentReplay: false };
+  });
+}
+
 export async function rollbackFreshV4Migration({ db, userId, tripId } = {}) {
   if (!db) throw new TypeError('Se requiere Firestore Admin.');
   const { tripRef, checkpointRef } = tripRefs(db, userId, tripId);
-  const [rootSnapshot, checkpointSnapshot, staged] = await Promise.all([
+  const [rootSnapshot, checkpointSnapshot] = await Promise.all([
     tripRef.get(),
     checkpointRef.get(),
-    readStagedV4(tripRef),
   ]);
   if (!rootSnapshot.exists || !checkpointSnapshot.exists) {
     throw new V4MigrationError('rollback-unavailable', 'No existe migración completa para rollback.');
   }
-  const preflightRoot = rootSnapshot.data();
+  const root = rootSnapshot.data();
   const checkpoint = checkpointSnapshot.data();
-  if (checkpoint.state !== 'complete' || preflightRoot.schemaVersion !== 4 || preflightRoot.version !== 1) {
+
+  if (checkpoint.state === 'rolled-back' && Number(root.storageVersion) === 3) {
+    return { state: 'rolled-back', idempotentReplay: true };
+  }
+  if (checkpoint.state === 'rollback-cleanup' && Number(root.storageVersion) === 3) {
+    return completeRollbackCleanup({ db, tripRef, checkpointRef });
+  }
+  if (checkpoint.state !== 'complete' || root.schemaVersion !== 4 || root.version !== 1) {
     throw new V4MigrationError('rollback-unsafe', 'El viaje ya no está en el estado fresco de migración.');
   }
-  const currentDigest = stagedDigest(preflightRoot, staged);
+
+  const staged = await readStagedV4(tripRef);
+  const currentDigest = stagedDigest(root, staged);
   if (currentDigest !== checkpoint.expectedDigest) {
     throw new V4MigrationError('rollback-unsafe', 'El estado v4 cambió después de la migración.');
   }
-  const preflightRootJson = normalizedJson(preflightRoot);
+  const preflightRootJson = normalizedJson(root);
 
-  return db.runTransaction(async (transaction) => {
+  await db.runTransaction(async (transaction) => {
     const [currentRootSnapshot, currentCheckpointSnapshot] = await Promise.all([
       transaction.get(tripRef),
       transaction.get(checkpointRef),
@@ -338,10 +385,11 @@ export async function rollbackFreshV4Migration({ db, userId, tripId } = {}) {
     }
     transaction.set(tripRef, currentCheckpoint.sourceSummary);
     transaction.update(checkpointRef, {
-      state: 'rolled-back',
-      rolledBackAt: FieldValue.serverTimestamp(),
+      state: 'rollback-cleanup',
+      rollbackStartedAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
-    return { state: 'rolled-back' };
   });
+
+  return completeRollbackCleanup({ db, tripRef, checkpointRef });
 }
