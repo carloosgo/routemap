@@ -11,6 +11,7 @@ const read100 = Object.freeze({
   mode: 'read',
   cohortPercent: 100,
   salt: 'gate-g-read-test',
+  readRulesReady: true,
 });
 
 const pilot100 = Object.freeze({
@@ -21,11 +22,21 @@ const pilot100 = Object.freeze({
   salt: 'gate-g-pilot-test',
 });
 
-test('Gate G READ elige repositorio híbrido solo para una cohorte habilitada', () => {
+test('Gate G READ elige repositorio híbrido solo para cohorte + rules ready', () => {
   const decision = planTripRepositoryRollout({ uid: 'alice', rolloutConfig: read100 });
   assert.equal(decision.repositoryMode, TRIP_REPOSITORY_ROLLOUT_MODE.HYBRID_READ);
   assert.equal(decision.rolloutMode, 'read');
   assert.equal(decision.reason, 'read-cohort');
+});
+
+test('READ sin rules ready falla cerrado a v3 aunque la cohorte esté habilitada', () => {
+  const decision = planTripRepositoryRollout({
+    uid: 'alice',
+    rolloutConfig: { ...read100, readRulesReady: false },
+  });
+  assert.equal(decision.repositoryMode, TRIP_REPOSITORY_ROLLOUT_MODE.V3);
+  assert.equal(decision.rolloutMode, 'read');
+  assert.equal(decision.reason, 'read-rules-not-ready');
 });
 
 test('kill switch devuelve inmediatamente a v3', () => {
