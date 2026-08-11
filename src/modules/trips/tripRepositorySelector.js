@@ -7,13 +7,17 @@ export function createLocalTripRepository() {
   return createLocalStorageRepository(config.storageKey);
 }
 
-export function selectTripRepository({ uid, localRepository }) {
+export function selectTripRepository({
+  uid,
+  localRepository,
+  rolloutConfig = config.storageV4Rollout,
+}) {
   if (!uid) return localRepository;
 
   const { db } = getFirebaseServices();
   return createGateGTripRepository({
     db,
     uid,
-    rolloutConfig: config.storageV4Rollout,
+    rolloutConfig,
   }).repository;
 }
