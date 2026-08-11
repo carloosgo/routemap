@@ -22,12 +22,25 @@ function requirePositiveMs(value, field) {
   return value;
 }
 
+function safeMetricEmitter(onMetric) {
+  if (onMetric == null) return () => {};
+  const emit = requireFunction(onMetric, 'onMetric');
+  return (metric) => {
+    try {
+      emit(metric);
+    } catch {
+      // Observabilidad best-effort: nunca puede romper el scheduler o el guardado.
+    }
+  };
+}
+
 export function createV4SyncLifecycleController({
   flush,
   now = () => Date.now(),
   setTimer = (callback, delay) => globalThis.setTimeout(callback, delay),
   clearTimer = (handle) => globalThis.clearTimeout(handle),
   onError = () => {},
+  onMetric = null,
   debounceMs = 3000,
   maxDirtyAgeMs = 30000,
   nonLeaderRetryMs = 4000,
@@ -40,6 +53,7 @@ export function createV4SyncLifecycleController({
   const scheduleTimer = requireFunction(setTimer, 'setTimer');
   const cancelTimer = requireFunction(clearTimer, 'clearTimer');
   const reportError = requireFunction(onError, 'onError');
+  const emitMetric = safeMetricEmitter(onMetric);
   requirePositiveMs(debounceMs, 'debounceMs');
   requirePositiveMs(maxDirtyAgeMs, 'maxDirtyAgeMs');
   requirePositiveMs(nonLeaderRetryMs, 'nonLeaderRetryMs');
@@ -85,6 +99,7 @@ export function createV4SyncLifecycleController({
     }
 
     clearScheduledTimer();
+    const startedAt = clock();
     const started = beginScheduledFlush(state);
     state = started.state;
     inFlight = true;
@@ -98,14 +113,30 @@ export function createV4SyncLifecycleController({
           nextAttemptAt: finishedAt + nonLeaderRetryMs,
           nowMs: finishedAt,
         });
+        emitMetric({
+          event: 'flush',
+          outcome: 'not-leader',
+          reason,
+          durationMs: Math.max(0, finishedAt - startedAt),
+          pending: null,
+        });
         return result;
       }
 
+      const pending = Math.max(0, Math.trunc(Number(result?.pending) || 0));
       state = completeScheduledFlush(state, {
         flushedGeneration: started.generation,
-        hasPending: Number(result?.pending) > 0,
+        hasPending: pending > 0,
         nextAttemptAt: result?.nextAttemptAt ?? null,
         nowMs: finishedAt,
+      });
+      emitMetric({
+        event: 'flush',
+        outcome: 'success',
+        reason,
+        durationMs: Math.max(0, finishedAt - startedAt),
+        pending,
+        retryScheduled: result?.nextAttemptAt != null,
       });
       return result;
     } catch (error) {
@@ -117,6 +148,15 @@ export function createV4SyncLifecycleController({
         nowMs: failedAt,
       });
       reportError(error);
+      emitMetric({
+        event: 'flush',
+        outcome: 'unexpected-error',
+        reason,
+        durationMs: Math.max(0, failedAt - startedAt),
+        pending: null,
+        errorName: error?.name || 'Error',
+        errorCode: typeof error?.code === 'string' ? error.code : '',
+      });
       return { error };
     } finally {
       inFlight = false;
