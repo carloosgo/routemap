@@ -26,22 +26,13 @@ function readRemoteValues(remoteConfig) {
   };
 }
 
-function defaultConfigFrom(base) {
+function failClosedDefaults() {
   return {
     [GATE_G_REMOTE_KEYS.enabled]: false,
     [GATE_G_REMOTE_KEYS.killSwitch]: true,
     [GATE_G_REMOTE_KEYS.mode]: 'off',
     [GATE_G_REMOTE_KEYS.cohortPercent]: 0,
     [GATE_G_REMOTE_KEYS.readRulesReady]: false,
-    ...(
-      base?.enabled
-      && !base?.killSwitch
-      && base?.mode === 'read'
-      && base?.readRulesReady
-      && Number(base?.cohortPercent) > 0
-        ? {}
-        : {}
-    ),
   };
 }
 
@@ -69,7 +60,7 @@ export async function createGateGRemoteConfigController({
 
     const remoteConfig = getRemoteConfig(app);
     remoteConfig.settings.minimumFetchIntervalMillis = minimumFetchIntervalMillis;
-    remoteConfig.defaultConfig = defaultConfigFrom(baseConfig);
+    remoteConfig.defaultConfig = failClosedDefaults();
 
     await fetchAndActivate(remoteConfig);
     let current = normalizeRemoteRolloutConfig({
