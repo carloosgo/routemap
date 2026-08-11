@@ -90,8 +90,8 @@ test('repositorio híbrido revalida el root remoto antes de save/remove y no aut
   const source = await readFile('src/infrastructure/firebase/firestoreHybridTripRepository.js', 'utf8');
   assert.match(source, /async function readRootKind\(tripId\)/);
   assert.doesNotMatch(source, /if \(knownKinds\.has\(id\)\) return knownKinds\.get\(id\)/);
-  const saveBody = source.match(/async save\(rawTrip\) \{([\s\S]*?)\n    \},\n\n    async remove/);
-  const removeBody = source.match(/async remove\(id\) \{([\s\S]*?)\n    \},\n  \};/);
+  const saveBody = source.match(/async save\(rawTrip\) \{([\s\S]*?)\n {4}\},\n\n {4}async remove/);
+  const removeBody = source.match(/async remove\(id\) \{([\s\S]*?)\n {4}\},\n {2}\};/);
   assert.ok(saveBody);
   assert.ok(removeBody);
   assert.match(saveBody[1], /await readRootKind\(tripId\)/);
