@@ -18,7 +18,8 @@
     "phase-k:observability:preflight": "node scripts/runStorageV4PhaseKObservabilityPreflight.mjs",
     "phase-k:observability:apply-dev": "node scripts/runStorageV4PhaseKObservabilityApplyDev.mjs",
     "phase-k:restore:preflight": "node scripts/runStorageV4PhaseKRestorePreflight.mjs",
-    "phase-k:restore:drill-dev": "node scripts/runStorageV4PhaseKRestoreDrillDev.mjs"
+    "phase-k:restore:drill-dev": "node scripts/runStorageV4PhaseKRestoreDrillDev.mjs",
+    "phase-k:resilience:local": "node --test test/sharedProviderCacheResilience.test.js test/storageV4ReconnectionStorm.test.js test/storageV4MultiDeviceSimulation.test.js"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.44.0",
