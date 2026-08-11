@@ -1,6 +1,6 @@
 import { config } from '../../config.js';
+import { createGateGTripRepository } from '../../infrastructure/firebase/createGateGTripRepository.js';
 import { getFirebaseServices } from '../../infrastructure/firebase/firebaseClient.js';
-import { createFirestoreTripRepository } from '../../infrastructure/firebase/firestoreTripRepository.js';
 import { createLocalStorageRepository } from '../storage/localStorageRepository.js';
 
 export function createLocalTripRepository() {
@@ -11,5 +11,9 @@ export function selectTripRepository({ uid, localRepository }) {
   if (!uid) return localRepository;
 
   const { db } = getFirebaseServices();
-  return createFirestoreTripRepository({ db, uid });
+  return createGateGTripRepository({
+    db,
+    uid,
+    rolloutConfig: config.storageV4Rollout,
+  }).repository;
 }
