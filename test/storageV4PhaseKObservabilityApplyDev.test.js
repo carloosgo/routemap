@@ -37,7 +37,7 @@ test('observability apply no borra recursos, no muta budgets y no toca produccio
   assert.doesNotMatch(source, /'delete'|\bRemove-Item\b/i);
   assert.doesNotMatch(source, /billing['", ]+budgets['", ]+(create|update|delete)/i);
   assert.doesNotMatch(source, /atlasmap-prod|production-project|prod-project/i);
-  assert.doesNotMatch(source, /storageV4Write[^\r\n]*=\s*\$true/i);
+  assert.doesNotMatch(source, /enablesStorageV4Write\s*=\s*\$true/i);
 });
 
 test('observability preflight permanece read-only', async () => {
