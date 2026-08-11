@@ -150,6 +150,41 @@ test('finalize cambia root a v4 en una sola transacción y replay de finalize es
   assert.equal(replay.version, 1);
 });
 
+test('finalize completo rechaza replay con digest o fuente diferentes', async () => {
+  await seedV3Trip('trip-replay-mismatch');
+  const staged = await stageV3TripMigration({ db, userId: 'alice', tripId: 'trip-replay-mismatch' });
+  await finalizeV3TripMigration({
+    db,
+    userId: 'alice',
+    tripId: 'trip-replay-mismatch',
+    materialized: staged.materialized,
+    digest: staged.digest,
+  });
+
+  await assert.rejects(
+    finalizeV3TripMigration({
+      db,
+      userId: 'alice',
+      tripId: 'trip-replay-mismatch',
+      materialized: staged.materialized,
+      digest: '0'.repeat(64),
+    }),
+    (error) => error instanceof V4MigrationError && error.code === 'replay-mismatch'
+  );
+});
+
+test('migrate completo puede repetirse tras respuesta perdida sin intentar remigrar el root v4', async () => {
+  await seedV3Trip('trip-full-replay');
+  const first = await migrateV3TripToV4({ db, userId: 'alice', tripId: 'trip-full-replay' });
+  const replay = await migrateV3TripToV4({ db, userId: 'alice', tripId: 'trip-full-replay' });
+
+  assert.equal(first.state, 'complete');
+  assert.equal(first.idempotentReplay, false);
+  assert.equal(replay.state, 'complete');
+  assert.equal(replay.idempotentReplay, true);
+  assert.equal(replay.digest, first.digest);
+});
+
 test('si v3 cambia después de staging, finalize falla y no reemplaza la fuente nueva', async () => {
   const { tripRef } = await seedV3Trip('trip-source-change');
   const staged = await stageV3TripMigration({ db, userId: 'alice', tripId: 'trip-source-change' });
