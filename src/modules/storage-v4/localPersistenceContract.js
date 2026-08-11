@@ -47,6 +47,23 @@ function clonePayload(payload) {
   return JSON.parse(JSON.stringify(payload));
 }
 
+function normalizeConflictSnapshot(conflict) {
+  if (conflict == null) return null;
+  return {
+    serverVersion: positiveInteger(conflict.serverVersion, 'conflict.serverVersion'),
+    serverStatus: oneOf(
+      conflict.serverStatus,
+      DESIRED_STATUS_VALUES,
+      'conflict.serverStatus'
+    ),
+    payload: clonePayload(conflict.payload),
+    detectedAtLocal: nonNegativeInteger(
+      conflict.detectedAtLocal ?? 0,
+      'conflict.detectedAtLocal'
+    ),
+  };
+}
+
 export function normalizeDraftRecord(record) {
   const scopeId = requiredText(record?.scopeId, 'scopeId');
   const draftId = requiredText(record?.draftId, 'draftId');
@@ -81,6 +98,7 @@ export function normalizeLocalEntityRecord(record) {
     desiredStatus: oneOf(record.desiredStatus, DESIRED_STATUS_VALUES, 'desiredStatus'),
     localRevision: nonNegativeInteger(record.localRevision ?? 0, 'localRevision'),
     state: oneOf(record.state, LOCAL_STATE_VALUES, 'state'),
+    conflict: normalizeConflictSnapshot(record.conflict),
     lastModifiedLocal: nonNegativeInteger(
       record.lastModifiedLocal ?? 0,
       'lastModifiedLocal'
@@ -136,6 +154,8 @@ export function assertLocalPersistenceAdapter(adapter) {
     'listMutations',
     'deleteMutationIfRevision',
     'acknowledgeSyncedMutation',
+    'recordSyncFailure',
+    'recordSyncConflict',
     'tryAcquireSyncLease',
     'releaseSyncLeaseIfOwned',
     'clearUserData',
