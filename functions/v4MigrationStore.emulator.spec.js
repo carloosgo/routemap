@@ -230,3 +230,26 @@ test('rollback falla cerrado si una entidad v4 ya avanzó después de migrar', a
   );
   assert.equal((await tripRef.get()).data().schemaVersion, 4);
 });
+
+test('rollback falla cerrado si aparece una entidad nueva version 1 después de migrar', async () => {
+  const { tripRef } = await seedV3Trip('trip-rollback-new-entity');
+  await migrateV3TripToV4({ db, userId: 'alice', tripId: 'trip-rollback-new-entity' });
+  const existingSegment = (await tripRef.collection('segments').doc('segment-1').get()).data();
+  await tripRef.collection('notes').doc('new-note').set({
+    id: 'new-note',
+    rank: '0000016v7k',
+    title: 'Nueva',
+    text: 'Creada después de la migración',
+    status: 'active',
+    version: 1,
+    createdAt: existingSegment.createdAt,
+    updatedAt: existingSegment.updatedAt,
+    deletedAt: null,
+  });
+
+  await assert.rejects(
+    rollbackFreshV4Migration({ db, userId: 'alice', tripId: 'trip-rollback-new-entity' }),
+    (error) => error instanceof V4MigrationError && error.code === 'rollback-unsafe'
+  );
+  assert.equal((await tripRef.get()).data().schemaVersion, 4);
+});
