@@ -24,3 +24,16 @@ test('IndexedDB v4 mantiene stores separados y operaciones críticas readwrite',
   assert.match(source, /tryAcquireSyncLease/);
   assert.doesNotMatch(source, /localStorage|sessionStorage/);
 });
+
+test('ack IndexedDB comprueba lease, entidad y mutación dentro de una sola transacción', async () => {
+  const source = await readFile(sourceUrl, 'utf8');
+  assert.match(source, /acknowledgeSyncedMutation/);
+  assert.match(
+    source,
+    /transaction\(\['entities', 'mutations', 'meta'\], 'readwrite'\)/
+  );
+  assert.match(source, /planSyncAcknowledgement/);
+  assert.match(source, /meta\.get\(LEASE_KEY\)/);
+  assert.match(source, /entities\.get\(sentMutation\.entityKey\)/);
+  assert.match(source, /mutations\.get\(sentMutation\.entityKey\)/);
+});
