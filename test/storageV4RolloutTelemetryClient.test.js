@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { setImmediate } from 'node:timers';
 import { createGateGRolloutTelemetryEmitter } from '../src/infrastructure/firebase/gateGRolloutTelemetryClient.js';
 
 test('Gate G telemetry agrupa eventos y nunca propaga fallos del sink', async () => {
