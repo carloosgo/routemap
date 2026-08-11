@@ -17,6 +17,7 @@ test('config usa valores seguros fuera de Vite', () => {
     cohortPercent: 0,
     salt: 'atlas-storage-v4',
     readRulesReady: false,
+    remoteConfigEnabled: false,
   });
 });
 
