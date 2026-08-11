@@ -153,6 +153,7 @@ export function assertLocalPersistenceAdapter(adapter) {
     'putMutation',
     'listMutations',
     'deleteMutationIfRevision',
+    'commitLocalIntent',
     'acknowledgeSyncedMutation',
     'recordSyncFailure',
     'recordSyncConflict',
