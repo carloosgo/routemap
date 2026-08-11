@@ -135,6 +135,7 @@ export function assertLocalPersistenceAdapter(adapter) {
     'putMutation',
     'listMutations',
     'deleteMutationIfRevision',
+    'acknowledgeSyncedMutation',
     'tryAcquireSyncLease',
     'releaseSyncLeaseIfOwned',
     'clearUserData',
