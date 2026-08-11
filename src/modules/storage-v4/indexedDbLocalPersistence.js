@@ -133,7 +133,7 @@ function clearIndexMatches(store, indexName, value) {
 }
 
 export function createIndexedDbV4LocalPersistence({
-  indexedDb = globalThis.indexedDB,
+  indexedDb = typeof window === 'undefined' ? null : window.indexedDB,
   dbName = DEFAULT_DB_NAME,
 } = {}) {
   if (!indexedDb || typeof indexedDb.open !== 'function') {
