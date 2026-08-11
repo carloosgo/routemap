@@ -45,7 +45,7 @@ after(async () => {
   await deleteApp(app);
 });
 
-test('delete mueve el viaje a papelera con versión nueva y purgeAfter controlado por servidor', async () => {
+test('delete mueve el viaje a papelera y agenda purga con la misma fecha autoritativa', async () => {
   const tripId = 'trip-delete';
   await seedTrip(tripId);
   const now = Timestamp.fromMillis(2_000_000_000_000);
@@ -74,6 +74,12 @@ test('delete mueve el viaje a papelera con versión nueva y purgeAfter controlad
   assert.equal(trip.segmentCount, 2);
   assert.equal(trip.placeCount, 5);
   assert.equal(trip.total, 1200);
+
+  const purgeJob = (await db.doc(`users/alice/__tripPurgeJobs/${tripId}`).get()).data();
+  assert.equal(purgeJob.userId, 'alice');
+  assert.equal(purgeJob.tripId, tripId);
+  assert.equal(purgeJob.state, 'scheduled');
+  assert.equal(purgeJob.dueAt.toMillis(), result.purgeAfter.toMillis());
 });
 
 test('repetir exactamente el mismo operationId es idempotente y no incrementa versión', async () => {
@@ -131,7 +137,7 @@ test('reutilizar operationId con parámetros diferentes falla cerrado', async ()
   );
 });
 
-test('restore reactiva el viaje y elimina fechas de papelera', async () => {
+test('restore reactiva el viaje, limpia fechas y cancela el job de purga', async () => {
   const tripId = 'trip-restore';
   await seedTrip(tripId);
   const deleted = await applyV4TripLifecycleOperation({
@@ -142,6 +148,8 @@ test('restore reactiva el viaje y elimina fechas de papelera', async () => {
     action: V4_TRIP_LIFECYCLE_ACTION.DELETE,
     baseVersion: 1,
   });
+
+  assert.equal((await db.doc(`users/alice/__tripPurgeJobs/${tripId}`).get()).exists, true);
 
   const restored = await applyV4TripLifecycleOperation({
     db,
@@ -161,9 +169,10 @@ test('restore reactiva el viaje y elimina fechas de papelera', async () => {
   assert.equal(trip.version, 3);
   assert.equal(trip.deletedAt, null);
   assert.equal(trip.purgeAfter, null);
+  assert.equal((await db.doc(`users/alice/__tripPurgeJobs/${tripId}`).get()).exists, false);
 });
 
-test('baseVersion obsoleta no modifica un viaje más nuevo', async () => {
+test('baseVersion obsoleta no modifica un viaje más nuevo ni crea job de purga', async () => {
   const tripId = 'trip-stale';
   await seedTrip(tripId, { version: 4 });
 
@@ -183,9 +192,10 @@ test('baseVersion obsoleta no modifica un viaje más nuevo', async () => {
   const trip = (await db.doc(`users/alice/trips/${tripId}`).get()).data();
   assert.equal(trip.status, 'active');
   assert.equal(trip.version, 4);
+  assert.equal((await db.doc(`users/alice/__tripPurgeJobs/${tripId}`).get()).exists, false);
 });
 
-test('dos deletes concurrentes con la misma baseVersion nunca se aplican dos veces', async () => {
+test('dos deletes concurrentes con la misma baseVersion nunca se aplican ni agendan dos veces', async () => {
   const tripId = 'trip-concurrent';
   await seedTrip(tripId);
 
@@ -217,4 +227,7 @@ test('dos deletes concurrentes con la misma baseVersion nunca se aplican dos vec
   const trip = (await db.doc(`users/alice/trips/${tripId}`).get()).data();
   assert.equal(trip.status, 'deleted');
   assert.equal(trip.version, 2);
+  const purgeJob = (await db.doc(`users/alice/__tripPurgeJobs/${tripId}`).get()).data();
+  assert.equal(purgeJob.tripId, tripId);
+  assert.equal(purgeJob.state, 'scheduled');
 });
