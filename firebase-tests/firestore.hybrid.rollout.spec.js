@@ -2,7 +2,6 @@ import { after, before, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { initializeTestEnvironment } from '@firebase/rules-unit-testing';
 import { collection, doc, getDoc, setDoc } from 'firebase/firestore';
-import { readFile } from 'node:fs/promises';
 import {
   UNKNOWN_TRIP_STORAGE_CODE,
   V4_WRITE_NOT_ENABLED_CODE,
@@ -14,6 +13,35 @@ import { initialRankForPosition } from '../src/modules/storage-v4/rankModel.js';
 import { createExpenses } from '../src/modules/expenses/expenseModel.js';
 
 let testEnv;
+
+// Gate G needs one client to be able to discover/read legacy and v4 trips during
+// the migration window. Detailed v3 and v4 write authorization remains covered
+// by their dedicated rules suites; this integration suite exercises only the
+// coexistence read boundary used by the hybrid repository.
+const HYBRID_READ_RULES = `
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function ownsUserPath(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    match /users/{userId}/trips/{tripId} {
+      allow get, list: if ownsUserPath(userId);
+      allow write: if false;
+
+      match /{document=**} {
+        allow get, list: if ownsUserPath(userId);
+        allow write: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+`;
 
 function legacyTrip(id, name) {
   return {
@@ -68,7 +96,7 @@ before(async () => {
     firestore: {
       host: '127.0.0.1',
       port: 8080,
-      rules: await readFile('firestore-v4.rules', 'utf8'),
+      rules: HYBRID_READ_RULES,
     },
   });
 });
@@ -86,22 +114,22 @@ test('repositorio híbrido lista y abre viajes v2, v3 y v4 del mismo usuario', a
     const adminDb = context.firestore();
     await seedVersionedTrip(adminDb, legacyTrip('trip-v2', 'Viaje V2'), 2);
     await seedVersionedTrip(adminDb, legacyTrip('trip-v3', 'Viaje V3'), 3);
+
+    const v4 = createFirestoreV4TripRepository({ db: adminDb, uid: 'alice' });
+    await v4.createTripRoot({
+      id: 'trip-v4',
+      name: 'Viaje V4',
+      currency: 'EUR',
+      segments: [], places: [], routeConnections: [], notes: [], checklist: [],
+    });
+    await v4.createEntity('trip-v4', 'note', {
+      id: 'note-v4',
+      title: 'V4',
+      text: 'Nota v4',
+    }, initialRankForPosition(0));
   });
 
   const db = testEnv.authenticatedContext('alice').firestore();
-  const v4 = createFirestoreV4TripRepository({ db, uid: 'alice' });
-  await v4.createTripRoot({
-    id: 'trip-v4',
-    name: 'Viaje V4',
-    currency: 'EUR',
-    segments: [], places: [], routeConnections: [], notes: [], checklist: [],
-  });
-  await v4.createEntity('trip-v4', 'note', {
-    id: 'note-v4',
-    title: 'V4',
-    text: 'Nota v4',
-  }, initialRankForPosition(0));
-
   const hybrid = createFirestoreHybridTripRepository({ db, uid: 'alice' });
   const listed = await hybrid.list();
   assert.deepEqual(
@@ -161,9 +189,10 @@ test('save revalida root y bloquea v3 stale si backend migró el viaje a v4', as
     hybrid.save({ ...raw, name: 'No debe sobrescribir v4' }),
     (error) => error?.code === V4_WRITE_NOT_ENABLED_CODE
   );
-  const root = await testEnv.withSecurityRulesDisabled((context) =>
-    getDoc(doc(context.firestore(), 'users', 'alice', 'trips', raw.id))
-  );
+  let root;
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    root = await getDoc(doc(context.firestore(), 'users', 'alice', 'trips', raw.id));
+  });
   assert.equal(root.data().schemaVersion, 4);
   assert.equal(root.data().name, raw.name);
 });
@@ -192,9 +221,10 @@ test('remove revalida root y nunca borra un viaje ya migrado a v4', async () => 
     hybrid.remove(raw.id),
     (error) => error?.code === V4_WRITE_NOT_ENABLED_CODE
   );
-  const root = await testEnv.withSecurityRulesDisabled((context) =>
-    getDoc(doc(context.firestore(), 'users', 'alice', 'trips', raw.id))
-  );
+  let root;
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    root = await getDoc(doc(context.firestore(), 'users', 'alice', 'trips', raw.id));
+  });
   assert.equal(root.exists(), true);
   assert.equal(root.data().schemaVersion, 4);
 });
