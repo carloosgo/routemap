@@ -18,6 +18,7 @@ test('config usa valores seguros fuera de Vite', () => {
     salt: 'atlas-storage-v4',
     readRulesReady: false,
     remoteConfigEnabled: false,
+    telemetryEnabled: false,
   });
 });
 
