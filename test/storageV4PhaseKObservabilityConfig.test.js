@@ -70,7 +70,7 @@ test('dashboard Phase K cubre telemetria, Firestore y Cloud Run sin tocar produc
     'run.googleapis.com/request_count',
     'run.googleapis.com/request_latencies',
   ]) {
-    assert.match(serialized, new RegExp(metric.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.ok(serialized.includes(metric), `Falta ${metric} en dashboard.json`);
   }
 
   for (const stream of [
@@ -79,7 +79,7 @@ test('dashboard Phase K cubre telemetria, Firestore y Cloud Run sin tocar produc
     'storage_v4_provider_cache_metric',
     'storage_v4_provider_request_metric',
   ]) {
-    assert.match(serialized, new RegExp(stream));
+    assert.ok(serialized.includes(stream), `Falta ${stream} en dashboard.json`);
   }
 
   assert.doesNotMatch(serialized, /atlasmap-prod|production-project|prod-project/i);
@@ -91,12 +91,17 @@ test('alert templates Phase K nacen deshabilitados y sin canales', async () => {
 
   const policies = await Promise.all(files.map((name) => readJson(new URL(name, alertsRoot))));
   for (const policy of policies) {
-    assert.match(policy.displayName, /^Atlas Storage v4 — .+ — dev$/);
+    assert.ok(policy.displayName.startsWith('Atlas Storage v4 — '));
+    assert.ok(policy.displayName.endsWith(' — dev'));
     assert.equal(policy.enabled, false);
     assert.deepEqual(policy.notificationChannels, []);
     assert.equal(policy.combiner, 'OR');
     assert.equal(policy.conditions.length, 1);
     assert.ok(policy.conditions[0].conditionThreshold);
-    assert.match(policy.conditions[0].conditionThreshold.filter, /logging\.googleapis\.com\/user\/atlas_storage_v4_/);
+    assert.ok(
+      policy.conditions[0].conditionThreshold.filter.includes(
+        'logging.googleapis.com/user/atlas_storage_v4_'
+      )
+    );
   }
 });
