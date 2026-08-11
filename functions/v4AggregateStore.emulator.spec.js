@@ -164,3 +164,41 @@ test('store rechaza un payload cuyo id no coincide con la ruta autoritativa del 
   assert.equal(trip.segmentCount, 0);
   assert.equal(trip.total, 0);
 });
+
+test('staging v4 bajo un root v3 nunca modifica el resumen ni crea contribuciones', async () => {
+  const tripId = 'trip-v3-staging';
+  const entityId = 'segment-1';
+  const tripRef = db.doc(`users/alice/trips/${tripId}`);
+  await tripRef.set({
+    id: tripId,
+    storageVersion: 3,
+    activeRevision: 'revision_1234',
+    segmentCount: 7,
+    placeCount: 9,
+    total: 777,
+  });
+
+  const result = await applyV4AggregateEvent({
+    db,
+    userId: 'alice',
+    tripId,
+    entityId,
+    entityType: 'segment',
+    after: segment(entityId, 1, 125),
+  });
+
+  assert.deepEqual(result, {
+    applied: false,
+    skipped: true,
+    reason: 'trip-not-v4',
+    targetVersion: 1,
+  });
+  const trip = (await tripRef.get()).data();
+  assert.equal(trip.segmentCount, 7);
+  assert.equal(trip.placeCount, 9);
+  assert.equal(trip.total, 777);
+  const contribution = await tripRef.collection('__aggregateContributions')
+    .doc('segment:segment-1')
+    .get();
+  assert.equal(contribution.exists, false);
+});
