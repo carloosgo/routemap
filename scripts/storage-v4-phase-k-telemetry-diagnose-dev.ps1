@@ -29,6 +29,31 @@ function Invoke-GcloudJson {
   return $text | ConvertFrom-Json
 }
 
+function Get-FunctionDescription {
+  param([string]$FunctionName)
+  try {
+    $description = Invoke-GcloudJson @(
+      'functions', 'describe', $FunctionName,
+      '--v2',
+      "--region=$Region",
+      "--project=$Project"
+    )
+    return [pscustomobject]@{
+      exists = $true
+      description = $description
+      probeStatus = 'ok'
+    }
+  } catch {
+    $message = [string]$_.Exception.Message
+    $status = if ($message -match '(?i)not found|status=\[404\]|\b404\b') { 'not-found' } else { 'unavailable' }
+    return [pscustomobject]@{
+      exists = $false
+      description = $null
+      probeStatus = $status
+    }
+  }
+}
+
 function Test-PublicRunInvoker {
   param([string]$ServiceName)
   try {
@@ -82,24 +107,21 @@ function Invoke-CorsPreflight {
 
 $functions = @('geoapifyCityAutocomplete', 'storageV4SyncTelemetry')
 $results = foreach ($functionName in $functions) {
-  $description = Invoke-GcloudJson @(
-    'functions', 'describe', $functionName,
-    '--v2',
-    "--region=$Region",
-    "--project=$Project"
-  )
-
-  $serviceResource = [string]$description.serviceConfig.service
+  $probe = Get-FunctionDescription -FunctionName $functionName
+  $description = $probe.description
+  $serviceResource = if ($description) { [string]$description.serviceConfig.service } else { $null }
   $serviceName = if ($serviceResource) { ($serviceResource -split '/')[-1] } else { $null }
   $functionUrl = "https://$Region-$Project.cloudfunctions.net/$functionName"
   $preflight = Invoke-CorsPreflight -Url $functionUrl
 
   [pscustomobject]@{
     function = $functionName
-    state = [string]$description.state
-    ingressSettings = [string]$description.serviceConfig.ingressSettings
+    exists = [bool]$probe.exists
+    describeProbeStatus = [string]$probe.probeStatus
+    state = if ($description) { [string]$description.state } else { $null }
+    ingressSettings = if ($description) { [string]$description.serviceConfig.ingressSettings } else { $null }
     service = $serviceName
-    runUri = [string]$description.serviceConfig.uri
+    runUri = if ($description) { [string]$description.serviceConfig.uri } else { $null }
     cloudFunctionsUrl = $functionUrl
     publicRunInvoker = if ($serviceName) { Test-PublicRunInvoker -ServiceName $serviceName } else { $null }
     preflightStatus = $preflight.status
