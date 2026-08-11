@@ -7,6 +7,7 @@ import {
   acquireOrRenewLease,
   leaseStillOwned,
 } from './crossContextLeaseModel.js';
+import { planSyncAcknowledgement } from './syncAckModel.js';
 
 function copy(value) {
   if (value == null) return value;
@@ -77,6 +78,34 @@ export function createMemoryV4LocalPersistence() {
       if (!current || current.localRevision !== expectedLocalRevision) return false;
       mutations.delete(entityKey);
       return true;
+    },
+
+    async acknowledgeSyncedMutation(input) {
+      const sentMutation = normalizeMutationRecord(input?.sentMutation);
+      const decision = planSyncAcknowledgement({
+        ...input,
+        sentMutation,
+        lease: syncLease,
+        currentEntity: entities.get(sentMutation.entityKey) || null,
+        currentMutation: mutations.get(sentMutation.entityKey) || null,
+      });
+      if (!decision.apply) return copy(decision);
+
+      const nextEntity = normalizeLocalEntityRecord(decision.entity);
+      entities.set(nextEntity.key, copy(nextEntity));
+      if (decision.mutation) {
+        const nextMutation = normalizeMutationRecord(decision.mutation);
+        mutations.set(nextMutation.entityKey, copy(nextMutation));
+      } else {
+        mutations.delete(sentMutation.entityKey);
+      }
+      return copy({
+        ...decision,
+        entity: nextEntity,
+        mutation: decision.mutation
+          ? mutations.get(sentMutation.entityKey)
+          : null,
+      });
     },
 
     async tryAcquireSyncLease({ contextId, nowMs, ttlMs }) {
