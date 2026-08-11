@@ -9,8 +9,12 @@ function timestamp(iso) {
   return { toMillis: () => millis, toDate: () => new Date(millis) };
 }
 
-test('clasificador distingue v3, v4, legacy y desconocido sin heurística ambigua', () => {
+test('clasificador distingue v2, v3, v4, legacy y desconocido sin heurística ambigua', () => {
   assert.equal(storedTripKind({ schemaVersion: 4 }), STORED_TRIP_KIND.V4);
+  assert.equal(storedTripKind({
+    storageVersion: 2,
+    activeRevision: 'revision_1234',
+  }), STORED_TRIP_KIND.V2);
   assert.equal(storedTripKind({
     storageVersion: 3,
     activeRevision: 'revision_1234',
@@ -18,6 +22,21 @@ test('clasificador distingue v3, v4, legacy y desconocido sin heurística ambigu
   assert.equal(storedTripKind({ id: 'legacy', name: 'Legacy' }), STORED_TRIP_KIND.LEGACY);
   assert.equal(storedTripKind({ marker: true }), STORED_TRIP_KIND.UNKNOWN);
   assert.equal(storedTripKind(null), STORED_TRIP_KIND.UNKNOWN);
+});
+
+test('marcadores explícitos de versión desconocida fallan cerrado y nunca degradan a legacy', () => {
+  assert.equal(
+    storedTripKind({ schemaVersion: 5, id: 'future', name: 'Future' }),
+    STORED_TRIP_KIND.UNKNOWN
+  );
+  assert.equal(
+    storedTripKind({ storageVersion: 99, activeRevision: 'revision_1234', name: 'Future' }),
+    STORED_TRIP_KIND.UNKNOWN
+  );
+  assert.equal(
+    storedTripKind({ storageVersion: 3, activeRevision: '', name: 'Malformed' }),
+    STORED_TRIP_KIND.UNKNOWN
+  );
 });
 
 test('hidratación v4 excluye tombstones y reconstruye el modelo actual de viaje', () => {
@@ -65,6 +84,20 @@ test('list entry v4 normaliza timestamps y conserva solo resumen barato', () => 
     updatedAt: '2026-08-10T20:00:00.000Z',
     segmentCount: 12, placeCount: 30, total: 1234,
   });
+});
+
+test('repositorio híbrido revalida el root remoto antes de save/remove y no autoriza desde cache', async () => {
+  const source = await readFile('src/infrastructure/firebase/firestoreHybridTripRepository.js', 'utf8');
+  assert.match(source, /async function readRootKind\(tripId\)/);
+  assert.doesNotMatch(source, /if \(knownKinds\.has\(id\)\) return knownKinds\.get\(id\)/);
+  const saveBody = source.match(/async save\(rawTrip\) \{([\s\S]*?)\n    \},\n\n    async remove/);
+  const removeBody = source.match(/async remove\(id\) \{([\s\S]*?)\n    \},\n  \};/);
+  assert.ok(saveBody);
+  assert.ok(removeBody);
+  assert.match(saveBody[1], /await readRootKind\(tripId\)/);
+  assert.match(removeBody[1], /await readRootKind\(tripId\)/);
+  assert.match(saveBody[1], /STORED_TRIP_KIND\.V4/);
+  assert.match(removeBody[1], /STORED_TRIP_KIND\.V4/);
 });
 
 test('Gate G sigue desactivado: selector productivo no importa ni crea el repositorio híbrido', async () => {
