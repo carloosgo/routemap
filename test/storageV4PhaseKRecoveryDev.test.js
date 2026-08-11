@@ -28,7 +28,7 @@ test('recovery dev habilita PITR y crea backup solo cuando hace falta', async ()
 test('recovery dev no contiene operaciones de delete ni toca produccion', async () => {
   const source = await readFile(scriptPath, 'utf8');
 
-  assert.doesNotMatch(source, /firestore['\", ]+databases['\", ]+delete/i);
-  assert.doesNotMatch(source, /backups['\", ]+schedules['\", ]+delete/i);
+  assert.doesNotMatch(source, /firestore['", ]+databases['", ]+delete/i);
+  assert.doesNotMatch(source, /backups['", ]+schedules['", ]+delete/i);
   assert.doesNotMatch(source, /atlasmap-prod|production|prod-project/i);
 });
