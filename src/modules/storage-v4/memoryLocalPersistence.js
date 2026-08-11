@@ -7,6 +7,7 @@ import {
   acquireOrRenewLease,
   leaseStillOwned,
 } from './crossContextLeaseModel.js';
+import { v4EntityKey } from './entityKeyModel.js';
 import { planLocalEntityIntent } from './localIntentModel.js';
 import { planSyncAcknowledgement } from './syncAckModel.js';
 import { planSyncConflict, planSyncRetry } from './syncOutcomeModel.js';
@@ -111,7 +112,7 @@ export function createMemoryV4LocalPersistence() {
     },
 
     async commitLocalIntent({ intent, nowMs }) {
-      const entityKey = `${intent.userId}/${intent.tripId}/${intent.entityType}/${intent.entityId}`;
+      const entityKey = v4EntityKey(intent);
       const decision = planLocalEntityIntent({
         currentEntity: entities.get(entityKey) || null,
         currentMutation: mutations.get(entityKey) || null,
