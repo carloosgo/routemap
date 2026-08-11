@@ -2,6 +2,10 @@ import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { deleteApp, initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import {
+  V4_TRIP_LIFECYCLE_ACTION,
+  applyV4TripLifecycleOperation,
+} from './v4TripLifecycleStore.js';
 import { purgeV4TripJob, runDueV4TripPurges } from './v4TripPurgeStore.js';
 
 let app;
@@ -82,7 +86,7 @@ test('job stale nunca elimina un viaje cuya purgeAfter ya no coincide', async ()
   assert.equal((await jobRef.get()).exists, true);
 });
 
-test('job vencido elimina raíz, subcolecciones y el propio job', async () => {
+test('job vencido limpia subcolecciones y elimina raíz + job al final', async () => {
   const id = 'trip-expired';
   const dueAt = Timestamp.fromMillis(NOW.toMillis() - 1000);
   const { tripRef, jobRef } = await seedDeletedTrip(id, { dueAt });
@@ -102,7 +106,7 @@ test('job vencido elimina raíz, subcolecciones y el propio job', async () => {
   assert.equal((await jobRef.get()).exists, false);
 });
 
-test('fallo de limpieza deja job claimed y un retry termina descendientes huérfanos', async () => {
+test('fallo de limpieza conserva raíz deleted + job claimed y un retry termina la purga', async () => {
   const id = 'trip-resume';
   const dueAt = Timestamp.fromMillis(NOW.toMillis() - 1000);
   const { tripRef, jobRef } = await seedDeletedTrip(id, { dueAt });
@@ -123,7 +127,8 @@ test('fallo de limpieza deja job claimed y un retry termina descendientes huérf
   );
 
   assert.equal(failures, 1);
-  assert.equal((await tripRef.get()).exists, false);
+  const tripAfterFailure = (await tripRef.get()).data();
+  assert.equal(tripAfterFailure.status, 'deleted');
   assert.equal((await tripRef.collection('segments').doc('segment-1').get()).exists, true);
   const claimedJob = (await jobRef.get()).data();
   assert.equal(claimedJob.state, 'claimed');
@@ -136,8 +141,48 @@ test('fallo de limpieza deja job claimed y un retry termina descendientes huérf
   });
   assert.equal(retry.purged, true);
   assert.equal(retry.resumed, true);
+  assert.equal((await tripRef.get()).exists, false);
   assert.equal((await tripRef.collection('segments').doc('segment-1').get()).exists, false);
   assert.equal((await jobRef.get()).exists, false);
+});
+
+test('restore no puede ganar después de que la purga adquiere el fence claimed', async () => {
+  const id = 'trip-purge-fence';
+  const dueAt = Timestamp.fromMillis(NOW.toMillis() - 1000);
+  const { tripRef } = await seedDeletedTrip(id, { dueAt });
+  let restoreErrorCode = null;
+  let attemptedRestore = false;
+
+  const result = await purgeV4TripJob({
+    db,
+    userId: 'alice',
+    tripId: id,
+    now: () => NOW,
+    recursiveDelete: async (ref) => {
+      if (!attemptedRestore) {
+        attemptedRestore = true;
+        try {
+          await applyV4TripLifecycleOperation({
+            db,
+            userId: 'alice',
+            tripId: id,
+            operationId: 'restore-during-purge',
+            action: V4_TRIP_LIFECYCLE_ACTION.RESTORE,
+            baseVersion: 2,
+            now: () => NOW,
+          });
+        } catch (error) {
+          restoreErrorCode = error.code;
+        }
+      }
+      await db.recursiveDelete(ref);
+    },
+  });
+
+  assert.equal(attemptedRestore, true);
+  assert.equal(restoreErrorCode, 'purge-in-progress');
+  assert.equal(result.purged, true);
+  assert.equal((await tripRef.get()).exists, false);
 });
 
 test('sweeper procesa jobs vencidos y deja fuera los futuros', async () => {
