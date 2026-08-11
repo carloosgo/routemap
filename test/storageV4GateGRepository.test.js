@@ -54,10 +54,12 @@ test('rules no listas, kill switch y PILOT todavía crean v3', () => {
   }
 });
 
-test('factory Gate G permanece fuera del selector activo hasta el checkpoint de activación', async () => {
+test('selector Gate G usa la factory candidata pero conserva write runtime v4 desconectado', async () => {
   const selectorSource = await readFile(
     new URL('../src/modules/trips/tripRepositorySelector.js', import.meta.url),
     'utf8'
   );
-  assert.doesNotMatch(selectorSource, /createGateGTripRepository/);
+  assert.match(selectorSource, /createGateGTripRepository/);
+  assert.match(selectorSource, /config\.storageV4Rollout/);
+  assert.doesNotMatch(selectorSource, /createV4WebSyncComposition/);
 });
