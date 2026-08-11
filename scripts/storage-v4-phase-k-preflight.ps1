@@ -17,6 +17,33 @@ function Invoke-GcloudJson {
   return $text | ConvertFrom-Json
 }
 
+function Invoke-FirestoreBackupScheduleRest {
+  param(
+    [string]$ProjectId,
+    [string]$DatabaseId
+  )
+
+  $token = (& gcloud auth print-access-token 2>$null).Trim()
+  if (-not $token) {
+    throw 'No se pudo obtener un access token de gcloud para consultar backup schedules.'
+  }
+
+  $encodedProject = [Uri]::EscapeDataString($ProjectId)
+  $encodedDatabase = [Uri]::EscapeDataString($DatabaseId)
+  $uri = "https://firestore.googleapis.com/v1/projects/$encodedProject/databases/$encodedDatabase/backupSchedules"
+
+  try {
+    $response = Invoke-RestMethod -Method Get -Uri $uri -Headers @{
+      Authorization = "Bearer $token"
+    }
+  } catch {
+    throw "Firestore BackupSchedule REST fallo: $($_.Exception.Message)"
+  }
+
+  if ($null -eq $response.backupSchedules) { return @() }
+  return @($response.backupSchedules)
+}
+
 if (-not (Get-Command gcloud -ErrorAction SilentlyContinue)) {
   throw 'No se encontro gcloud en PATH.'
 }
@@ -32,11 +59,20 @@ $database = Invoke-GcloudJson @(
   "--project=$Project"
 )
 
-$backupSchedules = Invoke-GcloudJson @(
-  'firestore', 'backups', 'schedules', 'list',
-  "--database=$Database",
-  "--project=$Project"
-)
+$backupScheduleSource = 'gcloud'
+try {
+  $backupSchedules = Invoke-GcloudJson @(
+    'firestore', 'backups', 'schedules', 'list',
+    "--database=$Database",
+    "--project=$Project"
+  )
+} catch {
+  if ($_.Exception.Message -notmatch 'HTTPError 404') { throw }
+  # Cloud SDK 580 puede devolver 404 HTML en este subcomando aunque la API REST
+  # de Firestore exponga el recurso. El fallback sigue siendo estrictamente GET.
+  $backupSchedules = Invoke-FirestoreBackupScheduleRest -ProjectId $Project -DatabaseId $Database
+  $backupScheduleSource = 'firestore-rest'
+}
 
 $billing = Invoke-GcloudJson @(
   'billing', 'projects', 'describe',
@@ -71,6 +107,7 @@ $result = [ordered]@{
   earliestVersionTime = $database.earliestVersionTime
   deleteProtectionState = $database.deleteProtectionState
   backupScheduleCount = @($backupSchedules).Count
+  backupScheduleSource = $backupScheduleSource
   backupSchedules = @($backupSchedules)
   billingEnabled = $billingEnabled
   budgetCount = $budgetCount
