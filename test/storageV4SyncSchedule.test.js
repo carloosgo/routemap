@@ -89,6 +89,38 @@ test('una edición durante el flush no puede quedar marcada como limpia por un a
   assert.equal(state.immediateReason, V4_FLUSH_REASON.FOLLOW_UP);
 });
 
+test('backoff remoto impone notBefore y evita un loop de flush inmediato', () => {
+  const dirty = markScheduleDirty(createSyncScheduleState(), 1000);
+  const started = beginScheduledFlush(dirty);
+  const waiting = completeScheduledFlush(started.state, {
+    flushedGeneration: started.generation,
+    hasPending: true,
+    nextAttemptAt: 7000,
+    nowMs: 2000,
+  });
+
+  assert.equal(waiting.immediateReason, null);
+  assert.equal(waiting.notBefore, 7000);
+  assert.deepEqual(nextScheduledFlush(waiting, 2000), {
+    dueAt: 7000,
+    reason: V4_FLUSH_REASON.DEBOUNCE,
+  });
+});
+
+test('trabajo restante sin backoff agenda follow-up inmediato para drenar el siguiente lote', () => {
+  const dirty = markScheduleDirty(createSyncScheduleState(), 1000);
+  const started = beginScheduledFlush(dirty);
+  const pending = completeScheduledFlush(started.state, {
+    flushedGeneration: started.generation,
+    hasPending: true,
+    nextAttemptAt: null,
+    nowMs: 2000,
+  });
+
+  assert.equal(pending.immediateReason, V4_FLUSH_REASON.FOLLOW_UP);
+  assert.equal(nextScheduledFlush(pending, 2000).dueAt, 2000);
+});
+
 test('flush confirmado limpia estado solo si no queda trabajo ni hubo edición posterior', () => {
   const dirty = markScheduleDirty(createSyncScheduleState(), 1000);
   const started = beginScheduledFlush(dirty);
@@ -99,5 +131,6 @@ test('flush confirmado limpia estado solo si no queda trabajo ni hubo edición p
   });
   assert.equal(clean.dirtySince, null);
   assert.equal(clean.lastDirtyAt, null);
+  assert.equal(clean.notBefore, null);
   assert.equal(nextScheduledFlush(clean, 1500), null);
 });
