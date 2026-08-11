@@ -11,12 +11,12 @@ import {
 } from '../src/modules/storage-v4/aggregateTransitionModel.js';
 import { syncRetryDelayMs } from '../src/modules/storage-v4/syncRetryModel.js';
 import { v4EntityKey } from '../src/modules/storage-v4/entityKeyModel.js';
-import { STORAGE_V4_SCHEMA_VERSION } from '../src/modules/storage-v4/storageV4Contract.js';
+import { STORAGE_V4_VERSION } from '../src/modules/storage-v4/storageV4Contract.js';
 
 const root = new URL('../', import.meta.url);
 
 test('v4 parte de un contrato versionado explícito', () => {
-  assert.equal(STORAGE_V4_SCHEMA_VERSION, 4);
+  assert.equal(STORAGE_V4_VERSION, 4);
 });
 
 test('la clave local de entidad es estable y no admite componentes ambiguos', () => {
