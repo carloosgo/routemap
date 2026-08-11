@@ -16,6 +16,7 @@ const read100 = {
   mode: 'read',
   cohortPercent: 100,
   salt: 'gate-g-repository-test',
+  readRulesReady: true,
 };
 
 test('READ cohort crea el repositorio híbrido candidato', () => {
@@ -34,8 +35,9 @@ test('READ cohort crea el repositorio híbrido candidato', () => {
   assert.equal(calls[0].input.uid, 'alice');
 });
 
-test('kill switch y PILOT todavía crean v3', () => {
+test('rules no listas, kill switch y PILOT todavía crean v3', () => {
   for (const rolloutConfig of [
+    { ...read100, readRulesReady: false },
     { ...read100, killSwitch: true },
     { ...read100, mode: 'pilot' },
   ]) {
