@@ -4,6 +4,7 @@ import {
   TRIP_REPOSITORY_ROLLOUT_MODE,
   planTripRepositoryRollout,
 } from '../../modules/storage-v4/tripRepositoryRolloutPlan.js';
+import { createObservedTripRepository } from '../../modules/storage-v4/rolloutRepositoryTelemetry.js';
 
 function requiredText(value, field) {
   const normalized = typeof value === 'string' ? value.trim() : '';
@@ -22,6 +23,8 @@ export function createGateGTripRepository({
   db,
   uid,
   rolloutConfig,
+  emitTelemetry = null,
+  now = () => Date.now(),
   v3Factory = createFirestoreTripRepository,
   hybridFactory = createFirestoreHybridTripRepository,
 } = {}) {
@@ -30,11 +33,22 @@ export function createGateGTripRepository({
   if (typeof v3Factory !== 'function' || typeof hybridFactory !== 'function') {
     throw new TypeError('Los factories de repositorio deben ser funciones.');
   }
+  if (emitTelemetry !== null && typeof emitTelemetry !== 'function') {
+    throw new TypeError('emitTelemetry debe ser función o null.');
+  }
 
   const rollout = planTripRepositoryRollout({ uid: ownerId, rolloutConfig });
-  const repository = rollout.repositoryMode === TRIP_REPOSITORY_ROLLOUT_MODE.HYBRID_READ
+  const baseRepository = rollout.repositoryMode === TRIP_REPOSITORY_ROLLOUT_MODE.HYBRID_READ
     ? hybridFactory({ db, uid: ownerId })
     : v3Factory({ db, uid: ownerId });
+  const repository = emitTelemetry
+    ? createObservedTripRepository({
+      repository: baseRepository,
+      repositoryMode: rollout.repositoryMode,
+      emit: emitTelemetry,
+      now,
+    })
+    : baseRepository;
 
   return { repository, rollout };
 }
