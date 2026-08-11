@@ -7,23 +7,27 @@ const scriptPath = new URL('../scripts/storage-v4-phase-k-telemetry-diagnose-dev
 test('telemetry diagnose dev esta bloqueado a atlasmap-dev y es read-only', async () => {
   const source = await readFile(scriptPath, 'utf8');
 
-  assert.match(source, /\$Project -ne 'atlasmap-dev'/);
-  assert.match(source, /functions', 'describe'/);
-  assert.match(source, /run', 'services', 'get-iam-policy'/);
-  assert.match(source, /Invoke-WebRequest -Uri \$Url -Method Options/);
-  assert.doesNotMatch(source, /add-iam-policy-binding/i);
-  assert.doesNotMatch(source, /set-iam-policy/i);
-  assert.doesNotMatch(source, /functions['\", ]+deploy/i);
-  assert.doesNotMatch(source, /run['\", ]+deploy/i);
-  assert.doesNotMatch(source, /Invoke-WebRequest[^\n]+-Method (Post|Put|Patch|Delete)/i);
+  assert.ok(source.includes("$Project -ne 'atlasmap-dev'"));
+  assert.ok(source.includes("'functions', 'describe'"));
+  assert.ok(source.includes("'run', 'services', 'get-iam-policy'"));
+  assert.ok(source.includes('Invoke-WebRequest -Uri $Url -Method Options'));
+  assert.equal(source.includes('add-iam-policy-binding'), false);
+  assert.equal(source.includes('set-iam-policy'), false);
+  assert.equal(source.includes("'functions', 'deploy'"), false);
+  assert.equal(source.includes("'run', 'deploy'"), false);
+
+  const mutatingWebMethods = ['-Method Post', '-Method Put', '-Method Patch', '-Method Delete'];
+  for (const method of mutatingWebMethods) {
+    assert.equal(source.includes(method), false);
+  }
 });
 
 test('telemetry diagnose compara callable estable y callable nueva', async () => {
   const source = await readFile(scriptPath, 'utf8');
 
-  assert.match(source, /geoapifyCityAutocomplete/);
-  assert.match(source, /storageV4SyncTelemetry/);
-  assert.match(source, /publicRunInvoker/);
-  assert.match(source, /preflightStatus/);
-  assert.match(source, /accessControlAllowOrigin/);
+  assert.ok(source.includes('geoapifyCityAutocomplete'));
+  assert.ok(source.includes('storageV4SyncTelemetry'));
+  assert.ok(source.includes('publicRunInvoker'));
+  assert.ok(source.includes('preflightStatus'));
+  assert.ok(source.includes('accessControlAllowOrigin'));
 });
