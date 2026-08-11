@@ -5,13 +5,13 @@ import {
   acquireOrRenewLease,
   leaseStillOwned,
 } from '../src/modules/storage-v4/crossContextLeaseModel.js';
-import {
-  aggregateTransition,
-  V4_ENTITY_STATUS,
-} from '../src/modules/storage-v4/aggregateTransitionModel.js';
+import { aggregateTransition } from '../src/modules/storage-v4/aggregateTransitionModel.js';
 import { syncRetryDelayMs } from '../src/modules/storage-v4/syncRetryModel.js';
 import { v4EntityKey } from '../src/modules/storage-v4/entityKeyModel.js';
-import { STORAGE_V4_VERSION } from '../src/modules/storage-v4/storageV4Contract.js';
+import {
+  STORAGE_V4_VERSION,
+  V4_ENTITY_STATUS,
+} from '../src/modules/storage-v4/storageV4Contract.js';
 
 const root = new URL('../', import.meta.url);
 
