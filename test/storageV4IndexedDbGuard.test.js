@@ -15,7 +15,7 @@ test('adaptador web falla explícitamente fuera de un entorno con IndexedDB', ()
 test('IndexedDB v4 mantiene stores separados y operaciones críticas readwrite', async () => {
   const source = await readFile(sourceUrl, 'utf8');
   for (const store of ['drafts', 'entities', 'mutations', 'meta']) {
-    assert.match(source, new RegExp(`['\"]${store}['\"]`));
+    assert.match(source, new RegExp(`["']${store}["']`));
   }
   assert.match(source, /keyPath: 'entityKey'/);
   assert.match(source, /transaction\('mutations', 'readwrite'\)/);
