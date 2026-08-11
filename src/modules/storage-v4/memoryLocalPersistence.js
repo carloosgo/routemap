@@ -7,6 +7,7 @@ import {
   acquireOrRenewLease,
   leaseStillOwned,
 } from './crossContextLeaseModel.js';
+import { planLocalEntityIntent } from './localIntentModel.js';
 import { planSyncAcknowledgement } from './syncAckModel.js';
 import { planSyncConflict, planSyncRetry } from './syncOutcomeModel.js';
 
@@ -107,6 +108,36 @@ export function createMemoryV4LocalPersistence() {
       if (!current || current.localRevision !== expectedLocalRevision) return false;
       mutations.delete(entityKey);
       return true;
+    },
+
+    async commitLocalIntent({ intent, nowMs }) {
+      const entityKey = `${intent.userId}/${intent.tripId}/${intent.entityType}/${intent.entityId}`;
+      const decision = planLocalEntityIntent({
+        currentEntity: entities.get(entityKey) || null,
+        currentMutation: mutations.get(entityKey) || null,
+        intent,
+        nowMs,
+      });
+      if (decision.discarded) {
+        entities.delete(entityKey);
+        mutations.delete(entityKey);
+        return copy(decision);
+      }
+
+      const nextEntity = normalizeLocalEntityRecord(decision.entity);
+      entities.set(nextEntity.key, copy(nextEntity));
+      let nextMutation = null;
+      if (decision.mutation) {
+        nextMutation = normalizeMutationRecord(decision.mutation);
+        mutations.set(nextMutation.entityKey, copy(nextMutation));
+      } else {
+        mutations.delete(entityKey);
+      }
+      return copy({
+        ...decision,
+        entity: nextEntity,
+        mutation: nextMutation,
+      });
     },
 
     async acknowledgeSyncedMutation(input) {
