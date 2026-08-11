@@ -18,7 +18,7 @@ Este documento distingue el **roadmap original A–L** de los **rollout gates**.
 | H — concurrency/conflicts | Implementado en contrato/tests | Entity-level conflict en v4.0; no merge complejo campo-a-campo. |
 | I — migration | Implementado en código/tests | Materializer/verifier/rollback existentes; migración productiva no ejecutada. |
 | J — provider cache separation | Preparado lógicamente; separación física pendiente | `cacheDb` centraliza temporales, `expiresAt` y resiliencia probados. `atlas-cache` físico espera acceso server-side aprobado para named DB. |
-| K — monitoring/backups/load | En progreso avanzado de código | Runbook, modelo de capacidad y señales repo/sync/cache/provider preparados. Cloud dashboards/alerts/budget/PITR/backups/restore/load E2E aún requieren entorno. |
+| K — monitoring/backups/load | En progreso avanzado | Preflight real ya ejecutado en `atlasmap-dev`; recovery aún incompleto y nuevas señales aún no observadas en Cloud. |
 | L — production | Preparado, no iniciado | Runbook L0–L7 creado. Producción no se toca hasta completar recovery/cost/security gates. |
 
 ## Rollout Gate G READ
@@ -43,7 +43,9 @@ La frontera lógica ya separa `db` (canónico/interno) de `cacheDb` (temporales 
 
 No activar `atlas-cache` físicamente hasta disponer de un acceso server-side a named databases aprobado para producción, además de provisioning, deny-all cliente, TTL, IAM y smoke tests. Forzar una API marcada preview solo para cerrar el checklist introduciría riesgo sin beneficio funcional.
 
-## Phase K — trabajo de código completado hasta ahora
+## Phase K — trabajo completado y evidencia real
+
+Código/preparación:
 
 - `storage_v4_rollout_metric` para comparación del repositorio READ ya validada E2E;
 - `storage_v4_provider_cache_metric` preparado para hit/miss/read-error/write-error sin key/query/result/UID;
@@ -52,18 +54,34 @@ No activar `atlas-cache` físicamente hasta disponer de un acceso server-side a 
 - lifecycle de sync expone métricas agregadas de flush y recuperación de cola sin IDs/payloads;
 - callable `storageV4SyncTelemetry` + cliente bufferizado preparados con contrato allowlist y rechazo de campos sensibles;
 - modelo de capacidad parametrizable para 1k/10k/50k/100k usuarios preparado sin fijar precios unitarios en código;
-- runbook define SLOs iniciales, señales, alertas, dashboard, costos, PITR/backups, restore drill y pruebas de resiliencia.
+- simulación multidevice de conflicto entity-level preserva la edición perdedora explícitamente y evita pérdida silenciosa;
+- runbook define SLOs iniciales, señales, alertas, dashboard, costos, PITR/backups, restore drill y pruebas de resiliencia;
+- preflight read-only de recovery/billing/telemetría preparado, incluyendo fallback project-scoped para budgets.
 
-Todavía falta evidencia real del entorno para cerrar K:
+Evidencia `atlasmap-dev` del 2026-08-11:
 
-- desplegar/observar `storage_v4_sync_metric`, `storage_v4_provider_cache_metric` y `storage_v4_provider_request_metric` en un entorno controlado;
+- database `(default)` en `northamerica-south1`;
+- billing habilitado;
+- PITR **deshabilitado**;
+- retención de versiones `3600s`;
+- delete protection deshabilitado;
+- backup schedule probe exitoso y **0 schedules**;
+- budget todavía no demostrado con la identidad actual; se añadió probe project-scoped para el siguiente preflight;
+- `storage_v4_rollout_metric` visible en Cloud;
+- `storage_v4_sync_metric`, `storage_v4_provider_cache_metric` y `storage_v4_provider_request_metric` todavía sin evidencia Cloud.
+
+La evidencia completa está en `docs/STORAGE_V4_PHASE_K_EVIDENCE_2026-08-11.md`.
+
+Todavía falta para cerrar K:
+
+- habilitar PITR y scheduled backup en entorno controlado y verificarlo;
+- desplegar/observar `storage_v4_sync_metric`, `storage_v4_provider_cache_metric` y `storage_v4_provider_request_metric`;
 - dashboard;
 - alertas;
-- budgets;
-- PITR y scheduled backups;
+- budget configurado y observable;
 - restore drill;
 - provider outage E2E;
-- multidevice E2E;
+- multidevice E2E de navegador/dispositivos reales además de la simulación determinista;
 - carga/reconnect E2E y medición de SLO;
 - aplicar precios vigentes y supuestos aprobados al modelo de costos.
 
