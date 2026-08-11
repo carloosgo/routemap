@@ -25,7 +25,21 @@ function reportCacheError(onCacheError, { phase, collection, error }) {
   }
 }
 
-export function createSharedCache(db, { ttlMs, onCacheError } = {}) {
+function reportCacheMetric(onCacheMetric, { outcome, collection, error }) {
+  if (typeof onCacheMetric !== 'function') return;
+  try {
+    const metric = { outcome, collection };
+    if (error) {
+      metric.errorName = error?.name || 'Error';
+      metric.errorCode = typeof error?.code === 'string' ? error.code : '';
+    }
+    onCacheMetric(metric);
+  } catch {
+    // Las métricas son best-effort y nunca forman parte del camino funcional.
+  }
+}
+
+export function createSharedCache(db, { ttlMs, onCacheError, onCacheMetric } = {}) {
   const safeTtlMs = Math.max(60_000, Math.trunc(Number(ttlMs) || 0));
 
   return async function cached(collection, key, loader) {
@@ -38,15 +52,18 @@ export function createSharedCache(db, { ttlMs, onCacheError } = {}) {
       data = snapshot.data();
     } catch (error) {
       reportCacheError(onCacheError, { phase: 'read', collection, error });
+      reportCacheMetric(onCacheMetric, { outcome: 'read-error', collection, error });
     }
 
     const timestamp = data?.timestamp?.toMillis?.() || 0;
     const expiresAt = data?.expiresAt?.toMillis?.() || (timestamp + safeTtlMs);
 
     if (hasOwnResult(data) && Date.now() < expiresAt) {
+      reportCacheMetric(onCacheMetric, { outcome: 'hit', collection });
       return { result: data.result, cacheHit: true };
     }
 
+    reportCacheMetric(onCacheMetric, { outcome: 'miss', collection });
     const inFlightKey = `${collection}:${documentId}`;
     if (inFlightLoads.has(inFlightKey)) return inFlightLoads.get(inFlightKey);
 
@@ -61,6 +78,7 @@ export function createSharedCache(db, { ttlMs, onCacheError } = {}) {
         });
       } catch (error) {
         reportCacheError(onCacheError, { phase: 'write', collection, error });
+        reportCacheMetric(onCacheMetric, { outcome: 'write-error', collection, error });
       }
       return { result, cacheHit: false };
     })();
