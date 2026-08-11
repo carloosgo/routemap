@@ -12,8 +12,9 @@ export const TRIP_REPOSITORY_ROLLOUT_MODE = Object.freeze({
  * Gate G starts with read coexistence only. The decision is deliberately pure:
  * it does not create repositories, change Firestore rules or enable v4 writes.
  *
- * PILOT remains fail-closed until the write path, lifecycle Functions and
- * rollout ruleset are activated together behind a separate gate.
+ * READ requires an explicit rulesReady acknowledgement in addition to cohort
+ * eligibility. PILOT remains fail-closed until the write path, lifecycle
+ * Functions and rollout ruleset are activated together behind a separate gate.
  */
 export function planTripRepositoryRollout({ uid, rolloutConfig } = {}) {
   const decision = evaluateStorageV4Rollout({ uid, config: rolloutConfig });
@@ -29,6 +30,15 @@ export function planTripRepositoryRollout({ uid, rolloutConfig } = {}) {
   }
 
   if (decision.mode === STORAGE_V4_ROLLOUT_MODE.READ) {
+    if (rolloutConfig?.readRulesReady !== true) {
+      return {
+        repositoryMode: TRIP_REPOSITORY_ROLLOUT_MODE.V3,
+        rolloutMode: STORAGE_V4_ROLLOUT_MODE.READ,
+        bucket: decision.bucket,
+        cohortPercent: decision.cohortPercent,
+        reason: 'read-rules-not-ready',
+      };
+    }
     return {
       repositoryMode: TRIP_REPOSITORY_ROLLOUT_MODE.HYBRID_READ,
       rolloutMode: STORAGE_V4_ROLLOUT_MODE.READ,
