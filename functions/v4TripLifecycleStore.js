@@ -19,7 +19,7 @@ function requiredText(value, field) {
   return normalized;
 }
 
-function safeOperationId(value) {
+function normalizeOperationId(value) {
   const id = requiredText(value, 'operationId');
   if (!/^[A-Za-z0-9_-]{8,128}$/.test(id)) {
     throw new TypeError('operationId tiene formato inválido.');
@@ -96,7 +96,7 @@ export async function applyV4TripLifecycleOperation({
   if (!db) throw new TypeError('Se requiere Firestore Admin.');
   const ownerId = requiredText(userId, 'userId');
   const safeTripId = requiredText(tripId, 'tripId');
-  const safeOperationId = safeOperationId(operationId);
+  const safeOperationId = normalizeOperationId(operationId);
   const safeAction = lifecycleAction(action);
   const expectedVersion = positiveVersion(baseVersion);
   const retention = validateRetentionMs(retentionMs);
