@@ -81,10 +81,24 @@ Preflight de Logging capturado a las `2026-08-11T23:16:33Z`, ventana de 7 días:
 
 Conclusión de observabilidad base en desarrollo: **4/4 streams estructurados observados en Cloud Logging con evidencia real**. Este checkpoint valida presencia y recorrido E2E de las señales; no sustituye todavía dashboard, alertas, carga sostenida ni medición de SLO bajo tráfico representativo.
 
+## Bundle declarativo de observabilidad preparado
+
+Trabajo de repositorio preparado después de cerrar 4/4 streams:
+
+- siete definiciones de logs-based metrics bajo `ops/storage-v4/observability/metrics/`:
+  - counters para rollout, sync, provider cache y provider request;
+  - distribuciones de latencia para rollout, sync flush y provider request;
+- `ops/storage-v4/observability/dashboard.json` con panel de logs y vistas para eventos/ratios/latencias, operaciones y storage de Firestore, y request count/p95 de Cloud Run;
+- tres templates de alert policy bajo `ops/storage-v4/observability/alerts/`, **deshabilitados por defecto** y sin notification channels;
+- helper `storage-v4-phase-k-observability-apply-dev.ps1`, bloqueado a `atlasmap-dev`, dry-run por defecto, sin deletes, sin budgets y sin cambios de Storage v4 WRITE;
+- preflight read-only para inventariar dashboard, policies y log-based metrics existentes.
+
+Estado de este bundle: **preparado en repo, no aplicado ni validado server-side todavía**. No se declara dashboard creado ni alertas operacionales hasta obtener evidencia del entorno. Los thresholds de alertas son plantillas de desarrollo; en especial el threshold de proveedor se debe recalibrar con baseline real antes de habilitarse.
+
 ## Próximos checkpoints de Phase K
 
-1. resolver permisos/visibilidad de budget y configurar alertas de costo;
-2. dashboard + alertas operacionales sobre las señales ya observadas;
+1. aplicar/validar en un único checkpoint controlado el bundle de observabilidad dev cuando corresponda;
+2. resolver permisos/visibilidad de budget y definir umbrales de costo aprobados, sin inventar monto;
 3. restore drill usando un backup real cuando exista un backup disponible para restauración;
 4. provider outage E2E;
 5. multidevice E2E en navegadores/dispositivos reales;
@@ -99,3 +113,4 @@ Conclusión de observabilidad base en desarrollo: **4/4 streams estructurados ob
 - No se creó `atlas-cache` físico.
 - No se infiere que exista o no exista un budget mientras el probe no lo pueda demostrar.
 - La existencia de un scheduled backup no implica que ya exista un backup restaurable; el restore drill queda pendiente hasta verificar uno disponible.
+- Las nuevas definiciones de dashboard/metrics/alerts no son evidencia cloud hasta que se apliquen y se verifiquen explícitamente.
