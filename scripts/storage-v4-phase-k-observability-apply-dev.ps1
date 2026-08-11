@@ -59,6 +59,14 @@ if (-not $activeAccount -or $activeAccount -eq '(unset)') {
   throw 'gcloud no tiene una cuenta autenticada activa.'
 }
 
+function Invoke-Gcloud {
+  param([string[]]$Arguments)
+  & gcloud @Arguments
+  if ($LASTEXITCODE -ne 0) {
+    throw "gcloud fallo: $($Arguments -join ' ')"
+  }
+}
+
 function Invoke-GcloudJson {
   param([string[]]$Arguments)
   $raw = & gcloud @Arguments --format=json 2>&1
@@ -86,31 +94,34 @@ foreach ($metricFile in $metricFiles) {
     continue
   }
 
-  & gcloud logging metrics create $metricName \
-    "--config-from-file=$($metricFile.FullName)" \
-    "--project=$Project" \
-    --quiet
-  if ($LASTEXITCODE -ne 0) { throw "No se pudo crear la metrica $metricName." }
+  Invoke-Gcloud @(
+    'logging', 'metrics', 'create', $metricName,
+    "--config-from-file=$($metricFile.FullName)",
+    "--project=$Project",
+    '--quiet'
+  )
   $createdMetrics += $metricName
 }
 
-$null = & gcloud monitoring dashboards create \
-  "--config-from-file=$dashboardFile" \
-  "--project=$Project" \
-  --validate-only \
-  --quiet
-if ($LASTEXITCODE -ne 0) { throw 'dashboard.json no paso validacion server-side.' }
+Invoke-Gcloud @(
+  'monitoring', 'dashboards', 'create',
+  "--config-from-file=$dashboardFile",
+  "--project=$Project",
+  '--validate-only',
+  '--quiet'
+)
 
 $dashboards = Invoke-GcloudJson @('monitoring', 'dashboards', 'list', "--project=$Project")
 $dashboardDisplayName = [string]$dashboardConfig.displayName
 $dashboardExists = @($dashboards | Where-Object { [string]$_.displayName -eq $dashboardDisplayName }).Count -gt 0
 $dashboardCreated = $false
 if (-not $dashboardExists) {
-  $null = & gcloud monitoring dashboards create \
-    "--config-from-file=$dashboardFile" \
-    "--project=$Project" \
-    --quiet
-  if ($LASTEXITCODE -ne 0) { throw 'No se pudo crear el dashboard de Atlas Storage v4.' }
+  Invoke-Gcloud @(
+    'monitoring', 'dashboards', 'create',
+    "--config-from-file=$dashboardFile",
+    "--project=$Project",
+    '--quiet'
+  )
   $dashboardCreated = $true
 }
 
@@ -125,11 +136,12 @@ foreach ($alertFile in $alertFiles) {
     continue
   }
 
-  $null = & gcloud monitoring policies create \
-    "--policy-from-file=$($alertFile.FullName)" \
-    "--project=$Project" \
-    --quiet
-  if ($LASTEXITCODE -ne 0) { throw "No se pudo crear la policy $displayName." }
+  Invoke-Gcloud @(
+    'monitoring', 'policies', 'create',
+    "--policy-from-file=$($alertFile.FullName)",
+    "--project=$Project",
+    '--quiet'
+  )
   $createdPolicies += $displayName
 }
 
