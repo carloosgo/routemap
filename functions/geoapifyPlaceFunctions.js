@@ -5,6 +5,7 @@ import { extractPlaceEnrichment } from './geoapifyPlaceEnrichment.js';
 import {
   GEOAPIFY_API_KEY,
   QUOTAS,
+  cacheDb,
   cached,
   db,
 } from './geoapifyRuntime.js';
@@ -17,7 +18,7 @@ import {
 
 const MAX_QUERY_CHARS = 160;
 const PLACE_ENRICHMENT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const cachedEnrichment = createSharedCache(db, { ttlMs: PLACE_ENRICHMENT_TTL_MS });
+const cachedEnrichment = createSharedCache(cacheDb, { ttlMs: PLACE_ENRICHMENT_TTL_MS });
 
 function searchLimit(request) {
   return Math.min(Math.max(Number(request.data?.limit) || 5, 1), 5);
