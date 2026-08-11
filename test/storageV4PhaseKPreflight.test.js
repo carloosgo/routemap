@@ -14,6 +14,7 @@ test('Phase K preflight es estrictamente read-only', async () => {
   assert.match(source, /Invoke-RestMethod -Method Get/);
   assert.match(source, /firestore\.\$LocationId\.rep\.googleapis\.com/);
   assert.match(source, /databases\/\$DatabaseId\/backupSchedules/);
+  assert.match(source, /billingbudgets\.googleapis\.com\/v1\/\$BillingAccountName\/budgets\?scope=\$scope/);
   assert.doesNotMatch(source, /Invoke-RestMethod -Method (Post|Put|Patch|Delete)/i);
   assert.doesNotMatch(source, /firestore['\", ]+databases['\", ]+update/i);
   assert.doesNotMatch(source, /backups['\", ]+schedules['\", ]+create/i);
@@ -32,6 +33,17 @@ test('Phase K preflight no bloquea el resto si backup schedules no responde', as
   assert.match(source, /backupScheduleCount = if \(\$backupScheduleProbeStatus -eq 'ok'\)/);
 });
 
+test('Phase K preflight intenta budgets project-scoped si no puede listar la cuenta completa', async () => {
+  const source = await readFile(scriptPath, 'utf8');
+
+  assert.match(source, /Invoke-ProjectBudgetRest/);
+  assert.match(source, /\[Uri\]::EscapeDataString\("projects\/\$ProjectId"\)/);
+  assert.match(source, /budgetProbeStatus/);
+  assert.match(source, /budgetProbeSource/);
+  assert.match(source, /budgetProbeHttpStatus/);
+  assert.match(source, /budgetCount = @\(\$budgetProbe\.budgets\)\.Count/);
+});
+
 test('Phase K preflight mantiene separado el ID de base de la respuesta de gcloud', async () => {
   const source = await readFile(scriptPath, 'utf8');
 
@@ -40,8 +52,6 @@ test('Phase K preflight mantiene separado el ID de base de la respuesta de gclou
   assert.match(source, /"--database=\$DatabaseId"/);
   assert.match(source, /database = \$DatabaseId/);
   assert.match(source, /locationId = \$databaseInfo\.locationId/);
-  // PowerShell trata $Database y $database como la misma variable; este patrón
-  // habría permitido repetir la regresión que convirtió el ID en un objeto.
   assert.doesNotMatch(source, /^\s*\$database\s*=\s*Invoke-GcloudJson/im);
 });
 
