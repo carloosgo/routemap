@@ -7,6 +7,7 @@ import {
   acquireOrRenewLease,
   leaseStillOwned,
 } from './crossContextLeaseModel.js';
+import { planSyncAcknowledgement } from './syncAckModel.js';
 
 const DB_VERSION = 1;
 const DEFAULT_DB_NAME = 'atlas-storage-v4';
@@ -187,6 +188,61 @@ export function createIndexedDbV4LocalPersistence({
             store.delete(entityKey);
             deleted = true;
           }
+        };
+      });
+    },
+    async acknowledgeSyncedMutation(input) {
+      const sentMutation = normalizeMutationRecord(input?.sentMutation);
+      const db = await dbPromise;
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['entities', 'mutations', 'meta'], 'readwrite');
+        const entities = transaction.objectStore('entities');
+        const mutations = transaction.objectStore('mutations');
+        const meta = transaction.objectStore('meta');
+        let result = null;
+        let failure = null;
+
+        transaction.onerror = () => {
+          if (!failure) failure = transaction.error || new Error('Sync ack transaction failed.');
+        };
+        transaction.onabort = () => reject(
+          failure || transaction.error || new Error('Sync ack transaction aborted.')
+        );
+        transaction.oncomplete = () => resolve(result);
+
+        const leaseRead = meta.get(LEASE_KEY);
+        leaseRead.onerror = () => transaction.abort();
+        leaseRead.onsuccess = () => {
+          const entityRead = entities.get(sentMutation.entityKey);
+          entityRead.onerror = () => transaction.abort();
+          entityRead.onsuccess = () => {
+            const mutationRead = mutations.get(sentMutation.entityKey);
+            mutationRead.onerror = () => transaction.abort();
+            mutationRead.onsuccess = () => {
+              try {
+                const decision = planSyncAcknowledgement({
+                  ...input,
+                  sentMutation,
+                  lease: leaseRead.result?.value || null,
+                  currentEntity: entityRead.result || null,
+                  currentMutation: mutationRead.result || null,
+                });
+                result = decision;
+                if (!decision.apply) return;
+
+                const nextEntity = normalizeLocalEntityRecord(decision.entity);
+                entities.put(nextEntity);
+                if (decision.mutation) {
+                  mutations.put(normalizeMutationRecord(decision.mutation));
+                } else {
+                  mutations.delete(sentMutation.entityKey);
+                }
+              } catch (error) {
+                failure = error;
+                transaction.abort();
+              }
+            };
+          };
         };
       });
     },
