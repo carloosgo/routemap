@@ -11,8 +11,12 @@ function requiredText(value, field) {
   return normalized;
 }
 
-function entityIdFromEvent(before, after) {
-  return requiredText(after?.id || before?.id, 'entityId');
+function assertEntityIdentity(entity, entityId, label) {
+  if (!entity) return;
+  const payloadId = requiredText(entity.id, `${label}.id`);
+  if (payloadId !== entityId) {
+    throw new TypeError(`${label}.id no coincide con la ruta del evento.`);
+  }
 }
 
 function countField(entityType) {
@@ -25,6 +29,7 @@ export async function applyV4AggregateEvent({
   db,
   userId,
   tripId,
+  entityId,
   entityType,
   before = null,
   after = null,
@@ -32,7 +37,10 @@ export async function applyV4AggregateEvent({
   if (!db) throw new TypeError('Se requiere Firestore Admin.');
   const ownerId = requiredText(userId, 'userId');
   const safeTripId = requiredText(tripId, 'tripId');
-  const entityId = entityIdFromEvent(before, after);
+  const safeEntityId = requiredText(entityId, 'entityId');
+  assertEntityIdentity(before, safeEntityId, 'before');
+  assertEntityIdentity(after, safeEntityId, 'after');
+
   const target = targetAggregateContribution({
     entityType,
     before,
@@ -40,7 +48,7 @@ export async function applyV4AggregateEvent({
     valueOf: entityType === 'segment' ? v4SegmentAggregateValue : () => 0,
   });
   const tripRef = db.doc(`users/${ownerId}/trips/${safeTripId}`);
-  const contributionId = `${entityType}:${encodeURIComponent(entityId)}`;
+  const contributionId = `${entityType}:${encodeURIComponent(safeEntityId)}`;
   const contributionRef = tripRef.collection('__aggregateContributions').doc(contributionId);
 
   return db.runTransaction(async (transaction) => {
@@ -51,7 +59,7 @@ export async function applyV4AggregateEvent({
 
     transaction.set(contributionRef, {
       ...target,
-      entityId,
+      entityId: safeEntityId,
       updatedAt: FieldValue.serverTimestamp(),
     });
 
