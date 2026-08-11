@@ -76,12 +76,14 @@ test('flush exitoso confirma una mutación y deja la entidad limpia', async () =
     synced: 1,
     retried: 0,
     conflicts: 0,
+    pending: 0,
+    nextAttemptAt: null,
   });
   assert.equal(await store.getMutation(key), null);
   assert.equal((await store.getEntity(key)).state, V4_LOCAL_STATES.CLEAN);
 });
 
-test('error retryable aplica backoff determinista y no reintenta antes de tiempo', async () => {
+test('error retryable aplica backoff determinista y reporta el próximo intento', async () => {
   const store = createMemoryV4LocalPersistence();
   await seed(store);
   let writes = 0;
@@ -104,10 +106,15 @@ test('error retryable aplica backoff determinista y no reintenta antes de tiempo
 
   const first = await coordinator.flush({ userId: 'alice' });
   assert.equal(first.retried, 1);
+  assert.equal(first.pending, 1);
+  assert.equal(first.nextAttemptAt, 3000);
   assert.equal((await store.getMutation(key)).nextAttemptAt, 3000);
+
   currentTime = 2500;
   const second = await coordinator.flush({ userId: 'alice' });
   assert.equal(second.attempted, 0);
+  assert.equal(second.pending, 1);
+  assert.equal(second.nextAttemptAt, 3000);
   assert.equal(writes, 1);
 });
 
@@ -137,6 +144,7 @@ test('conflicto remoto se conserva como conflicto durable sin merge automático'
 
   const summary = await coordinator.flush({ userId: 'alice' });
   assert.equal(summary.conflicts, 1);
+  assert.equal(summary.pending, 0);
   assert.equal(await store.getMutation(key), null);
   const saved = await store.getEntity(key);
   assert.equal(saved.state, V4_LOCAL_STATES.CONFLICT);
@@ -197,7 +205,7 @@ test('error remoto no tipado se propaga y conserva la mutación durable', async 
   assert.equal((await store.getEntity(key)).state, V4_LOCAL_STATES.DIRTY);
 });
 
-test('flush respeta el límite de lote para evitar drains sin cota', async () => {
+test('flush respeta el límite de lote y reporta trabajo restante inmediatamente elegible', async () => {
   const store = createMemoryV4LocalPersistence();
   for (let index = 1; index <= 3; index += 1) {
     await seed(
@@ -227,6 +235,8 @@ test('flush respeta el límite de lote para evitar drains sin cota', async () =>
 
   const summary = await coordinator.flush({ userId: 'alice' });
   assert.equal(summary.attempted, 2);
+  assert.equal(summary.pending, 1);
+  assert.equal(summary.nextAttemptAt, null);
   assert.equal(writes, 2);
   assert.equal((await store.listMutations({ userId: 'alice' })).length, 1);
 });
