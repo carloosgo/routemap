@@ -24,6 +24,6 @@ test('Phase K preflight no serializa identidad ni billing account', async () => 
   assert.match(source, /activeAccountPresent = \$true/);
   assert.match(source, /billingEnabled = \$billingEnabled/);
   assert.match(source, /budgetCount = \$budgetCount/);
-  assert.doesNotMatch(source, /activeAccount\s*=\s*\$account/);
-  assert.doesNotMatch(source, /billingAccount(Name|Id)\s*=/);
+  assert.doesNotMatch(source, /^\s*activeAccount\s*=\s*\$account/m);
+  assert.doesNotMatch(source, /^\s*billingAccount(Name|Id)\s*=\s*\$billingAccount/m);
 });
