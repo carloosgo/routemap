@@ -1,4 +1,5 @@
 import {
+  normalizeDraftRecord,
   normalizeLocalEntityRecord,
   normalizeMutationRecord,
 } from './localPersistenceContract.js';
@@ -14,11 +15,26 @@ function copy(value) {
 }
 
 export function createMemoryV4LocalPersistence() {
+  const drafts = new Map();
   const entities = new Map();
   const mutations = new Map();
   let syncLease = null;
 
   return {
+    async getDraft(key) {
+      return copy(drafts.get(key) || null);
+    },
+
+    async putDraft(record) {
+      const normalized = normalizeDraftRecord(record);
+      drafts.set(normalized.key, copy(normalized));
+      return copy(normalized);
+    },
+
+    async deleteDraft(key) {
+      return drafts.delete(key);
+    },
+
     async getEntity(key) {
       return copy(entities.get(key) || null);
     },
