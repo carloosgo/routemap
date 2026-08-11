@@ -19,6 +19,12 @@ const ENTITY_SOURCES = Object.freeze([
   ['checklist', 'checklist', 'checklist'],
 ]);
 
+function requiredStableId(value, field) {
+  const id = typeof value === 'string' ? value.trim() : '';
+  if (!id) throw new TypeError(`${field} requiere id estable para migración.`);
+  return id;
+}
+
 function requiredTimestampSource(value, field, timestampFromIso) {
   const raw = typeof value === 'string' ? value.trim() : '';
   if (!raw) throw new TypeError(`${field} v3 es obligatorio para migración.`);
@@ -30,10 +36,20 @@ function requiredTimestampSource(value, field, timestampFromIso) {
 function requireUniqueIds(items, collectionName) {
   const ids = new Set();
   for (const item of items) {
-    const id = typeof item?.id === 'string' ? item.id.trim() : '';
-    if (!id) throw new TypeError(`${collectionName} contiene una entidad sin id estable.`);
+    const id = requiredStableId(item?.id, collectionName);
     if (ids.has(id)) throw new TypeError(`${collectionName} contiene id duplicado: ${id}.`);
     ids.add(id);
+  }
+}
+
+function validateRawSourceIdentity(rawTrip) {
+  if (!rawTrip || typeof rawTrip !== 'object') {
+    throw new TypeError('Se requiere un viaje v3 hidratado para migración.');
+  }
+  requiredStableId(rawTrip.id, 'trip');
+  for (const [, , sourceName] of ENTITY_SOURCES) {
+    const source = Array.isArray(rawTrip[sourceName]) ? rawTrip[sourceName] : [];
+    requireUniqueIds(source, sourceName);
   }
 }
 
@@ -54,8 +70,8 @@ export function materializeV3TripToV4(rawTrip, { timestampFromIso } = {}) {
   if (typeof timestampFromIso !== 'function') {
     throw new TypeError('timestampFromIso debe ser función.');
   }
+  validateRawSourceIdentity(rawTrip);
   const trip = normalizeTrip(rawTrip);
-  if (!trip.id) throw new TypeError('El viaje v3 requiere id estable para migración.');
 
   const createdAt = requiredTimestampSource(trip.createdAt, 'createdAt', timestampFromIso);
   const updatedAt = requiredTimestampSource(trip.updatedAt, 'updatedAt', timestampFromIso);
