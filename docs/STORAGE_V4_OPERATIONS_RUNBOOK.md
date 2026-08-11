@@ -43,6 +43,8 @@ Por proveedor y operación, sin consulta cruda:
 - timeout/network failure;
 - fallback utilizado.
 
+El backend emite `storage_v4_provider_cache_metric` como señal agregada del cache compartido. Sus outcomes actuales son `hit`, `miss`, `read-error` y `write-error`. El evento solo puede incluir nombre de colección y, cuando existe un error, `errorName`/`errorCode` saneados; nunca debe incluir key, query, documentId, UID, resultado del proveedor ni contenido del viaje. El sink es best-effort y una falla de observabilidad no puede convertir un hit/miss en fallo funcional.
+
 ## 2. SLO inicial de Atlas Storage
 
 Estos son objetivos internos iniciales y deben revisarse con tráfico real antes de convertirlos en compromisos externos.
