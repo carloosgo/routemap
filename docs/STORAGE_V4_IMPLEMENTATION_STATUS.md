@@ -18,7 +18,7 @@ Este documento distingue el **roadmap original A–L** de los **rollout gates**.
 | H — concurrency/conflicts | Implementado en contrato/tests | Entity-level conflict en v4.0; no merge complejo campo-a-campo. |
 | I — migration | Implementado en código/tests | Materializer/verifier/rollback existentes; migración productiva no ejecutada. |
 | J — provider cache separation | Preparado lógicamente; separación física pendiente | `cacheDb` centraliza temporales, `expiresAt` y resiliencia probados. `atlas-cache` físico espera acceso server-side aprobado para named DB. |
-| K — monitoring/backups/load | En progreso avanzado | Recovery dev activo/verificado y 4/4 streams operacionales observados E2E. Faltan budget/dashboard/alerts/restore/load/resilience/SLOs. |
+| K — monitoring/backups/load | En progreso avanzado | Recovery dev activo/verificado y 4/4 streams observados E2E. Bundle declarativo de dashboard/metrics/alerts preparado; falta aplicarlo/validarlo y cerrar budget/restore/load/resilience/SLOs. |
 | L — production | Preparado, no iniciado | Runbook L0–L7 creado. Producción no se toca hasta completar recovery/cost/security gates. |
 
 ## Rollout Gate G READ
@@ -57,7 +57,11 @@ Código/preparación:
 - simulación multidevice de conflicto entity-level preserva la edición perdedora explícitamente y evita pérdida silenciosa;
 - runbook define SLOs iniciales, señales, alertas, dashboard, costos, PITR/backups, restore drill y pruebas de resiliencia;
 - preflight read-only de recovery/billing/telemetría con fallback project-scoped para budgets;
-- helper de deploy selectivo bloqueado a `atlasmap-dev` y diagnóstico read-only de Cloud Functions/Cloud Run/CORS.
+- helper de deploy selectivo bloqueado a `atlasmap-dev` y diagnóstico read-only de Cloud Functions/Cloud Run/CORS;
+- siete logs-based metric configs para counters y distribuciones de latencia;
+- dashboard declarativo de Storage v4 con telemetría propia + Firestore + Cloud Run;
+- tres alert policy templates de desarrollo, deshabilitados y sin notification channels;
+- apply de observabilidad dev bloqueado a `atlasmap-dev`, dry-run por defecto, sin deletes/budgets/write-v4.
 
 Evidencia `atlasmap-dev` del 2026-08-11:
 
@@ -78,12 +82,14 @@ Evidencia `atlasmap-dev` del 2026-08-11:
 - `storage_v4_provider_cache_metric` latest `2026-08-11T23:13:11.223825Z`;
 - `storage_v4_provider_request_metric` latest `2026-08-11T23:13:11.715676Z`.
 
+El bundle declarativo de observabilidad existe en repo, pero **todavía no es evidencia cloud**: no declarar dashboard creado ni alertas operacionales hasta aplicarlo y verificarlo server-side. Los templates permanecen deshabilitados hasta medir baseline y aprobar notification channel/owner.
+
 La evidencia completa está en `docs/STORAGE_V4_PHASE_K_EVIDENCE_2026-08-11.md`.
 
 Todavía falta para cerrar K:
 
-- dashboard;
-- alertas;
+- aplicar y validar dashboard/log-based metrics/alert templates en dev;
+- probar y después habilitar alertas con baseline y notification channels aprobados;
 - budget configurado y observable;
 - restore drill real usando un backup disponible;
 - provider outage E2E;
