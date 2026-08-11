@@ -17,7 +17,9 @@ Medir de forma agregada y sin contenido de viaje:
 - conflictos de versión;
 - recuperaciones después de offline/reconnect.
 
-Nunca registrar UID, tripId, entityId, nombres, notas, búsquedas, coordenadas privadas ni payloads de mutación en la telemetría de rollout.
+Nunca registrar UID, tripId, entityId, nombres, notas, búsquedas, coordenadas privadas ni payloads de mutación en la telemetría operacional.
+
+El runtime expone eventos agregados de `flush` y `queue-recovery`. La callable `storageV4SyncTelemetry` aplica un contrato allowlist antes de emitir `storage_v4_sync_metric`; rechaza campos desconocidos y no admite UID, tripId, entityId, entityKey ni payload. Su cliente es best-effort, con buffer acotado, y todavía no se considera evidencia E2E hasta desplegarlo/observarlo en un entorno controlado.
 
 ### Firestore / backend
 
@@ -44,6 +46,8 @@ Por proveedor y operación, sin consulta cruda:
 - fallback utilizado.
 
 El backend emite `storage_v4_provider_cache_metric` como señal agregada del cache compartido. Sus outcomes actuales son `hit`, `miss`, `read-error` y `write-error`. El evento solo puede incluir nombre de colección y, cuando existe un error, `errorName`/`errorCode` saneados; nunca debe incluir key, query, documentId, UID, resultado del proveedor ni contenido del viaje. El sink es best-effort y una falla de observabilidad no puede convertir un hit/miss en fallo funcional.
+
+Las llamadas salientes realizadas mediante `limitedFetch` emiten `storage_v4_provider_request_metric` con etiquetas estáticas `provider`/`operation`, outcome (`success`, `http-error`, `network-error`, `parse-error`), HTTP status y duración. La clasificación consume internamente la URL para producir etiquetas permitidas, pero la URL, query string, API key, body y respuesta nunca forman parte del evento.
 
 ## 2. SLO inicial de Atlas Storage
 
@@ -96,6 +100,17 @@ Un dashboard de Storage v4 debe mostrar en una sola vista:
 8. purge backlog;
 9. cache hit ratio y errores por proveedor;
 10. gasto actual y forecast contra presupuesto.
+
+Fuentes estructuradas preparadas en código:
+
+```text
+storage_v4_rollout_metric
+storage_v4_sync_metric
+storage_v4_provider_cache_metric
+storage_v4_provider_request_metric
+```
+
+`storage_v4_rollout_metric` ya fue validada E2E en `atlasmap-dev`; las restantes deben considerarse preparadas en código hasta que exista evidencia de despliegue/observación.
 
 ## 5. Modelo de capacidad/costos
 
