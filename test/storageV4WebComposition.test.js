@@ -66,12 +66,12 @@ test('composition root ensambla local queue -> coordinator -> gateway sin activa
   await composition.stop();
 });
 
-test('composition root no se conecta al selector productivo antes de Gate G', async () => {
+test('Gate G READ conecta solo el selector de repositorio, no el runtime de escritura v4', async () => {
   const selectorSource = await readFile(
     new URL('../src/modules/trips/tripRepositorySelector.js', import.meta.url),
     'utf8'
   );
+  assert.match(selectorSource, /createGateGTripRepository/);
   assert.doesNotMatch(selectorSource, /createV4WebSyncComposition/);
-  assert.doesNotMatch(selectorSource, /createFirestoreHybridTripRepository/);
-  assert.match(selectorSource, /createFirestoreTripRepository/);
+  assert.doesNotMatch(selectorSource, /createFirestoreV4SyncGateway/);
 });
