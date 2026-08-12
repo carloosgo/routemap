@@ -14,3 +14,5 @@ functions/.env.*
 !.vscode/settings.json
 coverage
 firestore-gate-g-read.rules
+firestore-phase-k-e2e.rules
+.phase-k-e2e-rules-state.json
