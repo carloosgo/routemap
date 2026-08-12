@@ -20,30 +20,69 @@ test('provider outage probe usa limitedFetch real contra una falla sintetica loc
   assert.doesNotMatch(source, /GEOAPIFY_API_KEY|defineSecret|requireGeoapifyKey/);
 });
 
-test('provider outage runner es dry-run por defecto y despliega solo el probe en atlasmap-dev', async () => {
+test('provider outage runner es dry-run por defecto y despliega solo el probe con apply', async () => {
   const source = await readFile(runnerPath, 'utf8');
 
   assert.ok(source.includes("const PROJECT = 'atlasmap-dev'"));
   assert.ok(source.includes("const FUNCTION = 'storageV4ProviderOutageProbe'"));
-  assert.ok(source.includes("process.argv.slice(2).includes('--apply')"));
+  assert.ok(source.includes("cliArgs.includes('--apply')"));
+  assert.ok(source.includes("cliArgs.includes('--verify-existing')"));
+  assert.ok(source.includes('if (apply && verifyExisting)'));
   assert.ok(source.includes('Dry-run: no se desplego ni invoco el provider outage probe.'));
+  assert.ok(source.includes('if (apply) {'));
   assert.ok(source.includes('`functions:${FUNCTION}`'));
-  assert.ok(source.includes("'functions', 'call', FUNCTION"));
+  assert.ok(source.includes('Verify-existing: se omite deploy y se valida la funcion ya existente.'));
   assert.doesNotMatch(source, /functions:[A-Za-z0-9_-]+,functions:/);
 });
 
-test('provider outage runner comprueba privacidad y evidencia estructurada en Cloud Logging', async () => {
+test('provider outage runner prefiere gcloud de PATH y evita comandos complejos por cmd en Windows', async () => {
   const source = await readFile(runnerPath, 'utf8');
 
-  assert.ok(source.includes("'run', 'services', 'get-iam-policy', serviceName"));
+  assert.ok(source.includes("const candidates = ['gcloud.cmd', 'gcloud.exe', 'gcloud']"));
+  assert.ok(source.includes("candidates.push(join(localAppData, 'Google', 'Cloud SDK'"));
+  assert.ok(source.includes("['auth', 'print-access-token']"));
+  assert.ok(source.includes("['auth', 'print-identity-token']"));
+  assert.doesNotMatch(source, /'functions', 'describe'/);
+  assert.doesNotMatch(source, /'functions', 'call'/);
+  assert.doesNotMatch(source, /'logging', 'read'/);
+});
+
+test('provider outage runner comprueba funcion GEN_2, privacidad y evidencia por APIs REST', async () => {
+  const source = await readFile(runnerPath, 'utf8');
+
+  assert.ok(source.includes('https://cloudfunctions.googleapis.com/v2/${FUNCTION_RESOURCE}'));
+  assert.ok(source.includes('https://run.googleapis.com/v2/${serviceResource}:getIamPolicy'));
+  assert.ok(source.includes('https://logging.googleapis.com/v2/entries:list'));
+  assert.ok(source.includes("description?.environment !== 'GEN_2'"));
+  assert.ok(source.includes('service?.invokerIamDisabled === true'));
   assert.ok(source.includes("binding?.role === 'roles/run.invoker'"));
-  assert.ok(source.includes("asArray(binding?.members).includes('allUsers')"));
-  assert.ok(source.includes("'logging', 'read', filter"));
+  assert.ok(source.includes("member === 'allUsers' || member === 'allAuthenticatedUsers'"));
   assert.ok(source.includes('jsonPayload.message="storage_v4_provider_request_metric"'));
   assert.ok(source.includes('jsonPayload.provider="geoapify"'));
   assert.ok(source.includes('jsonPayload.operation="geocode-search"'));
   assert.ok(source.includes('jsonPayload.outcome="network-error"'));
+  assert.ok(source.includes("orderBy: 'timestamp desc'"));
   assert.ok(source.includes('matchingProviderMetricLogCount'));
+  assert.ok(source.includes("cloudVerificationTransport: 'google-cloud-rest'"));
+});
+
+test('provider outage verify-existing omite Firebase CLI y conserva la invocacion unica', async () => {
+  const source = await readFile(runnerPath, 'utf8');
+
+  const deployGuard = source.indexOf('if (apply) {');
+  const firebaseResolution = source.indexOf('const firebaseCliScript = resolveFirebaseCliScript();', deployGuard);
+  const verifyMessage = source.indexOf('Verify-existing: se omite deploy', deployGuard);
+  const identityToken = source.indexOf("['auth', 'print-identity-token']", verifyMessage);
+  const invoke = source.indexOf('const callPayload = await requestJson(serviceUri', identityToken);
+
+  assert.ok(deployGuard >= 0);
+  assert.ok(firebaseResolution > deployGuard);
+  assert.ok(verifyMessage > firebaseResolution);
+  assert.ok(identityToken > verifyMessage);
+  assert.ok(invoke > identityToken);
+  assert.ok(source.includes('deploymentSkipped: verifyExisting'));
+  assert.ok(source.includes('deploysExactlyOnePrivateProbeFunction: apply'));
+  assert.ok(source.includes('invokesProbeExactlyOnce: execute'));
 });
 
 test('provider outage E2E preserva limites de Phase K', async () => {
