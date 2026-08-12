@@ -171,7 +171,7 @@ export async function runV4PhaseKSyncFlushProbe({
     coordinatorOptions: { maxMutationsPerFlush: 1 },
   });
 
-  let remoteCreated = false;
+  let remoteMayExist = false;
   let cleanupPassed = false;
   let localCleared = false;
   try {
@@ -186,10 +186,10 @@ export async function runV4PhaseKSyncFlushProbe({
 
     const flushResult = await composition.runtime.saveNow();
     const flush = assertSuccessfulSingleFlush(flushResult);
+    remoteMayExist = true;
 
     const remote = await readRemoteTrip({ db, uid: userId, tripId });
     const remoteSummary = assertRemoteTrip(remote, tripId);
-    remoteCreated = true;
 
     const telemetryFlushed = await emitter.flush();
     if (!telemetryFlushed) {
@@ -197,7 +197,7 @@ export async function runV4PhaseKSyncFlushProbe({
     }
 
     await deleteRemoteTrip({ db, uid: userId, tripId });
-    remoteCreated = false;
+    remoteMayExist = false;
     cleanupPassed = true;
 
     await local.clearUserData(userId);
@@ -217,9 +217,10 @@ export async function runV4PhaseKSyncFlushProbe({
       productionUntouched: true,
     };
   } finally {
-    if (remoteCreated) {
+    if (remoteMayExist) {
       try {
         await deleteRemoteTrip({ db, uid: userId, tripId });
+        remoteMayExist = false;
         cleanupPassed = true;
       } catch {
         // El caller recibe el error original; el cleanup remoto es best-effort en finally.
