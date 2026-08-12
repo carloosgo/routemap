@@ -106,7 +106,11 @@ export function createV4WebSyncComposition({
       lifecycleBridge = null;
       runtime.stop();
       notifier.close?.();
-      telemetryEmitter?.stop?.();
+      try {
+        await telemetryEmitter?.flush?.();
+      } finally {
+        telemetryEmitter?.stop?.();
+      }
       await local.close?.();
     },
   };
