@@ -18,7 +18,7 @@ Este documento distingue el **roadmap original A–L** de los **rollout gates**.
 | H — concurrency/conflicts | Implementado en contrato/tests | Entity-level conflict en v4.0; no merge complejo campo-a-campo. |
 | I — migration | Implementado en código/tests | Materializer/verifier/rollback existentes; migración productiva no ejecutada. |
 | J — provider cache separation | Preparado lógicamente; separación física pendiente | `cacheDb` centraliza temporales, `expiresAt` y resiliencia probados. `atlas-cache` físico espera acceso server-side aprobado para named DB. |
-| K — monitoring/backups/load | En progreso avanzado | Recovery dev activo/verificado y 4/4 streams observados E2E. Bundle declarativo de dashboard/metrics/alerts preparado; falta aplicarlo/validarlo y cerrar budget/restore/load/resilience/SLOs. |
+| K — monitoring/backups/load | En progreso avanzado | Recovery dev activo/verificado y 4/4 streams observados E2E. Observabilidad, restore, SLO y budget tooling preparados; faltan checkpoints Cloud/real-device/load y budget aprobado. |
 | L — production | Preparado, no iniciado | Runbook L0–L7 creado. Producción no se toca hasta completar recovery/cost/security gates. |
 
 ## Rollout Gate G READ
@@ -57,11 +57,17 @@ Código/preparación:
 - simulación multidevice de conflicto entity-level preserva la edición perdedora explícitamente y evita pérdida silenciosa;
 - runbook define SLOs iniciales, señales, alertas, dashboard, costos, PITR/backups, restore drill y pruebas de resiliencia;
 - preflight read-only de recovery/billing/telemetría con fallback project-scoped para budgets;
+- diagnóstico de permisos de budget que distingue account-scope vs single-project scope sin exponer billing account ID;
+- generador de plan de budget single-project que exige monto explícito, no tiene monto default y no muta Cloud;
 - helper de deploy selectivo bloqueado a `atlasmap-dev` y diagnóstico read-only de Cloud Functions/Cloud Run/CORS;
 - siete logs-based metric configs para counters y distribuciones de latencia;
-- dashboard declarativo de Storage v4 con telemetría propia + Firestore + Cloud Run;
+- dashboard declarativo de Storage v4 con telemetría propia + Firestore + Cloud Run, incluyendo p50/p95/p99 del repositorio;
 - tres alert policy templates de desarrollo, deshabilitados y sin notification channels;
-- apply de observabilidad dev bloqueado a `atlasmap-dev`, dry-run por defecto, sin deletes/budgets/write-v4.
+- apply de observabilidad dev bloqueado a `atlasmap-dev`, dry-run por defecto, sin deletes/budgets/write-v4;
+- restore preflight + restore drill aislado, con destino obligatorio `atlas-restore-drill-*`, sin sobrescribir `(default)` y sin cleanup automático;
+- preflight SLO read-only sobre Cloud Logging con ratios y p50/p95/p99, detectando muestras truncadas;
+- checkpoint Cloud consolidado read-only para recovery, budget, SLO, Monitoring y readiness de restore;
+- smoke local agregado de cache fail-soft, reconnect storm y conflicto multidevice.
 
 Evidencia `atlasmap-dev` del 2026-08-11:
 
@@ -90,11 +96,11 @@ Todavía falta para cerrar K:
 
 - aplicar y validar dashboard/log-based metrics/alert templates en dev;
 - probar y después habilitar alertas con baseline y notification channels aprobados;
-- budget configurado y observable;
+- resolver visibilidad/permisos de budget y configurar un monto/thresholds aprobados;
 - restore drill real usando un backup disponible;
 - provider outage E2E;
 - multidevice E2E de navegador/dispositivos reales además de la simulación determinista;
-- carga/reconnect E2E y medición de SLO;
+- carga/reconnect E2E y medición de SLO con tráfico representativo;
 - aplicar precios vigentes y supuestos aprobados al modelo de costos.
 
 ## Phase L — regla de avance
