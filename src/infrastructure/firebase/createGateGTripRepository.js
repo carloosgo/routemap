@@ -1,5 +1,6 @@
 import { createFirestoreHybridTripRepository } from './firestoreHybridTripRepository.js';
 import { createFirestoreTripRepository } from './firestoreTripRepository.js';
+import { createFirestoreV4PilotTripWriter } from './firestoreV4PilotTripWriter.js';
 import {
   TRIP_REPOSITORY_ROLLOUT_MODE,
   planTripRepositoryRollout,
@@ -13,12 +14,10 @@ function requiredText(value, field) {
 }
 
 /**
- * Gate G repository factory.
- *
- * The production selector can reach this factory, but rollout policy remains
- * fail-closed by default. READ cohorts use the hybrid repository only after
- * the coexistence ruleset is ready; PILOT writes remain fail-closed in
- * planTripRepositoryRollout().
+ * Storage v4 repository factory. Policy remains fail-closed by default:
+ * - v3: legacy repository only;
+ * - hybrid-read: v4 can be hydrated but writes remain disabled;
+ * - v4-pilot: only selected after every write-side readiness flag is true.
  */
 export function createGateGTripRepository({
   db,
@@ -28,10 +27,15 @@ export function createGateGTripRepository({
   now = () => Date.now(),
   v3Factory = createFirestoreTripRepository,
   hybridFactory = createFirestoreHybridTripRepository,
+  pilotWriterFactory = createFirestoreV4PilotTripWriter,
 } = {}) {
   if (!db) throw new TypeError('Se requiere una instancia de Firestore.');
   const ownerId = requiredText(uid, 'uid');
-  if (typeof v3Factory !== 'function' || typeof hybridFactory !== 'function') {
+  if (
+    typeof v3Factory !== 'function'
+    || typeof hybridFactory !== 'function'
+    || typeof pilotWriterFactory !== 'function'
+  ) {
     throw new TypeError('Los factories de repositorio deben ser funciones.');
   }
   if (emitTelemetry !== null && typeof emitTelemetry !== 'function') {
@@ -39,9 +43,22 @@ export function createGateGTripRepository({
   }
 
   const rollout = planTripRepositoryRollout({ uid: ownerId, rolloutConfig });
-  const baseRepository = rollout.repositoryMode === TRIP_REPOSITORY_ROLLOUT_MODE.HYBRID_READ
-    ? hybridFactory({ db, uid: ownerId })
-    : v3Factory({ db, uid: ownerId });
+  let baseRepository;
+  if (rollout.repositoryMode === TRIP_REPOSITORY_ROLLOUT_MODE.V4_PILOT) {
+    const writer = pilotWriterFactory({
+      db,
+      uid: ownerId,
+      telemetryEnabled: rolloutConfig?.telemetryEnabled === true,
+      lifecycleReady: rolloutConfig?.lifecycleReady === true,
+      now,
+    });
+    baseRepository = hybridFactory({ db, uid: ownerId, v4Writer: writer });
+  } else if (rollout.repositoryMode === TRIP_REPOSITORY_ROLLOUT_MODE.HYBRID_READ) {
+    baseRepository = hybridFactory({ db, uid: ownerId });
+  } else {
+    baseRepository = v3Factory({ db, uid: ownerId });
+  }
+
   const repository = emitTelemetry
     ? createObservedTripRepository({
       repository: baseRepository,
