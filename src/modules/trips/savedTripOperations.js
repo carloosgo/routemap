@@ -9,10 +9,11 @@ export function savedTripErrorMessage(error, fallback) {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
-export function savedTripErrorTranslationKey(error, fallbackKey, { operation = 'save' } = {}) {
+export function savedTripErrorTranslationKey(error, fallbackKey, { operation = null } = {}) {
   const code = typeof error?.code === 'string' ? error.code : '';
   if (code === 'trip/save-conflict') {
-    return operation === 'delete' ? 'deleteConflict' : 'saveConflict';
+    const action = operation || (fallbackKey === 'deletePersistenceError' ? 'delete' : 'save');
+    return action === 'delete' ? 'deleteConflict' : 'saveConflict';
   }
   return ERROR_TRANSLATION_KEYS[code] || fallbackKey;
 }
