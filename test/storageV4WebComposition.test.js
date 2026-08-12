@@ -141,7 +141,7 @@ test('composition root detiene emitter aunque flush de telemetria falle', async 
     },
   });
 
-  await assert.rejects(() => composition.stop(), /telemetry unavailable/);
+  await composition.stop();
   assert.equal(telemetryStopped, true);
 });
 
