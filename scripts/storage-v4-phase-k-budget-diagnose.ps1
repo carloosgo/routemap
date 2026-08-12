@@ -59,6 +59,7 @@ function Invoke-BudgetListProbe {
   try {
     $response = Invoke-RestMethod -Method Get -Uri $uri -Headers @{
       Authorization = "Bearer $token"
+      'x-goog-user-project' = $ProjectId
     }
     $budgets = if ($null -eq $response.budgets) { @() } else { @($response.budgets) }
     return [pscustomobject]@{
@@ -113,6 +114,8 @@ $visibility = if (-not $billingEnabled) {
   activeAccountPresent = $true
   billingEnabled = $billingEnabled
   billingAccountPresent = [bool]($billingAccountName -match '^billingAccounts/')
+  quotaProjectHeaderApplied = $true
+  quotaProject = $Project
   accountScope = [ordered]@{
     status = [string]$accountScope.status
     httpStatus = $accountScope.httpStatus
@@ -124,6 +127,7 @@ $visibility = if (-not $billingEnabled) {
     budgetCount = $projectScope.count
   }
   visibility = $visibility
+  requiredForQuotaProject = 'serviceusage.services.use on atlasmap-dev'
   requiredForRead = [ordered]@{
     billingAccountPath = 'billing.budgets.list; predefined least-privilege read role: roles/billing.viewer on the billing account'
     singleProjectPath = 'resourcemanager.projects.get + billing.resourcebudgets.read; predefined project role: roles/viewer'
