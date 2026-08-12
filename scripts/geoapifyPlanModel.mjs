@@ -19,11 +19,10 @@ export const GEOAPIFY_PRICE_SNAPSHOT = Object.freeze({
 });
 
 function finiteNonNegative(value, field) {
-  const number = Number(value);
-  if (!Number.isFinite(number) || number < 0) {
-    throw new TypeError(`${field} debe ser un número no negativo.`);
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    throw new TypeError(`${field} debe ser un número no negativo explícito.`);
   }
-  return number;
+  return value;
 }
 
 export function estimateGeoapifyAutocompleteDailyCredits(requestsPerDay) {
@@ -32,7 +31,8 @@ export function estimateGeoapifyAutocompleteDailyCredits(requestsPerDay) {
 }
 
 export function selectGeoapifyPlanForAutocomplete(requestsPerDay) {
-  const dailyCredits = estimateGeoapifyAutocompleteDailyCredits(requestsPerDay);
+  const requests = finiteNonNegative(requestsPerDay, 'requestsPerDay');
+  const dailyCredits = estimateGeoapifyAutocompleteDailyCredits(requests);
   const plan = GEOAPIFY_PRICE_SNAPSHOT.plans.find(
     (candidate) => dailyCredits <= candidate.dailyCredits
   );
@@ -42,7 +42,7 @@ export function selectGeoapifyPlanForAutocomplete(requestsPerDay) {
   return Object.freeze({
     asOf: GEOAPIFY_PRICE_SNAPSHOT.asOf,
     currency: GEOAPIFY_PRICE_SNAPSHOT.currency,
-    requestsPerDay: Math.ceil(Number(requestsPerDay)),
+    requestsPerDay: Math.ceil(requests),
     dailyCredits,
     planName: plan.name,
     planDailyCredits: Number.isFinite(plan.dailyCredits) ? plan.dailyCredits : null,
