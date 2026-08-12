@@ -29,6 +29,16 @@ test('dashboard cleanup elimina solo un duplicado equivalente y preserva recurso
   assert.equal(source.includes('logging metrics delete'), false);
 });
 
+test('dashboard cleanup es idempotente cuando ya existe exactamente un dashboard Atlas', async () => {
+  const source = await readFile(scriptPath, 'utf8');
+
+  assert.ok(source.includes('if ($details.Count -eq 1)'));
+  assert.ok(source.includes('cleanupNeeded = $false'));
+  assert.ok(source.includes('alreadyClean = $true'));
+  assert.ok(source.includes('no hay duplicado que eliminar'));
+  assert.ok(source.includes('deletesExactlyOneDashboard = [bool]($Apply -and $details.Count -eq 2)'));
+});
+
 test('dashboard cleanup detecta Atlas por labels o firma de contenido', async () => {
   const source = await readFile(scriptPath, 'utf8');
 
