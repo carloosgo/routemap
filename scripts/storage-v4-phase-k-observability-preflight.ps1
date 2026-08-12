@@ -36,6 +36,72 @@ function Invoke-GcloudJsonProbe {
   }
 }
 
+function Get-HttpStatusCode {
+  param($ErrorRecord)
+  try {
+    if ($null -ne $ErrorRecord.Exception.Response.StatusCode) {
+      return [int]$ErrorRecord.Exception.Response.StatusCode
+    }
+  } catch {
+    return $null
+  }
+  return $null
+}
+
+function Get-GcloudAccessToken {
+  $token = (& gcloud auth print-access-token 2>$null).Trim()
+  if (-not $token) { return $null }
+  return $token
+}
+
+function Invoke-MonitoringNotificationChannelProbe {
+  param([string]$ProjectId)
+
+  $token = Get-GcloudAccessToken
+  if (-not $token) {
+    return [pscustomobject]@{
+      status = 'unavailable'
+      httpStatus = $null
+      data = @()
+    }
+  }
+
+  $channels = @()
+  $pageToken = $null
+
+  try {
+    do {
+      $uri = "https://monitoring.googleapis.com/v3/projects/$ProjectId/notificationChannels"
+      if ($pageToken) {
+        $encodedPageToken = [Uri]::EscapeDataString([string]$pageToken)
+        $uri = "${uri}?pageToken=$encodedPageToken"
+      }
+
+      $response = Invoke-RestMethod -Method Get -Uri $uri -Headers @{
+        Authorization = "Bearer $token"
+        'x-goog-user-project' = $ProjectId
+      }
+
+      if ($null -ne $response.notificationChannels) {
+        $channels += @($response.notificationChannels)
+      }
+      $pageToken = [string]$response.nextPageToken
+    } while ($pageToken)
+
+    return [pscustomobject]@{
+      status = 'ok'
+      httpStatus = 200
+      data = @($channels)
+    }
+  } catch {
+    return [pscustomobject]@{
+      status = 'unavailable'
+      httpStatus = Get-HttpStatusCode $_
+      data = @()
+    }
+  }
+}
+
 $dashboardProbe = Invoke-GcloudJsonProbe @(
   'monitoring', 'dashboards', 'list',
   "--project=$Project"
@@ -63,13 +129,13 @@ $atlasMetrics = @($metricProbe.data | Where-Object {
   [string]$_.name -like 'atlas_storage_v4_*'
 })
 
-$channelProbe = Invoke-GcloudJsonProbe @(
-  'beta', 'monitoring', 'channels', 'list',
-  "--project=$Project"
-)
+$channelProbe = Invoke-MonitoringNotificationChannelProbe -ProjectId $Project
 $notificationChannels = @($channelProbe.data)
 $enabledVerifiedChannels = @($notificationChannels | Where-Object {
   [bool]$_.enabled -and [string]$_.verificationStatus -eq 'VERIFIED'
+})
+$enabledUsableChannels = @($notificationChannels | Where-Object {
+  [bool]$_.enabled -and [string]$_.verificationStatus -ne 'UNVERIFIED'
 })
 
 [ordered]@{
@@ -105,8 +171,11 @@ $enabledVerifiedChannels = @($notificationChannels | Where-Object {
     }
   })
   notificationChannelProbeStatus = [string]$channelProbe.status
+  notificationChannelProbeHttpStatus = $channelProbe.httpStatus
+  notificationChannelTransport = 'monitoring-rest-v3'
   notificationChannelCount = $notificationChannels.Count
   enabledVerifiedNotificationChannelCount = $enabledVerifiedChannels.Count
+  enabledUsableNotificationChannelCount = $enabledUsableChannels.Count
   notificationChannels = @($notificationChannels | ForEach-Object {
     [ordered]@{
       name = [string]$_.name
