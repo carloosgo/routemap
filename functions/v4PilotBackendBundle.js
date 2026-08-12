@@ -3,17 +3,15 @@ import { createV4AggregateTriggers } from './v4AggregateTriggers.js';
 import { createV4TripLifecycleFunction } from './v4TripLifecycleFunction.js';
 import { createV4TripPurgeScheduledFunction } from './v4TripPurgeScheduler.js';
 import { createV4TripTouchTriggers } from './v4TripTouchTriggers.js';
+import {
+  V4_PILOT_BACKEND_FUNCTION_NAMES,
+  V4_PILOT_BACKEND_REGION,
+} from './v4PilotBackendManifest.js';
 
-export const V4_PILOT_BACKEND_REGION = 'us-central1';
-export const V4_PILOT_BACKEND_FUNCTION_NAMES = Object.freeze([
-  'v4SegmentAggregate',
-  'v4PlaceAggregate',
-  'v4ConnectionTouch',
-  'v4NoteTouch',
-  'v4ChecklistTouch',
-  'v4TripLifecycle',
-  'v4TripPurge',
-]);
+export {
+  V4_PILOT_BACKEND_FUNCTION_NAMES,
+  V4_PILOT_BACKEND_REGION,
+} from './v4PilotBackendManifest.js';
 
 /**
  * Composes the backend dependencies required by Storage v4 write pilot.
