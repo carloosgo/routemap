@@ -119,6 +119,13 @@ function Test-AtlasAlertPolicyMatch {
   return @($filters | Where-Object { $_ -like "*$MetricType*" }).Count -gt 0
 }
 
+# Fail-fast antes de cualquier mutacion si ya existe drift del dashboard.
+$preApplyDashboards = Invoke-GcloudJson @('monitoring', 'dashboards', 'list', "--project=$Project")
+$preApplyMatchingDashboards = @($preApplyDashboards | Where-Object { Test-AtlasDashboard $_ })
+if ($preApplyMatchingDashboards.Count -gt 1) {
+  throw "Observability apply abortado: se esperaba como maximo un dashboard Atlas dev y se detectaron $($preApplyMatchingDashboards.Count). Ejecuta primero el cleanup explicito."
+}
+
 # No usar `gcloud logging metrics describe` como prueba de existencia en Windows
 # PowerShell: un NOT_FOUND se materializa como ErrorRecord antes de que podamos
 # inspeccionar LASTEXITCODE bajo ErrorActionPreference=Stop. Listar es read-only y
@@ -152,12 +159,11 @@ Invoke-Gcloud @(
   '--quiet'
 )
 
-$dashboards = Invoke-GcloudJson @('monitoring', 'dashboards', 'list', "--project=$Project")
 $dashboardDisplayName = [string]$dashboardConfig.displayName
 # displayName puede sufrir mojibake al volver por Windows PowerShell 5. La identidad
 # estable del recurso es el par de labels ASCII controlados por este bundle.
-$matchingDashboards = @($dashboards | Where-Object { Test-AtlasDashboard $_ })
-$dashboardExists = $matchingDashboards.Count -gt 0
+$matchingDashboards = @($preApplyMatchingDashboards)
+$dashboardExists = $matchingDashboards.Count -eq 1
 $dashboardCreated = $false
 if (-not $dashboardExists) {
   Invoke-Gcloud @(
@@ -204,8 +210,8 @@ foreach ($plan in $metricPlans) {
 
 $verifiedDashboards = Invoke-GcloudJson @('monitoring', 'dashboards', 'list', "--project=$Project")
 $matchingDashboards = @($verifiedDashboards | Where-Object { Test-AtlasDashboard $_ })
-if ($matchingDashboards.Count -lt 1) {
-  throw 'El dashboard Atlas Storage v4 dev no aparece por labels despues del apply.'
+if ($matchingDashboards.Count -ne 1) {
+  throw "Post-check invalido: se esperaba exactamente un dashboard Atlas Storage v4 dev y se detectaron $($matchingDashboards.Count)."
 }
 
 $verifiedPolicies = Invoke-GcloudJson @('monitoring', 'policies', 'list', "--project=$Project")
@@ -239,7 +245,7 @@ foreach ($plan in $alertPlans) {
   dashboardDisplayName = $dashboardDisplayName
   dashboardCreated = $dashboardCreated
   dashboardAlreadyExisted = $dashboardExists
-  dashboardVerified = $matchingDashboards.Count -gt 0
+  dashboardVerified = $matchingDashboards.Count -eq 1
   dashboardMatchCount = $matchingDashboards.Count
   createdAlertPolicies = $createdPolicies
   existingAlertPolicies = $existingPolicies
