@@ -17,10 +17,19 @@ test('budget diagnose queda bloqueado a atlasmap-dev y no muta budgets', async (
   assert.equal(source.includes('-Method Delete'), false);
 });
 
-test('budget diagnose no expone billing account id y documenta rutas IAM minimas', async () => {
+test('budget diagnose aplica quota project sin exponer billing account id', async () => {
   const source = await readFile(scriptPath, 'utf8');
 
+  assert.ok(source.includes("'x-goog-user-project' = $ProjectId"));
+  assert.ok(source.includes('quotaProjectHeaderApplied = $true'));
+  assert.ok(source.includes('quotaProject = $Project'));
+  assert.ok(source.includes('serviceusage.services.use'));
   assert.ok(source.includes('exposesBillingAccountId = $false'));
+});
+
+test('budget diagnose documenta rutas IAM minimas', async () => {
+  const source = await readFile(scriptPath, 'utf8');
+
   assert.ok(source.includes('roles/billing.viewer'));
   assert.ok(source.includes('roles/viewer'));
   assert.ok(source.includes('roles/billing.costsManager'));
