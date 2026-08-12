@@ -9,8 +9,12 @@ import {
 import { config } from '../config.js';
 import es from './es.js';
 import en from './en.js';
+import { storageV4Messages } from './storageV4.js';
 
-const dictionaries = { es, en };
+const dictionaries = {
+  es: { ...es, ...storageV4Messages.es },
+  en: { ...en, ...storageV4Messages.en },
+};
 const LOCALE_STORAGE_KEY = 'atlas:locale';
 const localeMetadata = Object.freeze({
   es: { intlLocale: 'es-MX', label: 'ES' },
