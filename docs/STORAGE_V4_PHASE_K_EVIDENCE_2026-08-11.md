@@ -149,13 +149,33 @@ Cada policy se identifica operacionalmente por labels/metric type, no por Unicod
 
 ### Dashboard
 
-Estado observado en el recovery checkpoint posterior al restore:
+Estado final verificado por Monitoring REST v1 a las `2026-08-12T17:27:16Z`:
 
-- dashboards Atlas dev detectados: `1`;
-- dashboard conservado: `8d6a1c24-ea96-4bc3-848d-442a40b2adef`;
-- por tanto ya no existe un duplicado que retirar.
+- se detectaron inicialmente dos dashboards Atlas dev equivalentes:
+  - `2d6f5b70-dc89-43d8-87c7-f44c8a80f108`;
+  - `8d6a1c24-ea96-4bc3-848d-442a40b2adef`;
+- el cleanup REST validó exactamente ambos recursos, conservó explícitamente `8d6a1c24-ea96-4bc3-848d-442a40b2adef` y eliminó únicamente `2d6f5b70-dc89-43d8-87c7-f44c8a80f108`;
+- post-check del cleanup: `remainingAtlasDashboardCount=1`;
+- preflight independiente posterior: HTTP `200`, `dashboardTransport=monitoring-rest-v1`, `atlasDashboardCount=1`;
+- alert policies, log metrics, budgets, Storage v4 WRITE y producción permanecieron intactos.
 
-Los intentos anteriores habían observado dos dashboards equivalentes por retries de creación. El cleanup original fallaba porque exigía exactamente dos incluso cuando Cloud ya estaba en el estado deseado de uno. El helper fue corregido para ser idempotente: `1` significa `alreadyClean=true` y no provoca delete ni error.
+Durante el diagnóstico se detectó que el cleanup anterior mezclaba `gcloud dashboards list/describe`, mientras el preflight veía ambos recursos. El helper fue corregido para usar la misma fuente de verdad REST que el preflight, y el launcher ahora reenvía realmente `--preferred-dashboard-id`. Además, el apply de observabilidad aborta si detecta más de un dashboard Atlas antes de mutar recursos.
+
+Conclusión: **dashboard Atlas dev limpio y verificado con exactamente un recurso canónico**.
+
+### Notification channels
+
+Preflight final a las `2026-08-12T17:27:16Z` mediante Monitoring REST v3:
+
+- `notificationChannelProbeStatus=ok`;
+- HTTP `200`;
+- `notificationChannelCount=0`;
+- `enabledVerifiedNotificationChannelCount=0`;
+- `enabledUsableNotificationChannelCount=0`;
+- las tres alert policies tienen `notificationChannelCount=0`;
+- las tres policies continúan `enabled=false`.
+
+Conclusión: **el inventario de canales es conocido y limpio, pero todavía no existe un canal de notificación**. La creación/asociación/activación queda pendiente de un destino explícitamente aprobado y de baseline representativo.
 
 ## SLO sample
 
@@ -215,6 +235,7 @@ Conclusión: la ausencia de una muestra Cloud `flush` no se debe a falta del con
 - `atlas-cache` físico sigue pendiente de Phase J.
 - Budget visibility: **PASS**, API habilitada y `budgetCount=0`; falta monto/thresholds aprobados antes de crear uno.
 - Restore drill real: **PASS en dev y cleanup explícito completado**; no quedan restores temporales validados pendientes de este drill.
-- Dashboard Atlas dev: **estado limpio con exactamente uno**; el helper quedó idempotente.
+- Dashboard Atlas dev: **PASS con exactamente uno**, validado por Monitoring REST v1 tras cleanup explícito del duplicado.
+- Notification channels: **inventario PASS, count=0**; falta destino aprobado, creación/verificación y asociación antes de activar policies.
 - Falta una muestra real `sync flush` una vez que exista un entorno/flujo de escritura v4 autorizado; no se habilita WRITE solo para generar telemetría.
 - Falta load/reconnect/provider-outage/multidevice E2E y recalibrar thresholds/SLO con tráfico representativo.
