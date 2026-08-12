@@ -61,7 +61,17 @@ Restore aislado observado el `2026-08-12`:
 
 El snapshot del backup tiene segundos/fracciones y, al momento de la validación, era mayor a una hora. Firestore no permitía consultar independientemente ese instante exacto mediante PITR, por lo que no se afirmó paridad SHA-256 contra un instante aproximado. En su lugar, el PASS se basa en procedencia administrada verificada, finalización de la operación y lectura/inventario exitosos de la base restaurada. No se redondeó el timestamp para fabricar una comparación falsa.
 
-La base temporal se conserva únicamente hasta ejecutar su cleanup explícito.
+### Cleanup explícito de restores temporales — PASS
+
+Antes del cleanup se inventariaron tres bases `atlas-restore-drill-*`:
+
+- `atlas-restore-drill-20260812-025651`;
+- `atlas-restore-drill-20260812-030557`;
+- `atlas-restore-drill-20260812-031227`.
+
+Las tres estaban en `northamerica-south1`, exponían `sourceInfo.backup` al mismo backup de Phase K, `sourceInfo.operation`, `etag` individual y `progress: COMPLETED`. El cleanup endurecido validó cada destino por nombre exacto y eliminó únicamente esas bases temporales de restore. La ejecución final reportó que las bases temporales validadas fueron eliminadas y que `(default)` permaneció intacta.
+
+Conclusión: **el restore drill queda cerrado limpiamente en dev: backup + restore + lectura/inventario + cleanup explícito completados, sin tocar `(default)` ni producción**.
 
 ### Budget: bloqueo de permisos demostrado
 
@@ -191,7 +201,7 @@ Conclusión: la ausencia de una muestra Cloud `flush` no se debe a falta del con
 - No se ejecutó migración.
 - `atlas-cache` físico sigue pendiente de Phase J.
 - Budget sigue bloqueado por permisos de lectura.
-- Restore drill real: **PASS en dev**; queda únicamente retirar la base temporal de evidencia.
+- Restore drill real: **PASS en dev y cleanup explícito completado**; no quedan restores temporales validados pendientes de este drill.
 - Dashboard Atlas dev: **estado limpio con exactamente uno**; el helper quedó idempotente.
 - Falta una muestra real `sync flush` una vez que exista un entorno/flujo de escritura v4 autorizado; no se habilita WRITE solo para generar telemetría.
 - Falta load/reconnect/provider-outage/multidevice E2E y recalibrar thresholds/SLO con tráfico representativo.
