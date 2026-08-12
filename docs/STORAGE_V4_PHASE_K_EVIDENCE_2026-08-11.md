@@ -73,21 +73,31 @@ Las tres estaban en `northamerica-south1`, exponían `sourceInfo.backup` al mism
 
 Conclusión: **el restore drill queda cerrado limpiamente en dev: backup + restore + lectura/inventario + cleanup explícito completados, sin tocar `(default)` ni producción**.
 
-### Budget: diagnóstico previo requiere rerun corregido
+### Budget visibility — PASS; creación pendiente de aprobación
 
-El diagnóstico específico de budget a las `2026-08-12T02:09:48Z` observó:
+El diagnóstico original había observado `403` al listar budgets. El probe fue endurecido progresivamente para:
 
-- billing habilitado;
-- billing account asociado presente;
-- lectura account-scope: `403`;
-- lectura project-scope: `403`;
-- budget count no observable en esa ejecución.
+- enviar `x-goog-user-project: atlasmap-dev`;
+- verificar si `billingbudgets.googleapis.com` estaba habilitada;
+- comprobar `serviceusage.services.use`, `resourcemanager.projects.get`, `billing.resourcebudgets.read` y `billing.budgets.list` mediante probes read-only / `testIamPermissions`;
+- no exponer el billing account ID;
+- no mutar budgets, IAM ni producción.
 
-Revisión posterior contra la documentación oficial detectó que el probe REST original no enviaba `x-goog-user-project`, header utilizado por la Budget API al trabajar con credenciales de usuario y necesario para establecer el proyecto de cuota en este tipo de request. Por tanto, los `403` previos **no se toman como demostración concluyente de permisos IAM de budgets**.
+La ejecución de `2026-08-12T06:45:12Z` aisló la causa del `403`: **Cloud Billing Budget API deshabilitada**, mientras los permisos requeridos estaban presentes. La API `billingbudgets.googleapis.com` fue habilitada explícitamente en `atlasmap-dev` y la operación terminó correctamente.
 
-El probe fue corregido para enviar `x-goog-user-project: atlasmap-dev` en ambos listados y expone que el quota project fue aplicado sin revelar el billing account ID. Sigue siendo read-only: no crea, modifica ni elimina budgets.
+Rerun posterior a `2026-08-12T07:28:34Z`:
 
-Conclusión actual: el estado del budget sigue **desconocido hasta rerunear el probe corregido**. No se interpreta como ausencia de budget, no se inventa monto y no se cambia IAM sin autorización explícita.
+- `budgetApi.enabled=true`;
+- `serviceUsageUse=true`;
+- `resourceManagerProjectsGet=true`;
+- `billingResourceBudgetsRead=true`;
+- `billingBudgetsList=true`;
+- account-scope: HTTP `200`, `budgetCount=0`;
+- project-scope: HTTP `200`, `budgetCount=0`;
+- `visibility=single-project-budget-readable`;
+- `diagnosis=budget-readable`.
+
+Conclusión: **budget visibility PASS** y ausencia de budget confirmada (`0`). No se crea un budget todavía porque no existe un monto/thresholds aprobados. El repo conserva un generador de plan que exige monto explícito y no muta Cloud.
 
 ## Telemetría
 
@@ -203,7 +213,7 @@ Conclusión: la ausencia de una muestra Cloud `flush` no se debe a falta del con
 - Storage v4 WRITE sigue deshabilitado.
 - No se ejecutó migración.
 - `atlas-cache` físico sigue pendiente de Phase J.
-- Budget: rerun pendiente del probe corregido con `x-goog-user-project`; los `403` previos ya no se consideran clasificación IAM concluyente.
+- Budget visibility: **PASS**, API habilitada y `budgetCount=0`; falta monto/thresholds aprobados antes de crear uno.
 - Restore drill real: **PASS en dev y cleanup explícito completado**; no quedan restores temporales validados pendientes de este drill.
 - Dashboard Atlas dev: **estado limpio con exactamente uno**; el helper quedó idempotente.
 - Falta una muestra real `sync flush` una vez que exista un entorno/flujo de escritura v4 autorizado; no se habilita WRITE solo para generar telemetría.
