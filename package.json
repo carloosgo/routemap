@@ -18,6 +18,7 @@
     "storage-v4:migrate-trip-dev": "node functions/runV4MigrationDev.js",
     "storage-v4:rollback-trip-dev": "node functions/runV4MigrationRollbackDev.js",
     "storage-v4:pilot-plan-dev": "node scripts/runStorageV4PilotPlanDev.mjs",
+    "storage-v4:pilot-stage-deploy-dev": "node scripts/runStorageV4PilotStageDeployDev.mjs",
     "phase-k:preflight": "node scripts/runStorageV4PhaseKPreflight.mjs",
     "phase-k:telemetry:deploy-dev": "node scripts/deployStorageV4PhaseKTelemetryDev.mjs",
     "phase-k:telemetry:diagnose-dev": "node scripts/runStorageV4PhaseKTelemetryDiagnoseDev.mjs",
