@@ -32,6 +32,18 @@ test('observability apply valida dashboard y crea solo recursos faltantes', asyn
   assert.ok(source.includes('alertPoliciesRemainDisabledByConfig = $true'));
 });
 
+test('observability apply identifica recursos por labels y metric type, no por displayName Unicode', async () => {
+  const source = await readFile(applyScriptPath, 'utf8');
+
+  assert.ok(source.includes('function Test-AtlasDashboard'));
+  assert.ok(source.includes("$Dashboard.labels.system -eq 'atlas-storage-v4'"));
+  assert.ok(source.includes("$Dashboard.labels.environment -eq 'dev'"));
+  assert.ok(source.includes('function Test-AtlasAlertPolicyMatch'));
+  assert.ok(source.includes("$Policy.userLabels.phase -ne 'k'"));
+  assert.ok(source.includes('$plan.metricType'));
+  assert.equal(source.includes('[string]$_.displayName -eq $dashboardDisplayName'), false);
+});
+
 test('observability apply fuerza UTF-8 en configs para Windows PowerShell 5', async () => {
   const source = await readFile(applyScriptPath, 'utf8');
 
@@ -49,12 +61,14 @@ test('observability apply no borra recursos, no muta budgets y no toca produccio
   assert.equal(source.includes('enablesStorageV4Write = $true'), false);
 });
 
-test('observability preflight permanece read-only', async () => {
+test('observability preflight permanece read-only y usa labels ASCII estables', async () => {
   const source = await readFile(preflightScriptPath, 'utf8');
 
   assert.ok(source.includes("'monitoring', 'dashboards', 'list'"));
   assert.ok(source.includes("'monitoring', 'policies', 'list'"));
   assert.ok(source.includes("'logging', 'metrics', 'list'"));
+  assert.ok(source.includes("$_.labels.system -eq 'atlas-storage-v4'"));
+  assert.ok(source.includes("$_.userLabels.phase -eq 'k'"));
   assert.equal(source.includes("'create'"), false);
   assert.equal(source.includes("'update'"), false);
   assert.equal(source.includes("'delete'"), false);
