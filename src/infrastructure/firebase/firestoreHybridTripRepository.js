@@ -46,8 +46,10 @@ function normalizeV4Writer(writer) {
   if (typeof writer.save !== 'function' || typeof writer.remove !== 'function') {
     throw new TypeError('v4Writer requiere save() y remove().');
   }
-  if (writer.acceptRemoteState != null && typeof writer.acceptRemoteState !== 'function') {
-    throw new TypeError('v4Writer.acceptRemoteState debe ser función cuando existe.');
+  for (const method of ['acceptRemoteState', 'recoverPending', 'close']) {
+    if (writer[method] != null && typeof writer[method] !== 'function') {
+      throw new TypeError(`v4Writer.${method} debe ser función cuando existe.`);
+    }
   }
   return writer;
 }
@@ -70,6 +72,8 @@ export function createFirestoreHybridTripRepository({ db, uid, v4Writer = null }
   const v4 = createFirestoreV4TripRepository({ db, uid: ownerId });
   const writer = normalizeV4Writer(v4Writer);
   const knownKinds = new Map();
+  let initialized = false;
+  let initialization = null;
 
   async function readRootKind(tripId) {
     const id = requiredText(tripId, 'tripId');
@@ -97,7 +101,24 @@ export function createFirestoreHybridTripRepository({ db, uid, v4Writer = null }
     return hydrated;
   }
 
+  async function initialize() {
+    if (initialized || !writer?.recoverPending) return 0;
+    if (!initialization) {
+      initialization = Promise.resolve(writer.recoverPending())
+        .then((recovered) => {
+          initialized = true;
+          return Number(recovered) || 0;
+        })
+        .finally(() => {
+          initialization = null;
+        });
+    }
+    return initialization;
+  }
+
   return {
+    initialize,
+
     async list() {
       const snapshot = await getDocs(roots);
       const items = [];
