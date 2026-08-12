@@ -63,6 +63,15 @@ $atlasMetrics = @($metricProbe.data | Where-Object {
   [string]$_.name -like 'atlas_storage_v4_*'
 })
 
+$channelProbe = Invoke-GcloudJsonProbe @(
+  'beta', 'monitoring', 'channels', 'list',
+  "--project=$Project"
+)
+$notificationChannels = @($channelProbe.data)
+$enabledVerifiedChannels = @($notificationChannels | Where-Object {
+  [bool]$_.enabled -and [string]$_.verificationStatus -eq 'VERIFIED'
+})
+
 [ordered]@{
   collectedAtUtc = [DateTime]::UtcNow.ToString('o')
   project = $Project
@@ -78,10 +87,13 @@ $atlasMetrics = @($metricProbe.data | Where-Object {
   alertPolicyProbeStatus = [string]$policyProbe.status
   atlasAlertPolicyCount = $atlasPolicies.Count
   atlasAlertPolicies = @($atlasPolicies | ForEach-Object {
+    $policyChannels = @($_.notificationChannels)
     [ordered]@{
       name = [string]$_.name
       displayName = [string]$_.displayName
       enabled = [bool]$_.enabled
+      notificationChannelCount = $policyChannels.Count
+      notificationChannels = @($policyChannels | ForEach-Object { [string]$_ })
     }
   })
   logMetricProbeStatus = [string]$metricProbe.status
@@ -92,4 +104,19 @@ $atlasMetrics = @($metricProbe.data | Where-Object {
       disabled = [bool]$_.disabled
     }
   })
+  notificationChannelProbeStatus = [string]$channelProbe.status
+  notificationChannelCount = $notificationChannels.Count
+  enabledVerifiedNotificationChannelCount = $enabledVerifiedChannels.Count
+  notificationChannels = @($notificationChannels | ForEach-Object {
+    [ordered]@{
+      name = [string]$_.name
+      displayName = [string]$_.displayName
+      type = [string]$_.type
+      enabled = [bool]$_.enabled
+      verificationStatus = [string]$_.verificationStatus
+    }
+  })
+  mutatesCloud = $false
+  activatesAlertPolicies = $false
+  touchesProduction = $false
 } | ConvertTo-Json -Depth 8
