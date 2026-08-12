@@ -20,6 +20,12 @@ const pilot100 = Object.freeze({
   mode: 'pilot',
   cohortPercent: 100,
   salt: 'gate-g-pilot-test',
+  readRulesReady: true,
+  writeRulesReady: true,
+  syncReady: true,
+  aggregateReady: true,
+  lifecycleReady: true,
+  purgeReady: true,
 });
 
 test('Gate G READ elige repositorio híbrido solo para cohorte + rules ready', () => {
@@ -49,11 +55,31 @@ test('kill switch devuelve inmediatamente a v3', () => {
   assert.equal(decision.reason, 'disabled');
 });
 
-test('Gate G todavía falla cerrado para PILOT de escritura', () => {
+test('PILOT solo selecciona writer v4 cuando todas las dependencias están listas', () => {
   const decision = planTripRepositoryRollout({ uid: 'alice', rolloutConfig: pilot100 });
-  assert.equal(decision.repositoryMode, TRIP_REPOSITORY_ROLLOUT_MODE.V3);
+  assert.equal(decision.repositoryMode, TRIP_REPOSITORY_ROLLOUT_MODE.V4_PILOT);
   assert.equal(decision.rolloutMode, 'pilot');
-  assert.equal(decision.reason, 'pilot-write-not-enabled');
+  assert.equal(decision.reason, 'pilot-cohort');
+});
+
+test('PILOT falla cerrado ante cualquier dependencia de escritura incompleta', () => {
+  const expectedReasons = {
+    readRulesReady: 'read-rules-not-ready',
+    writeRulesReady: 'write-rules-not-ready',
+    syncReady: 'sync-not-ready',
+    aggregateReady: 'aggregate-not-ready',
+    lifecycleReady: 'lifecycle-not-ready',
+    purgeReady: 'purge-not-ready',
+  };
+  for (const [field, reason] of Object.entries(expectedReasons)) {
+    const decision = planTripRepositoryRollout({
+      uid: 'alice',
+      rolloutConfig: { ...pilot100, [field]: false },
+    });
+    assert.equal(decision.repositoryMode, TRIP_REPOSITORY_ROLLOUT_MODE.V3, field);
+    assert.equal(decision.rolloutMode, 'pilot', field);
+    assert.equal(decision.reason, reason, field);
+  }
 });
 
 test('usuario sin UID nunca puede entrar al rollout', () => {
