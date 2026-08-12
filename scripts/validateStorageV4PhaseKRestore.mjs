@@ -1,6 +1,5 @@
 /* global process, console, fetch */
 import { createHash } from 'node:crypto';
-import { spawnSync } from 'node:child_process';
 
 const PROJECT = 'atlasmap-dev';
 const SOURCE_DB = '(default)';
@@ -28,15 +27,10 @@ function assertReadTime(value) {
 }
 
 function accessToken() {
-  const result = spawnSync('gcloud', ['auth', 'print-access-token'], {
-    encoding: 'utf8',
-    windowsHide: true,
-  });
-  if (result.error || result.status !== 0) {
-    throw new Error('No se pudo obtener un access token de gcloud.');
+  const token = String(process.env.ATLAS_GCLOUD_ACCESS_TOKEN || '').trim();
+  if (!token) {
+    throw new Error('Falta ATLAS_GCLOUD_ACCESS_TOKEN; el launcher debe inyectarlo sin imprimirlo.');
   }
-  const token = result.stdout.trim();
-  if (!token) throw new Error('gcloud devolvio un access token vacio.');
   return token;
 }
 
