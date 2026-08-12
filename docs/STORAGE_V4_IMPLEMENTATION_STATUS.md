@@ -1,6 +1,6 @@
 # Atlas Storage v4 — implementation status
 
-Fecha de corte: 2026-08-11
+Fecha de corte: 2026-08-12
 
 Este documento distingue el **roadmap original A–L** de los **rollout gates**. En particular, `Phase G` (delete/trash) no es `Gate G READ`.
 
@@ -18,7 +18,7 @@ Este documento distingue el **roadmap original A–L** de los **rollout gates**.
 | H — concurrency/conflicts | Implementado en contrato/tests | Entity-level conflict en v4.0; no merge complejo campo-a-campo. |
 | I — migration | Implementado en código/tests | Materializer/verifier/rollback existentes; migración productiva no ejecutada. |
 | J — provider cache separation | Preparado lógicamente; separación física pendiente | `cacheDb` centraliza temporales, `expiresAt` y resiliencia probados. `atlas-cache` físico espera acceso server-side aprobado para named DB. |
-| K — monitoring/backups/load | En progreso avanzado | Recovery, restore drill, 4/4 streams y observabilidad Cloud dev aplicados/verificados. Faltan budget, cleanup de la base temporal y E2E/load/SLO representativo. |
+| K — monitoring/backups/load | En progreso avanzado | Recovery, restore drill, 4/4 streams, observabilidad Cloud dev y snapshot de precios aplicados/verificados. Faltan budget, cleanup de la base temporal y E2E/load/SLO representativo. |
 | L — production | Preparado, no iniciado | Runbook L0–L7 creado. Producción no se toca hasta completar recovery/cost/security gates. |
 
 ## Rollout Gate G READ
@@ -48,10 +48,13 @@ No activar `atlas-cache` físicamente hasta disponer de un acceso server-side a 
 Código/preparación:
 
 - telemetría rollout/sync/provider cache/provider request con contratos allowlist;
-- el composition root de sync v4 acepta un `syncTelemetryEmitter` opcional y conecta sus métricas de lifecycle sin activar WRITE por sí mismo; el cleanup de la composición también detiene el emitter;
+- el composition root de sync v4 acepta un `syncTelemetryEmitter` opcional y conecta sus métricas de lifecycle sin activar WRITE por sí mismo; el cleanup de la composición también vacía/detiene el emitter en modo best-effort;
 - provider cache fail-soft y coalescing;
 - modelo de capacidad/costos parametrizable para 1k/10k/50k/100k usuarios;
+- snapshot fechado de precios públicos Firestore/Cloud Run/Geoapify (`docs/STORAGE_V4_PHASE_K_PRICE_SNAPSHOT_2026-08-12.md`);
+- modelo de tiers Geoapify para Address Autocomplete que conserva el esquema real por créditos/planes y no inventa un precio lineal por request;
 - simulación multidevice entity-level sin pérdida silenciosa;
+- simulaciones deterministas de reconnect para 1k/10k/50k/100k y contención de 100 dispositivos sobre la misma entidad;
 - runbook de SLOs, costos, recovery y resiliencia;
 - diagnóstico de budget account-scope/project-scope sin exponer billing account ID;
 - plan de budget local que exige monto explícito;
@@ -95,7 +98,7 @@ Todavía falta para cerrar K:
 - provider outage E2E;
 - multidevice E2E de navegador/dispositivos reales;
 - carga/reconnect E2E y medición de SLO con tráfico representativo;
-- aplicar precios vigentes y supuestos aprobados al modelo de costos.
+- alimentar el modelo de costos con supuestos de uso/almacenamiento medidos o aprobados; los precios públicos ya tienen snapshot fechado, pero eso por sí solo no constituye forecast ni budget.
 
 ## Phase L — regla de avance
 
