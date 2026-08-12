@@ -19,7 +19,17 @@ const read100 = {
   readRulesReady: true,
 };
 
-test('READ cohort crea el repositorio híbrido candidato', () => {
+const pilot100 = {
+  ...read100,
+  mode: 'pilot',
+  writeRulesReady: true,
+  syncReady: true,
+  aggregateReady: true,
+  lifecycleReady: true,
+  purgeReady: true,
+};
+
+test('READ cohort crea el repositorio híbrido candidato sin writer', () => {
   const calls = [];
   const result = createGateGTripRepository({
     db: { fake: true },
@@ -27,19 +37,39 @@ test('READ cohort crea el repositorio híbrido candidato', () => {
     rolloutConfig: read100,
     v3Factory: factory('v3', calls),
     hybridFactory: factory('hybrid', calls),
+    pilotWriterFactory: factory('writer', calls),
   });
 
   assert.equal(result.repository.label, 'hybrid');
   assert.equal(result.rollout.repositoryMode, 'hybrid-read');
   assert.deepEqual(calls.map((item) => item.label), ['hybrid']);
   assert.equal(calls[0].input.uid, 'alice');
+  assert.equal(calls[0].input.v4Writer, undefined);
 });
 
-test('rules no listas, kill switch y PILOT todavía crean v3', () => {
+test('PILOT listo construye writer y lo inyecta al híbrido', () => {
+  const calls = [];
+  const result = createGateGTripRepository({
+    db: { fake: true },
+    uid: 'alice',
+    rolloutConfig: pilot100,
+    v3Factory: factory('v3', calls),
+    hybridFactory: factory('hybrid', calls),
+    pilotWriterFactory: factory('writer', calls),
+  });
+
+  assert.equal(result.repository.label, 'hybrid');
+  assert.equal(result.rollout.repositoryMode, 'v4-pilot');
+  assert.deepEqual(calls.map((item) => item.label), ['writer', 'hybrid']);
+  assert.equal(calls[1].input.v4Writer.label, 'writer');
+  assert.equal(calls[0].input.lifecycleReady, true);
+});
+
+test('rules no listas, kill switch o PILOT incompleto crean v3 y no writer', () => {
   for (const rolloutConfig of [
     { ...read100, readRulesReady: false },
     { ...read100, killSwitch: true },
-    { ...read100, mode: 'pilot' },
+    { ...pilot100, aggregateReady: false },
   ]) {
     const calls = [];
     const result = createGateGTripRepository({
@@ -48,13 +78,14 @@ test('rules no listas, kill switch y PILOT todavía crean v3', () => {
       rolloutConfig,
       v3Factory: factory('v3', calls),
       hybridFactory: factory('hybrid', calls),
+      pilotWriterFactory: factory('writer', calls),
     });
     assert.equal(result.repository.label, 'v3');
     assert.deepEqual(calls.map((item) => item.label), ['v3']);
   }
 });
 
-test('selector Gate G usa la factory candidata pero conserva write runtime v4 desconectado', async () => {
+test('selector usa la factory Gate G y no cablea composición v4 directamente', async () => {
   const selectorSource = await readFile(
     new URL('../src/modules/trips/tripRepositorySelector.js', import.meta.url),
     'utf8'
