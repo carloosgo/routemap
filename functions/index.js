@@ -33,6 +33,4 @@ export { googleRouteOptimized } from './googleOptimizedRouteFunction.js';
 // migrations, aggregates, lifecycle or purge functions.
 export { storageV4RolloutTelemetry } from './v4RolloutTelemetryFunction.js';
 export { storageV4SyncTelemetry } from './v4SyncTelemetryFunction.js';
-
-// Phase K synthetic E2E probe. Private invoker; no provider key or app data access.
 export { storageV4ProviderOutageProbe } from './v4ProviderOutageProbeFunction.js';
