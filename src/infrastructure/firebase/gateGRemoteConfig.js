@@ -26,6 +26,7 @@ function readRemoteValues(remoteConfig) {
     writeRulesReady: getBoolean(remoteConfig, GATE_G_REMOTE_KEYS.writeRulesReady),
     syncReady: getBoolean(remoteConfig, GATE_G_REMOTE_KEYS.syncReady),
     aggregateReady: getBoolean(remoteConfig, GATE_G_REMOTE_KEYS.aggregateReady),
+    touchReady: getBoolean(remoteConfig, GATE_G_REMOTE_KEYS.touchReady),
     lifecycleReady: getBoolean(remoteConfig, GATE_G_REMOTE_KEYS.lifecycleReady),
     purgeReady: getBoolean(remoteConfig, GATE_G_REMOTE_KEYS.purgeReady),
   };
@@ -41,6 +42,7 @@ function failClosedDefaults() {
     [GATE_G_REMOTE_KEYS.writeRulesReady]: false,
     [GATE_G_REMOTE_KEYS.syncReady]: false,
     [GATE_G_REMOTE_KEYS.aggregateReady]: false,
+    [GATE_G_REMOTE_KEYS.touchReady]: false,
     [GATE_G_REMOTE_KEYS.lifecycleReady]: false,
     [GATE_G_REMOTE_KEYS.purgeReady]: false,
   };
