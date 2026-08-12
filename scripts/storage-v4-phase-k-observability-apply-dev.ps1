@@ -22,15 +22,17 @@ if ($metricFiles.Count -eq 0) { throw 'No se encontraron configs de log-based me
 if ($alertFiles.Count -eq 0) { throw 'No se encontraron templates de alertas.' }
 if (-not (Test-Path $dashboardFile)) { throw 'No se encontro dashboard.json.' }
 
+# Windows PowerShell 5 no interpreta de forma fiable UTF-8 sin BOM usando el default.
+# Todos los JSON del bundle se leen explicitamente como UTF-8 para no corromper displayName.
 $metricPlans = @($metricFiles | ForEach-Object {
-  $config = Get-Content $_.FullName -Raw | ConvertFrom-Json
+  $config = Get-Content $_.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
   [ordered]@{ name = [string]$config.name; file = $_.Name }
 })
 $alertPlans = @($alertFiles | ForEach-Object {
-  $config = Get-Content $_.FullName -Raw | ConvertFrom-Json
+  $config = Get-Content $_.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
   [ordered]@{ displayName = [string]$config.displayName; file = $_.Name; enabled = [bool]$config.enabled }
 })
-$dashboardConfig = Get-Content $dashboardFile -Raw | ConvertFrom-Json
+$dashboardConfig = Get-Content $dashboardFile -Raw -Encoding UTF8 | ConvertFrom-Json
 
 [ordered]@{
   project = $Project
@@ -78,18 +80,22 @@ function Invoke-GcloudJson {
   return @($text | ConvertFrom-Json)
 }
 
-function Test-LogMetricExists {
-  param([string]$MetricName)
-  $null = & gcloud logging metrics describe $MetricName "--project=$Project" --format=json 2>$null
-  return $LASTEXITCODE -eq 0
+function Get-LogMetricNames {
+  $metrics = Invoke-GcloudJson @('logging', 'metrics', 'list', "--project=$Project")
+  return @($metrics | ForEach-Object { [string]$_.name })
 }
 
+# No usar `gcloud logging metrics describe` como prueba de existencia en Windows
+# PowerShell: un NOT_FOUND se materializa como ErrorRecord antes de que podamos
+# inspeccionar LASTEXITCODE bajo ErrorActionPreference=Stop. Listar es read-only y
+# permite tratar una metrica ausente como estado normal del primer apply.
+$knownMetricNames = @(Get-LogMetricNames)
 $createdMetrics = @()
 $existingMetrics = @()
 foreach ($metricFile in $metricFiles) {
-  $metricConfig = Get-Content $metricFile.FullName -Raw | ConvertFrom-Json
+  $metricConfig = Get-Content $metricFile.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
   $metricName = [string]$metricConfig.name
-  if (Test-LogMetricExists -MetricName $metricName) {
+  if ($knownMetricNames -contains $metricName) {
     $existingMetrics += $metricName
     continue
   }
@@ -101,6 +107,7 @@ foreach ($metricFile in $metricFiles) {
     '--quiet'
   )
   $createdMetrics += $metricName
+  $knownMetricNames += $metricName
 }
 
 Invoke-Gcloud @(
@@ -129,7 +136,7 @@ $policies = Invoke-GcloudJson @('monitoring', 'policies', 'list', "--project=$Pr
 $createdPolicies = @()
 $existingPolicies = @()
 foreach ($alertFile in $alertFiles) {
-  $alertConfig = Get-Content $alertFile.FullName -Raw | ConvertFrom-Json
+  $alertConfig = Get-Content $alertFile.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
   $displayName = [string]$alertConfig.displayName
   if (@($policies | Where-Object { [string]$_.displayName -eq $displayName }).Count -gt 0) {
     $existingPolicies += $displayName
@@ -146,9 +153,10 @@ foreach ($alertFile in $alertFiles) {
 }
 
 # Post-apply verification: do not trust local config or successful create commands alone.
+$verifiedMetricNames = @(Get-LogMetricNames)
 $verifiedMetrics = @()
 foreach ($plan in $metricPlans) {
-  if (-not (Test-LogMetricExists -MetricName ([string]$plan.name))) {
+  if ($verifiedMetricNames -notcontains [string]$plan.name) {
     throw "La metrica esperada no aparece despues del apply: $($plan.name)"
   }
   $verifiedMetrics += [string]$plan.name
