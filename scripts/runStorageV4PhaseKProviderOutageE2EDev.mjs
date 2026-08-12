@@ -118,7 +118,11 @@ function matchingProviderMetricLogs(entries) {
   });
 }
 
-async function readProbeMetricLogs(gcloud, serviceName, startedAtUtc) {
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function readProbeMetricLogs(gcloud, serviceName, startedAtUtc) {
   const filter = [
     'resource.type="cloud_run_revision"',
     `resource.labels.service_name="${serviceName}"`,
@@ -129,7 +133,7 @@ async function readProbeMetricLogs(gcloud, serviceName, startedAtUtc) {
     `timestamp>="${startedAtUtc}"`,
   ].join(' AND ');
 
-  for (let attempt = 0; attempt < 8; attempt += 1) {
+  function poll(attempt) {
     const entries = runGcloudJson(gcloud, [
       'logging', 'read', filter,
       `--project=${PROJECT}`,
@@ -137,12 +141,11 @@ async function readProbeMetricLogs(gcloud, serviceName, startedAtUtc) {
       '--order=asc',
     ]);
     const matches = matchingProviderMetricLogs(entries);
-    if (matches.length > 0) return matches;
-    if (attempt < 7) {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-    }
+    if (matches.length > 0 || attempt >= 7) return Promise.resolve(matches);
+    return delay(1500).then(() => poll(attempt + 1));
   }
-  return [];
+
+  return poll(0);
 }
 
 const plan = {
