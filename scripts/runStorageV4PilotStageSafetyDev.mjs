@@ -198,6 +198,11 @@ async function requestJson(url, {
   return payload;
 }
 
+async function readRulesetByName({ token, rulesetName, fetchFn }) {
+  if (!validRulesetName(rulesetName)) throw new Error('Ruleset original inválido.');
+  return requestJson(`${API_ROOT}/${rulesetName}`, { token, fetchFn });
+}
+
 async function patchRelease({ token, rulesetName, fetchFn }) {
   return requestJson(`${API_ROOT}/${PILOT_VERIFY_RELEASE}`, {
     token,
@@ -252,6 +257,16 @@ export async function runPilotStageSafetyDev({
     return snapshot;
   }
 
+  const originalRuleset = await readRulesetByName({
+    token: accessToken,
+    rulesetName: options.originalRulesetName,
+    fetchFn,
+  });
+  const observedOriginalSourceSha256 = sha256(rulesContent(originalRuleset));
+  if (observedOriginalSourceSha256 !== options.originalSourceSha256) {
+    throw new Error('Recovery abortado: el SHA del Ruleset original no coincide con el snapshot aprobado.');
+  }
+
   const plan = buildPilotStageRecoveryPlan({
     activeRuleset: active.ruleset,
     originalRulesetName: options.originalRulesetName,
@@ -259,7 +274,11 @@ export async function runPilotStageSafetyDev({
     candidateSourceSha256: options.candidateSourceSha256,
     remoteConfigSummary,
   });
-  log(JSON.stringify({ mode: options.apply ? 'recovery-apply-plan' : 'recovery-preflight', ...plan }, null, 2));
+  log(JSON.stringify({
+    mode: options.apply ? 'recovery-apply-plan' : 'recovery-preflight',
+    ...plan,
+    observedOriginalSourceSha256,
+  }, null, 2));
   if (!options.apply) {
     log('Recovery preflight: no se modificó Firestore Rules.');
     return plan;
