@@ -17,6 +17,7 @@
     "phase-k:telemetry:diagnose-dev": "node scripts/runStorageV4PhaseKTelemetryDiagnoseDev.mjs",
     "phase-k:observability:preflight": "node scripts/runStorageV4PhaseKObservabilityPreflight.mjs",
     "phase-k:observability:apply-dev": "node scripts/runStorageV4PhaseKObservabilityApplyDev.mjs",
+    "phase-k:observability:checkpoint-dev": "node scripts/runStorageV4PhaseKObservabilityCheckpointDev.mjs",
     "phase-k:restore:preflight": "node scripts/runStorageV4PhaseKRestorePreflight.mjs",
     "phase-k:restore:drill-dev": "node scripts/runStorageV4PhaseKRestoreDrillDev.mjs",
     "phase-k:budget:diagnose": "node scripts/runStorageV4PhaseKBudgetDiagnose.mjs",
