@@ -38,8 +38,20 @@ if (!powershell) {
   process.exit(1);
 }
 
+const cliArgs = process.argv.slice(2);
 const args = ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script];
-if (process.argv.slice(2).includes('--apply')) args.push('-Apply');
+if (cliArgs.includes('--apply')) args.push('-Apply');
+
+const preferredPrefix = '--preferred-dashboard-id=';
+const preferredArg = cliArgs.find((arg) => arg.startsWith(preferredPrefix));
+if (preferredArg) {
+  const preferredDashboardId = preferredArg.slice(preferredPrefix.length).trim();
+  if (!/^[A-Za-z0-9_-]+$/.test(preferredDashboardId)) {
+    console.error('El preferred dashboard ID contiene caracteres no permitidos.');
+    process.exit(2);
+  }
+  args.push('-PreferredDashboardId', preferredDashboardId);
+}
 
 const result = spawnSync(powershell, args, { stdio: 'inherit', windowsHide: true });
 if (result.error) {
