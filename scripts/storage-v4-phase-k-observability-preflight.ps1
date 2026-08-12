@@ -54,6 +54,54 @@ function Get-GcloudAccessToken {
   return $token
 }
 
+function Invoke-MonitoringDashboardProbe {
+  param([string]$ProjectId)
+
+  $token = Get-GcloudAccessToken
+  if (-not $token) {
+    return [pscustomobject]@{
+      status = 'unavailable'
+      httpStatus = $null
+      data = @()
+    }
+  }
+
+  $dashboards = @()
+  $pageToken = $null
+
+  try {
+    do {
+      $uri = "https://monitoring.googleapis.com/v1/projects/$ProjectId/dashboards"
+      if ($pageToken) {
+        $encodedPageToken = [Uri]::EscapeDataString([string]$pageToken)
+        $uri = "${uri}?pageToken=$encodedPageToken"
+      }
+
+      $response = Invoke-RestMethod -Method Get -Uri $uri -Headers @{
+        Authorization = "Bearer $token"
+        'x-goog-user-project' = $ProjectId
+      }
+
+      if ($null -ne $response.dashboards) {
+        $dashboards += @($response.dashboards)
+      }
+      $pageToken = [string]$response.nextPageToken
+    } while ($pageToken)
+
+    return [pscustomobject]@{
+      status = 'ok'
+      httpStatus = 200
+      data = @($dashboards)
+    }
+  } catch {
+    return [pscustomobject]@{
+      status = 'unavailable'
+      httpStatus = Get-HttpStatusCode $_
+      data = @()
+    }
+  }
+}
+
 function Invoke-MonitoringNotificationChannelProbe {
   param([string]$ProjectId)
 
@@ -102,10 +150,7 @@ function Invoke-MonitoringNotificationChannelProbe {
   }
 }
 
-$dashboardProbe = Invoke-GcloudJsonProbe @(
-  'monitoring', 'dashboards', 'list',
-  "--project=$Project"
-)
+$dashboardProbe = Invoke-MonitoringDashboardProbe -ProjectId $Project
 $atlasDashboards = @($dashboardProbe.data | Where-Object {
   [string]$_.labels.system -eq 'atlas-storage-v4' -and
   [string]$_.labels.environment -eq 'dev'
@@ -143,6 +188,8 @@ $enabledUsableChannels = @($notificationChannels | Where-Object {
   project = $Project
   activeAccountPresent = $true
   dashboardProbeStatus = [string]$dashboardProbe.status
+  dashboardProbeHttpStatus = $dashboardProbe.httpStatus
+  dashboardTransport = 'monitoring-rest-v1'
   atlasDashboardCount = $atlasDashboards.Count
   atlasDashboards = @($atlasDashboards | ForEach-Object {
     [ordered]@{
