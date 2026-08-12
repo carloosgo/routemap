@@ -2,6 +2,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 
 const PROJECT = 'atlasmap-dev';
@@ -116,10 +117,6 @@ function matchingProviderMetricLogs(entries) {
       && payload.outcome === 'network-error'
     );
   });
-}
-
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function readProbeMetricLogs(gcloud, serviceName, startedAtUtc) {
