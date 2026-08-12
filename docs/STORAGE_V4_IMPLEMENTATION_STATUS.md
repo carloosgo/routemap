@@ -17,8 +17,8 @@ Este documento distingue el **roadmap original A–L** de los **rollout gates**.
 | G — delete/trash | Implementado en backend/tests | Soft-delete/lifecycle/purge/reconciliación presentes; activación productiva pendiente. |
 | H — concurrency/conflicts | Implementado en contrato/tests | Entity-level conflict en v4.0; no merge complejo campo-a-campo. |
 | I — migration | Implementado en código/tests | Materializer/verifier/rollback existentes; migración productiva no ejecutada. |
-| J — provider cache separation | Preparado lógicamente; separación física pendiente | `cacheDb` centraliza temporales, `expiresAt` y resiliencia probados. `atlas-cache` físico espera acceso server-side aprobado para named DB. |
-| K — monitoring/backups/load | En progreso avanzado | Recovery, restore drill + cleanup explícito, 4/4 streams, observabilidad Cloud dev y snapshot de precios aplicados/verificados. Faltan budget y E2E/load/SLO representativo. |
+| J — provider cache separation | Preparado lógicamente; separación física pendiente | `cacheDb` centraliza temporales, `expiresAt` y resiliencia probados. `atlas-cache` físico sigue bloqueado porque el acceso a named Firestore mediante Firebase Admin Node continúa marcado Public Preview/no-production en la referencia oficial vigente al 2026-08-12. |
+| K — monitoring/backups/load | En progreso avanzado | Recovery, restore drill + cleanup explícito, 4/4 streams, observabilidad Cloud dev y snapshot de precios aplicados/verificados. Budget está bloqueado externamente por IAM y falta E2E/load/SLO representativo. |
 | L — production | Preparado, no iniciado | Runbook L0–L7 creado. Producción no se toca hasta completar recovery/cost/security gates. |
 
 ## Rollout Gate G READ
@@ -41,7 +41,13 @@ El PASS no autoriza `pilot`, write v4, migración productiva ni cambios de produ
 
 La frontera lógica ya separa `db` (canónico/interno) de `cacheDb` (temporales de proveedor), pero actualmente ambos apuntan a `(default)`.
 
-No activar `atlas-cache` físicamente hasta disponer de un acceso server-side a named databases aprobado para producción, además de provisioning, deny-all cliente, TTL, IAM y smoke tests. Forzar una API marcada preview solo para cerrar el checklist introduciría riesgo sin beneficio funcional.
+Revalidación oficial realizada el `2026-08-12`:
+
+- Firestore soporta múltiples bases y clientes conectados a named databases;
+- en Firebase Admin SDK para Node, `getFirestore(databaseId)` / `getFirestore(app, databaseId)` continúa marcado **Public Preview**;
+- la propia referencia oficial indica no usar esa API en producción.
+
+Por tanto, no activar `atlas-cache` físicamente hasta disponer de un acceso server-side a named databases aprobado para producción, además de provisioning, deny-all cliente, TTL, IAM y smoke tests. Forzar una API preview solo para cerrar el checklist introduciría riesgo sin beneficio funcional.
 
 ## Phase K — evidencia real acumulada
 
@@ -78,6 +84,7 @@ Evidencia `atlasmap-dev`:
 - el snapshot exacto ya no era consultable independientemente por PITR al incluir segundos/fracciones y superar una hora, por lo que no se afirmó una falsa paridad SHA-256 contra un timestamp redondeado;
 - billing habilitado;
 - budget no observable: account-scope `403`, project-scope `403`, clasificación `permission-blocked`;
+- la documentación oficial vigente confirma que el endpoint y los permisos usados por el diagnóstico son correctos; por tanto el `403` se clasifica como bloqueo IAM externo, no como defecto conocido del probe;
 - `storageV4SyncTelemetry` y `geoapifyCityAutocomplete` activas con CORS localhost validado;
 - **4/4 streams** observados en Cloud Logging;
 - **7/7 logs-based metrics** creadas/verificadas;
@@ -90,6 +97,13 @@ Evidencia `atlasmap-dev`:
 - bug de `entries=null` en singleton streams corregido en repo mediante coerción explícita a arrays.
 
 La evidencia completa está en `docs/STORAGE_V4_PHASE_K_EVIDENCE_2026-08-11.md`.
+
+### Bloqueos externos vigentes de K
+
+- **Budget / IAM:** el probe está validado contra la API vigente, pero la identidad actual no puede listar budgets (`403`). No cambiar IAM ni crear budget sin autorización explícita.
+- **Sync flush E2E:** la instrumentación existe, pero generar señal real requiere un flujo v4 WRITE autorizado. No activar WRITE solo para telemetría.
+- **Alertas:** existen deshabilitadas; falta baseline representativo y notification channels aprobados antes de activarlas.
+- **Load / reconnect:** una prueba representativa contra Cloud generaría tráfico/costo y requiere un escenario/carga aprobados.
 
 Todavía falta para cerrar K:
 
