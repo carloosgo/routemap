@@ -1,4 +1,5 @@
 /* global process, console, fetch */
+import { Buffer } from 'node:buffer';
 import {
   existsSync,
   readFileSync,
