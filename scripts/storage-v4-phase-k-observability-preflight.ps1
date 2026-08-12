@@ -41,7 +41,8 @@ $dashboardProbe = Invoke-GcloudJsonProbe @(
   "--project=$Project"
 )
 $atlasDashboards = @($dashboardProbe.data | Where-Object {
-  [string]$_.displayName -like '*Atlas Storage v4*'
+  [string]$_.labels.system -eq 'atlas-storage-v4' -and
+  [string]$_.labels.environment -eq 'dev'
 })
 
 $policyProbe = Invoke-GcloudJsonProbe @(
@@ -49,7 +50,9 @@ $policyProbe = Invoke-GcloudJsonProbe @(
   "--project=$Project"
 )
 $atlasPolicies = @($policyProbe.data | Where-Object {
-  [string]$_.displayName -like '*Atlas Storage v4*'
+  [string]$_.userLabels.system -eq 'atlas-storage-v4' -and
+  [string]$_.userLabels.environment -eq 'dev' -and
+  [string]$_.userLabels.phase -eq 'k'
 })
 
 $metricProbe = Invoke-GcloudJsonProbe @(
