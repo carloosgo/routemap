@@ -364,6 +364,49 @@ export function createFirestoreV4PilotTripWriter({
     }
   }
 
+  async function acceptRemoteStateOnce({ tripId, remoteRoot, remoteCollections = {} } = {}) {
+    if (closed) throw new Error('El writer v4 pilot está cerrado.');
+    const id = requiredText(tripId, 'tripId');
+    const root = validateRemoteRoot(remoteRoot);
+    if (!root || (root.id && root.id !== id)) {
+      throw new TypeError('El estado remoto abierto no coincide con el tripId v4.');
+    }
+
+    const conflicts = (await local.listEntities({ userId, tripId: id }))
+      .filter((entity) => entity.state === V4_LOCAL_STATES.CONFLICT);
+    if (!conflicts.length) return { clearedConflicts: 0 };
+
+    const remoteByType = new Map();
+    for (const { tripField, entityType } of V4_TRIP_SAVE_COLLECTIONS) {
+      const items = Array.isArray(remoteCollections[tripField]) ? remoteCollections[tripField] : [];
+      remoteByType.set(entityType, new Map(items.map((item) => [item.id, item])));
+    }
+
+    let clearedConflicts = 0;
+    for (const current of conflicts) {
+      const pending = await local.getMutation(current.key);
+      if (pending) throw syncPendingError();
+      const remote = current.entityType === 'trip'
+        ? root
+        : remoteByType.get(current.entityType)?.get(current.entityId) || null;
+      const payload = current.entityType === 'trip'
+        ? rootPayload(remote, id)
+        : childPayload(current.entityType, remote);
+      await local.putEntity(baselineRecord({
+        userId,
+        tripId: id,
+        entityType: current.entityType,
+        entityId: current.entityId,
+        remote,
+        payload,
+        current,
+        nowMs: timestampNow(now),
+      }));
+      clearedConflicts += 1;
+    }
+    return { clearedConflicts };
+  }
+
   async function commitIntents(intents) {
     for (const intent of intents) {
       await runtime.commitIntent(intent, { schedule: false });
@@ -443,6 +486,9 @@ export function createFirestoreV4PilotTripWriter({
     },
     remove(tripId) {
       return enqueue(() => removeOnce(tripId));
+    },
+    acceptRemoteState(remoteState) {
+      return enqueue(() => acceptRemoteStateOnce(remoteState));
     },
     async recoverPending(tripId = null) {
       if (closed) return 0;
