@@ -29,7 +29,8 @@ test('volumen superior a API 250 no inventa precio fijo y exige cotizacion Custo
   assert.equal(result.customQuoteRequired, true);
 });
 
-test('selector rechaza volumen invalido', () => {
-  assert.throws(() => selectGeoapifyPlanForAutocomplete(-1), /requestsPerDay/);
-  assert.throws(() => selectGeoapifyPlanForAutocomplete(Number.NaN), /requestsPerDay/);
+test('selector rechaza volumen invalido o no explicito', () => {
+  for (const invalid of [-1, Number.NaN, null, undefined, '', '3000', false]) {
+    assert.throws(() => selectGeoapifyPlanForAutocomplete(invalid), /requestsPerDay/);
+  }
 });
