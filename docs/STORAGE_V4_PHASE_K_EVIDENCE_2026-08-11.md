@@ -173,9 +173,16 @@ El repo cubre en smoke local:
 - fallo del metric sink sin romper la operación;
 - reconnect storm determinista de 1,000 clientes con jitter;
 - matriz determinista adicional de reconnect para `1k`, `10k`, `50k` y `100k` clientes, verificando dispersión en el backoff capped y límites de las bandas `1/2/4/8/16/30s`;
-- conflicto multidevice entity-level sin pérdida silenciosa.
+- conflicto multidevice entity-level sin pérdida silenciosa;
+- contención determinista de `100` dispositivos sobre la misma entidad/version: exactamente un ganador y `99` conflictos explícitos, preservando el payload local de cada perdedor y el snapshot remoto ganador sin pérdida silenciosa.
 
-La matriz de `1k/10k/50k/100k` es una prueba del modelo de retry, no evidencia E2E ni una afirmación de capacidad real del backend. Sigue pendiente evidencia E2E real de provider outage, reconnect y múltiples navegadores/dispositivos.
+La matriz de `1k/10k/50k/100k` y la contención de `100` dispositivos son pruebas del modelo local, no evidencia E2E ni una afirmación de capacidad real del backend. Sigue pendiente evidencia E2E real de provider outage, reconnect y múltiples navegadores/dispositivos.
+
+## Wiring de sync flush
+
+Revisión de código confirma que el `syncLifecycleController` ya emite métricas `flush` para `success`, `not-leader` y `unexpected-error`, incluyendo duración y contadores agregados saneados. `syncRuntime` propaga `lifecycleOptions.onMetric` tanto a recuperación de cola como al lifecycle de flush. La composición web v4 acepta `lifecycleOptions`, pero sigue deliberadamente aislada del repositorio activo por Gate G READ; no se activó Storage v4 WRITE para fabricar una muestra real de `flush`.
+
+Conclusión: la ausencia de una muestra Cloud `flush` no se debe a falta del contrato de instrumentación; se debe a que el runtime de escritura v4 continúa sin activarse globalmente, como exige el rollout actual.
 
 ## Límites y próximos checkpoints
 
@@ -186,5 +193,5 @@ La matriz de `1k/10k/50k/100k` es una prueba del modelo de retry, no evidencia E
 - Budget sigue bloqueado por permisos de lectura.
 - Restore drill real: **PASS en dev**; queda únicamente retirar la base temporal de evidencia.
 - Dashboard Atlas dev: **estado limpio con exactamente uno**; el helper quedó idempotente.
-- Falta generar tráfico `sync flush` real para medir esa señal.
+- Falta una muestra real `sync flush` una vez que exista un entorno/flujo de escritura v4 autorizado; no se habilita WRITE solo para generar telemetría.
 - Falta load/reconnect/provider-outage/multidevice E2E y recalibrar thresholds/SLO con tráfico representativo.
