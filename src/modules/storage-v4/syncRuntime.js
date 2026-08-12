@@ -89,14 +89,14 @@ export function createV4SyncRuntime({
       return pending.length;
     },
 
-    async commitIntent(intent) {
+    async commitIntent(intent, { schedule = true } = {}) {
       if (stopped) throw new Error('El runtime v4 está detenido.');
       if (intent?.userId !== ownerId) {
         throw new TypeError('La intención no pertenece al usuario del runtime.');
       }
       const result = await local.commitLocalIntent({ intent, nowMs: now() });
       if (!result.discarded) {
-        lifecycle.markDirty();
+        if (schedule) lifecycle.markDirty();
         notifier.publish(DIRTY_MESSAGE, {
           userId: ownerId,
           tripId: intent.tripId,
