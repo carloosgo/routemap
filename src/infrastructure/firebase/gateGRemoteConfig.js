@@ -23,6 +23,11 @@ function readRemoteValues(remoteConfig) {
     mode: getString(remoteConfig, GATE_G_REMOTE_KEYS.mode),
     cohortPercent: getNumber(remoteConfig, GATE_G_REMOTE_KEYS.cohortPercent),
     readRulesReady: getBoolean(remoteConfig, GATE_G_REMOTE_KEYS.readRulesReady),
+    writeRulesReady: getBoolean(remoteConfig, GATE_G_REMOTE_KEYS.writeRulesReady),
+    syncReady: getBoolean(remoteConfig, GATE_G_REMOTE_KEYS.syncReady),
+    aggregateReady: getBoolean(remoteConfig, GATE_G_REMOTE_KEYS.aggregateReady),
+    lifecycleReady: getBoolean(remoteConfig, GATE_G_REMOTE_KEYS.lifecycleReady),
+    purgeReady: getBoolean(remoteConfig, GATE_G_REMOTE_KEYS.purgeReady),
   };
 }
 
@@ -33,6 +38,11 @@ function failClosedDefaults() {
     [GATE_G_REMOTE_KEYS.mode]: 'off',
     [GATE_G_REMOTE_KEYS.cohortPercent]: 0,
     [GATE_G_REMOTE_KEYS.readRulesReady]: false,
+    [GATE_G_REMOTE_KEYS.writeRulesReady]: false,
+    [GATE_G_REMOTE_KEYS.syncReady]: false,
+    [GATE_G_REMOTE_KEYS.aggregateReady]: false,
+    [GATE_G_REMOTE_KEYS.lifecycleReady]: false,
+    [GATE_G_REMOTE_KEYS.purgeReady]: false,
   };
 }
 
