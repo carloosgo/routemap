@@ -18,7 +18,7 @@ Este documento distingue el **roadmap original A–L** de los **rollout gates**.
 | H — concurrency/conflicts | Implementado en contrato/tests | Entity-level conflict en v4.0; no merge complejo campo-a-campo. |
 | I — migration | Implementado en código/tests | Materializer/verifier/rollback existentes; migración productiva no ejecutada. |
 | J — provider cache separation | Preparado lógicamente; separación física pendiente | `cacheDb` centraliza temporales, `expiresAt` y resiliencia probados. `atlas-cache` físico sigue bloqueado porque el acceso a named Firestore mediante Firebase Admin Node continúa marcado Public Preview/no-production en la referencia oficial vigente al 2026-08-12. |
-| K — monitoring/backups/load | En progreso avanzado | Recovery + cleanup, 4/4 streams y observabilidad Cloud dev verificados. Budget ya es legible y se confirmó que actualmente hay 0 budgets; dashboard/metrics/policies quedaron consistentes y el inventario de notification channels confirmó 0 canales. Falta aprobar budget, canal/thresholds y completar E2E/load/SLO representativo. |
+| K — monitoring/backups/load | En progreso avanzado | Recovery + cleanup, 4/4 streams, dashboard/metrics/policies, notification channel y Provider Outage E2E ya están verificados en dev. Budget ya es legible y se confirmó que actualmente hay 0 budgets. Falta aprobar budget, generar sync flush real, baseline/activación controlada de alertas, multidevice/load/reconnect E2E y SLO/costos representativos. |
 | L — production | Preparado, no iniciado | Runbook L0–L7 creado. Producción no se toca hasta completar recovery/cost/security gates. |
 
 ## Rollout Gate G READ
@@ -68,11 +68,11 @@ Código/preparación:
 - siete logs-based metrics;
 - dashboard Storage v4 dev;
 - tres alert policies dev deshabilitadas;
-- preflight de notification channels por Monitoring REST v3;
-- comando de creación controlada de email channel en dev: dry-run por defecto, email explícito requerido, canal creado deshabilitado, sin asociación automática a policies;
+- notification channel email Atlas Phase K creado, asociado y habilitado de forma controlada, sin activar alert policies;
 - preflight SLO read-only con ratios y p50/p95/p99;
 - restore preflight, restore drill aislado `atlas-restore-drill-*` y cleanup explícito endurecido;
 - checkpoint Cloud consolidado read-only;
+- probe privado Gen2 para Provider Outage E2E, sin endpoint productivo ni API key, con verificación REST de IAM/invocación/Cloud Logging;
 - smokes deterministas de provider outage, reconnect storm y multidevice.
 
 Evidencia `atlasmap-dev`:
@@ -97,27 +97,32 @@ Evidencia `atlasmap-dev`:
 - **3/3 alert policies** creadas y verificadas deshabilitadas;
 - **dashboard cleanup PASS**: Monitoring REST v1 detectó los dos dashboards Atlas equivalentes, conservó `8d6a1c24-ea96-4bc3-848d-442a40b2adef`, eliminó `2d6f5b70-dc89-43d8-87c7-f44c8a80f108` y el preflight independiente posterior confirmó `atlasDashboardCount=1`;
 - el cleanup y el preflight de dashboard comparten ahora Monitoring REST v1 como fuente de verdad; el apply aborta si vuelve a detectar drift con más de un dashboard;
-- **notification channel inventory PASS** al `2026-08-12T17:27:16Z`: REST v3 HTTP `200`, `notificationChannelCount=0`, `enabledUsableNotificationChannelCount=0` y las tres policies con `notificationChannelCount=0`;
+- **alert channel checkpoint PASS** al `2026-08-12T19:21:41Z`: exactamente un email notification channel Atlas Phase K, `enabled=true`, `verificationStatus` vacío/no `UNVERIFIED`, `enabledUsableNotificationChannelCount=1`; las tres policies apuntan exclusivamente a ese canal y siguen `enabled=false`;
+- **Provider Outage E2E CLOSED/PASS**: `storageV4ProviderOutageProbe` existente verificada `ACTIVE`, `GEN_2` y privada mediante Google Cloud REST; invocación autenticada observó `geoapify / geocode-search / network-error` y Cloud Logging confirmó `matchingProviderMetricLogCount=1`;
+- el Provider Outage E2E no usó endpoint productivo del proveedor ni API key, no mutó datos de aplicación, budgets, alert policies, Storage v4 WRITE ni producción;
 - rollout sample: 38/38 success, p50 196 ms, p95 912 ms, p99 4465 ms;
-- provider sample: 1/1 success, 490 ms;
+- provider sample inicial: 1/1 success, 490 ms; el outage sintético queda documentado por separado y no convierte esa muestra en SLO productivo;
 - sync todavía no tiene muestra `flush` válida; el evento observado fue `queue-recovery`;
 - bug de `entries=null` en singleton streams corregido en repo mediante coerción explícita a arrays.
 
-La evidencia completa está en `docs/STORAGE_V4_PHASE_K_EVIDENCE_2026-08-11.md`.
+La evidencia histórica consolidada está en `docs/STORAGE_V4_PHASE_K_EVIDENCE_2026-08-11.md`. Los checkpoints posteriores que actualizan ese snapshot son:
+
+- `docs/STORAGE_V4_PHASE_K_ALERT_CHANNEL_CHECKPOINT_2026-08-12.md`;
+- `docs/STORAGE_V4_PHASE_K_PROVIDER_OUTAGE_E2E_2026-08-12.md`.
 
 ### Bloqueos / verificaciones externas vigentes de K
 
 - **Budget amount/thresholds:** la visibilidad ya está resuelta y hay 0 budgets. Falta una decisión explícita sobre monto y thresholds antes de crear uno; no inventar el monto ni mutar budgets sin autorización.
 - **Sync flush E2E:** la instrumentación existe, pero generar señal real requiere un flujo v4 WRITE autorizado. No activar WRITE solo para telemetría.
-- **Alertas:** 3 policies existen y están deshabilitadas; el inventario confirma 0 notification channels. Falta destino explícitamente aprobado, creación/verificación/asociación del canal y baseline representativo antes de activar las policies.
+- **Alertas:** el canal email ya existe, está habilitado y asociado a las tres policies; las policies continúan deshabilitadas. Su activación/prueba real sigue condicionada a baseline/thresholds representativos y aprobación explícita.
 - **Load / reconnect:** una prueba representativa contra Cloud generaría tráfico/costo y requiere un escenario/carga aprobados.
+- **Multidevice E2E:** la simulación determinista ya existe, pero la evidencia real de navegador/dispositivos requiere un flujo v4 WRITE autorizado y un escenario controlado.
 
 Todavía falta para cerrar K:
 
 - aprobar y configurar un budget de proyecto con monto/thresholds explícitos;
 - generar `sync flush` E2E para medir esa señal;
-- crear/verificar un notification channel aprobado, asociarlo de forma controlada y probar/activar alertas solo después de baseline representativo;
-- provider outage E2E;
+- establecer baseline/thresholds representativos y probar/activar alertas de forma controlada;
 - multidevice E2E de navegador/dispositivos reales;
 - carga/reconnect E2E y medición de SLO con tráfico representativo;
 - alimentar el modelo de costos con supuestos de uso/almacenamiento medidos o aprobados; los precios públicos ya tienen snapshot fechado, pero eso por sí solo no constituye forecast ni budget.
