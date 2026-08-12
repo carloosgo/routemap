@@ -25,6 +25,7 @@ const pilot100 = {
   writeRulesReady: true,
   syncReady: true,
   aggregateReady: true,
+  touchReady: true,
   lifecycleReady: true,
   purgeReady: true,
 };
