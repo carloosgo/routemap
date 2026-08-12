@@ -13,6 +13,7 @@ const USER_LABELS = Object.freeze({
   phase: 'k',
   purpose: 'alerts',
 });
+const EMAIL_PATTERN = /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$/;
 
 function fail(message, code = 1) {
   console.error(message);
@@ -31,7 +32,7 @@ function parseArgs(argv) {
     email.length < 3 ||
     email.length > 254 ||
     /[\r\n\0]/.test(email) ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    !EMAIL_PATTERN.test(email)
   ) {
     fail('La direccion indicada en --email no tiene un formato valido.', 2);
   }
