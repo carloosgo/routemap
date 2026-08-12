@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from './i18n/index.jsx';
 import { useTrip } from './modules/trips/useTrip.js';
 import { useSavedTrips } from './modules/trips/useSavedTrips.js';
+import { savedTripErrorTranslationKey } from './modules/trips/savedTripOperations.js';
 import { useFirebaseAuth } from './infrastructure/firebase/useFirebaseAuth.js';
 import { isTripSavable } from './modules/trips/tripModel.js';
 import { AppTopbar } from './app/AppTopbar.jsx';
@@ -55,8 +56,12 @@ export default function App() {
       showToast(t('saveValidationError'), 2500);
       return;
     }
-    await saveTrip(trip);
-    showToast(t('saved'));
+    try {
+      await saveTrip(trip);
+      showToast(t('saved'));
+    } catch (error) {
+      showToast(t(savedTripErrorTranslationKey(error, 'savePersistenceError')), 3500);
+    }
   }, [saveTrip, showToast, trip, t]);
 
   const handleGoogleSignIn = useCallback(async () => {
@@ -115,8 +120,12 @@ export default function App() {
 
   async function confirmRemoveTrip() {
     if (!tripToDelete) return;
-    await deleteTrip(tripToDelete.id);
-    setTripToDelete(null);
+    try {
+      await deleteTrip(tripToDelete.id);
+      setTripToDelete(null);
+    } catch (error) {
+      showToast(t(savedTripErrorTranslationKey(error, 'deletePersistenceError')), 3500);
+    }
   }
 
   const topbar = (
