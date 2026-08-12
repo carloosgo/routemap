@@ -1,5 +1,4 @@
 const ERROR_TRANSLATION_KEYS = Object.freeze({
-  'trip/save-conflict': 'saveConflict',
   'trip/v4-sync-pending': 'saveSyncPending',
   'trip/v4-sync-busy': 'saveSyncBusy',
   'trip/v4-write-not-ready': 'saveWriteNotReady',
@@ -10,8 +9,11 @@ export function savedTripErrorMessage(error, fallback) {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
-export function savedTripErrorTranslationKey(error, fallbackKey) {
+export function savedTripErrorTranslationKey(error, fallbackKey, { operation = 'save' } = {}) {
   const code = typeof error?.code === 'string' ? error.code : '';
+  if (code === 'trip/save-conflict') {
+    return operation === 'delete' ? 'deleteConflict' : 'saveConflict';
+  }
   return ERROR_TRANSLATION_KEYS[code] || fallbackKey;
 }
 
