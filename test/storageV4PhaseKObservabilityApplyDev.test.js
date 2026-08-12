@@ -77,11 +77,13 @@ test('observability apply no borra recursos, no muta budgets y no toca produccio
 test('observability preflight permanece read-only y usa labels ASCII estables', async () => {
   const source = await readFile(preflightScriptPath, 'utf8');
 
-  assert.ok(source.includes("'monitoring', 'dashboards', 'list'"));
+  assert.ok(source.includes('monitoring.googleapis.com/v1/projects/$ProjectId/dashboards'));
+  assert.ok(source.includes("dashboardTransport = 'monitoring-rest-v1'"));
   assert.ok(source.includes("'monitoring', 'policies', 'list'"));
   assert.ok(source.includes("'logging', 'metrics', 'list'"));
   assert.ok(source.includes("$_.labels.system -eq 'atlas-storage-v4'"));
   assert.ok(source.includes("$_.userLabels.phase -eq 'k'"));
+  assert.equal(source.includes("'monitoring', 'dashboards', 'list'"), false);
   assert.equal(source.includes("'create'"), false);
   assert.equal(source.includes("'update'"), false);
   assert.equal(source.includes("'delete'"), false);
