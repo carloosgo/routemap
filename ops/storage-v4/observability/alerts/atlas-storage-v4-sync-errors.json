@@ -16,7 +16,7 @@
     {
       "displayName": "Sync unexpected-error count > 0 in 5m",
       "conditionThreshold": {
-        "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_sync_events\" AND metric.labels.event=\"flush\" AND metric.labels.outcome=\"unexpected-error\"",
+        "filter": "resource.type=\"cloud_run_revision\" AND metric.type=\"logging.googleapis.com/user/atlas_storage_v4_sync_events\" AND metric.labels.event=\"flush\" AND metric.labels.outcome=\"unexpected-error\"",
         "aggregations": [
           {
             "alignmentPeriod": "300s",
