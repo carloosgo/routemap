@@ -46,7 +46,20 @@ function normalizeV4Writer(writer) {
   if (typeof writer.save !== 'function' || typeof writer.remove !== 'function') {
     throw new TypeError('v4Writer requiere save() y remove().');
   }
+  if (writer.acceptRemoteState != null && typeof writer.acceptRemoteState !== 'function') {
+    throw new TypeError('v4Writer.acceptRemoteState debe ser función cuando existe.');
+  }
   return writer;
+}
+
+function writerRemoteCollections(collections) {
+  return {
+    segments: collections.segments || [],
+    places: collections.places || [],
+    routeConnections: collections.connections || [],
+    notes: collections.notes || [],
+    checklist: collections.checklist || [],
+  };
 }
 
 export function createFirestoreHybridTripRepository({ db, uid, v4Writer = null } = {}) {
@@ -67,11 +80,21 @@ export function createFirestoreHybridTripRepository({ db, uid, v4Writer = null }
   }
 
   async function getV4Trip(tripId, summary) {
+    const includeDeleted = typeof writer?.acceptRemoteState === 'function';
     const entries = await Promise.all(V4_ENTITY_TYPES.map(async ([name, type]) => [
       name,
-      await v4.listEntities(tripId, type),
+      await v4.listEntities(tripId, type, { includeDeleted }),
     ]));
-    return hydrateV4Trip(summary, Object.fromEntries(entries));
+    const collections = Object.fromEntries(entries);
+    const hydrated = hydrateV4Trip(summary, collections);
+    if (includeDeleted) {
+      await writer.acceptRemoteState({
+        tripId,
+        remoteRoot: summary,
+        remoteCollections: writerRemoteCollections(collections),
+      });
+    }
+    return hydrated;
   }
 
   return {
