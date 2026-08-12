@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
+import { execPath } from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 const scriptPath = new URL('../scripts/runStorageV4PhaseKNotificationChannelEmailDev.mjs', import.meta.url);
@@ -18,7 +19,7 @@ test('notification channel email dev es dry-run por defecto y exige destino expl
 
 test('notification channel email rechaza wrappers markdown/mailto antes de tocar gcloud', () => {
   const result = spawnSync(
-    process.execPath,
+    execPath,
     [fileURLToPath(scriptPath), '--email=[alerts@example.com](mailto:alerts@example.com)'],
     { encoding: 'utf8' }
   );
