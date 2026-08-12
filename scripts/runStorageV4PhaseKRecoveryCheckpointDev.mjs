@@ -8,12 +8,12 @@ const applyRequested = process.argv.slice(2).includes('--apply');
 
 const steps = Object.freeze([
   {
-    name: 'cleanup-duplicate-dashboard',
-    script: join(here, 'runStorageV4PhaseKDashboardCleanupDev.mjs'),
-  },
-  {
     name: 'restore-drill-and-validate',
     script: join(here, 'runStorageV4PhaseKRestoreCheckpointDev.mjs'),
+  },
+  {
+    name: 'cleanup-duplicate-dashboard',
+    script: join(here, 'runStorageV4PhaseKDashboardCleanupDev.mjs'),
   },
 ]);
 
@@ -24,6 +24,7 @@ console.log(JSON.stringify({
   deletesOnlyVerifiedDuplicateDashboard: true,
   createsTemporaryRestoreDatabase: true,
   validatesRestoredContent: true,
+  restoreRunsBeforeNonCriticalDashboardCleanup: true,
   mutatesBudgets: false,
   enablesStorageV4Write: false,
   touchesDefaultDatabase: false,
