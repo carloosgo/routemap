@@ -41,6 +41,22 @@ Evidencia capturada a las `2026-08-11T21:51:49Z` y reconfirmada a las `2026-08-1
 
 Conclusión de recovery en desarrollo: **baseline de PITR + scheduled backup cumplido y verificado en `atlasmap-dev`**. El 403 de budget refleja falta de visibilidad suficiente con la identidad actual y no demuestra que el proyecto carezca de budget.
 
+### Diagnóstico de permisos de budget preparado
+
+El repo incluye ahora un diagnóstico read-only específico que prueba por separado:
+
+- visibilidad de budgets a nivel de billing account;
+- visibilidad de budgets filtrados al proyecto `atlasmap-dev`;
+- clasificación explícita `permission-blocked` cuando el API responde 403;
+- sin serializar el billing account ID ni la cuenta activa.
+
+El diagnóstico documenta dos caminos IAM de mínimo privilegio, basados en el contrato oficial vigente del Budget API:
+
+- lectura a nivel billing account: `billing.budgets.list`, cubierto por `roles/billing.viewer`;
+- lectura de budget de un solo proyecto: `resourcemanager.projects.get` + `billing.resourcebudgets.read`, cubierto por `roles/viewer` en el proyecto.
+
+Para creación futura, el helper solo informa requisitos; **no crea ni modifica budgets**. El monto y los thresholds siguen sin definirse porque requieren una decisión aprobada, no una suposición del repo.
+
 ## Telemetría
 
 ### Baseline antes del despliegue acotado
@@ -89,16 +105,41 @@ Trabajo de repositorio preparado después de cerrar 4/4 streams:
   - counters para rollout, sync, provider cache y provider request;
   - distribuciones de latencia para rollout, sync flush y provider request;
 - `ops/storage-v4/observability/dashboard.json` con panel de logs y vistas para eventos/ratios/latencias, operaciones y storage de Firestore, y request count/p95 de Cloud Run;
+- el dashboard de repositorio expone p50/p95/p99 para latencia del repositorio y usa como denominador de `Sync flush success ratio` únicamente eventos `flush`, evitando mezclar `queue-recovery`;
 - tres templates de alert policy bajo `ops/storage-v4/observability/alerts/`, **deshabilitados por defecto** y sin notification channels;
 - helper `storage-v4-phase-k-observability-apply-dev.ps1`, bloqueado a `atlasmap-dev`, dry-run por defecto, sin deletes, sin budgets y sin cambios de Storage v4 WRITE;
 - preflight read-only para inventariar dashboard, policies y log-based metrics existentes.
 
 Estado de este bundle: **preparado en repo, no aplicado ni validado server-side todavía**. No se declara dashboard creado ni alertas operacionales hasta obtener evidencia del entorno. Los thresholds de alertas son plantillas de desarrollo; en especial el threshold de proveedor se debe recalibrar con baseline real antes de habilitarse.
 
+## SLO / resiliencia preparada
+
+El repositorio incluye un preflight SLO read-only sobre Cloud Logging que calcula, sin mutar Cloud:
+
+- rollout success rate y p50/p95/p99;
+- sync flush success rate accionable y p50/p95/p99;
+- cache hit rate sobre `hit + miss`, manteniendo `read-error` y `write-error` como señales separadas;
+- provider success rate y p50/p95/p99;
+- bandera de truncamiento si un stream alcanza el límite de muestra, para impedir tratar una muestra incompleta como SLO de ventana completa.
+
+Además existe un smoke local agregado de resiliencia para cache fail-soft, tormenta de reconexión determinista y conflicto multidevice. Esa evidencia sigue siendo simulación de repositorio y **no sustituye** provider outage, reconnect ni multidevice E2E reales.
+
+## Checkpoint cloud consolidado preparado
+
+`phase-k:cloud-checkpoint` agrupa en una sola intervención local, exclusivamente read-only:
+
+1. recovery/billing/telemetry;
+2. diagnóstico detallado de permisos de budget;
+3. muestra SLO desde Cloud Logging;
+4. inventario de Monitoring;
+5. readiness de restore.
+
+El checkpoint no contiene `--apply`, no despliega Functions, no crea dashboard, no restaura bases y no toca producción.
+
 ## Próximos checkpoints de Phase K
 
 1. aplicar/validar en un único checkpoint controlado el bundle de observabilidad dev cuando corresponda;
-2. resolver permisos/visibilidad de budget y definir umbrales de costo aprobados, sin inventar monto;
+2. ejecutar el diagnóstico de budget con la identidad local y resolver solo el permiso necesario; luego definir monto/thresholds aprobados, sin inventarlos;
 3. restore drill usando un backup real cuando exista un backup disponible para restauración;
 4. provider outage E2E;
 5. multidevice E2E en navegadores/dispositivos reales;
