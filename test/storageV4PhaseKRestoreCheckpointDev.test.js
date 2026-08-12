@@ -46,13 +46,25 @@ test('restore checkpoint reanuda una unica base restaurada usando sourceInfo sin
   assert.ok(source.includes('$resumeExisting = $existingDrills.Count -eq 1'));
   assert.ok(source.includes('$existingDetail.sourceInfo.backup.backup'));
   assert.ok(source.includes('no se crea una segunda base ni se repite el restore'));
+  assert.ok(source.includes('managedRestoreLineageVerified'));
 });
 
-test('restore validator normaliza a minuto lecturas PITR mayores a una hora', async () => {
+test('restore validator exige paridad exacta solo cuando Firestore puede consultar el snapshot exacto', async () => {
   const source = await readFile(validatorPath, 'utf8');
 
   assert.ok(source.includes('const ONE_HOUR_MS = 60 * 60 * 1000'));
-  assert.ok(source.includes('parsed.setUTCSeconds(0, 0)'));
-  assert.ok(source.includes('pitrMinuteNormalizationApplied'));
-  assert.ok(source.includes('exactBackupTimestampQueryable'));
+  assert.ok(source.includes("validationMode: 'exact-source-parity'"));
+  assert.ok(source.includes("validationMode: 'managed-restore-readability'"));
+  assert.ok(source.includes('sourceParityAttempted: false'));
+  assert.ok(source.includes('Backup snapshot is older than one hour and not a whole-minute timestamp'));
+  assert.equal(source.includes('parsed.setUTCSeconds(0, 0)'), false);
+});
+
+test('restore validator siempre inventaria destino y no expone contenido', async () => {
+  const source = await readFile(validatorPath, 'utf8');
+
+  assert.ok(source.includes('const destination = await inventoryDatabase'));
+  assert.ok(source.includes('destinationReadable: true'));
+  assert.ok(source.includes('exposesDocumentContent: false'));
+  assert.ok(source.includes('managedRestoreLineageMustBeVerifiedByCaller'));
 });
