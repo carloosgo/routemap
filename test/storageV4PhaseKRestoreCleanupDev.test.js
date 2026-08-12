@@ -46,11 +46,14 @@ test('restore cleanup no puede borrar default ni recursos vecinos', async () => 
   assert.doesNotMatch(source, /billing[\s'",]+budgets[\s'",]+(create|update|delete)/i);
 });
 
-test('restore cleanup launcher ejecuta gcloud directamente sin depender de PowerShell', async () => {
+test('restore cleanup launcher usa cmd.exe para wrappers .cmd en Windows sin depender de PowerShell', async () => {
   const source = await readFile(launcherPath, 'utf8');
 
   assert.ok(source.includes("['gcloud.cmd', 'gcloud.exe', 'gcloud']"));
   assert.ok(source.includes("['gcloud']"));
+  assert.ok(source.includes("executable.toLowerCase().endsWith('.cmd')"));
+  assert.ok(source.includes("process.env.ComSpec || 'cmd.exe'"));
+  assert.ok(source.includes("['/d', '/c', executable, ...args]"));
   assert.ok(source.includes("'firestore', 'databases', 'delete'"));
   assert.ok(source.includes('`--etag=${etag}`'));
   assert.ok(source.includes("destinationDatabase === '(default)'"));
