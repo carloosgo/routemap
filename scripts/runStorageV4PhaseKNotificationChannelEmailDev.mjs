@@ -2,6 +2,7 @@
 import { existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
+import { URLSearchParams } from 'node:url';
 
 const PROJECT = 'atlasmap-dev';
 const DISPLAY_NAME = 'Atlas Storage v4 — dev alerts';
