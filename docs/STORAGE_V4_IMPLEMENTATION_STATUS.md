@@ -18,7 +18,7 @@ Este documento distingue el **roadmap original A–L** de los **rollout gates**.
 | H — concurrency/conflicts | Implementado en contrato/tests | Entity-level conflict en v4.0; no merge complejo campo-a-campo. |
 | I — migration | Implementado en código/tests | Materializer/verifier/rollback existentes; migración productiva no ejecutada. |
 | J — provider cache separation | Preparado lógicamente; separación física pendiente | `cacheDb` centraliza temporales, `expiresAt` y resiliencia probados. `atlas-cache` físico espera acceso server-side aprobado para named DB. |
-| K — monitoring/backups/load | En progreso avanzado | Recovery, 4/4 streams y observabilidad Cloud dev aplicados/verificados; backup `READY` disponible. Faltan budget, restore drill, cleanup de dashboard duplicado y E2E/load/SLO representativo. |
+| K — monitoring/backups/load | En progreso avanzado | Recovery, restore drill, 4/4 streams y observabilidad Cloud dev aplicados/verificados. Faltan budget, cleanup de la base temporal y E2E/load/SLO representativo. |
 | L — production | Preparado, no iniciado | Runbook L0–L7 creado. Producción no se toca hasta completar recovery/cost/security gates. |
 
 ## Rollout Gate G READ
@@ -67,15 +67,17 @@ Evidencia `atlasmap-dev`:
 - `(default)` en `northamerica-south1`;
 - PITR habilitado, retención 7 días;
 - scheduled backup diario, retención 7 días;
-- backup `READY` disponible con snapshot `2026-08-12T02:05:06.847993Z`;
+- backup `READY` con snapshot `2026-08-12T02:05:06.847993Z`;
+- **restore drill PASS** sobre `atlas-restore-drill-20260812-031227`: procedencia `sourceInfo.backup` verificada, operación administrada completada antes de leer, base restaurada legible e inventario de `345` documentos;
+- el snapshot exacto ya no era consultable independientemente por PITR al incluir segundos/fracciones y superar una hora, por lo que no se afirmó una falsa paridad SHA-256 contra un timestamp redondeado;
 - billing habilitado;
 - budget no observable: account-scope `403`, project-scope `403`, clasificación `permission-blocked`;
 - `storageV4SyncTelemetry` y `geoapifyCityAutocomplete` activas con CORS localhost validado;
 - **4/4 streams** observados en Cloud Logging;
 - **7/7 logs-based metrics** creadas/verificadas;
 - **3/3 alert policies** creadas y verificadas deshabilitadas;
-- dashboard Storage v4 creado y verificable por labels;
-- inventario detectó **2 dashboards** equivalentes por retries previos; cleanup pendiente y no automático;
+- dashboard Storage v4 creado y verificable; el último checkpoint detectó **exactamente 1 dashboard Atlas dev**, por lo que el duplicado ya no existe;
+- helper de dashboard corregido para ser idempotente: un solo dashboard significa `alreadyClean`, no error;
 - rollout sample: 38/38 success, p50 196 ms, p95 912 ms, p99 4465 ms;
 - provider sample: 1/1 success, 490 ms;
 - sync todavía no tiene muestra `flush` válida; el evento observado fue `queue-recovery`;
@@ -86,8 +88,7 @@ La evidencia completa está en `docs/STORAGE_V4_PHASE_K_EVIDENCE_2026-08-11.md`.
 Todavía falta para cerrar K:
 
 - resolver visibilidad/permisos de budget y configurar un monto/thresholds aprobados;
-- ejecutar restore drill real sobre el backup `READY`, medir RTO y validar contenido;
-- retirar uno de los dos dashboards duplicados mediante cleanup dev explícito;
+- retirar la base temporal del restore drill una vez conservada la evidencia;
 - generar `sync flush` E2E para medir esa señal;
 - probar/activar alertas con baseline y notification channels aprobados;
 - provider outage E2E;
