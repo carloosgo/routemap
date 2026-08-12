@@ -18,8 +18,7 @@ test('dashboard cleanup queda bloqueado a atlasmap-dev y es dry-run por defecto'
 test('dashboard cleanup elimina solo un duplicado equivalente y preserva recursos vecinos', async () => {
   const source = await readFile(scriptPath, 'utf8');
 
-  assert.ok(source.includes("$atlasDashboards.Count -ne 2"));
-  assert.ok(source.includes("$duplicateCandidates.Count -ne 1"));
+  assert.ok(source.includes('$atlasDashboards.Count -ne 2'));
   assert.ok(source.includes('Normalize-DashboardForComparison'));
   assert.ok(source.includes("'monitoring', 'dashboards', 'describe'"));
   assert.ok(source.includes('gcloud monitoring dashboards delete $duplicateId'));
@@ -28,4 +27,15 @@ test('dashboard cleanup elimina solo un duplicado equivalente y preserva recurso
   assert.ok(source.includes('budgetsUntouched = $true'));
   assert.equal(source.includes('policies delete'), false);
   assert.equal(source.includes('logging metrics delete'), false);
+});
+
+test('dashboard cleanup no depende de un ID canonico hardcodeado', async () => {
+  const source = await readFile(scriptPath, 'utf8');
+
+  assert.ok(source.includes("[string]$PreferredDashboardId = ''"));
+  assert.ok(source.includes('$ids = @($details | ForEach-Object { DashboardId $_ } | Sort-Object)'));
+  assert.ok(source.includes('$keepId = $ids[0]'));
+  assert.ok(source.includes('$ids -contains $PreferredDashboardId'));
+  assert.equal(source.includes('8d6a1c24-ea96-4bc3-848d-442a40b2adef'), false);
+  assert.equal(source.includes('dashboard canonico con el ID esperado'), false);
 });
