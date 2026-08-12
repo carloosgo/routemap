@@ -8,11 +8,18 @@ const gcloudCandidates = process.platform === 'win32'
   : ['gcloud'];
 
 function runWith(executable, args, { inherit = false } = {}) {
-  return spawnSync(executable, args, {
+  const options = {
     encoding: inherit ? undefined : 'utf8',
     stdio: inherit ? 'inherit' : 'pipe',
     windowsHide: true,
-  });
+  };
+
+  if (process.platform === 'win32' && executable.toLowerCase().endsWith('.cmd')) {
+    const commandProcessor = process.env.ComSpec || 'cmd.exe';
+    return spawnSync(commandProcessor, ['/d', '/c', executable, ...args], options);
+  }
+
+  return spawnSync(executable, args, options);
 }
 
 function resolveGcloud() {
