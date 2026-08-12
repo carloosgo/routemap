@@ -6,6 +6,19 @@ Este documento separa deliberadamente **evidencia determinista de repositorio** 
 
 ## Suites deterministas existentes
 
+### Provider request outage / telemetry safety
+
+`functions/geoapifySupport.resilience.test.js` cubre la frontera HTTP antes del cache funcional:
+
+- HTTP `429` se clasifica como `http-error`, conserva status y no se convierte silenciosamente en success;
+- HTTP `503` se clasifica como `http-error` para una operación de routing;
+- rechazo de red se clasifica como `network-error` con status `0`;
+- JSON inválido con HTTP 200 se clasifica como `parse-error`;
+- las métricas no contienen query, API key, URL completa ni mensaje de error de red;
+- una falla del `metricSink` no transforma una respuesta válida del proveedor en error funcional.
+
+Criterio arquitectónico cubierto: la observabilidad del proveedor es best-effort, preserva privacidad y clasifica correctamente degradaciones típicas sin convertirse ella misma en dependencia crítica.
+
 ### Provider cache fail-soft
 
 `test/sharedProviderCacheResilience.test.js` cubre:
@@ -47,7 +60,7 @@ El repositorio expone:
 npm run phase-k:resilience:local
 ```
 
-Ese comando ejecuta únicamente las tres suites anteriores y sirve como smoke determinista de resiliencia para Phase K.
+Ese comando ejecuta las cuatro suites anteriores y sirve como smoke determinista de resiliencia para Phase K.
 
 ## Lo que esta evidencia NO cierra
 
