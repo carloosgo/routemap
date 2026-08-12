@@ -16,7 +16,7 @@
     {
       "displayName": "Provider failures > 5 in 5m",
       "conditionThreshold": {
-        "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_provider_request_events\" AND metric.labels.outcome!=\"success\"",
+        "filter": "resource.type=\"cloud_run_revision\" AND metric.type=\"logging.googleapis.com/user/atlas_storage_v4_provider_request_events\" AND metric.labels.outcome!=\"success\"",
         "aggregations": [
           {
             "alignmentPeriod": "300s",
