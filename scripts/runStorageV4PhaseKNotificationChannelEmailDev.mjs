@@ -59,7 +59,7 @@ function runProcess(executable, args) {
 function resolveGcloud() {
   for (const candidate of gcloudCandidates()) {
     if ((candidate.includes('\\') || candidate.includes('/')) && !existsSync(candidate)) continue;
-    const probe = runProcess(candidate, ['version', '--format=value(Google Cloud SDK)']);
+    const probe = runProcess(candidate, ['version']);
     if (!probe.error && probe.status === 0) return candidate;
   }
   return null;
