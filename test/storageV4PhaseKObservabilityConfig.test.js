@@ -116,7 +116,7 @@ test('dashboard expone p50 p95 p99 para latencia de repositorio', async () => {
   ]);
 });
 
-test('alert templates Phase K nacen deshabilitados y sin canales', async () => {
+test('alert templates Phase K nacen deshabilitados, sin canales y con resource.type explicito', async () => {
   const files = await jsonFiles(alertsRoot);
   assert.equal(files.length, 3);
 
@@ -129,10 +129,8 @@ test('alert templates Phase K nacen deshabilitados y sin canales', async () => {
     assert.equal(policy.combiner, 'OR');
     assert.equal(policy.conditions.length, 1);
     assert.ok(policy.conditions[0].conditionThreshold);
-    assert.ok(
-      policy.conditions[0].conditionThreshold.filter.includes(
-        'logging.googleapis.com/user/atlas_storage_v4_'
-      )
-    );
+    const filter = policy.conditions[0].conditionThreshold.filter;
+    assert.ok(filter.includes('resource.type="cloud_run_revision"'));
+    assert.ok(filter.includes('logging.googleapis.com/user/atlas_storage_v4_'));
   }
 });
