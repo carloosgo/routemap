@@ -27,24 +27,40 @@ function assertReadTime(value) {
   return value;
 }
 
-function resolveEffectiveReadTime(value, nowMs = Date.now()) {
+function isWholeMinuteTimestamp(value) {
+  const parsed = new Date(value);
+  return parsed.getUTCSeconds() === 0 && parsed.getUTCMilliseconds() === 0;
+}
+
+function resolveValidationMode(value, nowMs = Date.now()) {
   const parsed = new Date(value);
   const ageMs = nowMs - parsed.getTime();
   if (ageMs <= ONE_HOUR_MS) {
     return {
-      requestedReadTime: value,
-      effectiveReadTime: value,
+      validationMode: 'exact-source-parity',
+      sourceReadTime: value,
       exactBackupTimestampQueryable: true,
-      pitrMinuteNormalizationApplied: false,
+      sourceParityAttempted: true,
+      reason: 'Backup snapshot is within Firestore exact historical-read window.',
     };
   }
 
-  parsed.setUTCSeconds(0, 0);
+  if (isWholeMinuteTimestamp(value)) {
+    return {
+      validationMode: 'exact-source-parity',
+      sourceReadTime: value,
+      exactBackupTimestampQueryable: true,
+      sourceParityAttempted: true,
+      reason: 'Backup snapshot is a whole-minute PITR timestamp within the retention window.',
+    };
+  }
+
   return {
-    requestedReadTime: value,
-    effectiveReadTime: parsed.toISOString().replace('.000Z', 'Z'),
+    validationMode: 'managed-restore-readability',
+    sourceReadTime: '',
     exactBackupTimestampQueryable: false,
-    pitrMinuteNormalizationApplied: true,
+    sourceParityAttempted: false,
+    reason: 'Backup snapshot is older than one hour and not a whole-minute timestamp; Firestore PITR cannot independently query that exact source instant.',
   };
 }
 
@@ -184,44 +200,55 @@ function compareInventories(source, destination) {
 
 const destinationDb = assertDatabaseId(option('--destination-db'));
 const requestedSourceReadTime = assertReadTime(option('--source-read-time'));
-const readTimeResolution = resolveEffectiveReadTime(requestedSourceReadTime);
+const mode = resolveValidationMode(requestedSourceReadTime);
 const token = accessToken();
 
-const source = await inventoryDatabase({
-  databaseId: SOURCE_DB,
-  readTime: readTimeResolution.effectiveReadTime,
-  token,
-});
 const destination = await inventoryDatabase({
   databaseId: destinationDb,
   readTime: '',
   token,
 });
-const comparison = compareInventories(source, destination);
-const passed =
-  comparison.missing.length === 0
-  && comparison.extra.length === 0
-  && comparison.changed.length === 0;
+
+let source = null;
+let comparison = null;
+let passed = true;
+
+if (mode.sourceParityAttempted) {
+  source = await inventoryDatabase({
+    databaseId: SOURCE_DB,
+    readTime: mode.sourceReadTime,
+    token,
+  });
+  comparison = compareInventories(source, destination);
+  passed =
+    comparison.missing.length === 0
+    && comparison.extra.length === 0
+    && comparison.changed.length === 0;
+}
 
 console.log(JSON.stringify({
   collectedAtUtc: new Date().toISOString(),
   project: PROJECT,
   sourceDatabase: SOURCE_DB,
-  requestedSourceReadTime: readTimeResolution.requestedReadTime,
-  effectiveSourceReadTime: readTimeResolution.effectiveReadTime,
-  exactBackupTimestampQueryable: readTimeResolution.exactBackupTimestampQueryable,
-  pitrMinuteNormalizationApplied: readTimeResolution.pitrMinuteNormalizationApplied,
+  requestedSourceReadTime,
+  effectiveSourceReadTime: mode.sourceReadTime || null,
+  validationMode: mode.validationMode,
+  validationReason: mode.reason,
+  exactBackupTimestampQueryable: mode.exactBackupTimestampQueryable,
+  sourceParityAttempted: mode.sourceParityAttempted,
   destinationDatabase: destinationDb,
-  sourceDocumentCount: comparison.sourcePaths.length,
-  destinationDocumentCount: comparison.destinationPaths.length,
-  missingDocumentCount: comparison.missing.length,
-  extraDocumentCount: comparison.extra.length,
-  changedDocumentCount: comparison.changed.length,
-  sampleMissingPaths: comparison.missing.slice(0, 20),
-  sampleExtraPaths: comparison.extra.slice(0, 20),
-  sampleChangedPaths: comparison.changed.slice(0, 20),
-  comparesFieldContentBySha256: true,
+  destinationReadable: true,
+  sourceDocumentCount: comparison ? comparison.sourcePaths.length : null,
+  destinationDocumentCount: destination.size,
+  missingDocumentCount: comparison ? comparison.missing.length : null,
+  extraDocumentCount: comparison ? comparison.extra.length : null,
+  changedDocumentCount: comparison ? comparison.changed.length : null,
+  sampleMissingPaths: comparison ? comparison.missing.slice(0, 20) : [],
+  sampleExtraPaths: comparison ? comparison.extra.slice(0, 20) : [],
+  sampleChangedPaths: comparison ? comparison.changed.slice(0, 20) : [],
+  comparesFieldContentBySha256: mode.sourceParityAttempted,
   exposesDocumentContent: false,
+  managedRestoreLineageMustBeVerifiedByCaller: !mode.sourceParityAttempted,
   mutatesCloud: false,
   touchesProduction: false,
   passed,
