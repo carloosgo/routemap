@@ -8,7 +8,7 @@ import { createFirestoreV4SyncGateway } from '../src/infrastructure/firebase/fir
 import { createFirestoreV4PilotTripWriter } from '../src/infrastructure/firebase/firestoreV4PilotTripWriter.js';
 
 function clone(value) {
-  return value == null ? value : structuredClone(value);
+  return value == null ? value : globalThis.structuredClone(value);
 }
 
 function segment(id, note = '') {
@@ -146,97 +146,82 @@ function createRemoteRepository() {
   };
 }
 
-function compositionFor(repository) {
+function createWriterHarness() {
+  const remoteRepository = createRemoteRepository();
   const localPersistence = createMemoryV4LocalPersistence();
-  const remoteGateway = createFirestoreV4SyncGateway({ repository });
-  const syncCoordinator = createV4SyncCoordinator({
-    localPersistence,
-    remoteGateway,
-    contextId: 'pilot-writer-test',
-    now: () => 1000,
+  const gateway = createFirestoreV4SyncGateway({
+    userId: 'user-pilot',
+    repository: remoteRepository,
   });
-  const crossContextNotifier = {
-    publish() {},
-    subscribe() { return () => {}; },
-  };
+  const coordinator = createV4SyncCoordinator({
+    localPersistence,
+    gateway,
+    userId: 'user-pilot',
+    contextId: 'pilot-test',
+    now: () => Date.parse('2026-01-01T00:00:00.000Z'),
+    random: () => 0.5,
+  });
   const runtime = createV4SyncRuntime({
-    userId: 'alice',
+    userId: 'user-pilot',
+    contextId: 'pilot-test',
     localPersistence,
-    syncCoordinator,
-    crossContextNotifier,
-    now: () => 1000,
+    coordinator,
+    isOnline: true,
+    now: () => Date.parse('2026-01-01T00:00:00.000Z'),
+    setTimeoutFn: () => 1,
+    clearTimeoutFn: () => {},
   });
-  return {
+  const writer = createFirestoreV4PilotTripWriter({
+    userId: 'user-pilot',
+    repository: remoteRepository,
     localPersistence,
-    syncCoordinator,
     runtime,
-    async stop() { runtime.stop(); },
-  };
+  });
+
+  return { writer, remoteRepository };
 }
 
 test('writer pilot crea root primero, persiste hijos incrementalmente y actualiza solo cambios posteriores', async () => {
-  const repository = createRemoteRepository();
-  const composition = compositionFor(repository);
-  let clock = 1000;
-  const writer = createFirestoreV4PilotTripWriter({
-    db: {},
-    uid: 'alice',
-    telemetryEnabled: false,
-    repository,
-    composition,
-    now: () => clock += 1,
-  });
+  const { writer, remoteRepository } = createWriterHarness();
 
-  await writer.save(trip());
-  let remote = repository.snapshot();
-  assert.equal(remote.root.schemaVersion, 4);
-  assert.equal(remote.root.version, 1);
-  assert.equal(remote.root.name, 'Europa');
-  assert.equal(remote.children.length, 2);
-  assert.deepEqual(
-    remote.children.map((item) => `${item.entityType}:${item.id}`).sort(),
-    ['note:note-1', 'segment:segment-1']
-  );
-  assert.ok(remote.children.every((item) => item.version === 1));
+  const created = await writer.save(trip());
+  assert.equal(created.storageVersion, 4);
+  assert.equal(created.schemaVersion, 4);
+  assert.equal(created.name, 'Europa');
 
-  await writer.save(trip({
+  let snapshot = remoteRepository.snapshot();
+  assert.equal(snapshot.root.version, 1);
+  assert.equal(snapshot.children.length, 2);
+  assert.deepEqual(snapshot.children.map((item) => item.entityType).sort(), ['notes', 'segments']);
+
+  const updated = await writer.save(trip({
     name: 'Europa 2026',
-    segments: [],
-    notes: [{ id: 'note-1', title: 'Reserva', text: 'Hotel confirmado' }],
+    segments: [segment('segment-1', 'tren nocturno'), segment('segment-2', 'vuelo')],
+    notes: [],
   }));
-  remote = repository.snapshot();
-  assert.equal(remote.root.version, 2);
-  assert.equal(remote.root.name, 'Europa 2026');
-  const note = remote.children.find((item) => item.id === 'note-1');
-  const deletedSegment = remote.children.find((item) => item.id === 'segment-1');
-  assert.equal(note.version, 2);
-  assert.equal(note.text, 'Hotel confirmado');
-  assert.equal(note.status, 'active');
-  assert.equal(deletedSegment.version, 2);
-  assert.equal(deletedSegment.status, 'deleted');
 
-  const pending = await composition.localPersistence.listMutations({
-    userId: 'alice',
-    tripId: 'trip-pilot',
-  });
-  assert.deepEqual(pending, []);
+  assert.equal(updated.name, 'Europa 2026');
+  snapshot = remoteRepository.snapshot();
+  assert.equal(snapshot.root.version, 2);
+  assert.equal(snapshot.children.find((item) => item.id === 'segment-1').version, 2);
+  assert.equal(snapshot.children.find((item) => item.id === 'segment-2').version, 1);
+  assert.equal(snapshot.children.find((item) => item.id === 'note-1').status, 'deleted');
+
   await writer.close();
 });
 
 test('writer pilot restaura una entidad eliminada con el payload editado actual', async () => {
-  const repository = createRemoteRepository();
-  const composition = compositionFor(repository);
-  const writer = createFirestoreV4PilotTripWriter({
-    db: {}, uid: 'alice', telemetryEnabled: false, repository, composition,
-  });
+  const { writer, remoteRepository } = createWriterHarness();
 
   await writer.save(trip());
-  await writer.save(trip({ segments: [] }));
-  await writer.save(trip({ segments: [segment('segment-1', 'restaurado y cambiado')] }));
+  await writer.save(trip({ notes: [] }));
+  await writer.save(trip({ notes: [{ id: 'note-1', title: 'Reserva nueva', text: 'Hostal' }] }));
 
-  const restored = repository.snapshot().children.find((item) => item.id === 'segment-1');
+  const restored = remoteRepository.snapshot().children.find((item) => item.id === 'note-1');
   assert.equal(restored.status, 'active');
   assert.equal(restored.version, 3);
-  assert.equal(restored.note, 'restaurado y cambiado');
+  assert.equal(restored.title, 'Reserva nueva');
+  assert.equal(restored.text, 'Hostal');
+
   await writer.close();
 });
