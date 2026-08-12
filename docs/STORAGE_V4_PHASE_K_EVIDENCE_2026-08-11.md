@@ -172,9 +172,10 @@ El repo cubre en smoke local:
 - provider `429`, `503`, network error y JSON inválido;
 - fallo del metric sink sin romper la operación;
 - reconnect storm determinista de 1,000 clientes con jitter;
+- matriz determinista adicional de reconnect para `1k`, `10k`, `50k` y `100k` clientes, verificando dispersión en el backoff capped y límites de las bandas `1/2/4/8/16/30s`;
 - conflicto multidevice entity-level sin pérdida silenciosa.
 
-Sigue pendiente evidencia E2E real de provider outage, reconnect y múltiples navegadores/dispositivos.
+La matriz de `1k/10k/50k/100k` es una prueba del modelo de retry, no evidencia E2E ni una afirmación de capacidad real del backend. Sigue pendiente evidencia E2E real de provider outage, reconnect y múltiples navegadores/dispositivos.
 
 ## Límites y próximos checkpoints
 
