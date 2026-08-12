@@ -43,7 +43,7 @@ test('restore cleanup no puede borrar default ni recursos vecinos', async () => 
   assert.ok(source.includes("$databaseId -eq '(default)'"));
   assert.equal(source.includes('logging metrics delete'), false);
   assert.equal(source.includes('monitoring policies delete'), false);
-  assert.doesNotMatch(source, /billing[\s'\",]+budgets[\s'\",]+(create|update|delete)/i);
+  assert.doesNotMatch(source, /billing[\s'",]+budgets[\s'",]+(create|update|delete)/i);
 });
 
 test('restore cleanup launcher ejecuta gcloud directamente sin depender de PowerShell', async () => {
