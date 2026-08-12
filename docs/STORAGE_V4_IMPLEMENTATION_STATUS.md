@@ -18,7 +18,7 @@ Este documento distingue el **roadmap original A–L** de los **rollout gates**.
 | H — concurrency/conflicts | Implementado en contrato/tests | Entity-level conflict en v4.0; no merge complejo campo-a-campo. |
 | I — migration | Implementado en código/tests | Materializer/verifier/rollback existentes; migración productiva no ejecutada. |
 | J — provider cache separation | Preparado lógicamente; separación física pendiente | `cacheDb` centraliza temporales, `expiresAt` y resiliencia probados. `atlas-cache` físico sigue bloqueado porque el acceso a named Firestore mediante Firebase Admin Node continúa marcado Public Preview/no-production en la referencia oficial vigente al 2026-08-12. |
-| K — monitoring/backups/load | En progreso avanzado | Recovery, restore drill + cleanup explícito, 4/4 streams, observabilidad Cloud dev y snapshot de precios aplicados/verificados. Budget requiere rerun con quota-project correcto y falta E2E/load/SLO representativo. |
+| K — monitoring/backups/load | En progreso avanzado | Recovery + cleanup, 4/4 streams y observabilidad Cloud dev verificados. Budget ya es legible y se confirmó que actualmente hay 0 budgets; falta aprobar monto/thresholds y completar E2E/load/SLO representativo. |
 | L — production | Preparado, no iniciado | Runbook L0–L7 creado. Producción no se toca hasta completar recovery/cost/security gates. |
 
 ## Rollout Gate G READ
@@ -63,7 +63,7 @@ Código/preparación:
 - simulaciones deterministas de reconnect para 1k/10k/50k/100k y contención de 100 dispositivos sobre la misma entidad;
 - runbook de SLOs, costos, recovery y resiliencia;
 - diagnóstico de budget account-scope/project-scope sin exponer billing account ID;
-- el probe de budget aplica ahora `x-goog-user-project: atlasmap-dev`, como exige la documentación oficial para REST con credenciales de usuario;
+- el probe de budget aplica `x-goog-user-project: atlasmap-dev`, verifica API/permiso de quota project y usa `testIamPermissions` para separar permisos de proyecto y billing account;
 - plan de budget local que exige monto explícito;
 - siete logs-based metrics;
 - dashboard Storage v4 dev;
@@ -84,8 +84,11 @@ Evidencia `atlasmap-dev`:
 - **cleanup de restore PASS**: las bases temporales validadas fueron eliminadas y `(default)` permaneció intacta;
 - el snapshot exacto ya no era consultable independientemente por PITR al incluir segundos/fracciones y superar una hora, por lo que no se afirmó una falsa paridad SHA-256 contra un timestamp redondeado;
 - billing habilitado;
-- el diagnóstico anterior observó account-scope `403` y project-scope `403`, pero ese probe REST no enviaba `x-goog-user-project`; por tanto esos `403` **no se consideran evidencia concluyente de IAM de budgets**;
-- el probe corregido ya incluye quota project y debe rerunearse antes de clasificar el bloqueo definitivo o afirmar budget count;
+- **Cloud Billing Budget API habilitada** en `atlasmap-dev`;
+- permisos de quota project y lectura verificados: `serviceusage.services.use`, `resourcemanager.projects.get`, `billing.resourcebudgets.read` y `billing.budgets.list` presentes;
+- **budget visibility PASS**: account-scope `200`, project-scope `200`, `visibility=single-project-budget-readable`, `diagnosis=budget-readable`;
+- **budget count confirmado: 0** tanto en account-scope como project-scope al `2026-08-12T07:28:34Z`;
+- no se creó ni modificó ningún budget; el siguiente paso requiere monto y thresholds explícitamente aprobados;
 - `storageV4SyncTelemetry` y `geoapifyCityAutocomplete` activas con CORS localhost validado;
 - **4/4 streams** observados en Cloud Logging;
 - **7/7 logs-based metrics** creadas/verificadas;
@@ -101,14 +104,14 @@ La evidencia completa está en `docs/STORAGE_V4_PHASE_K_EVIDENCE_2026-08-11.md`.
 
 ### Bloqueos / verificaciones externas vigentes de K
 
-- **Budget:** rerun pendiente del probe corregido con quota project. Solo si persiste `403` se clasificará el permiso faltante con evidencia actualizada. No cambiar IAM ni crear budget sin autorización explícita.
+- **Budget amount/thresholds:** la visibilidad ya está resuelta y hay 0 budgets. Falta una decisión explícita sobre monto y thresholds antes de crear uno; no inventar el monto ni mutar budgets sin autorización.
 - **Sync flush E2E:** la instrumentación existe, pero generar señal real requiere un flujo v4 WRITE autorizado. No activar WRITE solo para telemetría.
 - **Alertas:** existen deshabilitadas; falta baseline representativo y notification channels aprobados antes de activarlas.
 - **Load / reconnect:** una prueba representativa contra Cloud generaría tráfico/costo y requiere un escenario/carga aprobados.
 
 Todavía falta para cerrar K:
 
-- rerunear budget con quota project correcto; si queda legible, inventariar; si persiste bloqueo, resolver permisos y luego configurar un monto/thresholds aprobados;
+- aprobar y configurar un budget de proyecto con monto/thresholds explícitos;
 - generar `sync flush` E2E para medir esa señal;
 - probar/activar alertas con baseline y notification channels aprobados;
 - provider outage E2E;
