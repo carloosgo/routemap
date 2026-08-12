@@ -13,6 +13,7 @@ export const GATE_G_REMOTE_KEYS = Object.freeze({
   writeRulesReady: 'storage_v4_write_rules_ready',
   syncReady: 'storage_v4_sync_ready',
   aggregateReady: 'storage_v4_aggregate_ready',
+  touchReady: 'storage_v4_touch_ready',
   lifecycleReady: 'storage_v4_lifecycle_ready',
   purgeReady: 'storage_v4_purge_ready',
 });
@@ -22,6 +23,7 @@ const PILOT_READY_FIELDS = Object.freeze([
   'writeRulesReady',
   'syncReady',
   'aggregateReady',
+  'touchReady',
   'lifecycleReady',
   'purgeReady',
 ]);
@@ -53,6 +55,7 @@ export function failClosedRolloutConfig(base = {}) {
     writeRulesReady: false,
     syncReady: false,
     aggregateReady: false,
+    touchReady: false,
     lifecycleReady: false,
     purgeReady: false,
   };
@@ -69,6 +72,7 @@ export function normalizeRemoteRolloutConfig({ base = {}, remote = {} } = {}) {
     writeRulesReady: safeBoolean(remote.writeRulesReady, false),
     syncReady: safeBoolean(remote.syncReady, false),
     aggregateReady: safeBoolean(remote.aggregateReady, false),
+    touchReady: safeBoolean(remote.touchReady, false),
     lifecycleReady: safeBoolean(remote.lifecycleReady, false),
     purgeReady: safeBoolean(remote.purgeReady, false),
   };
