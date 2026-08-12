@@ -41,12 +41,21 @@ function unknownStorageError() {
   return error;
 }
 
-export function createFirestoreHybridTripRepository({ db, uid } = {}) {
+function normalizeV4Writer(writer) {
+  if (writer == null) return null;
+  if (typeof writer.save !== 'function' || typeof writer.remove !== 'function') {
+    throw new TypeError('v4Writer requiere save() y remove().');
+  }
+  return writer;
+}
+
+export function createFirestoreHybridTripRepository({ db, uid, v4Writer = null } = {}) {
   if (!db) throw new TypeError('Se requiere una instancia de Firestore.');
   const ownerId = requiredText(uid, 'uid');
   const roots = collection(db, 'users', ownerId, 'trips');
   const v3 = createFirestoreTripRepository({ db, uid: ownerId });
   const v4 = createFirestoreV4TripRepository({ db, uid: ownerId });
+  const writer = normalizeV4Writer(v4Writer);
   const knownKinds = new Map();
 
   async function readRootKind(tripId) {
@@ -115,11 +124,21 @@ export function createFirestoreHybridTripRepository({ db, uid } = {}) {
 
     async save(rawTrip) {
       const tripId = requiredText(rawTrip?.id, 'trip.id');
-      // Write routing must always use a fresh root read. A cached v2/v3 kind can
-      // become stale if a backend migration commits while this tab stays open.
+      // Always route from a fresh root read. A backend migration may have changed
+      // the storage kind while this tab remained open.
       const kind = await readRootKind(tripId);
-      if (kind === STORED_TRIP_KIND.V4) throw v4WriteDisabledError();
       if (kind === STORED_TRIP_KIND.UNKNOWN) throw unknownStorageError();
+
+      if (kind === STORED_TRIP_KIND.V4 || kind === null) {
+        if (!writer) {
+          if (kind === STORED_TRIP_KIND.V4) throw v4WriteDisabledError();
+        } else {
+          const saved = await writer.save(rawTrip);
+          knownKinds.set(tripId, STORED_TRIP_KIND.V4);
+          return saved;
+        }
+      }
+
       const saved = await v3.save(rawTrip);
       knownKinds.set(tripId, STORED_TRIP_KIND.V3);
       return saved;
@@ -130,10 +149,19 @@ export function createFirestoreHybridTripRepository({ db, uid } = {}) {
       // Same migration-race protection as save(): never authorize a destructive
       // operation from a kind learned by a previous list/get call.
       const kind = await readRootKind(tripId);
-      if (kind === STORED_TRIP_KIND.V4) throw v4WriteDisabledError();
       if (kind === STORED_TRIP_KIND.UNKNOWN) throw unknownStorageError();
+      if (kind === STORED_TRIP_KIND.V4) {
+        if (!writer) throw v4WriteDisabledError();
+        await writer.remove(tripId);
+        knownKinds.set(tripId, null);
+        return;
+      }
       await v3.remove(tripId);
       knownKinds.set(tripId, null);
+    },
+
+    async close() {
+      await writer?.close?.();
     },
   };
 }
