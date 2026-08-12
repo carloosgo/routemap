@@ -49,14 +49,37 @@ if ($ready.Count -lt 1) {
   throw 'No existe un backup READY de (default) para ejecutar el restore drill.'
 }
 
-$selected = $ready[0]
-$destination = 'atlas-restore-drill-' + [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss').ToLowerInvariant()
 $databases = @(Invoke-GcloudJson @('firestore', 'databases', 'list', "--project=$Project"))
 $existingDrills = @($databases | Where-Object {
   (([string]$_.name -split '/')[-1]) -like 'atlas-restore-drill-*'
 })
-if ($existingDrills.Count -gt 0) {
-  throw 'Ya existe una base atlas-restore-drill-*; no se crea otra hasta resolver la anterior.'
+if ($existingDrills.Count -gt 1) {
+  throw 'Hay mas de una base atlas-restore-drill-*; no se adivina cual corresponde al drill actual.'
+}
+
+$selected = $null
+$destination = $null
+$resumeExisting = $existingDrills.Count -eq 1
+
+if ($resumeExisting) {
+  $existingId = (([string]$existingDrills[0].name -split '/')[-1])
+  $existingDetail = @(Invoke-GcloudJson @(
+    'firestore', 'databases', 'describe',
+    "--database=$existingId",
+    "--project=$Project"
+  )) | Select-Object -First 1
+  $sourceBackup = [string]$existingDetail.sourceInfo.backup.backup
+  if (-not $sourceBackup) {
+    throw 'La base de restore existente no expone sourceInfo.backup; se conserva y no se intenta adivinar su origen.'
+  }
+  $selected = @($backups | Where-Object { [string]$_.name -eq $sourceBackup }) | Select-Object -First 1
+  if (-not $selected -or [string]$selected.state -ne 'READY' -or [string]$selected.database -ne $expectedDatabase) {
+    throw 'La procedencia de la base restaurada no coincide con un backup READY de (default).'
+  }
+  $destination = $existingId
+} else {
+  $selected = $ready[0]
+  $destination = 'atlas-restore-drill-' + [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss').ToLowerInvariant()
 }
 
 [ordered]@{
@@ -66,9 +89,11 @@ if ($existingDrills.Count -gt 0) {
   selectedBackup = [string]$selected.name
   selectedSnapshotTime = [string]$selected.snapshotTime
   destinationDatabase = $destination
-  createsIsolatedDatabase = $true
+  resumeExistingRestoreDatabase = $resumeExisting
+  createsIsolatedDatabase = -not $resumeExisting
   validatesDocumentPathsAndFields = $true
-  costBearingChange = $true
+  pitrAwareHistoricalValidation = $true
+  costBearingChange = -not $resumeExisting
   deletesResources = $false
   touchesDefaultDatabase = $false
   enablesStorageV4Write = $false
@@ -76,27 +101,31 @@ if ($existingDrills.Count -gt 0) {
 } | ConvertTo-Json -Depth 6
 
 if (-not $Apply) {
-  Write-Output 'Dry-run: backup READY seleccionado y destino aislado calculado; no se ejecuto restore.'
+  Write-Output 'Dry-run: restore checkpoint preparado; no se creo, modifico ni elimino ninguna base.'
   exit 0
 }
 
-$drillScript = Join-Path $PSScriptRoot 'storage-v4-phase-k-restore-drill-dev.ps1'
-& $drillScript `
-  -Project $Project `
-  -Location $Location `
-  -SourceDatabaseId '(default)' `
-  -SourceBackup ([string]$selected.name) `
-  -DestinationDatabase $destination `
-  -Apply
+if (-not $resumeExisting) {
+  $drillScript = Join-Path $PSScriptRoot 'storage-v4-phase-k-restore-drill-dev.ps1'
+  & $drillScript `
+    -Project $Project `
+    -Location $Location `
+    -SourceDatabaseId '(default)' `
+    -SourceBackup ([string]$selected.name) `
+    -DestinationDatabase $destination `
+    -Apply
 
-if ($LASTEXITCODE -ne 0) {
-  throw 'El restore drill devolvio un codigo de salida no exitoso.'
+  if ($LASTEXITCODE -ne 0) {
+    throw 'El restore drill devolvio un codigo de salida no exitoso.'
+  }
+} else {
+  Write-Output "Se reutiliza la base restaurada existente $destination; no se crea una segunda base ni se repite el restore."
 }
 
 $validator = Join-Path $PSScriptRoot 'validateStorageV4PhaseKRestore.mjs'
 $accessToken = (& gcloud auth print-access-token 2>$null).Trim()
 if (-not $accessToken) {
-  throw 'La base fue restaurada, pero no se pudo obtener token para validarla. Se conserva para diagnostico.'
+  throw 'No se pudo obtener token para validar la base restaurada. Se conserva para diagnostico.'
 }
 
 try {
@@ -105,7 +134,7 @@ try {
     "--source-read-time=$([string]$selected.snapshotTime)" `
     "--destination-db=$destination"
   if ($LASTEXITCODE -ne 0) {
-    throw 'La base fue restaurada pero la validacion de contenido no paso. Se conserva intacta para diagnostico.'
+    throw 'La base restaurada existe pero la validacion de contenido no paso. Se conserva intacta para diagnostico.'
   }
 } finally {
   Remove-Item Env:ATLAS_GCLOUD_ACCESS_TOKEN -ErrorAction SilentlyContinue
