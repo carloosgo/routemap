@@ -22,6 +22,7 @@
     "phase-k:restore:preflight": "node scripts/runStorageV4PhaseKRestorePreflight.mjs",
     "phase-k:restore:drill-dev": "node scripts/runStorageV4PhaseKRestoreDrillDev.mjs",
     "phase-k:restore:checkpoint-dev": "node scripts/runStorageV4PhaseKRestoreCheckpointDev.mjs",
+    "phase-k:restore:cleanup-dev": "node scripts/runStorageV4PhaseKRestoreCleanupDev.mjs",
     "phase-k:recovery:checkpoint-dev": "node scripts/runStorageV4PhaseKRecoveryCheckpointDev.mjs",
     "phase-k:budget:diagnose": "node scripts/runStorageV4PhaseKBudgetDiagnose.mjs",
     "phase-k:budget:plan": "node scripts/buildStorageV4PhaseKBudgetPlan.mjs",
