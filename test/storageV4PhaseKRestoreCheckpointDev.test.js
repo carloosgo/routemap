@@ -49,6 +49,19 @@ test('restore checkpoint reanuda una unica base restaurada usando sourceInfo sin
   assert.ok(source.includes('managedRestoreLineageVerified'));
 });
 
+test('restore checkpoint espera la long-running operation antes de leer documentos', async () => {
+  const source = await readFile(scriptPath, 'utf8');
+
+  assert.ok(source.includes('function Wait-FirestoreRestoreOperation'));
+  assert.ok(source.includes("'firestore', 'operations', 'describe'"));
+  assert.ok(source.includes('$operation.done'));
+  assert.ok(source.includes('$operation.error'));
+  assert.ok(source.includes('Start-Sleep -Seconds $PollSeconds'));
+  assert.ok(source.includes('Wait-FirestoreRestoreOperation'));
+  assert.ok(source.indexOf('Wait-FirestoreRestoreOperation') < source.indexOf('$validator = Join-Path'));
+  assert.ok(source.includes('restoreOperationCompletionVerified = $true'));
+});
+
 test('restore validator exige paridad exacta solo cuando Firestore puede consultar el snapshot exacto', async () => {
   const source = await readFile(validatorPath, 'utf8');
 
