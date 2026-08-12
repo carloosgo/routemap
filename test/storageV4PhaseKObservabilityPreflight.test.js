@@ -17,6 +17,7 @@ test('observability preflight inventaria notification channels via REST sin muta
   assert.ok(source.includes('enabledUsableNotificationChannelCount'));
   assert.ok(source.includes("verificationStatus -ne 'UNVERIFIED'"));
   assert.ok(source.includes('verificationStatus'));
+  assert.ok(source.includes('[string]::IsNullOrWhiteSpace([string]$_)'));
   assert.ok(source.includes('notificationChannelCount = $policyChannels.Count'));
   assert.ok(source.includes('mutatesCloud = $false'));
   assert.ok(source.includes('activatesAlertPolicies = $false'));
