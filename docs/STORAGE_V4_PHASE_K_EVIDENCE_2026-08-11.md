@@ -4,7 +4,7 @@ Entorno: `atlasmap-dev`
 
 Este documento registra evidencia observada del entorno. No autoriza producción ni cambia configuración cloud por sí mismo.
 
-## Preflight Firestore / billing
+## Recovery / Firestore / billing
 
 ### Baseline antes de recovery
 
@@ -18,9 +18,9 @@ Evidencia capturada a las `2026-08-11T21:25:07Z`:
 - backup schedule probe: `ok`;
 - backup schedules: `0`.
 
-### Evidencia después de recovery dev
+### Recovery dev activo
 
-Evidencia capturada a las `2026-08-11T21:51:49Z` y reconfirmada a las `2026-08-11T23:16:24Z`:
+Reconfirmado en el checkpoint consolidado a las `2026-08-12T01:59:31Z`:
 
 - database: `(default)`;
 - location: `northamerica-south1`;
@@ -33,125 +33,147 @@ Evidencia capturada a las `2026-08-11T21:51:49Z` y reconfirmada a las `2026-08-1
 - backup schedules: `1`;
 - scheduled backup creado: `2026-08-11T21:51:35.104231Z`;
 - recurrencia: diaria;
-- retención del backup: `604800s` (7 días);
-- budget probe: `unavailable`;
-- budget probe source: `billing-rest-project-scope`;
-- budget probe HTTP status: `403`;
-- budget count: no demostrado.
+- retención del backup: `604800s` (7 días).
 
-Conclusión de recovery en desarrollo: **baseline de PITR + scheduled backup cumplido y verificado en `atlasmap-dev`**. El 403 de budget refleja falta de visibilidad suficiente con la identidad actual y no demuestra que el proyecto carezca de budget.
+Conclusión de recovery en desarrollo: **baseline PITR + scheduled backup cumplido y verificado en `atlasmap-dev`**.
 
-### Diagnóstico de permisos de budget preparado
+### Backup restaurable ya disponible
 
-El repo incluye ahora un diagnóstico read-only específico que prueba por separado:
+Restore readiness capturado a las `2026-08-12T02:16:09Z`:
 
-- visibilidad de budgets a nivel de billing account;
-- visibilidad de budgets filtrados al proyecto `atlasmap-dev`;
-- clasificación explícita `permission-blocked` cuando el API responde 403;
-- sin serializar el billing account ID ni la cuenta activa.
+- `sourceBackupCount=1`;
+- backup: `projects/atlasmap-dev/locations/northamerica-south1/backups/55a35516-c5e0-447a-a123-7f4285b5ce6a`;
+- estado: `READY`;
+- snapshot: `2026-08-12T02:05:06.847993Z`;
+- expiración: `2026-08-19T02:05:06.847993Z`;
+- restore drill databases existentes: `0`.
 
-El diagnóstico documenta dos caminos IAM de mínimo privilegio, basados en el contrato oficial vigente del Budget API:
+Esto cierra **readiness de restore**, no el restore drill: todavía falta crear la base aislada, medir RTO y validar el contenido restaurado.
 
-- lectura a nivel billing account: `billing.budgets.list`, cubierto por `roles/billing.viewer`;
-- lectura de budget de un solo proyecto: `resourcemanager.projects.get` + `billing.resourcebudgets.read`, cubierto por `roles/viewer` en el proyecto.
+### Budget: bloqueo de permisos demostrado
 
-Para creación futura, el helper solo informa requisitos; **no crea ni modifica budgets**. El monto y los thresholds siguen sin definirse porque requieren una decisión aprobada, no una suposición del repo.
+El checkpoint volvió a obtener HTTP `403` en el probe original. El diagnóstico específico de budget a las `2026-08-12T02:09:48Z` confirmó:
+
+- billing habilitado;
+- billing account asociado presente;
+- lectura account-scope: `403`;
+- lectura project-scope: `403`;
+- clasificación: `permission-blocked`;
+- budget count: no observable con la identidad actual.
+
+Conclusión: el estado del budget sigue **desconocido**. No se interpreta como ausencia de budget y no se inventa monto. El repo documenta la ruta IAM de lectura y contiene un generador local de plan que exige un monto explícito y no muta Cloud.
 
 ## Telemetría
 
-### Baseline antes del despliegue acotado
+### Despliegue y E2E
 
-Evidencia capturada a las `2026-08-11T21:52:01Z`, ventana de 7 días:
+- `geoapifyCityAutocomplete`: `ACTIVE`, ingress `ALLOW_ALL`, Cloud Run invoker público y CORS localhost `204`;
+- `storageV4SyncTelemetry`: `ACTIVE`, ingress `ALLOW_ALL`, Cloud Run invoker público y CORS localhost `204`;
+- prueba de city autocomplete: `cacheHit=false`, `results=1`;
+- prueba autenticada de sync telemetry: `syncOk=true` sin activar Storage v4 WRITE.
 
-| stream | seen | latest |
-|---|---:|---|
-| `storage_v4_rollout_metric` | sí | `2026-08-11T19:13:47.321742Z` |
-| `storage_v4_sync_metric` | no | — |
-| `storage_v4_provider_cache_metric` | no | — |
-| `storage_v4_provider_request_metric` | no | — |
-
-### Despliegue controlado de telemetría
-
-Evidencia capturada a las `2026-08-11T23:06:53Z` después de un deploy selectivo en `atlasmap-dev`:
-
-- `geoapifyCityAutocomplete`: existe, `ACTIVE`, ingress `ALLOW_ALL`, Cloud Run invoker público presente y preflight CORS desde `http://localhost:5173` responde `204` con método `POST` permitido;
-- `storageV4SyncTelemetry`: existe, `ACTIVE`, ingress `ALLOW_ALL`, Cloud Run invoker público presente y preflight CORS desde `http://localhost:5173` responde `204` con método `POST` permitido;
-- el deploy fue acotado a esas dos Functions y no habilitó Storage v4 WRITE, migración, aggregates, lifecycle ni purge;
-- el error CORS previo de `storageV4SyncTelemetry` quedó explicado por ausencia de la función antes del deploy, no por una política CORS defectuosa.
-
-### Evidencia E2E de los cuatro streams
-
-Prueba controlada desde el cliente autenticado:
-
-- city autocomplete: `cacheHit=false`, `results=1`, suficiente para recorrer cache miss + request real de proveedor;
-- sync telemetry: `syncOk=true` con evento operacional `queue-recovery`, sin activar Storage v4 WRITE.
-
-Preflight de Logging capturado a las `2026-08-11T23:16:33Z`, ventana de 7 días:
+Checkpoint de Logging reconfirmado a las `2026-08-12T02:01:10Z`:
 
 | stream | seen | latest |
 |---|---:|---|
-| `storage_v4_rollout_metric` | sí | `2026-08-11T23:12:44.459781Z` |
+| `storage_v4_rollout_metric` | sí | `2026-08-11T23:16:55.845556Z` |
 | `storage_v4_sync_metric` | sí | `2026-08-11T23:13:12.100196Z` |
 | `storage_v4_provider_cache_metric` | sí | `2026-08-11T23:13:11.223825Z` |
 | `storage_v4_provider_request_metric` | sí | `2026-08-11T23:13:11.715676Z` |
 
-Conclusión de observabilidad base en desarrollo: **4/4 streams estructurados observados en Cloud Logging con evidencia real**. Este checkpoint valida presencia y recorrido E2E de las señales; no sustituye todavía dashboard, alertas, carga sostenida ni medición de SLO bajo tráfico representativo.
+Conclusión: **4/4 streams estructurados siguen visibles en Cloud Logging**.
 
-## Bundle declarativo de observabilidad preparado
+## Observabilidad Cloud aplicada
 
-Trabajo de repositorio preparado después de cerrar 4/4 streams:
+Checkpoint aplicado y post-verificado el `2026-08-11` local / `2026-08-12` UTC.
 
-- siete definiciones de logs-based metrics bajo `ops/storage-v4/observability/metrics/`:
-  - counters para rollout, sync, provider cache y provider request;
-  - distribuciones de latencia para rollout, sync flush y provider request;
-- `ops/storage-v4/observability/dashboard.json` con panel de logs y vistas para eventos/ratios/latencias, operaciones y storage de Firestore, y request count/p95 de Cloud Run;
-- el dashboard de repositorio expone p50/p95/p99 para latencia del repositorio y usa como denominador de `Sync flush success ratio` únicamente eventos `flush`, evitando mezclar `queue-recovery`;
-- tres templates de alert policy bajo `ops/storage-v4/observability/alerts/`, **deshabilitados por defecto** y sin notification channels;
-- helper `storage-v4-phase-k-observability-apply-dev.ps1`, bloqueado a `atlasmap-dev`, dry-run por defecto, sin deletes, sin budgets y sin cambios de Storage v4 WRITE;
-- preflight read-only para inventariar dashboard, policies y log-based metrics existentes.
+### Logs-based metrics
 
-Estado de este bundle: **preparado en repo, no aplicado ni validado server-side todavía**. No se declara dashboard creado ni alertas operacionales hasta obtener evidencia del entorno. Los thresholds de alertas son plantillas de desarrollo; en especial el threshold de proveedor se debe recalibrar con baseline real antes de habilitarse.
+Las siete métricas esperadas existen y fueron verificadas:
 
-## SLO / resiliencia preparada
+- `atlas_storage_v4_provider_cache_events`;
+- `atlas_storage_v4_provider_latency_ms`;
+- `atlas_storage_v4_provider_request_events`;
+- `atlas_storage_v4_rollout_events`;
+- `atlas_storage_v4_rollout_latency_ms`;
+- `atlas_storage_v4_sync_events`;
+- `atlas_storage_v4_sync_latency_ms`.
 
-El repositorio incluye un preflight SLO read-only sobre Cloud Logging que calcula, sin mutar Cloud:
+Todas aparecen con `disabled=false`.
 
-- rollout success rate y p50/p95/p99;
-- sync flush success rate accionable y p50/p95/p99;
-- cache hit rate sobre `hit + miss`, manteniendo `read-error` y `write-error` como señales separadas;
-- provider success rate y p50/p95/p99;
-- bandera de truncamiento si un stream alcanza el límite de muestra, para impedir tratar una muestra incompleta como SLO de ventana completa.
+### Alert policies
 
-Además existe un smoke local agregado de resiliencia para cache fail-soft, tormenta de reconexión determinista y conflicto multidevice. Esa evidencia sigue siendo simulación de repositorio y **no sustituye** provider outage, reconnect ni multidevice E2E reales.
+Existen exactamente las tres policies esperadas y las tres permanecen **deshabilitadas**:
 
-## Checkpoint cloud consolidado preparado
+- provider errors;
+- repository errors;
+- sync unexpected errors.
 
-`phase-k:cloud-checkpoint` agrupa en una sola intervención local, exclusivamente read-only:
+Cada policy se identifica operacionalmente por labels/metric type, no por Unicode de `displayName`, y ninguna tiene activación accidental.
 
-1. recovery/billing/telemetry;
-2. diagnóstico detallado de permisos de budget;
-3. muestra SLO desde Cloud Logging;
-4. inventario de Monitoring;
-5. readiness de restore.
+### Dashboard
 
-El checkpoint no contiene `--apply`, no despliega Functions, no crea dashboard, no restaura bases y no toca producción.
+El dashboard esperado está creado y verificado por labels `system=atlas-storage-v4`, `environment=dev`.
 
-## Próximos checkpoints de Phase K
+El inventario mostró **dos dashboards Atlas Storage v4**. Esta duplicación provino de los retries anteriores mientras la verificación por `displayName` Unicode daba falsos negativos en Windows PowerShell. No se borró ninguno automáticamente porque el helper no realiza deletes. Se debe conservar uno y retirar el duplicado en un cleanup dev explícito separado.
 
-1. aplicar/validar en un único checkpoint controlado el bundle de observabilidad dev cuando corresponda;
-2. ejecutar el diagnóstico de budget con la identidad local y resolver solo el permiso necesario; luego definir monto/thresholds aprobados, sin inventarlos;
-3. restore drill usando un backup real cuando exista un backup disponible para restauración;
-4. provider outage E2E;
-5. multidevice E2E en navegadores/dispositivos reales;
-6. load/reconnect E2E y medición de SLOs;
-7. completar el modelo de costos con supuestos medidos y precios vigentes.
+IDs observados:
 
-## Límites
+- `projects/833327011450/dashboards/2d6f5b70-dc89-43d8-87c7-f44c8a80f108`;
+- `projects/833327011450/dashboards/8d6a1c24-ea96-4bc3-848d-442a40b2adef`.
+
+El mojibake mostrado por `gcloud` como `?` afecta representación en Windows CLI; la identidad operativa se valida por labels ASCII.
+
+## SLO sample
+
+Muestra read-only a las `2026-08-12T02:11:35Z`, ventana `7d`, sin truncamiento observado:
+
+### Rollout
+
+- entries: `38`;
+- success: `38`;
+- error: `0`;
+- success rate: `100%`;
+- p50: `196 ms`;
+- p95: `912 ms`;
+- p99: `4465 ms`.
+
+### Provider
+
+- request success: `1`;
+- request errors: `0`;
+- success rate: `100%`;
+- latencia observada: `490 ms`;
+- cache: `1 miss`, `0 hit`, sin read/write errors.
+
+### Sync
+
+La evidencia disponible era `queue-recovery`, no un `flush`, por lo que no existe todavía muestra válida para `sync flush` success rate ni percentiles.
+
+El primer output mostró `entries=null` para streams singleton debido a un detalle de PowerShell que desenvuelve pipelines de un elemento. El repo ya fue corregido para forzar arrays en `Read-Stream`/`Payloads`; los ratios y valores de provider/cache anteriores sí provenían del evento real, pero el contador `entries` debe reconfirmarse en el siguiente read-only checkpoint.
+
+Estos números son una **muestra inicial**, no un SLO de producción ni una prueba de carga representativa.
+
+## Resiliencia determinista
+
+El repo cubre en smoke local:
+
+- cache fail-soft;
+- provider `429`, `503`, network error y JSON inválido;
+- fallo del metric sink sin romper la operación;
+- reconnect storm determinista de 1,000 clientes con jitter;
+- conflicto multidevice entity-level sin pérdida silenciosa.
+
+Sigue pendiente evidencia E2E real de provider outage, reconnect y múltiples navegadores/dispositivos.
+
+## Límites y próximos checkpoints
 
 - Producción no fue tocada.
-- No se activó Storage v4 WRITE.
+- Storage v4 WRITE sigue deshabilitado.
 - No se ejecutó migración.
-- No se creó `atlas-cache` físico.
-- No se infiere que exista o no exista un budget mientras el probe no lo pueda demostrar.
-- La existencia de un scheduled backup no implica que ya exista un backup restaurable; el restore drill queda pendiente hasta verificar uno disponible.
-- Las nuevas definiciones de dashboard/metrics/alerts no son evidencia cloud hasta que se apliquen y se verifiquen explícitamente.
+- `atlas-cache` físico sigue pendiente de Phase J.
+- Budget sigue bloqueado por permisos de lectura.
+- Restore drill real ya puede ejecutarse porque existe un backup `READY`, pero es una operación cost-bearing y debe usar una base aislada `atlas-restore-drill-*`.
+- Falta limpiar un dashboard duplicado mediante acción destructiva dev explícita y separada.
+- Falta generar tráfico `sync flush` real para medir esa señal.
+- Falta load/reconnect/provider-outage/multidevice E2E y recalibrar thresholds/SLO con tráfico representativo.
