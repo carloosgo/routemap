@@ -34,13 +34,18 @@ test('alert policy channel association aborta si policy o canal estan habilitado
 
 test('alert policy channel association parchea solo notificationChannels', async () => {
   const source = await readFile(scriptPath, 'utf8');
+  const patchBodyStart = source.indexOf('function buildPolicyPatchBody');
+  const patchBodyEnd = source.indexOf('\n}\n\nasync function patchPolicyChannel', patchBodyStart) + 2;
+  const patchBodySource = source.slice(patchBodyStart, patchBodyEnd);
 
+  assert.ok(patchBodyStart >= 0);
+  assert.ok(patchBodyEnd > patchBodyStart);
   assert.ok(source.includes("new URLSearchParams({ updateMask: 'notificationChannels' })"));
   assert.ok(source.includes("method: 'PATCH'"));
-  assert.ok(source.includes('notificationChannels: [channelName]'));
+  assert.ok(patchBodySource.includes('notificationChannels: [channelName]'));
+  assert.doesNotMatch(patchBodySource, /enabled\s*:/);
   assert.ok(source.includes('patchesOnlyNotificationChannels: true'));
   assert.ok(source.includes('changesAlertPolicyEnabled: false'));
-  assert.doesNotMatch(source, /buildPolicyPatchBody[\s\S]*?enabled\s*:/);
 });
 
 test('alert policy channel association es idempotente y rechaza canales inesperados', async () => {
