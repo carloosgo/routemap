@@ -22,6 +22,14 @@ function defaultRemoteGateway({ db, uid }) {
   return createFirestoreV4SyncGateway({ repository });
 }
 
+function normalizeTelemetryEmitter(emitter) {
+  if (!emitter) return null;
+  if (typeof emitter.emit !== 'function') {
+    throw new TypeError('syncTelemetryEmitter requiere emit().');
+  }
+  return emitter;
+}
+
 /**
  * Composition root for the web implementation of Atlas Storage v4.
  *
@@ -36,6 +44,7 @@ export function createV4WebSyncComposition({
   localPersistence = null,
   remoteGateway = null,
   crossContextNotifier = null,
+  syncTelemetryEmitter = null,
   indexedDb,
   BroadcastChannelImpl,
   now = () => Date.now(),
@@ -51,6 +60,10 @@ export function createV4WebSyncComposition({
     BroadcastChannelImpl,
   });
   const gateway = remoteGateway || defaultRemoteGateway({ db, uid: ownerId });
+  const telemetryEmitter = normalizeTelemetryEmitter(syncTelemetryEmitter);
+  const resolvedLifecycleOptions = telemetryEmitter && typeof lifecycleOptions.onMetric !== 'function'
+    ? { ...lifecycleOptions, onMetric: (metric) => telemetryEmitter.emit(metric) }
+    : lifecycleOptions;
   const coordinator = createV4SyncCoordinator({
     localPersistence: local,
     remoteGateway: gateway,
@@ -65,7 +78,7 @@ export function createV4WebSyncComposition({
     syncCoordinator: coordinator,
     crossContextNotifier: notifier,
     now,
-    lifecycleOptions,
+    lifecycleOptions: resolvedLifecycleOptions,
   });
 
   let lifecycleBridge = null;
@@ -77,6 +90,7 @@ export function createV4WebSyncComposition({
     syncCoordinator: coordinator,
     runtime,
     notifier,
+    syncTelemetryEmitter: telemetryEmitter,
 
     attachLifecycle(options = {}) {
       if (stopped) throw new Error('La composición v4 está detenida.');
@@ -92,6 +106,7 @@ export function createV4WebSyncComposition({
       lifecycleBridge = null;
       runtime.stop();
       notifier.close?.();
+      telemetryEmitter?.stop?.();
       await local.close?.();
     },
   };
