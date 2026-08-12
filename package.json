@@ -18,6 +18,7 @@
     "phase-k:observability:preflight": "node scripts/runStorageV4PhaseKObservabilityPreflight.mjs",
     "phase-k:observability:apply-dev": "node scripts/runStorageV4PhaseKObservabilityApplyDev.mjs",
     "phase-k:observability:checkpoint-dev": "node scripts/runStorageV4PhaseKObservabilityCheckpointDev.mjs",
+    "phase-k:observability:cleanup-dashboard-dev": "node scripts/runStorageV4PhaseKDashboardCleanupDev.mjs",
     "phase-k:restore:preflight": "node scripts/runStorageV4PhaseKRestorePreflight.mjs",
     "phase-k:restore:drill-dev": "node scripts/runStorageV4PhaseKRestoreDrillDev.mjs",
     "phase-k:budget:diagnose": "node scripts/runStorageV4PhaseKBudgetDiagnose.mjs",
