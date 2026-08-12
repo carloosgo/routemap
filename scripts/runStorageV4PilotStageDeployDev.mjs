@@ -1,4 +1,5 @@
 /* global process, console */
+import { Buffer } from 'node:buffer';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -91,8 +92,9 @@ export function buildPilotStageDeployPlan({ v3Rules, v4Rules, indexSource } = {}
     applyBlockedUntilExportsActivated: !exportsActivated,
     deploymentOrder: ['functions', 'firestore-rules'],
     remoteConfigChanged: false,
-    pilotTrafficActivated: false,
-    enablesGlobalStorageV4Write: false,
+    clientPilotTrafficActivated: false,
+    wouldDeployV4WriteRules: true,
+    requiresExplicitWriteAuthorization: true,
     touchesProduction: false,
     candidateRules,
   });
@@ -175,8 +177,9 @@ export function runPilotStageDeployDev({
     rulesSha256: plan.rulesSha256,
     functionCount: plan.functionCount,
     remoteConfigChanged: false,
-    pilotTrafficActivated: false,
-    enablesGlobalStorageV4Write: false,
+    clientPilotTrafficActivated: false,
+    v4WriteRulesDeployed: true,
+    requiresExplicitWriteAuthorization: true,
     touchesProduction: false,
   });
   log(JSON.stringify(result, null, 2));
