@@ -18,7 +18,7 @@ Este documento distingue el **roadmap original A–L** de los **rollout gates**.
 | H — concurrency/conflicts | Implementado en contrato/tests | Entity-level conflict en v4.0; no merge complejo campo-a-campo. |
 | I — migration | Implementado en código/tests | Materializer/verifier/rollback existentes; migración productiva no ejecutada. |
 | J — provider cache separation | Preparado lógicamente; separación física pendiente | `cacheDb` centraliza temporales, `expiresAt` y resiliencia probados. `atlas-cache` físico espera acceso server-side aprobado para named DB. |
-| K — monitoring/backups/load | En progreso avanzado | Recovery dev activo/verificado y 4/4 streams observados E2E. Observabilidad, restore, SLO y budget tooling preparados; faltan checkpoints Cloud/real-device/load y budget aprobado. |
+| K — monitoring/backups/load | En progreso avanzado | Recovery, 4/4 streams y observabilidad Cloud dev aplicados/verificados; backup `READY` disponible. Faltan budget, restore drill, cleanup de dashboard duplicado y E2E/load/SLO representativo. |
 | L — production | Preparado, no iniciado | Runbook L0–L7 creado. Producción no se toca hasta completar recovery/cost/security gates. |
 
 ## Rollout Gate G READ
@@ -43,63 +43,55 @@ La frontera lógica ya separa `db` (canónico/interno) de `cacheDb` (temporales 
 
 No activar `atlas-cache` físicamente hasta disponer de un acceso server-side a named databases aprobado para producción, además de provisioning, deny-all cliente, TTL, IAM y smoke tests. Forzar una API marcada preview solo para cerrar el checklist introduciría riesgo sin beneficio funcional.
 
-## Phase K — trabajo completado y evidencia real
+## Phase K — evidencia real acumulada
 
 Código/preparación:
 
-- `storage_v4_rollout_metric` para comparación del repositorio READ validada E2E;
-- `storage_v4_provider_cache_metric` para hit/miss/read-error/write-error sin key/query/result/UID;
-- `storage_v4_provider_request_metric` para provider/operation/outcome/status/latencia sin URL, query string, API key, body ni respuesta;
-- provider cache fail-soft ante errores de lectura/escritura y coalescing concurrente probados;
-- lifecycle de sync expone métricas agregadas de flush y recuperación de cola sin IDs/payloads;
-- callable `storageV4SyncTelemetry` + cliente bufferizado con contrato allowlist y rechazo de campos sensibles;
-- modelo de capacidad parametrizable para 1k/10k/50k/100k usuarios sin fijar precios unitarios en código;
-- simulación multidevice de conflicto entity-level preserva la edición perdedora explícitamente y evita pérdida silenciosa;
-- runbook define SLOs iniciales, señales, alertas, dashboard, costos, PITR/backups, restore drill y pruebas de resiliencia;
-- preflight read-only de recovery/billing/telemetría con fallback project-scoped para budgets;
-- diagnóstico de permisos de budget que distingue account-scope vs single-project scope sin exponer billing account ID;
-- generador de plan de budget single-project que exige monto explícito, no tiene monto default y no muta Cloud;
-- helper de deploy selectivo bloqueado a `atlasmap-dev` y diagnóstico read-only de Cloud Functions/Cloud Run/CORS;
-- siete logs-based metric configs para counters y distribuciones de latencia;
-- dashboard declarativo de Storage v4 con telemetría propia + Firestore + Cloud Run, incluyendo p50/p95/p99 del repositorio;
-- tres alert policy templates de desarrollo, deshabilitados y sin notification channels;
-- apply de observabilidad dev bloqueado a `atlasmap-dev`, dry-run por defecto, sin deletes/budgets/write-v4;
-- restore preflight + restore drill aislado, con destino obligatorio `atlas-restore-drill-*`, sin sobrescribir `(default)` y sin cleanup automático;
-- preflight SLO read-only sobre Cloud Logging con ratios y p50/p95/p99, detectando muestras truncadas;
-- checkpoint Cloud consolidado read-only para recovery, budget, SLO, Monitoring y readiness de restore;
-- smoke local agregado de cache fail-soft, reconnect storm y conflicto multidevice.
+- telemetría rollout/sync/provider cache/provider request con contratos allowlist;
+- provider cache fail-soft y coalescing;
+- modelo de capacidad/costos parametrizable para 1k/10k/50k/100k usuarios;
+- simulación multidevice entity-level sin pérdida silenciosa;
+- runbook de SLOs, costos, recovery y resiliencia;
+- diagnóstico de budget account-scope/project-scope sin exponer billing account ID;
+- plan de budget local que exige monto explícito;
+- siete logs-based metrics;
+- dashboard Storage v4 dev;
+- tres alert policies dev deshabilitadas;
+- preflight SLO read-only con ratios y p50/p95/p99;
+- restore preflight y restore drill aislado `atlas-restore-drill-*`;
+- checkpoint Cloud consolidado read-only;
+- smokes deterministas de provider outage, reconnect storm y multidevice.
 
-Evidencia `atlasmap-dev` del 2026-08-11:
+Evidencia `atlasmap-dev`:
 
-- database `(default)` en `northamerica-south1`;
+- `(default)` en `northamerica-south1`;
+- PITR habilitado, retención 7 días;
+- scheduled backup diario, retención 7 días;
+- backup `READY` disponible con snapshot `2026-08-12T02:05:06.847993Z`;
 - billing habilitado;
-- PITR **habilitado**;
-- retención de versiones `604800s` (7 días);
-- delete protection deshabilitado;
-- un scheduled backup diario activo, creado `2026-08-11T21:51:35.104231Z`, con retención `604800s` (7 días);
-- budget todavía no demostrado: el probe project-scoped obtuvo HTTP 403 con la identidad actual; no se interpreta como ausencia de budget;
-- `storageV4SyncTelemetry` desplegada, `ACTIVE`, ingress `ALLOW_ALL`, Cloud Run invoker público y preflight CORS localhost `204`;
-- `geoapifyCityAutocomplete` revalidada `ACTIVE` con la misma accesibilidad y con instrumentación provider cache/request desplegada;
-- prueba real de city autocomplete produjo `cacheHit=false`, `results=1`;
-- prueba autenticada de sync telemetry produjo `syncOk=true` sin activar Storage v4 WRITE;
-- preflight de Cloud Logging a `2026-08-11T23:16:33Z`: **4/4 streams observados**;
-- `storage_v4_rollout_metric` latest `2026-08-11T23:12:44.459781Z`;
-- `storage_v4_sync_metric` latest `2026-08-11T23:13:12.100196Z`;
-- `storage_v4_provider_cache_metric` latest `2026-08-11T23:13:11.223825Z`;
-- `storage_v4_provider_request_metric` latest `2026-08-11T23:13:11.715676Z`.
-
-El bundle declarativo de observabilidad existe en repo, pero **todavía no es evidencia cloud**: no declarar dashboard creado ni alertas operacionales hasta aplicarlo y verificarlo server-side. Los templates permanecen deshabilitados hasta medir baseline y aprobar notification channel/owner.
+- budget no observable: account-scope `403`, project-scope `403`, clasificación `permission-blocked`;
+- `storageV4SyncTelemetry` y `geoapifyCityAutocomplete` activas con CORS localhost validado;
+- **4/4 streams** observados en Cloud Logging;
+- **7/7 logs-based metrics** creadas/verificadas;
+- **3/3 alert policies** creadas y verificadas deshabilitadas;
+- dashboard Storage v4 creado y verificable por labels;
+- inventario detectó **2 dashboards** equivalentes por retries previos; cleanup pendiente y no automático;
+- rollout sample: 38/38 success, p50 196 ms, p95 912 ms, p99 4465 ms;
+- provider sample: 1/1 success, 490 ms;
+- sync todavía no tiene muestra `flush` válida; el evento observado fue `queue-recovery`;
+- bug de `entries=null` en singleton streams corregido en repo mediante coerción explícita a arrays.
 
 La evidencia completa está en `docs/STORAGE_V4_PHASE_K_EVIDENCE_2026-08-11.md`.
 
 Todavía falta para cerrar K:
 
-- aplicar y validar dashboard/log-based metrics/alert templates en dev;
-- probar y después habilitar alertas con baseline y notification channels aprobados;
 - resolver visibilidad/permisos de budget y configurar un monto/thresholds aprobados;
-- restore drill real usando un backup disponible;
+- ejecutar restore drill real sobre el backup `READY`, medir RTO y validar contenido;
+- retirar uno de los dos dashboards duplicados mediante cleanup dev explícito;
+- generar `sync flush` E2E para medir esa señal;
+- probar/activar alertas con baseline y notification channels aprobados;
 - provider outage E2E;
-- multidevice E2E de navegador/dispositivos reales además de la simulación determinista;
+- multidevice E2E de navegador/dispositivos reales;
 - carga/reconnect E2E y medición de SLO con tráfico representativo;
 - aplicar precios vigentes y supuestos aprobados al modelo de costos.
 
