@@ -108,6 +108,8 @@ export function createV4WebSyncComposition({
       notifier.close?.();
       try {
         await telemetryEmitter?.flush?.();
+      } catch {
+        // Telemetría best-effort: un fallo al vaciarla no puede bloquear shutdown.
       } finally {
         telemetryEmitter?.stop?.();
       }
