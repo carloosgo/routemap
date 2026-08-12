@@ -35,6 +35,62 @@ function Invoke-GcloudJson {
   return @($text | ConvertFrom-Json)
 }
 
+function Get-RestoreDatabaseDetail {
+  param([string]$DatabaseId)
+  return @(Invoke-GcloudJson @(
+    'firestore', 'databases', 'describe',
+    "--database=$DatabaseId",
+    "--project=$Project"
+  )) | Select-Object -First 1
+}
+
+function Wait-FirestoreRestoreOperation {
+  param(
+    [string]$DatabaseId,
+    [string]$OperationName,
+    [int]$TimeoutSeconds = 900,
+    [int]$PollSeconds = 5
+  )
+
+  if (-not $OperationName) {
+    Write-Output 'La base no expone una operacion de restore pendiente; se continua con la validacion.'
+    return
+  }
+
+  $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+  $lastState = ''
+
+  while ([DateTime]::UtcNow -lt $deadline) {
+    $operation = @(Invoke-GcloudJson @(
+      'firestore', 'operations', 'describe',
+      $OperationName,
+      "--database=$DatabaseId",
+      "--project=$Project"
+    )) | Select-Object -First 1
+
+    if ($operation.error) {
+      $code = [string]$operation.error.code
+      $message = [string]$operation.error.message
+      throw "La operacion de restore fallo (code=$code): $message"
+    }
+
+    if ([bool]$operation.done) {
+      Write-Output 'La operacion administrada de restore termino; se inicia la validacion de datos.'
+      return
+    }
+
+    $state = [string]$operation.metadata.operationState
+    if ($state -and $state -ne $lastState) {
+      Write-Output "Restore aun en progreso (operationState=$state); esperando antes de leer la base."
+      $lastState = $state
+    }
+
+    Start-Sleep -Seconds $PollSeconds
+  }
+
+  throw "Timeout esperando que termine el restore de $DatabaseId despues de $TimeoutSeconds segundos. La base se conserva intacta."
+}
+
 $backups = @(Invoke-GcloudJson @(
   'firestore', 'backups', 'list',
   "--location=$Location",
@@ -61,14 +117,11 @@ $selected = $null
 $destination = $null
 $resumeExisting = $existingDrills.Count -eq 1
 $managedRestoreLineageVerified = $false
+$restoreOperationName = ''
 
 if ($resumeExisting) {
   $existingId = (([string]$existingDrills[0].name -split '/')[-1])
-  $existingDetail = @(Invoke-GcloudJson @(
-    'firestore', 'databases', 'describe',
-    "--database=$existingId",
-    "--project=$Project"
-  )) | Select-Object -First 1
+  $existingDetail = Get-RestoreDatabaseDetail -DatabaseId $existingId
   $sourceBackup = [string]$existingDetail.sourceInfo.backup.backup
   if (-not $sourceBackup) {
     throw 'La base de restore existente no expone sourceInfo.backup; se conserva y no se intenta adivinar su origen.'
@@ -79,6 +132,7 @@ if ($resumeExisting) {
   }
   $destination = $existingId
   $managedRestoreLineageVerified = $true
+  $restoreOperationName = [string]$existingDetail.sourceInfo.operation
 } else {
   $selected = $ready[0]
   $destination = 'atlas-restore-drill-' + [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss').ToLowerInvariant()
@@ -95,6 +149,7 @@ if ($resumeExisting) {
   createsIsolatedDatabase = -not $resumeExisting
   verifiesManagedRestoreLineage = $true
   managedRestoreLineageVerifiedBeforeValidation = $managedRestoreLineageVerified
+  waitsForRestoreOperationCompletion = $true
   validatesRestoredDatabaseReadability = $true
   exactSourceParityWhenFirestoreAllows = $true
   costBearingChange = -not $resumeExisting
@@ -123,18 +178,25 @@ if (-not $resumeExisting) {
     throw 'El restore drill devolvio un codigo de salida no exitoso.'
   }
 
-  $restoredDetail = @(Invoke-GcloudJson @(
-    'firestore', 'databases', 'describe',
-    "--database=$destination",
-    "--project=$Project"
-  )) | Select-Object -First 1
+  $restoredDetail = Get-RestoreDatabaseDetail -DatabaseId $destination
   $restoredSourceBackup = [string]$restoredDetail.sourceInfo.backup.backup
   if ($restoredSourceBackup -ne [string]$selected.name) {
     throw 'La base fue restaurada pero su sourceInfo.backup no coincide con el backup seleccionado; se conserva para diagnostico.'
   }
   $managedRestoreLineageVerified = $true
+  $restoreOperationName = [string]$restoredDetail.sourceInfo.operation
 } else {
   Write-Output "Se reutiliza la base restaurada existente $destination; no se crea una segunda base ni se repite el restore."
+}
+
+Wait-FirestoreRestoreOperation `
+  -DatabaseId $destination `
+  -OperationName $restoreOperationName
+
+$readyDetail = Get-RestoreDatabaseDetail -DatabaseId $destination
+$readySourceBackup = [string]$readyDetail.sourceInfo.backup.backup
+if ($readySourceBackup -ne [string]$selected.name) {
+  throw 'Despues de esperar el restore, la procedencia administrada ya no coincide con el backup seleccionado.'
 }
 
 $validator = Join-Path $PSScriptRoot 'validateStorageV4PhaseKRestore.mjs'
@@ -162,6 +224,7 @@ try {
   destinationDatabase = $destination
   selectedBackup = [string]$selected.name
   managedRestoreLineageVerified = $managedRestoreLineageVerified
+  restoreOperationCompletionVerified = $true
   restoredDatabaseReadable = $true
   exactParityConditionalOnFirestoreHistoricalReadWindow = $true
   cleanupPerformed = $false
@@ -169,4 +232,4 @@ try {
   defaultDatabaseUntouched = $true
 } | ConvertTo-Json -Depth 6
 
-Write-Output 'Restore checkpoint completado. Se verifico procedencia administrada y lectura de la base restaurada; la paridad exacta solo se exige cuando Firestore permite consultar exactamente el snapshot del backup.'
+Write-Output 'Restore checkpoint completado. Se verifico que la operacion administrada terminara antes de leer, ademas de procedencia y legibilidad de la base restaurada.'
