@@ -30,7 +30,7 @@ function requireRank(value) {
   return value;
 }
 
-function entityCore(entityType, rawEntity, rank) {
+export function v4EntityPayload(entityType, rawEntity, rank) {
   if (entityType === 'segment') {
     const segment = createSegment(rawEntity);
     return { ...segment, id: requireId(rawEntity?.id), rank: requireRank(rank) };
@@ -77,7 +77,7 @@ export function v4EntityCollection(entityType) {
 
 export function v4EntityCreateDocument(entityType, rawEntity, rank, timestampValue) {
   return {
-    ...entityCore(entityType, rawEntity, rank),
+    ...v4EntityPayload(entityType, rawEntity, rank),
     status: V4_ENTITY_STATUS.ACTIVE,
     version: 1,
     createdAt: timestampValue,
@@ -94,7 +94,7 @@ export function v4EntityUpdatePatch(
   timestampValue
 ) {
   return {
-    ...entityCore(entityType, rawEntity, rank),
+    ...v4EntityPayload(entityType, rawEntity, rank),
     status: V4_ENTITY_STATUS.ACTIVE,
     version: nextEntityVersion(baseVersion),
     updatedAt: timestampValue,
