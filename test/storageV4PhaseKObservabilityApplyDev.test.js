@@ -32,6 +32,19 @@ test('observability apply valida dashboard y crea solo recursos faltantes', asyn
   assert.ok(source.includes('alertPoliciesRemainDisabledByConfig = $true'));
 });
 
+test('observability apply aborta antes de mutar si encuentra dashboards Atlas duplicados', async () => {
+  const source = await readFile(applyScriptPath, 'utf8');
+
+  const duplicateGuard = source.indexOf('$preApplyMatchingDashboards.Count -gt 1');
+  const firstMetricCreate = source.indexOf("'logging', 'metrics', 'create'");
+  assert.ok(duplicateGuard >= 0);
+  assert.ok(firstMetricCreate >= 0);
+  assert.ok(duplicateGuard < firstMetricCreate);
+  assert.ok(source.includes('Ejecuta primero el cleanup explicito'));
+  assert.ok(source.includes('$matchingDashboards.Count -ne 1'));
+  assert.ok(source.includes('dashboardVerified = $matchingDashboards.Count -eq 1'));
+});
+
 test('observability apply identifica recursos por labels y metric type, no por displayName Unicode', async () => {
   const source = await readFile(applyScriptPath, 'utf8');
 
