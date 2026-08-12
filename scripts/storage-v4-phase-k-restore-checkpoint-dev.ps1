@@ -60,6 +60,7 @@ if ($existingDrills.Count -gt 1) {
 $selected = $null
 $destination = $null
 $resumeExisting = $existingDrills.Count -eq 1
+$managedRestoreLineageVerified = $false
 
 if ($resumeExisting) {
   $existingId = (([string]$existingDrills[0].name -split '/')[-1])
@@ -77,6 +78,7 @@ if ($resumeExisting) {
     throw 'La procedencia de la base restaurada no coincide con un backup READY de (default).'
   }
   $destination = $existingId
+  $managedRestoreLineageVerified = $true
 } else {
   $selected = $ready[0]
   $destination = 'atlas-restore-drill-' + [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss').ToLowerInvariant()
@@ -91,8 +93,10 @@ if ($resumeExisting) {
   destinationDatabase = $destination
   resumeExistingRestoreDatabase = $resumeExisting
   createsIsolatedDatabase = -not $resumeExisting
-  validatesDocumentPathsAndFields = $true
-  pitrAwareHistoricalValidation = $true
+  verifiesManagedRestoreLineage = $true
+  managedRestoreLineageVerifiedBeforeValidation = $managedRestoreLineageVerified
+  validatesRestoredDatabaseReadability = $true
+  exactSourceParityWhenFirestoreAllows = $true
   costBearingChange = -not $resumeExisting
   deletesResources = $false
   touchesDefaultDatabase = $false
@@ -118,6 +122,17 @@ if (-not $resumeExisting) {
   if ($LASTEXITCODE -ne 0) {
     throw 'El restore drill devolvio un codigo de salida no exitoso.'
   }
+
+  $restoredDetail = @(Invoke-GcloudJson @(
+    'firestore', 'databases', 'describe',
+    "--database=$destination",
+    "--project=$Project"
+  )) | Select-Object -First 1
+  $restoredSourceBackup = [string]$restoredDetail.sourceInfo.backup.backup
+  if ($restoredSourceBackup -ne [string]$selected.name) {
+    throw 'La base fue restaurada pero su sourceInfo.backup no coincide con el backup seleccionado; se conserva para diagnostico.'
+  }
+  $managedRestoreLineageVerified = $true
 } else {
   Write-Output "Se reutiliza la base restaurada existente $destination; no se crea una segunda base ni se repite el restore."
 }
@@ -134,11 +149,24 @@ try {
     "--source-read-time=$([string]$selected.snapshotTime)" `
     "--destination-db=$destination"
   if ($LASTEXITCODE -ne 0) {
-    throw 'La base restaurada existe pero la validacion de contenido no paso. Se conserva intacta para diagnostico.'
+    throw 'La base restaurada existe pero la validacion no paso. Se conserva intacta para diagnostico.'
   }
 } finally {
   Remove-Item Env:ATLAS_GCLOUD_ACCESS_TOKEN -ErrorAction SilentlyContinue
   $accessToken = $null
 }
 
-Write-Output 'Restore checkpoint completado y contenido validado. La base restaurada se conserva; cleanup sigue siendo una decision separada.'
+[ordered]@{
+  project = $Project
+  restoreCheckpointPassed = $true
+  destinationDatabase = $destination
+  selectedBackup = [string]$selected.name
+  managedRestoreLineageVerified = $managedRestoreLineageVerified
+  restoredDatabaseReadable = $true
+  exactParityConditionalOnFirestoreHistoricalReadWindow = $true
+  cleanupPerformed = $false
+  productionUntouched = $true
+  defaultDatabaseUntouched = $true
+} | ConvertTo-Json -Depth 6
+
+Write-Output 'Restore checkpoint completado. Se verifico procedencia administrada y lectura de la base restaurada; la paridad exacta solo se exige cuando Firestore permite consultar exactamente el snapshot del backup.'
