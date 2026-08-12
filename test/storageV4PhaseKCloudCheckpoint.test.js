@@ -9,6 +9,7 @@ test('cloud checkpoint de Phase K agrupa solo preflights read-only', async () =>
 
   for (const script of [
     'runStorageV4PhaseKPreflight.mjs',
+    'runStorageV4PhaseKBudgetDiagnose.mjs',
     'runStorageV4PhaseKSloPreflight.mjs',
     'runStorageV4PhaseKObservabilityPreflight.mjs',
     'runStorageV4PhaseKRestorePreflight.mjs',
