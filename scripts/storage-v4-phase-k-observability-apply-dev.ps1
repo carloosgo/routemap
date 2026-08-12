@@ -30,7 +30,17 @@ $metricPlans = @($metricFiles | ForEach-Object {
 })
 $alertPlans = @($alertFiles | ForEach-Object {
   $config = Get-Content $_.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
-  [ordered]@{ displayName = [string]$config.displayName; file = $_.Name; enabled = [bool]$config.enabled }
+  $conditionFilter = [string]$config.conditions[0].conditionThreshold.filter
+  $metricType = ''
+  if ($conditionFilter -match 'metric\.type=\"([^\"]+)\"') {
+    $metricType = [string]$Matches[1]
+  }
+  [ordered]@{
+    displayName = [string]$config.displayName
+    file = $_.Name
+    enabled = [bool]$config.enabled
+    metricType = $metricType
+  }
 })
 $dashboardConfig = Get-Content $dashboardFile -Raw -Encoding UTF8 | ConvertFrom-Json
 
@@ -85,6 +95,30 @@ function Get-LogMetricNames {
   return @($metrics | ForEach-Object { [string]$_.name })
 }
 
+function Test-AtlasDashboard {
+  param($Dashboard)
+  return (
+    [string]$Dashboard.labels.system -eq 'atlas-storage-v4' -and
+    [string]$Dashboard.labels.environment -eq 'dev'
+  )
+}
+
+function Test-AtlasAlertPolicyMatch {
+  param(
+    $Policy,
+    [string]$MetricType
+  )
+  if ([string]$Policy.userLabels.system -ne 'atlas-storage-v4') { return $false }
+  if ([string]$Policy.userLabels.environment -ne 'dev') { return $false }
+  if ([string]$Policy.userLabels.phase -ne 'k') { return $false }
+  if (-not $MetricType) { return $false }
+
+  $filters = @($Policy.conditions | ForEach-Object {
+    [string]$_.conditionThreshold.filter
+  })
+  return @($filters | Where-Object { $_ -like "*$MetricType*" }).Count -gt 0
+}
+
 # No usar `gcloud logging metrics describe` como prueba de existencia en Windows
 # PowerShell: un NOT_FOUND se materializa como ErrorRecord antes de que podamos
 # inspeccionar LASTEXITCODE bajo ErrorActionPreference=Stop. Listar es read-only y
@@ -120,7 +154,10 @@ Invoke-Gcloud @(
 
 $dashboards = Invoke-GcloudJson @('monitoring', 'dashboards', 'list', "--project=$Project")
 $dashboardDisplayName = [string]$dashboardConfig.displayName
-$dashboardExists = @($dashboards | Where-Object { [string]$_.displayName -eq $dashboardDisplayName }).Count -gt 0
+# displayName puede sufrir mojibake al volver por Windows PowerShell 5. La identidad
+# estable del recurso es el par de labels ASCII controlados por este bundle.
+$matchingDashboards = @($dashboards | Where-Object { Test-AtlasDashboard $_ })
+$dashboardExists = $matchingDashboards.Count -gt 0
 $dashboardCreated = $false
 if (-not $dashboardExists) {
   Invoke-Gcloud @(
@@ -135,21 +172,24 @@ if (-not $dashboardExists) {
 $policies = Invoke-GcloudJson @('monitoring', 'policies', 'list', "--project=$Project")
 $createdPolicies = @()
 $existingPolicies = @()
-foreach ($alertFile in $alertFiles) {
-  $alertConfig = Get-Content $alertFile.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
-  $displayName = [string]$alertConfig.displayName
-  if (@($policies | Where-Object { [string]$_.displayName -eq $displayName }).Count -gt 0) {
-    $existingPolicies += $displayName
+foreach ($plan in $alertPlans) {
+  $matches = @($policies | Where-Object {
+    Test-AtlasAlertPolicyMatch $_ ([string]$plan.metricType)
+  })
+  if ($matches.Count -gt 0) {
+    $existingPolicies += [string]$plan.displayName
     continue
   }
 
+  $alertFile = $alertFiles | Where-Object { $_.Name -eq [string]$plan.file } | Select-Object -First 1
+  if (-not $alertFile) { throw "No se encontro el template esperado: $($plan.file)" }
   Invoke-Gcloud @(
     'monitoring', 'policies', 'create',
     "--policy-from-file=$($alertFile.FullName)",
     "--project=$Project",
     '--quiet'
   )
-  $createdPolicies += $displayName
+  $createdPolicies += [string]$plan.displayName
 }
 
 # Post-apply verification: do not trust local config or successful create commands alone.
@@ -163,28 +203,27 @@ foreach ($plan in $metricPlans) {
 }
 
 $verifiedDashboards = Invoke-GcloudJson @('monitoring', 'dashboards', 'list', "--project=$Project")
-$matchingDashboards = @($verifiedDashboards | Where-Object {
-  [string]$_.displayName -eq $dashboardDisplayName
-})
+$matchingDashboards = @($verifiedDashboards | Where-Object { Test-AtlasDashboard $_ })
 if ($matchingDashboards.Count -lt 1) {
-  throw "El dashboard esperado no aparece despues del apply: $dashboardDisplayName"
+  throw 'El dashboard Atlas Storage v4 dev no aparece por labels despues del apply.'
 }
 
 $verifiedPolicies = Invoke-GcloudJson @('monitoring', 'policies', 'list', "--project=$Project")
 $policyVerification = @()
 foreach ($plan in $alertPlans) {
   $matches = @($verifiedPolicies | Where-Object {
-    [string]$_.displayName -eq [string]$plan.displayName
+    Test-AtlasAlertPolicyMatch $_ ([string]$plan.metricType)
   })
   if ($matches.Count -lt 1) {
-    throw "La alert policy esperada no aparece despues del apply: $($plan.displayName)"
+    throw "La alert policy esperada no aparece despues del apply para metrica: $($plan.metricType)"
   }
   $enabledMatches = @($matches | Where-Object { [bool]$_.enabled })
   if ($enabledMatches.Count -gt 0) {
-    throw "La alert policy quedo habilitada inesperadamente: $($plan.displayName)"
+    throw "La alert policy quedo habilitada inesperadamente para metrica: $($plan.metricType)"
   }
   $policyVerification += [ordered]@{
     displayName = [string]$plan.displayName
+    metricType = [string]$plan.metricType
     foundCount = $matches.Count
     allDisabled = $true
   }
@@ -201,6 +240,7 @@ foreach ($plan in $alertPlans) {
   dashboardCreated = $dashboardCreated
   dashboardAlreadyExisted = $dashboardExists
   dashboardVerified = $matchingDashboards.Count -gt 0
+  dashboardMatchCount = $matchingDashboards.Count
   createdAlertPolicies = $createdPolicies
   existingAlertPolicies = $existingPolicies
   alertPolicyVerification = $policyVerification
