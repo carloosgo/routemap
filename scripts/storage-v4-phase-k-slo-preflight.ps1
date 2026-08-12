@@ -45,7 +45,15 @@ function Percentile {
     [double]$P
   )
   $numbers = @($Values | ForEach-Object {
-    if ($_ -ne $null -and [double]::TryParse([string]$_, [ref]$parsed)) { $parsed }
+    if ($_ -eq $null) { return }
+    try {
+      $number = [Convert]::ToDouble($_, [Globalization.CultureInfo]::InvariantCulture)
+      if (-not [double]::IsNaN($number) -and -not [double]::IsInfinity($number)) {
+        $number
+      }
+    } catch {
+      # Ignore malformed telemetry values; the emitted contract already bounds valid durations.
+    }
   })
   if ($numbers.Count -eq 0) { return $null }
   $sorted = @($numbers | Sort-Object)
