@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const scriptPath = new URL('../scripts/storage-v4-phase-k-restore-cleanup-dev.ps1', import.meta.url);
+const launcherPath = new URL('../scripts/runStorageV4PhaseKRestoreCleanupDev.mjs', import.meta.url);
 
 test('restore cleanup queda bloqueado a dev y dry-run por defecto', async () => {
   const source = await readFile(scriptPath, 'utf8');
@@ -43,4 +44,13 @@ test('restore cleanup no puede borrar default ni recursos vecinos', async () => 
   assert.equal(source.includes('logging metrics delete'), false);
   assert.equal(source.includes('monitoring policies delete'), false);
   assert.doesNotMatch(source, /billing[\s'\",]+budgets[\s'\",]+(create|update|delete)/i);
+});
+
+test('restore cleanup launcher soporta PowerShell 7 y Windows PowerShell', async () => {
+  const source = await readFile(launcherPath, 'utf8');
+
+  assert.ok(source.includes("['pwsh.exe', 'powershell.exe']"));
+  assert.ok(source.includes("result.error?.code === 'ENOENT'"));
+  assert.ok(source.includes('continue;'));
+  assert.ok(source.includes("['pwsh', 'powershell']"));
 });
