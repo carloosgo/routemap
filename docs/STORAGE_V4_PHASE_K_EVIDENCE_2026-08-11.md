@@ -37,18 +37,31 @@ Reconfirmado en el checkpoint consolidado a las `2026-08-12T01:59:31Z`:
 
 Conclusión de recovery en desarrollo: **baseline PITR + scheduled backup cumplido y verificado en `atlasmap-dev`**.
 
-### Backup restaurable ya disponible
+### Restore drill real — PASS
 
-Restore readiness capturado a las `2026-08-12T02:16:09Z`:
+Backup usado:
 
-- `sourceBackupCount=1`;
-- backup: `projects/atlasmap-dev/locations/northamerica-south1/backups/55a35516-c5e0-447a-a123-7f4285b5ce6a`;
-- estado: `READY`;
-- snapshot: `2026-08-12T02:05:06.847993Z`;
-- expiración: `2026-08-19T02:05:06.847993Z`;
-- restore drill databases existentes: `0`.
+- `projects/atlasmap-dev/locations/northamerica-south1/backups/55a35516-c5e0-447a-a123-7f4285b5ce6a`;
+- estado observado previamente: `READY`;
+- snapshot: `2026-08-12T02:05:06.847993Z`.
 
-Esto cierra **readiness de restore**, no el restore drill: todavía falta crear la base aislada, medir RTO y validar el contenido restaurado.
+Restore aislado observado el `2026-08-12`:
+
+- destino: `atlas-restore-drill-20260812-031227`;
+- location: `northamerica-south1`;
+- `(default)` permaneció intacta;
+- producción permaneció intacta;
+- Storage v4 WRITE permaneció deshabilitado;
+- la operación administrada de restore terminó antes de iniciar la lectura;
+- `sourceInfo.backup` de la base restaurada coincide con el backup seleccionado;
+- la base restaurada fue legible;
+- se inventariaron `345` documentos;
+- el validador no expuso contenido de documentos;
+- resultado del checkpoint: `restoreCheckpointPassed=true`.
+
+El snapshot del backup tiene segundos/fracciones y, al momento de la validación, era mayor a una hora. Firestore no permitía consultar independientemente ese instante exacto mediante PITR, por lo que no se afirmó paridad SHA-256 contra un instante aproximado. En su lugar, el PASS se basa en procedencia administrada verificada, finalización de la operación y lectura/inventario exitosos de la base restaurada. No se redondeó el timestamp para fabricar una comparación falsa.
+
+La base temporal se conserva únicamente hasta ejecutar su cleanup explícito.
 
 ### Budget: bloqueo de permisos demostrado
 
@@ -113,16 +126,13 @@ Cada policy se identifica operacionalmente por labels/metric type, no por Unicod
 
 ### Dashboard
 
-El dashboard esperado está creado y verificado por labels `system=atlas-storage-v4`, `environment=dev`.
+Estado observado en el recovery checkpoint posterior al restore:
 
-El inventario mostró **dos dashboards Atlas Storage v4**. Esta duplicación provino de los retries anteriores mientras la verificación por `displayName` Unicode daba falsos negativos en Windows PowerShell. No se borró ninguno automáticamente porque el helper no realiza deletes. Se debe conservar uno y retirar el duplicado en un cleanup dev explícito separado.
+- dashboards Atlas dev detectados: `1`;
+- dashboard conservado: `8d6a1c24-ea96-4bc3-848d-442a40b2adef`;
+- por tanto ya no existe un duplicado que retirar.
 
-IDs observados:
-
-- `projects/833327011450/dashboards/2d6f5b70-dc89-43d8-87c7-f44c8a80f108`;
-- `projects/833327011450/dashboards/8d6a1c24-ea96-4bc3-848d-442a40b2adef`.
-
-El mojibake mostrado por `gcloud` como `?` afecta representación en Windows CLI; la identidad operativa se valida por labels ASCII.
+Los intentos anteriores habían observado dos dashboards equivalentes por retries de creación. El cleanup original fallaba porque exigía exactamente dos incluso cuando Cloud ya estaba en el estado deseado de uno. El helper fue corregido para ser idempotente: `1` significa `alreadyClean=true` y no provoca delete ni error.
 
 ## SLO sample
 
@@ -173,7 +183,7 @@ Sigue pendiente evidencia E2E real de provider outage, reconnect y múltiples na
 - No se ejecutó migración.
 - `atlas-cache` físico sigue pendiente de Phase J.
 - Budget sigue bloqueado por permisos de lectura.
-- Restore drill real ya puede ejecutarse porque existe un backup `READY`, pero es una operación cost-bearing y debe usar una base aislada `atlas-restore-drill-*`.
-- Falta limpiar un dashboard duplicado mediante acción destructiva dev explícita y separada.
+- Restore drill real: **PASS en dev**; queda únicamente retirar la base temporal de evidencia.
+- Dashboard Atlas dev: **estado limpio con exactamente uno**; el helper quedó idempotente.
 - Falta generar tráfico `sync flush` real para medir esa señal.
 - Falta load/reconnect/provider-outage/multidevice E2E y recalibrar thresholds/SLO con tráfico representativo.
