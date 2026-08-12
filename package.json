@@ -25,6 +25,7 @@
     "phase-k:observability:associate-channel-dev": "node scripts/runStorageV4PhaseKAlertPolicyChannelsDev.mjs",
     "phase-k:observability:enable-channel-dev": "node scripts/runStorageV4PhaseKNotificationChannelEnableDev.mjs",
     "phase-k:e2e:provider-outage-dev": "node scripts/runStorageV4PhaseKProviderOutageE2EDev.mjs",
+    "phase-k:e2e:scoped-write-rules-dev": "node scripts/runStorageV4PhaseKScopedWriteRulesDev.mjs",
     "phase-k:restore:preflight": "node scripts/runStorageV4PhaseKRestorePreflight.mjs",
     "phase-k:restore:drill-dev": "node scripts/runStorageV4PhaseKRestoreDrillDev.mjs",
     "phase-k:restore:checkpoint-dev": "node scripts/runStorageV4PhaseKRestoreCheckpointDev.mjs",
