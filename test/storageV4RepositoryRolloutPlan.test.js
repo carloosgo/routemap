@@ -24,6 +24,7 @@ const pilot100 = Object.freeze({
   writeRulesReady: true,
   syncReady: true,
   aggregateReady: true,
+  touchReady: true,
   lifecycleReady: true,
   purgeReady: true,
 });
@@ -68,6 +69,7 @@ test('PILOT falla cerrado ante cualquier dependencia de escritura incompleta', (
     writeRulesReady: 'write-rules-not-ready',
     syncReady: 'sync-not-ready',
     aggregateReady: 'aggregate-not-ready',
+    touchReady: 'touch-not-ready',
     lifecycleReady: 'lifecycle-not-ready',
     purgeReady: 'purge-not-ready',
   };
