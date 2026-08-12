@@ -16,7 +16,7 @@
     {
       "displayName": "Repository error count > 0 in 5m",
       "conditionThreshold": {
-        "filter": "metric.type=\"logging.googleapis.com/user/atlas_storage_v4_rollout_events\" AND metric.labels.outcome=\"error\"",
+        "filter": "resource.type=\"cloud_run_revision\" AND metric.type=\"logging.googleapis.com/user/atlas_storage_v4_rollout_events\" AND metric.labels.outcome=\"error\"",
         "aggregations": [
           {
             "alignmentPeriod": "300s",
