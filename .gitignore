@@ -15,4 +15,5 @@ functions/.env.*
 coverage
 firestore-gate-g-read.rules
 firestore-phase-k-e2e.rules
+firestore-pilot-write.rules
 .phase-k-e2e-rules-state.json
