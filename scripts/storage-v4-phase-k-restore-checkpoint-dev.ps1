@@ -94,11 +94,22 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $validator = Join-Path $PSScriptRoot 'validateStorageV4PhaseKRestore.mjs'
-& node $validator `
-  "--source-read-time=$([string]$selected.snapshotTime)" `
-  "--destination-db=$destination"
-if ($LASTEXITCODE -ne 0) {
-  throw 'La base fue restaurada pero la validacion de contenido no paso. Se conserva intacta para diagnostico.'
+$accessToken = (& gcloud auth print-access-token 2>$null).Trim()
+if (-not $accessToken) {
+  throw 'La base fue restaurada, pero no se pudo obtener token para validarla. Se conserva para diagnostico.'
+}
+
+try {
+  $env:ATLAS_GCLOUD_ACCESS_TOKEN = $accessToken
+  & node $validator `
+    "--source-read-time=$([string]$selected.snapshotTime)" `
+    "--destination-db=$destination"
+  if ($LASTEXITCODE -ne 0) {
+    throw 'La base fue restaurada pero la validacion de contenido no paso. Se conserva intacta para diagnostico.'
+  }
+} finally {
+  Remove-Item Env:ATLAS_GCLOUD_ACCESS_TOKEN -ErrorAction SilentlyContinue
+  $accessToken = $null
 }
 
 Write-Output 'Restore checkpoint completado y contenido validado. La base restaurada se conserva; cleanup sigue siendo una decision separada.'
