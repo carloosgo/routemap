@@ -66,6 +66,53 @@ test('composition root ensambla local queue -> coordinator -> gateway sin activa
   await composition.stop();
 });
 
+test('composition root conecta telemetria sync opcional sin activar WRITE por si sola', async () => {
+  const localPersistence = createMemoryV4LocalPersistence();
+  const metrics = [];
+  let telemetryStopped = false;
+  const telemetry = {
+    emit(metric) {
+      metrics.push(metric);
+    },
+    stop() {
+      telemetryStopped = true;
+    },
+  };
+  const composition = createV4WebSyncComposition({
+    uid: 'alice',
+    contextId: 'tab-a',
+    localPersistence,
+    crossContextNotifier: inertNotifier(),
+    syncTelemetryEmitter: telemetry,
+    remoteGateway: {
+      async writeMutation() {
+        return { serverVersion: 1, serverStatus: 'active' };
+      },
+    },
+    now: () => 1000,
+    lifecycleOptions: {
+      setTimer() { return 1; },
+      clearTimer() {},
+    },
+  });
+
+  assert.equal(composition.syncTelemetryEmitter, telemetry);
+  assert.deepEqual(metrics, []);
+
+  await composition.runtime.commitIntent(intent());
+  const result = await composition.runtime.saveNow();
+
+  assert.equal(result.synced, 1);
+  assert.equal(metrics.length, 1);
+  assert.equal(metrics[0].event, 'flush');
+  assert.equal(metrics[0].outcome, 'success');
+  assert.equal(metrics[0].synced, 1);
+  assert.doesNotMatch(JSON.stringify(metrics), /userId|tripId|entityId|entityKey|payload|uid/i);
+
+  await composition.stop();
+  assert.equal(telemetryStopped, true);
+});
+
 test('Gate G READ conecta solo el selector de repositorio, no el runtime de escritura v4', async () => {
   const selectorSource = await readFile(
     new URL('../src/modules/trips/tripRepositorySelector.js', import.meta.url),
