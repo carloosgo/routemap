@@ -16,13 +16,25 @@ test('dashboard cleanup queda bloqueado a atlasmap-dev y es dry-run por defecto'
   assert.ok(source.includes('enablesStorageV4Write = $false'));
 });
 
+test('dashboard cleanup inventaria, compara y elimina por Monitoring REST v1', async () => {
+  const source = await readFile(scriptPath, 'utf8');
+
+  assert.ok(source.includes('monitoring.googleapis.com/v1/projects/$Project/dashboards'));
+  assert.ok(source.includes('Get-MonitoringDashboardDetail'));
+  assert.ok(source.includes('Normalize-DashboardForComparison'));
+  assert.ok(source.includes('Invoke-RestMethod -Method Delete'));
+  assert.ok(source.includes("transport = 'monitoring-rest-v1'"));
+  assert.ok(source.includes("'x-goog-user-project' = $Project"));
+  assert.equal(source.includes("'monitoring', 'dashboards', 'describe'"), false);
+  assert.equal(source.includes('gcloud monitoring dashboards delete'), false);
+});
+
 test('dashboard cleanup elimina solo un duplicado equivalente y preserva recursos vecinos', async () => {
   const source = await readFile(scriptPath, 'utf8');
 
   assert.ok(source.includes('$details.Count -ne 2'));
-  assert.ok(source.includes('Normalize-DashboardForComparison'));
-  assert.ok(source.includes("'monitoring', 'dashboards', 'describe'"));
-  assert.ok(source.includes('gcloud monitoring dashboards delete $duplicateId'));
+  assert.ok(source.includes('$normalized[0] -ne $normalized[1]'));
+  assert.ok(source.includes('Remove-MonitoringDashboard -ResourceName $duplicateResourceName'));
   assert.ok(source.includes('alertPoliciesUntouched = $true'));
   assert.ok(source.includes('logMetricsUntouched = $true'));
   assert.ok(source.includes('budgetsUntouched = $true'));
@@ -38,6 +50,16 @@ test('dashboard cleanup es idempotente cuando ya existe exactamente un dashboard
   assert.ok(source.includes('alreadyClean = $true'));
   assert.ok(source.includes('no hay duplicado que eliminar'));
   assert.ok(source.includes('deletesExactlyOneDashboard = [bool]($Apply -and $details.Count -eq 2)'));
+});
+
+test('dashboard cleanup exige que el ID preferido exista antes de borrar', async () => {
+  const source = await readFile(scriptPath, 'utf8');
+
+  assert.ok(source.includes("[string]$PreferredDashboardId = ''"));
+  assert.ok(source.includes('$ids -notcontains $PreferredDashboardId'));
+  assert.ok(source.includes('no aparece entre los dos candidatos validados'));
+  assert.ok(source.includes('$existingId -ne $PreferredDashboardId'));
+  assert.equal(source.includes('8d6a1c24-ea96-4bc3-848d-442a40b2adef'), false);
 });
 
 test('dashboard cleanup detecta Atlas por labels o firma de contenido', async () => {
@@ -56,16 +78,6 @@ test('dashboard cleanup detecta Atlas por labels o firma de contenido', async ()
     assert.ok(source.includes(marker));
   }
   assert.ok(source.includes("foreach ($property in @('name', 'etag', 'displayName', 'labels'))"));
-});
-
-test('dashboard cleanup no depende de un ID canonico hardcodeado', async () => {
-  const source = await readFile(scriptPath, 'utf8');
-
-  assert.ok(source.includes("[string]$PreferredDashboardId = ''"));
-  assert.ok(source.includes('$ids = @($details | ForEach-Object { DashboardId $_ } | Sort-Object)'));
-  assert.ok(source.includes('$ids -contains $PreferredDashboardId'));
-  assert.equal(source.includes('8d6a1c24-ea96-4bc3-848d-442a40b2adef'), false);
-  assert.equal(source.includes('dashboard canonico con el ID esperado'), false);
 });
 
 test('dashboard cleanup launcher permite reenviar un ID preferido validado', async () => {
