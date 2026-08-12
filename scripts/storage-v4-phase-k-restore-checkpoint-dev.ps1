@@ -15,6 +15,9 @@ if ($Location -ne 'northamerica-south1') {
 if (-not (Get-Command gcloud -ErrorAction SilentlyContinue)) {
   throw 'No se encontro gcloud en PATH.'
 }
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+  throw 'No se encontro node en PATH.'
+}
 
 $activeAccount = (& gcloud config get-value account 2>$null).Trim()
 if (-not $activeAccount -or $activeAccount -eq '(unset)') {
@@ -64,6 +67,7 @@ if ($existingDrills.Count -gt 0) {
   selectedSnapshotTime = [string]$selected.snapshotTime
   destinationDatabase = $destination
   createsIsolatedDatabase = $true
+  validatesDocumentPathsAndFields = $true
   costBearingChange = $true
   deletesResources = $false
   touchesDefaultDatabase = $false
@@ -89,4 +93,12 @@ if ($LASTEXITCODE -ne 0) {
   throw 'El restore drill devolvio un codigo de salida no exitoso.'
 }
 
-Write-Output 'Restore checkpoint completado. La base restaurada se conserva para validacion; cleanup sigue siendo una decision separada.'
+$validator = Join-Path $PSScriptRoot 'validateStorageV4PhaseKRestore.mjs'
+& node $validator `
+  "--source-read-time=$([string]$selected.snapshotTime)" `
+  "--destination-db=$destination"
+if ($LASTEXITCODE -ne 0) {
+  throw 'La base fue restaurada pero la validacion de contenido no paso. Se conserva intacta para diagnostico.'
+}
+
+Write-Output 'Restore checkpoint completado y contenido validado. La base restaurada se conserva; cleanup sigue siendo una decision separada.'
