@@ -23,7 +23,7 @@ test('observability apply valida dashboard y crea solo recursos faltantes', asyn
 
   assert.ok(source.includes("'logging', 'metrics', 'create'"));
   assert.ok(source.includes('Get-LogMetricNames'));
-  assert.equal(source.includes('logging metrics describe'), false);
+  assert.equal(source.includes('& gcloud logging metrics describe'), false);
   assert.ok(source.includes("'monitoring', 'dashboards', 'create'"));
   assert.ok(source.includes("'--validate-only'"));
   assert.ok(source.includes('$dashboardExists'));
