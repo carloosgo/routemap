@@ -1,4 +1,4 @@
-/* global process, console, fetch */
+/* global process, console, fetch, URLSearchParams */
 import { createHash } from 'node:crypto';
 
 const PROJECT = 'atlasmap-dev';
