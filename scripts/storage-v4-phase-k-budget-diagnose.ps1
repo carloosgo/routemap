@@ -53,7 +53,7 @@ function Invoke-BudgetListProbe {
   $uri = "https://billingbudgets.googleapis.com/v1/$BillingAccountName/budgets"
   if ($ProjectScope) {
     $scope = [Uri]::EscapeDataString("projects/$ProjectId")
-    $uri = "$uri?scope=$scope"
+    $uri = "${uri}?scope=$scope"
   }
 
   try {
