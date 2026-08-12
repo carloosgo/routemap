@@ -17,6 +17,7 @@
     "test:rules:phase-k-e2e": "npm run generate:rules:phase-k-e2e && firebase emulators:exec --config firebase.phase-k-e2e.json --only firestore \"node --test --test-concurrency=1 firebase-tests/firestore.phase-k-e2e.rules.spec.js\"",
     "storage-v4:migrate-trip-dev": "node functions/runV4MigrationDev.js",
     "storage-v4:rollback-trip-dev": "node functions/runV4MigrationRollbackDev.js",
+    "storage-v4:pilot-plan-dev": "node scripts/runStorageV4PilotPlanDev.mjs",
     "phase-k:preflight": "node scripts/runStorageV4PhaseKPreflight.mjs",
     "phase-k:telemetry:deploy-dev": "node scripts/deployStorageV4PhaseKTelemetryDev.mjs",
     "phase-k:telemetry:diagnose-dev": "node scripts/runStorageV4PhaseKTelemetryDiagnoseDev.mjs",
