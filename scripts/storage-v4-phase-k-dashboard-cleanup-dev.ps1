@@ -1,6 +1,6 @@
 param(
   [string]$Project = 'atlasmap-dev',
-  [string]$KeepDashboardId = '8d6a1c24-ea96-4bc3-848d-442a40b2adef',
+  [string]$PreferredDashboardId = '',
   [switch]$Apply
 )
 
@@ -55,16 +55,13 @@ function Normalize-DashboardForComparison {
 
 $dashboards = @(Invoke-GcloudJson @('monitoring', 'dashboards', 'list', "--project=$Project"))
 $atlasDashboards = @($dashboards | Where-Object { Is-AtlasDevDashboard $_ })
-$keepMatches = @($atlasDashboards | Where-Object { (DashboardId $_) -eq $KeepDashboardId })
-$duplicateCandidates = @($atlasDashboards | Where-Object { (DashboardId $_) -ne $KeepDashboardId })
 
 $plan = [ordered]@{
   project = $Project
   applyRequested = [bool]$Apply
-  keepDashboardId = $KeepDashboardId
+  preferredDashboardId = if ($PreferredDashboardId) { $PreferredDashboardId } else { $null }
   atlasDashboardCount = $atlasDashboards.Count
-  duplicateCandidateCount = $duplicateCandidates.Count
-  duplicateCandidateIds = @($duplicateCandidates | ForEach-Object { DashboardId $_ })
+  atlasDashboardIds = @($atlasDashboards | ForEach-Object { DashboardId $_ } | Sort-Object)
   deletesExactlyOneDashboard = $Apply
   deletesAlertPolicies = $false
   deletesLogMetrics = $false
@@ -79,25 +76,36 @@ if (-not $Apply) {
   exit 0
 }
 
-if ($keepMatches.Count -ne 1) {
-  throw 'No se encontro exactamente un dashboard canonico con el ID esperado; cleanup abortado.'
-}
-if ($atlasDashboards.Count -ne 2 -or $duplicateCandidates.Count -ne 1) {
-  throw 'El cleanup solo opera cuando existen exactamente dos dashboards Atlas dev y un unico duplicado.'
+if ($atlasDashboards.Count -ne 2) {
+  throw 'El cleanup solo opera cuando existen exactamente dos dashboards Atlas dev.'
 }
 
-$duplicateId = DashboardId $duplicateCandidates[0]
-$keepDetails = @(Invoke-GcloudJson @('monitoring', 'dashboards', 'describe', $KeepDashboardId, "--project=$Project")) | Select-Object -First 1
-$duplicateDetails = @(Invoke-GcloudJson @('monitoring', 'dashboards', 'describe', $duplicateId, "--project=$Project")) | Select-Object -First 1
-
-if (-not (Is-AtlasDevDashboard $keepDetails) -or -not (Is-AtlasDevDashboard $duplicateDetails)) {
-  throw 'Los dashboards ya no cumplen los labels Atlas dev esperados; cleanup abortado.'
+$details = @()
+foreach ($dashboard in $atlasDashboards) {
+  $id = DashboardId $dashboard
+  $detail = @(Invoke-GcloudJson @('monitoring', 'dashboards', 'describe', $id, "--project=$Project")) | Select-Object -First 1
+  if (-not (Is-AtlasDevDashboard $detail)) {
+    throw "El dashboard $id ya no cumple los labels Atlas dev esperados; cleanup abortado."
+  }
+  $details += $detail
 }
 
-$keepNormalized = Normalize-DashboardForComparison $keepDetails
-$duplicateNormalized = Normalize-DashboardForComparison $duplicateDetails
-if ($keepNormalized -ne $duplicateNormalized) {
+$normalized = @($details | ForEach-Object { Normalize-DashboardForComparison $_ })
+if ($normalized.Count -ne 2 -or $normalized[0] -ne $normalized[1]) {
   throw 'Los dos dashboards no son equivalentes despues de normalizar campos server-owned; no se elimina ninguno.'
+}
+
+$ids = @($details | ForEach-Object { DashboardId $_ } | Sort-Object)
+$keepId = $null
+if ($PreferredDashboardId -and $ids -contains $PreferredDashboardId) {
+  $keepId = $PreferredDashboardId
+} else {
+  $keepId = $ids[0]
+}
+$duplicateId = @($ids | Where-Object { $_ -ne $keepId }) | Select-Object -First 1
+
+if (-not $duplicateId) {
+  throw 'No se pudo determinar de forma segura el dashboard duplicado; cleanup abortado.'
 }
 
 & gcloud monitoring dashboards delete $duplicateId "--project=$Project" --quiet
@@ -107,14 +115,14 @@ if ($LASTEXITCODE -ne 0) {
 
 $remaining = @(Invoke-GcloudJson @('monitoring', 'dashboards', 'list', "--project=$Project"))
 $remainingAtlas = @($remaining | Where-Object { Is-AtlasDevDashboard $_ })
-if ($remainingAtlas.Count -ne 1 -or (DashboardId $remainingAtlas[0]) -ne $KeepDashboardId) {
-  throw 'Post-check invalido: no quedo exactamente el dashboard canonico esperado.'
+if ($remainingAtlas.Count -ne 1 -or (DashboardId $remainingAtlas[0]) -ne $keepId) {
+  throw 'Post-check invalido: no quedo exactamente el dashboard Atlas dev esperado.'
 }
 
 [ordered]@{
   project = $Project
   applied = $true
-  keptDashboardId = $KeepDashboardId
+  keptDashboardId = $keepId
   deletedDashboardId = $duplicateId
   remainingAtlasDashboardCount = $remainingAtlas.Count
   alertPoliciesUntouched = $true
