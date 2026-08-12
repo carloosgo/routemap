@@ -111,8 +111,15 @@ export function v4EntityDeletePatch(baseVersion, timestampValue) {
   };
 }
 
-export function v4EntityRestorePatch(baseVersion, timestampValue) {
+export function v4EntityRestorePatch(
+  baseVersion,
+  timestampValue,
+  { entityType = null, rawEntity = null, rank = null } = {}
+) {
   return {
+    ...(entityType && rawEntity
+      ? v4EntityPayload(entityType, rawEntity, rank)
+      : {}),
     status: V4_ENTITY_STATUS.ACTIVE,
     version: nextEntityVersion(baseVersion),
     updatedAt: timestampValue,
