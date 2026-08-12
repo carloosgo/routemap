@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const scriptPath = new URL('../scripts/storage-v4-phase-k-dashboard-cleanup-dev.ps1', import.meta.url);
+const launcherPath = new URL('../scripts/runStorageV4PhaseKDashboardCleanupDev.mjs', import.meta.url);
 
 test('dashboard cleanup queda bloqueado a atlasmap-dev y es dry-run por defecto', async () => {
   const source = await readFile(scriptPath, 'utf8');
@@ -65,4 +66,13 @@ test('dashboard cleanup no depende de un ID canonico hardcodeado', async () => {
   assert.ok(source.includes('$ids -contains $PreferredDashboardId'));
   assert.equal(source.includes('8d6a1c24-ea96-4bc3-848d-442a40b2adef'), false);
   assert.equal(source.includes('dashboard canonico con el ID esperado'), false);
+});
+
+test('dashboard cleanup launcher permite reenviar un ID preferido validado', async () => {
+  const source = await readFile(launcherPath, 'utf8');
+
+  assert.ok(source.includes("const preferredPrefix = '--preferred-dashboard-id='"));
+  assert.ok(source.includes("args.push('-PreferredDashboardId', preferredDashboardId)"));
+  assert.ok(source.includes('/^[A-Za-z0-9_-]+$/'));
+  assert.ok(source.includes("if (cliArgs.includes('--apply')) args.push('-Apply')"));
 });
