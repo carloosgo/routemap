@@ -79,6 +79,15 @@ export function useSavedTrips(user) {
     };
   }, [refresh]);
 
+  useEffect(() => () => {
+    try {
+      const result = repository.close?.();
+      if (result && typeof result.catch === 'function') result.catch(() => {});
+    } catch {
+      // Cleanup best-effort: un fallo al cerrar recursos no debe romper React unmount.
+    }
+  }, [repository]);
+
   const getTrip = useCallback(
     async (id) => {
       setError(null);
