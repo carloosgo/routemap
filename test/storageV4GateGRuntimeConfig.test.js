@@ -12,10 +12,28 @@ const base = {
   cohortPercent: 0,
   salt: 'atlas-storage-v4',
   readRulesReady: false,
+  writeRulesReady: false,
+  syncReady: false,
+  aggregateReady: false,
+  lifecycleReady: false,
+  purgeReady: false,
   remoteConfigEnabled: true,
 };
 
-test('runtime Gate G activa READ solo con todos los seguros abiertos explícitamente', () => {
+const pilotRemote = {
+  enabled: true,
+  killSwitch: false,
+  mode: 'pilot',
+  cohortPercent: 5,
+  readRulesReady: true,
+  writeRulesReady: true,
+  syncReady: true,
+  aggregateReady: true,
+  lifecycleReady: true,
+  purgeReady: true,
+};
+
+test('runtime Gate G activa READ solo con todos los seguros de lectura abiertos', () => {
   const result = normalizeRemoteRolloutConfig({
     base,
     remote: {
@@ -27,21 +45,37 @@ test('runtime Gate G activa READ solo con todos los seguros abiertos explícitam
     },
   });
 
-  assert.deepEqual(result, {
-    ...base,
-    enabled: true,
-    killSwitch: false,
-    mode: 'read',
-    cohortPercent: 5,
-    readRulesReady: true,
-  });
+  assert.equal(result.enabled, true);
+  assert.equal(result.killSwitch, false);
+  assert.equal(result.mode, 'read');
+  assert.equal(result.cohortPercent, 5);
+  assert.equal(result.readRulesReady, true);
+  assert.equal(result.writeRulesReady, false);
 });
 
-test('runtime Gate G falla cerrado ante parámetros incompletos o modo pilot', () => {
+test('runtime Gate G acepta PILOT solo con readiness completo', () => {
+  const result = normalizeRemoteRolloutConfig({ base, remote: pilotRemote });
+  assert.equal(result.enabled, true);
+  assert.equal(result.killSwitch, false);
+  assert.equal(result.mode, 'pilot');
+  for (const field of [
+    'readRulesReady',
+    'writeRulesReady',
+    'syncReady',
+    'aggregateReady',
+    'lifecycleReady',
+    'purgeReady',
+  ]) {
+    assert.equal(result[field], true, field);
+  }
+});
+
+test('runtime Gate G falla cerrado ante parámetros incompletos', () => {
+  const incompletePilot = { ...pilotRemote, aggregateReady: false };
   for (const remote of [
     {},
     { enabled: true, killSwitch: false, mode: 'read', cohortPercent: 5 },
-    { enabled: true, killSwitch: false, mode: 'pilot', cohortPercent: 5, readRulesReady: true },
+    incompletePilot,
     { enabled: true, killSwitch: true, mode: 'read', cohortPercent: 5, readRulesReady: true },
     { enabled: true, killSwitch: false, mode: 'read', cohortPercent: 0, readRulesReady: true },
   ]) {
@@ -51,6 +85,7 @@ test('runtime Gate G falla cerrado ante parámetros incompletos o modo pilot', (
     assert.equal(result.mode, 'off');
     assert.equal(result.cohortPercent, 0);
     assert.equal(result.readRulesReady, false);
+    assert.equal(result.writeRulesReady, false);
   }
 });
 
@@ -68,13 +103,20 @@ test('runtime Gate G limita cohortes al rango 0..100', () => {
   assert.equal(result.cohortPercent, 100);
 });
 
-test('failClosedRolloutConfig conserva metadata pero apaga rollout', () => {
-  assert.deepEqual(failClosedRolloutConfig({ ...base, enabled: true, mode: 'read' }), {
-    ...base,
-    enabled: false,
-    killSwitch: true,
-    mode: 'off',
-    cohortPercent: 0,
-    readRulesReady: false,
-  });
+test('failClosedRolloutConfig conserva metadata pero apaga todo readiness', () => {
+  const result = failClosedRolloutConfig({ ...base, ...pilotRemote });
+  assert.equal(result.enabled, false);
+  assert.equal(result.killSwitch, true);
+  assert.equal(result.mode, 'off');
+  assert.equal(result.cohortPercent, 0);
+  for (const field of [
+    'readRulesReady',
+    'writeRulesReady',
+    'syncReady',
+    'aggregateReady',
+    'lifecycleReady',
+    'purgeReady',
+  ]) {
+    assert.equal(result[field], false, field);
+  }
 });
