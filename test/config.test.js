@@ -17,6 +17,11 @@ test('config usa valores seguros fuera de Vite', () => {
     cohortPercent: 0,
     salt: 'atlas-storage-v4',
     readRulesReady: false,
+    writeRulesReady: false,
+    syncReady: false,
+    aggregateReady: false,
+    lifecycleReady: false,
+    purgeReady: false,
     remoteConfigEnabled: false,
     telemetryEnabled: false,
   });
