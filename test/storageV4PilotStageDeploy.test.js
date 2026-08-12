@@ -87,13 +87,10 @@ test('pilot stage apply usa solo las siete Functions y después firestore:rules'
   assert.equal(calls[0][0], 'deploy');
   assert.match(calls[0][2], /^functions:v4SegmentAggregate,/);
   assert.match(calls[0][2], /functions:v4TripPurge$/);
-  assert.deepEqual(calls[1].slice(0, 5), [
-    'deploy',
-    '--config',
-    new URL('../firebase.pilot-write.json', import.meta.url).pathname,
-    '--only',
-    'firestore:rules',
-  ]);
+  assert.equal(calls[1][0], 'deploy');
+  assert.equal(calls[1][1], '--config');
+  assert.ok(calls[1][2].replaceAll('\\', '/').endsWith('/firebase.pilot-write.json'));
+  assert.deepEqual(calls[1].slice(3, 5), ['--only', 'firestore:rules']);
   assert.ok(generatedRules.includes('pilotValidClientTripUpdate'));
   assert.equal(result.v4WriteRulesDeployed, true);
   assert.equal(result.clientPilotTrafficActivated, false);
