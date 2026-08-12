@@ -72,15 +72,17 @@ function Payloads {
   return @($Entries | ForEach-Object { $_.jsonPayload })
 }
 
-$rolloutEntries = Read-Stream 'storage_v4_rollout_metric'
-$syncEntries = Read-Stream 'storage_v4_sync_metric'
-$cacheEntries = Read-Stream 'storage_v4_provider_cache_metric'
-$providerEntries = Read-Stream 'storage_v4_provider_request_metric'
+$rolloutEntries = @(Read-Stream 'storage_v4_rollout_metric')
+$syncEntries = @(Read-Stream 'storage_v4_sync_metric')
+$cacheEntries = @(Read-Stream 'storage_v4_provider_cache_metric')
+$providerEntries = @(Read-Stream 'storage_v4_provider_request_metric')
 
-$rollout = Payloads $rolloutEntries
-$sync = Payloads $syncEntries
-$cache = Payloads $cacheEntries
-$provider = Payloads $providerEntries
+# PowerShell unwraps a one-item pipeline result into a scalar. Force arrays here so
+# `.Count` remains 0/1/N instead of `$null` for singleton telemetry streams.
+$rollout = @(Payloads $rolloutEntries)
+$sync = @(Payloads $syncEntries)
+$cache = @(Payloads $cacheEntries)
+$provider = @(Payloads $providerEntries)
 
 $rolloutSuccess = @($rollout | Where-Object { [string]$_.outcome -eq 'success' }).Count
 $rolloutError = @($rollout | Where-Object { [string]$_.outcome -eq 'error' }).Count
