@@ -153,7 +153,9 @@ $enabledUsableChannels = @($notificationChannels | Where-Object {
   alertPolicyProbeStatus = [string]$policyProbe.status
   atlasAlertPolicyCount = $atlasPolicies.Count
   atlasAlertPolicies = @($atlasPolicies | ForEach-Object {
-    $policyChannels = @($_.notificationChannels)
+    $policyChannels = @($_.notificationChannels | Where-Object {
+      -not [string]::IsNullOrWhiteSpace([string]$_)
+    })
     [ordered]@{
       name = [string]$_.name
       displayName = [string]$_.displayName
