@@ -34,11 +34,28 @@ const prices = Object.freeze({
   objectStorageUsdPerGiBMonth: 0.02,
 });
 
-test('price book no acepta defaults implícitos ni valores negativos', () => {
+test('price book no acepta defaults implícitos, coerciones ni valores negativos', () => {
   assert.throws(() => normalizeStorageV4PriceBook({}), /daysPerMonth/);
   assert.throws(
     () => normalizeStorageV4PriceBook({ ...prices, firestoreReadUsdPer100k: -1 }),
     /firestoreReadUsdPer100k/
+  );
+  for (const invalid of [null, undefined, '', '0', false]) {
+    assert.throws(
+      () => normalizeStorageV4PriceBook({ ...prices, providerRequestUsdEach: invalid }),
+      /providerRequestUsdEach/
+    );
+  }
+});
+
+test('capacity assumptions tampoco aceptan null como cero implícito', () => {
+  assert.throws(
+    () => estimateStorageV4MonthlyCost(1000, { ...capacity, providerCacheHitRate: null }, prices),
+    /providerCacheHitRate/
+  );
+  assert.throws(
+    () => estimateStorageV4MonthlyCost(null, capacity, prices),
+    /activeUsers/
   );
 });
 
