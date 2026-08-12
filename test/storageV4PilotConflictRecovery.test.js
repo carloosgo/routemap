@@ -119,9 +119,11 @@ test('reabrir v4 acepta estado remoto fresco y limpia conflicto local sin invent
   await writer.close();
 });
 
-test('repositorio observado reenvía close al repositorio real', async () => {
+test('repositorio observado reenvía initialize y close al repositorio real', async () => {
+  let initializes = 0;
   let closes = 0;
   const target = {
+    async initialize() { initializes += 1; return 2; },
     async list() { return []; },
     async get() { return null; },
     async save(value) { return value; },
@@ -133,11 +135,13 @@ test('repositorio observado reenvía close al repositorio real', async () => {
     repositoryMode: 'v4-pilot',
     emit() {},
   });
+  assert.equal(await observed.initialize(), 2);
   await observed.close();
+  assert.equal(initializes, 1);
   assert.equal(closes, 1);
 });
 
-test('hybrid reopen usa entidades deleted para rebase y useSavedTrips cierra repositorios reemplazados', async () => {
+test('hybrid reopen/recovery y useSavedTrips lifecycle están cableados sin activar writer fuera de pilot', async () => {
   const [hybridSource, hookSource] = await Promise.all([
     readFile(new URL('../src/infrastructure/firebase/firestoreHybridTripRepository.js', import.meta.url), 'utf8'),
     readFile(new URL('../src/modules/trips/useSavedTrips.js', import.meta.url), 'utf8'),
@@ -146,6 +150,8 @@ test('hybrid reopen usa entidades deleted para rebase y useSavedTrips cierra rep
   assert.match(hybridSource, /includeDeleted = typeof writer\?\.acceptRemoteState === 'function'/);
   assert.match(hybridSource, /await writer\.acceptRemoteState\(/);
   assert.match(hybridSource, /routeConnections: collections\.connections/);
+  assert.match(hybridSource, /writer\.recoverPending\(\)/);
+  assert.match(hookSource, /await repository\.initialize\?\.\(\)/);
   assert.match(hookSource, /repository\.close\?\.\(\)/);
   assert.match(hookSource, /Cleanup best-effort/);
 });
