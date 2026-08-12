@@ -54,8 +54,22 @@ test('restore cleanup launcher usa cmd.exe para wrappers .cmd en Windows sin dep
   assert.ok(source.includes("executable.toLowerCase().endsWith('.cmd')"));
   assert.ok(source.includes("process.env.ComSpec || 'cmd.exe'"));
   assert.ok(source.includes("['/d', '/c', executable, ...args]"));
-  assert.ok(source.includes("'firestore', 'databases', 'delete'"));
-  assert.ok(source.includes('`--etag=${etag}`'));
-  assert.ok(source.includes("destinationDatabase === '(default)'"));
   assert.doesNotMatch(source, /pwsh|powershell/i);
+});
+
+test('restore cleanup launcher valida cada restore antes de borrar multiples bases temporales', async () => {
+  const source = await readFile(launcherPath, 'utf8');
+
+  assert.ok(source.includes('restoreDatabases.map(validateRestoreDatabase)'));
+  assert.ok(source.includes("destinationDatabase === '(default)'"));
+  assert.ok(source.includes("detailName !== expectedName"));
+  assert.ok(source.includes("sourceOperation.startsWith(`${expectedName}/operations/`)"));
+  assert.ok(source.includes("progress !== 'COMPLETED'"));
+  assert.ok(source.includes('sourceBackups.size !== 1'));
+  assert.ok(source.includes('locations.size !== 1'));
+  assert.ok(source.includes('for (const restore of validatedRestores)'));
+  assert.ok(source.includes("'firestore', 'databases', 'delete'"));
+  assert.ok(source.includes('`--etag=${restore.etag}`'));
+  assert.ok(source.includes('remainingRestoreDatabaseCount: 0'));
+  assert.equal(source.includes("'--database=atlas-restore-drill-*'"), false);
 });
