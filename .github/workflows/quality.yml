@@ -70,6 +70,9 @@ jobs:
       - name: Test Firestore security rules
         run: npm run test:rules
 
+      - name: Test scoped Phase K E2E Firestore rules
+        run: npm run test:rules:phase-k-e2e
+
       - name: Run ESLint
         run: npm run lint
 
