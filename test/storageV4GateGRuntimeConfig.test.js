@@ -15,6 +15,7 @@ const base = {
   writeRulesReady: false,
   syncReady: false,
   aggregateReady: false,
+  touchReady: false,
   lifecycleReady: false,
   purgeReady: false,
   remoteConfigEnabled: true,
@@ -29,6 +30,7 @@ const pilotRemote = {
   writeRulesReady: true,
   syncReady: true,
   aggregateReady: true,
+  touchReady: true,
   lifecycleReady: true,
   purgeReady: true,
 };
@@ -63,6 +65,7 @@ test('runtime Gate G acepta PILOT solo con readiness completo', () => {
     'writeRulesReady',
     'syncReady',
     'aggregateReady',
+    'touchReady',
     'lifecycleReady',
     'purgeReady',
   ]) {
@@ -114,6 +117,7 @@ test('failClosedRolloutConfig conserva metadata pero apaga todo readiness', () =
     'writeRulesReady',
     'syncReady',
     'aggregateReady',
+    'touchReady',
     'lifecycleReady',
     'purgeReady',
   ]) {
