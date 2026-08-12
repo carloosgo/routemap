@@ -15,6 +15,16 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(here);
 const generatedRulesPath = join(repoRoot, 'firestore-pilot-write.rules');
 const pilotConfigPath = join(repoRoot, 'firebase.pilot-write.json');
+const functionsIndexPath = join(repoRoot, 'functions', 'index.js');
+const pilotExportBlock = `export {
+  v4SegmentAggregate,
+  v4PlaceAggregate,
+  v4ConnectionTouch,
+  v4NoteTouch,
+  v4ChecklistTouch,
+  v4TripLifecycle,
+  v4TripPurge,
+} from './v4PilotExports.js';`;
 
 function sha256(value) {
   return createHash('sha256').update(value, 'utf8').digest('hex');
@@ -74,6 +84,17 @@ function indexActivatesPilot(indexSource) {
     || V4_PILOT_BACKEND_FUNCTION_NAMES.every((name) => new RegExp(`\\b${name}\\b`).test(indexSource));
 }
 
+export function buildEphemeralPilotIndex(indexSource) {
+  if (typeof indexSource !== 'string') throw new TypeError('indexSource debe ser texto.');
+  if (indexActivatesPilot(indexSource)) {
+    return Object.freeze({ source: indexSource, changed: false });
+  }
+  return Object.freeze({
+    source: `${indexSource.trimEnd()}\n\n// Ephemeral export block used only by the guarded pilot stage deploy.\n${pilotExportBlock}\n`,
+    changed: true,
+  });
+}
+
 export function buildPilotStageDeployPlan({ v3Rules, v4Rules, indexSource } = {}) {
   if (typeof v3Rules !== 'string' || typeof v4Rules !== 'string' || typeof indexSource !== 'string') {
     throw new TypeError('Se requieren Rules v3/v4 e index.js como texto.');
@@ -89,8 +110,9 @@ export function buildPilotStageDeployPlan({ v3Rules, v4Rules, indexSource } = {}
     functions: [...V4_PILOT_BACKEND_FUNCTION_NAMES],
     functionCount: V4_PILOT_BACKEND_FUNCTION_NAMES.length,
     pilotExportsActivatedInIndex: exportsActivated,
-    applyBlockedUntilExportsActivated: !exportsActivated,
-    deploymentOrder: ['functions', 'firestore-rules'],
+    usesEphemeralPilotExports: !exportsActivated,
+    committedIndexRemainsUnchanged: true,
+    deploymentOrder: ['functions', 'restore-local-index', 'firestore-rules'],
     remoteConfigChanged: false,
     clientPilotTrafficActivated: false,
     wouldDeployV4WriteRules: true,
@@ -116,10 +138,12 @@ export function runPilotStageDeployDev({
   args = process.argv.slice(2),
   v3Rules = readFileSync(join(repoRoot, 'firestore.rules'), 'utf8'),
   v4Rules = readFileSync(join(repoRoot, 'firestore-v4.rules'), 'utf8'),
-  indexSource = readFileSync(join(repoRoot, 'functions', 'index.js'), 'utf8'),
+  indexSource = readFileSync(functionsIndexPath, 'utf8'),
   firebaseCliScript = resolveFirebaseCliScript(),
   executeFirebase = runFirebase,
   writeGeneratedRules = (content) => writeFileSync(generatedRulesPath, content, 'utf8'),
+  writeFunctionsIndex = (content) => writeFileSync(functionsIndexPath, content, 'utf8'),
+  readFunctionsIndex = () => readFileSync(functionsIndexPath, 'utf8'),
   log = (value) => console.log(value),
 } = {}) {
   const options = parsePilotStageArgs(args);
@@ -135,9 +159,6 @@ export function runPilotStageDeployDev({
     log('Dry-run: no se desplegó ninguna Function ni Rules.');
     return visiblePlan;
   }
-  if (!plan.pilotExportsActivatedInIndex) {
-    throw new Error('Apply bloqueado: functions/index.js todavía no activa v4PilotExports.js.');
-  }
   if (options.expectedRulesSha !== plan.rulesSha256) {
     throw new Error('El SHA de Rules ya no coincide con el plan aprobado. Repite el plan antes de desplegar.');
   }
@@ -150,15 +171,26 @@ export function runPilotStageDeployDev({
 
   writeGeneratedRules(plan.candidateRules);
   const onlyFunctions = V4_PILOT_BACKEND_FUNCTION_NAMES.map((name) => `functions:${name}`).join(',');
+  const deployIndex = buildEphemeralPilotIndex(indexSource);
 
-  executeFirebase(firebaseCliScript, [
-    'deploy',
-    '--only',
-    onlyFunctions,
-    '--project',
-    PILOT_STAGE_PROJECT,
-    '--non-interactive',
-  ]);
+  if (deployIndex.changed) writeFunctionsIndex(deployIndex.source);
+  try {
+    executeFirebase(firebaseCliScript, [
+      'deploy',
+      '--only',
+      onlyFunctions,
+      '--project',
+      PILOT_STAGE_PROJECT,
+      '--non-interactive',
+    ]);
+  } finally {
+    if (deployIndex.changed) {
+      writeFunctionsIndex(indexSource);
+      if (readFunctionsIndex() !== indexSource) {
+        throw new Error('Stage abortado: functions/index.js no pudo restaurarse exactamente.');
+      }
+    }
+  }
 
   executeFirebase(firebaseCliScript, [
     'deploy',
@@ -176,6 +208,8 @@ export function runPilotStageDeployDev({
     mode: 'staged',
     rulesSha256: plan.rulesSha256,
     functionCount: plan.functionCount,
+    ephemeralPilotExportsUsed: deployIndex.changed,
+    functionsIndexRestored: true,
     remoteConfigChanged: false,
     clientPilotTrafficActivated: false,
     v4WriteRulesDeployed: true,
