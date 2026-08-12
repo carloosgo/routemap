@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 const PROJECT = 'atlasmap-dev';
 const SOURCE_DB = '(default)';
 const MAX_DOCUMENTS = 10_000;
+const ONE_HOUR_MS = 60 * 60 * 1000;
 
 function option(name) {
   const prefix = `${name}=`;
@@ -24,6 +25,27 @@ function assertReadTime(value) {
     throw new Error('source-read-time debe ser un timestamp RFC3339 valido.');
   }
   return value;
+}
+
+function resolveEffectiveReadTime(value, nowMs = Date.now()) {
+  const parsed = new Date(value);
+  const ageMs = nowMs - parsed.getTime();
+  if (ageMs <= ONE_HOUR_MS) {
+    return {
+      requestedReadTime: value,
+      effectiveReadTime: value,
+      exactBackupTimestampQueryable: true,
+      pitrMinuteNormalizationApplied: false,
+    };
+  }
+
+  parsed.setUTCSeconds(0, 0);
+  return {
+    requestedReadTime: value,
+    effectiveReadTime: parsed.toISOString().replace('.000Z', 'Z'),
+    exactBackupTimestampQueryable: false,
+    pitrMinuteNormalizationApplied: true,
+  };
 }
 
 function accessToken() {
@@ -161,12 +183,13 @@ function compareInventories(source, destination) {
 }
 
 const destinationDb = assertDatabaseId(option('--destination-db'));
-const sourceReadTime = assertReadTime(option('--source-read-time'));
+const requestedSourceReadTime = assertReadTime(option('--source-read-time'));
+const readTimeResolution = resolveEffectiveReadTime(requestedSourceReadTime);
 const token = accessToken();
 
 const source = await inventoryDatabase({
   databaseId: SOURCE_DB,
-  readTime: sourceReadTime,
+  readTime: readTimeResolution.effectiveReadTime,
   token,
 });
 const destination = await inventoryDatabase({
@@ -184,7 +207,10 @@ console.log(JSON.stringify({
   collectedAtUtc: new Date().toISOString(),
   project: PROJECT,
   sourceDatabase: SOURCE_DB,
-  sourceReadTime,
+  requestedSourceReadTime: readTimeResolution.requestedReadTime,
+  effectiveSourceReadTime: readTimeResolution.effectiveReadTime,
+  exactBackupTimestampQueryable: readTimeResolution.exactBackupTimestampQueryable,
+  pitrMinuteNormalizationApplied: readTimeResolution.pitrMinuteNormalizationApplied,
   destinationDatabase: destinationDb,
   sourceDocumentCount: comparison.sourcePaths.length,
   destinationDocumentCount: comparison.destinationPaths.length,
