@@ -47,6 +47,7 @@ test('pilot plan conserva WRITE apagado y expone todos los readiness requeridos'
     'writeRulesReady',
     'syncReady',
     'aggregateReady',
+    'touchReady',
     'lifecycleReady',
     'purgeReady',
   ]);
@@ -55,6 +56,7 @@ test('pilot plan conserva WRITE apagado y expone todos los readiness requeridos'
     writeRulesReady: 'storage_v4_write_rules_ready',
     syncReady: 'storage_v4_sync_ready',
     aggregateReady: 'storage_v4_aggregate_ready',
+    touchReady: 'storage_v4_touch_ready',
     lifecycleReady: 'storage_v4_lifecycle_ready',
     purgeReady: 'storage_v4_purge_ready',
   });
