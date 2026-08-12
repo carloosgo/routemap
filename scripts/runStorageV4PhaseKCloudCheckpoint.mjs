@@ -10,6 +10,10 @@ const checks = Object.freeze([
     script: join(here, 'runStorageV4PhaseKPreflight.mjs'),
   },
   {
+    name: 'slo-sample',
+    script: join(here, 'runStorageV4PhaseKSloPreflight.mjs'),
+  },
+  {
     name: 'monitoring-inventory',
     script: join(here, 'runStorageV4PhaseKObservabilityPreflight.mjs'),
   },
