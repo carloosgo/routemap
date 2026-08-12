@@ -28,3 +28,20 @@ test('SLO preflight calcula percentiles y ratios sobre denominadores semanticos'
   assert.ok(source.includes('hitRatePercent'));
   assert.ok(source.includes('truncated ='));
 });
+
+test('SLO preflight preserva Count para streams singleton en PowerShell', async () => {
+  const source = await readFile(scriptPath, 'utf8');
+
+  for (const assignment of [
+    "$rolloutEntries = @(Read-Stream 'storage_v4_rollout_metric')",
+    "$syncEntries = @(Read-Stream 'storage_v4_sync_metric')",
+    "$cacheEntries = @(Read-Stream 'storage_v4_provider_cache_metric')",
+    "$providerEntries = @(Read-Stream 'storage_v4_provider_request_metric')",
+    '$rollout = @(Payloads $rolloutEntries)',
+    '$sync = @(Payloads $syncEntries)',
+    '$cache = @(Payloads $cacheEntries)',
+    '$provider = @(Payloads $providerEntries)',
+  ]) {
+    assert.ok(source.includes(assignment), `Falta array coercion: ${assignment}`);
+  }
+});
