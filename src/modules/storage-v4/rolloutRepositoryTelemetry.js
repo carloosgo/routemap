@@ -72,6 +72,9 @@ export function createObservedTripRepository({
   }
 
   return {
+    async initialize() {
+      return target.initialize?.() ?? 0;
+    },
     list() {
       return observed('list', () => target.list(), classifyList);
     },
