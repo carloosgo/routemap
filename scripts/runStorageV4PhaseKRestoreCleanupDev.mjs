@@ -94,46 +94,81 @@ if (restoreDatabases.length === 0) {
   process.exit(0);
 }
 
-if (restoreDatabases.length !== 1) {
-  throw new Error('Restore cleanup abortado: se esperaba como maximo una base atlas-restore-drill-* y se detectaron varias.');
+function validateRestoreDatabase(database) {
+  const destinationDatabase = databaseId(database);
+  if (!destinationDatabase.startsWith('atlas-restore-drill-')) {
+    throw new Error('Restore cleanup abortado: el destino no cumple el prefijo aislado requerido.');
+  }
+  if (destinationDatabase === '(default)') {
+    throw new Error('Restore cleanup abortado: nunca se permite operar sobre (default).');
+  }
+
+  const detail = gcloudJson([
+    'firestore', 'databases', 'describe',
+    `--database=${destinationDatabase}`,
+    `--project=${PROJECT}`,
+  ]);
+  const expectedName = `projects/${PROJECT}/databases/${destinationDatabase}`;
+  const detailName = String(detail?.name || '');
+  const sourceBackup = String(detail?.sourceInfo?.backup?.backup || '');
+  const sourceOperation = String(detail?.sourceInfo?.operation || '');
+  const progress = String(detail?.sourceInfo?.progress || '');
+  const etag = String(detail?.etag || '');
+  const locationId = String(detail?.locationId || '');
+
+  if (detailName !== expectedName) {
+    throw new Error(`Restore cleanup abortado: identidad inesperada para ${destinationDatabase}.`);
+  }
+  if (!sourceBackup.startsWith(`projects/${PROJECT}/locations/`)) {
+    throw new Error(`Restore cleanup abortado: ${destinationDatabase} no expone una procedencia de backup del proyecto dev.`);
+  }
+  if (!sourceOperation.startsWith(`${expectedName}/operations/`)) {
+    throw new Error(`Restore cleanup abortado: ${destinationDatabase} no expone sourceInfo.operation de su restore administrado.`);
+  }
+  if (progress !== 'COMPLETED') {
+    throw new Error(`Restore cleanup abortado: ${destinationDatabase} no esta en estado COMPLETED.`);
+  }
+  if (!etag) {
+    throw new Error(`Restore cleanup abortado: falta etag para ${destinationDatabase}; no se elimina sin precondicion de concurrencia.`);
+  }
+
+  return {
+    destinationDatabase,
+    sourceBackup,
+    sourceOperation,
+    progress,
+    etag,
+    locationId,
+  };
 }
 
-const destinationDatabase = databaseId(restoreDatabases[0]);
-if (!destinationDatabase.startsWith('atlas-restore-drill-')) {
-  throw new Error('Restore cleanup abortado: el destino no cumple el prefijo aislado requerido.');
+const validatedRestores = restoreDatabases.map(validateRestoreDatabase);
+const sourceBackups = new Set(validatedRestores.map((restore) => restore.sourceBackup));
+const locations = new Set(validatedRestores.map((restore) => restore.locationId));
+
+if (sourceBackups.size !== 1) {
+  throw new Error('Restore cleanup abortado: las bases temporales no provienen del mismo backup administrado.');
 }
-if (destinationDatabase === '(default)') {
-  throw new Error('Restore cleanup abortado: nunca se permite operar sobre (default).');
+if (locations.size !== 1) {
+  throw new Error('Restore cleanup abortado: las bases temporales no pertenecen a la misma region.');
 }
 
-const detail = gcloudJson([
-  'firestore', 'databases', 'describe',
-  `--database=${destinationDatabase}`,
-  `--project=${PROJECT}`,
-]);
-const sourceBackup = String(detail?.sourceInfo?.backup?.backup || '');
-const sourceOperation = String(detail?.sourceInfo?.operation || '');
-const etag = String(detail?.etag || '');
-
-if (!sourceBackup.startsWith(`projects/${PROJECT}/locations/`)) {
-  throw new Error('Restore cleanup abortado: la base no expone una procedencia de backup del proyecto dev.');
-}
-if (!sourceOperation) {
-  throw new Error('Restore cleanup abortado: la base no expone sourceInfo.operation de un restore administrado.');
-}
-if (!etag) {
-  throw new Error('Restore cleanup abortado: falta etag; no se elimina sin precondicion de concurrencia.');
-}
+const destinationDatabases = validatedRestores.map((restore) => restore.destinationDatabase);
+const sourceBackup = validatedRestores[0].sourceBackup;
+const locationId = validatedRestores[0].locationId;
 
 console.log(JSON.stringify({
   project: PROJECT,
   applyRequested,
   cleanupNeeded: true,
-  restoreDatabaseCount: 1,
-  destinationDatabase,
-  managedRestoreLineagePresent: true,
-  etagPreconditionPresent: true,
-  deletesExactlyOneRestoreDatabase: applyRequested,
+  restoreDatabaseCount: validatedRestores.length,
+  destinationDatabases,
+  sourceBackup,
+  locationId,
+  managedRestoreLineagePresentForAll: true,
+  restoreProgressCompletedForAll: true,
+  etagPreconditionPresentForAll: true,
+  deletesRestoreDatabaseCount: applyRequested ? validatedRestores.length : 0,
   touchesDefaultDatabase: false,
   enablesStorageV4Write: false,
   touchesProduction: false,
@@ -141,17 +176,19 @@ console.log(JSON.stringify({
 }, null, 2));
 
 if (!applyRequested) {
-  console.log('Dry-run: base temporal validada; no se elimino ninguna base.');
+  console.log('Dry-run: bases temporales validadas; no se elimino ninguna base.');
   process.exit(0);
 }
 
-runGcloud([
-  'firestore', 'databases', 'delete',
-  `--database=${destinationDatabase}`,
-  `--etag=${etag}`,
-  `--project=${PROJECT}`,
-  '--quiet',
-], { inherit: true });
+for (const restore of validatedRestores) {
+  runGcloud([
+    'firestore', 'databases', 'delete',
+    `--database=${restore.destinationDatabase}`,
+    `--etag=${restore.etag}`,
+    `--project=${PROJECT}`,
+    '--quiet',
+  ], { inherit: true });
+}
 
 const remaining = gcloudJson(['firestore', 'databases', 'list', `--project=${PROJECT}`]);
 const remainingRestore = remaining.filter((database) =>
@@ -164,11 +201,12 @@ if (remainingRestore.length !== 0) {
 console.log(JSON.stringify({
   project: PROJECT,
   applied: true,
-  deletedDatabase: destinationDatabase,
+  deletedDatabases: destinationDatabases,
+  deletedDatabaseCount: destinationDatabases.length,
   remainingRestoreDatabaseCount: 0,
   defaultDatabaseUntouched: true,
   storageV4WriteUnchanged: true,
   budgetsUntouched: true,
   productionUntouched: true,
 }, null, 2));
-console.log('Restore cleanup completado: la base temporal fue eliminada y (default) permanecio intacta.');
+console.log('Restore cleanup completado: las bases temporales validadas fueron eliminadas y (default) permanecio intacta.');
