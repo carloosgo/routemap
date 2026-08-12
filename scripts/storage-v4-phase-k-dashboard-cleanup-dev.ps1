@@ -18,15 +18,70 @@ if (-not $activeAccount -or $activeAccount -eq '(unset)') {
   throw 'gcloud no tiene una cuenta autenticada activa.'
 }
 
-function Invoke-GcloudJson {
-  param([string[]]$Arguments)
-  $raw = & gcloud @Arguments --format=json 2>&1
-  if ($LASTEXITCODE -ne 0) {
-    throw "gcloud fallo: $($raw -join [Environment]::NewLine)"
+$accessToken = (& gcloud auth print-access-token 2>$null).Trim()
+if (-not $accessToken) {
+  throw 'No se pudo obtener un access token de la cuenta activa de gcloud.'
+}
+
+$monitoringHeaders = @{
+  Authorization = "Bearer $accessToken"
+  'x-goog-user-project' = $Project
+}
+
+function Invoke-MonitoringRestGet {
+  param([string]$Uri)
+
+  try {
+    return Invoke-RestMethod -Method Get -Uri $Uri -Headers $monitoringHeaders
+  } catch {
+    throw "Monitoring REST GET fallo para $Uri : $($_.Exception.Message)"
   }
-  $text = ($raw -join [Environment]::NewLine).Trim()
-  if (-not $text) { return @() }
-  return @($text | ConvertFrom-Json)
+}
+
+function Get-MonitoringDashboards {
+  $dashboards = @()
+  $pageToken = $null
+
+  do {
+    $uri = "https://monitoring.googleapis.com/v1/projects/$Project/dashboards"
+    if ($pageToken) {
+      $encodedPageToken = [Uri]::EscapeDataString([string]$pageToken)
+      $uri = "${uri}?pageToken=$encodedPageToken"
+    }
+
+    $response = Invoke-MonitoringRestGet -Uri $uri
+    if ($null -ne $response.dashboards) {
+      $dashboards += @($response.dashboards)
+    }
+    $pageToken = [string]$response.nextPageToken
+  } while ($pageToken)
+
+  return @($dashboards)
+}
+
+function Get-MonitoringDashboardDetail {
+  param($Dashboard)
+
+  $resourceName = [string]$Dashboard.name
+  if (-not $resourceName) {
+    throw 'Monitoring devolvio un dashboard sin resource name; cleanup abortado.'
+  }
+  return Invoke-MonitoringRestGet -Uri "https://monitoring.googleapis.com/v1/$resourceName"
+}
+
+function Remove-MonitoringDashboard {
+  param([string]$ResourceName)
+
+  if (-not $ResourceName -or $ResourceName -notmatch '^projects/[^/]+/dashboards/[A-Za-z0-9_-]+$') {
+    throw 'Resource name de dashboard invalido; delete abortado.'
+  }
+
+  $uri = "https://monitoring.googleapis.com/v1/$ResourceName"
+  try {
+    $null = Invoke-RestMethod -Method Delete -Uri $uri -Headers $monitoringHeaders
+  } catch {
+    throw "Monitoring REST DELETE fallo para $ResourceName : $($_.Exception.Message)"
+  }
 }
 
 function DashboardId {
@@ -69,23 +124,30 @@ function Normalize-DashboardForComparison {
   return ($copy | ConvertTo-Json -Depth 100 -Compress)
 }
 
-$listed = @(Invoke-GcloudJson @('monitoring', 'dashboards', 'list', "--project=$Project"))
-$details = @()
-foreach ($dashboard in $listed) {
-  $id = DashboardId $dashboard
-  if (-not $id) { continue }
-  $detail = @(Invoke-GcloudJson @('monitoring', 'dashboards', 'describe', $id, "--project=$Project")) | Select-Object -First 1
-  if ($detail -and (Is-AtlasDevDashboard $detail)) {
-    $details += $detail
+function Get-AtlasDashboardDetails {
+  $listed = @(Get-MonitoringDashboards)
+  $details = @()
+
+  foreach ($dashboard in $listed) {
+    $detail = Get-MonitoringDashboardDetail -Dashboard $dashboard
+    if ($detail -and (Is-AtlasDevDashboard $detail)) {
+      $details += $detail
+    }
   }
+
+  return @($details)
 }
+
+$details = @(Get-AtlasDashboardDetails)
+$ids = @($details | ForEach-Object { DashboardId $_ } | Sort-Object)
 
 $plan = [ordered]@{
   project = $Project
   applyRequested = [bool]$Apply
+  transport = 'monitoring-rest-v1'
   preferredDashboardId = if ($PreferredDashboardId) { $PreferredDashboardId } else { $null }
   atlasDashboardCount = $details.Count
-  atlasDashboardIds = @($details | ForEach-Object { DashboardId $_ } | Sort-Object)
+  atlasDashboardIds = $ids
   deletesExactlyOneDashboard = [bool]($Apply -and $details.Count -eq 2)
   alreadyClean = [bool]($details.Count -eq 1)
   deletesAlertPolicies = $false
@@ -103,11 +165,16 @@ if (-not $Apply) {
 
 if ($details.Count -eq 1) {
   $existingId = DashboardId $details[0]
+  if ($PreferredDashboardId -and $existingId -ne $PreferredDashboardId) {
+    throw "El unico dashboard Atlas dev no coincide con el ID preferido solicitado ($PreferredDashboardId); cleanup abortado."
+  }
+
   [ordered]@{
     project = $Project
     applied = $true
     cleanupNeeded = $false
     alreadyClean = $true
+    transport = 'monitoring-rest-v1'
     keptDashboardId = $existingId
     deletedDashboardId = $null
     remainingAtlasDashboardCount = 1
@@ -122,7 +189,7 @@ if ($details.Count -eq 1) {
 }
 
 if ($details.Count -ne 2) {
-  throw 'El cleanup requiere uno o dos dashboards Atlas dev: uno significa estado ya limpio; dos permiten verificar y eliminar un duplicado.'
+  throw "El cleanup requiere uno o dos dashboards Atlas dev y Monitoring REST detecto $($details.Count); no se elimina ninguno."
 }
 
 $normalized = @($details | ForEach-Object { Normalize-DashboardForComparison $_ })
@@ -130,33 +197,22 @@ if ($normalized.Count -ne 2 -or $normalized[0] -ne $normalized[1]) {
   throw 'Los dos dashboards no son equivalentes despues de normalizar campos server-owned; no se elimina ninguno.'
 }
 
-$ids = @($details | ForEach-Object { DashboardId $_ } | Sort-Object)
-$keepId = if ($PreferredDashboardId -and $ids -contains $PreferredDashboardId) {
-  $PreferredDashboardId
-} else {
-  $ids[0]
+if ($PreferredDashboardId -and $ids -notcontains $PreferredDashboardId) {
+  throw "El dashboard preferido $PreferredDashboardId no aparece entre los dos candidatos validados; no se elimina ninguno."
 }
-$duplicateId = @($ids | Where-Object { $_ -ne $keepId }) | Select-Object -First 1
 
-if (-not $duplicateId) {
+$keepId = if ($PreferredDashboardId) { $PreferredDashboardId } else { $ids[0] }
+$duplicate = @($details | Where-Object { (DashboardId $_) -ne $keepId }) | Select-Object -First 1
+$duplicateId = if ($duplicate) { DashboardId $duplicate } else { $null }
+$duplicateResourceName = if ($duplicate) { [string]$duplicate.name } else { $null }
+
+if (-not $duplicateId -or -not $duplicateResourceName) {
   throw 'No se pudo determinar de forma segura el dashboard duplicado; cleanup abortado.'
 }
 
-& gcloud monitoring dashboards delete $duplicateId "--project=$Project" --quiet
-if ($LASTEXITCODE -ne 0) {
-  throw "No se pudo eliminar el dashboard duplicado $duplicateId."
-}
+Remove-MonitoringDashboard -ResourceName $duplicateResourceName
 
-$remainingListed = @(Invoke-GcloudJson @('monitoring', 'dashboards', 'list', "--project=$Project"))
-$remainingAtlas = @()
-foreach ($dashboard in $remainingListed) {
-  $id = DashboardId $dashboard
-  if (-not $id) { continue }
-  $detail = @(Invoke-GcloudJson @('monitoring', 'dashboards', 'describe', $id, "--project=$Project")) | Select-Object -First 1
-  if ($detail -and (Is-AtlasDevDashboard $detail)) {
-    $remainingAtlas += $detail
-  }
-}
+$remainingAtlas = @(Get-AtlasDashboardDetails)
 if ($remainingAtlas.Count -ne 1 -or (DashboardId $remainingAtlas[0]) -ne $keepId) {
   throw 'Post-check invalido: no quedo exactamente el dashboard Atlas dev esperado.'
 }
@@ -166,6 +222,7 @@ if ($remainingAtlas.Count -ne 1 -or (DashboardId $remainingAtlas[0]) -ne $keepId
   applied = $true
   cleanupNeeded = $true
   alreadyClean = $false
+  transport = 'monitoring-rest-v1'
   keptDashboardId = $keepId
   deletedDashboardId = $duplicateId
   remainingAtlasDashboardCount = $remainingAtlas.Count
