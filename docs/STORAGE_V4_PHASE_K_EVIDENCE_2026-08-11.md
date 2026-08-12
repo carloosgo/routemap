@@ -73,18 +73,21 @@ Las tres estaban en `northamerica-south1`, exponían `sourceInfo.backup` al mism
 
 Conclusión: **el restore drill queda cerrado limpiamente en dev: backup + restore + lectura/inventario + cleanup explícito completados, sin tocar `(default)` ni producción**.
 
-### Budget: bloqueo de permisos demostrado
+### Budget: diagnóstico previo requiere rerun corregido
 
-El checkpoint volvió a obtener HTTP `403` en el probe original. El diagnóstico específico de budget a las `2026-08-12T02:09:48Z` confirmó:
+El diagnóstico específico de budget a las `2026-08-12T02:09:48Z` observó:
 
 - billing habilitado;
 - billing account asociado presente;
 - lectura account-scope: `403`;
 - lectura project-scope: `403`;
-- clasificación: `permission-blocked`;
-- budget count: no observable con la identidad actual.
+- budget count no observable en esa ejecución.
 
-Conclusión: el estado del budget sigue **desconocido**. No se interpreta como ausencia de budget y no se inventa monto. El repo documenta la ruta IAM de lectura y contiene un generador local de plan que exige un monto explícito y no muta Cloud.
+Revisión posterior contra la documentación oficial detectó que el probe REST original no enviaba `x-goog-user-project`, header utilizado por la Budget API al trabajar con credenciales de usuario y necesario para establecer el proyecto de cuota en este tipo de request. Por tanto, los `403` previos **no se toman como demostración concluyente de permisos IAM de budgets**.
+
+El probe fue corregido para enviar `x-goog-user-project: atlasmap-dev` en ambos listados y expone que el quota project fue aplicado sin revelar el billing account ID. Sigue siendo read-only: no crea, modifica ni elimina budgets.
+
+Conclusión actual: el estado del budget sigue **desconocido hasta rerunear el probe corregido**. No se interpreta como ausencia de budget, no se inventa monto y no se cambia IAM sin autorización explícita.
 
 ## Telemetría
 
@@ -200,7 +203,7 @@ Conclusión: la ausencia de una muestra Cloud `flush` no se debe a falta del con
 - Storage v4 WRITE sigue deshabilitado.
 - No se ejecutó migración.
 - `atlas-cache` físico sigue pendiente de Phase J.
-- Budget sigue bloqueado por permisos de lectura.
+- Budget: rerun pendiente del probe corregido con `x-goog-user-project`; los `403` previos ya no se consideran clasificación IAM concluyente.
 - Restore drill real: **PASS en dev y cleanup explícito completado**; no quedan restores temporales validados pendientes de este drill.
 - Dashboard Atlas dev: **estado limpio con exactamente uno**; el helper quedó idempotente.
 - Falta una muestra real `sync flush` una vez que exista un entorno/flujo de escritura v4 autorizado; no se habilita WRITE solo para generar telemetría.
