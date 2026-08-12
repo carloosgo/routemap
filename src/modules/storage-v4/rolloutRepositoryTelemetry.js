@@ -84,5 +84,8 @@ export function createObservedTripRepository({
     remove(id) {
       return observed('remove', () => target.remove(id));
     },
+    async close() {
+      await target.close?.();
+    },
   };
 }
