@@ -46,6 +46,7 @@ export function useSavedTrips(user) {
     setLoading(true);
     setError(null);
     try {
+      await repository.initialize?.();
       const list = await listSavedTrips(repository);
       if (
         refreshVersion === refreshVersionRef.current
