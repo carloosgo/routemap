@@ -128,7 +128,9 @@ async function writeChild(repository, mutation) {
     mutation.tripId,
     mutation.entityType,
     mutation.entityId,
-    mutation.baseVersion
+    mutation.baseVersion,
+    payload,
+    rank
   );
   return { serverVersion: result.version, serverStatus: 'active' };
 }
