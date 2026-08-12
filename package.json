@@ -26,7 +26,7 @@
     "phase-k:recovery:checkpoint-dev": "node scripts/runStorageV4PhaseKRecoveryCheckpointDev.mjs",
     "phase-k:budget:diagnose": "node scripts/runStorageV4PhaseKBudgetDiagnose.mjs",
     "phase-k:budget:plan": "node scripts/buildStorageV4PhaseKBudgetPlan.mjs",
-    "phase-k:resilience:local": "node --test functions/geoapifySupport.resilience.test.js test/sharedProviderCacheResilience.test.js test/storageV4ReconnectionStorm.test.js test/storageV4MultiDeviceSimulation.test.js",
+    "phase-k:resilience:local": "node --test functions/geoapifySupport.resilience.test.js test/sharedProviderCacheResilience.test.js test/storageV4ReconnectionStorm.test.js test/storageV4ReconnectCapacitySimulation.test.js test/storageV4MultiDeviceSimulation.test.js",
     "phase-k:slo:preflight": "node scripts/runStorageV4PhaseKSloPreflight.mjs",
     "phase-k:cloud-checkpoint": "node scripts/runStorageV4PhaseKCloudCheckpoint.mjs"
   },
