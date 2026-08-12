@@ -39,10 +39,10 @@ test('provider outage runner comprueba privacidad y evidencia estructurada en Cl
   assert.ok(source.includes("binding?.role === 'roles/run.invoker'"));
   assert.ok(source.includes("asArray(binding?.members).includes('allUsers')"));
   assert.ok(source.includes("'logging', 'read', filter"));
-  assert.ok(source.includes('jsonPayload.message=\\"storage_v4_provider_request_metric\\"'));
-  assert.ok(source.includes('jsonPayload.provider=\\"geoapify\\"'));
-  assert.ok(source.includes('jsonPayload.operation=\\"geocode-search\\"'));
-  assert.ok(source.includes('jsonPayload.outcome=\\"network-error\\"'));
+  assert.ok(source.includes('jsonPayload.message="storage_v4_provider_request_metric"'));
+  assert.ok(source.includes('jsonPayload.provider="geoapify"'));
+  assert.ok(source.includes('jsonPayload.operation="geocode-search"'));
+  assert.ok(source.includes('jsonPayload.outcome="network-error"'));
   assert.ok(source.includes('matchingProviderMetricLogCount'));
 });
 
