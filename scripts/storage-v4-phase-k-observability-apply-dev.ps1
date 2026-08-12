@@ -145,16 +145,58 @@ foreach ($alertFile in $alertFiles) {
   $createdPolicies += $displayName
 }
 
+# Post-apply verification: do not trust local config or successful create commands alone.
+$verifiedMetrics = @()
+foreach ($plan in $metricPlans) {
+  if (-not (Test-LogMetricExists -MetricName ([string]$plan.name))) {
+    throw "La metrica esperada no aparece despues del apply: $($plan.name)"
+  }
+  $verifiedMetrics += [string]$plan.name
+}
+
+$verifiedDashboards = Invoke-GcloudJson @('monitoring', 'dashboards', 'list', "--project=$Project")
+$matchingDashboards = @($verifiedDashboards | Where-Object {
+  [string]$_.displayName -eq $dashboardDisplayName
+})
+if ($matchingDashboards.Count -lt 1) {
+  throw "El dashboard esperado no aparece despues del apply: $dashboardDisplayName"
+}
+
+$verifiedPolicies = Invoke-GcloudJson @('monitoring', 'policies', 'list', "--project=$Project")
+$policyVerification = @()
+foreach ($plan in $alertPlans) {
+  $matches = @($verifiedPolicies | Where-Object {
+    [string]$_.displayName -eq [string]$plan.displayName
+  })
+  if ($matches.Count -lt 1) {
+    throw "La alert policy esperada no aparece despues del apply: $($plan.displayName)"
+  }
+  $enabledMatches = @($matches | Where-Object { [bool]$_.enabled })
+  if ($enabledMatches.Count -gt 0) {
+    throw "La alert policy quedo habilitada inesperadamente: $($plan.displayName)"
+  }
+  $policyVerification += [ordered]@{
+    displayName = [string]$plan.displayName
+    foundCount = $matches.Count
+    allDisabled = $true
+  }
+}
+
 [ordered]@{
   project = $Project
   applied = $true
   createdMetrics = $createdMetrics
   existingMetrics = $existingMetrics
+  verifiedMetrics = $verifiedMetrics
+  allMetricsVerified = $verifiedMetrics.Count -eq $metricPlans.Count
   dashboardDisplayName = $dashboardDisplayName
   dashboardCreated = $dashboardCreated
   dashboardAlreadyExisted = $dashboardExists
+  dashboardVerified = $matchingDashboards.Count -gt 0
   createdAlertPolicies = $createdPolicies
   existingAlertPolicies = $existingPolicies
+  alertPolicyVerification = $policyVerification
+  allAlertPoliciesVerifiedDisabled = @($policyVerification | Where-Object { -not $_.allDisabled }).Count -eq 0
   alertPoliciesRemainDisabledByConfig = $true
   budgetUnchanged = $true
   storageV4WriteUnchanged = $true
