@@ -48,6 +48,7 @@ No activar `atlas-cache` físicamente hasta disponer de un acceso server-side a 
 Código/preparación:
 
 - telemetría rollout/sync/provider cache/provider request con contratos allowlist;
+- el composition root de sync v4 acepta un `syncTelemetryEmitter` opcional y conecta sus métricas de lifecycle sin activar WRITE por sí mismo; el cleanup de la composición también detiene el emitter;
 - provider cache fail-soft y coalescing;
 - modelo de capacidad/costos parametrizable para 1k/10k/50k/100k usuarios;
 - simulación multidevice entity-level sin pérdida silenciosa;
