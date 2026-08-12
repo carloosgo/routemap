@@ -20,6 +20,7 @@
     "phase-k:restore:preflight": "node scripts/runStorageV4PhaseKRestorePreflight.mjs",
     "phase-k:restore:drill-dev": "node scripts/runStorageV4PhaseKRestoreDrillDev.mjs",
     "phase-k:resilience:local": "node --test test/sharedProviderCacheResilience.test.js test/storageV4ReconnectionStorm.test.js test/storageV4MultiDeviceSimulation.test.js",
+    "phase-k:slo:preflight": "node scripts/runStorageV4PhaseKSloPreflight.mjs",
     "phase-k:cloud-checkpoint": "node scripts/runStorageV4PhaseKCloudCheckpoint.mjs"
   },
   "dependencies": {
