@@ -1,7 +1,7 @@
 /* global process, console */
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Buffer } from 'node:buffer';
 import {
@@ -119,7 +119,9 @@ export async function runStorageV4PilotPlanDev({ log = (value) => console.log(va
   return plan;
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === fileURLToPath(new URL(`file://${process.argv[1]}`))) {
+const invokedPath = process.argv[1] ? resolve(process.argv[1]) : '';
+const modulePath = resolve(fileURLToPath(import.meta.url));
+if (invokedPath === modulePath) {
   runStorageV4PilotPlanDev().catch((error) => {
     console.error(error?.message || error);
     process.exitCode = 1;
