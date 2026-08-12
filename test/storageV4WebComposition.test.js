@@ -69,13 +69,17 @@ test('composition root ensambla local queue -> coordinator -> gateway sin activa
 test('composition root conecta telemetria sync opcional sin activar WRITE por si sola', async () => {
   const localPersistence = createMemoryV4LocalPersistence();
   const metrics = [];
-  let telemetryStopped = false;
+  const shutdownOrder = [];
   const telemetry = {
     emit(metric) {
       metrics.push(metric);
     },
+    async flush() {
+      shutdownOrder.push('flush');
+      return true;
+    },
     stop() {
-      telemetryStopped = true;
+      shutdownOrder.push('stop');
     },
   };
   const composition = createV4WebSyncComposition({
@@ -110,6 +114,34 @@ test('composition root conecta telemetria sync opcional sin activar WRITE por si
   assert.doesNotMatch(JSON.stringify(metrics), /userId|tripId|entityId|entityKey|payload|uid/i);
 
   await composition.stop();
+  assert.deepEqual(shutdownOrder, ['flush', 'stop']);
+});
+
+test('composition root detiene emitter aunque flush de telemetria falle', async () => {
+  const localPersistence = createMemoryV4LocalPersistence();
+  let telemetryStopped = false;
+  const composition = createV4WebSyncComposition({
+    uid: 'alice',
+    contextId: 'tab-a',
+    localPersistence,
+    crossContextNotifier: inertNotifier(),
+    syncTelemetryEmitter: {
+      emit() {},
+      async flush() { throw new Error('telemetry unavailable'); },
+      stop() { telemetryStopped = true; },
+    },
+    remoteGateway: {
+      async writeMutation() {
+        return { serverVersion: 1, serverStatus: 'active' };
+      },
+    },
+    lifecycleOptions: {
+      setTimer() { return 1; },
+      clearTimer() {},
+    },
+  });
+
+  await assert.rejects(() => composition.stop(), /telemetry unavailable/);
   assert.equal(telemetryStopped, true);
 });
 
