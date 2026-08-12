@@ -112,8 +112,12 @@ export function createFirestoreV4TripRepository({ db, uid }) {
       return { id: entityId, version: patch.version };
     },
 
-    async restoreEntity(tripId, entityType, entityId, baseVersion) {
-      const patch = v4EntityRestorePatch(baseVersion, serverTimestamp());
+    async restoreEntity(tripId, entityType, entityId, baseVersion, rawEntity = null, rank = null) {
+      const patch = v4EntityRestorePatch(baseVersion, serverTimestamp(), {
+        entityType,
+        rawEntity,
+        rank,
+      });
       await updateDoc(entityRef(tripId, entityType, entityId), patch);
       return { id: entityId, version: patch.version };
     },
