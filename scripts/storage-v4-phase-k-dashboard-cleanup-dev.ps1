@@ -86,7 +86,8 @@ $plan = [ordered]@{
   preferredDashboardId = if ($PreferredDashboardId) { $PreferredDashboardId } else { $null }
   atlasDashboardCount = $details.Count
   atlasDashboardIds = @($details | ForEach-Object { DashboardId $_ } | Sort-Object)
-  deletesExactlyOneDashboard = [bool]$Apply
+  deletesExactlyOneDashboard = [bool]($Apply -and $details.Count -eq 2)
+  alreadyClean = [bool]($details.Count -eq 1)
   deletesAlertPolicies = $false
   deletesLogMetrics = $false
   mutatesBudgets = $false
@@ -100,8 +101,28 @@ if (-not $Apply) {
   exit 0
 }
 
+if ($details.Count -eq 1) {
+  $existingId = DashboardId $details[0]
+  [ordered]@{
+    project = $Project
+    applied = $true
+    cleanupNeeded = $false
+    alreadyClean = $true
+    keptDashboardId = $existingId
+    deletedDashboardId = $null
+    remainingAtlasDashboardCount = 1
+    alertPoliciesUntouched = $true
+    logMetricsUntouched = $true
+    budgetsUntouched = $true
+    storageV4WriteUnchanged = $true
+    productionUntouched = $true
+  } | ConvertTo-Json -Depth 6
+  Write-Output 'Dashboard cleanup: ya existe exactamente un dashboard Atlas dev; no hay duplicado que eliminar.'
+  exit 0
+}
+
 if ($details.Count -ne 2) {
-  throw 'El cleanup solo opera cuando detecta exactamente dos dashboards Atlas dev por labels o firma de contenido.'
+  throw 'El cleanup requiere uno o dos dashboards Atlas dev: uno significa estado ya limpio; dos permiten verificar y eliminar un duplicado.'
 }
 
 $normalized = @($details | ForEach-Object { Normalize-DashboardForComparison $_ })
@@ -143,6 +164,8 @@ if ($remainingAtlas.Count -ne 1 -or (DashboardId $remainingAtlas[0]) -ne $keepId
 [ordered]@{
   project = $Project
   applied = $true
+  cleanupNeeded = $true
+  alreadyClean = $false
   keptDashboardId = $keepId
   deletedDashboardId = $duplicateId
   remainingAtlasDashboardCount = $remainingAtlas.Count
