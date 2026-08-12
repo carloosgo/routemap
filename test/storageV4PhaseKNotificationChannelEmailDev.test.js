@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const scriptPath = new URL('../scripts/runStorageV4PhaseKNotificationChannelEmailDev.mjs', import.meta.url);
 
@@ -12,6 +14,18 @@ test('notification channel email dev es dry-run por defecto y exige destino expl
   assert.ok(source.includes("arg.startsWith('--email=')"));
   assert.ok(source.includes('emailAddressExposed: false'));
   assert.ok(source.includes('Dry-run: no se creo ningun notification channel.'));
+});
+
+test('notification channel email rechaza wrappers markdown/mailto antes de tocar gcloud', () => {
+  const result = spawnSync(
+    process.execPath,
+    [fileURLToPath(scriptPath), '--email=[alerts@example.com](mailto:alerts@example.com)'],
+    { encoding: 'utf8' }
+  );
+
+  assert.equal(result.status, 2);
+  assert.match(String(result.stderr || result.stdout || ''), /formato valido/i);
+  assert.doesNotMatch(String(result.stderr || result.stdout || ''), /gcloud/i);
 });
 
 test('notification channel email se crea deshabilitado y no se asocia a policies', async () => {
