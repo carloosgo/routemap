@@ -22,13 +22,21 @@ test('observability apply valida dashboard y crea solo recursos faltantes', asyn
   const source = await readFile(applyScriptPath, 'utf8');
 
   assert.ok(source.includes("'logging', 'metrics', 'create'"));
-  assert.ok(source.includes('Test-LogMetricExists'));
+  assert.ok(source.includes('Get-LogMetricNames'));
+  assert.equal(source.includes('logging metrics describe'), false);
   assert.ok(source.includes("'monitoring', 'dashboards', 'create'"));
   assert.ok(source.includes("'--validate-only'"));
   assert.ok(source.includes('$dashboardExists'));
   assert.ok(source.includes("'monitoring', 'policies', 'create'"));
   assert.ok(source.includes('$existingPolicies'));
   assert.ok(source.includes('alertPoliciesRemainDisabledByConfig = $true'));
+});
+
+test('observability apply fuerza UTF-8 en configs para Windows PowerShell 5', async () => {
+  const source = await readFile(applyScriptPath, 'utf8');
+
+  assert.ok(source.includes('-Raw -Encoding UTF8'));
+  assert.ok(source.includes('$dashboardConfig = Get-Content $dashboardFile -Raw -Encoding UTF8'));
 });
 
 test('observability apply no borra recursos, no muta budgets y no toca produccion', async () => {
