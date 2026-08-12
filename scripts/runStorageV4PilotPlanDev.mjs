@@ -20,6 +20,7 @@ const PILOT_READINESS_FIELDS = Object.freeze([
   'writeRulesReady',
   'syncReady',
   'aggregateReady',
+  'touchReady',
   'lifecycleReady',
   'purgeReady',
 ]);
