@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const scriptPath = new URL('../scripts/storage-v4-phase-k-restore-checkpoint-dev.ps1', import.meta.url);
+const validatorPath = new URL('../scripts/validateStorageV4PhaseKRestore.mjs', import.meta.url);
 
 test('restore checkpoint auto-selecciona solo backup READY de default', async () => {
   const source = await readFile(scriptPath, 'utf8');
@@ -19,7 +20,7 @@ test('restore checkpoint es dry-run por defecto y nunca limpia la base restaurad
 
   assert.ok(source.includes('[switch]$Apply'));
   assert.ok(source.includes('if (-not $Apply)'));
-  assert.ok(source.includes('costBearingChange = $true'));
+  assert.ok(source.includes('costBearingChange = -not $resumeExisting'));
   assert.ok(source.includes('deletesResources = $false'));
   assert.ok(source.includes('touchesDefaultDatabase = $false'));
   assert.ok(source.includes('enablesStorageV4Write = $false'));
@@ -36,4 +37,22 @@ test('restore checkpoint delega al drill aislado con destino atlas-restore-drill
   assert.ok(source.includes('-SourceBackup ([string]$selected.name)'));
   assert.ok(source.includes('-DestinationDatabase $destination'));
   assert.ok(source.includes('-Apply'));
+});
+
+test('restore checkpoint reanuda una unica base restaurada usando sourceInfo sin crear otra', async () => {
+  const source = await readFile(scriptPath, 'utf8');
+
+  assert.ok(source.includes('$existingDrills.Count -gt 1'));
+  assert.ok(source.includes('$resumeExisting = $existingDrills.Count -eq 1'));
+  assert.ok(source.includes('$existingDetail.sourceInfo.backup.backup'));
+  assert.ok(source.includes('no se crea una segunda base ni se repite el restore'));
+});
+
+test('restore validator normaliza a minuto lecturas PITR mayores a una hora', async () => {
+  const source = await readFile(validatorPath, 'utf8');
+
+  assert.ok(source.includes('const ONE_HOUR_MS = 60 * 60 * 1000'));
+  assert.ok(source.includes('parsed.setUTCSeconds(0, 0)'));
+  assert.ok(source.includes('pitrMinuteNormalizationApplied'));
+  assert.ok(source.includes('exactBackupTimestampQueryable'));
 });
