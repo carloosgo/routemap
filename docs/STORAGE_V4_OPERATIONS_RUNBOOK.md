@@ -67,6 +67,14 @@ Estos son objetivos internos iniciales y deben revisarse con tráfico real antes
 
 Una degradación de proveedor no debe impedir editar el viaje. El editor debe conservar el estado local y sincronizar cuando el backend vuelva a estar disponible.
 
+El preflight `phase-k:slo:preflight` calcula sobre Cloud Logging, en modo exclusivamente read-only:
+
+- success rate de repositorio y provider;
+- success rate accionable de `sync flush`, excluyendo `not-leader` del denominador de fallos;
+- cache hit rate sobre `hit + miss`;
+- p50/p95/p99 de rollout, sync flush y provider request;
+- bandera `truncated` si un stream alcanza el límite de muestra y por tanto no puede tratarse como ventana SLO completa.
+
 ## 3. Alertas
 
 Configurar alertas accionables; evitar alertas por cada evento individual.
@@ -117,13 +125,22 @@ storage_v4_provider_request_metric
 El bundle declarativo `ops/storage-v4/observability/` prepara:
 
 - counters de rollout/sync/provider cache/provider request;
-- distribuciones de latencia p95 para rollout/sync/provider;
+- distribuciones de latencia para rollout/sync/provider;
+- p50/p95/p99 del repositorio en la vista operacional;
 - panel de logs de los cuatro streams;
 - ratios de éxito y cache hit;
 - operaciones y storage de Firestore;
 - request count y p95 de los servicios Cloud Run observados.
 
 La definición existe en repo pero no se considera dashboard operativo hasta pasar validación server-side y crear/verificar el recurso en `atlasmap-dev`.
+
+El comando de checkpoint preferido para minimizar intervenciones manuales es:
+
+```bash
+npm run phase-k:observability:checkpoint-dev -- --apply
+```
+
+Ese comando está limitado a los recursos de observabilidad dev, ejecuta post-verificación server-side y después encadena el checkpoint Cloud read-only. No modifica budgets, no ejecuta restore, no habilita Storage v4 WRITE y no toca producción.
 
 ## 5. Modelo de capacidad/costos
 
@@ -197,6 +214,8 @@ Reglas de seguridad del drill:
 - la creación del destino es cost-bearing y requiere un checkpoint `-Apply` explícito;
 - no forzar APIs preview de acceso server-side a named databases solo para cerrar la evidencia.
 
+El repo contiene un preflight de restore read-only y un drill bloqueado a `atlasmap-dev` que exige un backup `READY`, un destino `atlas-restore-drill-*` inexistente y nunca realiza cleanup automático.
+
 ## 8. Pruebas de carga y resiliencia
 
 ### Reconnect storm
@@ -212,6 +231,8 @@ Simular timeout/429/5xx y confirmar:
 - cache vigente se usa cuando el contrato del dato lo permita;
 - el error no provoca loops agresivos;
 - backoff y métricas son correctos.
+
+El smoke determinista actual cubre 429, 503, network error, JSON inválido, privacidad de la telemetría y fallo del metric sink. Esto no sustituye el escenario E2E con UX/local state real.
 
 ### Multidevice
 
@@ -244,6 +265,13 @@ Configurar un budget por proyecto (dev y producción separados) y alertas de gas
 Los umbrales concretos deben fijarse con el presupuesto operativo aprobado del proyecto. Como mínimo, usar múltiples escalones para advertencia temprana y crítica, y definir el responsable que actúa ante cada uno.
 
 El probe actual de `atlasmap-dev` recibe HTTP 403 para budgets. Ese resultado significa **visibilidad insuficiente / estado desconocido**, nunca prueba de ausencia de budget. No crear ni fijar un monto por inferencia.
+
+Herramientas preparadas:
+
+- `phase-k:budget:diagnose`: compara lectura account-scope y single-project scope sin mostrar el billing account ID;
+- `phase-k:budget:plan -- --amount=<monto>`: construye localmente un body de budget mensual solo para `atlasmap-dev`; exige monto explícito, no tiene monto default y no muta Cloud.
+
+La ruta IAM read-only mínima documentada por Google es `roles/billing.viewer` en billing account, o `roles/viewer` en el proyecto para visibilidad single-project. La creación requiere permisos adicionales y sigue bloqueada hasta aprobación explícita del monto/thresholds.
 
 ## 10. Criterio de cierre de Phase K
 
