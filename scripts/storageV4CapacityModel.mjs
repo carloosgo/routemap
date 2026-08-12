@@ -6,11 +6,10 @@ export const STORAGE_V4_CAPACITY_SCENARIOS = Object.freeze([
 ]);
 
 function finiteNonNegative(value, field) {
-  const number = Number(value);
-  if (!Number.isFinite(number) || number < 0) {
-    throw new TypeError(`${field} debe ser un número no negativo.`);
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    throw new TypeError(`${field} debe ser un número no negativo explícito.`);
   }
-  return number;
+  return value;
 }
 
 function fraction(value, field) {
