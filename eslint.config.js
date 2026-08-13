@@ -42,14 +42,6 @@ export default [
     },
   },
   {
-    files: ['scripts/**/*.mjs'],
-    languageOptions: {
-      globals: {
-        URLSearchParams: 'readonly',
-      },
-    },
-  },
-  {
     files: ['functions/**/*.js'],
     languageOptions: {
       globals: {
