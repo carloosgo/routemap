@@ -18,11 +18,7 @@ async function ruleSources() {
 }
 
 const activatedIndex = `export {
-  v4SegmentAggregate,
-  v4PlaceAggregate,
-  v4ConnectionTouch,
-  v4NoteTouch,
-  v4ChecklistTouch,
+  v4FirestoreEventIngress,
   v4TripLifecycle,
   v4TripPurge,
 } from './v4PilotExports.js';`;
@@ -45,20 +41,23 @@ test('pilot stage es dry-run por defecto y apply exige hash + confirmación', ()
   assert.equal(parsed.expectedRulesSha, digest);
 });
 
-test('pilot stage conserva index commiteado fail-closed y usa exports efímeros', async () => {
+test('pilot stage conserva index fail-closed y separa Eventarc de Functions', async () => {
   const { v3Rules, v4Rules } = await ruleSources();
-  const plan = buildPilotStageDeployPlan({
-    v3Rules,
-    v4Rules,
-    indexSource: stableIndex,
-  });
+  const plan = buildPilotStageDeployPlan({ v3Rules, v4Rules, indexSource: stableIndex });
 
   assert.match(plan.rulesSha256, /^[a-f0-9]{64}$/);
-  assert.equal(plan.functionCount, 7);
+  assert.equal(plan.functionCount, 3);
+  assert.deepEqual(plan.functions, [
+    'v4FirestoreEventIngress',
+    'v4TripLifecycle',
+    'v4TripPurge',
+  ]);
+  assert.equal(plan.eventarcTriggerCount, 5);
+  assert.equal(plan.eventarcWiringIncluded, false);
+  assert.equal(plan.eventarcWiringRequiresIamPreflight, true);
   assert.equal(plan.pilotExportsActivatedInIndex, false);
   assert.equal(plan.usesEphemeralPilotExports, true);
   assert.equal(plan.committedIndexRemainsUnchanged, true);
-  assert.equal(plan.functionFailurePolicyAcknowledged, true);
   assert.equal(plan.wouldDeployV4WriteRules, true);
   assert.equal(plan.requiresExplicitWriteAuthorization, true);
   assert.equal(plan.remoteConfigChanged, false);
@@ -67,11 +66,12 @@ test('pilot stage conserva index commiteado fail-closed y usa exports efímeros'
 
   const ephemeral = buildEphemeralPilotIndex(stableIndex);
   assert.equal(ephemeral.changed, true);
-  assert.match(ephemeral.source, /v4PilotExports\.js/);
+  assert.match(ephemeral.source, /v4FirestoreEventIngress/);
+  assert.doesNotMatch(ephemeral.source, /v4SegmentAggregate/);
   assert.equal(buildEphemeralPilotIndex(activatedIndex).changed, false);
 });
 
-test('pilot stage apply despliega solo siete Functions, restaura index y después Rules', async () => {
+test('pilot stage apply despliega tres Functions soportadas, restaura index y después Rules', async () => {
   const { v3Rules, v4Rules } = await ruleSources();
   const plan = buildPilotStageDeployPlan({ v3Rules, v4Rules, indexSource: stableIndex });
   const calls = [];
@@ -104,20 +104,23 @@ test('pilot stage apply despliega solo siete Functions, restaura index y despué
 
   assert.equal(calls.length, 2);
   assert.equal(calls[0][0], 'deploy');
-  assert.match(calls[0][2], /^functions:v4SegmentAggregate,/);
-  assert.match(calls[0][2], /functions:v4TripPurge$/);
-  assert.ok(calls[0].includes('--force'));
+  assert.equal(
+    calls[0][2],
+    'functions:v4FirestoreEventIngress,functions:v4TripLifecycle,functions:v4TripPurge'
+  );
+  assert.equal(calls[0].includes('--force'), false);
   assert.equal(calls[1][0], 'deploy');
   assert.equal(calls[1][1], '--config');
   assert.ok(calls[1][2].replaceAll('\\', '/').endsWith('/firebase.pilot-write.json'));
   assert.deepEqual(calls[1].slice(3, 5), ['--only', 'firestore:rules']);
-  assert.equal(calls[1].includes('--force'), false);
   assert.ok(generatedRules.includes('pilotValidClientTripUpdate'));
   assert.equal(indexWrites.length, 2);
-  assert.match(indexWrites[0], /v4PilotExports\.js/);
   assert.equal(indexWrites[1], stableIndex);
   assert.equal(currentIndex, stableIndex);
-  assert.equal(result.functionFailurePolicyAcknowledged, true);
+  assert.equal(result.mode, 'backend-and-rules-staged');
+  assert.equal(result.functionCount, 3);
+  assert.equal(result.eventarcTriggerCount, 5);
+  assert.equal(result.eventarcWiringPending, true);
   assert.equal(result.ephemeralPilotExportsUsed, true);
   assert.equal(result.functionsIndexRestored, true);
   assert.equal(result.v4WriteRulesDeployed, true);
