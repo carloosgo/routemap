@@ -113,6 +113,7 @@ export function buildPilotStageDeployPlan({ v3Rules, v4Rules, indexSource } = {}
     usesEphemeralPilotExports: !exportsActivated,
     committedIndexRemainsUnchanged: true,
     deploymentOrder: ['functions', 'restore-local-index', 'firestore-rules'],
+    functionFailurePolicyAcknowledged: true,
     remoteConfigChanged: false,
     clientPilotTrafficActivated: false,
     wouldDeployV4WriteRules: true,
@@ -184,6 +185,7 @@ export function runPilotStageDeployDev({
       '--project',
       PILOT_STAGE_PROJECT,
       '--non-interactive',
+      '--force',
     ]);
   } catch (error) {
     functionDeployError = error;
@@ -229,6 +231,7 @@ export function runPilotStageDeployDev({
     mode: 'staged',
     rulesSha256: plan.rulesSha256,
     functionCount: plan.functionCount,
+    functionFailurePolicyAcknowledged: true,
     ephemeralPilotExportsUsed: deployIndex.changed,
     functionsIndexRestored: true,
     remoteConfigChanged: false,
