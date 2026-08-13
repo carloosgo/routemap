@@ -22,6 +22,8 @@
     "storage-v4:pilot-stage-verify-dev": "node scripts/runStorageV4PilotStageVerifyDev.mjs",
     "storage-v4:pilot-stage-safety-dev": "node scripts/runStorageV4PilotStageSafetyDev.mjs",
     "storage-v4:pilot-eventarc-iam-preflight-dev": "node scripts/runStorageV4PilotEventarcIamPreflightDev.mjs",
+    "storage-v4:pilot-eventarc-iam-bootstrap-dev": "node scripts/runStorageV4PilotEventarcIamBootstrapDev.mjs",
+    "storage-v4:pilot-eventarc-deploy-dev": "node scripts/runStorageV4PilotEventarcDeployDev.mjs",
     "storage-v4:pilot-remote-config-dev": "node scripts/runStorageV4PilotRemoteConfigDev.mjs",
     "phase-k:preflight": "node scripts/runStorageV4PhaseKPreflight.mjs",
     "phase-k:telemetry:deploy-dev": "node scripts/deployStorageV4PhaseKTelemetryDev.mjs",
