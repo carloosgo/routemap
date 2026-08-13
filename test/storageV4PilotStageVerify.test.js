@@ -1,21 +1,51 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import {
-  V4_PILOT_BACKEND_FUNCTION_NAMES,
-  V4_PILOT_BACKEND_FUNCTION_REGIONS,
-} from '../functions/v4PilotBackendManifest.js';
 import { composePilotWriteRules } from '../scripts/firestorePilotWriteRules.mjs';
 import {
+  PILOT_VERIFY_EVENT_TYPE,
   PILOT_VERIFY_RELEASE,
   buildPilotStageVerification,
 } from '../scripts/runStorageV4PilotStageVerifyDev.mjs';
+import { V4_PILOT_EVENTARC_TRIGGERS } from '../functions/v4PilotBackendManifest.js';
+
+const functionNames = [
+  'v4FirestoreEventIngress',
+  'v4TripLifecycle',
+  'v4TripPurge',
+];
+const ingressRunService = 'v4firestoreeventingress-abcd';
 
 function functionInventory() {
-  return V4_PILOT_BACKEND_FUNCTION_NAMES.map((name) => ({
-    name: `projects/atlasmap-dev/locations/${V4_PILOT_BACKEND_FUNCTION_REGIONS[name]}/functions/${name}`,
+  return functionNames.map((name) => ({
+    name: `projects/atlasmap-dev/locations/us-central1/functions/${name}`,
     state: 'ACTIVE',
     buildConfig: { runtime: 'nodejs22' },
+    serviceConfig: {
+      service: `projects/atlasmap-dev/locations/us-central1/services/${
+        name === 'v4FirestoreEventIngress' ? ingressRunService : name.toLowerCase()
+      }`,
+    },
+  }));
+}
+
+function eventarcInventory() {
+  return V4_PILOT_EVENTARC_TRIGGERS.map((expected) => ({
+    name: `projects/atlasmap-dev/locations/northamerica-south1/triggers/${expected.name}`,
+    eventFilters: [
+      { attribute: 'type', value: PILOT_VERIFY_EVENT_TYPE },
+      { attribute: 'document', value: expected.document, operator: 'match-path-pattern' },
+    ],
+    serviceAccount: '833327011450-compute@developer.gserviceaccount.com',
+    destination: {
+      cloudRun: {
+        service: ingressRunService,
+        region: 'us-central1',
+      },
+    },
+    conditions: {
+      transport: { code: 'CONDITION_SUCCEEDED' },
+    },
   }));
 }
 
@@ -48,26 +78,25 @@ function activeRules(rules) {
   };
 }
 
-test('stage verify acepta solo backend activo en regiones correctas + Rules exactas + Remote Config apagado', async () => {
+test('stage verify exige Functions + Eventarc + Rules exactas + Remote Config apagado', async () => {
   const rules = await candidateRules();
   const current = activeRules(rules);
   const result = buildPilotStageVerification({
     candidateRules: rules,
     cloudFunctions: functionInventory(),
+    eventarcTriggers: eventarcInventory(),
     release: current.release,
     ruleset: current.ruleset,
     remoteConfigSummary: safeRemoteConfig(),
   });
 
   assert.equal(result.staged, true);
+  assert.equal(result.functionsReady, true);
+  assert.equal(result.eventarc.ready, true);
   assert.equal(result.backendReady, true);
   assert.equal(result.rules.matchesCandidate, true);
   assert.equal(result.remoteConfig.safeForStage, true);
   assert.equal(result.remoteConfig.pilotTrafficActivated, false);
-  assert.deepEqual(result.unexpectedRegionFunctions, []);
-  assert.equal(result.regions.v4SegmentAggregate, 'northamerica-south1');
-  assert.equal(result.regions.v4TripLifecycle, 'us-central1');
-  assert.equal(result.regions.v4TripPurge, 'us-central1');
   assert.deepEqual(result.readinessCandidates, {
     writeRulesReady: true,
     aggregateReady: true,
@@ -79,62 +108,77 @@ test('stage verify acepta solo backend activo en regiones correctas + Rules exac
   assert.equal(result.activatesClientPilotTraffic, false);
 });
 
-test('stage verify falla cerrado si falta una Function o su runtime/estado no coincide', async () => {
+test('stage verify falla cerrado si falta Function, runtime o Eventarc', async () => {
   const rules = await candidateRules();
   const current = activeRules(rules);
   const missing = functionInventory().slice(1);
   const missingResult = buildPilotStageVerification({
     candidateRules: rules,
     cloudFunctions: missing,
+    eventarcTriggers: eventarcInventory(),
     release: current.release,
     ruleset: current.ruleset,
     remoteConfigSummary: safeRemoteConfig(),
   });
   assert.equal(missingResult.staged, false);
-  assert.deepEqual(missingResult.missingFunctions, ['v4SegmentAggregate']);
+  assert.deepEqual(missingResult.missingFunctions, ['v4FirestoreEventIngress']);
+  assert.equal(missingResult.eventarc.ready, false);
 
   const wrong = functionInventory();
-  wrong[0] = { ...wrong[0], state: 'FAILED' };
-  wrong[1] = { ...wrong[1], buildConfig: { runtime: 'nodejs20' } };
+  wrong[1] = { ...wrong[1], state: 'FAILED' };
+  wrong[2] = { ...wrong[2], buildConfig: { runtime: 'nodejs20' } };
   const wrongResult = buildPilotStageVerification({
     candidateRules: rules,
     cloudFunctions: wrong,
+    eventarcTriggers: eventarcInventory(),
     release: current.release,
     ruleset: current.ruleset,
     remoteConfigSummary: safeRemoteConfig(),
   });
   assert.equal(wrongResult.staged, false);
-  assert.deepEqual(wrongResult.nonActiveFunctions, ['v4SegmentAggregate']);
-  assert.deepEqual(wrongResult.wrongRuntimeFunctions, ['v4PlaceAggregate']);
-});
+  assert.deepEqual(wrongResult.nonActiveFunctions, ['v4TripLifecycle']);
+  assert.deepEqual(wrongResult.wrongRuntimeFunctions, ['v4TripPurge']);
 
-test('stage verify rechaza una Function pilot en región inesperada', async () => {
-  const rules = await candidateRules();
-  const current = activeRules(rules);
-  const inventory = functionInventory();
-  inventory.push({
-    name: 'projects/atlasmap-dev/locations/us-central1/functions/v4SegmentAggregate',
-    state: 'ACTIVE',
-    buildConfig: { runtime: 'nodejs22' },
-  });
-  const result = buildPilotStageVerification({
+  const incompleteEventarc = eventarcInventory().slice(1);
+  const eventarcResult = buildPilotStageVerification({
     candidateRules: rules,
-    cloudFunctions: inventory,
+    cloudFunctions: functionInventory(),
+    eventarcTriggers: incompleteEventarc,
     release: current.release,
     ruleset: current.ruleset,
     remoteConfigSummary: safeRemoteConfig(),
   });
-  assert.equal(result.backendReady, false);
-  assert.equal(result.staged, false);
-  assert.deepEqual(result.unexpectedRegionFunctions, ['v4SegmentAggregate@us-central1']);
+  assert.equal(eventarcResult.staged, false);
+  assert.equal(eventarcResult.functionsReady, true);
+  assert.deepEqual(eventarcResult.eventarc.missingTriggers, ['atlas-v4-segment-written']);
+  assert.equal(eventarcResult.readinessCandidates.aggregateReady, false);
+  assert.equal(eventarcResult.readinessCandidates.lifecycleReady, true);
 });
 
-test('stage verify detecta Rules distintas o tráfico pilot ya activado', async () => {
+test('stage verify detecta Eventarc mal apuntado, Rules distintas o tráfico pilot', async () => {
   const rules = await candidateRules();
+  const current = activeRules(rules);
+  const invalidTriggers = eventarcInventory();
+  invalidTriggers[0] = {
+    ...invalidTriggers[0],
+    destination: { cloudRun: { service: 'otro-servicio', region: 'us-central1' } },
+  };
+  const triggerResult = buildPilotStageVerification({
+    candidateRules: rules,
+    cloudFunctions: functionInventory(),
+    eventarcTriggers: invalidTriggers,
+    release: current.release,
+    ruleset: current.ruleset,
+    remoteConfigSummary: safeRemoteConfig(),
+  });
+  assert.deepEqual(triggerResult.eventarc.invalidTriggers, ['atlas-v4-segment-written']);
+  assert.equal(triggerResult.staged, false);
+
   const changed = activeRules(`${rules}\n// drift`);
   const driftResult = buildPilotStageVerification({
     candidateRules: rules,
     cloudFunctions: functionInventory(),
+    eventarcTriggers: eventarcInventory(),
     release: changed.release,
     ruleset: changed.ruleset,
     remoteConfigSummary: safeRemoteConfig(),
@@ -142,10 +186,10 @@ test('stage verify detecta Rules distintas o tráfico pilot ya activado', async 
   assert.equal(driftResult.rules.matchesCandidate, false);
   assert.equal(driftResult.staged, false);
 
-  const current = activeRules(rules);
   const trafficResult = buildPilotStageVerification({
     candidateRules: rules,
     cloudFunctions: functionInventory(),
+    eventarcTriggers: eventarcInventory(),
     release: current.release,
     ruleset: current.ruleset,
     remoteConfigSummary: {
@@ -161,12 +205,13 @@ test('stage verify detecta Rules distintas o tráfico pilot ya activado', async 
   assert.equal(trafficResult.staged, false);
 });
 
-test('stage verifier es estrictamente read-only y usa APIs GET oficiales', async () => {
+test('stage verifier sigue estrictamente read-only y usa GET de Functions/Eventarc/Rules', async () => {
   const source = await readFile(
     new URL('../scripts/runStorageV4PilotStageVerifyDev.mjs', import.meta.url),
     'utf8'
   );
   assert.match(source, /cloudfunctions\.googleapis\.com\/v2/);
+  assert.match(source, /eventarc\.googleapis\.com\/v1/);
   assert.match(source, /firebaserules\.googleapis\.com\/v1/);
   assert.match(source, /getRemoteConfigTemplate/);
   assert.match(source, /method: 'GET'/);
