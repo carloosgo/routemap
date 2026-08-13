@@ -37,6 +37,23 @@ Validado:
 
 El PASS no autoriza `pilot`, write v4, migración productiva ni cambios de producción.
 
+## Pilot WRITE dev — pre-stage snapshot
+
+**READ-ONLY PASS; stage todavía no autorizado/aplicado.**
+
+Al `2026-08-12` se capturó el snapshot previo al stage con Remote Config fail-closed:
+
+- release: `projects/atlasmap-dev/releases/cloud.firestore`;
+- Ruleset original: `projects/atlasmap-dev/rulesets/cd99a504-01c0-45dc-8875-cb9183d7698b`;
+- SHA-256 original: `5f7d4e5adbc1e1751bc800f0cc692f77ce8aa5234ab043342ef4266a4ced71f2`;
+- SHA-256 candidato: `a41792990264c765867e90c03ee4998448c838f10d23631e1b9863d6ad679062`;
+- `remoteConfigSafeOff=true`;
+- sin mutación Cloud, sin tráfico pilot y sin producción.
+
+Evidencia: `docs/STORAGE_V4_PILOT_STAGE_SNAPSHOT_2026-08-12.md`.
+
+El siguiente `--apply` de `storage-v4:pilot-stage-deploy-dev` despliega las Functions pilot y las Rules candidatas de WRITE v4 en `atlasmap-dev`; requiere autorización explícita aunque Remote Config permanezca en OFF/0%.
+
 ## Phase J — checkpoint pendiente
 
 La frontera lógica ya separa `db` (canónico/interno) de `cacheDb` (temporales de proveedor), pero actualmente ambos apuntan a `(default)`.
@@ -108,7 +125,8 @@ Evidencia `atlasmap-dev`:
 La evidencia histórica consolidada está en `docs/STORAGE_V4_PHASE_K_EVIDENCE_2026-08-11.md`. Los checkpoints posteriores que actualizan ese snapshot son:
 
 - `docs/STORAGE_V4_PHASE_K_ALERT_CHANNEL_CHECKPOINT_2026-08-12.md`;
-- `docs/STORAGE_V4_PHASE_K_PROVIDER_OUTAGE_E2E_2026-08-12.md`.
+- `docs/STORAGE_V4_PHASE_K_PROVIDER_OUTAGE_E2E_2026-08-12.md`;
+- `docs/STORAGE_V4_PILOT_STAGE_SNAPSHOT_2026-08-12.md`.
 
 ### Bloqueos / verificaciones externas vigentes de K
 
