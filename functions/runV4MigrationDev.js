@@ -1,4 +1,4 @@
-/* global process, console */
+/* global process */
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
