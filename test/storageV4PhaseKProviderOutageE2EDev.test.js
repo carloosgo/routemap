@@ -35,11 +35,12 @@ test('provider outage runner es dry-run por defecto y despliega solo el probe co
   assert.doesNotMatch(source, /functions:[A-Za-z0-9_-]+,functions:/);
 });
 
-test('provider outage runner prefiere gcloud de PATH y evita comandos complejos por cmd en Windows', async () => {
+test('provider outage runner usa gcloud exclusivamente desde PATH en Windows', async () => {
   const source = await readFile(runnerPath, 'utf8');
 
-  assert.ok(source.includes("const candidates = ['gcloud.cmd', 'gcloud.exe', 'gcloud']"));
-  assert.ok(source.includes("candidates.push(join(localAppData, 'Google', 'Cloud SDK'"));
+  assert.ok(source.includes("? ['gcloud.cmd', 'gcloud.exe', 'gcloud']"));
+  assert.ok(source.includes("spawnSync('cmd.exe', ['/d', '/c', executable, ...args]"));
+  assert.doesNotMatch(source, /LOCALAPPDATA|Google', 'Cloud SDK/);
   assert.ok(source.includes("['auth', 'print-access-token']"));
   assert.ok(source.includes("['auth', 'print-identity-token']"));
   assert.doesNotMatch(source, /'functions', 'describe'/);
