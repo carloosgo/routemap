@@ -60,8 +60,7 @@ test('deploy Eventarc usa filtros oficiales Firestore y destino privado esperado
   assert.match(source, /--event-filters-path-pattern/);
   assert.match(source, /document=\$\{trigger\.document\}/);
   assert.match(source, /--event-data-content-type/);
-  assert.match(source, /--service-account/);
-  assert.match(source, new RegExp(PILOT_EVENTARC_SERVICE_ACCOUNT.replaceAll('.', '\\.')));
+  assert.match(source, /'--service-account', PILOT_EVENTARC_SERVICE_ACCOUNT/);
 });
 
 test('deploy Eventarc exige preflight listo y revierte creación parcial', async () => {
