@@ -25,6 +25,8 @@ export const PILOT_VERIFY_REGIONS = Object.freeze([
 ]);
 export const PILOT_VERIFY_RELEASE = `projects/${PILOT_VERIFY_PROJECT}/releases/cloud.firestore`;
 export const PILOT_VERIFY_EVENT_TYPE = 'google.cloud.firestore.document.v1.written';
+export const PILOT_VERIFY_DATABASE = '(default)';
+export const PILOT_VERIFY_EVENT_CONTENT_TYPE = 'application/protobuf';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(here);
@@ -192,11 +194,15 @@ function expectedCloudRunService(ingressFunction) {
 function validateExpectedEventarcTrigger(trigger, expected, cloudRunService) {
   if (!trigger) return Object.freeze({ valid: false, reason: 'missing' });
   const typeFilter = eventFilter(trigger, 'type');
+  const databaseFilter = eventFilter(trigger, 'database');
   const documentFilter = eventFilter(trigger, 'document');
   const destination = trigger?.destination?.cloudRun;
   const valid = typeFilter?.value === PILOT_VERIFY_EVENT_TYPE
+    && databaseFilter?.value === PILOT_VERIFY_DATABASE
+    && !databaseFilter?.operator
     && documentFilter?.value === expected.document
-    && ['match-path-pattern', 'path_pattern'].includes(documentFilter?.operator || 'match-path-pattern')
+    && documentFilter?.operator === 'match-path-pattern'
+    && trigger?.eventDataContentType === PILOT_VERIFY_EVENT_CONTENT_TYPE
     && destination?.service === cloudRunService
     && destination?.region === V4_PILOT_SERVICE_REGION
     && typeof trigger?.serviceAccount === 'string'
@@ -209,7 +215,9 @@ function validateExpectedEventarcTrigger(trigger, expected, cloudRunService) {
     serviceAccount: trigger?.serviceAccount || null,
     destinationService: destination?.service || null,
     destinationRegion: destination?.region || null,
+    eventDataContentType: trigger?.eventDataContentType || null,
     type: typeFilter?.value || null,
+    database: databaseFilter?.value || null,
     document: documentFilter?.value || null,
     documentOperator: documentFilter?.operator || null,
   });
