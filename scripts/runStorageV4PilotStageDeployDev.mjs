@@ -5,7 +5,10 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { V4_PILOT_BACKEND_FUNCTION_NAMES } from '../functions/v4PilotBackendManifest.js';
+import {
+  V4_PILOT_BACKEND_FUNCTION_NAMES,
+  V4_PILOT_EVENTARC_TRIGGERS,
+} from '../functions/v4PilotBackendManifest.js';
 import { composePilotWriteRules } from './firestorePilotWriteRules.mjs';
 
 export const PILOT_STAGE_PROJECT = 'atlasmap-dev';
@@ -16,15 +19,7 @@ const repoRoot = dirname(here);
 const generatedRulesPath = join(repoRoot, 'firestore-pilot-write.rules');
 const pilotConfigPath = join(repoRoot, 'firebase.pilot-write.json');
 const functionsIndexPath = join(repoRoot, 'functions', 'index.js');
-const pilotExportBlock = `export {
-  v4SegmentAggregate,
-  v4PlaceAggregate,
-  v4ConnectionTouch,
-  v4NoteTouch,
-  v4ChecklistTouch,
-  v4TripLifecycle,
-  v4TripPurge,
-} from './v4PilotExports.js';`;
+const pilotExportBlock = `export {\n${V4_PILOT_BACKEND_FUNCTION_NAMES.map((name) => `  ${name},`).join('\n')}\n} from './v4PilotExports.js';`;
 
 function sha256(value) {
   return createHash('sha256').update(value, 'utf8').digest('hex');
@@ -109,11 +104,14 @@ export function buildPilotStageDeployPlan({ v3Rules, v4Rules, indexSource } = {}
     rulesBytes: Buffer.byteLength(candidateRules, 'utf8'),
     functions: [...V4_PILOT_BACKEND_FUNCTION_NAMES],
     functionCount: V4_PILOT_BACKEND_FUNCTION_NAMES.length,
+    eventarcTriggers: V4_PILOT_EVENTARC_TRIGGERS.map((trigger) => trigger.name),
+    eventarcTriggerCount: V4_PILOT_EVENTARC_TRIGGERS.length,
+    eventarcWiringIncluded: false,
+    eventarcWiringRequiresIamPreflight: true,
     pilotExportsActivatedInIndex: exportsActivated,
     usesEphemeralPilotExports: !exportsActivated,
     committedIndexRemainsUnchanged: true,
-    deploymentOrder: ['functions', 'restore-local-index', 'firestore-rules'],
-    functionFailurePolicyAcknowledged: true,
+    deploymentOrder: ['supported-functions', 'restore-local-index', 'firestore-rules'],
     remoteConfigChanged: false,
     clientPilotTrafficActivated: false,
     wouldDeployV4WriteRules: true,
@@ -185,7 +183,6 @@ export function runPilotStageDeployDev({
       '--project',
       PILOT_STAGE_PROJECT,
       '--non-interactive',
-      '--force',
     ]);
   } catch (error) {
     functionDeployError = error;
@@ -228,10 +225,13 @@ export function runPilotStageDeployDev({
 
   const result = Object.freeze({
     project: PILOT_STAGE_PROJECT,
-    mode: 'staged',
+    mode: 'backend-and-rules-staged',
     rulesSha256: plan.rulesSha256,
     functionCount: plan.functionCount,
-    functionFailurePolicyAcknowledged: true,
+    functions: plan.functions,
+    eventarcTriggerCount: plan.eventarcTriggerCount,
+    eventarcWiringIncluded: false,
+    eventarcWiringPending: true,
     ephemeralPilotExportsUsed: deployIndex.changed,
     functionsIndexRestored: true,
     remoteConfigChanged: false,
