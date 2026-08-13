@@ -6,6 +6,10 @@ import { fileURLToPath } from 'node:url';
 import {
   V4_PILOT_BACKEND_FUNCTION_NAMES,
   V4_PILOT_BACKEND_FUNCTION_REGIONS,
+  V4_PILOT_EVENTARC_DESTINATION_FUNCTION,
+  V4_PILOT_EVENTARC_REGION,
+  V4_PILOT_EVENTARC_TRIGGERS,
+  V4_PILOT_SERVICE_REGION,
 } from '../functions/v4PilotBackendManifest.js';
 import { composePilotWriteRules } from './firestorePilotWriteRules.mjs';
 import {
@@ -20,6 +24,7 @@ export const PILOT_VERIFY_REGIONS = Object.freeze([
   ...new Set(Object.values(V4_PILOT_BACKEND_FUNCTION_REGIONS)),
 ]);
 export const PILOT_VERIFY_RELEASE = `projects/${PILOT_VERIFY_PROJECT}/releases/cloud.firestore`;
+export const PILOT_VERIFY_EVENT_TYPE = 'google.cloud.firestore.document.v1.written';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(here);
@@ -27,6 +32,10 @@ const rulesEndpoint = 'https://firebaserules.googleapis.com/v1';
 
 function functionsEndpoint(region) {
   return `https://cloudfunctions.googleapis.com/v2/projects/${PILOT_VERIFY_PROJECT}/locations/${region}/functions`;
+}
+
+function eventarcEndpoint() {
+  return `https://eventarc.googleapis.com/v1/projects/${PILOT_VERIFY_PROJECT}/locations/${V4_PILOT_EVENTARC_REGION}/triggers`;
 }
 
 function sha256(value) {
@@ -86,6 +95,26 @@ export async function listPilotFunctions({ token, fetchFn = fetch } = {}) {
   return inventories.flat();
 }
 
+export async function listPilotEventarcTriggers({ token, fetchFn = fetch } = {}) {
+  const triggers = [];
+  let pageToken = '';
+  do {
+    const query = new URLSearchParams({ pageSize: '100' });
+    if (pageToken) query.set('pageToken', pageToken);
+    const payload = await requestJson(`${eventarcEndpoint()}?${query}`, {
+      token,
+      fetchFn,
+      label: `Eventarc list ${V4_PILOT_EVENTARC_REGION}`,
+    });
+    if (Array.isArray(payload.unreachable) && payload.unreachable.length > 0) {
+      throw new Error('Eventarc reportó locations no alcanzables.');
+    }
+    triggers.push(...(Array.isArray(payload.triggers) ? payload.triggers : []));
+    pageToken = typeof payload.nextPageToken === 'string' ? payload.nextPageToken : '';
+  } while (pageToken);
+  return triggers;
+}
+
 export async function getActiveFirestoreRuleset({ token, fetchFn = fetch } = {}) {
   const release = await requestJson(`${rulesEndpoint}/${PILOT_VERIFY_RELEASE}`, {
     token,
@@ -106,7 +135,7 @@ export async function getActiveFirestoreRuleset({ token, fetchFn = fetch } = {})
   return Object.freeze({ release, ruleset });
 }
 
-function functionName(resource) {
+function resourceId(resource) {
   const name = typeof resource?.name === 'string' ? resource.name : '';
   return name.split('/').pop() || '';
 }
@@ -119,10 +148,11 @@ function functionRegion(resource) {
 
 function summarizeFunction(resource) {
   return Object.freeze({
-    name: functionName(resource),
+    name: resourceId(resource),
     region: functionRegion(resource),
     state: resource?.state || null,
     runtime: resource?.buildConfig?.runtime || null,
+    cloudRunService: resource?.serviceConfig?.service || null,
   });
 }
 
@@ -141,9 +171,54 @@ function remoteConfigIsSafelyOff(summary) {
     && summary.cohortPercent === '0';
 }
 
+function eventFilter(trigger, attribute) {
+  return (Array.isArray(trigger?.eventFilters) ? trigger.eventFilters : [])
+    .find((filter) => filter?.attribute === attribute) || null;
+}
+
+function hasFailedEventarcCondition(trigger) {
+  return Object.values(trigger?.conditions || {}).some((condition) => (
+    typeof condition?.code === 'string'
+    && condition.code
+    && condition.code !== 'CONDITION_SUCCEEDED'
+  ));
+}
+
+function expectedCloudRunService(ingressFunction) {
+  const fullName = ingressFunction?.serviceConfig?.service;
+  return typeof fullName === 'string' ? (fullName.split('/').pop() || '') : '';
+}
+
+function validateExpectedEventarcTrigger(trigger, expected, cloudRunService) {
+  if (!trigger) return Object.freeze({ valid: false, reason: 'missing' });
+  const typeFilter = eventFilter(trigger, 'type');
+  const documentFilter = eventFilter(trigger, 'document');
+  const destination = trigger?.destination?.cloudRun;
+  const valid = typeFilter?.value === PILOT_VERIFY_EVENT_TYPE
+    && documentFilter?.value === expected.document
+    && ['match-path-pattern', 'path_pattern'].includes(documentFilter?.operator || 'match-path-pattern')
+    && destination?.service === cloudRunService
+    && destination?.region === V4_PILOT_SERVICE_REGION
+    && typeof trigger?.serviceAccount === 'string'
+    && Boolean(trigger.serviceAccount.trim())
+    && !hasFailedEventarcCondition(trigger);
+  return Object.freeze({
+    valid,
+    reason: valid ? null : 'configuration-mismatch',
+    name: resourceId(trigger),
+    serviceAccount: trigger?.serviceAccount || null,
+    destinationService: destination?.service || null,
+    destinationRegion: destination?.region || null,
+    type: typeFilter?.value || null,
+    document: documentFilter?.value || null,
+    documentOperator: documentFilter?.operator || null,
+  });
+}
+
 export function buildPilotStageVerification({
   candidateRules,
   cloudFunctions,
+  eventarcTriggers = [],
   release,
   ruleset,
   remoteConfigSummary,
@@ -152,6 +227,7 @@ export function buildPilotStageVerification({
     throw new TypeError('candidateRules es obligatorio.');
   }
   if (!Array.isArray(cloudFunctions)) throw new TypeError('cloudFunctions debe ser un arreglo.');
+  if (!Array.isArray(eventarcTriggers)) throw new TypeError('eventarcTriggers debe ser un arreglo.');
   if (!release || !ruleset) throw new TypeError('release y ruleset son obligatorios.');
   if (!remoteConfigSummary || typeof remoteConfigSummary !== 'object') {
     throw new TypeError('remoteConfigSummary es obligatorio.');
@@ -162,7 +238,7 @@ export function buildPilotStageVerification({
     V4_PILOT_BACKEND_FUNCTION_REGIONS[name],
   ]));
   const byLocationAndName = new Map(cloudFunctions.map((resource) => [
-    `${functionRegion(resource)}:${functionName(resource)}`,
+    `${functionRegion(resource)}:${resourceId(resource)}`,
     resource,
   ]));
   const expectedFunctions = V4_PILOT_BACKEND_FUNCTION_NAMES.map((name) => (
@@ -172,16 +248,37 @@ export function buildPilotStageVerification({
   const nonActiveFunctions = expectedFunctions
     .filter(Boolean)
     .filter((resource) => resource.state !== 'ACTIVE')
-    .map(functionName);
+    .map(resourceId);
   const wrongRuntimeFunctions = expectedFunctions
     .filter(Boolean)
     .filter((resource) => resource?.buildConfig?.runtime !== 'nodejs22')
-    .map(functionName);
+    .map(resourceId);
   const unexpectedRegionFunctions = cloudFunctions
-    .filter((resource) => expectedByName.has(functionName(resource)))
-    .filter((resource) => functionRegion(resource) !== expectedByName.get(functionName(resource)))
-    .map((resource) => `${functionName(resource)}@${functionRegion(resource)}`)
+    .filter((resource) => expectedByName.has(resourceId(resource)))
+    .filter((resource) => functionRegion(resource) !== expectedByName.get(resourceId(resource)))
+    .map((resource) => `${resourceId(resource)}@${functionRegion(resource)}`)
     .sort();
+  const functionsReady = missingFunctions.length === 0
+    && nonActiveFunctions.length === 0
+    && wrongRuntimeFunctions.length === 0
+    && unexpectedRegionFunctions.length === 0;
+
+  const ingressIndex = V4_PILOT_BACKEND_FUNCTION_NAMES.indexOf(V4_PILOT_EVENTARC_DESTINATION_FUNCTION);
+  const ingressFunction = ingressIndex >= 0 ? expectedFunctions[ingressIndex] : null;
+  const cloudRunService = expectedCloudRunService(ingressFunction);
+  const triggersByName = new Map(eventarcTriggers.map((trigger) => [resourceId(trigger), trigger]));
+  const eventarc = V4_PILOT_EVENTARC_TRIGGERS.map((expected) => (
+    validateExpectedEventarcTrigger(triggersByName.get(expected.name), expected, cloudRunService)
+  ));
+  const missingEventarcTriggers = V4_PILOT_EVENTARC_TRIGGERS
+    .filter((_, index) => eventarc[index].reason === 'missing')
+    .map((trigger) => trigger.name);
+  const invalidEventarcTriggers = V4_PILOT_EVENTARC_TRIGGERS
+    .filter((_, index) => eventarc[index].reason === 'configuration-mismatch')
+    .map((trigger) => trigger.name);
+  const eventarcReady = Boolean(cloudRunService)
+    && missingEventarcTriggers.length === 0
+    && invalidEventarcTriggers.length === 0;
 
   const expectedRulesSha256 = sha256(candidateRules);
   const activeRulesSha256 = sha256(deployedRulesContent(ruleset));
@@ -189,15 +286,15 @@ export function buildPilotStageVerification({
     && release.rulesetName === ruleset.name
     && activeRulesSha256 === expectedRulesSha256;
   const remoteConfigSafe = remoteConfigIsSafelyOff(remoteConfigSummary);
-  const backendReady = missingFunctions.length === 0
-    && nonActiveFunctions.length === 0
-    && wrongRuntimeFunctions.length === 0
-    && unexpectedRegionFunctions.length === 0;
+  const backendReady = functionsReady && eventarcReady;
   const staged = backendReady && rulesReleaseMatches && remoteConfigSafe;
 
   return Object.freeze({
     project: PILOT_VERIFY_PROJECT,
-    regions: Object.freeze({ ...V4_PILOT_BACKEND_FUNCTION_REGIONS }),
+    regions: Object.freeze({
+      functions: { ...V4_PILOT_BACKEND_FUNCTION_REGIONS },
+      eventarc: V4_PILOT_EVENTARC_REGION,
+    }),
     mode: 'stage-verify',
     expectedFunctionCount: V4_PILOT_BACKEND_FUNCTION_NAMES.length,
     functions: Object.freeze(expectedFunctions.filter(Boolean).map(summarizeFunction)),
@@ -205,6 +302,16 @@ export function buildPilotStageVerification({
     nonActiveFunctions: Object.freeze(nonActiveFunctions),
     wrongRuntimeFunctions: Object.freeze(wrongRuntimeFunctions),
     unexpectedRegionFunctions: Object.freeze(unexpectedRegionFunctions),
+    functionsReady,
+    eventarc: Object.freeze({
+      destinationFunction: V4_PILOT_EVENTARC_DESTINATION_FUNCTION,
+      destinationCloudRunService: cloudRunService || null,
+      expectedTriggerCount: V4_PILOT_EVENTARC_TRIGGERS.length,
+      triggers: Object.freeze(eventarc),
+      missingTriggers: Object.freeze(missingEventarcTriggers),
+      invalidTriggers: Object.freeze(invalidEventarcTriggers),
+      ready: eventarcReady,
+    }),
     backendReady,
     rules: Object.freeze({
       releaseName: release.name || null,
@@ -223,10 +330,10 @@ export function buildPilotStageVerification({
     }),
     readinessCandidates: Object.freeze({
       writeRulesReady: rulesReleaseMatches,
-      aggregateReady: backendReady,
-      touchReady: backendReady,
-      lifecycleReady: backendReady,
-      purgeReady: backendReady,
+      aggregateReady: functionsReady && eventarcReady,
+      touchReady: functionsReady && eventarcReady,
+      lifecycleReady: functionsReady,
+      purgeReady: functionsReady,
     }),
     staged,
     mutatesCloud: false,
@@ -247,8 +354,9 @@ export async function runPilotStageVerifyDev({
 } = {}) {
   const accessToken = token || accessTokenFromGcloud(gcloud);
   const candidateRules = composePilotWriteRules(v3Rules, v4Rules);
-  const [cloudFunctions, activeRules, remoteConfig] = await Promise.all([
+  const [cloudFunctions, eventarcTriggers, activeRules, remoteConfig] = await Promise.all([
     listPilotFunctions({ token: accessToken, fetchFn }),
+    listPilotEventarcTriggers({ token: accessToken, fetchFn }),
     getActiveFirestoreRuleset({ token: accessToken, fetchFn }),
     getRemoteConfigTemplate({ token: accessToken, fetchFn }),
   ]);
@@ -256,6 +364,7 @@ export async function runPilotStageVerifyDev({
   const result = buildPilotStageVerification({
     candidateRules,
     cloudFunctions,
+    eventarcTriggers,
     release: activeRules.release,
     ruleset: activeRules.ruleset,
     remoteConfigSummary,
