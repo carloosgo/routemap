@@ -19,6 +19,7 @@ import {
 import {
   buildPilotStageVerification,
   getActiveFirestoreRuleset,
+  listPilotEventarcTriggers,
   listPilotFunctions,
 } from './runStorageV4PilotStageVerifyDev.mjs';
 
@@ -146,14 +147,16 @@ function targetMatches(action, summary, cohortPercent) {
 }
 
 async function verifyStage({ token, fetchFn, candidateRules }) {
-  const [cloudFunctions, activeRules, remoteConfig] = await Promise.all([
+  const [cloudFunctions, eventarcTriggers, activeRules, remoteConfig] = await Promise.all([
     listPilotFunctions({ token, fetchFn }),
+    listPilotEventarcTriggers({ token, fetchFn }),
     getActiveFirestoreRuleset({ token, fetchFn }),
     getRemoteConfigTemplate({ token, fetchFn }),
   ]);
   return buildPilotStageVerification({
     candidateRules,
     cloudFunctions,
+    eventarcTriggers,
     release: activeRules.release,
     ruleset: activeRules.ruleset,
     remoteConfigSummary: summarizeStorageV4RemoteConfig(remoteConfig.template),
@@ -195,7 +198,7 @@ export async function runPilotRemoteConfigDev({
       candidateRules: composePilotWriteRules(v3Rules, v4Rules),
     });
     if (!stage.staged) {
-      throw new Error('Apply bloqueado: Functions/Rules no coinciden con el stage v4 esperado o ya existe tráfico pilot.');
+      throw new Error('Apply bloqueado: Functions/Rules/Eventarc no coinciden con el stage v4 esperado o ya existe tráfico pilot.');
     }
   }
 
