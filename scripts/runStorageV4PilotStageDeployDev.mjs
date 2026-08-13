@@ -172,6 +172,8 @@ export function runPilotStageDeployDev({
   writeGeneratedRules(plan.candidateRules);
   const onlyFunctions = V4_PILOT_BACKEND_FUNCTION_NAMES.map((name) => `functions:${name}`).join(',');
   const deployIndex = buildEphemeralPilotIndex(indexSource);
+  let functionDeployError = null;
+  let indexRestoreError = null;
 
   if (deployIndex.changed) writeFunctionsIndex(deployIndex.source);
   try {
@@ -183,14 +185,33 @@ export function runPilotStageDeployDev({
       PILOT_STAGE_PROJECT,
       '--non-interactive',
     ]);
+  } catch (error) {
+    functionDeployError = error;
   } finally {
     if (deployIndex.changed) {
-      writeFunctionsIndex(indexSource);
-      if (readFunctionsIndex() !== indexSource) {
-        throw new Error('Stage abortado: functions/index.js no pudo restaurarse exactamente.');
+      try {
+        writeFunctionsIndex(indexSource);
+        if (readFunctionsIndex() !== indexSource) {
+          indexRestoreError = new Error(
+            'Stage abortado: functions/index.js no pudo restaurarse exactamente.'
+          );
+        }
+      } catch (error) {
+        indexRestoreError = error instanceof Error
+          ? error
+          : new Error('Stage abortado: falló la restauración de functions/index.js.');
       }
     }
   }
+
+  if (indexRestoreError && functionDeployError) {
+    throw new AggregateError(
+      [functionDeployError, indexRestoreError],
+      'Stage abortado: fallaron el deploy de Functions y la restauración de functions/index.js.'
+    );
+  }
+  if (indexRestoreError) throw indexRestoreError;
+  if (functionDeployError) throw functionDeployError;
 
   executeFirebase(firebaseCliScript, [
     'deploy',
