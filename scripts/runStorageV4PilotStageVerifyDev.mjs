@@ -3,7 +3,10 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { V4_PILOT_BACKEND_FUNCTION_NAMES } from '../functions/v4PilotBackendManifest.js';
+import {
+  V4_PILOT_BACKEND_FUNCTION_NAMES,
+  V4_PILOT_BACKEND_FUNCTION_REGIONS,
+} from '../functions/v4PilotBackendManifest.js';
 import { composePilotWriteRules } from './firestorePilotWriteRules.mjs';
 import {
   accessTokenFromGcloud,
@@ -13,13 +16,18 @@ import {
 import { summarizeStorageV4RemoteConfig } from './storageV4PilotRemoteConfigModel.mjs';
 
 export const PILOT_VERIFY_PROJECT = 'atlasmap-dev';
-export const PILOT_VERIFY_REGION = 'us-central1';
+export const PILOT_VERIFY_REGIONS = Object.freeze([
+  ...new Set(Object.values(V4_PILOT_BACKEND_FUNCTION_REGIONS)),
+]);
 export const PILOT_VERIFY_RELEASE = `projects/${PILOT_VERIFY_PROJECT}/releases/cloud.firestore`;
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(here);
-const functionsEndpoint = `https://cloudfunctions.googleapis.com/v2/projects/${PILOT_VERIFY_PROJECT}/locations/${PILOT_VERIFY_REGION}/functions`;
 const rulesEndpoint = 'https://firebaserules.googleapis.com/v1';
+
+function functionsEndpoint(region) {
+  return `https://cloudfunctions.googleapis.com/v2/projects/${PILOT_VERIFY_PROJECT}/locations/${region}/functions`;
+}
 
 function sha256(value) {
   return createHash('sha256').update(value, 'utf8').digest('hex');
@@ -51,24 +59,31 @@ async function requestJson(url, { token, fetchFn = fetch, label } = {}) {
   return payload;
 }
 
-export async function listPilotFunctions({ token, fetchFn = fetch } = {}) {
+async function listFunctionsInRegion({ region, token, fetchFn = fetch } = {}) {
   const functions = [];
   let pageToken = '';
   do {
     const query = new URLSearchParams({ pageSize: '1000' });
     if (pageToken) query.set('pageToken', pageToken);
-    const payload = await requestJson(`${functionsEndpoint}?${query}`, {
+    const payload = await requestJson(`${functionsEndpoint(region)}?${query}`, {
       token,
       fetchFn,
-      label: 'Cloud Functions list',
+      label: `Cloud Functions list ${region}`,
     });
     if (Array.isArray(payload.unreachable) && payload.unreachable.length > 0) {
-      throw new Error('Cloud Functions reportó locations no alcanzables.');
+      throw new Error(`Cloud Functions reportó locations no alcanzables para ${region}.`);
     }
     functions.push(...(Array.isArray(payload.functions) ? payload.functions : []));
     pageToken = typeof payload.nextPageToken === 'string' ? payload.nextPageToken : '';
   } while (pageToken);
   return functions;
+}
+
+export async function listPilotFunctions({ token, fetchFn = fetch } = {}) {
+  const inventories = await Promise.all(PILOT_VERIFY_REGIONS.map((region) => (
+    listFunctionsInRegion({ region, token, fetchFn })
+  )));
+  return inventories.flat();
 }
 
 export async function getActiveFirestoreRuleset({ token, fetchFn = fetch } = {}) {
@@ -96,9 +111,16 @@ function functionName(resource) {
   return name.split('/').pop() || '';
 }
 
+function functionRegion(resource) {
+  const parts = typeof resource?.name === 'string' ? resource.name.split('/') : [];
+  const locationIndex = parts.indexOf('locations');
+  return locationIndex >= 0 ? (parts[locationIndex + 1] || '') : '';
+}
+
 function summarizeFunction(resource) {
   return Object.freeze({
     name: functionName(resource),
+    region: functionRegion(resource),
     state: resource?.state || null,
     runtime: resource?.buildConfig?.runtime || null,
   });
@@ -135,8 +157,17 @@ export function buildPilotStageVerification({
     throw new TypeError('remoteConfigSummary es obligatorio.');
   }
 
-  const byName = new Map(cloudFunctions.map((resource) => [functionName(resource), resource]));
-  const expectedFunctions = V4_PILOT_BACKEND_FUNCTION_NAMES.map((name) => byName.get(name) || null);
+  const expectedByName = new Map(V4_PILOT_BACKEND_FUNCTION_NAMES.map((name) => [
+    name,
+    V4_PILOT_BACKEND_FUNCTION_REGIONS[name],
+  ]));
+  const byLocationAndName = new Map(cloudFunctions.map((resource) => [
+    `${functionRegion(resource)}:${functionName(resource)}`,
+    resource,
+  ]));
+  const expectedFunctions = V4_PILOT_BACKEND_FUNCTION_NAMES.map((name) => (
+    byLocationAndName.get(`${expectedByName.get(name)}:${name}`) || null
+  ));
   const missingFunctions = V4_PILOT_BACKEND_FUNCTION_NAMES.filter((name, index) => !expectedFunctions[index]);
   const nonActiveFunctions = expectedFunctions
     .filter(Boolean)
@@ -146,6 +177,11 @@ export function buildPilotStageVerification({
     .filter(Boolean)
     .filter((resource) => resource?.buildConfig?.runtime !== 'nodejs22')
     .map(functionName);
+  const unexpectedRegionFunctions = cloudFunctions
+    .filter((resource) => expectedByName.has(functionName(resource)))
+    .filter((resource) => functionRegion(resource) !== expectedByName.get(functionName(resource)))
+    .map((resource) => `${functionName(resource)}@${functionRegion(resource)}`)
+    .sort();
 
   const expectedRulesSha256 = sha256(candidateRules);
   const activeRulesSha256 = sha256(deployedRulesContent(ruleset));
@@ -155,18 +191,20 @@ export function buildPilotStageVerification({
   const remoteConfigSafe = remoteConfigIsSafelyOff(remoteConfigSummary);
   const backendReady = missingFunctions.length === 0
     && nonActiveFunctions.length === 0
-    && wrongRuntimeFunctions.length === 0;
+    && wrongRuntimeFunctions.length === 0
+    && unexpectedRegionFunctions.length === 0;
   const staged = backendReady && rulesReleaseMatches && remoteConfigSafe;
 
   return Object.freeze({
     project: PILOT_VERIFY_PROJECT,
-    region: PILOT_VERIFY_REGION,
+    regions: Object.freeze({ ...V4_PILOT_BACKEND_FUNCTION_REGIONS }),
     mode: 'stage-verify',
     expectedFunctionCount: V4_PILOT_BACKEND_FUNCTION_NAMES.length,
     functions: Object.freeze(expectedFunctions.filter(Boolean).map(summarizeFunction)),
     missingFunctions: Object.freeze(missingFunctions),
     nonActiveFunctions: Object.freeze(nonActiveFunctions),
     wrongRuntimeFunctions: Object.freeze(wrongRuntimeFunctions),
+    unexpectedRegionFunctions: Object.freeze(unexpectedRegionFunctions),
     backendReady,
     rules: Object.freeze({
       releaseName: release.name || null,
