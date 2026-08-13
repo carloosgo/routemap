@@ -1,5 +1,5 @@
 const OPERATIONS = new Set(['list', 'get', 'save', 'remove']);
-const REPOSITORY_MODES = new Set(['v3', 'hybrid-read']);
+const REPOSITORY_MODES = new Set(['v3', 'hybrid-read', 'v4-pilot']);
 const OUTCOMES = new Set(['success', 'error']);
 const RESULT_SCHEMAS = new Set(['none', 'legacy', 'v4']);
 const ALLOWED_KEYS = new Set([
