@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { composePilotWriteRules } from '../scripts/firestorePilotWriteRules.mjs';
 import {
+  PILOT_VERIFY_DATABASE,
+  PILOT_VERIFY_EVENT_CONTENT_TYPE,
   PILOT_VERIFY_EVENT_TYPE,
   PILOT_VERIFY_RELEASE,
   buildPilotStageVerification,
@@ -34,8 +36,10 @@ function eventarcInventory() {
     name: `projects/atlasmap-dev/locations/northamerica-south1/triggers/${expected.name}`,
     eventFilters: [
       { attribute: 'type', value: PILOT_VERIFY_EVENT_TYPE },
+      { attribute: 'database', value: PILOT_VERIFY_DATABASE },
       { attribute: 'document', value: expected.document, operator: 'match-path-pattern' },
     ],
+    eventDataContentType: PILOT_VERIFY_EVENT_CONTENT_TYPE,
     serviceAccount: '833327011450-compute@developer.gserviceaccount.com',
     destination: {
       cloudRun: {
@@ -104,6 +108,8 @@ test('stage verify exige Functions + Eventarc + Rules exactas + Remote Config ap
     lifecycleReady: true,
     purgeReady: true,
   });
+  assert.equal(result.eventarc.triggers[0].database, '(default)');
+  assert.equal(result.eventarc.triggers[0].eventDataContentType, 'application/protobuf');
   assert.equal(result.mutatesCloud, false);
   assert.equal(result.activatesClientPilotTraffic, false);
 });
@@ -155,7 +161,7 @@ test('stage verify falla cerrado si falta Function, runtime o Eventarc', async (
   assert.equal(eventarcResult.readinessCandidates.lifecycleReady, true);
 });
 
-test('stage verify detecta Eventarc mal apuntado, Rules distintas o tráfico pilot', async () => {
+test('stage verify detecta Eventarc mal apuntado, filtros incompletos, Rules distintas o tráfico pilot', async () => {
   const rules = await candidateRules();
   const current = activeRules(rules);
   const invalidTriggers = eventarcInventory();
@@ -173,6 +179,21 @@ test('stage verify detecta Eventarc mal apuntado, Rules distintas o tráfico pil
   });
   assert.deepEqual(triggerResult.eventarc.invalidTriggers, ['atlas-v4-segment-written']);
   assert.equal(triggerResult.staged, false);
+
+  const wrongFilterTriggers = eventarcInventory();
+  wrongFilterTriggers[1] = {
+    ...wrongFilterTriggers[1],
+    eventFilters: wrongFilterTriggers[1].eventFilters.filter((filter) => filter.attribute !== 'database'),
+  };
+  const wrongFilterResult = buildPilotStageVerification({
+    candidateRules: rules,
+    cloudFunctions: functionInventory(),
+    eventarcTriggers: wrongFilterTriggers,
+    release: current.release,
+    ruleset: current.ruleset,
+    remoteConfigSummary: safeRemoteConfig(),
+  });
+  assert.deepEqual(wrongFilterResult.eventarc.invalidTriggers, ['atlas-v4-place-written']);
 
   const changed = activeRules(`${rules}\n// drift`);
   const driftResult = buildPilotStageVerification({
