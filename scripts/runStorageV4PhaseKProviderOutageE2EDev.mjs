@@ -43,13 +43,9 @@ function resolveFirebaseCliScript() {
 }
 
 function gcloudCandidates() {
-  if (process.platform !== 'win32') return ['gcloud'];
-  const candidates = ['gcloud.cmd', 'gcloud.exe', 'gcloud'];
-  const localAppData = process.env.LOCALAPPDATA;
-  if (localAppData) {
-    candidates.push(join(localAppData, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', 'gcloud.cmd'));
-  }
-  return candidates;
+  return process.platform === 'win32'
+    ? ['gcloud.cmd', 'gcloud.exe', 'gcloud']
+    : ['gcloud'];
 }
 
 function runProcess(executable, args, { cwd = repoRoot, inherit = false } = {}) {
@@ -60,14 +56,13 @@ function runProcess(executable, args, { cwd = repoRoot, inherit = false } = {}) 
     stdio: inherit ? 'inherit' : 'pipe',
   };
   if (process.platform === 'win32' && executable.toLowerCase().endsWith('.cmd')) {
-    return spawnSync(process.env.ComSpec || 'cmd.exe', ['/d', '/c', executable, ...args], options);
+    return spawnSync('cmd.exe', ['/d', '/c', executable, ...args], options);
   }
   return spawnSync(executable, args, options);
 }
 
 function resolveGcloud() {
   for (const candidate of gcloudCandidates()) {
-    if ((candidate.includes('\\') || candidate.includes('/')) && !existsSync(candidate)) continue;
     const probe = runProcess(candidate, ['version']);
     if (!probe.error && probe.status === 0) return candidate;
   }
@@ -209,7 +204,7 @@ if (!execute) {
 }
 
 const gcloud = resolveGcloud();
-if (!gcloud) fail('No se encontro una instalacion utilizable de gcloud en PATH o Google Cloud SDK.');
+if (!gcloud) fail('No se encontro una instalacion utilizable de gcloud en PATH.');
 
 const activeAccount = runGcloud(gcloud, ['config', 'get-value', 'account']);
 if (!activeAccount || activeAccount === '(unset)') {
