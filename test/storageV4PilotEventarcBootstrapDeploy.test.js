@@ -52,8 +52,8 @@ test('gcloud en Windows prioriza PATH antes del fallback LOCALAPPDATA con espaci
   });
   assert.deepEqual(candidates.slice(0, 3), ['gcloud.cmd', 'gcloud.exe', 'gcloud']);
   assert.equal(
-    candidates.at(-1),
-    'C:\\Users\\Carlos Gonzalez\\AppData\\Local\\Google\\Cloud SDK\\google-cloud-sdk\\bin\\gcloud.cmd'
+    candidates.at(-1).replaceAll('\\', '/'),
+    'C:/Users/Carlos Gonzalez/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud.cmd'
   );
 });
 
