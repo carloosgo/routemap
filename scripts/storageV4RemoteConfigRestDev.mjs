@@ -14,12 +14,14 @@ function runProcess(executable, args) {
   return spawnSync(executable, args, options);
 }
 
-function gcloudCandidates() {
-  if (process.platform !== 'win32') return ['gcloud'];
+export function gcloudCandidates({
+  platform = process.platform,
+  localAppData = process.env.LOCALAPPDATA,
+} = {}) {
+  if (platform !== 'win32') return ['gcloud'];
   const candidates = ['gcloud.cmd', 'gcloud.exe', 'gcloud'];
-  const localAppData = process.env.LOCALAPPDATA;
   if (localAppData) {
-    candidates.unshift(join(localAppData, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', 'gcloud.cmd'));
+    candidates.push(join(localAppData, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', 'gcloud.cmd'));
   }
   return candidates;
 }
