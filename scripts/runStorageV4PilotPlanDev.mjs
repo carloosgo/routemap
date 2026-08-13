@@ -6,7 +6,9 @@ import { fileURLToPath } from 'node:url';
 import { Buffer } from 'node:buffer';
 import {
   V4_PILOT_BACKEND_FUNCTION_NAMES,
-  V4_PILOT_BACKEND_REGION,
+  V4_PILOT_BACKEND_FUNCTION_REGIONS,
+  V4_PILOT_EVENTARC_REGION,
+  V4_PILOT_EVENTARC_TRIGGERS,
 } from '../functions/v4PilotBackendManifest.js';
 import { GATE_G_REMOTE_KEYS } from '../src/modules/storage-v4/gateGRuntimeConfigModel.js';
 import { composePilotWriteRules } from './firestorePilotWriteRules.mjs';
@@ -66,9 +68,13 @@ export function buildStorageV4PilotPlan({
       v4RootHardDeleteAllowed: false,
     },
     backend: {
-      region: V4_PILOT_BACKEND_REGION,
       functionCount: V4_PILOT_BACKEND_FUNCTION_NAMES.length,
       functionNames: [...V4_PILOT_BACKEND_FUNCTION_NAMES],
+      functionRegions: { ...V4_PILOT_BACKEND_FUNCTION_REGIONS },
+      eventarcRegion: V4_PILOT_EVENTARC_REGION,
+      eventarcTriggerCount: V4_PILOT_EVENTARC_TRIGGERS.length,
+      eventarcTriggerNames: V4_PILOT_EVENTARC_TRIGGERS.map((trigger) => trigger.name),
+      eventarcWiringRequiresIamPreflight: true,
       exportsPrepared,
       exportsActivatedInIndex: exportsActivated,
     },
@@ -85,10 +91,12 @@ export function buildStorageV4PilotPlan({
       pilotTrafficActivated: false,
     },
     nextActivationSequence: [
-      'activate-pilot-exports-in-functions-index',
-      'deploy-exact-pilot-functions',
+      'deploy-three-supported-pilot-functions',
       'apply-composed-pilot-write-rules',
-      'verify-backend-and-rules',
+      'verify-functions-and-rules-with-remote-config-off',
+      'run-read-only-eventarc-iam-preflight',
+      'wire-five-firestore-eventarc-triggers-after-explicit-iam-approval-if-needed',
+      'verify-eventarc-backend-and-rules',
       'mark-readiness-flags',
       'choose-explicit-pilot-cohort',
       'disable-kill-switch-and-enter-pilot',
