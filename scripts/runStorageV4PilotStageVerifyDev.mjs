@@ -1,4 +1,4 @@
-/* global fetch, process, console */
+/* global fetch, process, console, URLSearchParams */
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
