@@ -1,25 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import {
+  V4_PILOT_BACKEND_FUNCTION_NAMES,
+  V4_PILOT_BACKEND_FUNCTION_REGIONS,
+} from '../functions/v4PilotBackendManifest.js';
 import { composePilotWriteRules } from '../scripts/firestorePilotWriteRules.mjs';
 import {
   PILOT_VERIFY_RELEASE,
   buildPilotStageVerification,
 } from '../scripts/runStorageV4PilotStageVerifyDev.mjs';
 
-const functionNames = [
-  'v4SegmentAggregate',
-  'v4PlaceAggregate',
-  'v4ConnectionTouch',
-  'v4NoteTouch',
-  'v4ChecklistTouch',
-  'v4TripLifecycle',
-  'v4TripPurge',
-];
-
 function functionInventory() {
-  return functionNames.map((name) => ({
-    name: `projects/atlasmap-dev/locations/us-central1/functions/${name}`,
+  return V4_PILOT_BACKEND_FUNCTION_NAMES.map((name) => ({
+    name: `projects/atlasmap-dev/locations/${V4_PILOT_BACKEND_FUNCTION_REGIONS[name]}/functions/${name}`,
     state: 'ACTIVE',
     buildConfig: { runtime: 'nodejs22' },
   }));
@@ -54,7 +48,7 @@ function activeRules(rules) {
   };
 }
 
-test('stage verify acepta solo backend activo + Rules exactas + Remote Config apagado', async () => {
+test('stage verify acepta solo backend activo en regiones correctas + Rules exactas + Remote Config apagado', async () => {
   const rules = await candidateRules();
   const current = activeRules(rules);
   const result = buildPilotStageVerification({
@@ -70,6 +64,10 @@ test('stage verify acepta solo backend activo + Rules exactas + Remote Config ap
   assert.equal(result.rules.matchesCandidate, true);
   assert.equal(result.remoteConfig.safeForStage, true);
   assert.equal(result.remoteConfig.pilotTrafficActivated, false);
+  assert.deepEqual(result.unexpectedRegionFunctions, []);
+  assert.equal(result.regions.v4SegmentAggregate, 'northamerica-south1');
+  assert.equal(result.regions.v4TripLifecycle, 'us-central1');
+  assert.equal(result.regions.v4TripPurge, 'us-central1');
   assert.deepEqual(result.readinessCandidates, {
     writeRulesReady: true,
     aggregateReady: true,
@@ -108,6 +106,27 @@ test('stage verify falla cerrado si falta una Function o su runtime/estado no co
   assert.equal(wrongResult.staged, false);
   assert.deepEqual(wrongResult.nonActiveFunctions, ['v4SegmentAggregate']);
   assert.deepEqual(wrongResult.wrongRuntimeFunctions, ['v4PlaceAggregate']);
+});
+
+test('stage verify rechaza una Function pilot en región inesperada', async () => {
+  const rules = await candidateRules();
+  const current = activeRules(rules);
+  const inventory = functionInventory();
+  inventory.push({
+    name: 'projects/atlasmap-dev/locations/us-central1/functions/v4SegmentAggregate',
+    state: 'ACTIVE',
+    buildConfig: { runtime: 'nodejs22' },
+  });
+  const result = buildPilotStageVerification({
+    candidateRules: rules,
+    cloudFunctions: inventory,
+    release: current.release,
+    ruleset: current.ruleset,
+    remoteConfigSummary: safeRemoteConfig(),
+  });
+  assert.equal(result.backendReady, false);
+  assert.equal(result.staged, false);
+  assert.deepEqual(result.unexpectedRegionFunctions, ['v4SegmentAggregate@us-central1']);
 });
 
 test('stage verify detecta Rules distintas o tráfico pilot ya activado', async () => {
