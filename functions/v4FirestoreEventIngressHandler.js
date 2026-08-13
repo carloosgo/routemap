@@ -2,7 +2,7 @@ import { applyV4AggregateEvent } from './v4AggregateStore.js';
 import { applyV4TripTouch } from './v4TripTouchStore.js';
 
 export const V4_FIRESTORE_EVENT_TYPE = 'google.cloud.firestore.document.v1.written';
-export const V4_FIRESTORE_EVENT_SOURCE = '//firestore.googleapis.com/projects/atlasmap-dev/databases/(default)';
+export const V4_FIRESTORE_DATABASE = '(default)';
 
 const ENTITY_ROUTES = Object.freeze({
   segments: Object.freeze({ entityType: 'segment', mode: 'aggregate' }),
@@ -32,25 +32,28 @@ function decodePathSegment(value, field) {
 export function parseV4FirestoreEventHeaders(headers = {}) {
   const type = headerValue(headers, 'ce-type');
   const source = headerValue(headers, 'ce-source');
-  const subject = headerValue(headers, 'ce-subject');
+  const database = headerValue(headers, 'ce-database');
+  const document = headerValue(headers, 'ce-document');
   const eventId = headerValue(headers, 'ce-id');
   const specVersion = headerValue(headers, 'ce-specversion');
 
   if (type !== V4_FIRESTORE_EVENT_TYPE) {
     throw new TypeError('Evento Firestore v4 con ce-type inválido.');
   }
-  if (source !== V4_FIRESTORE_EVENT_SOURCE) {
-    throw new TypeError('Evento Firestore v4 con ce-source inválido.');
+  if (database !== V4_FIRESTORE_DATABASE) {
+    throw new TypeError('Evento Firestore v4 con ce-database inválido.');
   }
-  if (specVersion && specVersion !== '1.0') {
+  if (specVersion !== '1.0') {
     throw new TypeError('Evento Firestore v4 con ce-specversion inválido.');
   }
   if (!eventId) throw new TypeError('Evento Firestore v4 sin ce-id.');
-  if (!subject.startsWith('documents/')) {
-    throw new TypeError('Evento Firestore v4 con ce-subject inválido.');
-  }
+  if (!source) throw new TypeError('Evento Firestore v4 sin ce-source.');
+  if (!document) throw new TypeError('Evento Firestore v4 sin ce-document.');
 
-  const parts = subject.slice('documents/'.length).split('/');
+  const normalizedDocument = document.startsWith('documents/')
+    ? document.slice('documents/'.length)
+    : document;
+  const parts = normalizedDocument.split('/');
   if (parts.length !== 6 || parts[0] !== 'users' || parts[2] !== 'trips') {
     throw new TypeError('Evento Firestore v4 fuera del árbol de viajes soportado.');
   }
@@ -68,7 +71,8 @@ export function parseV4FirestoreEventHeaders(headers = {}) {
     eventId,
     type,
     source,
-    subject,
+    database,
+    document,
     documentPath,
     collection,
     userId,
@@ -83,9 +87,9 @@ export function parseV4FirestoreEventHeaders(headers = {}) {
  * Reconciles the latest authoritative Firestore state for a child document.
  *
  * Eventarc delivery is at-least-once and may be out of order. Instead of
- * trusting an event payload snapshot, the ingress re-reads the current child.
- * Aggregate contribution/version fences and monotonic touch timestamps then
- * make duplicate or stale deliveries safe.
+ * trusting the protobuf payload snapshot, the ingress re-reads the current
+ * child. Aggregate contribution/version fences and monotonic touch timestamps
+ * then make duplicate or stale deliveries safe.
  */
 export async function handleV4FirestoreEventIngress({
   db,
