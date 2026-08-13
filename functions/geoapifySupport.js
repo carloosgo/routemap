@@ -39,6 +39,10 @@ function safeMetricToken(value, fallback = '') {
     : fallback;
 }
 
+function hostnameMatches(hostname, domain) {
+  return hostname === domain || hostname.endsWith(`.${domain}`);
+}
+
 export function providerRequestMetricDescriptor(url, serviceName = '') {
   let hostname = '';
   let pathname = '';
@@ -51,9 +55,9 @@ export function providerRequestMetricDescriptor(url, serviceName = '') {
   }
 
   let provider = 'other';
-  if (hostname.endsWith('geoapify.com')) provider = 'geoapify';
-  else if (hostname.endsWith('googleapis.com')) provider = 'google';
-  else if (hostname === 'overpass-api.de' || hostname.endsWith('.overpass-api.de')) provider = 'overpass';
+  if (hostnameMatches(hostname, 'geoapify.com')) provider = 'geoapify';
+  else if (hostnameMatches(hostname, 'googleapis.com')) provider = 'google';
+  else if (hostnameMatches(hostname, 'overpass-api.de')) provider = 'overpass';
   else if (String(serviceName).toLowerCase().includes('geoapify')) provider = 'geoapify';
   else if (String(serviceName).toLowerCase().includes('google')) provider = 'google';
 
