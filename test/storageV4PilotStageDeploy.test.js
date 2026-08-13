@@ -58,6 +58,7 @@ test('pilot stage conserva index commiteado fail-closed y usa exports efímeros'
   assert.equal(plan.pilotExportsActivatedInIndex, false);
   assert.equal(plan.usesEphemeralPilotExports, true);
   assert.equal(plan.committedIndexRemainsUnchanged, true);
+  assert.equal(plan.functionFailurePolicyAcknowledged, true);
   assert.equal(plan.wouldDeployV4WriteRules, true);
   assert.equal(plan.requiresExplicitWriteAuthorization, true);
   assert.equal(plan.remoteConfigChanged, false);
@@ -105,15 +106,18 @@ test('pilot stage apply despliega solo siete Functions, restaura index y despué
   assert.equal(calls[0][0], 'deploy');
   assert.match(calls[0][2], /^functions:v4SegmentAggregate,/);
   assert.match(calls[0][2], /functions:v4TripPurge$/);
+  assert.ok(calls[0].includes('--force'));
   assert.equal(calls[1][0], 'deploy');
   assert.equal(calls[1][1], '--config');
   assert.ok(calls[1][2].replaceAll('\\', '/').endsWith('/firebase.pilot-write.json'));
   assert.deepEqual(calls[1].slice(3, 5), ['--only', 'firestore:rules']);
+  assert.equal(calls[1].includes('--force'), false);
   assert.ok(generatedRules.includes('pilotValidClientTripUpdate'));
   assert.equal(indexWrites.length, 2);
   assert.match(indexWrites[0], /v4PilotExports\.js/);
   assert.equal(indexWrites[1], stableIndex);
   assert.equal(currentIndex, stableIndex);
+  assert.equal(result.functionFailurePolicyAcknowledged, true);
   assert.equal(result.ephemeralPilotExportsUsed, true);
   assert.equal(result.functionsIndexRestored, true);
   assert.equal(result.v4WriteRulesDeployed, true);
