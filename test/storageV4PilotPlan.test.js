@@ -13,21 +13,31 @@ async function repoInputs() {
   return { v3Rules, v4Rules, indexSource, pilotExportsSource };
 }
 
-test('pilot plan enumera las siete Functions preparadas sin activarlas en index', async () => {
+test('pilot plan modela tres Functions soportadas + cinco triggers Eventarc sin activarlos', async () => {
   const plan = buildStorageV4PilotPlan(await repoInputs());
 
   assert.equal(plan.project, 'atlasmap-dev');
-  assert.equal(plan.backend.region, 'us-central1');
-  assert.equal(plan.backend.functionCount, 7);
+  assert.equal(plan.backend.functionCount, 3);
   assert.deepEqual(plan.backend.functionNames, [
-    'v4SegmentAggregate',
-    'v4PlaceAggregate',
-    'v4ConnectionTouch',
-    'v4NoteTouch',
-    'v4ChecklistTouch',
+    'v4FirestoreEventIngress',
     'v4TripLifecycle',
     'v4TripPurge',
   ]);
+  assert.deepEqual(plan.backend.functionRegions, {
+    v4FirestoreEventIngress: 'us-central1',
+    v4TripLifecycle: 'us-central1',
+    v4TripPurge: 'us-central1',
+  });
+  assert.equal(plan.backend.eventarcRegion, 'northamerica-south1');
+  assert.equal(plan.backend.eventarcTriggerCount, 5);
+  assert.deepEqual(plan.backend.eventarcTriggerNames, [
+    'atlas-v4-segment-written',
+    'atlas-v4-place-written',
+    'atlas-v4-connection-written',
+    'atlas-v4-note-written',
+    'atlas-v4-checklist-written',
+  ]);
+  assert.equal(plan.backend.eventarcWiringRequiresIamPreflight, true);
   assert.equal(plan.backend.exportsPrepared, true);
   assert.equal(plan.backend.exportsActivatedInIndex, false);
   assert.equal(plan.codePrepared, true);
