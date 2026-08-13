@@ -23,6 +23,7 @@ import {
   V4_PILOT_EVENTARC_TRIGGERS,
   V4_PILOT_SERVICE_REGION,
 } from '../functions/v4PilotBackendManifest.js';
+import { gcloudCandidates } from '../scripts/storageV4RemoteConfigRestDev.mjs';
 
 test('bootstrap IAM queda separado de Eventarc y no auto-concede actAs', async () => {
   const source = await readFile(
@@ -42,6 +43,18 @@ test('bootstrap IAM queda separado de Eventarc y no auto-concede actAs', async (
   assert.doesNotMatch(source, /roles\/iam\.serviceAccountUser/);
   assert.doesNotMatch(source, /eventarc', 'triggers', 'create'/);
   assert.doesNotMatch(source, /remote-config|Remote Config publish/i);
+});
+
+test('gcloud en Windows prioriza PATH antes del fallback LOCALAPPDATA con espacios', () => {
+  const candidates = gcloudCandidates({
+    platform: 'win32',
+    localAppData: 'C:\\Users\\Carlos Gonzalez\\AppData\\Local',
+  });
+  assert.deepEqual(candidates.slice(0, 3), ['gcloud.cmd', 'gcloud.exe', 'gcloud']);
+  assert.equal(
+    candidates.at(-1),
+    'C:\\Users\\Carlos Gonzalez\\AppData\\Local\\Google\\Cloud SDK\\google-cloud-sdk\\bin\\gcloud.cmd'
+  );
 });
 
 test('deploy Eventarc usa filtros oficiales Firestore y destino privado esperado', async () => {
