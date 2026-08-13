@@ -32,9 +32,11 @@ test('bootstrap IAM queda separado de Eventarc y no auto-concede actAs', async (
   assert.equal(PILOT_EVENTARC_IAM_BOOTSTRAP_CONFIRM, 'APPLY-ATLAS-V4-EVENTARC-IAM-DEV');
   assert.equal(PILOT_EVENTARC_INGRESS_SERVICE, 'v4firestoreeventingress');
   assert.equal(PILOT_EVENTARC_INGRESS_REGION, 'us-central1');
+  assert.equal(PILOT_EVENTARC_RECEIVER_ROLE, 'roles/eventarc.eventReceiver');
+  assert.equal(PILOT_EVENTARC_INVOKER_ROLE, 'roles/run.invoker');
   assert.match(source, /iam', 'service-accounts', 'create'/);
-  assert.match(source, new RegExp(PILOT_EVENTARC_RECEIVER_ROLE.replaceAll('.', '\\.')));
-  assert.match(source, new RegExp(PILOT_EVENTARC_INVOKER_ROLE.replaceAll('.', '\\.')));
+  assert.match(source, /'--role', PILOT_EVENTARC_RECEIVER_ROLE/);
+  assert.match(source, /'--role', PILOT_EVENTARC_INVOKER_ROLE/);
   assert.match(source, /grantCallerActAsAutomatically:\s*false/);
   assert.match(source, /callerActAsGrantedAutomatically:\s*false/);
   assert.doesNotMatch(source, /roles\/iam\.serviceAccountUser/);
