@@ -30,6 +30,7 @@ export function TripDeleteDialog({
           {t('confirmDelete')}{' '}
           <strong>{tripToDelete.name || t('unnamedTrip')}</strong>
         </p>
+        <p className="confirm__message">{t('deletePermanentWarning')}</p>
         <div className="confirm__actions">
           <button
             type="button"
