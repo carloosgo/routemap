@@ -18,6 +18,8 @@ export default {
   deleteTrip: 'Eliminar viaje',
   cancel: 'Cancelar',
   confirmDelete: '¿Eliminar este viaje?',
+  deletePermanentWarning: 'Esta acción es definitiva y no se puede deshacer.',
+  deletingTrip: 'Eliminando…',
   loadTrip: 'Abrir',
   of: 'de',
   itinerary: 'Itinerario',
