@@ -7,10 +7,39 @@ import {
 } from '../../modules/storage-v4/tripRepositoryRolloutPlan.js';
 import { createObservedTripRepository } from '../../modules/storage-v4/rolloutRepositoryTelemetry.js';
 
+export const V4_ROLLOUT_CONFIG_UNAVAILABLE_CODE = 'trip/v4-rollout-config-unavailable';
+
 function requiredText(value, field) {
   const normalized = typeof value === 'string' ? value.trim() : '';
   if (!normalized) throw new TypeError(`${field} es obligatorio.`);
   return normalized;
+}
+
+function rolloutConfigUnavailableError() {
+  const error = new Error(
+    'Atlas todavía no confirmó la configuración segura de Storage v4. Intenta guardar de nuevo en unos segundos.'
+  );
+  error.code = V4_ROLLOUT_CONFIG_UNAVAILABLE_CODE;
+  return error;
+}
+
+function guardUnresolvedRemoteConfigMutations(repository, rolloutConfig) {
+  if (
+    rolloutConfig?.remoteConfigEnabled !== true
+    || rolloutConfig?.remoteConfigReady === true
+  ) {
+    return repository;
+  }
+
+  return {
+    ...repository,
+    save() {
+      throw rolloutConfigUnavailableError();
+    },
+    remove() {
+      throw rolloutConfigUnavailableError();
+    },
+  };
 }
 
 /**
@@ -18,6 +47,11 @@ function requiredText(value, field) {
  * - v3: legacy repository only;
  * - hybrid-read: v4 can be hydrated but writes remain disabled;
  * - v4-pilot: only selected after every write-side readiness flag is true.
+ *
+ * When Remote Config is enabled but unresolved, reads may still use the safe v3
+ * repository while mutations are blocked. Falling back to an ordinary v3 write
+ * would let a transient Remote Config failure silently persist a pilot trip in
+ * the legacy schema.
  */
 export function createGateGTripRepository({
   db,
@@ -58,6 +92,8 @@ export function createGateGTripRepository({
   } else {
     baseRepository = v3Factory({ db, uid: ownerId });
   }
+
+  baseRepository = guardUnresolvedRemoteConfigMutations(baseRepository, rolloutConfig);
 
   const repository = emitTelemetry
     ? createObservedTripRepository({
