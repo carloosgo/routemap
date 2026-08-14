@@ -15,11 +15,11 @@ Cuando el target aún no existe:
 3. habilita Firebase Management API y Cloud Firestore API;
 4. agrega Firebase al proyecto;
 5. crea Firestore `(default)` en Native mode, Standard edition, en la location explícitamente aprobada;
-6. habilita PITR;
-7. habilita delete protection para la base.
+6. habilita delete protection para la base.
 
 No crea todavía:
 
+- PITR productivo: queda detrás del gate L2 recovery/cost;
 - Firebase Web App;
 - Authentication providers;
 - Functions productivas;
@@ -72,11 +72,11 @@ La location se fija al crear `(default)` y el runner exige que coincida exactame
 ```text
 mode: firestore-native
 edition: standard
-PITR: enabled
 delete protection: enabled
+PITR: no gestionado en L0; se decide/activa en L2
 ```
 
-PITR tiene costo de almacenamiento, por lo que su activación forma parte explícita de la decisión de crear el entorno productivo.
+La separación es intencional: PITR genera costo de almacenamiento y forma parte del gate productivo de recovery/cost, no del bootstrap de identidad/location.
 
 ## Después del PASS
 
@@ -85,4 +85,5 @@ Después de un `pass: true`:
 1. ejecutar `phase-l:l0:preflight -- --check-cloud` contra el mismo Project ID/location;
 2. agregar el alias `prod` a `.firebaserc` únicamente después de verificar que el proyecto real existe;
 3. registrar el target aprobado en la documentación de implementación;
-4. avanzar a L1 sin habilitar todavía tráfico ni escrituras productivas.
+4. avanzar a L1 sin habilitar todavía tráfico ni escrituras productivas;
+5. activar PITR solo al llegar a L2 con su costo/protección aprobados.
