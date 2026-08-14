@@ -2,11 +2,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const scriptPath = fileURLToPath(
   new URL('../scripts/runStorageV4PhaseL0CreateProductionProject.mjs', import.meta.url)
 );
+const source = readFileSync(scriptPath, 'utf8');
 
 function run(args = []) {
   return spawnSync(process.execPath, [scriptPath, ...args], {
@@ -70,4 +72,12 @@ test('apply exige token ligado al Project ID exacto', () => {
   ]);
   assert.notEqual(wrong.status, 0);
   assert.match(wrong.stderr, /CREATE-ATLAS-V4-PROD-atlasmap-prod/);
+});
+
+test('Windows prefiere gcloud por PATH y evita ejecutar una ruta .cmd con espacios como token de cmd.exe', () => {
+  assert.match(source, /const candidates = \['gcloud\.cmd', 'gcloud\.exe', 'gcloud'\]/);
+  assert.match(source, /candidates\.push\(join\(localAppData/);
+  assert.doesNotMatch(source, /candidates\.unshift\(join\(localAppData/);
+  assert.match(source, /const command = hasPath \? basename\(executable\) : executable/);
+  assert.match(source, /cwd: dirname\(executable\)/);
 });
