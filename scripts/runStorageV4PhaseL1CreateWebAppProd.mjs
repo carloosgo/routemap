@@ -123,6 +123,8 @@ async function main() {
     displayName: DISPLAY_NAME,
     createsExactlyOneFirebaseWebApp: apply,
     runsEmptyProductionPreflightBeforeFirstCreate: true,
+    targetComesFromHardcodedProjectAndRestPath: true,
+    dependsOnActiveGcloudProject: false,
     opensFirestoreRules: false,
     changesAuthProviders: false,
     changesIam: false,
@@ -137,8 +139,6 @@ async function main() {
 
   const gcloud = resolveCommand('gcloud');
   if (!gcloud) fail('No se encontró gcloud.');
-  const activeProject = runChecked(gcloud, ['config', 'get-value', 'project'], 'No se pudo leer el proyecto gcloud activo');
-  if (activeProject !== PROJECT) fail(`gcloud debe tener project=${PROJECT}; actual=${activeProject || '[vacío]'}.`);
   const token = runChecked(gcloud, ['auth', 'print-access-token'], 'No se pudo obtener access token');
 
   let apps = await listWebApps(token);
