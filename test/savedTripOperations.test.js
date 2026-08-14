@@ -8,6 +8,7 @@ import {
   persistSavedTrip,
   removeSavedTrip,
   savedTripErrorMessage,
+  savedTripErrorTranslationKey,
 } from '../src/modules/trips/savedTripOperations.js';
 
 function repositoryFixture() {
@@ -92,4 +93,14 @@ test('el conteo local y el mensaje de error conservan su contrato', async () => 
   assert.equal(await countLocalTrips({ async list() { return [{}, {}]; } }), 2);
   assert.equal(savedTripErrorMessage(new Error('fallo real'), 'alternativo'), 'fallo real');
   assert.equal(savedTripErrorMessage('fallo', 'alternativo'), 'alternativo');
+});
+
+test('Remote Config no resuelto se muestra como write no listo y no como error genérico', () => {
+  assert.equal(
+    savedTripErrorTranslationKey(
+      { code: 'trip/v4-rollout-config-unavailable' },
+      'savePersistenceError'
+    ),
+    'saveWriteNotReady'
+  );
 });
