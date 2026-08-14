@@ -3,6 +3,7 @@ const ERROR_TRANSLATION_KEYS = Object.freeze({
   'trip/v4-sync-busy': 'saveSyncBusy',
   'trip/v4-write-not-ready': 'saveWriteNotReady',
   'trip/v4-write-not-enabled': 'saveWriteNotReady',
+  'trip/v4-rollout-config-unavailable': 'saveWriteNotReady',
 });
 
 export function savedTripErrorMessage(error, fallback) {
