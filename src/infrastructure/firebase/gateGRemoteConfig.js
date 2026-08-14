@@ -48,6 +48,10 @@ function failClosedDefaults() {
   };
 }
 
+function resolutionState(config, remoteConfigReady) {
+  return { ...config, remoteConfigReady };
+}
+
 export async function createGateGRemoteConfigController({
   app,
   baseConfig,
@@ -55,7 +59,7 @@ export async function createGateGRemoteConfigController({
   minimumFetchIntervalMillis = DEFAULT_FETCH_INTERVAL_MS,
   onChange = null,
 } = {}) {
-  const fallback = failClosedRolloutConfig(baseConfig);
+  const fallback = resolutionState(failClosedRolloutConfig(baseConfig), false);
   if (!enabled || !app || typeof window === 'undefined') {
     return {
       config: fallback,
@@ -75,19 +79,19 @@ export async function createGateGRemoteConfigController({
     remoteConfig.defaultConfig = failClosedDefaults();
 
     await fetchAndActivate(remoteConfig);
-    let current = normalizeRemoteRolloutConfig({
+    let current = resolutionState(normalizeRemoteRolloutConfig({
       base: baseConfig,
       remote: readRemoteValues(remoteConfig),
-    });
+    }), true);
 
     const unsubscribe = onConfigUpdate(remoteConfig, {
       next: async () => {
         try {
           await activate(remoteConfig);
-          current = normalizeRemoteRolloutConfig({
+          current = resolutionState(normalizeRemoteRolloutConfig({
             base: baseConfig,
             remote: readRemoteValues(remoteConfig),
-          });
+          }), true);
           if (typeof onChange === 'function') onChange(current);
         } catch {
           current = fallback;
