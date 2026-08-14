@@ -29,6 +29,7 @@ test('L1 locked-rules plan no muta producción', () => {
   assert.equal(value.mode, 'plan');
   assert.equal(value.project, 'atlasmap-prod');
   assert.equal(value.denyAllClientReadsAndWrites, true);
+  assert.equal(value.capturesPreviousRulesetPointer, true);
   assert.equal(value.deploysOnlyFirestoreRules, false);
   assert.equal(value.createsWebApp, false);
   assert.equal(value.changesAuth, false);
@@ -67,4 +68,14 @@ test('apply hace preflight antes del deploy y verifica source server-side', () =
   assert.match(source, /serverSideRulesSourceMatched: true/);
   assert.match(source, /'x-goog-user-project': PROJECT/);
   assert.doesNotMatch(source, /functions:deploy/);
+});
+
+test('apply captura el ruleset previo antes del deploy como puntero de rollback', () => {
+  const beforeIndex = source.indexOf("stage: 'rules-before'");
+  const deployIndex = source.indexOf("'deploy',");
+  assert.ok(beforeIndex >= 0);
+  assert.ok(deployIndex > beforeIndex);
+  assert.match(source, /previousRulesetName/);
+  assert.match(source, /previousRulesetPreservedServerSide/);
+  assert.match(source, /rollbackPointerRecorded/);
 });
