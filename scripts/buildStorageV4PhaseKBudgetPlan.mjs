@@ -2,7 +2,6 @@
 
 const PROJECT = 'atlasmap-dev';
 const DEFAULT_DISPLAY_NAME = 'Atlas Storage v4 dev';
-const DEFAULT_THRESHOLDS = Object.freeze([0.5, 0.8, 1]);
 
 function argValue(name) {
   const prefix = `${name}=`;
@@ -23,12 +22,13 @@ function parsePositiveAmount(raw) {
 }
 
 function parseThresholds(raw) {
-  if (!raw) return [...DEFAULT_THRESHOLDS];
+  if (!raw) throw new Error('Falta --thresholds. No existen thresholds default deliberadamente.');
   const values = raw.split(',').map((value) => Number(value.trim()));
   if (values.length === 0 || values.some((value) => !Number.isFinite(value) || value <= 0 || value > 2)) {
-    throw new Error('--thresholds debe contener porcentajes decimales > 0 y <= 2, por ejemplo 0.5,0.8,1.');
+    throw new Error('--thresholds debe contener porcentajes decimales > 0 y <= 2.');
   }
   const unique = [...new Set(values)].sort((a, b) => a - b);
+  if (unique.length !== values.length) throw new Error('--thresholds no debe contener valores duplicados.');
   return unique;
 }
 
@@ -65,8 +65,9 @@ try {
     mutatesBudgets: false,
     touchesProduction: false,
     requiresExplicitAmount: true,
+    requiresExplicitThresholds: true,
     currencyCodeOmittedIntentionally: true,
-    note: 'Plan only. Creation remains blocked until budget visibility/permissions and amount are explicitly approved.',
+    note: 'Plan only. Creation remains blocked until amount and thresholds are explicitly approved.',
     budget,
   }, null, 2));
 } catch (error) {
