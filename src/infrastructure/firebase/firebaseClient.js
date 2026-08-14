@@ -15,7 +15,6 @@ function requireFirebaseConfig() {
     'apiKey',
     'authDomain',
     'projectId',
-    'storageBucket',
     'messagingSenderId',
     'appId',
   ];
