@@ -2,7 +2,7 @@
 
 Fecha de corte: **2026-08-14**
 
-Este documento distingue implementación técnica, evidencia dev y rollout productivo. `atlasmap-prod` ya existe desde L0, pero **todavía no sirve tráfico de aplicación ni tiene Storage v4 WRITE habilitado**.
+Este documento distingue implementación técnica, evidencia dev y rollout productivo. `atlasmap-prod` ya existe y L1 está en curso, pero **todavía no sirve tráfico de aplicación ni tiene Storage v4 WRITE habilitado**.
 
 ## Resumen A–L
 
@@ -19,16 +19,16 @@ Este documento distingue implementación técnica, evidencia dev y rollout produ
 | I — migration | **Cerrado en dev** | Round-trip cloud real `v3→v4→v3→v4` PASS. No hay migración masiva/productiva. |
 | J — provider cache separation | **Cerrado para v4.0** | Separación lógica y resiliencia probadas; database física `atlas-cache` diferida mientras la vía server-side elegida siga no production-ready. |
 | K — monitoring/backups/load | **Cerrado en dev** | Recovery, restore, telemetry, dashboard, alert firing real, budget dev, resiliencia, carga/reconnect y CI PASS. Forecast/latencia real pasan a gates productivos. |
-| L0 — target productivo | **PASS productivo** | `atlasmap-prod` ACTIVE, billing ligado, Firebase enabled, Firestore `(default)` Standard/Native en `us-central1`, delete protection enabled. Sin app/tráfico/datos. |
-| L1 — seguridad/datos | **En preparación** | Preflight read-only y baseline Firestore deny-all preparados; ningún cambio L1 aplicado todavía. |
+| L0 — target productivo | **PASS productivo** | `atlasmap-prod` ACTIVE, billing ligado, Firebase enabled, Firestore `(default)` Standard/Native en `us-central1`, delete protection enabled. |
+| L1 — seguridad/datos | **En curso productivo** | Preflight PASS; Firestore Rules deny-all activas y verificadas; 1 Web App productiva creada y verificada; Google Auth pendiente. Firestore sigue vacío. |
 | L2–L7 — rollout | **Pendiente** | Recovery/costo, App Check, READ gradual, materialización, WRITE controlado y convergencia/retiro v3. |
 
 ## Avance global estimado
 
 - **Implementación técnica v4:** ~99%.
-- **Plan completo A–L hasta producción estable:** **~96%**.
+- **Plan completo A–L hasta producción estable:** **~97%**.
 
-El porcentaje restante está concentrado en seguridad/recovery productivos, configuración de la Firebase Web App/Auth/App Check, rollout gradual, baseline de latencia, activación WRITE y convergencia final.
+El porcentaje restante está concentrado en Auth/App Check/recovery productivos, rollout gradual, baseline real de latencia, activación WRITE y convergencia final.
 
 ## Entornos
 
@@ -53,6 +53,9 @@ Mode: FIRESTORE_NATIVE
 Edition: STANDARD
 Delete protection: enabled
 PITR: pendiente de L2
+Firebase Web App: AtlasMap Web Production
+Firestore client Rules: deny-all
+Google Authentication: pendiente
 ```
 
 L0 bootstrap PASS:
@@ -68,7 +71,7 @@ L0              -> pass: true
 
 El estado `already-present/already-linked` se debe a la reanudación idempotente de un intento anterior que alcanzó esas etapas antes de fallar en Firebase Management por quota-project. El runner fue corregido sin modificar ADC global.
 
-Evidencia: `docs/STORAGE_V4_PHASE_L0_CLOSEOUT_2026-08-14.md`.
+Evidencia L0: `docs/STORAGE_V4_PHASE_L0_CLOSEOUT_2026-08-14.md`.
 
 `.firebaserc` conserva `default` en dev y agrega solo el alias explícito `prod -> atlasmap-prod`. Ningún runner productivo debe depender del alias `default`.
 
@@ -76,8 +79,11 @@ Evidencia: `docs/STORAGE_V4_PHASE_L0_CLOSEOUT_2026-08-14.md`.
 
 En este punto:
 
-- no existe Firebase Web App productiva creada por este rollout;
+- existe exactamente 1 Firebase Web App productiva creada por este rollout: `AtlasMap Web Production`;
+- Firestore client Rules están en baseline `deny-all` y el source server-side fue verificado;
+- Firestore productivo seguía con 0 colecciones top-level en el preflight inmediatamente anterior al bootstrap de la Web App;
 - no se han configurado providers de Authentication en producción;
+- `localhost` no debe autorizarse como dominio productivo;
 - no se han desplegado Functions/Eventarc productivos;
 - no se ha configurado Remote Config productivo;
 - no se ha habilitado App Check productivo;
@@ -136,24 +142,56 @@ El cost model existe con clasificación `simulation | measured | approved`. No h
 
 ## L1 — seguridad/datos
 
-L1 comienza fail-closed.
+L1 comenzó fail-closed.
 
-El repo incluye un preflight productivo read-only que exige observar:
+### Preflight inicial — PASS
 
-1. `atlasmap-prod` ACTIVE;
+Se verificó en `atlasmap-prod`:
+
+1. proyecto ACTIVE;
 2. billing enabled;
 3. Firestore `(default)` en `us-central1`, Standard/Native y delete protection;
-4. **0 colecciones top-level** en la base productiva;
-5. **0 Firebase Web Apps** inesperadas;
+4. **0 colecciones top-level**;
+5. **0 Firebase Web Apps** antes del bootstrap;
 6. ninguna mutación de Rules, IAM, Auth, Functions o datos durante el preflight.
 
-También existe `firestore.l1.prod.locked.rules`, una baseline explícita `deny-all` para clientes web/móvil. Su apply está separado y guardado; antes de desplegar ejecuta el preflight read-only y después verifica server-side que el Ruleset activo coincide con el source esperado.
+Evidencia: `docs/STORAGE_V4_PHASE_L1_PREFLIGHT_2026-08-14.md`.
 
-No se despliega la Rules v3 histórica de `firestore.rules` como baseline productiva: L1 empieza locked y las aperturas necesarias para READ/WRITE se hacen únicamente en sus gates posteriores.
+### Firestore Rules locked — PASS
+
+`firestore.l1.prod.locked.rules` fue desplegada y el release activo se verificó server-side. El contrato efectivo es:
+
+```text
+allow read, write: if false;
+```
+
+No existía release Firestore previo en este proyecto recién creado, por lo que `previousReleaseName`/`previousRulesetName` fueron `null`; no había rollback pointer anterior que preservar.
+
+Evidencia: `docs/STORAGE_V4_PHASE_L1_RULES_LOCK_2026-08-14.md`.
+
+### Firebase Web App — PASS
+
+Se creó exactamente una Web App:
+
+```text
+displayName: AtlasMap Web Production
+webAppCountObserved: 1
+sdkConfigProjectMatches: true
+```
+
+El runner no imprimió API key ni escribió `.env`. Firestore Rules permanecieron locked; Auth/IAM/Functions/datos no cambiaron.
+
+Evidencia: `docs/STORAGE_V4_PHASE_L1_WEB_APP_2026-08-14.md`.
+
+### Google Authentication — siguiente gate
+
+El frontend usa `GoogleAuthProvider` + `signInWithPopup`, sin scopes OAuth adicionales. L1 configurará únicamente Google Sign-In; email/password, anonymous y phone deben permanecer deshabilitados. El correo de soporte OAuth se exige como input explícito del apply y no se almacena como secreto en el repo.
+
+No se autorizará `localhost` en producción. El dominio real de la app se autorizará cuando exista el target de despliegue productivo.
 
 ## Orden restante de Phase L
 
-1. **L1 — seguridad/datos:** preflight vacío/limpio → rules locked → Web App/Auth controlados;
+1. **L1 — seguridad/datos:** Google Auth controlado y cierre L1;
 2. **L2 — recovery + costo:** PITR/backups/budget productivos + forecast aprobado;
 3. **L3 — App Check:** observación antes de enforcement;
 4. **L4 — READ productivo gradual:** baseline real de latencia/errores;
