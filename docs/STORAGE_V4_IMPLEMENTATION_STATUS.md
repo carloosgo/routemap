@@ -18,13 +18,13 @@ Este documento distingue el roadmap original A–L de los rollout gates. Producc
 | H — concurrency/conflicts | **Implementado/probado** | Contrato entity-level, simulaciones multidevice/contención y protección contra fallback destructivo v4→v3. Falta únicamente una muestra multi-browser/device real si se exige como gate productivo. |
 | I — migration | **Cerrado en dev** | Materializer/verifier/rollback + round-trip cloud real `v3→v4→v3→v4` PASS. No hay migración masiva/productiva. |
 | J — provider cache separation | **Lógica cerrada; física diferida** | `cacheDb`, TTL/freshness, provider policy y resiliencia probados. `atlas-cache` físico sigue bloqueado por el acceso named-database de Firebase Admin Node aún marcado Preview/no-production. |
-| K — monitoring/backups/load | **Muy avanzado** | Recovery, restore drill, 4/4 streams, 7 métricas, dashboard, canal, provider outage, sync flush y closeout cloud PASS. Restan budget/thresholds, alertas representativas, load/reconnect cloud representativo, costo con supuestos aprobados y opcional multidevice navegador real. |
+| K — monitoring/backups/load | **Muy avanzado** | Recovery, restore drill, 4/4 streams, 7 métricas, dashboard, canal, provider outage, sync flush, purge/migration closeout y carga/reconnect cloud funcional PASS. Restan budget/thresholds, alertas representativas, costo con supuestos aprobados y aceptación/tuning de latencias antes del gate productivo. |
 | L — production | **Preparado, no iniciado** | Runbook L0–L7. No tocar producción antes de cerrar decisiones operativas/costo/seguridad. |
 
 ## Avance global estimado
 
 - **Implementación técnica v4:** ~97%.
-- **Plan completo A–L hasta producción estable:** **~91%**.
+- **Plan completo A–L hasta producción estable:** **~92%**.
 
 El porcentaje restante está concentrado principalmente en decisiones y evidencia operacional/productiva, no en construir de nuevo la arquitectura.
 
@@ -125,21 +125,32 @@ La ventana de rollout/provider sigue contaminada por pruebas intencionales de er
 
 ### Resiliencia / carga
 
-Cerrado:
+Cerrado funcionalmente en dev:
 
 - Provider Outage E2E real;
 - reconnect/capacity determinista;
 - multidevice/contención determinista;
 - purge real aislado;
 - migration/rollback cloud real;
-- sync flush real.
+- sync flush real;
+- carga/reconnect cloud real con fixture de 120 hijos, 10 hydrates y 60 updates: **60/60 success, 0 failures, aggregates convergentes y cleanup PASS**.
+
+Mediciones del drill cloud de carga/reconnect:
+
+- creación de 120 hijos: 751 ms;
+- aggregate convergence inicial: 31,666 ms;
+- hydrate p50: 2,746 ms; p95/p99: 17,872 ms;
+- reconnect write p50: 4,187 ms; p95: 5,644 ms; p99: 5,817 ms;
+- aggregate convergence después del reconnect: 17,869 ms.
+
+Estas mediciones cierran la **robustez funcional** del escenario, no un SLO productivo. Las latencias quedan como señal real para aceptación/tuning antes del rollout productivo. Evidencia: `docs/STORAGE_V4_PHASE_K_CLOUD_LOAD_2026-08-14.md`.
 
 Pendiente material para cerrar K:
 
 1. aprobar/configurar budget mensual y thresholds;
-2. convertir baseline representativo en thresholds y probar/habilitar alertas dev;
-3. ejecutar una carga/reconnect **cloud representativa** con fixture controlado y cleanup;
-4. alimentar el cost model con supuestos medidos o explícitamente aprobados;
+2. convertir un baseline representativo en thresholds y probar/habilitar alertas dev;
+3. alimentar el cost model con supuestos medidos o explícitamente aprobados;
+4. decidir/optimizar el nivel de latencia aceptable antes del gate productivo;
 5. si se mantiene como requisito productivo, obtener muestra de dos navegadores/dispositivos reales sobre mismo usuario.
 
 ## Phase L — regla de avance
