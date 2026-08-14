@@ -45,7 +45,7 @@ after(async () => {
   await deleteApp(app);
 });
 
-test('delete mueve el viaje a papelera y agenda purga con la misma fecha autoritativa', async () => {
+test('delete marca el viaje eliminado y agenda purga con la misma fecha autoritativa', async () => {
   const tripId = 'trip-delete';
   await seedTrip(tripId);
   const now = Timestamp.fromMillis(2_000_000_000_000);
@@ -129,7 +129,7 @@ test('reutilizar operationId con parámetros diferentes falla cerrado', async ()
       userId: 'alice',
       tripId,
       operationId: 'lifecycle-op-0003',
-      action: V4_TRIP_LIFECYCLE_ACTION.RESTORE,
+      action: V4_TRIP_LIFECYCLE_ACTION.DELETE,
       baseVersion: 2,
     }),
     (error) => error instanceof V4TripLifecycleError
@@ -137,8 +137,8 @@ test('reutilizar operationId con parámetros diferentes falla cerrado', async ()
   );
 });
 
-test('restore reactiva el viaje, limpia fechas y cancela el job de purga', async () => {
-  const tripId = 'trip-restore';
+test('restore de viaje está prohibido y no cancela la purga programada', async () => {
+  const tripId = 'trip-no-restore';
   await seedTrip(tripId);
   const deleted = await applyV4TripLifecycleOperation({
     db,
@@ -149,27 +149,26 @@ test('restore reactiva el viaje, limpia fechas y cancela el job de purga', async
     baseVersion: 1,
   });
 
-  assert.equal((await db.doc(`users/alice/__tripPurgeJobs/${tripId}`).get()).exists, true);
+  const purgeBefore = (await db.doc(`users/alice/__tripPurgeJobs/${tripId}`).get()).data();
 
-  const restored = await applyV4TripLifecycleOperation({
-    db,
-    userId: 'alice',
-    tripId,
-    operationId: 'restore-op-0004',
-    action: V4_TRIP_LIFECYCLE_ACTION.RESTORE,
-    baseVersion: deleted.version,
-  });
+  await assert.rejects(
+    applyV4TripLifecycleOperation({
+      db,
+      userId: 'alice',
+      tripId,
+      operationId: 'restore-op-0004',
+      action: 'restore',
+      baseVersion: deleted.version,
+    }),
+    (error) => error instanceof TypeError && /solo admite delete/.test(error.message)
+  );
 
-  assert.equal(restored.status, 'active');
-  assert.equal(restored.version, 3);
-  assert.equal(restored.deletedAt, null);
-  assert.equal(restored.purgeAfter, null);
   const trip = (await db.doc(`users/alice/trips/${tripId}`).get()).data();
-  assert.equal(trip.status, 'active');
-  assert.equal(trip.version, 3);
-  assert.equal(trip.deletedAt, null);
-  assert.equal(trip.purgeAfter, null);
-  assert.equal((await db.doc(`users/alice/__tripPurgeJobs/${tripId}`).get()).exists, false);
+  const purgeAfter = (await db.doc(`users/alice/__tripPurgeJobs/${tripId}`).get()).data();
+  assert.equal(trip.status, 'deleted');
+  assert.equal(trip.version, 2);
+  assert.equal(purgeAfter.state, 'scheduled');
+  assert.equal(purgeAfter.dueAt.toMillis(), purgeBefore.dueAt.toMillis());
 });
 
 test('baseVersion obsoleta no modifica un viaje más nuevo ni crea job de purga', async () => {
