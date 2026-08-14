@@ -103,7 +103,11 @@ async function requestJson(url, { token, method = 'GET', body } = {}) {
     }
   }
   if (!response.ok) {
-    const error = new Error(`Google API HTTP ${response.status}`);
+    const apiMessage = typeof payload?.error?.message === 'string'
+      ? payload.error.message.trim()
+      : '';
+    const detail = apiMessage ? `: ${apiMessage.slice(0, 300)}` : '';
+    const error = new Error(`Google API HTTP ${response.status}${detail}`);
     error.status = response.status;
     error.payload = payload;
     throw error;
@@ -254,7 +258,7 @@ async function listAlerts(token) {
   const alerts = [];
   let pageToken = '';
   do {
-    const params = new URLSearchParams({ pageSize: '100', orderBy: 'openTime desc' });
+    const params = new URLSearchParams({ pageSize: '100' });
     if (pageToken) params.set('pageToken', pageToken);
     const payload = await requestJson(
       `https://monitoring.googleapis.com/v3/projects/${PROJECT}/alerts?${params}`,
