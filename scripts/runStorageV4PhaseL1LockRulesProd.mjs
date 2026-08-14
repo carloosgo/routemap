@@ -111,30 +111,38 @@ function normalizeRules(value) {
   return String(value || '').replace(/\r\n/g, '\n').trim();
 }
 
-async function verifyLockedRelease(gcloud, expectedRules) {
-  const token = runChecked(gcloud, ['auth', 'print-access-token'], 'No se pudo obtener access token');
-  const releases = await requestJson(`${RULES_API}/projects/${PROJECT}/releases?pageSize=100`, token);
+function selectFirestoreRelease(releases) {
   const candidates = (Array.isArray(releases?.releases) ? releases.releases : [])
     .filter((release) => typeof release?.name === 'string' && release.name.includes('/releases/cloud.firestore'));
-  if (candidates.length === 0) fail('No se encontró un release Firestore después del deploy de reglas locked.');
-
   const exact = candidates.find((release) => release.name.endsWith('/releases/cloud.firestore'));
-  const release = exact || candidates[0];
-  if (typeof release?.rulesetName !== 'string' || !release.rulesetName.startsWith(`projects/${PROJECT}/rulesets/`)) {
-    fail('El release Firestore no referencia un ruleset válido del proyecto productivo.');
-  }
+  return exact || candidates[0] || null;
+}
 
-  const ruleset = await requestJson(`${RULES_API}/${release.rulesetName}`, token);
+async function readCurrentFirestoreRelease(token) {
+  const releases = await requestJson(`${RULES_API}/projects/${PROJECT}/releases?pageSize=100`, token);
+  const release = selectFirestoreRelease(releases);
+  if (!release) return null;
+  if (typeof release.rulesetName !== 'string' || !release.rulesetName.startsWith(`projects/${PROJECT}/rulesets/`)) {
+    fail('El release Firestore actual no referencia un ruleset válido del proyecto productivo.');
+  }
+  return {
+    releaseName: release.name,
+    rulesetName: release.rulesetName,
+  };
+}
+
+async function verifyLockedRelease(token, expectedRules) {
+  const current = await readCurrentFirestoreRelease(token);
+  if (!current) fail('No se encontró un release Firestore después del deploy de reglas locked.');
+
+  const ruleset = await requestJson(`${RULES_API}/${current.rulesetName}`, token);
   const files = Array.isArray(ruleset?.source?.files) ? ruleset.source.files : [];
   const deployedSource = files.map((file) => file?.content || '').join('\n');
   if (normalizeRules(deployedSource) !== normalizeRules(expectedRules)) {
     fail('El source server-side del ruleset activo no coincide exactamente con las reglas deny-all esperadas.');
   }
 
-  return {
-    releaseName: release.name,
-    rulesetName: release.rulesetName,
-  };
+  return current;
 }
 
 async function main() {
@@ -155,6 +163,7 @@ async function main() {
     rulesFile: LOCKED_RULES_FILE,
     denyAllClientReadsAndWrites: true,
     runsReadOnlyL1PreflightFirst: true,
+    capturesPreviousRulesetPointer: true,
     enablesFirebaseRulesApiIfNeeded: apply,
     deploysOnlyFirestoreRules: apply,
     createsWebApp: false,
@@ -188,6 +197,16 @@ async function main() {
   ], 'No se pudo habilitar Firebase Rules API');
   console.log(JSON.stringify({ stage: 'rules-api-ready', project: PROJECT }, null, 2));
 
+  const token = runChecked(gcloud, ['auth', 'print-access-token'], 'No se pudo obtener access token');
+  const previous = await readCurrentFirestoreRelease(token);
+  console.log(JSON.stringify({
+    stage: 'rules-before',
+    project: PROJECT,
+    previousReleaseName: previous?.releaseName || null,
+    previousRulesetName: previous?.rulesetName || null,
+    previousRulesetPreservedServerSide: previous != null,
+  }, null, 2));
+
   const firebaseCli = resolve(process.cwd(), 'node_modules', 'firebase-tools', 'lib', 'bin', 'firebase.js');
   if (!existsSync(firebaseCli)) {
     fail('No se encontró la Firebase CLI local en node_modules; ejecuta npm install antes del apply.');
@@ -209,7 +228,7 @@ async function main() {
     if (existsSync(tempConfig)) unlinkSync(tempConfig);
   }
 
-  const verification = await verifyLockedRelease(gcloud, expectedRules);
+  const verification = await verifyLockedRelease(token, expectedRules);
   console.log(JSON.stringify({
     phase: 'L1',
     pass: true,
@@ -219,6 +238,9 @@ async function main() {
     serverSideRulesSourceMatched: true,
     releaseName: verification.releaseName,
     rulesetName: verification.rulesetName,
+    previousReleaseName: previous?.releaseName || null,
+    previousRulesetName: previous?.rulesetName || null,
+    rollbackPointerRecorded: previous != null,
     webAppCreated: false,
     authChanged: false,
     iamChanged: false,
