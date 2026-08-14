@@ -61,7 +61,10 @@
     "phase-l:l1:preflight-prod": "node scripts/runStorageV4PhaseL1SecurityPreflightProd.mjs",
     "phase-l:l1:lock-rules-prod": "node scripts/runStorageV4PhaseL1LockRulesProd.mjs",
     "phase-l:l1:create-web-app-prod": "node scripts/runStorageV4PhaseL1CreateWebAppProd.mjs",
-    "phase-l:l1:configure-google-auth-prod": "node scripts/runStorageV4PhaseL1ConfigureGoogleAuthProd.mjs"
+    "phase-l:l1:configure-google-auth-prod": "node scripts/runStorageV4PhaseL1ConfigureGoogleAuthProd.mjs",
+    "phase-l:l2:preflight-prod": "node scripts/runStorageV4PhaseL2PreflightProd.mjs",
+    "phase-l:l2:recovery-prod": "node scripts/runStorageV4PhaseL2RecoveryProd.mjs",
+    "phase-l:l2:budget-prod": "node scripts/runStorageV4PhaseL2BudgetProd.mjs"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.44.0",
