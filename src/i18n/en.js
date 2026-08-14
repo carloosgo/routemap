@@ -18,6 +18,8 @@ export default {
   deleteTrip: 'Delete trip',
   cancel: 'Cancel',
   confirmDelete: 'Delete this trip?',
+  deletePermanentWarning: 'This action is permanent and cannot be undone.',
+  deletingTrip: 'Deleting…',
   loadTrip: 'Open',
   of: 'of',
   itinerary: 'Itinerary',
