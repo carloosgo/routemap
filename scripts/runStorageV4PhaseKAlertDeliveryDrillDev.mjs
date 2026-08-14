@@ -216,23 +216,38 @@ async function deletePolicy(token, policyName) {
   }
 }
 
-function writeSyntheticSyncError(gcloud, drillId) {
-  const payload = JSON.stringify({
-    message: 'storage_v4_sync_metric',
-    event: 'flush',
-    outcome: 'unexpected-error',
-    reason: drillId,
-    synthetic: true,
-    phase: 'k-alert-drill',
+async function writeSyntheticSyncError(token, drillId) {
+  const body = {
+    logName: `projects/${PROJECT}/logs/${TEST_LOG_NAME}`,
+    resource: {
+      type: 'cloud_run_revision',
+      labels: {
+        project_id: PROJECT,
+        service_name: 'atlas-phase-k-alert-drill',
+        revision_name: 'atlas-phase-k-alert-drill-00001',
+        location: 'us-central1',
+        configuration_name: 'atlas-phase-k-alert-drill',
+      },
+    },
+    entries: [
+      {
+        severity: 'ERROR',
+        jsonPayload: {
+          message: 'storage_v4_sync_metric',
+          event: 'flush',
+          outcome: 'unexpected-error',
+          reason: drillId,
+          synthetic: true,
+          phase: 'k-alert-drill',
+        },
+      },
+    ],
+  };
+  await requestJson('https://logging.googleapis.com/v2/entries:write', {
+    token,
+    method: 'POST',
+    body,
   });
-  runGcloud(gcloud, [
-    'logging', 'write', TEST_LOG_NAME, payload,
-    '--payload-type=json',
-    '--severity=ERROR',
-    '--monitored-resource-type=cloud_run_revision',
-    `--monitored-resource-labels=project_id=${PROJECT},service_name=atlas-phase-k-alert-drill,revision_name=atlas-phase-k-alert-drill-00001,location=us-central1,configuration_name=atlas-phase-k-alert-drill`,
-    `--project=${PROJECT}`,
-  ]);
 }
 
 async function listAlerts(token) {
@@ -321,7 +336,7 @@ async function main() {
   try {
     policy = await createDrillPolicy(token, channel, drillId);
     console.log(JSON.stringify({ stage: 'policy-created', name: policy.name, drillId }, null, 2));
-    writeSyntheticSyncError(gcloud, drillId);
+    await writeSyntheticSyncError(token, drillId);
     console.log(JSON.stringify({ stage: 'synthetic-signal-written', drillId }, null, 2));
     const alert = await waitForDrillAlert(token, policy.name, startedAtMs);
     console.log(JSON.stringify({
