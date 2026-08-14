@@ -81,3 +81,20 @@ test('Windows prefiere gcloud por PATH y evita ejecutar una ruta .cmd con espaci
   assert.match(source, /const command = hasPath \? basename\(executable\) : executable/);
   assert.match(source, /cwd: dirname\(executable\)/);
 });
+
+test('Firebase Management REST declara el target productivo como quota project sin mutar ADC global', () => {
+  assert.match(source, /'x-goog-user-project': quotaProject/);
+  assert.match(source, /firebaseRequest\(gcloud, project, `projects\/\$\{project\}`/);
+  assert.match(source, /firebaseRequest\(gcloud, project, `projects\/\$\{project\}:addFirebase`/);
+  assert.match(source, /waitFirebaseOperation\(gcloud, project, operationName\)/);
+  assert.doesNotMatch(source, /application-default set-quota-project/);
+  assert.doesNotMatch(source, /config set billing\/quota_project/);
+});
+
+test('bootstrap emite checkpoints de infraestructura para reanudación segura', () => {
+  assert.match(source, /stage\('project-ready'/);
+  assert.match(source, /stage\('billing-ready'/);
+  assert.match(source, /stage\('apis-ready'/);
+  assert.match(source, /stage\('firebase-ready'/);
+  assert.match(source, /stage\('firestore-ready'/);
+});
