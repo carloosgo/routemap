@@ -1,153 +1,150 @@
 # Atlas Storage v4 — implementation status
 
-Fecha de corte: 2026-08-12
+Fecha de corte: **2026-08-14**
 
-Este documento distingue el **roadmap original A–L** de los **rollout gates**. En particular, `Phase G` (delete/trash) no es `Gate G READ`.
+Este documento distingue el roadmap original A–L de los rollout gates. Producción sigue intacta; la evidencia de activación real descrita aquí corresponde a `atlasmap-dev`.
 
-## Resumen
+## Resumen A–L
 
 | Roadmap | Estado | Evidencia / límite |
 |---|---|---|
-| A — schema/rules | Implementado y probado | Contrato v4, Rules y suites emulator existentes. |
-| B — IndexedDB/drafts | Implementado | Persistencia local web, recuperación y contratos existentes. |
-| C — dirty tracking | Implementado | Intent/mutation models y coalescing existentes. |
-| D — Sync Coordinator | Implementado, no activado globalmente | Queue, lease/fencing, retry/backoff y lifecycle cubiertos por tests. |
-| E — incremental persistence | Implementado | Escrituras por entidad/versionado, sin reescritura completa como happy path. |
-| F — aggregates | Implementado en backend/tests | Modelo/event handler/store/triggers presentes; activación productiva pendiente. |
-| G — delete/trash | Implementado en backend/tests | Soft-delete/lifecycle/purge/reconciliación presentes; activación productiva pendiente. |
-| H — concurrency/conflicts | Implementado en contrato/tests | Entity-level conflict en v4.0; no merge complejo campo-a-campo. |
-| I — migration | Implementado en código/tests | Materializer/verifier/rollback existentes; migración productiva no ejecutada. |
-| J — provider cache separation | Preparado lógicamente; separación física pendiente | `cacheDb` centraliza temporales, `expiresAt` y resiliencia probados. `atlas-cache` físico sigue bloqueado porque el acceso a named Firestore mediante Firebase Admin Node continúa marcado Public Preview/no-production en la referencia oficial vigente al 2026-08-12. |
-| K — monitoring/backups/load | En progreso avanzado | Recovery + cleanup, 4/4 streams, dashboard/metrics/policies, notification channel y Provider Outage E2E ya están verificados en dev. Budget ya es legible y se confirmó que actualmente hay 0 budgets. Falta aprobar budget, generar sync flush real, baseline/activación controlada de alertas, multidevice/load/reconnect E2E y SLO/costos representativos. |
-| L — production | Preparado, no iniciado | Runbook L0–L7 creado. Producción no se toca hasta completar recovery/cost/security gates. |
+| A — schema/rules | **Cerrado técnicamente** | Contrato v4, Rules estrictas y suites emulator. |
+| B — IndexedDB/drafts | **Cerrado técnicamente** | Persistencia local web, recuperación y contratos. |
+| C — dirty tracking | **Cerrado técnicamente** | Intent/mutation models y coalescing. |
+| D — Sync Coordinator | **Implementado + E2E dev** | Queue, lease/fencing, retry/backoff, lifecycle y flush real observados; activación global pendiente de rollout. |
+| E — incremental persistence | **Implementado + E2E dev** | Create/write v4 real, escritura por entidad/versionado y sync flush real. |
+| F — aggregates | **Implementado + E2E dev** | Eventarc real de segment/note procesado; aggregate/touch backend observado. |
+| G — delete/lifecycle/purge | **Cerrado en dev** | Delete real desde cliente, `deleted/version+1`, purge job real, UX anti-doble-click, restore de viaje eliminado removido, purge físico aislado real PASS. |
+| H — concurrency/conflicts | **Implementado/probado** | Contrato entity-level, simulaciones multidevice/contención y protección contra fallback destructivo v4→v3. Falta únicamente una muestra multi-browser/device real si se exige como gate productivo. |
+| I — migration | **Cerrado en dev** | Materializer/verifier/rollback + round-trip cloud real `v3→v4→v3→v4` PASS. No hay migración masiva/productiva. |
+| J — provider cache separation | **Lógica cerrada; física diferida** | `cacheDb`, TTL/freshness, provider policy y resiliencia probados. `atlas-cache` físico sigue bloqueado por el acceso named-database de Firebase Admin Node aún marcado Preview/no-production. |
+| K — monitoring/backups/load | **Muy avanzado** | Recovery, restore drill, 4/4 streams, 7 métricas, dashboard, canal, provider outage, sync flush y closeout cloud PASS. Restan budget/thresholds, alertas representativas, load/reconnect cloud representativo, costo con supuestos aprobados y opcional multidevice navegador real. |
+| L — production | **Preparado, no iniciado** | Runbook L0–L7. No tocar producción antes de cerrar decisiones operativas/costo/seguridad. |
 
-## Rollout Gate G READ
+## Avance global estimado
 
-**PASS técnico en `atlasmap-dev`.**
+- **Implementación técnica v4:** ~97%.
+- **Plan completo A–L hasta producción estable:** **~91%**.
 
-Validado:
+El porcentaje restante está concentrado principalmente en decisiones y evidencia operacional/productiva, no en construir de nuevo la arquitectura.
 
-- Remote Config fail-closed;
-- canal Remote Config Realtime observado;
-- telemetría autenticada sin contenido sensible;
-- Rules READ candidatas compatibles con CRUD v3;
-- selector estable por UID;
-- lectura real `repositoryMode=hybrid-read` con outcome exitoso;
-- rollback final a fail-closed.
+## Pilot WRITE dev — evidencia real cerrada
 
-El PASS no autoriza `pilot`, write v4, migración productiva ni cambios de producción.
+En `atlasmap-dev` ya se validó una cadena real de punta a punta:
 
-## Pilot WRITE dev — pre-stage snapshot
+```text
+Remote Config pilot
+  -> browser repositoryMode=v4-pilot
+  -> CREATE v4 real
+  -> root schemaVersion=4/version=1
+  -> segment + note v4
+  -> Eventarc segment/note
+  -> aggregate/touch backend
+  -> DELETE real desde UI
+  -> root deleted/version=2
+  -> purge job scheduled
+  -> purge físico real en fixture aislado
+```
 
-**READ-ONLY PASS; stage todavía no autorizado/aplicado.**
+El primer viaje sintético que cayó por v3 permitió detectar el bug de mode-flip. La corrección bloquea mutaciones cuando Remote Config queda no resuelto en vez de degradar silenciosamente a v3. Un segundo viaje sintético confirmó creación v4 real.
 
-Al `2026-08-12` se capturó el snapshot previo al stage con Remote Config fail-closed:
+El delete quedó definido como **irreversible para el usuario**. El backend público de lifecycle ya no acepta restore de viaje completo. La retención previa a purge es únicamente operacional.
 
-- release: `projects/atlasmap-dev/releases/cloud.firestore`;
-- Ruleset original: `projects/atlasmap-dev/rulesets/cd99a504-01c0-45dc-8875-cb9183d7698b`;
-- SHA-256 original: `5f7d4e5adbc1e1751bc800f0cc692f77ce8aa5234ab043342ef4266a4ced71f2`;
-- SHA-256 candidato: `a41792990264c765867e90c03ee4998448c838f10d23631e1b9863d6ad679062`;
-- `remoteConfigSafeOff=true`;
-- sin mutación Cloud, sin tráfico pilot y sin producción.
+Evidencia consolidada: `docs/STORAGE_V4_DEV_CLOSEOUT_2026-08-14.md`.
 
-Evidencia: `docs/STORAGE_V4_PILOT_STAGE_SNAPSHOT_2026-08-12.md`.
+## Migración real dev
 
-El siguiente `--apply` de `storage-v4:pilot-stage-deploy-dev` despliega las Functions pilot y las Rules candidatas de WRITE v4 en `atlasmap-dev`; requiere autorización explícita aunque Remote Config permanezca en OFF/0%.
+La evidencia ya no es solo emulator/unit:
 
-## Phase J — checkpoint pendiente
+```text
+v3 real retenido
+ -> migrate
+ -> v4 complete/version=1
+ -> rollback real
+ -> v3 restored
+ -> remigrate
+ -> v4 complete/version=1
+```
 
-La frontera lógica ya separa `db` (canónico/interno) de `cacheDb` (temporales de proveedor), pero actualmente ambos apuntan a `(default)`.
+El round-trip completo pasó en `atlasmap-dev`. Esto prueba materialización, verificación, commit, rollback y reejecución sobre cloud real. No autoriza todavía migración masiva ni producción.
 
-Revalidación oficial realizada el `2026-08-12`:
+## Phase J — decisión pendiente
 
-- Firestore soporta múltiples bases y clientes conectados a named databases;
-- en Firebase Admin SDK para Node, `getFirestore(databaseId)` / `getFirestore(app, databaseId)` continúa marcado **Public Preview**;
-- la propia referencia oficial indica no usar esa API en producción.
+La separación lógica ya obliga a que datos temporales/derivados de proveedor dependan de `cacheDb` y no del almacenamiento canónico.
 
-Por tanto, no activar `atlas-cache` físicamente hasta disponer de un acceso server-side a named databases aprobado para producción, además de provisioning, deny-all cliente, TTL, IAM y smoke tests. Forzar una API preview solo para cerrar el checklist introduciría riesgo sin beneficio funcional.
+Revalidación oficial realizada el **2026-08-14**:
 
-## Phase K — evidencia real acumulada
+- Firestore soporta múltiples databases por proyecto;
+- Firebase Admin Node continúa marcando `getFirestore(databaseId)` y `getFirestore(app, databaseId)` como **Public Preview**;
+- la referencia oficial sigue indicando no utilizar ese acceso named-database en producción.
 
-Código/preparación:
+Por eso no se fuerza `atlas-cache` físico. Para cerrar J productivamente se requiere una de dos cosas:
 
-- telemetría rollout/sync/provider cache/provider request con contratos allowlist;
-- el composition root de sync v4 acepta un `syncTelemetryEmitter` opcional y conecta sus métricas de lifecycle sin activar WRITE por sí mismo; el cleanup de la composición también vacía/detiene el emitter en modo best-effort;
-- provider cache fail-soft y coalescing;
-- modelo de capacidad/costos parametrizable para 1k/10k/50k/100k usuarios;
-- snapshot fechado de precios públicos Firestore/Cloud Run/Geoapify (`docs/STORAGE_V4_PHASE_K_PRICE_SNAPSHOT_2026-08-12.md`);
-- modelo de tiers Geoapify para Address Autocomplete que conserva el esquema real por créditos/planes y no inventa un precio lineal por request;
-- simulación multidevice entity-level sin pérdida silenciosa;
-- simulaciones deterministas de reconnect para 1k/10k/50k/100k y contención de 100 dispositivos sobre la misma entidad;
-- runbook de SLOs, costos, recovery y resiliencia;
-- diagnóstico de budget account-scope/project-scope sin exponer billing account ID;
-- el probe de budget aplica `x-goog-user-project: atlasmap-dev`, verifica API/permiso de quota project y usa `testIamPermissions` para separar permisos de proyecto y billing account;
-- plan de budget local que exige monto explícito;
-- siete logs-based metrics;
-- dashboard Storage v4 dev;
-- tres alert policies dev deshabilitadas;
-- notification channel email Atlas Phase K creado, asociado y habilitado de forma controlada, sin activar alert policies;
-- preflight SLO read-only con ratios y p50/p95/p99;
-- restore preflight, restore drill aislado `atlas-restore-drill-*` y cleanup explícito endurecido;
-- checkpoint Cloud consolidado read-only;
-- probe privado Gen2 para Provider Outage E2E, sin endpoint productivo ni API key, con verificación REST de IAM/invocación/Cloud Logging;
-- smokes deterministas de provider outage, reconnect storm y multidevice.
+1. que el acceso server-side elegido deje de estar marcado no-production; o
+2. aprobar explícitamente una topología sustituta/defer para v4.0 manteniendo la separación lógica ya implementada.
 
-Evidencia `atlasmap-dev`:
+## Phase K — estado actualizado
+
+### Recovery
 
 - `(default)` en `northamerica-south1`;
-- PITR habilitado, retención 7 días;
-- scheduled backup diario, retención 7 días;
-- backup `READY` con snapshot `2026-08-12T02:05:06.847993Z`;
-- **restore drill PASS** sobre `atlas-restore-drill-20260812-031227`: procedencia `sourceInfo.backup` verificada, operación administrada completada antes de leer, base restaurada legible e inventario de `345` documentos;
-- se inventariaron tres restores temporales legítimos (`atlas-restore-drill-20260812-025651`, `atlas-restore-drill-20260812-030557`, `atlas-restore-drill-20260812-031227`), todos del mismo backup, en `northamerica-south1`, con restore `COMPLETED`, lineage y `etag` individual;
-- **cleanup de restore PASS**: las bases temporales validadas fueron eliminadas y `(default)` permaneció intacta;
-- el snapshot exacto ya no era consultable independientemente por PITR al incluir segundos/fracciones y superar una hora, por lo que no se afirmó una falsa paridad SHA-256 contra un timestamp redondeado;
+- PITR habilitado, 7 días;
+- backup diario, retención 7 días;
+- múltiples backups `READY`;
+- restore drill real PASS y cleanup PASS;
+- último checkpoint confirmó 0 bases temporales de restore existentes.
+
+### Telemetría / SLO
+
+4/4 streams visibles:
+
+- rollout;
+- sync;
+- provider cache;
+- provider request.
+
+El checkpoint del 2026-08-14 confirmó **5 flush reales, 5/5 success**, p50 154 ms y p95/p99 878 ms en esa muestra. El requisito antes pendiente de tener señal `sync flush` real queda cerrado.
+
+La ventana de rollout/provider sigue contaminada por pruebas intencionales de error, kill switch, config-unavailable y provider-outage; no usar su success rate agregado como baseline productivo.
+
+### Monitoring
+
+- exactamente 1 dashboard Atlas Storage v4 dev;
+- 7/7 logs-based metrics;
+- 3 alert policies existentes, todavía deshabilitadas;
+- 1 canal email usable y asociado a las tres policies.
+
+### Billing
+
 - billing habilitado;
-- **Cloud Billing Budget API habilitada** en `atlasmap-dev`;
-- permisos de quota project y lectura verificados: `serviceusage.services.use`, `resourcemanager.projects.get`, `billing.resourcebudgets.read` y `billing.budgets.list` presentes;
-- **budget visibility PASS**: account-scope `200`, project-scope `200`, `visibility=single-project-budget-readable`, `diagnosis=budget-readable`;
-- **budget count confirmado: 0** tanto en account-scope como project-scope al `2026-08-12T07:28:34Z`;
-- no se creó ni modificó ningún budget; el siguiente paso requiere monto y thresholds explícitamente aprobados;
-- `storageV4SyncTelemetry` y `geoapifyCityAutocomplete` activas con CORS localhost validado;
-- **4/4 streams** observados en Cloud Logging;
-- **7/7 logs-based metrics** creadas/verificadas;
-- **3/3 alert policies** creadas y verificadas deshabilitadas;
-- **dashboard cleanup PASS**: Monitoring REST v1 detectó los dos dashboards Atlas equivalentes, conservó `8d6a1c24-ea96-4bc3-848d-442a40b2adef`, eliminó `2d6f5b70-dc89-43d8-87c7-f44c8a80f108` y el preflight independiente posterior confirmó `atlasDashboardCount=1`;
-- el cleanup y el preflight de dashboard comparten ahora Monitoring REST v1 como fuente de verdad; el apply aborta si vuelve a detectar drift con más de un dashboard;
-- **alert channel checkpoint PASS** al `2026-08-12T19:21:41Z`: exactamente un email notification channel Atlas Phase K, `enabled=true`, `verificationStatus` vacío/no `UNVERIFIED`, `enabledUsableNotificationChannelCount=1`; las tres policies apuntan exclusivamente a ese canal y siguen `enabled=false`;
-- **Provider Outage E2E CLOSED/PASS**: `storageV4ProviderOutageProbe` existente verificada `ACTIVE`, `GEN_2` y privada mediante Google Cloud REST; invocación autenticada observó `geoapify / geocode-search / network-error` y Cloud Logging confirmó `matchingProviderMetricLogCount=1`;
-- el Provider Outage E2E no usó endpoint productivo del proveedor ni API key, no mutó datos de aplicación, budgets, alert policies, Storage v4 WRITE ni producción;
-- rollout sample: 38/38 success, p50 196 ms, p95 912 ms, p99 4465 ms;
-- provider sample inicial: 1/1 success, 490 ms; el outage sintético queda documentado por separado y no convierte esa muestra en SLO productivo;
-- sync todavía no tiene muestra `flush` válida; el evento observado fue `queue-recovery`;
-- bug de `entries=null` en singleton streams corregido en repo mediante coerción explícita a arrays.
+- Budget API habilitada y legible;
+- permisos read-only verificados;
+- account-scope y project-scope legibles;
+- **budget count = 0**;
+- no se inventa un monto ni thresholds.
 
-La evidencia histórica consolidada está en `docs/STORAGE_V4_PHASE_K_EVIDENCE_2026-08-11.md`. Los checkpoints posteriores que actualizan ese snapshot son:
+### Resiliencia / carga
 
-- `docs/STORAGE_V4_PHASE_K_ALERT_CHANNEL_CHECKPOINT_2026-08-12.md`;
-- `docs/STORAGE_V4_PHASE_K_PROVIDER_OUTAGE_E2E_2026-08-12.md`;
-- `docs/STORAGE_V4_PILOT_STAGE_SNAPSHOT_2026-08-12.md`.
+Cerrado:
 
-### Bloqueos / verificaciones externas vigentes de K
+- Provider Outage E2E real;
+- reconnect/capacity determinista;
+- multidevice/contención determinista;
+- purge real aislado;
+- migration/rollback cloud real;
+- sync flush real.
 
-- **Budget amount/thresholds:** la visibilidad ya está resuelta y hay 0 budgets. Falta una decisión explícita sobre monto y thresholds antes de crear uno; no inventar el monto ni mutar budgets sin autorización.
-- **Sync flush E2E:** la instrumentación existe, pero generar señal real requiere un flujo v4 WRITE autorizado. No activar WRITE solo para telemetría.
-- **Alertas:** el canal email ya existe, está habilitado y asociado a las tres policies; las policies continúan deshabilitadas. Su activación/prueba real sigue condicionada a baseline/thresholds representativos y aprobación explícita.
-- **Load / reconnect:** una prueba representativa contra Cloud generaría tráfico/costo y requiere un escenario/carga aprobados.
-- **Multidevice E2E:** la simulación determinista ya existe, pero la evidencia real de navegador/dispositivos requiere un flujo v4 WRITE autorizado y un escenario controlado.
+Pendiente material para cerrar K:
 
-Todavía falta para cerrar K:
-
-- aprobar y configurar un budget de proyecto con monto/thresholds explícitos;
-- generar `sync flush` E2E para medir esa señal;
-- establecer baseline/thresholds representativos y probar/activar alertas de forma controlada;
-- multidevice E2E de navegador/dispositivos reales;
-- carga/reconnect E2E y medición de SLO con tráfico representativo;
-- alimentar el modelo de costos con supuestos de uso/almacenamiento medidos o aprobados; los precios públicos ya tienen snapshot fechado, pero eso por sí solo no constituye forecast ni budget.
+1. aprobar/configurar budget mensual y thresholds;
+2. convertir baseline representativo en thresholds y probar/habilitar alertas dev;
+3. ejecutar una carga/reconnect **cloud representativa** con fixture controlado y cleanup;
+4. alimentar el cost model con supuestos medidos o explícitamente aprobados;
+5. si se mantiene como requisito productivo, obtener muestra de dos navegadores/dispositivos reales sobre mismo usuario.
 
 ## Phase L — regla de avance
 
-No existe salto directo a producción. Orden mínimo:
+Orden de producción:
 
 1. L0 proyecto/ubicación;
 2. L1 seguridad/datos;
@@ -155,21 +152,7 @@ No existe salto directo a producción. Orden mínimo:
 4. L3 App Check observación;
 5. L4 READ productivo gradual;
 6. L5 materialización/verificación;
-7. L6 write v4 controlado;
-8. L7 convergencia y retiro gradual de legado.
+7. L6 WRITE v4 controlado;
+8. L7 convergencia y retiro de v3.
 
-Mientras Functions permanezca en una versión donde `BooleanParam` no esté soportado explícitamente como `CallableOptions.enforceAppCheck`, mantener el valor literal validado y no reintroducir el patrón paramétrico que produjo 401.
-
-## Criterio de "v4 completa"
-
-No declarar Storage v4 completa hasta que:
-
-- v4 sea canónico en producción;
-- no exista dual-write permanente;
-- migración/paridad/rollback estén cerrados;
-- Sync/IndexedDB/concurrencia/delete/agregados hayan pasado evidencia productiva controlada;
-- backups y restore drill estén probados;
-- App Check esté estable según el rollout aprobado;
-- observabilidad/costos/budgets estén operativos;
-- provider cache esté físicamente aislado o exista una decisión explícita aprobada que sustituya esa topología;
-- el camino v3 restante tenga retiro completado o condición/fecha explícita.
+No existe salto directo. La arquitectura queda declarada completa solo cuando v4 sea canónico en producción, no exista dual-write permanente, migración/rollback estén cerrados, observabilidad/costos/budget estén operativos, App Check esté estable y el camino v3 tenga retiro completo o fecha/condición explícita.
