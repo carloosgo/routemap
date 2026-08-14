@@ -1,12 +1,37 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { createGateGTripRepository } from '../src/infrastructure/firebase/createGateGTripRepository.js';
+import {
+  createGateGTripRepository,
+  V4_ROLLOUT_CONFIG_UNAVAILABLE_CODE,
+} from '../src/infrastructure/firebase/createGateGTripRepository.js';
 
 function factory(label, calls) {
   return (input) => {
     calls.push({ label, input });
     return { label };
+  };
+}
+
+function writableFactory(label, calls) {
+  return (input) => {
+    calls.push({ label, input });
+    return {
+      label,
+      async list() {
+        return ['safe-read'];
+      },
+      async get(id) {
+        return { id };
+      },
+      async save(value) {
+        calls.push({ label: `${label}:save`, value });
+        return value;
+      },
+      async remove(id) {
+        calls.push({ label: `${label}:remove`, id });
+      },
+    };
   };
 }
 
@@ -28,6 +53,22 @@ const pilot100 = {
   touchReady: true,
   lifecycleReady: true,
   purgeReady: true,
+};
+
+const remoteOff = {
+  enabled: false,
+  killSwitch: true,
+  mode: 'off',
+  cohortPercent: 0,
+  salt: 'gate-g-repository-test',
+  readRulesReady: false,
+  writeRulesReady: false,
+  syncReady: false,
+  aggregateReady: false,
+  touchReady: false,
+  lifecycleReady: false,
+  purgeReady: false,
+  remoteConfigEnabled: true,
 };
 
 test('READ cohort crea el repositorio híbrido candidato sin writer', () => {
@@ -84,6 +125,53 @@ test('rules no listas, kill switch o PILOT incompleto crean v3 y no writer', () 
     assert.equal(result.repository.label, 'v3');
     assert.deepEqual(calls.map((item) => item.label), ['v3']);
   }
+});
+
+test('Remote Config sin resolver permite lectura segura pero bloquea save/remove legacy', async () => {
+  const calls = [];
+  const result = createGateGTripRepository({
+    db: { fake: true },
+    uid: 'alice',
+    rolloutConfig: { ...remoteOff, remoteConfigReady: false },
+    v3Factory: writableFactory('v3', calls),
+    hybridFactory: factory('hybrid', calls),
+    pilotWriterFactory: factory('writer', calls),
+  });
+
+  assert.equal(result.rollout.repositoryMode, 'v3');
+  assert.deepEqual(await result.repository.list(), ['safe-read']);
+  assert.deepEqual(await result.repository.get('trip-1'), { id: 'trip-1' });
+
+  await assert.rejects(
+    async () => result.repository.save({ id: 'trip-1' }),
+    (error) => error?.code === V4_ROLLOUT_CONFIG_UNAVAILABLE_CODE
+  );
+  await assert.rejects(
+    async () => result.repository.remove('trip-1'),
+    (error) => error?.code === V4_ROLLOUT_CONFIG_UNAVAILABLE_CODE
+  );
+
+  assert.equal(calls.some((call) => call.label === 'v3:save'), false);
+  assert.equal(calls.some((call) => call.label === 'v3:remove'), false);
+});
+
+test('Remote Config resuelto en OFF conserva el write v3 intencional del kill switch', async () => {
+  const calls = [];
+  const result = createGateGTripRepository({
+    db: { fake: true },
+    uid: 'alice',
+    rolloutConfig: { ...remoteOff, remoteConfigReady: true },
+    v3Factory: writableFactory('v3', calls),
+    hybridFactory: factory('hybrid', calls),
+    pilotWriterFactory: factory('writer', calls),
+  });
+
+  const saved = await result.repository.save({ id: 'trip-kill-safe' });
+  await result.repository.remove('trip-kill-safe');
+
+  assert.deepEqual(saved, { id: 'trip-kill-safe' });
+  assert.equal(calls.some((call) => call.label === 'v3:save'), true);
+  assert.equal(calls.some((call) => call.label === 'v3:remove'), true);
 });
 
 test('selector usa la factory Gate G y no cablea composición v4 directamente', async () => {
