@@ -1,8 +1,8 @@
 # Atlas Storage Architecture v4
 
-Status: **design contract / not active in runtime**
+Status: **controlled pilot in `atlasmap-dev`; not active in production**
 
-This document defines the target persistence architecture for Atlas. The current v3 revision-based repository remains the only active persistence path until each v4 rollout gate is explicitly completed.
+This document defines the target persistence architecture for Atlas. v4 may be exercised only through explicitly approved rollout gates until production readiness is complete.
 
 ## 1. Non-negotiable invariants
 
@@ -15,7 +15,7 @@ This document defines the target persistence architecture for Atlas. The current
 7. No silent overwrite is allowed when the same entity has advanced remotely.
 8. Server-derived aggregates are not client-authoritative.
 9. Provider cache data is never client-writable and is not mixed with canonical user data.
-10. Deletes are recoverable first and physically destructive later.
+10. Whole-trip deletion is irreversible for the user once confirmed; physical purge may happen later for operational safety.
 11. Background work must be idempotent because Firestore triggers are at-least-once and unordered.
 12. Every migration is resumable and rollback-safe.
 13. v3 and v4 must not be dual-written indefinitely.
@@ -235,6 +235,8 @@ attempts
 nextAttemptAt
 ```
 
+`restore` in the generic mutation vocabulary is reserved for entity/tombstone synchronization where explicitly allowed. It is not a supported whole-trip user action.
+
 Multiple pending mutations for the same entity should be coalesced before remote sync where semantically safe. The earliest relevant `baseVersion` is preserved and the newest intended payload wins inside that coalesced local mutation.
 
 ## 5. Sync Coordinator
@@ -343,21 +345,21 @@ No distributed counter or backend queue is introduced by default. First measure 
 2. if metrics prove contention: serialize/coalesce aggregate work per trip;
 3. shard only if measured workload still requires it.
 
-## 9. Delete and restore
+## 9. Delete and purge
 
 ### Whole trip
 
-Deleting a trip is initially logical:
+Once the user confirms deletion, Atlas treats the trip as permanently deleted from the product perspective:
 
 ```text
 status = deleted
 deletedAt = server timestamp
-purgeAfter = server timestamp + retention
+purgeAfter = server timestamp + operational retention
 ```
 
-Default target retention: 30 days, configurable before production.
+There is no user-facing trash and no whole-trip restore API. The trip disappears from normal queries immediately and cannot be reactivated by the client or lifecycle callable.
 
-The trip disappears from normal queries but can be restored during retention.
+The retention window exists only so the backend can perform physical cleanup safely and resumably; it is not a recovery window exposed to the user. The current development target is 30 days and remains configurable before production.
 
 A server purge process performs recursive physical deletion later. Parent/tombstone removal happens last.
 
@@ -367,7 +369,7 @@ Purge state is resumable:
 deleted -> purging -> purged/removed
 ```
 
-A scheduled reconciliation job retries stale `purging` records. Partial recursive deletion is therefore recoverable.
+A scheduled reconciliation job retries stale `purging` records. Partial recursive deletion is therefore operationally recoverable by the backend without making the trip restorable to the user.
 
 ### Child entity
 
@@ -412,7 +414,7 @@ v4 rules must also enforce:
 - immutable `createdAt`/ownership identity;
 - server-owned aggregate fields cannot be forged by clients;
 - entity updates advance `version` exactly once;
-- clients cannot mutate canonical data inside deleted/purging trips except explicitly permitted restore flows;
+- clients cannot mutate canonical data inside deleted/purging whole trips;
 - provider/internal cache collections are inaccessible to clients;
 - cross-user access is denied at every nesting level.
 
@@ -531,7 +533,7 @@ Budgets and automated alerts are required before production. Budget alerts do no
 
 - idempotent aggregate processing;
 - duplicate/out-of-order event tests;
-- soft delete/restore;
+- irreversible whole-trip soft delete;
 - purge/reconciliation;
 - failure injection.
 
@@ -580,4 +582,3 @@ Official Firebase documentation must be rechecked during each implementation pha
 - Transactions/batches and offline transaction behavior: https://firebase.google.com/docs/firestore/manage-data/transactions
 - Firestore-trigger delivery ordering/at-least-once: https://firebase.google.com/docs/functions/firestore-events
 - Security Rules field validation/diff: https://firebase.google.com/docs/firestore/security/rules-fields
-
