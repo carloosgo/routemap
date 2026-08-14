@@ -204,7 +204,7 @@ async function patchEnabled(token, policy, enabled) {
   const params = new URLSearchParams({ updateMask: 'enabled' });
   const updated = await requestJson(
     `https://monitoring.googleapis.com/v3/${policy.name}?${params}`,
-    { token, method: 'PATCH', body: { enabled } }
+    { token, method: 'PATCH', body: { name: policy.name, enabled } }
   );
   if (!updated || updated.name !== policy.name || updated.enabled !== enabled) {
     fail(`La respuesta PATCH de ${policy.name} no dejó enabled=${enabled}.`);
