@@ -1,7 +1,7 @@
 /* global process, console */
 import { existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 
 const DEV_PROJECT = 'atlasmap-dev';
 
@@ -49,7 +49,7 @@ function gcloudCandidates() {
   const candidates = ['gcloud.cmd', 'gcloud.exe', 'gcloud'];
   const localAppData = process.env.LOCALAPPDATA;
   if (localAppData) {
-    candidates.unshift(join(localAppData, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', 'gcloud.cmd'));
+    candidates.push(join(localAppData, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', 'gcloud.cmd'));
   }
   return candidates;
 }
@@ -57,7 +57,10 @@ function gcloudCandidates() {
 function runProcess(executable, args) {
   const options = { encoding: 'utf8', windowsHide: true, stdio: 'pipe' };
   if (process.platform === 'win32' && executable.toLowerCase().endsWith('.cmd')) {
-    return spawnSync(process.env.ComSpec || 'cmd.exe', ['/d', '/c', executable, ...args], options);
+    const hasPath = executable.includes('\\') || executable.includes('/');
+    const command = hasPath ? basename(executable) : executable;
+    const cmdOptions = hasPath ? { ...options, cwd: dirname(executable) } : options;
+    return spawnSync(process.env.ComSpec || 'cmd.exe', ['/d', '/c', command, ...args], cmdOptions);
   }
   return spawnSync(executable, args, options);
 }
