@@ -2,6 +2,7 @@ import { HttpsError } from 'firebase-functions/v2/https';
 import { error as logError } from 'firebase-functions/logger';
 import { requireAuthenticated } from './callablePolicy.js';
 import {
+  V4_TRIP_LIFECYCLE_ACTION,
   V4TripLifecycleError,
   applyV4TripLifecycleOperation,
 } from './v4TripLifecycleStore.js';
@@ -27,6 +28,13 @@ function publicLifecycleResult(result) {
     purgeAfterMs: timestampMillis(result.purgeAfter),
     idempotentReplay: Boolean(result.idempotentReplay),
   };
+}
+
+function requireDeleteAction(value) {
+  if (value !== V4_TRIP_LIFECYCLE_ACTION.DELETE) {
+    throw new TypeError('action de lifecycle v4 solo admite delete.');
+  }
+  return value;
 }
 
 function mappedLifecycleError(error) {
@@ -69,12 +77,13 @@ export function createV4TripLifecycleCallableHandler({
     try {
       const userId = authenticate(request);
       await enforceRateLimit(request, V4_TRIP_LIFECYCLE_QUOTA);
+      const action = requireDeleteAction(request?.data?.action);
       const result = await applyOperation({
         db,
         userId,
         tripId: request?.data?.tripId,
         operationId: request?.data?.operationId,
-        action: request?.data?.action,
+        action,
         baseVersion: request?.data?.baseVersion,
       });
       return publicLifecycleResult(result);
@@ -87,7 +96,7 @@ export function createV4TripLifecycleCallableHandler({
       });
       throw new HttpsError(
         'internal',
-        'No fue posible actualizar temporalmente el estado del viaje.'
+        'No fue posible eliminar el viaje.'
       );
     }
   };
