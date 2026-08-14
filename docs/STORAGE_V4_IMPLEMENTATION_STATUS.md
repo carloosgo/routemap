@@ -18,13 +18,13 @@ Este documento distingue el roadmap original A–L de los rollout gates. Producc
 | H — concurrency/conflicts | **Implementado/probado** | Contrato entity-level, simulaciones multidevice/contención y protección contra fallback destructivo v4→v3. Falta únicamente una muestra multi-browser/device real si se exige como gate productivo. |
 | I — migration | **Cerrado en dev** | Materializer/verifier/rollback + round-trip cloud real `v3→v4→v3→v4` PASS. No hay migración masiva/productiva. |
 | J — provider cache separation | **Lógica cerrada; física diferida** | `cacheDb`, TTL/freshness, provider policy y resiliencia probados. `atlas-cache` físico sigue bloqueado por el acceso named-database de Firebase Admin Node aún marcado Preview/no-production. |
-| K — monitoring/backups/load | **Muy avanzado** | Recovery, restore drill, 4/4 streams, 7 métricas, dashboard, canal, provider outage, sync flush, purge/migration closeout y carga/reconnect cloud funcional PASS. Restan budget/thresholds, alertas representativas, costo con supuestos aprobados y aceptación/tuning de latencias antes del gate productivo. |
+| K — monitoring/backups/load | **Muy avanzado** | Recovery, restore drill, 4/4 streams, 7 métricas, dashboard, canal, provider outage, sync flush, purge/migration closeout, carga/reconnect cloud y CI completo PASS. Restan budget/thresholds, alertas representativas, costo con supuestos aprobados y aceptación/tuning de latencias antes del gate productivo. |
 | L — production | **Preparado, no iniciado** | Runbook L0–L7. No tocar producción antes de cerrar decisiones operativas/costo/seguridad. |
 
 ## Avance global estimado
 
-- **Implementación técnica v4:** ~97%.
-- **Plan completo A–L hasta producción estable:** **~92%**.
+- **Implementación técnica v4:** ~98%.
+- **Plan completo A–L hasta producción estable:** **~93%**.
 
 El porcentaje restante está concentrado principalmente en decisiones y evidencia operacional/productiva, no en construir de nuevo la arquitectura.
 
@@ -112,7 +112,8 @@ La ventana de rollout/provider sigue contaminada por pruebas intencionales de er
 - exactamente 1 dashboard Atlas Storage v4 dev;
 - 7/7 logs-based metrics;
 - 3 alert policies existentes, todavía deshabilitadas;
-- 1 canal email usable y asociado a las tres policies.
+- 1 canal email usable y asociado a las tres policies;
+- runner guardado para enable/disable controlado de policies dev; no se habilitan a ciegas con la ventana de pruebas contaminada.
 
 ### Billing
 
@@ -121,7 +122,7 @@ La ventana de rollout/provider sigue contaminada por pruebas intencionales de er
 - permisos read-only verificados;
 - account-scope y project-scope legibles;
 - **budget count = 0**;
-- no se inventa un monto ni thresholds.
+- runner de apply preparado y guardado, pero no se inventa ni aplica monto/thresholds sin aprobación explícita.
 
 ### Resiliencia / carga
 
@@ -144,6 +145,20 @@ Mediciones del drill cloud de carga/reconnect:
 - aggregate convergence después del reconnect: 17,869 ms.
 
 Estas mediciones cierran la **robustez funcional** del escenario, no un SLO productivo. Las latencias quedan como señal real para aceptación/tuning antes del rollout productivo. Evidencia: `docs/STORAGE_V4_PHASE_K_CLOUD_LOAD_2026-08-14.md`.
+
+### CI
+
+El HEAD `84167d931a836a050bfd74727d568c786675f7cc` cerró el checkpoint de CI del bloque dev:
+
+- unit tests PASS;
+- Firestore Rules suite PASS;
+- Phase K scoped Rules PASS;
+- ESLint PASS;
+- production build PASS;
+- Dependency audit PASS;
+- CodeQL PASS.
+
+El fallo previo de Rules era un test heredado que todavía esperaba `restore` de viaje completo después de que el contrato fue convertido a delete-only. El test fue alineado con el contrato irreversible actual; además se corrigieron dos declaraciones redundantes de globals que bloqueaban ESLint.
 
 Pendiente material para cerrar K:
 
