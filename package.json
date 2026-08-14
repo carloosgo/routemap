@@ -19,6 +19,7 @@
     "storage-v4:rollback-trip-dev": "node functions/runV4MigrationRollbackDev.js",
     "storage-v4:pilot-plan-dev": "node scripts/runStorageV4PilotPlanDev.mjs",
     "storage-v4:pilot-stage-deploy-dev": "node scripts/runStorageV4PilotStageDeployDev.mjs",
+    "storage-v4:pilot-lifecycle-deploy-dev": "node scripts/deployStorageV4TripLifecycleDev.mjs",
     "storage-v4:pilot-stage-verify-dev": "node scripts/runStorageV4PilotStageVerifyDev.mjs",
     "storage-v4:pilot-stage-safety-dev": "node scripts/runStorageV4PilotStageSafetyDev.mjs",
     "storage-v4:pilot-eventarc-iam-preflight-dev": "node scripts/runStorageV4PilotEventarcIamPreflightDev.mjs",
