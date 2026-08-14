@@ -1,4 +1,4 @@
-/* global process, console, setTimeout */
+/* global process */
 import { randomUUID } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
 import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
