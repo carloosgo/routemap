@@ -22,6 +22,10 @@ function sanitize(value) {
     .replace(BILLING_ID_PATTERN, '[REDACTED-BILLING-ID]');
 }
 
+function stage(name, details = {}) {
+  console.log(JSON.stringify({ stage: name, ...details }, null, 2));
+}
+
 function option(args, name) {
   const prefix = `${name}=`;
   const matches = args.filter((value) => value.startsWith(prefix));
@@ -182,13 +186,14 @@ function getAccessToken(gcloud) {
   return result.stdout;
 }
 
-async function firebaseRequest(gcloud, path, { method = 'GET', body, allow404 = false } = {}) {
+async function firebaseRequest(gcloud, quotaProject, path, { method = 'GET', body, allow404 = false } = {}) {
   const token = getAccessToken(gcloud);
   const response = await fetch(`${FIREBASE_API}/${path}`, {
     method,
     headers: {
       Authorization: `Bearer ${token}`,
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
+      'x-goog-user-project': quotaProject,
+      ...(body ? { 'Content-Type': 'application/json; charset=utf-8' } : {}),
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
@@ -209,10 +214,10 @@ async function firebaseRequest(gcloud, path, { method = 'GET', body, allow404 = 
   return { status: response.status, payload };
 }
 
-async function waitFirebaseOperation(gcloud, operationName) {
+async function waitFirebaseOperation(gcloud, quotaProject, operationName) {
   const deadline = Date.now() + 180_000;
   while (Date.now() < deadline) {
-    const result = await firebaseRequest(gcloud, operationName);
+    const result = await firebaseRequest(gcloud, quotaProject, operationName);
     if (result.payload?.done === true) {
       if (result.payload.error) {
         fail(`projects.addFirebase terminó con error: ${sanitize(result.payload.error.message || JSON.stringify(result.payload.error))}`);
@@ -225,16 +230,16 @@ async function waitFirebaseOperation(gcloud, operationName) {
 }
 
 async function ensureFirebase(gcloud, project) {
-  const current = await firebaseRequest(gcloud, `projects/${project}`, { allow404: true });
+  const current = await firebaseRequest(gcloud, project, `projects/${project}`, { allow404: true });
   if (current.status !== 404) return 'already-enabled';
 
-  const start = await firebaseRequest(gcloud, `projects/${project}:addFirebase`, {
+  const start = await firebaseRequest(gcloud, project, `projects/${project}:addFirebase`, {
     method: 'POST',
     body: {},
   });
   const operationName = start.payload?.name;
   if (!operationName) fail('projects.addFirebase no devolvió un operation name.');
-  await waitFirebaseOperation(gcloud, operationName);
+  await waitFirebaseOperation(gcloud, project, operationName);
   return 'enabled';
 }
 
@@ -344,8 +349,18 @@ async function main() {
   if (target.lifecycleState && target.lifecycleState !== 'ACTIVE') {
     fail(`El proyecto target no está ACTIVE: ${target.lifecycleState}.`);
   }
+  stage('project-ready', {
+    project: options.project,
+    projectState,
+    projectActive: true,
+  });
 
   const billingState = ensureBilling(gcloud, options.project, sourceBilling.billingAccountId);
+  stage('billing-ready', {
+    project: options.project,
+    billingState,
+    billingAccountIdExposed: false,
+  });
 
   runGcloud(gcloud, [
     'services', 'enable',
@@ -354,9 +369,26 @@ async function main() {
     `--project=${options.project}`,
     '--quiet',
   ]);
+  stage('apis-ready', {
+    project: options.project,
+    firebaseManagementApiEnabled: true,
+    firestoreApiEnabled: true,
+  });
 
   const firebaseState = await ensureFirebase(gcloud, options.project);
+  stage('firebase-ready', {
+    project: options.project,
+    firebaseState,
+    quotaProjectHeaderApplied: true,
+  });
+
   const firestoreState = ensureFirestore(gcloud, options.project, options.location);
+  stage('firestore-ready', {
+    project: options.project,
+    firestoreState,
+    location: options.location,
+    deleteProtectionEnabled: true,
+  });
 
   console.log(JSON.stringify({
     phase: 'L0',
