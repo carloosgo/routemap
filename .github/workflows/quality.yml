@@ -68,7 +68,29 @@ jobs:
         run: npm test
 
       - name: Test Firestore security rules
-        run: npm run test:rules
+        shell: bash
+        run: |
+          set -o pipefail
+          log_file="$(mktemp)"
+
+          if npm run test:rules 2>&1 | tee "$log_file"; then
+            exit 0
+          fi
+
+          tail_text="$(tail -n 80 "$log_file")"
+          {
+            echo "### Firestore security rules failure"
+            echo '```text'
+            printf '%s\n' "$tail_text"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          escaped="$tail_text"
+          escaped="${escaped//'%'/'%25'}"
+          escaped="${escaped//$'\r'/'%0D'}"
+          escaped="${escaped//$'\n'/'%0A'}"
+          echo "::error title=Firestore security rules failed::$escaped"
+          exit 1
 
       - name: Test scoped Phase K E2E Firestore rules
         run: npm run test:rules:phase-k-e2e
