@@ -77,9 +77,10 @@ test('runner despliega solo auth y configura únicamente Google', () => {
 test('runner verifica seguridad antes y después del deploy', () => {
   const precheckIndex = source.indexOf('security-precheck-pass');
   const deployIndex = source.indexOf("'deploy',");
-  const verifyIndex = source.indexOf('verifyAuth(token)');
+  const verifyIndex = source.indexOf('const verification = await verifyAuth(token);');
   assert.ok(precheckIndex >= 0);
   assert.ok(deployIndex > precheckIndex);
+  assert.ok(verifyIndex >= 0);
   assert.ok(verifyIndex > deployIndex);
   assert.match(source, /assertLockedRules/);
   assert.match(source, /assertWebAppAndEmptyData/);
