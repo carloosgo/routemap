@@ -125,30 +125,23 @@ test('conflicto de versión usa aborted y precondiciones no se confunden con err
   }
 });
 
-test('restore devuelve fechas de papelera nulas y replay explícito', async () => {
+test('restore de viaje se rechaza antes de llegar al store', async () => {
+  let called = false;
   const handler = createV4TripLifecycleCallableHandler({
     db: {},
     authenticate: () => 'alice',
-    applyOperation: async () => ({
-      operationId: 'operation_456',
-      action: 'restore',
-      tripId: 'trip-1',
-      version: 7,
-      status: 'active',
-      deletedAt: null,
-      purgeAfter: null,
-      idempotentReplay: true,
-    }),
+    applyOperation: async () => {
+      called = true;
+      throw new Error('no debe ejecutarse');
+    },
   });
 
-  const result = await handler(request(validData({
-    operationId: 'operation_456',
-    action: 'restore',
-    baseVersion: 6,
-  })));
-  assert.equal(result.deletedAtMs, null);
-  assert.equal(result.purgeAfterMs, null);
-  assert.equal(result.idempotentReplay, true);
+  await assert.rejects(handler(request(validData({ action: 'restore' }))), (error) => {
+    assert.equal(codeOf(error), 'invalid-argument');
+    assert.match(error.message, /solo admite delete/);
+    return true;
+  });
+  assert.equal(called, false);
 });
 
 test('error inesperado se registra sin devolver detalles internos al cliente', async () => {
