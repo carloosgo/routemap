@@ -6,7 +6,6 @@ import { URLSearchParams } from 'node:url';
 
 const PROJECT = 'atlasmap-dev';
 const DEFAULT_DISPLAY_NAME = 'Atlas Storage v4 dev';
-const DEFAULT_THRESHOLDS = Object.freeze([0.5, 0.8, 1]);
 const CONFIRM = 'CREATE-ATLAS-V4-PHASE-K-BUDGET-DEV';
 
 function fail(message, code = 1) {
@@ -31,12 +30,14 @@ function parsePositiveAmount(raw) {
 }
 
 function parseThresholds(raw) {
-  if (!raw) return [...DEFAULT_THRESHOLDS];
+  if (!raw) fail('Falta --thresholds. No existen thresholds default deliberadamente.', 2);
   const values = raw.split(',').map((value) => Number(value.trim()));
   if (values.length === 0 || values.some((value) => !Number.isFinite(value) || value <= 0 || value > 2)) {
     fail('--thresholds debe contener porcentajes decimales > 0 y <= 2.', 2);
   }
-  return [...new Set(values)].sort((a, b) => a - b);
+  const unique = [...new Set(values)].sort((a, b) => a - b);
+  if (unique.length !== values.length) fail('--thresholds no debe contener valores duplicados.', 2);
+  return unique;
 }
 
 function parseDisplayName(raw) {
@@ -243,6 +244,8 @@ console.log(JSON.stringify({
     calendarPeriod: 'MONTH',
     projectScope: `projects/${PROJECT}`,
   },
+  amountExplicit: true,
+  thresholdsExplicit: true,
   mutatesOnlyBillingBudget: args.apply,
   mutatesApplicationData: false,
   changesIam: false,
