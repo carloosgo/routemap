@@ -22,6 +22,15 @@ test('alert delivery drill escribe la señal sintética por Logging REST API', a
   assert.match(source, /outcome: 'unexpected-error'/);
 });
 
+test('alert delivery drill consulta incidents sin imponer orderBy redundante', async () => {
+  const source = await runnerSource();
+
+  assert.match(source, /monitoring\.googleapis\.com\/v3\/projects\/\$\{PROJECT\}\/alerts/);
+  assert.doesNotMatch(source, /orderBy: 'openTime desc'/);
+  assert.match(source, /payload\?\.error\?\.message/);
+  assert.match(source, /Google API HTTP \$\{response\.status\}\$\{detail\}/);
+});
+
 test('alert delivery drill conserva cleanup de policy temporal y límites dev', async () => {
   const source = await runnerSource();
 
