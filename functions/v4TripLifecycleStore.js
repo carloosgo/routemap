@@ -2,7 +2,6 @@ import { Timestamp } from 'firebase-admin/firestore';
 
 export const V4_TRIP_LIFECYCLE_ACTION = Object.freeze({
   DELETE: 'delete',
-  RESTORE: 'restore',
 });
 
 export class V4TripLifecycleError extends Error {
@@ -35,8 +34,8 @@ function positiveVersion(value) {
 }
 
 function lifecycleAction(value) {
-  if (!Object.values(V4_TRIP_LIFECYCLE_ACTION).includes(value)) {
-    throw new TypeError('action de lifecycle v4 inválida.');
+  if (value !== V4_TRIP_LIFECYCLE_ACTION.DELETE) {
+    throw new TypeError('action de lifecycle v4 solo admite delete.');
   }
   return value;
 }
@@ -147,51 +146,37 @@ export async function applyV4TripLifecycleOperation({
     if (purgeJob?.state === 'claimed') {
       throw new V4TripLifecycleError(
         'purge-in-progress',
-        'La eliminación definitiva del viaje ya está en curso.'
+        'La eliminación física del viaje ya está en curso.'
       );
     }
 
-    const deleting = safeAction === V4_TRIP_LIFECYCLE_ACTION.DELETE;
-    if (deleting && trip.status !== 'active') {
+    if (trip.status !== 'active') {
       throw new V4TripLifecycleError(
         'failed-precondition',
-        'Solo un viaje activo puede enviarse a la papelera.'
-      );
-    }
-    if (!deleting && trip.status !== 'deleted') {
-      throw new V4TripLifecycleError(
-        'failed-precondition',
-        'Solo un viaje eliminado puede restaurarse.'
+        'Solo un viaje activo puede eliminarse.'
       );
     }
 
     const timestamp = timestampValue(now());
     const nextVersion = expectedVersion + 1;
-    const deletedAt = deleting ? timestamp : null;
-    const purgeAfter = deleting
-      ? Timestamp.fromMillis(timestamp.toMillis() + retention)
-      : null;
-    const nextStatus = deleting ? 'deleted' : 'active';
+    const deletedAt = timestamp;
+    const purgeAfter = Timestamp.fromMillis(timestamp.toMillis() + retention);
 
     transaction.update(tripRef, {
-      status: nextStatus,
+      status: 'deleted',
       version: nextVersion,
       updatedAt: timestamp,
       deletedAt,
       purgeAfter,
     });
-    if (deleting) {
-      transaction.set(purgeJobRef, {
-        userId: ownerId,
-        tripId: safeTripId,
-        state: 'scheduled',
-        dueAt: purgeAfter,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-      });
-    } else {
-      transaction.delete(purgeJobRef);
-    }
+    transaction.set(purgeJobRef, {
+      userId: ownerId,
+      tripId: safeTripId,
+      state: 'scheduled',
+      dueAt: purgeAfter,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    });
     transaction.set(operationRef, {
       operationId: safeOperationId,
       userId: ownerId,
@@ -199,7 +184,7 @@ export async function applyV4TripLifecycleOperation({
       action: safeAction,
       baseVersion: expectedVersion,
       resultVersion: nextVersion,
-      resultStatus: nextStatus,
+      resultStatus: 'deleted',
       deletedAt,
       purgeAfter,
       completedAt: timestamp,
@@ -210,7 +195,7 @@ export async function applyV4TripLifecycleOperation({
       action: safeAction,
       tripId: safeTripId,
       version: nextVersion,
-      status: nextStatus,
+      status: 'deleted',
       deletedAt,
       purgeAfter,
       idempotentReplay: false,
