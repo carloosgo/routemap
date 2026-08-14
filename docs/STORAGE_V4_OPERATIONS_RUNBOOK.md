@@ -19,7 +19,7 @@ Medir de forma agregada y sin contenido de viaje:
 
 Nunca registrar UID, tripId, entityId, nombres, notas, búsquedas, coordenadas privadas ni payloads de mutación en la telemetría operacional.
 
-El runtime expone eventos agregados de `flush` y `queue-recovery`. La callable `storageV4SyncTelemetry` aplica un contrato allowlist antes de emitir `storage_v4_sync_metric`; rechaza campos desconocidos y no admite UID, tripId, entityId, entityKey ni payload. Su cliente es best-effort, con buffer acotado. La señal ya fue desplegada y observada E2E en `atlasmap-dev` sin activar Storage v4 WRITE.
+El runtime expone eventos agregados de `flush` y `queue-recovery`. La callable `storageV4SyncTelemetry` aplica un contrato allowlist antes de emitir `storage_v4_sync_metric`; rechaza campos desconocidos y no admite UID, tripId, entityId, entityKey ni payload. Su cliente es best-effort, con buffer acotado. La señal ya fue desplegada y observada E2E en `atlasmap-dev` sin activar Storage v4 WRITE globalmente.
 
 ### Firestore / backend
 
@@ -75,6 +75,8 @@ El preflight `phase-k:slo:preflight` calcula sobre Cloud Logging, en modo exclus
 - p50/p95/p99 de rollout, sync flush y provider request;
 - bandera `truncated` si un stream alcanza el límite de muestra y por tanto no puede tratarse como ventana SLO completa.
 
+La muestra real del 2026-08-14 confirmó 5 `flush` reales y 5/5 `success`, con p50 154 ms y p95/p99 878 ms. Las muestras agregadas de rollout/provider de esa jornada incluyen fallos deliberados de pilot, kill-switch y provider-outage; no deben reutilizarse como baseline productivo.
+
 ## 3. Alertas
 
 Configurar alertas accionables; evitar alertas por cada evento individual.
@@ -96,7 +98,16 @@ Prioridad media:
 - proveedor devuelve 429/5xx por encima del baseline;
 - incremento anormal de reintentos/reconexiones.
 
-El repositorio contiene templates de desarrollo para errores de repositorio, `unexpected-error` de sync y fallos de proveedor. Nacen **deshabilitados**, sin notification channels, y no deben habilitarse hasta validar server-side las métricas, medir baseline y aprobar owner/canal. El threshold de proveedor es provisional y no constituye un SLO ni una decisión operativa final.
+Estado real en `atlasmap-dev` al 2026-08-14:
+
+- existen exactamente 3 alert policies Atlas Storage v4;
+- las 3 están deshabilitadas;
+- las 3 apuntan al mismo notification channel email Atlas;
+- el canal está habilitado y usable;
+- el repo incluye `phase-k:observability:toggle-alerts-dev`, que inventaría exactamente esas 3 policies y ese canal antes de cambiar únicamente el campo `enabled`;
+- habilitar/deshabilitar exige token de confirmación explícito y nunca cambia thresholds, canal, budget, datos de aplicación ni producción.
+
+Los thresholds actuales son plantillas dev, no baseline productivo: repository dispara ante cualquier error de rollout en 5 min; sync ante cualquier `unexpected-error` de flush en 5 min; provider ante más de cinco requests no-success en 5 min. No habilitar a ciegas ni convertirlos en SLO externo sin una prueba controlada y un baseline representativo.
 
 ## 4. Dashboard mínimo
 
@@ -122,19 +133,11 @@ storage_v4_provider_cache_metric
 storage_v4_provider_request_metric
 ```
 
-El bundle declarativo `ops/storage-v4/observability/` prepara:
+El bundle declarativo `ops/storage-v4/observability/` prepara counters y distribuciones de latencia, ratios de éxito/cache hit, señales Firestore/Cloud Run y panel de logs.
 
-- counters de rollout/sync/provider cache/provider request;
-- distribuciones de latencia para rollout/sync/provider;
-- p50/p95/p99 del repositorio en la vista operacional;
-- panel de logs de los cuatro streams;
-- ratios de éxito y cache hit;
-- operaciones y storage de Firestore;
-- request count y p95 de los servicios Cloud Run observados.
+Estado real al 2026-08-14: existe exactamente 1 dashboard Atlas Storage v4 dev y 7/7 logs-based metrics esperadas. El dashboard ya no es solo una definición en repo; fue creado y verificado server-side en `atlasmap-dev`.
 
-La definición existe en repo pero no se considera dashboard operativo hasta pasar validación server-side y crear/verificar el recurso en `atlasmap-dev`.
-
-El comando de checkpoint preferido para minimizar intervenciones manuales es:
+El comando de checkpoint preferido es:
 
 ```bash
 npm run phase-k:observability:checkpoint-dev -- --apply
@@ -171,6 +174,8 @@ No fijar precios unitarios dentro del código de la aplicación. Aplicar los pre
 
 Regla de arquitectura: una modificación lógica debe aproximarse a una escritura lógica de entidad; una edición de nota no debe reescribir el viaje completo.
 
+El repo ya incluye `phase-k:cost:scenarios`; el cierre económico requiere alimentar el modelo con supuestos de uso medidos o explícitamente aprobados. No inferir volumen de usuarios ni presupuesto por conveniencia técnica.
+
 ## 6. Backups y PITR
 
 Antes de producción:
@@ -181,9 +186,9 @@ Antes de producción:
 - documentar owner de recuperación;
 - verificar que la política también cubre cualquier base nombrada que pase a ser operacionalmente necesaria.
 
-En `atlasmap-dev`, PITR ya está habilitado con retención de 7 días y existe un scheduled backup diario con retención de 7 días. Esto valida configuración, no recuperación efectiva.
+En `atlasmap-dev`, PITR está habilitado con retención de 7 días y existe un scheduled backup diario con retención de 7 días. El último checkpoint del 2026-08-14 observó múltiples backups `READY`.
 
-Firestore PITR conserva una ventana de hasta siete días cuando está habilitado. Los scheduled backups pueden ser diarios o semanales y se restauran a una base nueva. Las políticas TTL no viajan dentro del backup, por lo que deben reaplicarse/verificarse tras un restore.
+Firestore PITR conserva una ventana de hasta siete días cuando está habilitado. Los scheduled backups se restauran a una base nueva. Las políticas TTL no viajan dentro del backup, por lo que deben reaplicarse/verificarse tras un restore.
 
 ## 7. Restore drill obligatorio
 
@@ -214,77 +219,101 @@ Reglas de seguridad del drill:
 - la creación del destino es cost-bearing y requiere un checkpoint `-Apply` explícito;
 - no forzar APIs preview de acceso server-side a named databases solo para cerrar la evidencia.
 
-El repo contiene un preflight de restore read-only y un drill bloqueado a `atlasmap-dev` que exige un backup `READY`, un destino `atlas-restore-drill-*` inexistente y nunca realiza cleanup automático.
+El restore drill real de `atlasmap-dev` ya pasó y su cleanup también. El checkpoint posterior confirmó 0 bases temporales `atlas-restore-drill-*` remanentes. Esto cierra la evidencia de recuperación en dev; no equivale a autorizar restore de producción.
 
 ## 8. Pruebas de carga y resiliencia
 
 ### Reconnect storm
 
-Mantener el test determinista de 1,000 clientes con jitter. En staging añadir una prueba E2E que simule reconexiones escalonadas y confirme ausencia de thundering herd.
+La suite local mantiene pruebas deterministas de reconnect/capacity. Además, el drill cloud acotado ejecutó 60 updates escalonados sobre un fixture sintético y terminó 60/60 success, sin failures, con convergencia posterior de aggregates.
 
 ### Provider outage
 
-Simular timeout/429/5xx y confirmar:
-
-- editor continúa usable;
-- dato local no se pierde;
-- cache vigente se usa cuando el contrato del dato lo permita;
-- el error no provoca loops agresivos;
-- backoff y métricas son correctos.
-
-El smoke determinista actual cubre 429, 503, network error, JSON inválido, privacidad de la telemetría y fallo del metric sink. Esto no sustituye el escenario E2E con UX/local state real.
+El E2E dev de provider outage ya pasó. El smoke determinista también cubre 429, 503, network error, JSON inválido, privacidad de telemetría y fallo del metric sink. Esto valida backend/resiliencia; la UX real frente a cada proveedor debe seguir observándose durante rollout.
 
 ### Multidevice
 
-Como mínimo:
+La lógica de conflicto/contención tiene simulaciones deterministas. Para un gate productivo estricto puede conservarse una muestra adicional de dos navegadores/dispositivos reales sobre el mismo usuario, cubriendo:
 
-- dos pestañas mismo usuario;
-- dos dispositivos mismo usuario;
 - edición de entidades distintas;
-- edición de misma entidad con version mismatch;
-- delete en un dispositivo mientras otro tiene draft;
+- misma entidad con version mismatch;
+- delete en un dispositivo mientras otro conserva draft;
 - reconnect después de conflicto.
 
 No se exige merge complejo campo-a-campo en v4.0; el comportamiento debe ser determinista y nunca silenciosamente destructivo.
 
 ### Carga de viajes
 
-Probar tamaños pequeño/medio/grande y medir:
+El drill cloud real del 2026-08-14 creó un fixture de 120 hijos (20 segments, 40 places, 20 connections, 20 notes y 20 checklist), ejecutó 10 hydrates y después 60 updates de reconnect.
 
-- tiempo de `list`;
-- tiempo de `get/hydrate`;
-- número de reads;
-- tamaño transferido;
-- mutaciones por edición;
-- comportamiento offline y al reconectar.
+Resultado funcional:
+
+- 120/120 hijos creados;
+- 60/60 updates de reconnect exitosos;
+- 0 failures;
+- aggregates convergentes antes y después del reconnect;
+- cleanup del fixture PASS.
+
+Mediciones observadas:
+
+- creación de hijos: 751 ms;
+- aggregate convergence inicial: 31,666 ms;
+- hydrate p50: 2,746 ms;
+- hydrate p95/p99: 17,872 ms;
+- reconnect write p50: 4,187 ms;
+- reconnect write p95: 5,644 ms;
+- reconnect write p99: 5,817 ms;
+- aggregate convergence post-reconnect: 17,869 ms.
+
+Estas cifras prueban robustez funcional del camino Cloud Firestore + Eventarc bajo esa carga acotada; no son todavía un SLO productivo ni una prueba de dos dispositivos/browser reales. Las colas de Eventarc y latencias de hydrate deben revisarse antes de aceptar el gate productivo.
 
 ## 9. Presupuestos
 
-Configurar un budget por proyecto (dev y producción separados) y alertas de gasto real/forecast. Un budget de Cloud Billing es una señal de alerta, no debe asumirse como un hard cap automático.
+Configurar un budget por proyecto (dev y producción separados) y alertas de gasto real/forecast. Un budget de Cloud Billing es una señal de alerta, no debe asumirse como hard cap automático.
 
-Los umbrales concretos deben fijarse con el presupuesto operativo aprobado del proyecto. Como mínimo, usar múltiples escalones para advertencia temprana y crítica, y definir el responsable que actúa ante cada uno.
+Estado real de `atlasmap-dev` al 2026-08-14:
 
-El probe actual de `atlasmap-dev` recibe HTTP 403 para budgets. Ese resultado significa **visibilidad insuficiente / estado desconocido**, nunca prueba de ausencia de budget. No crear ni fijar un monto por inferencia.
+- billing habilitado;
+- Budget API habilitada y legible;
+- permisos de lectura verificados;
+- lectura account-scope y project-scope disponible;
+- budget count = 0.
+
+Por tanto, ya no existe incertidumbre de lectura: actualmente no hay budget configurado para el scope comprobado. El monto y thresholds siguen siendo una decisión financiera explícita y no se inventan.
 
 Herramientas preparadas:
 
-- `phase-k:budget:diagnose`: compara lectura account-scope y single-project scope sin mostrar el billing account ID;
-- `phase-k:budget:plan -- --amount=<monto>`: construye localmente un body de budget mensual solo para `atlasmap-dev`; exige monto explícito, no tiene monto default y no muta Cloud.
+- `phase-k:budget:diagnose`: lectura/diagnóstico sin exponer billing account ID;
+- `phase-k:budget:plan -- --amount=<monto>`: construye localmente el plan y exige monto explícito;
+- `phase-k:budget:apply-dev`: apply guardado y limitado a `atlasmap-dev`; no tiene monto default y exige confirmación explícita.
 
-La ruta IAM read-only mínima documentada por Google es `roles/billing.viewer` en billing account, o `roles/viewer` en el proyecto para visibilidad single-project. La creación requiere permisos adicionales y sigue bloqueada hasta aprobación explícita del monto/thresholds.
+No ejecutar `apply-dev` hasta que exista aprobación del monto mensual y sus thresholds.
 
-## 10. Criterio de cierre de Phase K
+## 10. CI y criterio de cierre de Phase K
+
+Checkpoint CI dev cerrado en el commit `84167d931a836a050bfd74727d568c786675f7cc`:
+
+- unit tests PASS;
+- Firestore Rules suite PASS;
+- Phase K scoped Rules PASS;
+- ESLint PASS;
+- production build PASS;
+- Dependency audit PASS;
+- CodeQL PASS.
 
 Phase K queda cerrada solo con evidencia de:
 
-- dashboard creado;
-- alertas probadas;
-- presupuesto configurado;
-- métricas cliente/backend/proveedor visibles;
-- PITR/backups configurados;
-- restore drill ejecutado;
-- load/reconnect/provider-outage/multidevice ejecutados;
-- SLOs medidos contra resultados reales;
-- CI completo verde.
+- dashboard creado — **PASS dev**;
+- métricas cliente/backend/proveedor visibles — **PASS dev**;
+- PITR/backups configurados — **PASS dev**;
+- restore drill ejecutado — **PASS dev**;
+- load/reconnect/provider-outage ejecutados — **PASS dev**;
+- migración/purge/sync flush E2E — **PASS dev**;
+- CI completo verde — **PASS**;
+- alertas representativas probadas — **pendiente**;
+- presupuesto configurado — **pendiente de decisión financiera**;
+- costo modelado con supuestos aprobados — **pendiente**;
+- aceptación/tuning de latencias cloud observadas — **pendiente para gate productivo**;
+- muestra browser/device real — **pendiente solo si se conserva como requisito productivo**.
 
-Los cuatro streams y recovery dev ya tienen evidencia real. El bundle de observabilidad y los tests del repositorio preparan controles adicionales, pero los checkpoints de Cloud Monitoring/Billing/Firestore que requieran mutación o identidad autenticada siguen necesitando evidencia explícita del entorno objetivo.
+No iniciar Phase L por inercia. Producción permanece intacta hasta aprobación explícita del rollout productivo.
