@@ -2,10 +2,7 @@ import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { deleteApp, initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
-import {
-  V4_TRIP_LIFECYCLE_ACTION,
-  applyV4TripLifecycleOperation,
-} from './v4TripLifecycleStore.js';
+import { applyV4TripLifecycleOperation } from './v4TripLifecycleStore.js';
 import { purgeV4TripJob, runDueV4TripPurges } from './v4TripPurgeStore.js';
 
 let app;
@@ -146,11 +143,11 @@ test('fallo de limpieza conserva raíz deleted + job claimed y un retry termina 
   assert.equal((await jobRef.get()).exists, false);
 });
 
-test('restore no puede ganar después de que la purga adquiere el fence claimed', async () => {
+test('restore no existe y no puede interferir después de que la purga adquiere el fence claimed', async () => {
   const id = 'trip-purge-fence';
   const dueAt = Timestamp.fromMillis(NOW.toMillis() - 1000);
   const { tripRef } = await seedDeletedTrip(id, { dueAt });
-  let restoreErrorCode = null;
+  let restoreError = null;
   let attemptedRestore = false;
 
   const result = await purgeV4TripJob({
@@ -167,12 +164,12 @@ test('restore no puede ganar después de que la purga adquiere el fence claimed'
             userId: 'alice',
             tripId: id,
             operationId: 'restore-during-purge',
-            action: V4_TRIP_LIFECYCLE_ACTION.RESTORE,
+            action: 'restore',
             baseVersion: 2,
             now: () => NOW,
           });
         } catch (error) {
-          restoreErrorCode = error.code;
+          restoreError = error;
         }
       }
       await db.recursiveDelete(ref);
@@ -180,7 +177,8 @@ test('restore no puede ganar después de que la purga adquiere el fence claimed'
   });
 
   assert.equal(attemptedRestore, true);
-  assert.equal(restoreErrorCode, 'purge-in-progress');
+  assert.ok(restoreError instanceof TypeError);
+  assert.match(restoreError.message, /solo admite delete/);
   assert.equal(result.purged, true);
   assert.equal((await tripRef.get()).exists, false);
 });
