@@ -38,11 +38,13 @@ export default function App() {
   const [mobileView, setMobileView] = useState('form');
   const [activeTab, setActiveTab] = useState('segments');
   const [tripToDelete, setTripToDelete] = useState(null);
+  const [deletePending, setDeletePending] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
   const [openNoteSegmentId, setOpenNoteSegmentId] = useState(null);
   const [desktopPanelCollapsed, setDesktopPanelCollapsed] = useState(false);
   const menuWrapRef = useRef(null);
   const editorMenuRef = useRef(null);
+  const deleteInFlightRef = useRef(false);
 
   const canSave = isTripSavable(trip);
 
@@ -119,12 +121,17 @@ export default function App() {
   useOutsideClickSelector('.segnote', Boolean(openNoteSegmentId), closeSegmentNote);
 
   async function confirmRemoveTrip() {
-    if (!tripToDelete) return;
+    if (!tripToDelete || deleteInFlightRef.current) return;
+    deleteInFlightRef.current = true;
+    setDeletePending(true);
     try {
       await deleteTrip(tripToDelete.id);
       setTripToDelete(null);
     } catch (error) {
       showToast(t(savedTripErrorTranslationKey(error, 'deletePersistenceError')), 3500);
+    } finally {
+      deleteInFlightRef.current = false;
+      setDeletePending(false);
     }
   }
 
@@ -197,6 +204,7 @@ export default function App() {
         tripToDelete={tripToDelete}
         setTripToDelete={setTripToDelete}
         onConfirm={confirmRemoveTrip}
+        isDeleting={deletePending}
         t={t}
       />
     </div>
