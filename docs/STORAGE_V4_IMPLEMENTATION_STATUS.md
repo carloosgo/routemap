@@ -17,16 +17,16 @@ Este documento distingue el roadmap original A–L de los rollout gates. Producc
 | G — delete/lifecycle/purge | **Cerrado en dev** | Delete real desde cliente, `deleted/version+1`, purge job real, UX anti-doble-click, restore de viaje eliminado removido, purge físico aislado real PASS. |
 | H — concurrency/conflicts | **Implementado/probado** | Contrato entity-level, simulaciones multidevice/contención y protección contra fallback destructivo v4→v3. Falta únicamente una muestra multi-browser/device real si se exige como gate productivo. |
 | I — migration | **Cerrado en dev** | Materializer/verifier/rollback + round-trip cloud real `v3→v4→v3→v4` PASS. No hay migración masiva/productiva. |
-| J — provider cache separation | **Lógica cerrada; física diferida** | `cacheDb`, TTL/freshness, provider policy y resiliencia probados. `atlas-cache` físico sigue bloqueado por el acceso named-database de Firebase Admin Node aún marcado Preview/no-production. |
-| K — monitoring/backups/load | **Muy avanzado** | Recovery, restore drill, 4/4 streams, 7 métricas, dashboard, canal, provider outage, sync flush, purge/migration closeout, carga/reconnect cloud y CI completo PASS. Runner de firing real de alertas ya preparado; restan ejecutarlo, budget/thresholds explícitos, costo con supuestos aprobados y aceptación/tuning de latencias antes del gate productivo. |
+| J — provider cache separation | **Cerrado para v4.0** | Separación lógica, `cacheDb`, TTL/freshness, provider policy y resiliencia probados. La database física `atlas-cache` se difiere mientras Firebase Admin Node mantenga named-database access como Preview/no-production. |
+| K — monitoring/backups/load | **Cierre operacional dev** | Recovery, restore drill, 4/4 streams, 7 métricas, dashboard, canal, 3 policies permanentes habilitadas, budget dev MXN, provider outage, sync flush, purge/migration closeout, carga/reconnect cloud y CI completo PASS. Resta observar el firing del drill temporal y cerrar cost assumptions/latencia para el gate productivo. |
 | L — production | **Preparado, no iniciado** | Runbook L0–L7. No tocar producción antes de cerrar decisiones operativas/costo/seguridad. |
 
 ## Avance global estimado
 
-- **Implementación técnica v4:** ~98%.
-- **Plan completo A–L hasta producción estable:** **~93%**.
+- **Implementación técnica v4:** ~99%.
+- **Plan completo A–L hasta producción estable:** **~94%**.
 
-El porcentaje restante está concentrado principalmente en decisiones y evidencia operacional/productiva, no en construir de nuevo la arquitectura.
+El porcentaje restante está concentrado principalmente en evidencia operacional final y rollout productivo, no en construir de nuevo la arquitectura.
 
 ## Pilot WRITE dev — evidencia real cerrada
 
@@ -68,20 +68,17 @@ v3 real retenido
 
 El round-trip completo pasó en `atlasmap-dev`. Esto prueba materialización, verificación, commit, rollback y reejecución sobre cloud real. No autoriza todavía migración masiva ni producción.
 
-## Phase J — decisión pendiente
+## Phase J — decisión cerrada para v4.0
 
-La separación lógica ya obliga a que datos temporales/derivados de proveedor dependan de `cacheDb` y no del almacenamiento canónico.
+La separación lógica obliga a que datos temporales/derivados de proveedor dependan de `cacheDb` y no del almacenamiento canónico.
 
 Revalidación oficial realizada el **2026-08-14**:
 
 - Firestore soporta múltiples databases por proyecto;
-- Firebase Admin Node continúa marcando `getFirestore(databaseId)` y `getFirestore(app, databaseId)` como **Public Preview**;
+- Firebase Admin Node continúa marcando `getFirestore(databaseId)`, `getFirestore(app, databaseId)` e `initializeFirestore(..., databaseId)` como **Public Preview**;
 - la referencia oficial sigue indicando no utilizar ese acceso named-database en producción.
 
-Por eso no se fuerza `atlas-cache` físico. Para cerrar J productivamente se requiere una de dos cosas:
-
-1. que el acceso server-side elegido deje de estar marcado no-production; o
-2. aprobar explícitamente una topología sustituta/defer para v4.0 manteniendo la separación lógica ya implementada.
+Por lo tanto, v4.0 **no fuerza `atlas-cache` físico** ni queda bloqueado esperando una API no-production. La separación física se reabrirá cuando el acceso server-side sea production-ready o exista una alternativa estable aprobada. La decisión detallada queda en `docs/STORAGE_V4_PHASE_J_DECISION_2026-08-14.md`.
 
 ## Phase K — estado actualizado
 
@@ -105,28 +102,31 @@ Por eso no se fuerza `atlas-cache` físico. Para cerrar J productivamente se req
 
 El checkpoint del 2026-08-14 confirmó **5 flush reales, 5/5 success**, p50 154 ms y p95/p99 878 ms en esa muestra. El requisito antes pendiente de tener señal `sync flush` real queda cerrado.
 
-La ventana de rollout/provider sigue contaminada por pruebas intencionales de error, kill switch, config-unavailable y provider-outage; no usar su success rate agregado como baseline productivo.
+La ventana de rollout/provider sigue contaminada por pruebas intencionales de error, kill switch, config-unavailable, provider-outage y drills sintéticos; no usar su success rate agregado como baseline productivo.
 
 ### Monitoring
 
 - exactamente 1 dashboard Atlas Storage v4 dev;
 - 7/7 logs-based metrics;
-- 3 alert policies existentes, todavía deshabilitadas;
+- **3/3 alert policies permanentes habilitadas** en `atlasmap-dev`;
+- thresholds y asociaciones de canal permanecieron sin cambios durante la activación;
 - 1 canal email usable y asociado a las tres policies;
 - runner guardado para enable/disable controlado de policies dev;
-- runner adicional `phase-k:observability:alert-delivery-drill-dev` preparado para crear una policy temporal, emitir una sola señal sintética `sync unexpected-error`, observar un incidente real de Cloud Monitoring y borrar la policy en `finally` sin modificar las tres policies permanentes.
+- runner `phase-k:observability:alert-delivery-drill-dev` crea una policy temporal, emite una señal sintética `sync unexpected-error`, intenta observar el incidente de Cloud Monitoring y borra la policy en `finally` sin modificar las tres policies permanentes.
 
-El API de incidentes de Cloud Monitoring usado por el drill está documentado por Google como `projects.alerts.list`; esa API de incidentes continúa en Preview, por lo que la evidencia sirve como drill operacional dev y no introduce una dependencia de runtime de la aplicación.
+Los dos primeros intentos del drill fallaron de forma segura antes de probar el firing: el primero por transporte `gcloud logging write` bajo una ruta Windows con espacios; el segundo después de escribir correctamente la señal, al consultar `projects.alerts.list` con una petición que devolvió HTTP 400. Ambos confirmaron cleanup de la policy temporal. El runner actual elimina el `orderBy` redundante —la API ya ordena por `openTime desc` por defecto— y muestra el mensaje seguro del API si vuelve a fallar. Su CI está verde; falta una nueva ejecución cloud.
 
 ### Billing
 
 - billing habilitado;
 - Budget API habilitada y legible;
-- permisos read-only verificados;
-- account-scope y project-scope legibles;
-- **budget count = 0**;
-- plan y apply runners fueron endurecidos para exigir **tanto `--amount` como `--thresholds` explícitos**; ya no existe 50/80/100 silencioso ni ningún otro threshold por defecto;
-- no se inventa ni aplica monto/thresholds sin aprobación explícita.
+- permisos de create/list confirmados;
+- existe exactamente **1 budget project-scoped** para `atlasmap-dev`;
+- display name: `Atlas Storage v4 dev`;
+- monto: **500 MXN/mes**;
+- thresholds aprobados/aplicados: **50%, 80% y 100%**;
+- el apply no tocó IAM, datos de aplicación, Storage v4 write ni producción;
+- el runner fue endurecido después para exigir `--amount` y `--thresholds` explícitos en futuras creaciones, evitando defaults financieros silenciosos.
 
 ### Resiliencia / carga
 
@@ -152,7 +152,7 @@ Estas mediciones cierran la **robustez funcional** del escenario, no un SLO prod
 
 ### CI
 
-El HEAD `ccf5e23f970627857dfc950ac776c104e89fdcd3` cerró el checkpoint posterior al endurecimiento de alertas/budget:
+El HEAD `ab10be7a60656af63559055cbb57a8852bde5ba0` cerró el checkpoint posterior al segundo hardening del alert-delivery drill:
 
 - unit tests PASS;
 - Firestore Rules suite PASS;
@@ -162,15 +162,14 @@ El HEAD `ccf5e23f970627857dfc950ac776c104e89fdcd3` cerró el checkpoint posterio
 - Dependency audit PASS;
 - CodeQL PASS.
 
-Durante este cierre se corrigieron tres inconsistencias reales: un test heredado que todavía esperaba `restore` de viaje completo después de convertir lifecycle a delete-only; declaraciones redundantes de globals que bloqueaban ESLint; y un test de budget que todavía suponía thresholds automáticos después de eliminarlos del contrato.
+Durante este cierre se corrigieron inconsistencias reales de lifecycle, lint, budget y transporte/polling del drill de alertas, manteniendo cleanup fail-safe y los límites exclusivos de `atlasmap-dev`.
 
-Pendiente material para cerrar K:
+Pendiente material para cerrar K/preparar L:
 
-1. ejecutar el drill real de firing de alerta en `atlasmap-dev` y observar el incidente;
-2. aprobar/configurar budget mensual y thresholds;
-3. alimentar el cost model con supuestos medidos o explícitamente aprobados;
-4. decidir/optimizar el nivel de latencia aceptable antes del gate productivo;
-5. si se mantiene como requisito productivo, obtener muestra de dos navegadores/dispositivos reales sobre mismo usuario.
+1. ejecutar de nuevo el drill temporal y observar un incidente real de Cloud Monitoring;
+2. alimentar el cost model con supuestos medidos o explícitamente aprobados; mientras no existan, solo se permiten simulaciones claramente etiquetadas;
+3. trasladar la aceptación/tuning de las latencias del stress drill al gate de rollout productivo, sin confundir robustez funcional con SLO;
+4. si se mantiene como requisito productivo, obtener muestra de dos navegadores/dispositivos reales sobre mismo usuario durante L4/L6.
 
 ## Phase L — regla de avance
 
