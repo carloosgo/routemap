@@ -255,9 +255,6 @@ function assertFirestoreShape(database, location) {
   if (database.edition && database.edition !== 'STANDARD') {
     fail(`Firestore (default) no está en Standard edition: ${database.edition}.`);
   }
-  if (database.pointInTimeRecoveryEnablement !== 'POINT_IN_TIME_RECOVERY_ENABLED') {
-    fail('Firestore (default) no tiene PITR habilitado.');
-  }
   if (database.deleteProtectionState !== 'DELETE_PROTECTION_ENABLED') {
     fail('Firestore (default) no tiene delete protection habilitada.');
   }
@@ -277,7 +274,6 @@ function ensureFirestore(gcloud, project, location) {
     `--location=${location}`,
     '--type=firestore-native',
     '--edition=standard',
-    '--enable-pitr',
     '--delete-protection',
     '--quiet',
   ]);
@@ -301,7 +297,7 @@ function plan(options) {
     createsDefaultFirestoreIfMissing: true,
     firestoreMode: 'native',
     firestoreEdition: 'standard',
-    firestorePitrEnabled: true,
+    firestorePitrManagedInPhaseL2: true,
     firestoreDeleteProtectionEnabled: true,
     createsWebApp: false,
     deploysApplication: false,
@@ -371,7 +367,7 @@ async function main() {
     firebaseState,
     firestoreState,
     firestoreDefaultDatabasePresent: true,
-    firestorePitrEnabled: true,
+    firestorePitrManagedInPhaseL2: true,
     firestoreDeleteProtectionEnabled: true,
     webAppCreated: false,
     applicationDeployed: false,
