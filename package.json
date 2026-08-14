@@ -55,7 +55,8 @@
     "phase-k:cost:scenarios": "node scripts/runStorageV4AtlasCostScenarios.mjs",
     "phase-k:resilience:local": "node --test functions/geoapifySupport.resilience.test.js test/sharedProviderCacheResilience.test.js test/storageV4ReconnectionStorm.test.js test/storageV4ReconnectCapacitySimulation.test.js test/storageV4MultiDeviceSimulation.test.js test/storageV4MultiDeviceContentionSimulation.test.js",
     "phase-k:slo:preflight": "node scripts/runStorageV4PhaseKSloPreflight.mjs",
-    "phase-k:cloud-checkpoint": "node scripts/runStorageV4PhaseKCloudCheckpoint.mjs"
+    "phase-k:cloud-checkpoint": "node scripts/runStorageV4PhaseKCloudCheckpoint.mjs",
+    "phase-l:l0:preflight": "node scripts/runStorageV4PhaseL0Preflight.mjs"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.44.0",
