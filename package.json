@@ -57,7 +57,8 @@
     "phase-k:slo:preflight": "node scripts/runStorageV4PhaseKSloPreflight.mjs",
     "phase-k:cloud-checkpoint": "node scripts/runStorageV4PhaseKCloudCheckpoint.mjs",
     "phase-l:l0:preflight": "node scripts/runStorageV4PhaseL0Preflight.mjs",
-    "phase-l:l0:create-prod": "node scripts/runStorageV4PhaseL0CreateProductionProject.mjs"
+    "phase-l:l0:create-prod": "node scripts/runStorageV4PhaseL0CreateProductionProject.mjs",
+    "phase-l:l1:preflight-prod": "node scripts/runStorageV4PhaseL1SecurityPreflightProd.mjs"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.44.0",
