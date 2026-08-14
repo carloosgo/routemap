@@ -44,7 +44,7 @@ test('plan es no mutante y explicita protecciones productivas', () => {
   assert.equal(value.mode, 'plan');
   assert.equal(value.productionInfrastructureMutation, false);
   assert.equal(value.reusesDevBillingAccountWithoutPrintingId, true);
-  assert.equal(value.firestorePitrEnabled, true);
+  assert.equal(value.firestorePitrManagedInPhaseL2, true);
   assert.equal(value.firestoreDeleteProtectionEnabled, true);
   assert.equal(value.createsWebApp, false);
   assert.equal(value.deploysApplication, false);
