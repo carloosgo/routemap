@@ -2,6 +2,7 @@
 import { existsSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { URLSearchParams } from 'node:url';
 
 const PROJECT = 'atlasmap-prod';
 const LOCATION = 'us-central1';
