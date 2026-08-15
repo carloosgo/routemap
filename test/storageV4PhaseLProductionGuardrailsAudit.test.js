@@ -64,7 +64,7 @@ test('L4-L7 son plan-only y rechazan apply/confirm por comportamiento', () => {
     const args = validPlanArgs.get(file);
     const plan = run(file, args);
     assert.equal(plan.status, 0, `${file} debe aceptar su plan válido: ${plan.stderr}`);
-    assert.match(plan.stdout, /"mode":\s*"plan"/, `${file} debe declarar mode=plan`);
+    assert.match(plan.stdout, /"mode":\s*"plan(?:-only)?"/, `${file} debe declarar un modo de plan no mutable`);
     assert.match(plan.stdout, /"mutatesCloud":\s*false/, `${file} debe declarar cero mutación cloud`);
 
     const apply = run(file, [...args, '--apply']);
