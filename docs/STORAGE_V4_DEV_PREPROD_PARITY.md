@@ -23,7 +23,7 @@ El preflight `runStorageV4DevPreprodParity.mjs` acepta ambos estados y rechaza c
 
 ## Infraestructura real ya presente en atlasmap-dev
 
-Evidencia acumulada al 2026-08-14/15:
+La fuente de cierre para Phase K es `STORAGE_V4_PHASE_K_CLOSEOUT_2026-08-14.md`. Evidencia acumulada al 2026-08-14/15:
 
 - Firestore real `(default)` en `northamerica-south1`;
 - PITR habilitado, 7 días;
@@ -38,26 +38,33 @@ Evidencia acumulada al 2026-08-14/15:
 - cuatro streams de telemetry reales;
 - un dashboard Atlas;
 - siete logs-based metrics;
-- tres alert policies;
+- 3/3 alert policies permanentes habilitadas;
 - un notification channel de email usable asociado a las tres policies;
+- alert-delivery drill real con incidente `OPEN` y cleanup de policy temporal;
 - billing habilitado y Budget API legible;
+- exactamente 1 budget project-scoped: `Atlas Storage v4 dev`, 500 MXN/mes, thresholds 50/80/100%;
+- provider outage E2E, sync flush E2E y purge físico real PASS;
+- carga cloud de 120 hijos PASS;
+- reconnect 60/60 updates PASS;
+- simulaciones de multidevice/contención PASS;
 - SLO/preflight, recovery, restore, observability y cost tooling de Phase K.
 
 La ubicación de dev no tiene que copiar la región productiva para demostrar la clase de infraestructura. No se migra la base dev sólo para igualar `us-central1`; la paridad buscada es funcional/operativa salvo que una prueba dependa específicamente de región.
 
 ## Gaps de paridad que sí aportan valor
 
-### Budget dev
+Los controles de recovery, budget y observabilidad ya están cerrados en dev. No se vuelven a crear ni duplicar.
 
-La infraestructura para inspeccionar/crear un budget existe, pero el último closeout observó `budgetCount=0`. Crear un budget real en dev aporta paridad operativa y debe mantener monto/thresholds explícitos; ninguna cantidad se infiere por defecto.
+### Plataforma web estable de preprod
 
-### Alertas activas + delivery drill
+Se debe comprobar si `atlasmap-dev` ya tiene un Firebase Hosting site. Una URL estable de preprod aporta valor para:
 
-Las tres alert policies existen pero permanecen deshabilitadas. Antes de activarlas deben revisarse thresholds para no convertir tráfico de debug/failure-injection en ruido permanente. El canal de email ya existe y está asociado.
+- pruebas reales cross-browser/device;
+- Google Auth fuera de localhost;
+- App Check con reCAPTCHA Enterprise;
+- pruebas de build/despliegue cercanas a producción.
 
-### Carga/concurrencia real representativa
-
-Las simulaciones deterministas ya existen. Conviene complementar con muestras reales cloud y al menos una prueba real de dos navegadores/dispositivos antes del rollout productivo.
+No se crea Hosting hasta observar primero el inventario real.
 
 ### App Check en dev
 
@@ -70,12 +77,20 @@ Se preparará App Check en `atlasmap-dev` sin depender del dominio productivo de
 
 La creación de Hosting/site key/registro/enforcement en cloud continúa siendo una mutación explícita y no queda autorizada por este documento.
 
-## Preflight de paridad
+### Firestore TTL
 
-Ejecutar:
+Las colecciones internas con `expiresAt` deben tener políticas TTL reales cuando corresponda. El inventario de plataforma revisa las ocho collection groups históricamente declaradas como expirables antes de crear ninguna policy, para evitar duplicados o asumir que el código de expiración equivale a TTL cloud activo.
+
+### Concurrencia browser/device
+
+Ya existen carga cloud y simulaciones multidevice/contención. Una prueba real en dos navegadores/dispositivos sigue siendo útil como evidencia preprod, especialmente antes de ampliar READ/WRITE productivo, pero no requiere inventar nueva infraestructura.
+
+## Preflights de paridad
+
+### Runtime + Phase K
 
 ```powershell
-node scripts/runStorageV4DevPreprodParity.mjs
+npm run storage-v4:dev:preprod-parity
 ```
 
 Es estrictamente read-only. Verifica:
@@ -90,6 +105,23 @@ Es estrictamente read-only. Verifica:
 - checkpoint Phase K de recovery/billing/telemetry/SLO/monitoring/restore-readiness.
 
 Un pilot activo no hace fallar este auditor por sí mismo. Sí falla si detecta drift de infraestructura o un estado Remote Config inconsistente.
+
+### Plataforma web/seguridad
+
+```powershell
+npm run storage-v4:dev:platform-parity
+```
+
+También es read-only. Inventaría:
+
+- Delete Protection y PITR de Firestore;
+- Firebase Web Apps y Google Auth;
+- Firebase Hosting sites;
+- APIs/registro de App Check y reCAPTCHA Enterprise;
+- Secret Manager, Remote Config e Identity Toolkit;
+- TTL policies de las collection groups internas con expiración.
+
+Devuelve una lista explícita de `gaps`; no crea recursos para hacer desaparecer el gap.
 
 ## Regla de mutaciones
 
