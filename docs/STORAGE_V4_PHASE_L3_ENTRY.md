@@ -17,25 +17,29 @@ L3 se prepara mientras L2 espera evidencia temporal de backups. No habilita Stor
 
 - `functions/callablePolicy.js` declara `ENFORCE_APP_CHECK`, con default `false`.
 - `BASE_CALLABLE_OPTIONS.enforceAppCheck` permanece explícitamente en `false`.
-- el frontend todavía no inicializa `firebase/app-check`.
-- por lo tanto, **no existe enforcement productivo de App Check en este momento**.
+- `src/infrastructure/firebase/firebaseClient.js` **ya integra** `initializeAppCheck` + `ReCaptchaEnterpriseProvider`.
+- el cliente habilita auto-refresh de tokens.
+- la integración cliente permanece dormida cuando falta `VITE_FIREBASE_APPCHECK_SITE_KEY`, cuando se usan emuladores o fuera de `window`.
+- `src/config.js` ya lee `VITE_FIREBASE_APPCHECK_SITE_KEY`.
+- por lo tanto, **la integración de cliente está preimplementada, pero todavía no existe registro/enforcement productivo de App Check**.
 
-## Proveedor elegido para la preparación
+## Proveedor
 
-Para la Web App productiva, la vía objetivo es **Firebase App Check + reCAPTCHA Enterprise**.
+La implementación existente ya eligió **Firebase App Check + reCAPTCHA Enterprise**, que además coincide con la recomendación actual de Firebase para integraciones web nuevas.
 
-No se usará reCAPTCHA v3 para una integración nueva salvo decisión posterior explícita.
+No se necesita introducir reCAPTCHA v3.
 
 ## Orden de rollout L3
 
-1. Crear/configurar una Website key de reCAPTCHA Enterprise para los dominios productivos aprobados.
-2. Registrar `AtlasMap Web Production` en App Check con esa site key.
-3. Añadir `firebase/app-check` al cliente e inicializarlo antes del acceso a servicios Firebase.
-4. Desplegar primero en modo **observation / unenforced**.
-5. Observar solicitudes `VALID`, `INVALID` y `MISSING` en Firestore/Authentication/Functions.
-6. No activar enforcement mientras haya una proporción material de tráfico legítimo `MISSING` o `INVALID` sin explicación.
-7. Activar enforcement por producto de forma controlada solo después de evidencia PASS.
-8. Mantener mecanismos de rollback separados para cliente y enforcement.
+1. Resolver el dominio productivo que realmente servirá Atlas.
+2. Crear/configurar una Website key de reCAPTCHA Enterprise para los dominios productivos aprobados.
+3. Registrar `AtlasMap Web Production` en App Check con esa site key.
+4. Inyectar `VITE_FIREBASE_APPCHECK_SITE_KEY` únicamente en el entorno/build productivo correspondiente; no hardcodearla en el código fuente.
+5. Desplegar primero en modo **observation / unenforced**. El cliente ya empezará a enviar tokens porque la inicialización está implementada.
+6. Observar solicitudes `VALID`, `INVALID` y `MISSING` en Firestore/Authentication/Functions.
+7. No activar enforcement mientras haya una proporción material de tráfico legítimo `MISSING` o `INVALID` sin explicación.
+8. Activar enforcement por producto de forma controlada solo después de evidencia PASS.
+9. Mantener mecanismos de rollback separados para la variable/configuración cliente y para enforcement server-side.
 
 ## Decisiones que L3 no toma todavía
 
@@ -50,10 +54,10 @@ Estas decisiones se toman cuando exista dominio productivo verificable y antes d
 
 ## Invariantes
 
-- no imprimir site keys/credenciales privadas innecesarias en logs;
+- no imprimir ni hardcodear valores de configuración innecesariamente en logs/código;
 - no guardar debug tokens en repo;
 - no autorizar `localhost` como dominio productivo;
-- no activar enforcement antes de desplegar el SDK cliente y observar métricas;
+- no activar enforcement antes de desplegar un build que envíe tokens y observar métricas;
 - no convertir el flag `ENFORCE_APP_CHECK` en un switch global sin verificación por servicio;
 - no abrir Firestore Rules por motivo de App Check;
 - no habilitar Storage v4 WRITE durante L3.
@@ -63,7 +67,7 @@ Estas decisiones se toman cuando exista dominio productivo verificable y antes d
 L3 puede cerrarse cuando exista evidencia de:
 
 - Web App registrada con App Check;
-- cliente productivo enviando tokens;
+- build productivo enviando tokens mediante la integración cliente ya existente;
 - métricas de observación suficientes para distinguir tráfico verificado/no verificado;
 - rollback documentado;
 - enforcement activado únicamente donde la evidencia confirme que no rompe tráfico legítimo, o decisión explícita de mantener observation durante L4 si el rollout lo requiere.
