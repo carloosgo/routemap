@@ -29,6 +29,22 @@ La implementación existente ya eligió **Firebase App Check + reCAPTCHA Enterpr
 
 No se necesita introducir reCAPTCHA v3.
 
+## Preflight read-only
+
+L3 dispone de un inventario cloud que no habilita APIs, no crea site keys, no registra App Check y no activa enforcement:
+
+```powershell
+npm run phase-l:l3:preflight-prod -- --check-cloud
+```
+
+Observa:
+
+- Web App productiva esperada;
+- estado de `firebaseappcheck.googleapis.com`;
+- estado de `recaptchaenterprise.googleapis.com`;
+- configuración reCAPTCHA Enterprise de App Check, únicamente cuando la API ya está habilitada;
+- TTL/risk threshold si ya existieran, sin imprimir el valor de la site key.
+
 ## Orden de rollout L3
 
 1. Resolver el dominio productivo que realmente servirá Atlas.
