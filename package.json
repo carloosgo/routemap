@@ -65,7 +65,8 @@
     "phase-l:l2:preflight-prod": "node scripts/runStorageV4PhaseL2PreflightProd.mjs",
     "phase-l:l2:recovery-prod": "node scripts/runStorageV4PhaseL2RecoveryProd.mjs",
     "phase-l:l2:budget-prod": "node scripts/runStorageV4PhaseL2BudgetProd.mjs",
-    "phase-l:l3:preflight-prod": "node scripts/runStorageV4PhaseL3PreflightProd.mjs"
+    "phase-l:l3:preflight-prod": "node scripts/runStorageV4PhaseL3PreflightProd.mjs",
+    "phase-l:l4:read-plan-prod": "node scripts/runStorageV4PhaseL4ReadPlanProd.mjs"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.44.0",
