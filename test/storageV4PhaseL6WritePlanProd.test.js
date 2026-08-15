@@ -23,7 +23,7 @@ test('L6 exige cohorte explícita y nunca activa WRITE', () => {
   const value = json(run(['--cohort-percent=1']));
   assert.equal(value.phase, 'L6');
   assert.equal(value.project, 'atlasmap-prod');
-  assert.equal(value.mode, 'plan');
+  assert.equal(value.mode, 'plan-only');
   assert.equal(value.mutatesCloud, false);
   assert.equal(value.enablesStorageV4Write, false);
   assert.equal(value.targetRemoteConfig.storage_v4_mode, 'pilot');
