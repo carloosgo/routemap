@@ -29,6 +29,7 @@
     "storage-v4:pilot-remote-config-dev": "node scripts/runStorageV4PilotRemoteConfigDev.mjs",
     "storage-v4:dev-block-closeout": "node scripts/runStorageV4DevBlockCloseout.mjs",
     "storage-v4:dev:steady-state": "node scripts/runStorageV4DevSteadyState.mjs",
+    "storage-v4:dev:preprod-parity": "node scripts/runStorageV4DevPreprodParity.mjs",
     "phase-k:preflight": "node scripts/runStorageV4PhaseKPreflight.mjs",
     "phase-k:telemetry:deploy-dev": "node scripts/deployStorageV4PhaseKTelemetryDev.mjs",
     "phase-k:telemetry:diagnose-dev": "node scripts/runStorageV4PhaseKTelemetryDiagnoseDev.mjs",
