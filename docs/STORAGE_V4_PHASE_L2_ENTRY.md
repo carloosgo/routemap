@@ -54,9 +54,27 @@ El apply:
 - verifica server-side PITR + schedule después del cambio;
 - no ejecuta restore automáticamente.
 
-El restore drill se ejecuta como gate separado cuando exista el primer backup `READY`; nunca se restaura encima de `(default)`.
+## 3. Restore drill productivo — política de seguridad
 
-## 3. Budget productivo
+El restore drill es un gate separado y solo puede ejecutarse cuando exista al menos un backup `READY`.
+
+Contrato obligatorio:
+
+- usar `gcloud firestore databases restore` estable, no una variante alpha/beta;
+- fuente: backup administrado de `projects/atlasmap-prod/locations/us-central1/backups/...` perteneciente a `(default)`;
+- destino: **database nueva y aislada**, con prefijo reservado `atlas-l2-restore-drill-`;
+- prohibido usar `(default)` como destino;
+- prohibido eliminar o recrear `(default)` para simular un restore in-place;
+- validar que el destino no exista antes de restaurar;
+- verificar después identidad/location de la database restaurada y que `(default)` conserve `us-central1` + delete protection;
+- cleanup como operación separada y guardada;
+- cleanup únicamente de la database temporal exacta, con `etag` como precondición de concurrencia;
+- nunca barrer ni borrar databases por coincidencia amplia de nombre;
+- no abrir Rules ni habilitar Storage v4 READ/WRITE durante el drill.
+
+La creación y posterior eliminación de la database temporal son operaciones productivas/cost-bearing y requieren aprobación explícita antes del apply. El conector de repositorio no debe ejecutar estas operaciones cloud; solo la sesión local autenticada puede hacerlo mediante un runner aprobado.
+
+## 4. Budget productivo
 
 El runner exige monto y thresholds explícitos. Un Cloud Billing budget es **alert-only**, no un hard cap.
 
@@ -88,7 +106,7 @@ El runner:
 - usa periodo mensual y `CURRENT_SPEND`;
 - no muta datos, IAM, Rules ni rollout.
 
-## 4. Cost forecast
+## 5. Cost forecast
 
 El budget no sustituye al forecast. El modelo de costos mantiene clasificación:
 
@@ -98,7 +116,7 @@ simulation | measured | approved
 
 No se declarará forecast productivo sin supuestos medidos o explícitamente aprobados (usuarios activos, viajes/sesiones, reads/writes, cache hit ratio, llamadas de proveedor, tamaño medio y retención).
 
-## 5. Cierre L2
+## 6. Cierre L2
 
 L2 requiere evidencia de:
 
