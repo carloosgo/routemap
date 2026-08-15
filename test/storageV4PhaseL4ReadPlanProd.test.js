@@ -23,7 +23,7 @@ test('L4 exige cohorte explícita y nunca aplica cambios', () => {
   const value = json(run(['--cohort-percent=1']));
   assert.equal(value.phase, 'L4');
   assert.equal(value.project, 'atlasmap-prod');
-  assert.equal(value.mode, 'plan-only');
+  assert.equal(value.mode, 'plan');
   assert.equal(value.mutatesCloud, false);
   assert.equal(value.enablesStorageV4Read, false);
   assert.equal(value.enablesStorageV4Write, false);
