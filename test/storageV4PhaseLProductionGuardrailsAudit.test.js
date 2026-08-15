@@ -43,7 +43,18 @@ const validPlanArgs = new Map([
 ]);
 
 test('todos los runners productivos mutables conservan confirmación explícita', () => {
-  for (const file of applyRunners) {
+  const [l0Runner, ...fixedConfirmationRunners] = applyRunners;
+  const l0Args = ['--project=atlasmap-prod', '--location=us-central1'];
+  const l0Plan = run(l0Runner, l0Args);
+  assert.equal(l0Plan.status, 0, `L0 debe aceptar plan sin mutar: ${l0Plan.stderr}`);
+  const l0Value = JSON.parse(l0Plan.stdout);
+  assert.equal(l0Value.confirmationRequiredForApply, 'CREATE-ATLAS-V4-PROD-atlasmap-prod');
+
+  const l0Rejected = run(l0Runner, [...l0Args, '--apply', '--confirm=UNSAFE']);
+  assert.notEqual(l0Rejected.status, 0, 'L0 debe rechazar un token incorrecto antes de mutar cloud');
+  assert.match(l0Rejected.stderr, /CREATE-ATLAS-V4-PROD-atlasmap-prod/);
+
+  for (const file of fixedConfirmationRunners) {
     const value = source(file);
     assert.match(value, /CONFIRMATION/, `${file} debe declarar token de confirmación`);
     assert.match(value, /--apply/, `${file} debe exigir camino apply explícito`);
