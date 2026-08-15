@@ -23,7 +23,7 @@ test('L5 exige tamaño de muestra explícito y nunca materializa', () => {
   const value = json(run(['--trip-count=10']));
   assert.equal(value.phase, 'L5');
   assert.equal(value.project, 'atlasmap-prod');
-  assert.equal(value.mode, 'plan-only');
+  assert.equal(value.mode, 'plan');
   assert.equal(value.requestedTripCount, 10);
   assert.equal(value.mutatesCloud, false);
   assert.equal(value.materializesTrips, false);
