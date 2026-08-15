@@ -1,10 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
+function pathFor(relativePath) {
+  return fileURLToPath(new URL(`../${relativePath}`, import.meta.url));
+}
+
 function source(relativePath) {
-  return readFileSync(fileURLToPath(new URL(`../${relativePath}`, import.meta.url)), 'utf8');
+  return readFileSync(pathFor(relativePath), 'utf8');
+}
+
+function run(relativePath, args = []) {
+  return spawnSync(process.execPath, [pathFor(relativePath), ...args], {
+    encoding: 'utf8',
+    windowsHide: true,
+  });
 }
 
 const applyRunners = [
@@ -23,6 +35,13 @@ const planOnlyRunners = [
   'scripts/runStorageV4PhaseL7ConvergencePlanProd.mjs',
 ];
 
+const validPlanArgs = new Map([
+  [planOnlyRunners[0], ['--cohort-percent=1']],
+  [planOnlyRunners[1], ['--trip-count=1']],
+  [planOnlyRunners[2], ['--cohort-percent=1']],
+  [planOnlyRunners[3], ['--canonical-percent=100']],
+]);
+
 test('todos los runners productivos mutables conservan confirmación explícita', () => {
   for (const file of applyRunners) {
     const value = source(file);
@@ -40,13 +59,21 @@ test('L1-L7 productivo está fijado a atlasmap-prod', () => {
   }
 });
 
-test('L4-L7 son plan-only y rechazan apply/confirm', () => {
+test('L4-L7 son plan-only y rechazan apply/confirm por comportamiento', () => {
   for (const file of planOnlyRunners) {
-    const value = source(file);
-    assert.match(value, /plan-only|plan/, `${file} debe declarar modo plan`);
-    assert.match(value, /--apply/, `${file} debe reconocer y rechazar --apply`);
-    assert.match(value, /--confirm=/, `${file} debe reconocer y rechazar --confirm`);
-    assert.match(value, /mutatesCloud:\s*false/, `${file} debe declarar cero mutación cloud`);
+    const args = validPlanArgs.get(file);
+    const plan = run(file, args);
+    assert.equal(plan.status, 0, `${file} debe aceptar su plan válido: ${plan.stderr}`);
+    assert.match(plan.stdout, /"mode":\s*"plan"/, `${file} debe declarar mode=plan`);
+    assert.match(plan.stdout, /"mutatesCloud":\s*false/, `${file} debe declarar cero mutación cloud`);
+
+    const apply = run(file, [...args, '--apply']);
+    assert.notEqual(apply.status, 0, `${file} debe rechazar --apply`);
+    assert.match(`${apply.stdout}\n${apply.stderr}`, /plan-only|nunca admite --apply|no admite --apply/i);
+
+    const confirm = run(file, [...args, '--confirm=UNSAFE']);
+    assert.notEqual(confirm.status, 0, `${file} debe rechazar --confirm`);
+    assert.match(`${confirm.stdout}\n${confirm.stderr}`, /plan-only|nunca admite --apply\/--confirm|no admite --confirm/i);
   }
 });
 
