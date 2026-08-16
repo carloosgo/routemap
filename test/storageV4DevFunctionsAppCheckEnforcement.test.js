@@ -11,6 +11,7 @@ import {
   DEV_FUNCTIONS_APP_CHECK_PARAM,
   DEV_FUNCTIONS_APP_CHECK_ROLLBACK_CONFIRMATION,
   buildCallableDeployBatches,
+  buildFunctionsAppCheckDeployEnv,
   parseDevFunctionsAppCheckEnforcementArgs,
   withAppCheckParam,
 } from '../scripts/runStorageV4DevFunctionsAppCheckEnforcement.mjs';
@@ -87,6 +88,18 @@ test('inyección dotenv reemplaza sólo ENFORCE_APP_CHECK y conserva otros valor
   const rolledBack = withAppCheckParam(enforced, false);
   assert.match(rolledBack, /^ENFORCE_APP_CHECK=false\n$/m);
   assert.equal((rolledBack.match(/ENFORCE_APP_CHECK=/g) || []).length, 1);
+});
+
+test('Firebase CLI recibe el mismo switch en process env para construir el manifest', () => {
+  const base = { OTHER: 'value', ENFORCE_APP_CHECK: 'stale' };
+  const enforced = buildFunctionsAppCheckDeployEnv(true, base);
+  assert.deepEqual(enforced, { OTHER: 'value', ENFORCE_APP_CHECK: 'true' });
+  assert.deepEqual(base, { OTHER: 'value', ENFORCE_APP_CHECK: 'stale' });
+
+  const rolledBack = buildFunctionsAppCheckDeployEnv(false, base);
+  assert.deepEqual(rolledBack, { OTHER: 'value', ENFORCE_APP_CHECK: 'false' });
+  assert.match(source, /firebaseCliProcessEnvInjected: true/);
+  assert.match(source, /env: deployProcessEnv/);
 });
 
 test('runner no crea/borra Functions, no incluye probe HTTP y restaura dotenv', () => {
