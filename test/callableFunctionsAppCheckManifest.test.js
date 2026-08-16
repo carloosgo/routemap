@@ -33,9 +33,10 @@ test('cada callable del manifest sigue exportado y definido con onCall + callabl
   }
 });
 
-test('política central conserva enforcement parametrizado y replay protection apagado', () => {
-  assert.match(policySource, /ENFORCE_APP_CHECK = defineBoolean/);
-  assert.match(policySource, /default:\s*false/);
+test('política central usa booleano de entorno compatible con Functions v6 y replay protection apagado', () => {
+  assert.match(policySource, /process\.env\.ENFORCE_APP_CHECK/);
+  assert.match(policySource, /parseAppCheckEnforcementEnv/);
+  assert.doesNotMatch(policySource, /defineBoolean/);
   assert.match(policySource, /enforceAppCheck:\s*ENFORCE_APP_CHECK/);
   assert.match(policySource, /consumeAppCheckToken:\s*false/);
   assert.doesNotMatch(policySource, /consumeAppCheckToken:\s*true/);
