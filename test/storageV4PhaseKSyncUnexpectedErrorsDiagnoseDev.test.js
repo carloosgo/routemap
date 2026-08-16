@@ -10,7 +10,7 @@ test('sync unexpected-error diagnosis is hard-bound to dev and read-only', async
   assert.match(source, /\[string\]\$Project = 'atlasmap-dev'/);
   assert.match(source, /if \(\$Project -ne 'atlasmap-dev'\)/);
   assert.match(source, /gcloud logging read/);
-  assert.match(source, /jsonPayload\.outcome=\"unexpected-error\"/);
+  assert.match(source, /jsonPayload\.outcome="unexpected-error"/);
   assert.doesNotMatch(source, /logging write|firestore .*update|Invoke-RestMethod -Method (Post|Put|Patch|Delete)/i);
   assert.match(source, /mutatesCloud = \$false/);
   assert.match(source, /mutatesApplicationData = \$false/);
