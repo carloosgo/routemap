@@ -4,14 +4,15 @@ import { HttpsError } from 'firebase-functions/v2/https';
 import { defineBoolean } from 'firebase-functions/params';
 import { error as logError } from 'firebase-functions/logger';
 
-const ENFORCE_APP_CHECK = defineBoolean('ENFORCE_APP_CHECK', {
+export const ENFORCE_APP_CHECK = defineBoolean('ENFORCE_APP_CHECK', {
   default: false,
   description: 'Rechaza llamadas sin un token válido de Firebase App Check.',
 });
 
 const BASE_CALLABLE_OPTIONS = Object.freeze({
   region: 'us-central1',
-  enforceAppCheck: false,
+  enforceAppCheck: ENFORCE_APP_CHECK,
+  consumeAppCheckToken: false,
   memory: '256MiB',
   timeoutSeconds: 30,
   maxInstances: 10,
@@ -55,7 +56,17 @@ function requestPrincipal(request) {
 }
 
 export function callableOptions(overrides = {}) {
-  return { ...BASE_CALLABLE_OPTIONS, ...overrides };
+  const {
+    enforceAppCheck: _ignoredEnforcement,
+    consumeAppCheckToken: _ignoredReplayProtection,
+    ...safeOverrides
+  } = overrides;
+  return {
+    ...BASE_CALLABLE_OPTIONS,
+    ...safeOverrides,
+    enforceAppCheck: ENFORCE_APP_CHECK,
+    consumeAppCheckToken: false,
+  };
 }
 
 export function requireAuthenticated(request) {
