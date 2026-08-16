@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { parseAppCheckEnforcementEnv } from '../functions/callablePolicy.js';
 
 const clientPath = fileURLToPath(new URL('../src/infrastructure/firebase/firebaseClient.js', import.meta.url));
 const configPath = fileURLToPath(new URL('../src/config.js', import.meta.url));
@@ -37,9 +38,18 @@ test('Google Maps JavaScript recibe tokens de la misma instancia App Check', () 
   assert.doesNotMatch(mapsLoaderSource, /getLimitedUseToken/);
 });
 
-test('App Check server-side conserva default fail-open pero queda centralmente parametrizado', () => {
-  assert.match(callablePolicySource, /export const ENFORCE_APP_CHECK = defineBoolean/);
-  assert.match(callablePolicySource, /default:\s*false/);
+test('App Check server-side conserva default fail-open con booleano compatible con firebase-functions v6', () => {
+  assert.equal(parseAppCheckEnforcementEnv(undefined), false);
+  assert.equal(parseAppCheckEnforcementEnv(''), false);
+  assert.equal(parseAppCheckEnforcementEnv('false'), false);
+  assert.equal(parseAppCheckEnforcementEnv('1'), false);
+  assert.equal(parseAppCheckEnforcementEnv('yes'), false);
+  assert.equal(parseAppCheckEnforcementEnv('true'), true);
+  assert.equal(parseAppCheckEnforcementEnv(' TRUE '), true);
+
+  assert.match(callablePolicySource, /process\.env\.ENFORCE_APP_CHECK/);
+  assert.match(callablePolicySource, /parseAppCheckEnforcementEnv/);
+  assert.doesNotMatch(callablePolicySource, /defineBoolean/);
   assert.match(callablePolicySource, /enforceAppCheck:\s*ENFORCE_APP_CHECK/);
   assert.match(callablePolicySource, /consumeAppCheckToken:\s*false/);
   assert.match(callablePolicySource, /delete safeOverrides\.enforceAppCheck/);
