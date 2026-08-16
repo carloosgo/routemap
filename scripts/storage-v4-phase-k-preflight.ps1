@@ -102,14 +102,27 @@ function Invoke-ProjectBudgetRest {
   }
 
   $scope = [Uri]::EscapeDataString("projects/$ProjectId")
-  $uri = "https://billingbudgets.googleapis.com/v1/$BillingAccountName/budgets?scope=$scope"
+  $budgets = @()
+  $pageToken = ''
+
   try {
-    $response = Invoke-RestMethod -Method Get -Uri $uri -Headers @{
-      Authorization = "Bearer $token"
-    }
-    $budgets = if ($null -eq $response.budgets) { @() } else { @($response.budgets) }
+    do {
+      $uri = "https://billingbudgets.googleapis.com/v1/$BillingAccountName/budgets?scope=$scope&pageSize=100"
+      if ($pageToken) {
+        $uri += "&pageToken=$([Uri]::EscapeDataString($pageToken))"
+      }
+      $response = Invoke-RestMethod -Method Get -Uri $uri -Headers @{
+        Authorization = "Bearer $token"
+        'x-goog-user-project' = $ProjectId
+      }
+      if ($null -ne $response.budgets) {
+        $budgets += @($response.budgets)
+      }
+      $pageToken = [string]$response.nextPageToken
+    } while ($pageToken)
+
     return [pscustomobject]@{
-      budgets = $budgets
+      budgets = @($budgets)
       source = 'billing-rest-project-scope'
       status = 'ok'
       httpStatus = 200
@@ -170,27 +183,32 @@ $budgetCount = $null
 $budgetProbeStatus = if ($billingEnabled) { 'unavailable' } else { 'not-applicable' }
 $budgetProbeSource = $null
 $budgetProbeHttpStatus = $null
+$accountBudgetCount = $null
+$accountBudgetProbeStatus = if ($billingEnabled) { 'unavailable' } else { 'not-applicable' }
 
 if ($billingEnabled -and $billingAccountName -match '^billingAccounts/(.+)$') {
   $billingAccountId = $Matches[1]
+
   try {
-    $budgets = Invoke-GcloudJson @(
+    $accountBudgets = Invoke-GcloudJson @(
       'billing', 'budgets', 'list',
       "--billing-account=$billingAccountId"
     )
-    $budgetCount = @($budgets).Count
-    $budgetProbeStatus = 'ok'
-    $budgetProbeSource = 'gcloud'
+    $accountBudgetCount = @($accountBudgets).Count
+    $accountBudgetProbeStatus = 'ok'
   } catch {
-    # Si la cuenta no concede billing.budgets.list, intentamos la lectura
-    # project-scoped documentada por Cloud Billing. Sigue siendo exclusivamente GET.
-    $budgetProbe = Invoke-ProjectBudgetRest -ProjectId $Project -BillingAccountName $billingAccountName
-    $budgetProbeStatus = [string]$budgetProbe.status
-    $budgetProbeSource = [string]$budgetProbe.source
-    $budgetProbeHttpStatus = $budgetProbe.httpStatus
-    if ($budgetProbeStatus -eq 'ok') {
-      $budgetCount = @($budgetProbe.budgets).Count
-    }
+    $accountBudgetProbeStatus = 'unavailable'
+  }
+
+  # budgetCount es deliberadamente project-scoped. Una cuenta de billing puede
+  # contener budgets de dev y prod; el total de la cuenta no representa el
+  # número de budgets que protegen atlasmap-dev.
+  $projectBudgetProbe = Invoke-ProjectBudgetRest -ProjectId $Project -BillingAccountName $billingAccountName
+  $budgetProbeStatus = [string]$projectBudgetProbe.status
+  $budgetProbeSource = [string]$projectBudgetProbe.source
+  $budgetProbeHttpStatus = $projectBudgetProbe.httpStatus
+  if ($budgetProbeStatus -eq 'ok') {
+    $budgetCount = @($projectBudgetProbe.budgets).Count
   }
 }
 
@@ -213,7 +231,10 @@ $result = [ordered]@{
   budgetProbeStatus = $budgetProbeStatus
   budgetProbeSource = $budgetProbeSource
   budgetProbeHttpStatus = $budgetProbeHttpStatus
+  budgetCountScope = 'project'
   budgetCount = $budgetCount
+  accountBudgetProbeStatus = $accountBudgetProbeStatus
+  accountBudgetCount = $accountBudgetCount
 }
 
 $json = $result | ConvertTo-Json -Depth 12
