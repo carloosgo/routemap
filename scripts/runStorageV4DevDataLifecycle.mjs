@@ -207,7 +207,10 @@ export async function runStorageV4DevDataLifecycle({
     enablesTtlIfMissing: true,
     ttlField: 'expiresAt',
     ttlOperationsStartAsync: true,
-    mayDeleteAlreadyExpiredDocumentsAfterTtlActivation: apply,
+    ttlActivationCanDeleteAlreadyExpiredDocuments: true,
+    ttlDeletesArePerformedByFirestore: true,
+    ttlDeleteOperationsAreBillable: true,
+    dryRunDeletesDocuments: false,
     mutatesCloud: apply,
     mutatesApplicationDataDirectly: false,
     changesRules: false,
@@ -242,6 +245,7 @@ export async function runStorageV4DevDataLifecycle({
       cloudChanged: false,
       deleteProtectionWouldChange: !plan.deleteProtectionAlreadyEnabled,
       ttlPoliciesWouldStart: plan.ttlToEnable.map(({ collectionGroup, field }) => ({ collectionGroup, field })),
+      expiredDocumentsMayBeDeletedOnlyAfterTtlPoliciesBecomeActive: plan.ttlToEnable.length > 0,
       touchesProduction: false,
     }, null, 2));
     return plan;
@@ -284,6 +288,7 @@ export async function runStorageV4DevDataLifecycle({
     ttlPoliciesStillNotObserved: plan.ttlToEnable.map(({ collectionGroup }) => collectionGroup),
     directApplicationDataMutation: false,
     expiredDocumentDeletionDelegatedToFirestoreTtl: true,
+    ttlDeleteOperationsAreBillable: true,
     productionMutated: false,
   }, null, 2));
   return plan;
