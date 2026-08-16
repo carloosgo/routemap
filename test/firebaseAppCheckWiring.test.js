@@ -42,6 +42,6 @@ test('App Check server-side conserva default fail-open pero queda centralmente p
   assert.match(callablePolicySource, /default:\s*false/);
   assert.match(callablePolicySource, /enforceAppCheck:\s*ENFORCE_APP_CHECK/);
   assert.match(callablePolicySource, /consumeAppCheckToken:\s*false/);
-  assert.match(callablePolicySource, /_ignoredEnforcement/);
-  assert.match(callablePolicySource, /_ignoredReplayProtection/);
+  assert.match(callablePolicySource, /delete safeOverrides\.enforceAppCheck/);
+  assert.match(callablePolicySource, /delete safeOverrides\.consumeAppCheckToken/);
 });
