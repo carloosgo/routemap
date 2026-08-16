@@ -102,14 +102,16 @@ test('Firebase CLI recibe el mismo switch en process env para construir el manif
   assert.match(source, /env: deployProcessEnv/);
 });
 
-test('Node queda fuera del shell y sólo gcloud.cmd usa el fallback literal de Windows', () => {
+test('Node queda fuera del shell y gcloud.cmd no hereda cwd/env dinámicos', () => {
   const directNode = source.indexOf('if (executable === process.execPath)');
   const cmdFallback = source.indexOf("if (process.platform === 'win32' && executable === 'gcloud.cmd')");
   assert.ok(directNode >= 0, 'Falta la rama explícita para process.execPath.');
   assert.ok(cmdFallback > directNode, 'La rama Node directa debe evaluarse antes del fallback gcloud.cmd.');
-  assert.match(source, /return spawnSync\(process\.execPath, args, base\);/);
-  assert.match(source, /return spawnSync\('cmd\.exe', \['\/d', '\/c', 'gcloud\.cmd', \.\.\.args\], base\);/);
+  assert.match(source, /return spawnSync\(process\.execPath, args, directOptions\);/);
+  assert.match(source, /return spawnSync\('cmd\.exe', \['\/d', '\/c', 'gcloud\.cmd', \.\.\.args\], \{/);
+  assert.match(source, /stdio: 'pipe'/);
   assert.doesNotMatch(source, /executable\.toLowerCase\(\)\.endsWith\('\.cmd'\)/);
+  assert.doesNotMatch(source, /spawnSync\('cmd\.exe',[\s\S]{0,220}(cwd:|env:|directOptions)/);
 });
 
 test('runner no crea/borra Functions, no incluye probe HTTP y restaura dotenv', () => {
