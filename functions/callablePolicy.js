@@ -1,13 +1,16 @@
+/* global process */
 import { createHash } from 'node:crypto';
 import { Timestamp } from 'firebase-admin/firestore';
 import { HttpsError } from 'firebase-functions/v2/https';
-import { defineBoolean } from 'firebase-functions/params';
 import { error as logError } from 'firebase-functions/logger';
 
-export const ENFORCE_APP_CHECK = defineBoolean('ENFORCE_APP_CHECK', {
-  default: false,
-  description: 'Rechaza llamadas sin un token válido de Firebase App Check.',
-});
+export function parseAppCheckEnforcementEnv(value) {
+  return String(value ?? '').trim().toLowerCase() === 'true';
+}
+
+export const ENFORCE_APP_CHECK = parseAppCheckEnforcementEnv(
+  process.env.ENFORCE_APP_CHECK
+);
 
 const BASE_CALLABLE_OPTIONS = Object.freeze({
   region: 'us-central1',
