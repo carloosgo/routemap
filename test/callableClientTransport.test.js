@@ -5,6 +5,8 @@ import { relative, resolve } from 'node:path';
 
 const SRC_ROOT = resolve('src');
 const WRAPPER_PATH = 'src/infrastructure/firebase/callableFunctions.js';
+const ROLLOUT_TELEMETRY_PATH = 'src/infrastructure/firebase/gateGRolloutTelemetryClient.js';
+const SYNC_TELEMETRY_PATH = 'src/infrastructure/firebase/v4SyncTelemetryClient.js';
 const SOURCE_EXTENSIONS = /\.(?:js|jsx|mjs|ts|tsx)$/i;
 
 function listSourceFiles(root) {
@@ -68,4 +70,18 @@ test('el wrapper central usa getFunctions + httpsCallable y sigue activo en cons
     .map(({ path }) => path);
 
   assert.ok(consumers.length > 0, 'No se observó ningún consumidor real de firebaseCallable fuera del wrapper.');
+});
+
+test('firebaseCallable se usa como operación async, no como factory que devuelve otra función', () => {
+  const records = sourceRecords();
+  const factoryMisuse = records
+    .filter(({ source }) => /\b(?:const|let|var)\s+callable\s*=\s*firebaseCallable\s*\(/.test(source))
+    .map(({ path }) => path);
+  assert.deepEqual(factoryMisuse, []);
+
+  for (const path of [ROLLOUT_TELEMETRY_PATH, SYNC_TELEMETRY_PATH]) {
+    const client = records.find((record) => record.path === path);
+    assert.ok(client, `Falta ${path}`);
+    assert.match(client.source, /await firebaseCallable\(FUNCTION_NAME, \{ events \}\);/);
+  }
 });
