@@ -209,14 +209,11 @@ function readLocalEnvPresence(repoRoot) {
 }
 
 function listFilesRecursive(root) {
-  const output = [];
-  if (!existsSync(root)) return output;
-  for (const entry of readdirSync(root)) {
+  if (!existsSync(root)) return [];
+  return readdirSync(root).flatMap((entry) => {
     const full = join(root, entry);
-    if (statSync(full).isDirectory()) output.push(...listFilesRecursive(full));
-    else output.push(full);
-  }
-  return output;
+    return statSync(full).isDirectory() ? listFilesRecursive(full) : [full];
+  });
 }
 
 export function inspectBuiltClient(distDir, { siteKey } = {}) {
