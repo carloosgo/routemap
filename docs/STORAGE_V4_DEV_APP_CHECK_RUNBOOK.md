@@ -186,11 +186,11 @@ Existe un manifest canónico de 18 callable Functions en `functions/callableMani
 
 La política central usa:
 
-- parámetro `ENFORCE_APP_CHECK`;
-- default `false`;
+- variable de entorno `ENFORCE_APP_CHECK` convertida estrictamente a booleano (`true` sólo para el texto `true`, ignorando mayúsculas/espacios);
+- ausencia de la variable, `false`, `1`, `yes` u otros valores permanecen fail-open (`false`);
 - `consumeAppCheckToken: false`.
 
-Un override individual no puede saltarse el switch central.
+La forma booleana es deliberada para conservar compatibilidad con `firebase-functions` v6.x, donde `CallableOptions.enforceAppCheck` requiere un booleano. Un override individual no puede saltarse el switch central.
 
 ### Pre-enforcement evidence
 
@@ -204,7 +204,12 @@ node scripts/runStorageV4DevFunctionsAppCheckEnforcement.mjs
 
 El precheck exige que los 18 callables ya existan en `atlasmap-dev`; no crea callables faltantes como efecto colateral.
 
-Los despliega en dos lotes de 9 y sólo modifica temporalmente `functions/.env.atlasmap-dev` para inyectar `ENFORCE_APP_CHECK`; el archivo original se restaura en `finally`.
+Los despliega en dos lotes de 9. Durante el deploy, el runner suministra exactamente el mismo `ENFORCE_APP_CHECK=true|false` por dos vías deliberadas:
+
+1. modifica temporalmente `functions/.env.atlasmap-dev`, para la configuración del entorno desplegado;
+2. lo inyecta directamente en el entorno del proceso Firebase CLI, para que la generación del manifest vea el booleano correcto sin depender del orden interno de lectura de dotenv.
+
+El archivo `.env.atlasmap-dev` original se restaura byte por byte en `finally`; si no existía, el temporal se elimina. El valor no se imprime.
 
 ### Apply
 
