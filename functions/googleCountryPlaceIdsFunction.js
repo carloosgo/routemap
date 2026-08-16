@@ -1,14 +1,14 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { error as logError } from 'firebase-functions/logger';
 import { callableOptions, enforceQuota } from './callablePolicy.js';
-import { GOOGLE_PLACES_API_KEY, QUOTAS, db } from './geoapifyRuntime.js';
+import { GOOGLE_PLACES_API_KEY, QUOTAS, cacheDb, db } from './geoapifyRuntime.js';
 import { limitedFetch, safeError } from './geoapifySupport.js';
 import { createSharedCache } from './sharedCache.js';
 
 const GOOGLE_PLACES_BASE = 'https://places.googleapis.com/v1';
 const COUNTRY_ID_FIELDS = 'places.id';
 const COUNTRY_PLACE_ID_CACHE_TTL_MS = 330 * 24 * 60 * 60 * 1000;
-const cachedCountryPlaceId = createSharedCache(db, {
+const cachedCountryPlaceId = createSharedCache(cacheDb, {
   ttlMs: COUNTRY_PLACE_ID_CACHE_TTL_MS,
 });
 
