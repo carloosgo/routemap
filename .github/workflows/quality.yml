@@ -74,19 +74,45 @@ jobs:
             exit 0
           fi
 
-          tail_text="$(tail -n 120 "$log_file")"
-          {
-            echo "### Unit test failure"
-            echo '```text'
-            printf '%s\n' "$tail_text"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          node - "$log_file" <<'NODE'
+          const fs = require('node:fs');
+          const path = process.argv[2];
+          const lines = fs.readFileSync(path, 'utf8').split(/\r?\n/);
+          const failureStarts = [];
+          for (let index = 0; index < lines.length; index += 1) {
+            if (/^not ok\s+\d+\s+-\s+/.test(lines[index])) failureStarts.push(index);
+          }
 
-          escaped="$tail_text"
-          escaped="${escaped//'%'/'%25'}"
-          escaped="${escaped//$'\r'/'%0D'}"
-          escaped="${escaped//$'\n'/'%0A'}"
-          echo "::error title=Unit tests failed::$escaped"
+          const blocks = failureStarts.map((start, position) => {
+            const next = failureStarts[position + 1] ?? lines.length;
+            let end = Math.min(next, start + 45);
+            for (let index = start + 1; index < end; index += 1) {
+              if (/^# Subtest: /.test(lines[index]) || /^ok\s+\d+\s+-\s+/.test(lines[index])) {
+                end = index;
+                break;
+              }
+            }
+            return lines.slice(start, end).join('\n').trim();
+          }).filter(Boolean);
+
+          const selected = blocks.length > 0
+            ? blocks
+            : [lines.slice(-120).join('\n').trim()];
+
+          const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+          fs.appendFileSync(
+            summaryPath,
+            `### Unit test failure blocks\n\n\`\`\`text\n${selected.join('\n\n---\n\n')}\n\`\`\`\n`
+          );
+
+          for (const block of selected) {
+            const escaped = block
+              .replace(/%/g, '%25')
+              .replace(/\r/g, '%0D')
+              .replace(/\n/g, '%0A');
+            console.log(`::error title=Unit test failure::${escaped}`);
+          }
+          NODE
           exit 1
 
       - name: Test Firestore security rules
