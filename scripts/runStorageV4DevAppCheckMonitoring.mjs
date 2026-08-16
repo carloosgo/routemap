@@ -1,4 +1,4 @@
-/* global process, console, fetch */
+/* global process, console, fetch, URLSearchParams */
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
