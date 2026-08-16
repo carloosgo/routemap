@@ -84,6 +84,13 @@ export function withAppCheckParam(raw = '', enabled = false) {
   return `${normalized.join('\n')}\n`;
 }
 
+export function buildFunctionsAppCheckDeployEnv(enabled = false, baseEnv = process.env) {
+  return {
+    ...baseEnv,
+    [DEV_FUNCTIONS_APP_CHECK_PARAM]: enabled ? 'true' : 'false',
+  };
+}
+
 function commandCandidates() {
   return process.platform === 'win32'
     ? ['gcloud.cmd', 'gcloud.exe', 'gcloud']
@@ -167,6 +174,7 @@ export async function runStorageV4DevFunctionsAppCheckEnforcement({
   const envPath = join(functionsDir, `.env.${DEV_FUNCTIONS_APP_CHECK_ENFORCEMENT_PROJECT}`);
   const firebaseCli = join(repoRoot, 'node_modules', 'firebase-tools', 'lib', 'bin', 'firebase.js');
   const batches = buildCallableDeployBatches();
+  const deployProcessEnv = buildFunctionsAppCheckDeployEnv(targetEnabled);
 
   log(JSON.stringify({
     project: DEV_FUNCTIONS_APP_CHECK_ENFORCEMENT_PROJECT,
@@ -179,6 +187,7 @@ export async function runStorageV4DevFunctionsAppCheckEnforcement({
     deployBatchSizeMax: Math.max(...batches.map((batch) => batch.length)),
     targetParam: DEV_FUNCTIONS_APP_CHECK_PARAM,
     targetParamValue: targetEnabled,
+    firebaseCliProcessEnvInjected: true,
     metricsReviewAcknowledged: metricsReviewed,
     replayProtectionEnabled: false,
     createsFunctions: false,
@@ -213,6 +222,7 @@ export async function runStorageV4DevFunctionsAppCheckEnforcement({
     functionsDirectoryReady: functionsDirReady,
     projectEnvFilePresent: existsSync(envPath),
     envFileContentsPrinted: false,
+    deployProcessEnvValuePrinted: false,
     deployBatches: batches,
     canApply,
   }, null, 2));
@@ -228,6 +238,7 @@ export async function runStorageV4DevFunctionsAppCheckEnforcement({
       cloudChanged: false,
       operation,
       parameterWouldBeInjectedTemporarily: true,
+      firebaseCliProcessEnvWouldBeInjected: true,
       projectEnvFileWouldBeRestored: true,
       callableDeployBatchesWouldRun: batches.length,
       functionsWouldBeCreated: false,
@@ -253,6 +264,7 @@ export async function runStorageV4DevFunctionsAppCheckEnforcement({
       ], `Deploy App Check Functions lote ${completedBatches + 1} falló`, {
         cwd: repoRoot,
         inherit: true,
+        env: deployProcessEnv,
       });
       completedBatches += 1;
       log(JSON.stringify({
@@ -284,6 +296,7 @@ export async function runStorageV4DevFunctionsAppCheckEnforcement({
     targetEnforceAppCheck: targetEnabled,
     callableCountDeployed: CALLABLE_FUNCTION_NAMES.length,
     deployBatchesCompleted: completedBatches,
+    firebaseCliProcessEnvInjected: true,
     projectEnvFileRestored: true,
     projectEnvFileContentsPrinted: false,
     replayProtectionEnabled: false,
