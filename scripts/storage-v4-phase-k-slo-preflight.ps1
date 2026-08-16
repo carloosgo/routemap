@@ -89,9 +89,14 @@ $rolloutError = @($rollout | Where-Object { [string]$_.outcome -eq 'error' }).Co
 $rolloutMeasured = $rolloutSuccess + $rolloutError
 
 $syncFlush = @($sync | Where-Object { [string]$_.event -eq 'flush' })
-$syncSuccess = @($syncFlush | Where-Object { [string]$_.outcome -eq 'success' }).Count
-$syncUnexpectedError = @($syncFlush | Where-Object { [string]$_.outcome -eq 'unexpected-error' }).Count
-$syncNotLeader = @($syncFlush | Where-Object { [string]$_.outcome -eq 'not-leader' }).Count
+# Alert-delivery drills intentionally emit synthetic unexpected-error events. Keep
+# them visible for auditability, but exclude them from the operational SLO sample.
+$syncSyntheticFlush = @($syncFlush | Where-Object { $_.synthetic -eq $true })
+$syncOperationalFlush = @($syncFlush | Where-Object { $_.synthetic -ne $true })
+$syncSuccess = @($syncOperationalFlush | Where-Object { [string]$_.outcome -eq 'success' }).Count
+$syncUnexpectedError = @($syncOperationalFlush | Where-Object { [string]$_.outcome -eq 'unexpected-error' }).Count
+$syncSyntheticUnexpectedError = @($syncSyntheticFlush | Where-Object { [string]$_.outcome -eq 'unexpected-error' }).Count
+$syncNotLeader = @($syncOperationalFlush | Where-Object { [string]$_.outcome -eq 'not-leader' }).Count
 $syncMeasured = $syncSuccess + $syncUnexpectedError
 
 $cacheHit = @($cache | Where-Object { [string]$_.outcome -eq 'hit' }).Count
@@ -111,7 +116,7 @@ $providerMeasured = $providerSuccess + $providerHttpError + $providerNetworkErro
   project = $Project
   freshness = $Freshness
   maxEntriesPerStream = $MaxEntriesPerStream
-  note = 'Read-only sample from Cloud Logging. A stream at the entry limit is truncated and cannot be treated as a complete-window SLO.'
+  note = 'Read-only sample from Cloud Logging. A stream at the entry limit is truncated and cannot be treated as a complete-window SLO. Synthetic alert-drill sync events are reported separately and excluded from operational sync SLO calculations.'
   rollout = [ordered]@{
     entries = $rollout.Count
     truncated = $rollout.Count -ge $MaxEntriesPerStream
@@ -128,14 +133,17 @@ $providerMeasured = $providerSuccess + $providerHttpError + $providerNetworkErro
     entries = $sync.Count
     truncated = $sync.Count -ge $MaxEntriesPerStream
     flushEntries = $syncFlush.Count
+    operationalFlushEntries = $syncOperationalFlush.Count
+    syntheticFlushEntries = $syncSyntheticFlush.Count
     success = $syncSuccess
     unexpectedError = $syncUnexpectedError
+    syntheticUnexpectedError = $syncSyntheticUnexpectedError
     notLeader = $syncNotLeader
     actionableSuccessRatePercent = RatioPercent $syncSuccess $syncMeasured
     durationMs = [ordered]@{
-      p50 = Percentile @($syncFlush | ForEach-Object { $_.durationMs }) 50
-      p95 = Percentile @($syncFlush | ForEach-Object { $_.durationMs }) 95
-      p99 = Percentile @($syncFlush | ForEach-Object { $_.durationMs }) 99
+      p50 = Percentile @($syncOperationalFlush | ForEach-Object { $_.durationMs }) 50
+      p95 = Percentile @($syncOperationalFlush | ForEach-Object { $_.durationMs }) 95
+      p99 = Percentile @($syncOperationalFlush | ForEach-Object { $_.durationMs }) 99
     }
   }
   providerCache = [ordered]@{
