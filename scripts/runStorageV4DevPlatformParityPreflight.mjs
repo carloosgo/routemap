@@ -3,19 +3,11 @@ import { existsSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { DEV_TTL_COLLECTION_GROUPS } from './storageV4DevTtlManifest.mjs';
 
 export const DEV_PLATFORM_PROJECT = 'atlasmap-dev';
 export const DEV_PLATFORM_PRODUCTION_PROJECT = 'atlasmap-prod';
-export const DEV_PLATFORM_EXPECTED_TTL_COLLECTIONS = Object.freeze([
-  'citySearchCache',
-  'placeSearchCache',
-  'geocodeCache',
-  'placeDetailsCache',
-  'routeCache',
-  'countryBoundaryCache',
-  'functionRateLimits',
-  'geoapifyBatchJobs',
-]);
+export const DEV_PLATFORM_EXPECTED_TTL_COLLECTIONS = DEV_TTL_COLLECTION_GROUPS;
 
 const FIREBASE_API = 'https://firebase.googleapis.com/v1beta1';
 const IDENTITY_API = 'https://identitytoolkit.googleapis.com/admin/v2';
@@ -151,11 +143,18 @@ export function derivePlatformParity({
   const sites = Array.isArray(hostingSites) ? hostingSites : [];
   const appCheck = Array.isArray(appCheckConfigs) ? appCheckConfigs : [];
   const ttl = Array.isArray(ttlPolicies) ? ttlPolicies : [];
-  const activeTtlCollections = new Set(ttl
-    .filter((policy) => policy.field === 'expiresAt' && policy.state === 'ACTIVE')
+  const expectedTtl = DEV_PLATFORM_EXPECTED_TTL_COLLECTIONS;
+  const ttlOnExpiresAt = ttl.filter((policy) => policy.field === 'expiresAt');
+  const activeTtlCollections = new Set(ttlOnExpiresAt
+    .filter((policy) => policy.state === 'ACTIVE')
     .map((policy) => policy.collectionGroup));
-  const missingTtlCollections = DEV_PLATFORM_EXPECTED_TTL_COLLECTIONS
-    .filter((collection) => !activeTtlCollections.has(collection));
+  const pendingTtlCollectionsSet = new Set(ttlOnExpiresAt
+    .filter((policy) => policy.state === 'CREATING')
+    .map((policy) => policy.collectionGroup));
+  const configuredTtlCollections = new Set([...activeTtlCollections, ...pendingTtlCollectionsSet]);
+  const missingTtlCollections = expectedTtl.filter((collection) => !configuredTtlCollections.has(collection));
+  const pendingTtlCollections = expectedTtl.filter((collection) => pendingTtlCollectionsSet.has(collection));
+  const notActiveTtlCollections = expectedTtl.filter((collection) => !activeTtlCollections.has(collection));
   const authorizedDomains = Array.isArray(authConfig?.authorizedDomains) ? authConfig.authorizedDomains : [];
 
   const gaps = [];
@@ -167,7 +166,7 @@ export function derivePlatformParity({
   if (services.firebaseAppCheck !== true) gaps.push('firebase-app-check-api');
   if (services.recaptchaEnterprise !== true) gaps.push('recaptcha-enterprise-api');
   if (appCheck.length === 0 || appCheck.every((config) => !config?.siteKeyConfigured)) gaps.push('app-check-registration');
-  if (missingTtlCollections.length > 0) gaps.push('firestore-ttl-policies');
+  if (notActiveTtlCollections.length > 0) gaps.push('firestore-ttl-policies');
 
   return Object.freeze({
     firestoreDeleteProtectionEnabled: firestore?.deleteProtectionState === 'DELETE_PROTECTION_ENABLED',
@@ -191,9 +190,12 @@ export function derivePlatformParity({
     appCheckRegistrationCount: appCheck.length,
     appCheckConfigs: Object.freeze(appCheck),
     ttlPolicyCount: ttl.length,
-    activeExpectedTtlCount: DEV_PLATFORM_EXPECTED_TTL_COLLECTIONS.length - missingTtlCollections.length,
-    expectedTtlCount: DEV_PLATFORM_EXPECTED_TTL_COLLECTIONS.length,
+    activeExpectedTtlCount: activeTtlCollections.size,
+    configuredExpectedTtlCount: configuredTtlCollections.size,
+    expectedTtlCount: expectedTtl.length,
     missingTtlCollections: Object.freeze(missingTtlCollections),
+    pendingTtlCollections: Object.freeze(pendingTtlCollections),
+    notActiveTtlCollections: Object.freeze(notActiveTtlCollections),
     gaps: Object.freeze(gaps),
     fullPlatformParityReady: gaps.length === 0,
   });
