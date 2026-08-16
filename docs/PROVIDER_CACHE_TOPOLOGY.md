@@ -22,20 +22,27 @@ Los callsites de cache deben depender de `cacheDb`, aunque durante la transició
 
 Esto evita que la migración física futura requiera reescribir cada Function y reduce el riesgo de mover accidentalmente `functionRateLimits` u otro estado interno junto con el cache.
 
-## Colecciones que deben terminar en `atlas-cache`
+## Collection groups temporales actuales
 
-Como mínimo:
+El manifiesto operativo canónico vive en `scripts/storageV4DevTtlManifest.mjs`.
+
+Los caches/estados temporales de proveedor que deben depender de `cacheDb` son:
 
 - `citySearchCache`;
 - `placeSearchCache`;
 - `geocodeCache`;
 - `placeDetailsCache`;
 - `placeEnrichmentCache`;
+- `routeCache`;
+- `routeEstimateCache`;
 - `countryBoundaryCache`;
 - `googlePlaceLocationCache`;
+- `googleCountryPlaceIdCacheV4`;
 - `geoapifyBatchJobs` mientras se conserve como estado temporal del proveedor.
 
-Todas deben usar IDs opacos/hash cuando corresponda y `expiresAt` como timestamp administrable.
+Además, `functionRateLimits` usa `expiresAt` y requiere TTL para limpieza operativa, pero **permanece deliberadamente en `db`** porque es estado interno de control de cuota, no cache de proveedor.
+
+Los doce collection groups del manifiesto TTL usan `expiresAt` como timestamp administrable. El manifiesto es la fuente única para el inventario de paridad y el runner de lifecycle dev; no mantener listas TTL paralelas a mano.
 
 ## Estado actual
 
@@ -47,6 +54,17 @@ export const cacheDb = db;
 ```
 
 No cambiar ese alias a una base nombrada dentro de una entrega productiva sin resolver antes el checkpoint de SDK y provisioning descrito abajo.
+
+## Lifecycle en `atlasmap-dev`
+
+`npm run storage-v4:dev:data-lifecycle` ejecuta un dry-run contra `atlasmap-dev` y compara Firestore con el manifiesto canónico. El modo `--apply` está protegido por confirmación explícita y puede:
+
+1. habilitar Delete Protection en `(default)` si falta;
+2. iniciar TTL sobre `expiresAt` únicamente para collection groups del manifiesto que aún no estén configurados;
+3. abortar si encuentra un TTL conflictivo en otro campo o una policy en estado no saludable;
+4. dejar Rules, Functions, Remote Config, Auth y `atlasmap-prod` sin cambios.
+
+TTL puede permanecer temporalmente en `CREATING`; el inventario distingue configuración iniciada de estado `ACTIVE` y no declara paridad completa hasta observar todos los TTL activos.
 
 ## Checkpoint para separación física
 
@@ -63,15 +81,9 @@ Antes de cambiar `cacheDb` a `atlas-cache`:
 
 ## Bloqueo de SDK observado el 2026-08-11
 
-La referencia oficial de Firebase Admin Node marca `getFirestore(databaseId)` / `initializeFirestore(..., databaseId)` como **Public Preview** e indica que no debe usarse en producción. Por eso Atlas no activa esa API de forma productiva solo para completar formalmente Phase J.
+La referencia oficial de Firebase Admin Node marcaba `getFirestore(databaseId)` / `initializeFirestore(..., databaseId)` como **Public Preview** en el checkpoint del 2026-08-11 e indicaba que no debía usarse en producción. Por eso Atlas no activó esa API de forma productiva solo para completar formalmente Phase J.
 
-La documentación oficial de Firestore sí soporta múltiples bases nombradas y exige especificar el database ID al instanciar el cliente. Cuando el acceso server-side elegido esté soportado para producción, la frontera `cacheDb` permite hacer el cambio en un punto controlado.
-
-Referencias operativas verificadas:
-
-- Firebase Admin Node — `firebase-admin.firestore`;
-- Firebase / Firestore — Manage databases;
-- Firebase / Firestore — Manage data retention with TTL policies.
+Ese estado debe volver a verificarse contra la documentación oficial antes de una futura separación física; la frontera `cacheDb` permite hacer el cambio en un punto controlado cuando el acceso elegido esté aprobado.
 
 ## Criterio de cierre de Phase J
 
