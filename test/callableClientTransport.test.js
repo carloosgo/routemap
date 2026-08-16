@@ -54,13 +54,14 @@ test('frontend no llama endpoints callable manualmente ni construye headers App 
   assert.deepEqual(manualAppCheckHeaders, []);
 });
 
-test('el wrapper central usa getFunctions + httpsCallable y sigue activo en consumidores reales', () => {
+test('el wrapper central conserva la semántica factory de getFunctions + httpsCallable', () => {
   const records = sourceRecords();
   const wrapper = records.find(({ path }) => path === WRAPPER_PATH);
   assert.ok(wrapper, `Falta ${WRAPPER_PATH}`);
   assert.match(wrapper.source, /\bgetFunctions\b/);
   assert.match(wrapper.source, /\bhttpsCallable\b/);
-  assert.match(wrapper.source, /httpsCallable\(getFirebaseFunctions\(\),\s*safeName,\s*options\)/);
+  assert.match(wrapper.source, /const functions = getFunctions\(app, config\.geoapify\.functionRegion\);/);
+  assert.match(wrapper.source, /return httpsCallable\(functions, name\);/);
 
   const consumers = records
     .filter(({ path, source }) => (
@@ -72,16 +73,20 @@ test('el wrapper central usa getFunctions + httpsCallable y sigue activo en cons
   assert.ok(consumers.length > 0, 'No se observó ningún consumidor real de firebaseCallable fuera del wrapper.');
 });
 
-test('firebaseCallable se usa como operación async, no como factory que devuelve otra función', () => {
+test('firebaseCallable se invoca como factory de un argumento y los emisores ejecutan el callable resultante', () => {
   const records = sourceRecords();
-  const factoryMisuse = records
-    .filter(({ source }) => /\b(?:const|let|var)\s+callable\s*=\s*firebaseCallable\s*\(/.test(source))
+  const multiArgumentCalls = records
+    .filter(({ path, source }) => (
+      path !== WRAPPER_PATH
+      && /firebaseCallable\([^()\n]*,\s*[^)\n]+\)/.test(source)
+    ))
     .map(({ path }) => path);
-  assert.deepEqual(factoryMisuse, []);
+  assert.deepEqual(multiArgumentCalls, []);
 
   for (const path of [ROLLOUT_TELEMETRY_PATH, SYNC_TELEMETRY_PATH]) {
     const client = records.find((record) => record.path === path);
     assert.ok(client, `Falta ${path}`);
-    assert.match(client.source, /await firebaseCallable\(FUNCTION_NAME, \{ events \}\);/);
+    assert.match(client.source, /const callable = firebaseCallable\(FUNCTION_NAME\);/);
+    assert.match(client.source, /await callable\(\{ events \}\);/);
   }
 });
