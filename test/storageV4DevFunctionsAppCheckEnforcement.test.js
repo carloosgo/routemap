@@ -109,3 +109,9 @@ test('runner exige que los 18 callables ya existan antes de aplicar', () => {
   assert.match(source, /--only/);
   assert.match(source, /functions:\$\{name\}/);
 });
+
+test('inventario de Functions usa la API v2 y la región explícita de la CLI actual', () => {
+  assert.match(source, /'--v2'/);
+  assert.doesNotMatch(source, /'--gen2'/);
+  assert.match(source, /`--regions=\$\{CALLABLE_FUNCTIONS_REGION\}`/);
+});
