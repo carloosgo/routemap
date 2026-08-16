@@ -94,7 +94,9 @@ test('client deploy contract keeps site key ephemeral and enforcement unchanged'
   const cmdFallback = source.indexOf("if (process.platform === 'win32' && executable === 'gcloud.cmd')");
   assert.ok(directNode >= 0, 'Falta la rama explícita para process.execPath.');
   assert.ok(cmdFallback > directNode, 'La rama Node directa debe evaluarse antes del fallback gcloud.cmd.');
-  assert.match(source, /return spawnSync\(process\.execPath, args, base\);/);
-  assert.match(source, /return spawnSync\('cmd\.exe', \['\/d', '\/c', 'gcloud\.cmd', \.\.\.args\], base\);/);
+  assert.match(source, /return spawnSync\(process\.execPath, args, directOptions\);/);
+  assert.match(source, /return spawnSync\('cmd\.exe', \['\/d', '\/c', 'gcloud\.cmd', \.\.\.args\], \{/);
+  assert.match(source, /stdio: 'pipe'/);
   assert.doesNotMatch(source, /executable\.toLowerCase\(\)\.endsWith\('\.cmd'\)/);
+  assert.doesNotMatch(source, /spawnSync\('cmd\.exe',[\s\S]{0,220}(cwd:|env:|directOptions)/);
 });
