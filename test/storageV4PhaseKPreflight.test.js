@@ -33,7 +33,7 @@ test('Phase K preflight no bloquea el resto si backup schedules no responde', as
   assert.match(source, /backupScheduleCount = if \(\$backupScheduleProbeStatus -eq 'ok'\)/);
 });
 
-test('Phase K preflight intenta budgets project-scoped si no puede listar la cuenta completa', async () => {
+test('Phase K preflight reporta budgetCount siempre con scope de atlasmap-dev', async () => {
   const source = await readFile(scriptPath, 'utf8');
 
   assert.match(source, /Invoke-ProjectBudgetRest/);
@@ -41,7 +41,10 @@ test('Phase K preflight intenta budgets project-scoped si no puede listar la cue
   assert.match(source, /budgetProbeStatus/);
   assert.match(source, /budgetProbeSource/);
   assert.match(source, /budgetProbeHttpStatus/);
-  assert.match(source, /budgetCount = @\(\$budgetProbe\.budgets\)\.Count/);
+  assert.match(source, /\$projectBudgetProbe = Invoke-ProjectBudgetRest/);
+  assert.match(source, /budgetCountScope = 'project'/);
+  assert.match(source, /\$budgetCount = @\(\$projectBudgetProbe\.budgets\)\.Count/);
+  assert.doesNotMatch(source, /\$budgetCount = @\(\$accountBudgets\)\.Count/);
 });
 
 test('Phase K preflight mantiene separado el ID de base de la respuesta de gcloud', async () => {
