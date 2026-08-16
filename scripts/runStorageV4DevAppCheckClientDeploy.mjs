@@ -71,8 +71,8 @@ function runProcess(executable, args, options = {}) {
   if (executable === process.execPath) {
     return spawnSync(process.execPath, args, base);
   }
-  if (process.platform === 'win32' && executable.toLowerCase().endsWith('.cmd')) {
-    return spawnSync('cmd.exe', ['/d', '/c', executable, ...args], base);
+  if (process.platform === 'win32' && executable === 'gcloud.cmd') {
+    return spawnSync('cmd.exe', ['/d', '/c', 'gcloud.cmd', ...args], base);
   }
   return spawnSync(executable, args, base);
 }
