@@ -1,4 +1,4 @@
-/* global process, console, fetch, URLSearchParams */
+/* global process, console, fetch, URL, URLSearchParams */
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -6,12 +6,15 @@ import { fileURLToPath } from 'node:url';
 export const DEV_APP_CHECK_MONITORING_PROJECT = 'atlasmap-dev';
 export const DEV_APP_CHECK_MONITORING_PRODUCTION_PROJECT = 'atlasmap-prod';
 export const DEV_APP_CHECK_MONITORING_CONFIRMATION = 'ENABLE-ATLAS-DEV-APP-CHECK-MONITORING';
+export const DEV_APP_CHECK_MONITORING_HOSTING_URL = 'https://atlasmap-dev.web.app';
 export const DEV_APP_CHECK_MONITORING_SERVICES = Object.freeze([
   'firestore.googleapis.com',
   'identitytoolkit.googleapis.com',
+  'maps-backend.googleapis.com',
 ]);
 
 const APP_CHECK_API = 'https://firebaseappcheck.googleapis.com/v1';
+const MAPS_SERVICE_ID = 'maps-backend.googleapis.com';
 
 function fail(message, code = 1) {
   const error = new Error(message);
@@ -156,10 +159,53 @@ function summarizeServices(services = []) {
   }));
 }
 
-function assessMonitoringPlan(services = []) {
+async function probeHostedMapsAppCheckWiring() {
+  const cacheBust = new URL(DEV_APP_CHECK_MONITORING_HOSTING_URL);
+  cacheBust.searchParams.set('appCheckProbe', String(Date.now()));
+  const response = await fetch(cacheBust, {
+    headers: { 'Cache-Control': 'no-cache' },
+  });
+  if (!response.ok) {
+    return Object.freeze({
+      status: `hosting-http-${response.status}`,
+      localBundleCount: 0,
+      mapsAppCheckTokenCallbackObserved: false,
+    });
+  }
+  const html = await response.text();
+  const scriptSources = [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/gi)]
+    .map((match) => match[1]);
+  const localScripts = scriptSources
+    .map((source) => new URL(source, DEV_APP_CHECK_MONITORING_HOSTING_URL))
+    .filter((url) => url.origin === new URL(DEV_APP_CHECK_MONITORING_HOSTING_URL).origin);
+
+  let observed = false;
+  for (const url of localScripts) {
+    const scriptResponse = await fetch(url, {
+      headers: { 'Cache-Control': 'no-cache' },
+    });
+    if (!scriptResponse.ok) continue;
+    const source = await scriptResponse.text();
+    if (source.includes('fetchAppCheckToken')) {
+      observed = true;
+      break;
+    }
+  }
+
+  return Object.freeze({
+    status: 'ok',
+    localBundleCount: localScripts.length,
+    mapsAppCheckTokenCallbackObserved: observed,
+  });
+}
+
+function assessMonitoringPlan(services = [], { mapsClientReady = false } = {}) {
   const conflicts = [];
   const toEnableMonitoring = [];
   const alreadyMonitoring = [];
+  if (!mapsClientReady) {
+    conflicts.push(`${MAPS_SERVICE_ID}: Hosting dev no evidencia fetchAppCheckToken`);
+  }
   for (const service of services) {
     if (service.enforcementMode === 'ENFORCED') {
       conflicts.push(`${service.serviceId}: baseline ya está ENFORCED`);
@@ -208,6 +254,8 @@ export async function runStorageV4DevAppCheckMonitoring({
     operation: 'development-app-check-monitoring-only',
     targetServices: DEV_APP_CHECK_MONITORING_SERVICES,
     targetMode: 'UNENFORCED',
+    hostingUrl: DEV_APP_CHECK_MONITORING_HOSTING_URL,
+    requiresHostedMapsAppCheckTokenWiring: true,
     collectsAppCheckMetrics: apply,
     rejectsInvalidOrMissingAppCheckTraffic: false,
     changesBaselineEnforcementToEnforced: false,
@@ -237,19 +285,23 @@ export async function runStorageV4DevAppCheckMonitoring({
   for (const serviceId of DEV_APP_CHECK_MONITORING_SERVICES) {
     services.push(await getService(token, projectNumber, serviceId));
   }
-  const plan = assessMonitoringPlan(services);
+  const hostedClient = await probeHostedMapsAppCheckWiring();
+  const plan = assessMonitoringPlan(services, {
+    mapsClientReady: hostedClient.mapsAppCheckTokenCallbackObserved,
+  });
 
   log(JSON.stringify({
     stage: 'precheck',
     project: DEV_APP_CHECK_MONITORING_PROJECT,
     services: summarizeServices(services),
+    hostedClient,
     conflicts: plan.conflicts,
     servicesAlreadyMonitoring: plan.alreadyMonitoring,
     servicesToEnableMonitoring: plan.toEnableMonitoring,
     canApply: plan.canApply,
   }, null, 2));
 
-  if (!plan.canApply) fail('App Check monitoring dev bloqueado por conflictos de estado.');
+  if (!plan.canApply) fail('App Check monitoring dev bloqueado por conflictos de estado o cliente Hosting incompleto.');
 
   if (!apply) {
     log(JSON.stringify({
@@ -258,6 +310,7 @@ export async function runStorageV4DevAppCheckMonitoring({
       cloudChanged: false,
       monitoringWouldEnableFor: plan.toEnableMonitoring,
       alreadyMonitoring: plan.alreadyMonitoring,
+      hostedMapsAppCheckWiringVerified: true,
       enforcementWouldRemainDisabled: true,
       replayProtectionWouldRemainOff: true,
       touchesProduction: false,
@@ -291,6 +344,7 @@ export async function runStorageV4DevAppCheckMonitoring({
     pass: true,
     monitoringOnlyReady: true,
     services: summarizeServices(postServices),
+    hostedMapsAppCheckWiringVerified: true,
     appCheckMetricsCollectionEnabled: true,
     appCheckEnforcementEnabled: false,
     replayProtectionEnabled: false,
