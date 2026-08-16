@@ -6,6 +6,7 @@ import {
   ALLOWED_MODES,
   GEOAPIFY_API_KEY,
   QUOTAS,
+  cacheDb,
   cached,
   db,
 } from './geoapifyRuntime.js';
@@ -18,7 +19,7 @@ import {
 } from './geoapifySupport.js';
 
 const ROUTE_ESTIMATE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const cachedRouteEstimate = createSharedCache(db, { ttlMs: ROUTE_ESTIMATE_TTL_MS });
+const cachedRouteEstimate = createSharedCache(cacheDb, { ttlMs: ROUTE_ESTIMATE_TTL_MS });
 
 function cachedRouteGeometry(result) {
   if (result?.geometry && typeof result.geometry === 'object') {
