@@ -91,8 +91,10 @@ test('client deploy contract keeps site key ephemeral and enforcement unchanged'
   assert.doesNotMatch(source, /atlasmap-prod[^'"\n]*deploy/);
 
   const directNode = source.indexOf('if (executable === process.execPath)');
-  const cmdFallback = source.indexOf("if (process.platform === 'win32' && executable.toLowerCase().endsWith('.cmd'))");
+  const cmdFallback = source.indexOf("if (process.platform === 'win32' && executable === 'gcloud.cmd')");
   assert.ok(directNode >= 0, 'Falta la rama explícita para process.execPath.');
-  assert.ok(cmdFallback > directNode, 'La rama Node directa debe evaluarse antes del fallback .cmd.');
+  assert.ok(cmdFallback > directNode, 'La rama Node directa debe evaluarse antes del fallback gcloud.cmd.');
   assert.match(source, /return spawnSync\(process\.execPath, args, base\);/);
+  assert.match(source, /return spawnSync\('cmd\.exe', \['\/d', '\/c', 'gcloud\.cmd', \.\.\.args\], base\);/);
+  assert.doesNotMatch(source, /executable\.toLowerCase\(\)\.endsWith\('\.cmd'\)/);
 });
