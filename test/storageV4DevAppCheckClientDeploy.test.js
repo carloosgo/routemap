@@ -89,4 +89,10 @@ test('client deploy contract keeps site key ephemeral and enforcement unchanged'
   assert.match(source, /site: DEV_APP_CHECK_HOSTING_SITE/);
   assert.match(source, /rewrites: \[\{ source: '\*\*', destination: '\/index\.html' \}\]/);
   assert.doesNotMatch(source, /atlasmap-prod[^'"\n]*deploy/);
+
+  const directNode = source.indexOf('if (executable === process.execPath)');
+  const cmdFallback = source.indexOf("if (process.platform === 'win32' && executable.toLowerCase().endsWith('.cmd'))");
+  assert.ok(directNode >= 0, 'Falta la rama explícita para process.execPath.');
+  assert.ok(cmdFallback > directNode, 'La rama Node directa debe evaluarse antes del fallback .cmd.');
+  assert.match(source, /return spawnSync\(process\.execPath, args, base\);/);
 });
