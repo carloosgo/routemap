@@ -208,9 +208,9 @@ export async function runStorageV4DevFunctionsAppCheckMetrics({
   assertDevTarget(gcloud);
 
   const filter = [
-    `timestamp>=\"${start.toISOString()}\"`,
-    `timestamp<=\"${end.toISOString()}\"`,
-    `labels.firebase-log-type=\"${DEV_FUNCTIONS_APP_CHECK_LOG_TYPE}\"`,
+    `timestamp>="${start.toISOString()}"`,
+    `timestamp<="${end.toISOString()}"`,
+    `labels.firebase-log-type="${DEV_FUNCTIONS_APP_CHECK_LOG_TYPE}"`,
   ].join(' AND ');
   const raw = runChecked(gcloud, [
     'logging', 'read', filter,
