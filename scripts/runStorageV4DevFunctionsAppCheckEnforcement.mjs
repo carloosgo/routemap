@@ -144,7 +144,7 @@ function deployedFunctionName(item) {
 function listDeployedFunctions(gcloud) {
   const raw = runChecked(gcloud, [
     'functions', 'list',
-    '--gen2',
+    '--v2',
     `--regions=${CALLABLE_FUNCTIONS_REGION}`,
     '--project', DEV_FUNCTIONS_APP_CHECK_ENFORCEMENT_PROJECT,
     '--format=json',
