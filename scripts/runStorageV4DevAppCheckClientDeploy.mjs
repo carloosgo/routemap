@@ -222,18 +222,24 @@ export function inspectBuiltClient(distDir, { siteKey } = {}) {
   let siteKeyFound = false;
   let devProjectFound = false;
   let productionProjectFound = false;
+  let mapsAppCheckTokenWiringFound = false;
   for (const file of files) {
     if (!/\.(?:html|js|css|json|map|txt)$/i.test(file)) continue;
     const text = readFileSync(file, 'utf8');
     if (siteKey && text.includes(siteKey)) siteKeyFound = true;
     if (text.includes(DEV_APP_CHECK_PROJECT)) devProjectFound = true;
     if (text.includes(DEV_APP_CHECK_PRODUCTION_PROJECT)) productionProjectFound = true;
+    if (text.includes('fetchAppCheckToken')) mapsAppCheckTokenWiringFound = true;
   }
   return Object.freeze({
-    valid: siteKeyFound && devProjectFound && !productionProjectFound,
+    valid: siteKeyFound
+      && devProjectFound
+      && !productionProjectFound
+      && mapsAppCheckTokenWiringFound,
     siteKeyFound,
     devProjectFound,
     productionProjectFound,
+    mapsAppCheckTokenWiringFound,
     fileCount: files.length,
   });
 }
@@ -281,6 +287,7 @@ async function verifyHostedClient(siteKey) {
             text.includes(siteKey)
             && text.includes(DEV_APP_CHECK_PROJECT)
             && !text.includes(DEV_APP_CHECK_PRODUCTION_PROJECT)
+            && text.includes('fetchAppCheckToken')
           ) {
             return true;
           }
@@ -315,6 +322,7 @@ export async function runStorageV4DevAppCheckClientDeploy({
     preservesLocalNonFirebaseViteSettings: true,
     forcesFirebaseProjectToDev: true,
     forcesFirebaseEmulatorsOff: true,
+    verifiesGoogleMapsAppCheckTokenWiring: true,
     deploysHosting: apply,
     changesAppCheckEnforcement: false,
     deploysFunctions: false,
@@ -393,6 +401,7 @@ export async function runStorageV4DevAppCheckClientDeploy({
       buildWouldRun: true,
       hostingDeployWouldRun: true,
       siteKeyWouldBeInjectedEphemerally: true,
+      googleMapsAppCheckWiringWouldBeVerified: true,
       environmentFilesWouldChange: false,
       enforcementWouldChange: false,
       touchesProduction: false,
@@ -410,13 +419,14 @@ export async function runStorageV4DevAppCheckClientDeploy({
   const distDir = join(repoRoot, 'dist');
   const built = inspectBuiltClient(distDir, { siteKey: recaptchaAssessment.siteKey });
   if (!built.valid) {
-    fail(`Bundle dev inválido: siteKey=${built.siteKeyFound}, dev=${built.devProjectFound}, prod=${built.productionProjectFound}.`);
+    fail(`Bundle dev inválido: siteKey=${built.siteKeyFound}, dev=${built.devProjectFound}, prod=${built.productionProjectFound}, mapsAppCheck=${built.mapsAppCheckTokenWiringFound}.`);
   }
   log(JSON.stringify({
     stage: 'client-bundle-verified',
     siteKeyEmbedded: true,
     firebaseDevProjectEmbedded: true,
     productionProjectEmbedded: false,
+    googleMapsAppCheckTokenWiringEmbedded: true,
     siteKeyPrinted: false,
     bundleFileCount: built.fileCount,
   }, null, 2));
@@ -441,7 +451,7 @@ export async function runStorageV4DevAppCheckClientDeploy({
 
   const hostedClientVerified = await verifyHostedClient(recaptchaAssessment.siteKey);
   if (!hostedClientVerified) {
-    fail('Post-check: Hosting no expone todavía el bundle dev con App Check esperado.');
+    fail('Post-check: Hosting no expone todavía el bundle dev con App Check + Maps fetchAppCheckToken esperado.');
   }
 
   const enforcementAfter = summarizeEnforcement(await listAppCheckServices(token, projectNumber));
@@ -458,6 +468,7 @@ export async function runStorageV4DevAppCheckClientDeploy({
     hostingDeployed: true,
     hostingUrl: DEV_APP_CHECK_HOSTING_URL,
     hostedBundleVerified: true,
+    hostedGoogleMapsAppCheckTokenWiringVerified: true,
     siteKeyValuePrinted: false,
     environmentFileMutated: false,
     appCheckEnforcementChanged: false,
