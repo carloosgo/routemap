@@ -65,55 +65,7 @@ jobs:
         run: npm ci --prefix functions
 
       - name: Run unit tests
-        shell: bash
-        run: |
-          set -o pipefail
-          log_file="$(mktemp)"
-
-          if npm test 2>&1 | tee "$log_file"; then
-            exit 0
-          fi
-
-          node - "$log_file" <<'NODE'
-          const fs = require('node:fs');
-          const path = process.argv[2];
-          const lines = fs.readFileSync(path, 'utf8').split(/\r?\n/);
-          const failureStarts = [];
-          for (let index = 0; index < lines.length; index += 1) {
-            if (/^not ok\s+\d+\s+-\s+/.test(lines[index])) failureStarts.push(index);
-          }
-
-          const blocks = failureStarts.map((start, position) => {
-            const next = failureStarts[position + 1] ?? lines.length;
-            let end = Math.min(next, start + 45);
-            for (let index = start + 1; index < end; index += 1) {
-              if (/^# Subtest: /.test(lines[index]) || /^ok\s+\d+\s+-\s+/.test(lines[index])) {
-                end = index;
-                break;
-              }
-            }
-            return lines.slice(start, end).join('\n').trim();
-          }).filter(Boolean);
-
-          const selected = blocks.length > 0
-            ? blocks
-            : [lines.slice(-120).join('\n').trim()];
-
-          const summaryPath = process.env.GITHUB_STEP_SUMMARY;
-          fs.appendFileSync(
-            summaryPath,
-            `### Unit test failure blocks\n\n\`\`\`text\n${selected.join('\n\n---\n\n')}\n\`\`\`\n`
-          );
-
-          for (const block of selected) {
-            const escaped = block
-              .replace(/%/g, '%25')
-              .replace(/\r/g, '%0D')
-              .replace(/\n/g, '%0A');
-            console.log(`::error title=Unit test failure::${escaped}`);
-          }
-          NODE
-          exit 1
+        run: npm test
 
       - name: Test Firestore security rules
         shell: bash
