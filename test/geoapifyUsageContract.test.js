@@ -72,14 +72,16 @@ test('batch Geoapify usa una solicitud oficial de hasta mil entradas y exige aut
   assert.doesNotMatch(source, /const tasks = queries\.map/);
 });
 
-test('App Check queda en observación compatible con Functions 6 junto con cuotas y límites', async () => {
+test('App Check queda fail-open por default y parametrizable de forma compatible con Functions 6', async () => {
   const policy = await read('functions/callablePolicy.js');
   const sources = await readCallableModules();
   const client = await read('src/infrastructure/firebase/firebaseClient.js');
 
-  assert.match(policy, /defineBoolean\('ENFORCE_APP_CHECK'/);
-  assert.match(policy, /enforceAppCheck: false/);
-  assert.doesNotMatch(policy, /enforceAppCheck: ENFORCE_APP_CHECK/);
+  assert.match(policy, /export function parseAppCheckEnforcementEnv\(value\)/);
+  assert.match(policy, /toLowerCase\(\) === 'true'/);
+  assert.match(policy, /process\.env\.ENFORCE_APP_CHECK/);
+  assert.match(policy, /enforceAppCheck:\s*ENFORCE_APP_CHECK/);
+  assert.doesNotMatch(policy, /defineBoolean\('ENFORCE_APP_CHECK'/);
   assert.match(policy, /maxInstances: 10/);
   assert.match(policy, /concurrency: 20/);
   assert.match(policy, /functionRateLimits/);
