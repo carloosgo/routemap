@@ -37,8 +37,11 @@ test('Google Maps JavaScript recibe tokens de la misma instancia App Check', () 
   assert.doesNotMatch(mapsLoaderSource, /getLimitedUseToken/);
 });
 
-test('App Check server-side permanece unenforced antes del gate L3', () => {
-  assert.match(callablePolicySource, /ENFORCE_APP_CHECK/);
+test('App Check server-side conserva default fail-open pero queda centralmente parametrizado', () => {
+  assert.match(callablePolicySource, /export const ENFORCE_APP_CHECK = defineBoolean/);
   assert.match(callablePolicySource, /default:\s*false/);
-  assert.match(callablePolicySource, /enforceAppCheck:\s*false/);
+  assert.match(callablePolicySource, /enforceAppCheck:\s*ENFORCE_APP_CHECK/);
+  assert.match(callablePolicySource, /consumeAppCheckToken:\s*false/);
+  assert.match(callablePolicySource, /_ignoredEnforcement/);
+  assert.match(callablePolicySource, /_ignoredReplayProtection/);
 });
