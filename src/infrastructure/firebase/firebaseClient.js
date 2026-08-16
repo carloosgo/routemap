@@ -8,7 +8,7 @@ import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
 import { config } from '../../config.js';
 
 let emulatorsConnected = false;
-let appCheckInitialized = false;
+let appCheckInstance = null;
 
 function requireFirebaseConfig() {
   const required = [
@@ -28,20 +28,25 @@ function requireFirebaseConfig() {
 }
 
 function initializeFirebaseAppCheck(app) {
+  if (appCheckInstance) return appCheckInstance;
   if (
-    appCheckInitialized
-    || config.firebase.useEmulators
+    config.firebase.useEmulators
     || !config.firebase.appCheckSiteKey
     || typeof window === 'undefined'
   ) {
-    return;
+    return null;
   }
 
-  initializeAppCheck(app, {
+  appCheckInstance = initializeAppCheck(app, {
     provider: new ReCaptchaEnterpriseProvider(config.firebase.appCheckSiteKey),
     isTokenAutoRefreshEnabled: true,
   });
-  appCheckInitialized = true;
+  return appCheckInstance;
+}
+
+export function getFirebaseAppCheck() {
+  const app = getApps().length > 0 ? getApp() : initializeApp(requireFirebaseConfig());
+  return initializeFirebaseAppCheck(app);
 }
 
 export function getFirebaseServices() {
