@@ -56,11 +56,9 @@ function requestPrincipal(request) {
 }
 
 export function callableOptions(overrides = {}) {
-  const {
-    enforceAppCheck: _ignoredEnforcement,
-    consumeAppCheckToken: _ignoredReplayProtection,
-    ...safeOverrides
-  } = overrides;
+  const safeOverrides = { ...overrides };
+  delete safeOverrides.enforceAppCheck;
+  delete safeOverrides.consumeAppCheckToken;
   return {
     ...BASE_CALLABLE_OPTIONS,
     ...safeOverrides,
