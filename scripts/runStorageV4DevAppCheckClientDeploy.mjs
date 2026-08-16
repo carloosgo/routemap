@@ -61,7 +61,7 @@ function commandCandidates() {
 }
 
 function runProcess(executable, args, options = {}) {
-  const base = {
+  const directOptions = {
     encoding: 'utf8',
     windowsHide: true,
     stdio: options.inherit ? 'inherit' : 'pipe',
@@ -69,12 +69,16 @@ function runProcess(executable, args, options = {}) {
     env: options.env || process.env,
   };
   if (executable === process.execPath) {
-    return spawnSync(process.execPath, args, base);
+    return spawnSync(process.execPath, args, directOptions);
   }
   if (process.platform === 'win32' && executable === 'gcloud.cmd') {
-    return spawnSync('cmd.exe', ['/d', '/c', 'gcloud.cmd', ...args], base);
+    return spawnSync('cmd.exe', ['/d', '/c', 'gcloud.cmd', ...args], {
+      encoding: 'utf8',
+      windowsHide: true,
+      stdio: 'pipe',
+    });
   }
-  return spawnSync(executable, args, base);
+  return spawnSync(executable, args, directOptions);
 }
 
 function resolveGcloud() {
