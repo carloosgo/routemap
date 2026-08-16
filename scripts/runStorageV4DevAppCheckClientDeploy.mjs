@@ -68,6 +68,9 @@ function runProcess(executable, args, options = {}) {
     cwd: options.cwd || process.cwd(),
     env: options.env || process.env,
   };
+  if (executable === process.execPath) {
+    return spawnSync(process.execPath, args, base);
+  }
   if (process.platform === 'win32' && executable.toLowerCase().endsWith('.cmd')) {
     return spawnSync('cmd.exe', ['/d', '/c', executable, ...args], base);
   }
