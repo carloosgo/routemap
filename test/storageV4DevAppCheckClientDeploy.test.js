@@ -23,14 +23,14 @@ test('dev App Check client deploy is hard-bound and guarded for apply', () => {
   assert.throws(() => parseDevAppCheckClientArgs(['--project=atlasmap-prod']), /Argumento desconocido/);
 });
 
-test('bundle inspection requires App Check site key and dev project and rejects production project', async () => {
+test('bundle inspection requires site key, dev project and Maps App Check wiring and rejects production project', async () => {
   const root = await mkdtemp(join(tmpdir(), 'atlas-appcheck-bundle-'));
   try {
     await mkdir(join(root, 'assets'));
     const siteKey = 'site-key-public-test';
     await writeFile(
       join(root, 'assets', 'app.js'),
-      `const project='atlasmap-dev'; const appCheck='${siteKey}';`,
+      `const project='atlasmap-dev'; const appCheck='${siteKey}'; const wiring='fetchAppCheckToken';`,
       'utf8'
     );
     const valid = inspectBuiltClient(root, { siteKey });
@@ -38,6 +38,7 @@ test('bundle inspection requires App Check site key and dev project and rejects 
     assert.equal(valid.siteKeyFound, true);
     assert.equal(valid.devProjectFound, true);
     assert.equal(valid.productionProjectFound, false);
+    assert.equal(valid.mapsAppCheckTokenWiringFound, true);
 
     await writeFile(
       join(root, 'assets', 'bad.js'),
@@ -52,12 +53,35 @@ test('bundle inspection requires App Check site key and dev project and rejects 
   }
 });
 
+test('bundle inspection rejects an otherwise-correct client without Maps App Check wiring', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'atlas-appcheck-bundle-no-maps-'));
+  try {
+    await mkdir(join(root, 'assets'));
+    const siteKey = 'site-key-public-test';
+    await writeFile(
+      join(root, 'assets', 'app.js'),
+      `const project='atlasmap-dev'; const appCheck='${siteKey}';`,
+      'utf8'
+    );
+    const invalid = inspectBuiltClient(root, { siteKey });
+    assert.equal(invalid.valid, false);
+    assert.equal(invalid.siteKeyFound, true);
+    assert.equal(invalid.devProjectFound, true);
+    assert.equal(invalid.productionProjectFound, false);
+    assert.equal(invalid.mapsAppCheckTokenWiringFound, false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test('client deploy contract keeps site key ephemeral and enforcement unchanged', async () => {
   const source = await readFile('scripts/runStorageV4DevAppCheckClientDeploy.mjs', 'utf8');
   assert.match(source, /writesSiteKeyToEnvironmentFile: false/);
   assert.match(source, /injectsFirebaseConfigOnlyIntoBuildProcess: true/);
   assert.match(source, /forcesFirebaseProjectToDev: true/);
   assert.match(source, /forcesFirebaseEmulatorsOff: true/);
+  assert.match(source, /verifiesGoogleMapsAppCheckTokenWiring: true/);
+  assert.match(source, /hostedGoogleMapsAppCheckTokenWiringVerified: true/);
   assert.match(source, /changesAppCheckEnforcement: false/);
   assert.match(source, /environmentFileMutated: false/);
   assert.match(source, /appCheckEnforcementChanged: false/);
