@@ -172,13 +172,6 @@ async function verifyAuth(token) {
   }
 
   return {
-    googleEnabled: true,
-    googleOAuthClientPresent: true,
-    googleOAuthSecretPresent: true,
-    emailPasswordEnabled: false,
-    anonymousEnabled: false,
-    phoneEnabled: false,
-    localhostAuthorized: false,
     authorizedDomainCount: domains.length,
   };
 }
@@ -279,15 +272,12 @@ async function main() {
     phase: 'L1',
     pass: true,
     project: PROJECT,
-    googleSignInEnabled: verification.googleEnabled,
-    googleOAuthClientPresent: verification.googleOAuthClientPresent,
-    googleOAuthSecretPresent: verification.googleOAuthSecretPresent,
+    googleSignInVerified: true,
+    oauthCredentialsPresenceVerifiedWithoutPrinting: true,
+    nonGoogleProvidersDisabledVerified: true,
     oauthClientCredentialsPrinted: false,
     supportEmailPrinted: false,
-    emailPasswordEnabled: verification.emailPasswordEnabled,
-    anonymousEnabled: verification.anonymousEnabled,
-    phoneEnabled: verification.phoneEnabled,
-    localhostAuthorized: verification.localhostAuthorized,
+    localhostAuthorized: false,
     authorizedDomainCountObserved: verification.authorizedDomainCount,
     firestoreRulesOpened: false,
     functionsDeployed: false,
