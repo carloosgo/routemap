@@ -8,8 +8,8 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, resolve } from 'node:path';
+import { URL, fileURLToPath } from 'node:url';
 import {
   DEV_APP_CHECK_HOST,
   DEV_APP_CHECK_KEY_DISPLAY_NAME,
