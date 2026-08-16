@@ -3,7 +3,8 @@ import { firebaseCallable } from './callableFunctions.js';
 const FUNCTION_NAME = 'storageV4RolloutTelemetry';
 
 async function defaultSendBatch(events) {
-  await firebaseCallable(FUNCTION_NAME, { events });
+  const callable = firebaseCallable(FUNCTION_NAME);
+  await callable({ events });
 }
 
 export function createGateGRolloutTelemetryEmitter({
