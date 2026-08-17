@@ -1,77 +1,50 @@
-# Lista de preparación para producción
+# Lista de preparación para producción — registro histórico
 
-## Configuración y secretos
+> **No usar este archivo como fuente de verdad del rollout actual.** Esta checklist nació antes de Atlas Storage v4 y varios puntos aquí listados fueron posteriormente cerrados, redefinidos o movidos a gates explícitos A–L.
+>
+> El estado vigente debe determinarse con los decision records, closeouts y evidencia cloud más recientes. En particular:
+>
+> - `docs/STORAGE_V4_IMPLEMENTATION_STATUS.md`
+> - `docs/STORAGE_V4_PHASE_K_CLOSEOUT_2026-08-14.md`
+> - `docs/STORAGE_V4_OPERATING_STATE_2026-08-15.md` (snapshot histórico; evidencia posterior prevalece)
+> - `docs/STORAGE_V4_PRODUCTION_ROLLOUT.md`
+> - `docs/STORAGE_V4_PHASE_J_DECISION_2026-08-14.md`
+>
+> No convertir una casilla antigua de esta página en un bloqueo nuevo sin contrastarla primero con esas fuentes.
 
-- [x] Mantener `GEOAPIFY_CITY_API_KEY` separado de `GEOAPIFY_API_KEY` en Secret Manager.
-- [x] Evitar claves privadas de Geoapify en frontend y repositorio.
-- [x] Ignorar `.env`, `.env.local` y `functions/.env*`.
-- [ ] Restringir `VITE_GEOAPIFY_MAPS_API_KEY` a los dominios autorizados.
-- [ ] Revisar versiones activas de secretos antes de destruir versiones antiguas.
-- [ ] Configurar alertas de presupuesto y consumo del proyecto Firebase.
+## Por qué se conserva
 
-## MapLibre y datos cartográficos
+Esta lista documenta los riesgos que guiaron las primeras fases: secretos, proveedores, mapas, autenticación, backups, App Check, observabilidad, privacidad y calidad. Sigue siendo útil como registro histórico, pero **no refleja por sí sola qué está pendiente hoy**.
 
-- [ ] Verificar atribuciones y términos de Geoapify, MapLibre, Overture y geoBoundaries.
-- [ ] Definir comportamiento ante indisponibilidad del estilo vectorial o PMTiles.
-- [ ] Medir cargas de mapa, marcadores y geometrías por sesión real.
-- [ ] Probar mapas en escritorio y móvil con viajes pequeños y grandes.
+## Principios que siguen vigentes
 
-## Geoapify y Functions
+### Configuración y secretos
 
-- [x] Sustituir Nominatim por callable Functions privadas.
-- [x] Separar autocomplete de ciudades y búsqueda general.
-- [x] Implementar cuotas, caché compartida, expiración y límites de instancias.
-- [x] Limitar longitud de búsquedas generales y entradas batch.
-- [x] Normalizar respuestas de reverse geocoding.
-- [ ] Configurar TTL para todas las colecciones internas con `expiresAt`.
-- [ ] Validar manualmente cada Function general antes de desplegarla.
-- [ ] Mantener logs sin API keys, tokens, headers completos, IP sin hash o contenido personal.
+- Mantener las claves privadas de proveedores exclusivamente en Secret Manager/backend.
+- No versionar secretos, debug tokens ni archivos `.env` reales.
+- Revisar restricciones de las claves web públicas y rotar/destruir secretos sólo mediante un procedimiento seguro.
 
-## Firebase, cuentas y datos
+### Proveedores, caché y mapas
 
-- [x] Implementar Google Auth y cierre de sesión.
-- [x] Separar viajes por UID y probar aislamiento con reglas.
-- [x] Guardar viajes mediante resúmenes y revisiones inmutables.
-- [x] Detectar conflictos entre pestañas o dispositivos.
-- [ ] Probar importación de viajes locales sin pérdida de datos.
-- [ ] Probar eliminación completa y limpieza de revisiones huérfanas.
-- [ ] Definir backups, restauración y retención.
-- [ ] Implementar exportación y eliminación de cuenta/datos.
+- Mantener cuotas, validación, caché y expiración explícitas.
+- Conservar separación entre datos canónicos del usuario y provider cache.
+- Verificar atribuciones/términos de los proveedores y medir rendimiento real antes de hacer tuning especulativo.
+- Mantener comportamiento degradado seguro cuando un proveedor o una caché auxiliar fallen.
 
-## App Check
+### Firebase, datos y rollout
 
-- [ ] Registrar la aplicación web y dominios legítimos con reCAPTCHA Enterprise.
-- [ ] Añadir `VITE_FIREBASE_APPCHECK_SITE_KEY` al entorno autorizado.
-- [ ] Observar solicitudes válidas e inválidas con enforcement desactivado.
-- [ ] Activar enforcement gradualmente y documentar rollback.
+- Aislar datos por UID mediante Rules y contratos de dominio.
+- Mantener recovery/backups/observabilidad y validar cualquier cambio por entorno.
+- App Check se observa antes de enforcement.
+- READ, migración, WRITE y retiro de v3 se habilitan únicamente en sus gates productivos correspondientes.
+- No usar `atlasmap-prod` como backend de desarrollo.
 
-## Alojamiento
+### Privacidad y calidad
 
-- [ ] Servir por HTTPS.
-- [ ] Configurar CSP, HSTS, Referrer-Policy y Permissions-Policy.
-- [ ] Servir assets estáticos con compresión y caché versionada.
-- [ ] Configurar fallback SPA sin interceptar endpoints ni assets inexistentes.
-- [ ] Crear un proyecto Firebase separado para producción.
+- Mantener minimización, aislamiento y borrado de datos de usuario.
+- Mantener verdes tests, Rules, lint, build y los workflows de seguridad/dependencias.
+- Validar experiencia real en navegadores/dispositivos soportados y accesibilidad del producto.
 
-## Observabilidad
+## Nota sobre casillas históricas
 
-- [ ] Monitorizar errores de frontend sin notas, consultas o rutas sensibles.
-- [ ] Monitorizar latencia, errores, cuotas y gasto de Functions.
-- [ ] Crear alertas de disponibilidad y presupuesto.
-- [ ] Definir retención de logs e identificadores de correlación no sensibles.
-
-## Privacidad y legal
-
-- [ ] Publicar política de privacidad y términos aplicables.
-- [ ] Documentar finalidades, proveedores, ubicación y retención de datos.
-- [ ] Determinar requisitos de cookies o analítica.
-- [ ] Documentar exportación y borrado de datos.
-
-## Calidad
-
-- [ ] Mantener verdes `npm test`, `npm run test:rules`, `npm run lint` y `npm run build`.
-- [ ] Mantener verdes Quality checks, CodeQL y Dependency audit.
-- [ ] Añadir pruebas end-to-end de crear, editar, guardar, abrir y eliminar viajes.
-- [ ] Probar teclado, lectores de pantalla y contraste conforme a WCAG 2.2 AA.
-- [ ] Probar Safari/iOS, Chrome/Android, Firefox y Edge.
-- [ ] Ejecutar pruebas de carga del backend y del mapa con muchos elementos.
+Las antiguas casillas de esta checklist fueron retiradas deliberadamente porque mezclaban trabajo ya completado con trabajo todavía condicionado por Phase L. Su presencia provocaba falsos pendientes (por ejemplo TTL, recovery o creación de infraestructura que ya podía tener evidencia posterior). El roadmap A–L y sus closeouts son ahora el mecanismo canónico para determinar readiness.
