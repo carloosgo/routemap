@@ -33,7 +33,7 @@ export async function searchGeoapifyPlaces(query, { signal } = {}) {
   throwIfAborted(signal);
 
   const result = Array.isArray(response.data?.results) ? response.data.results : [];
-  placeCache.set(queryKey, { result });
+  placeCache.set(queryKey, { result }, config.geoapify.clientCacheTtlMs);
   return result;
 }
 
@@ -50,6 +50,6 @@ export async function fetchGeoapifyPlaceImage(place, { signal } = {}) {
   throwIfAborted(signal);
 
   const image = String(response.data?.image || '').trim();
-  detailCache.set(id, { image });
+  detailCache.set(id, { image }, config.geoapify.clientCacheTtlMs);
   return image;
 }
