@@ -1,6 +1,6 @@
 import { createFirestoreHybridTripRepository } from './firestoreHybridTripRepository.js';
 import { createFirestoreTripRepository } from './firestoreTripRepository.js';
-import { createFirestoreV4PilotTripWriter } from './firestoreV4PilotTripWriter.js';
+import { createFirestoreV4EditorTripWriter } from './firestoreV4EditorTripWriter.js';
 import {
   TRIP_REPOSITORY_ROLLOUT_MODE,
   planTripRepositoryRollout,
@@ -36,6 +36,18 @@ function guardUnresolvedRemoteConfigMutations(repository, rolloutConfig) {
     save() {
       throw rolloutConfigUnavailableError();
     },
+    stage() {
+      // The product-level draft has already been persisted locally. Do not turn
+      // a transient Remote Config outage into a remote write or a false error;
+      // simply keep the edit local until rollout configuration is trustworthy.
+      return Promise.resolve({
+        supported: false,
+        autosync: false,
+        state: 'local',
+        pending: 0,
+        reason: 'rollout-config-unavailable',
+      });
+    },
     remove() {
       throw rolloutConfigUnavailableError();
     },
@@ -61,7 +73,7 @@ export function createGateGTripRepository({
   now = () => Date.now(),
   v3Factory = createFirestoreTripRepository,
   hybridFactory = createFirestoreHybridTripRepository,
-  pilotWriterFactory = createFirestoreV4PilotTripWriter,
+  pilotWriterFactory = createFirestoreV4EditorTripWriter,
 } = {}) {
   if (!db) throw new TypeError('Se requiere una instancia de Firestore.');
   const ownerId = requiredText(uid, 'uid');

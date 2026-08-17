@@ -45,6 +45,15 @@ function assertUniqueIds(items, label) {
   }
 }
 
+function normalizeTripForV4Plan(rawTrip) {
+  const trip = normalizeTrip(rawTrip);
+  // normalizeTrip keeps the legacy UI invariant of creating a starter note when
+  // notes are absent. Storage v4 must nevertheless preserve an explicitly empty
+  // canonical notes collection; otherwise every plan fabricates a fresh note id.
+  if (Array.isArray(rawTrip?.notes) && rawTrip.notes.length === 0) trip.notes = [];
+  return trip;
+}
+
 function rootPayload(trip) {
   return {
     id: trip.id,
@@ -184,7 +193,7 @@ function childIntentsForCollection({
 
 export function planV4TripSave({ uid, rawTrip, remoteRoot = null, remoteCollections = {} } = {}) {
   const userId = requiredText(uid, 'uid');
-  const trip = normalizeTrip(rawTrip);
+  const trip = normalizeTripForV4Plan(rawTrip);
   const root = rootIntent({ userId, trip, remoteRoot });
   const childIntents = [];
 

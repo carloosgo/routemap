@@ -32,9 +32,22 @@ function classifyGet(item) {
   };
 }
 
+function manualPersistenceState() {
+  return {
+    supported: false,
+    autosync: false,
+    state: 'manual',
+    pending: 0,
+  };
+}
+
 /**
  * Adds Gate G comparison telemetry without recording trip IDs, names, payloads
  * or mutation contents. The sink decides where metrics are ultimately sent.
+ *
+ * High-frequency editor staging deliberately bypasses rollout telemetry. Sync
+ * telemetry already measures the resulting coalesced remote flushes; emitting a
+ * rollout metric for every editing pause would add noise and avoidable cost.
  */
 export function createObservedTripRepository({
   repository,
@@ -80,6 +93,12 @@ export function createObservedTripRepository({
     },
     get(id) {
       return observed('get', () => target.get(id), classifyGet);
+    },
+    stage(trip) {
+      return target.stage?.(trip) ?? Promise.resolve(manualPersistenceState());
+    },
+    getPersistenceState(id) {
+      return target.getPersistenceState?.(id) ?? Promise.resolve(manualPersistenceState());
     },
     save(trip) {
       return observed('save', () => target.save(trip));
