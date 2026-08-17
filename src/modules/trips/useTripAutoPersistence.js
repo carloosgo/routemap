@@ -32,6 +32,15 @@ function stagedState(result) {
     : TRIP_PERSISTENCE_STATE.LOCAL;
 }
 
+export function isTripEditTransition(previous, trip) {
+  return Boolean(
+    previous
+    && trip?.id
+    && previous.id === trip.id
+    && previous.trip !== trip
+  );
+}
+
 /**
  * Product bridge from immutable React trip edits to durable local drafts and,
  * for writable v4 trips, to the existing incremental sync scheduler.
@@ -139,7 +148,9 @@ export function useTripAutoPersistence({
       };
     }
 
-    if (previous.trip === trip || explicitSaveRef.current) return undefined;
+    if (!isTripEditTransition(previous, trip) || explicitSaveRef.current) {
+      return undefined;
+    }
     setState(TRIP_PERSISTENCE_STATE.PENDING);
     scheduleStage();
     return clearStageTimer;
