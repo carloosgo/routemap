@@ -101,8 +101,9 @@ export function createPersistentCache(
 ) {
   const entries = sharedEntries(storageKey);
   const limit = normalizedLimit(maxEntries);
-  const changed = pruneKnownExpired(entries) || trimOldest(entries, limit);
-  if (changed) persistCache(storageKey, entries);
+  const expiredPruned = pruneKnownExpired(entries);
+  const excessTrimmed = trimOldest(entries, limit);
+  if (expiredPruned || excessTrimmed) persistCache(storageKey, entries);
 
   return {
     getFresh(key, ttlMs) {
