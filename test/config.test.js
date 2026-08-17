@@ -3,11 +3,10 @@ import assert from 'node:assert/strict';
 import { colorForIndex, config } from '../src/config.js';
 
 test('config usa valores seguros fuera de Vite', () => {
-  assert.equal(config.storageDriver, 'local');
+  assert.equal(config.storageKey, 'atlas:trips:v1');
   assert.equal(config.citySearchMinChars, 3);
   assert.equal(config.citySearchLimit, 5);
   assert.equal(config.defaultLocale, 'es');
-  assert.equal(config.apiBaseUrl, '');
   assert.equal(config.geoapify.mapApiKey, '');
   assert.equal(config.firebase.projectId, '');
   assert.deepEqual(config.storageV4Rollout, {
