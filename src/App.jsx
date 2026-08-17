@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from './i18n/index.jsx';
 import { useTrip } from './modules/trips/useTrip.js';
 import { useSavedTrips } from './modules/trips/useSavedTrips.js';
+import { useTripAutoPersistence } from './modules/trips/useTripAutoPersistence.js';
 import { savedTripErrorTranslationKey } from './modules/trips/savedTripOperations.js';
 import { useFirebaseAuth } from './infrastructure/firebase/useFirebaseAuth.js';
 import { isTripSavable } from './modules/trips/tripModel.js';
@@ -28,6 +29,8 @@ export default function App() {
   const { trip, loadTrip, renameTrip, updateSegment, addPlace } = tripStore;
   const {
     getTrip,
+    stageTrip,
+    getTripPersistenceState,
     saveTrip,
     deleteTrip,
     importLocalTrips,
@@ -47,6 +50,12 @@ export default function App() {
   const deleteInFlightRef = useRef(false);
 
   const canSave = isTripSavable(trip);
+  const persistence = useTripAutoPersistence({
+    trip,
+    stageTrip,
+    getTripPersistenceState,
+    canRemoteSync: canSave,
+  });
 
   const showToast = useCallback((message, duration = 2200) => {
     setToast(message);
@@ -58,13 +67,19 @@ export default function App() {
       showToast(t('saveValidationError'), 2500);
       return;
     }
+    // Durable local write is best-effort here: an IndexedDB problem must not
+    // prevent an explicit user-requested remote save from being attempted.
+    await persistence.persistLocalNow().catch(() => {});
+    persistence.markSaving();
     try {
       await saveTrip(trip);
+      persistence.markSaved();
       showToast(t('saved'));
     } catch (error) {
+      persistence.markSaveError(error);
       showToast(t(savedTripErrorTranslationKey(error, 'savePersistenceError')), 3500);
     }
-  }, [saveTrip, showToast, trip, t]);
+  }, [persistence, saveTrip, showToast, trip, t]);
 
   const handleGoogleSignIn = useCallback(async () => {
     try {
@@ -183,6 +198,7 @@ export default function App() {
       setOpenNoteSegmentId={setOpenNoteSegmentId}
       updateSegment={updateSegment}
       addPlace={addPlace}
+      persistenceState={persistence.state}
       toast={toast}
       t={t}
     />
