@@ -140,7 +140,7 @@ test('routing de Mis Rutas usa Geoapify para estimar y Google al seleccionar un 
   const googleRoute = await read('functions/googleOptimizedRouteFunction.js');
   const googleRouteClient = await read('src/modules/routes/googleRouteClient.js');
   const connections = await read('src/modules/places/TripRouteConnections.jsx');
-  const itineraryMap = await read('src/modules/map/ItineraryRouteMap.jsx');
+  const activeMap = await read('src/modules/map/GooglePlacesMap.jsx');
   const tripEntities = await read('src/modules/trips/tripEntities.js');
 
   assert.match(geoapifyRoute, /export const geoapifyRoute/);
@@ -150,7 +150,7 @@ test('routing de Mis Rutas usa Geoapify para estimar y Google al seleccionar un 
   assert.match(connections, /requestSavedPlaceRoute\(origin, destination, mode\)/);
   assert.match(connections, /requestGooglePlaceRoute\(/);
   assert.match(connections, /departureTime: mode === 'transit'/);
-  assert.doesNotMatch(itineraryMap, /googleRouteOptimized|requestGooglePlaceRoute|geoapifyRoute/);
+  assert.doesNotMatch(activeMap, /googleRouteOptimized|requestGooglePlaceRoute|geoapifyRoute/);
   assert.doesNotMatch(tripEntities, /segmentRoute|routeGeometry|routeSignature/);
 });
 
