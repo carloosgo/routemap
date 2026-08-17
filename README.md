@@ -8,9 +8,9 @@ Atlas es una aplicación web para planear viajes internacionales: itinerarios po
 - Firebase Authentication, Firestore, Cloud Functions y Remote Config.
 - Atlas Storage v4 con Gate G para transición controlada entre v3, lectura híbrida y v4.
 - `localStorage` únicamente para viajes locales de usuarios no autenticados y su importación posterior.
-- Google Maps / Google Places / Google Routes en los flujos que dependen de Google.
+- El entry path cartográfico principal (`AppMapPane -> RouteMap`) usa Google Maps; Google Places/Routes atienden los flujos que les corresponden.
 - Geoapify para autocompletado de ciudades y funciones auxiliares de proveedor.
-- MapLibre + PMTiles en las capas cartográficas que todavía los consumen, incluida la infraestructura de fronteras/rutas.
+- Permanecen módulos históricos/auxiliares MapLibre + PMTiles en el árbol, pero este documento no los declara parte del runtime principal sin un consumidor verificado.
 - Cachés de proveedor separadas de los datos canónicos: caché ligera en navegador y caché compartida server-side con TTL.
 
 ## Requisitos
