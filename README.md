@@ -10,7 +10,6 @@ Atlas es una aplicación web para planear viajes internacionales: itinerarios po
 - `localStorage` únicamente para viajes locales de usuarios no autenticados y su importación posterior.
 - El entry path cartográfico principal (`AppMapPane -> RouteMap`) usa Google Maps; Google Places/Routes atienden los flujos que les corresponden.
 - Geoapify para autocompletado de ciudades y funciones auxiliares de proveedor.
-- Permanecen módulos históricos/auxiliares MapLibre + PMTiles en el árbol, pero este documento no los declara parte del runtime principal sin un consumidor verificado.
 - Cachés de proveedor separadas de los datos canónicos: caché ligera en navegador y caché compartida server-side con TTL.
 
 ## Requisitos

@@ -82,15 +82,13 @@ Los datos de usuario y la caché de proveedor nunca comparten semántica aunque 
 
 ## Mapas
 
-El entry path principal verificado es:
+El entry path principal es:
 
 ```text
 App -> AppMapPane -> RouteMap -> GooglePlacesMap
 ```
 
-Por tanto, la arquitectura vigente del lienzo principal usa Google Maps. El árbol todavía conserva `ItineraryRouteMap` y módulos MapLibre/PMTiles asociados; su mera presencia no demuestra que formen parte del runtime activo. Se mantienen fuera del alcance de esta limpieza hasta completar una verificación específica de consumidores/dead code.
-
-No retirar dependencias cartográficas por inferencia: primero se debe demostrar que no existe ningún consumidor, prueba, entry point alternativo o necesidad deliberada de rollback/producto.
+El lienzo de mapas de Atlas usa Google Maps. La implementación histórica `ItineraryRouteMap` basada en MapLibre, junto con la integración Overture/PMTiles usada para polígonos de países, fue retirada después de verificar que no tenía consumidores, fallback ni entry point alternativo. La lógica de dominio reutilizable para rutas y países permanece separada del motor cartográfico y sigue siendo consumida por el renderer Google cuando corresponde.
 
 ## Seguridad y backend
 

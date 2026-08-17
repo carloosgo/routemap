@@ -48,8 +48,6 @@ export const config = {
   citySearchLimit: 5,
   citySearchCacheTtlMs: 60 * 24 * 60 * 60 * 1000,
   geoapify: {
-    mapApiKey: cleanString(env.VITE_GEOAPIFY_MAPS_API_KEY),
-    mapStyle: allowedValue(env.VITE_GEOAPIFY_MAP_STYLE, ['osm-bright', 'klokantech-basic', 'positron'], 'positron'),
     functionRegion: cleanString(env.VITE_FIREBASE_FUNCTIONS_REGION) || 'us-central1',
     searchMinChars: 5,
     searchDebounceMs: 450,
@@ -72,7 +70,6 @@ export const config = {
   map: {
     initialCenter: [19.4326, -99.1332],
     initialZoom: 4,
-    countryBoundariesUrl: cleanString(env.VITE_COUNTRY_BOUNDARIES_PMTILES_URL),
     startColor: '#15803d',
     endColor: '#e23b3b',
   },

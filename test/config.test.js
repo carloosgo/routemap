@@ -7,7 +7,7 @@ test('config usa valores seguros fuera de Vite', () => {
   assert.equal(config.citySearchMinChars, 3);
   assert.equal(config.citySearchLimit, 5);
   assert.equal(config.defaultLocale, 'es');
-  assert.equal(config.geoapify.mapApiKey, '');
+  assert.equal(config.geoapify.functionRegion, 'us-central1');
   assert.equal(config.firebase.projectId, '');
   assert.deepEqual(config.storageV4Rollout, {
     enabled: false,
