@@ -17,8 +17,6 @@ function envNumber(value, fallback = 0) {
 }
 
 export const config = {
-  storageDriver: allowedValue(env.VITE_STORAGE_DRIVER, ['local', 'api'], 'local'),
-  apiBaseUrl: cleanString(env.VITE_API_BASE_URL),
   storageKey: 'atlas:trips:v1',
   storageV4Rollout: {
     enabled: envBoolean(env.VITE_STORAGE_V4_ENABLED, false),
