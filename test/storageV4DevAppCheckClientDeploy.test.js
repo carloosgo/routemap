@@ -95,8 +95,13 @@ test('client deploy contract keeps site key ephemeral and enforcement unchanged'
   assert.ok(directNode >= 0, 'Falta la rama explícita para process.execPath.');
   assert.ok(cmdFallback > directNode, 'La rama Node directa debe evaluarse antes del fallback gcloud.cmd.');
   assert.match(source, /return spawnSync\(process\.execPath, args, directOptions\);/);
-  assert.match(source, /return spawnSync\('cmd\.exe', \['\/d', '\/c', 'gcloud\.cmd', \.\.\.args\], \{/);
-  assert.match(source, /stdio: 'pipe'/);
+  const cmdOptions = source.match(
+    /return spawnSync\('cmd\.exe', \['\/d', '\/c', 'gcloud\.cmd', \.\.\.args\], \{([\s\S]*?)\}\);/
+  );
+  assert.ok(cmdOptions, 'Falta el bloque explícito y literal de gcloud.cmd.');
+  assert.match(cmdOptions[1], /encoding: 'utf8'/);
+  assert.match(cmdOptions[1], /windowsHide: true/);
+  assert.match(cmdOptions[1], /stdio: 'pipe'/);
+  assert.doesNotMatch(cmdOptions[1], /\b(?:cwd|env|directOptions)\b/);
   assert.doesNotMatch(source, /executable\.toLowerCase\(\)\.endsWith\('\.cmd'\)/);
-  assert.doesNotMatch(source, /spawnSync\('cmd\.exe',[\s\S]{0,220}(cwd:|env:|directOptions)/);
 });
