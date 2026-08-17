@@ -1,66 +1,82 @@
-# Atlas — Rutas de viaje y gastos
+# Atlas — planificación de viajes
 
-Aplicación web para planear y rastrear **rutas de viaje internacionales** con
-control de gastos por tramo. Arquitectura modular pensada para escalar a uso
-global y para migrar a móvil (iOS/Android) reutilizando la lógica.
+Atlas es una aplicación web para planear viajes internacionales: itinerarios por ciudad, lugares guardados, conexiones, gastos, notas, checklist y visualización cartográfica. El frontend usa React + Vite y la persistencia autenticada se apoya en Firebase mediante la arquitectura **Atlas Storage v4** y su rollout controlado.
 
-## Funcionalidades
+## Stack actual
 
-- Mapa mundial interactivo (Leaflet) que dibuja cada tramo como una línea de
-  color distinto, con marcadores y banderas por ciudad.
-- Búsqueda de ciudades con autocompletado **a partir del 3er carácter**.
-- Bandera del país por cada ciudad (ISO + flagcdn.com).
-- Gastos por tramo: hospedaje, alimentos (gasto único o desayuno/comida/cena),
-  transporte (tren, avión, taxi, Uber, autobús, ferry, barco), atracciones
-  (tipo definido por el usuario) y otros gastos (tipo libre).
-- Total por tramo y **total general del viaje**.
-- "N" tramos por viaje que suman al total.
-- **Continuidad automática**: cada tramo nuevo hereda la ciudad destino y la
-  última fecha del tramo anterior.
-- Guardar, consultar y editar viajes.
-- Multi-idioma (ES/EN) y multi-moneda.
+- React 18 + Vite.
+- Firebase Authentication, Firestore, Cloud Functions y Remote Config.
+- Atlas Storage v4 con Gate G para transición controlada entre v3, lectura híbrida y v4.
+- `localStorage` únicamente para viajes locales de usuarios no autenticados y su importación posterior.
+- El entry path cartográfico principal (`AppMapPane -> RouteMap`) usa Google Maps; Google Places/Routes atienden los flujos que les corresponden.
+- Geoapify para autocompletado de ciudades y funciones auxiliares de proveedor.
+- Cachés de proveedor separadas de los datos canónicos: caché ligera en navegador y caché compartida server-side con TTL.
 
 ## Requisitos
 
-- Node.js >= 18
+- Node.js 22.x.
+- npm.
+- Firebase CLI para pruebas de Rules y tareas operativas que lo requieren.
 
-## Arrancar en desarrollo
+## Desarrollo local
 
 ```bash
 npm install
-cp .env.example .env.local   # ajusta variables si lo necesitas
+cp .env.example .env.local
 npm run dev
 ```
 
-Abre http://localhost:5173
+El servidor de Vite abre normalmente en `http://localhost:5173`.
 
-## Compilar para producción
+Las variables `VITE_*` son configuración pública del cliente. Las claves privadas de proveedores usadas por Functions viven en Firebase Secret Manager y no deben copiarse a `.env.local`.
+
+## Validación
+
+Antes de integrar cambios:
 
 ```bash
-npm run build      # genera /dist (estáticos para CDN)
-npm run preview    # sirve el build localmente para probar
+npm test
+npm run lint
+npm run build
 ```
 
-El contenido de `/dist` se publica en cualquier hosting estático global
-(Cloudflare Pages, Vercel, Netlify, S3 + CloudFront).
+Cuando el cambio afecta Firestore/Storage v4 también se ejecutan los contratos correspondientes, incluido `npm run test:rules`. El workflow `Quality checks` ejecuta unit tests, Rules, Phase-K E2E Rules, ESLint y build en pull requests.
 
-## Configuración (.env.local)
+## Persistencia de viajes
 
-| Variable | Descripción |
-|---|---|
-| `VITE_STORAGE_DRIVER` | `local` (localStorage) o `api` (backend REST) |
-| `VITE_API_BASE_URL` | URL del backend cuando `driver=api` |
-| `VITE_GEOCODER` | `nominatim` (default) |
-| `VITE_DEFAULT_LOCALE` | `es` o `en` |
+El selector activo vive en `src/modules/trips/tripRepositorySelector.js`:
 
-## Documentación
+```text
+sin usuario autenticado -> localStorageRepository
+usuario autenticado     -> Gate G -> v3 | hybrid-read | v4-pilot
+```
 
-- `ARCHITECTURE.md` — diseño modular y cómo extender.
-- `SECURITY.md` — checklist de seguridad para publicación.
-- `server/README.md` — blueprint del backend (FastAPI) para escala global.
+No existe un backend REST seleccionable mediante `VITE_STORAGE_DRIVER`. La transición v3/v4 es deliberada y permanece hasta que los gates productivos de convergencia permitan retirar v3.
 
-## Hacia móvil (iOS/Android)
+Storage v4 separa el documento raíz del viaje de sus entidades (`segments`, `places`, `connections`, `notes` y `checklist`) y mantiene los datos temporales/derivados de proveedores fuera del modelo canónico del usuario.
 
-Toda la lógica de negocio vive en `src/modules/**/*.js` y `src/shared/*.js`,
-sin dependencias del DOM. Esa capa se reutiliza tal cual en React Native;
-solo se reimplementa la capa visual (`.jsx`) y el mapa (react-native-maps).
+## Entornos
+
+La estrategia operativa se documenta en los closeouts y snapshots de Storage v4. Como principio:
+
+```text
+local/emulators -> iteración rápida
+atlasmap-dev    -> integración cloud / preproducción
+atlasmap-prod   -> rollout productivo controlado por gates
+```
+
+No se debe usar `atlasmap-prod` como backend de desarrollo ni inferir estado cloud sólo porque exista un runner en el repositorio.
+
+## Documentación principal
+
+- `ARCHITECTURE.md` — arquitectura de aplicación y fronteras principales.
+- `SECURITY.md` — controles de seguridad vigentes.
+- `docs/STORAGE_ARCHITECTURE_V4.md` — contrato y diseño de Atlas Storage v4.
+- `docs/STORAGE_V4_IMPLEMENTATION_STATUS.md` — estado de implementación por fases.
+- `docs/STORAGE_V4_OPERATING_STATE_2026-08-15.md` — snapshot operativo histórico; los closeouts/evidencia cloud posteriores tienen prioridad.
+- `docs/STORAGE_V4_PHASE_J_DECISION_2026-08-14.md` — decisión canónica sobre separación de provider cache para v4.0.
+- `docs/PROVIDER_CACHE_TOPOLOGY.md` — topología de caché y checkpoint futuro para separación física.
+
+## Principio de evolución
+
+Atlas evita reemplazos masivos sin evidencia. Las piezas de rollout, rollback y compatibilidad se retiran únicamente cuando el gate correspondiente lo autoriza; las optimizaciones de rendimiento se hacen con medición y no por especulación.

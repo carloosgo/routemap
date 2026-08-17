@@ -1,10 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  countryFillStyleState,
-  vividCountryColor,
-  visitedCountries,
-} from './countryColoring.js';
+import { visitedCountries } from './countryColoring.js';
 
 const colors = ['#e23b3b', '#2563eb', '#7c3aed'];
 const colorForIndex = (index) => colors[index] || '#000000';
@@ -54,45 +50,14 @@ test('skips a repeated palette value for the next country', () => {
   assert.equal(germany.color, '#2563eb');
 });
 
-test('makes country fills brighter without changing their opacity', () => {
-  assert.equal(vividCountryColor('#e23b3b'), '#f84e4e');
-  assert.equal(vividCountryColor('#2563eb'), '#3a78ff');
-  assert.equal(vividCountryColor('#7c3aed'), '#9151ff');
-  assert.equal(vividCountryColor('not-a-color'), 'not-a-color');
-});
-
-test('builds the MapLibre filter for Overture land country polygons', () => {
+test('ignores invalid coordinates and invalid country codes', () => {
   const segments = [
-    { origin: city('FR', 48.8566, 2.3522), destination: city('DE', 52.52, 13.405) },
-    { origin: city('DE', 52.52, 13.405), destination: city('NL', 52.3676, 4.9041) },
+    { origin: city('FRA', 48.8566, 2.3522), destination: city('DE', 120, 13.405) },
+    { origin: city('NL', 52.3676, 4.9041), destination: city('BE', 50.8503, 4.3517) },
   ];
 
-  assert.deepEqual(countryFillStyleState(segments, colorForIndex), {
-    filter: [
-      'all',
-      ['==', ['get', 'subtype'], 'country'],
-      ['==', ['get', 'class'], 'land'],
-      ['in', ['get', 'country'], ['literal', ['FR', 'DE', 'NL']]],
-    ],
-    colorExpression: [
-      'match',
-      ['get', 'country'],
-      'FR', '#f84e4e',
-      'DE', '#3a78ff',
-      'NL', '#9151ff',
-      'transparent',
-    ],
-  });
-});
-
-test('uses an empty Overture country filter when no valid country is present', () => {
-  assert.deepEqual(countryFillStyleState([], colorForIndex), {
-    filter: [
-      'all',
-      ['==', ['get', 'subtype'], 'country'],
-      ['==', ['get', 'class'], 'land'],
-      ['==', ['get', 'country'], '__NO_VISITED_COUNTRIES__'],
-    ],
-    colorExpression: 'transparent',
-  });
+  assert.deepEqual(
+    visitedCountries(segments, colorForIndex).map((item) => item.countryCode),
+    ['NL', 'BE']
+  );
 });
