@@ -97,42 +97,53 @@ function commandCandidates() {
     : ['gcloud'];
 }
 
-function runProcess(executable, args, options = {}) {
-  const directOptions = {
+function runDirectProcess(executable, args, options = {}) {
+  return spawnSync(executable, args, {
     encoding: 'utf8',
     windowsHide: true,
     stdio: options.inherit ? 'inherit' : 'pipe',
     cwd: options.cwd || process.cwd(),
     env: options.env || process.env,
-  };
-  if (executable === process.execPath) {
-    return spawnSync(process.execPath, args, directOptions);
-  }
-  if (process.platform === 'win32' && executable === 'gcloud.cmd') {
+  });
+}
+
+function runGcloudProcess(gcloud, args) {
+  if (process.platform === 'win32' && gcloud === 'gcloud.cmd') {
     return spawnSync('cmd.exe', ['/d', '/c', 'gcloud.cmd', ...args], {
       encoding: 'utf8',
       windowsHide: true,
       stdio: 'pipe',
     });
   }
-  return spawnSync(executable, args, directOptions);
+  return spawnSync(gcloud, args, {
+    encoding: 'utf8',
+    windowsHide: true,
+    stdio: 'pipe',
+  });
 }
 
 function resolveGcloud() {
   for (const candidate of commandCandidates()) {
-    const probe = runProcess(candidate, ['version']);
+    const probe = runGcloudProcess(candidate, ['version']);
     if (!probe.error && probe.status === 0) return candidate;
   }
   return null;
 }
 
-function runChecked(executable, args, label, options = {}) {
-  const result = runProcess(executable, args, options);
+function checkedOutput(result, label) {
   if (result.error) fail(`${label}: ${result.error.message}`);
   const stdout = String(result.stdout || '').trim();
   const stderr = String(result.stderr || '').trim();
   if (result.status !== 0) fail(`${label}: ${stderr || stdout || `exit ${result.status}`}`);
   return stdout;
+}
+
+function runGcloudChecked(gcloud, args, label) {
+  return checkedOutput(runGcloudProcess(gcloud, args), label);
+}
+
+function runDirectChecked(executable, args, label, options = {}) {
+  return checkedOutput(runDirectProcess(executable, args, options), label);
 }
 
 function parseJson(raw, label) {
@@ -141,9 +152,9 @@ function parseJson(raw, label) {
 }
 
 function assertDevTarget(gcloud) {
-  const account = runChecked(gcloud, ['config', 'get-value', 'account'], 'No se pudo leer la cuenta gcloud activa');
+  const account = runGcloudChecked(gcloud, ['config', 'get-value', 'account'], 'No se pudo leer la cuenta gcloud activa');
   if (!account || account === '(unset)') fail('gcloud no tiene una cuenta autenticada activa.');
-  const configuredProject = runChecked(gcloud, ['config', 'get-value', 'project'], 'No se pudo leer el proyecto gcloud activo');
+  const configuredProject = runGcloudChecked(gcloud, ['config', 'get-value', 'project'], 'No se pudo leer el proyecto gcloud activo');
   if (configuredProject && configuredProject !== '(unset)' && configuredProject !== DEV_FUNCTIONS_APP_CHECK_ENFORCEMENT_PROJECT) {
     fail(`gcloud apunta a ${configuredProject}; este runner exige ${DEV_FUNCTIONS_APP_CHECK_ENFORCEMENT_PROJECT}.`);
   }
@@ -156,7 +167,7 @@ function deployedFunctionName(item) {
 }
 
 function listDeployedFunctions(gcloud) {
-  const raw = runChecked(gcloud, [
+  const raw = runGcloudChecked(gcloud, [
     'functions', 'list',
     '--v2',
     `--regions=${CALLABLE_FUNCTIONS_REGION}`,
@@ -262,7 +273,7 @@ export async function runStorageV4DevFunctionsAppCheckEnforcement({
     writeFileSync(envPath, withAppCheckParam(originalEnv, targetEnabled), 'utf8');
     for (const batch of batches) {
       const only = batch.map((name) => `functions:${name}`).join(',');
-      runChecked(process.execPath, [
+      runDirectChecked(process.execPath, [
         firebaseCli,
         'deploy',
         '--only', only,
