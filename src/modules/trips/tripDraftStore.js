@@ -2,6 +2,7 @@ import { createIndexedDbV4LocalPersistence } from '../storage-v4/indexedDbLocalP
 import { normalizeTrip } from './tripModel.js';
 
 const DRAFT_SCOPE_PREFIX = 'trip-editor';
+const ACTIVE_DRAFT_ID = '__active__';
 
 function requiredText(value, field) {
   const normalized = typeof value === 'string' ? value.trim() : '';
@@ -17,10 +18,25 @@ export function tripDraftKey(scopeId, tripId) {
   return `${requiredText(scopeId, 'scopeId')}/${requiredText(tripId, 'tripId')}`;
 }
 
+function validDraftTrip(record, expectedId = null) {
+  if (!record?.payload) return null;
+  try {
+    const trip = normalizeTrip(record.payload);
+    return expectedId == null || trip.id === expectedId ? trip : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Durable editor drafts share the Storage v4 IndexedDB database but remain a
  * separate concern from canonical mutations. Writing a draft never touches
  * Firestore; it is safe to do frequently while the user edits.
+ *
+ * Besides the per-trip record, one reserved draft record tracks the active
+ * editor payload. That lets a brand-new, never-remotely-saved trip survive a
+ * full page reload without introducing localStorage or a parallel persistence
+ * mechanism.
  */
 export function createTripDraftStore({
   scopeId,
@@ -49,14 +65,21 @@ export function createTripDraftStore({
     const adapter = persistence();
     if (!adapter) return null;
     const record = await adapter.getDraft(tripDraftKey(ownerScope, id));
-    if (!record?.payload) return null;
-    try {
-      const trip = normalizeTrip(record.payload);
-      return trip.id === id ? trip : null;
-    } catch {
-      await adapter.deleteDraft(record.key).catch(() => {});
-      return null;
-    }
+    const trip = validDraftTrip(record, id);
+    if (trip) return trip;
+    if (record) await adapter.deleteDraft(record.key).catch(() => {});
+    return null;
+  }
+
+  async function getActiveDraft() {
+    const adapter = persistence();
+    if (!adapter) return null;
+    const key = tripDraftKey(ownerScope, ACTIVE_DRAFT_ID);
+    const record = await adapter.getDraft(key);
+    const trip = validDraftTrip(record);
+    if (trip) return trip;
+    if (record) await adapter.deleteDraft(key).catch(() => {});
+    return null;
   }
 
   return {
@@ -64,22 +87,43 @@ export function createTripDraftStore({
       const trip = normalizeTrip(rawTrip);
       const adapter = persistence();
       if (!adapter) return { durable: false, trip };
-      const record = await adapter.putDraft({
-        scopeId: ownerScope,
-        draftId: trip.id,
-        payload: trip,
-        lastModifiedLocal: Math.max(0, Math.trunc(Number(now()) || Date.now())),
-      });
+      const lastModifiedLocal = Math.max(
+        0,
+        Math.trunc(Number(now()) || Date.now())
+      );
+      const [record] = await Promise.all([
+        adapter.putDraft({
+          scopeId: ownerScope,
+          draftId: trip.id,
+          payload: trip,
+          lastModifiedLocal,
+        }),
+        adapter.putDraft({
+          scopeId: ownerScope,
+          draftId: ACTIVE_DRAFT_ID,
+          payload: trip,
+          lastModifiedLocal,
+        }),
+      ]);
       return { durable: true, trip, record };
     },
 
     get: getDraft,
+    getActive: getActiveDraft,
 
     async delete(tripId) {
       const id = requiredText(tripId, 'tripId');
       const adapter = persistence();
       if (!adapter) return false;
-      return adapter.deleteDraft(tripDraftKey(ownerScope, id));
+      const activeKey = tripDraftKey(ownerScope, ACTIVE_DRAFT_ID);
+      const active = validDraftTrip(await adapter.getDraft(activeKey));
+      const results = await Promise.all([
+        adapter.deleteDraft(tripDraftKey(ownerScope, id)),
+        active?.id === id
+          ? adapter.deleteDraft(activeKey)
+          : Promise.resolve(false),
+      ]);
+      return results.some(Boolean);
     },
 
     async has(tripId) {

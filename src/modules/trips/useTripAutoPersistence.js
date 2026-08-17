@@ -22,12 +22,35 @@ function errorState(error) {
     : TRIP_PERSISTENCE_STATE.ERROR;
 }
 
+function stagedState(result) {
+  if (result?.durable === false) return TRIP_PERSISTENCE_STATE.ERROR;
+  if (result?.autosync === true) {
+    return normalizedState(result.state, TRIP_PERSISTENCE_STATE.PENDING);
+  }
+  return result?.state === 'saved'
+    ? TRIP_PERSISTENCE_STATE.SAVED
+    : TRIP_PERSISTENCE_STATE.LOCAL;
+}
+
+export function isTripEditTransition(previous, trip) {
+  return Boolean(
+    previous
+    && trip?.id
+    && previous.id === trip.id
+    && previous.trip !== trip
+  );
+}
+
 /**
- * Product bridge from React edits to durable local drafts and, when the active
- * repository is a writable v4 trip, to the existing incremental sync scheduler.
+ * Product bridge from immutable React trip edits to durable local drafts and,
+ * for writable v4 trips, to the existing incremental sync scheduler.
  *
  * The 350ms timer is only a local IndexedDB boundary. Firestore remains behind
  * the v4 runtime's own ~3s debounce/coalescing policy.
+ *
+ * Callback identities are intentionally held in refs: repository/config changes
+ * must never cancel a pending local draft without rescheduling it. A real trip
+ * object change is the editing signal; timestamps are metadata, not authority.
  */
 export function useTripAutoPersistence({
   trip,
@@ -40,12 +63,16 @@ export function useTripAutoPersistence({
   const [state, setState] = useState(TRIP_PERSISTENCE_STATE.SAVED);
   const [autosyncActive, setAutosyncActive] = useState(false);
   const latestTripRef = useRef(trip);
+  const stageTripRef = useRef(stageTrip);
+  const getPersistenceStateRef = useRef(getTripPersistenceState);
   const canRemoteSyncRef = useRef(Boolean(canRemoteSync));
   const markerRef = useRef(null);
   const stageTimerRef = useRef(null);
   const explicitSaveRef = useRef(false);
 
   latestTripRef.current = trip;
+  stageTripRef.current = stageTrip;
+  getPersistenceStateRef.current = getTripPersistenceState;
   canRemoteSyncRef.current = Boolean(canRemoteSync);
 
   const clearStageTimer = useCallback(() => {
@@ -57,17 +84,18 @@ export function useTripAutoPersistence({
 
   const stageCurrent = useCallback(async ({ remote = canRemoteSyncRef.current } = {}) => {
     const current = latestTripRef.current;
-    if (!current?.id || typeof stageTrip !== 'function') return null;
+    const stage = stageTripRef.current;
+    if (!current?.id || typeof stage !== 'function') return null;
     try {
-      const result = await stageTrip(current, { remote });
+      const result = await stage(current, { remote });
       if (explicitSaveRef.current) return result;
-      const nextState = result?.autosync === true
-        ? normalizedState(result.state, TRIP_PERSISTENCE_STATE.PENDING)
-        : (result?.state === 'saved'
-            ? TRIP_PERSISTENCE_STATE.SAVED
-            : TRIP_PERSISTENCE_STATE.LOCAL);
+      const nextState = stagedState(result);
       setState(nextState);
-      setAutosyncActive(result?.autosync === true && nextState !== TRIP_PERSISTENCE_STATE.SAVED);
+      setAutosyncActive(
+        result?.autosync === true
+        && nextState !== TRIP_PERSISTENCE_STATE.SAVED
+        && nextState !== TRIP_PERSISTENCE_STATE.ERROR
+      );
       return result;
     } catch (error) {
       if (!explicitSaveRef.current) {
@@ -76,7 +104,7 @@ export function useTripAutoPersistence({
       }
       throw error;
     }
-  }, [stageTrip]);
+  }, []);
 
   const scheduleStage = useCallback(() => {
     clearStageTimer();
@@ -88,23 +116,26 @@ export function useTripAutoPersistence({
 
   useEffect(() => {
     const id = trip?.id || '';
-    const revision = trip?.updatedAt || '';
     if (!id) return undefined;
     const previous = markerRef.current;
-    markerRef.current = { id, revision };
+    markerRef.current = { id, trip };
 
     if (!previous || previous.id !== id) {
       clearStageTimer();
       explicitSaveRef.current = false;
       setAutosyncActive(false);
       let cancelled = false;
-      if (typeof getTripPersistenceState === 'function') {
-        Promise.resolve(getTripPersistenceState(id)).then((result) => {
+      const readState = getPersistenceStateRef.current;
+      if (typeof readState === 'function') {
+        Promise.resolve(readState(id)).then((result) => {
           if (cancelled) return;
           const nextState = normalizedState(result?.state, TRIP_PERSISTENCE_STATE.SAVED);
           setState(nextState === 'manual' ? TRIP_PERSISTENCE_STATE.SAVED : nextState);
           const shouldResume = result?.recoveredDraft === true;
-          setAutosyncActive(result?.autosync === true && nextState !== TRIP_PERSISTENCE_STATE.SAVED);
+          setAutosyncActive(
+            result?.autosync === true
+            && nextState !== TRIP_PERSISTENCE_STATE.SAVED
+          );
           if (shouldResume) scheduleStage();
         }).catch(() => {
           if (!cancelled) setState(TRIP_PERSISTENCE_STATE.ERROR);
@@ -117,32 +148,25 @@ export function useTripAutoPersistence({
       };
     }
 
-    if (previous.revision === revision || explicitSaveRef.current) return undefined;
+    if (!isTripEditTransition(previous, trip) || explicitSaveRef.current) {
+      return undefined;
+    }
     setState(TRIP_PERSISTENCE_STATE.PENDING);
     scheduleStage();
     return clearStageTimer;
-  }, [
-    clearStageTimer,
-    getTripPersistenceState,
-    scheduleStage,
-    trip?.id,
-    trip?.updatedAt,
-  ]);
+  }, [clearStageTimer, scheduleStage, trip]);
 
   useEffect(() => {
-    if (
-      !autosyncActive
-      || !trip?.id
-      || typeof getTripPersistenceState !== 'function'
-      || explicitSaveRef.current
-    ) {
+    if (!autosyncActive || !trip?.id || explicitSaveRef.current) {
       return undefined;
     }
 
     let cancelled = false;
     const poll = async () => {
+      const readState = getPersistenceStateRef.current;
+      if (typeof readState !== 'function') return;
       try {
-        const result = await getTripPersistenceState(trip.id);
+        const result = await readState(trip.id);
         if (cancelled || explicitSaveRef.current) return;
         const nextState = normalizedState(result?.state, TRIP_PERSISTENCE_STATE.LOCAL);
         setState(nextState);
@@ -167,7 +191,7 @@ export function useTripAutoPersistence({
       cancelled = true;
       globalThis.clearInterval(handle);
     };
-  }, [autosyncActive, getTripPersistenceState, statusPollMs, trip?.id]);
+  }, [autosyncActive, statusPollMs, trip?.id]);
 
   useEffect(() => () => clearStageTimer(), [clearStageTimer]);
 

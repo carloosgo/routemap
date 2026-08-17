@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from './i18n/index.jsx';
 import { useTrip } from './modules/trips/useTrip.js';
 import { useSavedTrips } from './modules/trips/useSavedTrips.js';
@@ -29,6 +29,7 @@ export default function App() {
   const { trip, loadTrip, renameTrip, updateSegment, addPlace } = tripStore;
   const {
     getTrip,
+    getActiveTripDraft,
     stageTrip,
     getTripPersistenceState,
     saveTrip,
@@ -48,6 +49,10 @@ export default function App() {
   const menuWrapRef = useRef(null);
   const editorMenuRef = useRef(null);
   const deleteInFlightRef = useRef(false);
+  const initialTripRef = useRef(trip);
+  const currentTripRef = useRef(trip);
+  const recoveredDraftScopeRef = useRef(null);
+  currentTripRef.current = trip;
 
   const canSave = isTripSavable(trip);
   const persistence = useTripAutoPersistence({
@@ -56,6 +61,28 @@ export default function App() {
     getTripPersistenceState,
     canRemoteSync: canSave,
   });
+
+  useEffect(() => {
+    if (auth.loading) return undefined;
+    const scope = auth.user?.uid || 'anonymous';
+    if (recoveredDraftScopeRef.current === scope) return undefined;
+    recoveredDraftScopeRef.current = scope;
+    let cancelled = false;
+
+    Promise.resolve(getActiveTripDraft()).then((draft) => {
+      if (cancelled || !draft) return;
+      // Never replace work the user already started during auth/draft startup.
+      if (currentTripRef.current !== initialTripRef.current) return;
+      loadTrip(draft);
+    }).catch(() => {
+      // Recovery is best-effort here. A later editor write surfaces durability
+      // failure through the persistence state instead of silently claiming saved.
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.loading, auth.user?.uid, getActiveTripDraft, loadTrip]);
 
   const showToast = useCallback((message, duration = 2200) => {
     setToast(message);
