@@ -82,9 +82,15 @@ Los datos de usuario y la caché de proveedor nunca comparten semántica aunque 
 
 ## Mapas
 
-Atlas no depende de un único motor histórico. El código actual usa Google Maps en los flujos Google y conserva MapLibre + PMTiles en las capas que requieren esa infraestructura, incluida la resolución/render de fronteras y rutas donde aplica.
+El entry path principal verificado es:
 
-No retirar una dependencia cartográfica sólo porque otra vista use otro proveedor: primero se debe comprobar el entry path y los consumidores reales.
+```text
+App -> AppMapPane -> RouteMap -> GooglePlacesMap
+```
+
+Por tanto, la arquitectura vigente del lienzo principal usa Google Maps. El árbol todavía conserva `ItineraryRouteMap` y módulos MapLibre/PMTiles asociados; su mera presencia no demuestra que formen parte del runtime activo. Se mantienen fuera del alcance de esta limpieza hasta completar una verificación específica de consumidores/dead code.
+
+No retirar dependencias cartográficas por inferencia: primero se debe demostrar que no existe ningún consumidor, prueba, entry point alternativo o necesidad deliberada de rollback/producto.
 
 ## Seguridad y backend
 
