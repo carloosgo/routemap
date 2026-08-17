@@ -12,11 +12,28 @@ import {
   createLocalTripRepository,
   selectTripRepository,
 } from './tripRepositorySelector.js';
+import { createTripDraftStore, tripDraftScopeId } from './tripDraftStore.js';
 import { useGateGRolloutConfig } from '../../infrastructure/firebase/useGateGRolloutConfig.js';
 import { useGateGRolloutTelemetry } from '../../infrastructure/firebase/useGateGRolloutTelemetry.js';
 
+function localOnlyState(durable = true) {
+  return {
+    supported: false,
+    autosync: false,
+    state: 'local',
+    pending: 0,
+    durable,
+  };
+}
+
 export function useSavedTrips(user) {
   const localRepository = useMemo(() => createLocalTripRepository(), []);
+  const draftStore = useMemo(
+    () => createTripDraftStore({
+      scopeId: tripDraftScopeId(user?.uid || 'anonymous'),
+    }),
+    [user?.uid]
+  );
   const rolloutConfig = useGateGRolloutConfig();
   const emitTelemetry = useGateGRolloutTelemetry();
   const repository = useMemo(
@@ -30,6 +47,7 @@ export function useSavedTrips(user) {
   );
   const currentRepositoryRef = useRef(repository);
   const refreshVersionRef = useRef(0);
+  const stagedDraftsRef = useRef(new Set());
   currentRepositoryRef.current = repository;
 
   const [trips, setTrips] = useState([]);
@@ -89,11 +107,17 @@ export function useSavedTrips(user) {
     }
   }, [repository]);
 
+  useEffect(() => () => {
+    void draftStore.close().catch(() => {});
+  }, [draftStore]);
+
   const getTrip = useCallback(
     async (id) => {
       setError(null);
       try {
-        return await openSavedTrip(repository, id);
+        const storedTrip = await openSavedTrip(repository, id);
+        const draft = await draftStore.get(id);
+        return draft || storedTrip;
       } catch (err) {
         if (isCurrentRepository()) {
           setError(savedTripErrorMessage(err, 'Error al abrir el viaje'));
@@ -101,7 +125,68 @@ export function useSavedTrips(user) {
         throw err;
       }
     },
-    [isCurrentRepository, repository]
+    [draftStore, isCurrentRepository, repository]
+  );
+
+  const stageTrip = useCallback(
+    async (trip, { remote = true } = {}) => {
+      const localDraft = await draftStore.put(trip);
+      if (!remote || typeof repository.stage !== 'function') {
+        return localOnlyState(localDraft.durable);
+      }
+
+      const staged = await repository.stage(trip);
+      if (staged?.autosync === true) {
+        stagedDraftsRef.current.add(trip.id);
+        if (staged.state === 'saved') {
+          await draftStore.delete(trip.id).catch(() => {});
+          stagedDraftsRef.current.delete(trip.id);
+        }
+      }
+      return {
+        ...localOnlyState(localDraft.durable),
+        ...(staged || {}),
+        durable: localDraft.durable,
+      };
+    },
+    [draftStore, repository]
+  );
+
+  const getTripPersistenceState = useCallback(
+    async (id) => {
+      const draft = await draftStore.get(id);
+      const remoteState = typeof repository.getPersistenceState === 'function'
+        ? await repository.getPersistenceState(id)
+        : null;
+
+      if (remoteState?.supported === true) {
+        if (
+          remoteState.state === 'saved'
+          && stagedDraftsRef.current.has(id)
+        ) {
+          await draftStore.delete(id).catch(() => {});
+          stagedDraftsRef.current.delete(id);
+          return remoteState;
+        }
+        if (draft && remoteState.state === 'saved') {
+          return {
+            ...remoteState,
+            autosync: true,
+            state: 'local',
+            recoveredDraft: true,
+          };
+        }
+        return remoteState;
+      }
+
+      return draft ? localOnlyState(true) : {
+        supported: false,
+        autosync: false,
+        state: 'saved',
+        pending: 0,
+      };
+    },
+    [draftStore, repository]
   );
 
   const saveTrip = useCallback(
@@ -109,6 +194,8 @@ export function useSavedTrips(user) {
       setError(null);
       try {
         const saved = await persistSavedTrip(repository, trip);
+        await draftStore.delete(trip.id).catch(() => {});
+        stagedDraftsRef.current.delete(trip.id);
         if (isCurrentRepository()) await refresh();
         return saved;
       } catch (err) {
@@ -118,7 +205,7 @@ export function useSavedTrips(user) {
         throw err;
       }
     },
-    [isCurrentRepository, refresh, repository]
+    [draftStore, isCurrentRepository, refresh, repository]
   );
 
   const deleteTrip = useCallback(
@@ -126,6 +213,8 @@ export function useSavedTrips(user) {
       setError(null);
       try {
         await removeSavedTrip(repository, id);
+        await draftStore.delete(id).catch(() => {});
+        stagedDraftsRef.current.delete(id);
         if (isCurrentRepository()) await refresh();
       } catch (err) {
         if (isCurrentRepository()) {
@@ -134,7 +223,7 @@ export function useSavedTrips(user) {
         throw err;
       }
     },
-    [isCurrentRepository, refresh, repository]
+    [draftStore, isCurrentRepository, refresh, repository]
   );
 
   const importLocalTrips = useCallback(async () => {
@@ -160,6 +249,8 @@ export function useSavedTrips(user) {
     error,
     refresh,
     getTrip,
+    stageTrip,
+    getTripPersistenceState,
     saveTrip,
     deleteTrip,
     importLocalTrips,
