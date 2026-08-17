@@ -37,7 +37,16 @@ function guardUnresolvedRemoteConfigMutations(repository, rolloutConfig) {
       throw rolloutConfigUnavailableError();
     },
     stage() {
-      throw rolloutConfigUnavailableError();
+      // The product-level draft has already been persisted locally. Do not turn
+      // a transient Remote Config outage into a remote write or a false error;
+      // simply keep the edit local until rollout configuration is trustworthy.
+      return Promise.resolve({
+        supported: false,
+        autosync: false,
+        state: 'local',
+        pending: 0,
+        reason: 'rollout-config-unavailable',
+      });
     },
     remove() {
       throw rolloutConfigUnavailableError();
