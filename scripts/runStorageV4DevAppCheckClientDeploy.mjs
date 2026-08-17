@@ -60,42 +60,53 @@ function commandCandidates() {
     : ['gcloud'];
 }
 
-function runProcess(executable, args, options = {}) {
-  const directOptions = {
+function runDirectProcess(executable, args, options = {}) {
+  return spawnSync(executable, args, {
     encoding: 'utf8',
     windowsHide: true,
     stdio: options.inherit ? 'inherit' : 'pipe',
     cwd: options.cwd || process.cwd(),
     env: options.env || process.env,
-  };
-  if (executable === process.execPath) {
-    return spawnSync(process.execPath, args, directOptions);
-  }
-  if (process.platform === 'win32' && executable === 'gcloud.cmd') {
+  });
+}
+
+function runGcloudProcess(gcloud, args) {
+  if (process.platform === 'win32' && gcloud === 'gcloud.cmd') {
     return spawnSync('cmd.exe', ['/d', '/c', 'gcloud.cmd', ...args], {
       encoding: 'utf8',
       windowsHide: true,
       stdio: 'pipe',
     });
   }
-  return spawnSync(executable, args, directOptions);
+  return spawnSync(gcloud, args, {
+    encoding: 'utf8',
+    windowsHide: true,
+    stdio: 'pipe',
+  });
 }
 
 function resolveGcloud() {
   for (const candidate of commandCandidates()) {
-    const probe = runProcess(candidate, ['version']);
+    const probe = runGcloudProcess(candidate, ['version']);
     if (!probe.error && probe.status === 0) return candidate;
   }
   return null;
 }
 
-function runChecked(executable, args, label, options = {}) {
-  const result = runProcess(executable, args, options);
+function checkedOutput(result, label) {
   if (result.error) fail(`${label}: ${result.error.message}`);
   const stdout = String(result.stdout || '').trim();
   const stderr = String(result.stderr || '').trim();
   if (result.status !== 0) fail(`${label}: ${stderr || stdout || `exit ${result.status}`}`);
   return stdout;
+}
+
+function runGcloudChecked(gcloud, args, label) {
+  return checkedOutput(runGcloudProcess(gcloud, args), label);
+}
+
+function runDirectChecked(executable, args, label, options = {}) {
+  return checkedOutput(runDirectProcess(executable, args, options), label);
 }
 
 function parseJson(raw, label) {
@@ -125,9 +136,9 @@ async function requestJson(url, token, { allow404 = false } = {}) {
 }
 
 function assertDevTarget(gcloud) {
-  const account = runChecked(gcloud, ['config', 'get-value', 'account'], 'No se pudo leer la cuenta gcloud activa');
+  const account = runGcloudChecked(gcloud, ['config', 'get-value', 'account'], 'No se pudo leer la cuenta gcloud activa');
   if (!account || account === '(unset)') fail('gcloud no tiene una cuenta autenticada activa.');
-  const configuredProject = runChecked(gcloud, ['config', 'get-value', 'project'], 'No se pudo leer el proyecto gcloud activo');
+  const configuredProject = runGcloudChecked(gcloud, ['config', 'get-value', 'project'], 'No se pudo leer el proyecto gcloud activo');
   if (configuredProject && configuredProject !== '(unset)' && configuredProject !== DEV_APP_CHECK_PROJECT) {
     fail(`gcloud apunta a ${configuredProject}; este runner exige ${DEV_APP_CHECK_PROJECT}.`);
   }
@@ -343,12 +354,12 @@ export async function runStorageV4DevAppCheckClientDeploy({
   if (!gcloud) fail('No se encontró gcloud.');
   assertDevTarget(gcloud);
 
-  const project = parseJson(runChecked(gcloud, [
+  const project = parseJson(runGcloudChecked(gcloud, [
     'projects', 'describe', DEV_APP_CHECK_PROJECT, '--format=json',
   ], 'No se pudo describir atlasmap-dev'), 'Proyecto dev');
   const projectNumber = String(project?.projectNumber || '').trim();
   if (!/^\d+$/.test(projectNumber)) fail('No se pudo resolver projectNumber de atlasmap-dev.');
-  const token = runChecked(gcloud, ['auth', 'print-access-token'], 'No se pudo obtener access token');
+  const token = runGcloudChecked(gcloud, ['auth', 'print-access-token'], 'No se pudo obtener access token');
   const webApp = await resolveWebApp(token);
   const sdkConfig = await getWebSdkConfig(token, webApp.appId);
   const recaptchaAssessment = assessDevRecaptchaKey(await listRecaptchaKeys(token));
@@ -417,7 +428,7 @@ export async function runStorageV4DevAppCheckClientDeploy({
   }
 
   const buildEnv = buildFirebaseClientEnv(sdkConfig, recaptchaAssessment.siteKey);
-  runChecked(process.execPath, [viteScript, 'build'], 'Vite build dev con App Check falló', {
+  runDirectChecked(process.execPath, [viteScript, 'build'], 'Vite build dev con App Check falló', {
     cwd: repoRoot,
     env: buildEnv,
     inherit: true,
@@ -441,7 +452,7 @@ export async function runStorageV4DevAppCheckClientDeploy({
   const tempConfig = join(repoRoot, `.firebase.appcheck.dev.hosting.${process.pid}.json`);
   try {
     writeFileSync(tempConfig, `${JSON.stringify(hostingConfig(), null, 2)}\n`, 'utf8');
-    runChecked(process.execPath, [
+    runDirectChecked(process.execPath, [
       firebaseCli,
       'deploy',
       '--only', 'hosting',
