@@ -1,4 +1,3 @@
-import { normalizeTrip } from '../../modules/trips/tripModel.js';
 import { V4_LOCAL_STATES } from '../../modules/storage-v4/storageV4Contract.js';
 import { createV4WebSyncComposition } from './createV4WebSyncComposition.js';
 import { createFirestoreV4PilotTripWriter } from './firestoreV4PilotTripWriter.js';
@@ -272,12 +271,12 @@ export function createFirestoreV4EditorTripWriter({
 
   async function stageOnce(rawTrip) {
     if (closed) throw new Error('El writer v4 editor está cerrado.');
-    const trip = normalizeTrip(rawTrip);
-    await assertNoConflict(trip.id);
+    const tripId = requiredText(rawTrip?.id, 'trip.id');
+    await assertNoConflict(tripId);
 
-    let state = await currentPlanState(trip.id);
+    let state = await currentPlanState(tripId);
     if (!state.remoteRoot) {
-      const remote = await readRemoteState(trip.id);
+      const remote = await readRemoteState(tripId);
       if (!remote.remoteRoot) {
         return {
           supported: true,
@@ -288,16 +287,16 @@ export function createFirestoreV4EditorTripWriter({
         };
       }
       await primeRemoteState({
-        tripId: trip.id,
+        tripId,
         remoteRoot: remote.remoteRoot,
         remoteCollections: remote.remoteCollections,
       });
-      state = await currentPlanState(trip.id);
+      state = await currentPlanState(tripId);
     }
 
     const plan = planV4TripSave({
       uid: userId,
-      rawTrip: trip,
+      rawTrip,
       remoteRoot: state.remoteRoot,
       remoteCollections: state.remoteCollections,
     });
@@ -314,7 +313,7 @@ export function createFirestoreV4EditorTripWriter({
     for (const intent of plan.intents) {
       await runtime.commitIntent(intent, { schedule: true });
     }
-    const pending = await local.listMutations({ userId, tripId: trip.id });
+    const pending = await local.listMutations({ userId, tripId });
     return {
       supported: true,
       autosync: true,
