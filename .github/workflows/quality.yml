@@ -65,32 +65,7 @@ jobs:
         run: npm ci --prefix functions
 
       - name: Run unit tests
-        shell: bash
-        run: |
-          set -o pipefail
-          log_file="$(mktemp)"
-
-          if npm test 2>&1 | tee "$log_file"; then
-            exit 0
-          fi
-
-          failure_text="$(grep -n -B 8 -A 40 -E '^not ok|ERR_ASSERTION|AssertionError|actual:|expected:|operator:' "$log_file" | tail -n 240 || true)"
-          if [ -z "$failure_text" ]; then
-            failure_text="$(tail -n 120 "$log_file")"
-          fi
-          {
-            echo "### Unit test failure"
-            echo '```text'
-            printf '%s\n' "$failure_text"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          escaped="$failure_text"
-          escaped="${escaped//'%'/'%25'}"
-          escaped="${escaped//$'\r'/'%0D'}"
-          escaped="${escaped//$'\n'/'%0A'}"
-          echo "::error title=Unit test assertions::$escaped"
-          exit 1
+        run: npm test
 
       - name: Test Firestore security rules
         shell: bash
