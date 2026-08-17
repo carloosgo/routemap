@@ -65,6 +65,32 @@ test('caché persistente mantiene un límite y expulsa las entradas más antigua
   }
 });
 
+test('inicialización poda expirados y aplica el límite en la misma pasada', () => {
+  const storageKey = 'test:geoapify-cache:init-prune-limit';
+  const previousStorage = globalThis.localStorage;
+  const now = Date.now();
+  const storage = createMemoryStorage({
+    [storageKey]: JSON.stringify({
+      expired: { value: 0, timestamp: now - 120_000, expiresAt: now - 1 },
+      oldestFresh: { value: 1, timestamp: now - 3_000, expiresAt: now + 60_000 },
+      middleFresh: { value: 2, timestamp: now - 2_000, expiresAt: now + 60_000 },
+      newestFresh: { value: 3, timestamp: now - 1_000, expiresAt: now + 60_000 },
+    }),
+  });
+  globalThis.localStorage = storage;
+
+  try {
+    const cache = createPersistentCache(storageKey, { maxEntries: 2 });
+    assert.deepEqual(storedKeys(storage, storageKey), ['middleFresh', 'newestFresh']);
+    assert.equal(cache.getFresh('expired', 60_000), null);
+    assert.equal(cache.getFresh('oldestFresh', 60_000), null);
+    assert.equal(cache.getFresh('middleFresh', 60_000)?.value, 2);
+    assert.equal(cache.getFresh('newestFresh', 60_000)?.value, 3);
+  } finally {
+    globalThis.localStorage = previousStorage;
+  }
+});
+
 test('instancias sobre la misma clave no se pisan entre sí', () => {
   const storageKey = 'test:geoapify-cache:shared';
   const previousStorage = globalThis.localStorage;
