@@ -23,10 +23,12 @@ test('el flujo activo de mapas usa Google y ya no monta MapLibre u Overture', as
 
 test('el renderer legacy MapLibre/PMTiles fue retirado del árbol y de dependencias activas', async () => {
   const packageJson = JSON.parse(await read('package.json'));
+  const packageLock = await read('package-lock.json');
   const configSource = await read('src/config.js');
 
   assert.equal(packageJson.dependencies?.['maplibre-gl'], undefined);
   assert.equal(packageJson.dependencies?.pmtiles, undefined);
+  assert.doesNotMatch(packageLock, /maplibre-gl|pmtiles/i);
   assert.doesNotMatch(
     configSource,
     /VITE_GEOAPIFY_MAPS_API_KEY|VITE_GEOAPIFY_MAP_STYLE|VITE_COUNTRY_BOUNDARIES_PMTILES_URL/
