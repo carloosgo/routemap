@@ -46,7 +46,13 @@ function normalizeV4Writer(writer) {
   if (typeof writer.save !== 'function' || typeof writer.remove !== 'function') {
     throw new TypeError('v4Writer requiere save() y remove().');
   }
-  for (const method of ['acceptRemoteState', 'recoverPending', 'close']) {
+  for (const method of [
+    'stage',
+    'getPersistenceState',
+    'acceptRemoteState',
+    'recoverPending',
+    'close',
+  ]) {
     if (writer[method] != null && typeof writer[method] !== 'function') {
       throw new TypeError(`v4Writer.${method} debe ser función cuando existe.`);
     }
@@ -61,6 +67,15 @@ function writerRemoteCollections(collections) {
     routeConnections: collections.connections || [],
     notes: collections.notes || [],
     checklist: collections.checklist || [],
+  };
+}
+
+function manualPersistenceState() {
+  return {
+    supported: false,
+    autosync: false,
+    state: 'manual',
+    pending: 0,
   };
 }
 
@@ -164,6 +179,27 @@ export function createFirestoreHybridTripRepository({ db, uid, v4Writer = null }
         return v3.get(tripId);
       }
       throw unknownStorageError();
+    },
+
+    stage(rawTrip) {
+      const tripId = requiredText(rawTrip?.id, 'trip.id');
+      const kind = knownKinds.get(tripId);
+      if (kind === STORED_TRIP_KIND.V4 && typeof writer?.stage === 'function') {
+        return writer.stage(rawTrip);
+      }
+      return Promise.resolve(manualPersistenceState());
+    },
+
+    getPersistenceState(id) {
+      const tripId = requiredText(id, 'tripId');
+      const kind = knownKinds.get(tripId);
+      if (
+        kind === STORED_TRIP_KIND.V4
+        && typeof writer?.getPersistenceState === 'function'
+      ) {
+        return writer.getPersistenceState(tripId);
+      }
+      return Promise.resolve(manualPersistenceState());
     },
 
     async save(rawTrip) {
