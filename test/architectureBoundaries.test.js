@@ -7,7 +7,6 @@ const PURE_MODULES = [
   'src/app/appInteractionModel.js',
   'src/modules/trips/tripModel.js',
   'src/modules/expenses/expenseModel.js',
-  'src/modules/storage/apiRepository.js',
   'src/modules/storage/localStorageRepository.js',
   'src/modules/geocoding/citySearchCache.js',
   'src/modules/storage-v4/gateGRuntimeConfigModel.js',
