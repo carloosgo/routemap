@@ -102,21 +102,16 @@ test('Firebase CLI recibe el mismo switch en process env para construir el manif
   assert.match(source, /env: deployProcessEnv/);
 });
 
-test('Node queda fuera del shell y gcloud.cmd no hereda cwd/env dinámicos', () => {
-  const directNode = source.indexOf('if (executable === process.execPath)');
-  const cmdFallback = source.indexOf("if (process.platform === 'win32' && executable === 'gcloud.cmd')");
-  assert.ok(directNode >= 0, 'Falta la rama explícita para process.execPath.');
-  assert.ok(cmdFallback > directNode, 'La rama Node directa debe evaluarse antes del fallback gcloud.cmd.');
-  assert.match(source, /return spawnSync\(process\.execPath, args, directOptions\);/);
-  const cmdOptions = source.match(
-    /return spawnSync\('cmd\.exe', \['\/d', '\/c', 'gcloud\.cmd', \.\.\.args\], \{([\s\S]*?)\}\);/
-  );
-  assert.ok(cmdOptions, 'Falta el bloque explícito y literal de gcloud.cmd.');
-  assert.match(cmdOptions[1], /encoding: 'utf8'/);
-  assert.match(cmdOptions[1], /windowsHide: true/);
-  assert.match(cmdOptions[1], /stdio: 'pipe'/);
-  assert.doesNotMatch(cmdOptions[1], /\b(?:cwd|env|directOptions)\b/);
-  assert.doesNotMatch(source, /executable\.toLowerCase\(\)\.endsWith\('\.cmd'\)/);
+test('Node/Firebase y gcloud usan ejecutores separados', () => {
+  assert.doesNotMatch(source, /function runProcess\(/);
+  assert.match(source, /function runDirectProcess\(executable, args, options = \{\}\)/);
+  assert.match(source, /function runGcloudProcess\(gcloud, args\)/);
+  assert.match(source, /function runDirectChecked\(executable, args, label, options = \{\}\)/);
+  assert.match(source, /function runGcloudChecked\(gcloud, args, label\)/);
+  assert.match(source, /runDirectChecked\(process\.execPath, \[\s*firebaseCli,/);
+  assert.doesNotMatch(source, /runGcloud(?:Process|Checked)\(process\.execPath/);
+  assert.match(source, /gcloud === 'gcloud\.cmd'/);
+  assert.doesNotMatch(source, /gcloud\.toLowerCase\(\)\.endsWith\('\.cmd'\)/);
 });
 
 test('runner no crea/borra Functions, no incluye probe HTTP y restaura dotenv', () => {
