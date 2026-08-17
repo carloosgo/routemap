@@ -11,7 +11,7 @@ function localOnlyState(durable = true) {
   return {
     supported: false,
     autosync: false,
-    state: 'local',
+    state: durable ? 'local' : 'error',
     pending: 0,
     durable,
   };
@@ -27,6 +27,11 @@ export function useSavedTripPersistenceActions({
   refreshIfCurrent,
   setError,
 }) {
+  const getActiveTripDraft = useCallback(
+    () => draftStore.getActive(),
+    [draftStore]
+  );
+
   const getTripPersistenceState = useCallback(
     async (id) => {
       const draft = await draftStore.get(id);
@@ -114,6 +119,7 @@ export function useSavedTripPersistenceActions({
   );
 
   return {
+    getActiveTripDraft,
     getTripPersistenceState,
     saveTrip,
     deleteTrip,
