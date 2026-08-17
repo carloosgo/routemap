@@ -17,7 +17,7 @@ function localOnlyState(durable = true) {
   return {
     supported: false,
     autosync: false,
-    state: 'local',
+    state: durable ? 'local' : 'error',
     pending: 0,
     durable,
   };
@@ -138,6 +138,7 @@ export function useSavedTrips(user) {
   }, [isCurrentRepository, refresh]);
 
   const {
+    getActiveTripDraft,
     getTripPersistenceState,
     saveTrip,
     deleteTrip,
@@ -162,6 +163,7 @@ export function useSavedTrips(user) {
     error,
     refresh,
     getTrip,
+    getActiveTripDraft,
     stageTrip,
     getTripPersistenceState,
     saveTrip,
