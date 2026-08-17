@@ -44,6 +44,21 @@ export function createTripDraftStore({
     }
   }
 
+  async function getDraft(tripId) {
+    const id = requiredText(tripId, 'tripId');
+    const adapter = persistence();
+    if (!adapter) return null;
+    const record = await adapter.getDraft(tripDraftKey(ownerScope, id));
+    if (!record?.payload) return null;
+    try {
+      const trip = normalizeTrip(record.payload);
+      return trip.id === id ? trip : null;
+    } catch {
+      await adapter.deleteDraft(record.key).catch(() => {});
+      return null;
+    }
+  }
+
   return {
     async put(rawTrip) {
       const trip = normalizeTrip(rawTrip);
@@ -58,20 +73,7 @@ export function createTripDraftStore({
       return { durable: true, trip, record };
     },
 
-    async get(tripId) {
-      const id = requiredText(tripId, 'tripId');
-      const adapter = persistence();
-      if (!adapter) return null;
-      const record = await adapter.getDraft(tripDraftKey(ownerScope, id));
-      if (!record?.payload) return null;
-      try {
-        const trip = normalizeTrip(record.payload);
-        return trip.id === id ? trip : null;
-      } catch {
-        await adapter.deleteDraft(record.key).catch(() => {});
-        return null;
-      }
-    },
+    get: getDraft,
 
     async delete(tripId) {
       const id = requiredText(tripId, 'tripId');
@@ -81,7 +83,7 @@ export function createTripDraftStore({
     },
 
     async has(tripId) {
-      return Boolean(await this.get(tripId));
+      return Boolean(await getDraft(tripId));
     },
 
     async close() {
