@@ -63,7 +63,7 @@ export async function fetchGeoapifyPlaceEnrichment(place, { signal } = {}) {
       openingHours: String(response.data?.openingHours || '').trim().slice(0, 500),
       geoapifyDetailsAt: String(response.data?.fetchedAt || new Date().toISOString()).slice(0, 40),
     };
-    enrichmentCache.set(cacheKey, result);
+    enrichmentCache.set(cacheKey, result, PLACE_ENRICHMENT_TTL_MS);
     return result;
   })();
 
