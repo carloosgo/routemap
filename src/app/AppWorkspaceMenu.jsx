@@ -8,6 +8,7 @@ import {
 } from '@tabler/icons-react';
 import { tripTotal } from '../modules/trips/tripModel.js';
 import { formatMoney } from '../shared/utils.js';
+import currencyCoinIcon from '../assets/currency-coin-menu.svg';
 
 const CURRENCIES = ['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'];
 
@@ -23,25 +24,39 @@ export function AppWorkspaceMenu({
   setLocale,
   availableLocales,
   t,
+  rail = false,
 }) {
   const { trip, resetTrip, setCurrency } = tripStore;
   const { trips, loading } = savedTrips;
 
   return (
-    <div className="editor-module__settings">
+    <div className={'editor-module__settings' + (rail ? ' editor-rail__settings' : '')}>
       <div className="editor-module__menu-anchor">
         <button
           type="button"
-          className={'editor-module__tab editor-module__nav-tab' +
-            (openMenu === 'currency' ? ' is-active' : '')}
+          className={rail
+            ? 'editor-rail__item editor-rail__currency' +
+              (openMenu === 'currency' ? ' is-active' : '')
+            : 'editor-module__tab editor-module__nav-tab' +
+              (openMenu === 'currency' ? ' is-active' : '')}
           aria-label={t('currency')}
           onClick={() => setOpenMenu(openMenu === 'currency' ? null : 'currency')}
         >
-          <span className="editor-module__tab-label">{trip.currency}</span>
-          <IconChevronDown className="editor-module__tab-chevron" aria-hidden="true" />
+          {rail && (
+            <span className="editor-rail__icon" aria-hidden="true">
+              <img src={currencyCoinIcon} alt="" />
+            </span>
+          )}
+          <span className={rail ? 'editor-rail__label' : 'editor-module__tab-label'}>
+            {trip.currency}
+          </span>
+          <IconChevronDown
+            className={rail ? 'editor-rail__chevron' : 'editor-module__tab-chevron'}
+            aria-hidden="true"
+          />
         </button>
         {openMenu === 'currency' && (
-          <div className="editor-module__currency-menu" aria-label={t('currency')}>
+          <div className="editor-module__currency-menu editor-module__currency-menu--rail" aria-label={t('currency')}>
             {CURRENCIES.map((currency) => (
               <button
                 type="button"
@@ -60,11 +75,12 @@ export function AppWorkspaceMenu({
         )}
       </div>
 
-      <div className="editor-module__menu-anchor">
+      <div className="editor-module__menu-anchor editor-rail__overflow-anchor">
         <button
           type="button"
-          className={'editor-module__more-button' +
-            (openMenu === 'workspace' ? ' is-active' : '')}
+          className={rail
+            ? 'editor-rail__more-button' + (openMenu === 'workspace' ? ' is-active' : '')
+            : 'editor-module__more-button' + (openMenu === 'workspace' ? ' is-active' : '')}
           aria-label={t('moreOptions')}
           onClick={() => setOpenMenu(openMenu === 'workspace' ? null : 'workspace')}
         >
@@ -72,7 +88,7 @@ export function AppWorkspaceMenu({
         </button>
 
         {openMenu === 'workspace' && (
-          <div className="editor-module__more-menu">
+          <div className="editor-module__more-menu editor-module__more-menu--rail">
             <button
               type="button"
               className="editor-module__menu-item"
