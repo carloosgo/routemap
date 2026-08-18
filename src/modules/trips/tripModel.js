@@ -30,5 +30,6 @@ export {
   routeStops,
   segmentCoords,
   segmentTotal,
+  syncSegmentOrigins,
   tripTotal,
 } from './tripOperations.js';
