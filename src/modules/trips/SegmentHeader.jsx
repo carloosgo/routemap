@@ -67,8 +67,12 @@ export function SegmentHeader({
         )}
       </div>
 
-      <span className="itinerary-stop__dates">{formattedDates || '—'}</span>
-      <span className="itinerary-stop__nights">{formattedNights || ''}</span>
+      <span className={'itinerary-stop__dates' + (!formattedDates ? ' is-placeholder' : '')}>
+        {formattedDates || t('dateRangeHint')}
+      </span>
+      <span className={'itinerary-stop__nights' + (!formattedNights ? ' is-placeholder' : '')}>
+        {formattedNights || t('nightsHint')}
+      </span>
       <span className="segment__pill itinerary-stop__amount">{formattedAmount}</span>
 
       <button
