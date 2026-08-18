@@ -24,9 +24,10 @@
   font-weight: 700;
 }
 
-.floating-editor .segment__header .flag {
-  width: 18px;
-  height: 13px;
+.floating-editor .segment__header .autocomplete__list .flag {
+  width: 24px;
+  height: 17px;
+  object-fit: contain;
 }
 
 .floating-editor .segment__pill {
@@ -171,64 +172,8 @@
   filter: brightness(0.92);
 }
 
-/* Una sola estructura y una sola regla para Tramos, Lugares, Notas y Moneda. */
-.editor-module__tabs .editor-module__nav-tab,
-.editor-module__tabs .editor-module__nav-tab.is-active {
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 6px;
-  height: 36px;
-  min-height: 36px;
-  margin: 0;
-  padding: 6px 10px;
-  border: 0;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #111827;
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 500;
-  font-style: normal;
-  line-height: 1;
-  letter-spacing: 0;
-  text-transform: none;
-  white-space: nowrap;
-  appearance: none;
-}
-
-.editor-module__tabs .editor-module__nav-tab:hover,
-.editor-module__tabs .editor-module__nav-tab.is-active:hover {
-  background: #f4f5f7;
-  color: #4b5563;
-}
-
-.editor-module__tab-icon {
-  display: grid;
-  place-items: center;
-  width: 25px;
-  height: 25px;
-  flex: 0 0 25px;
-  overflow: visible;
-  line-height: 0;
-}
-
-.editor-module__tab-icon > svg,
-.editor-module__tab-icon > img {
-  display: block;
-  width: 25px;
-  height: 25px;
-  max-width: none;
-  object-fit: contain;
-}
-
-.editor-module__tab-label {
-  display: inline-block;
-  font: inherit;
-  line-height: 1;
-}
-
+/* La geometría de Tramos, Mis Rutas y Notas vive exclusivamente en
+   ItinerarySidebar.css. Aquí solo quedan estilos ajenos a su layout. */
 .editor-module__tab-chevron {
   width: 12px;
   height: 12px;
