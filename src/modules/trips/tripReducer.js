@@ -7,8 +7,10 @@ import {
   createTrip,
   insertPlaceByCountry,
   normalizeTrip,
+  removeSegmentFromRoute,
   reorderPlaces,
   reorderSegments,
+  updateSegmentDestination,
 } from './tripModel.js';
 import {
   createSavedPlaceRoute,
@@ -119,11 +121,7 @@ export function tripReducer(state, action) {
       return appendSegment(state);
 
     case TRIP_ACTIONS.removeSegment:
-      return touch(state, {
-        segments: state.segments.filter(
-          (segment) => segment.id !== action.segmentId
-        ),
-      });
+      return removeSegmentFromRoute(state, action.segmentId);
 
     case TRIP_ACTIONS.reorderSegment:
       return reorderSegments(
@@ -133,14 +131,30 @@ export function tripReducer(state, action) {
         action.placement
       );
 
-    case TRIP_ACTIONS.updateSegment:
-      return touch(state, {
-        segments: state.segments.map((segment) =>
+    case TRIP_ACTIONS.updateSegment: {
+      const patch = action.patch || {};
+      const hasDestination = Object.prototype.hasOwnProperty.call(
+        patch,
+        'destination'
+      );
+      const routedState = hasDestination
+        ? updateSegmentDestination(state, action.segmentId, patch.destination)
+        : state;
+      const remainingPatch = hasDestination
+        ? Object.fromEntries(
+            Object.entries(patch).filter(([key]) => key !== 'destination')
+          )
+        : patch;
+
+      if (Object.keys(remainingPatch).length === 0) return routedState;
+      return touch(routedState, {
+        segments: routedState.segments.map((segment) =>
           segment.id === action.segmentId
-            ? { ...segment, ...action.patch }
+            ? { ...segment, ...remainingPatch }
             : segment
         ),
       });
+    }
 
     case TRIP_ACTIONS.updateExpenses:
       return touch(state, {

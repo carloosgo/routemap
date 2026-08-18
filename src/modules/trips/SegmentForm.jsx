@@ -1,9 +1,14 @@
 import { useState } from 'react';
 import { segmentTotal } from './tripModel.js';
+import { ItineraryOriginNode } from './ItineraryOriginNode.jsx';
 import { SegmentBody } from './SegmentBody.jsx';
 import { SegmentDeleteDialog } from './SegmentDeleteDialog.jsx';
 import { SegmentHeader } from './SegmentHeader.jsx';
-import { formatSegmentAmount, formatSegmentDates } from './segmentFormModel.js';
+import {
+  formatSegmentAmount,
+  formatSegmentDateLines,
+  segmentNightCount,
+} from './segmentFormModel.js';
 
 function SegmentDropIndicator({ placement }) {
   if (!placement) return null;
@@ -45,7 +50,8 @@ export function SegmentForm({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const bodyId = `segment-body-${segment.id}`;
   const formattedAmount = formatSegmentAmount(segmentTotal(segment), locale);
-  const formattedDates = formatSegmentDates(segment, locale);
+  const formattedDateLines = formatSegmentDateLines(segment, locale);
+  const nightCount = segmentNightCount(segment);
 
   const confirmRemove = () => {
     setConfirmOpen(false);
@@ -53,56 +59,64 @@ export function SegmentForm({
   };
 
   return (
-    <article
-      className={
-        'segment' +
-        (dragging ? ' is-dragging' : '') +
-        (dropPlacement ? ` is-drop-${dropPlacement}` : '')
-      }
-      data-segment-id={segment.id}
-      style={
-        dragging
-          ? {
-              transform: `translateY(${dragOffsetY}px)`,
-              pointerEvents: 'none',
-              zIndex: 20,
-            }
-          : undefined
-      }
-    >
-      <SegmentDropIndicator placement={dropPlacement} />
-
-      <SegmentHeader
-        segment={segment}
-        index={index}
-        formattedDates={formattedDates}
-        formattedAmount={formattedAmount}
-        expanded={expanded}
-        dragging={dragging}
-        bodyId={bodyId}
-        onToggle={onToggle}
-        onUpdate={onUpdate}
-        onOpenNote={onOpenNote}
-        onRemoveRequest={() => setConfirmOpen(true)}
-        onReorderPointerStart={onReorderPointerStart}
-      />
-
-      {expanded && (
-        <SegmentBody
-          segment={segment}
-          currency={currency}
-          locale={locale}
-          bodyId={bodyId}
-          onUpdate={onUpdate}
-          onUpdateExpenses={onUpdateExpenses}
+    <>
+      {index === 0 && (
+        <ItineraryOriginNode
+          city={segment.origin}
+          onSelect={(city) => onUpdate({ origin: city })}
         />
       )}
+      <article
+        className={
+          'segment' +
+          (dragging ? ' is-dragging' : '') +
+          (dropPlacement ? ` is-drop-${dropPlacement}` : '')
+        }
+        data-segment-id={segment.id}
+        style={
+          dragging
+            ? {
+                transform: `translateY(${dragOffsetY}px)`,
+                pointerEvents: 'none',
+                zIndex: 20,
+              }
+            : undefined
+        }
+      >
+        <SegmentDropIndicator placement={dropPlacement} />
 
-      <SegmentDeleteDialog
-        open={confirmOpen}
-        onConfirm={confirmRemove}
-        onCancel={() => setConfirmOpen(false)}
-      />
-    </article>
+        <SegmentHeader
+          segment={segment}
+          formattedDateLines={formattedDateLines}
+          formattedAmount={formattedAmount}
+          nightCount={nightCount}
+          expanded={expanded}
+          dragging={dragging}
+          bodyId={bodyId}
+          onToggle={onToggle}
+          onUpdate={onUpdate}
+          onOpenNote={onOpenNote}
+          onRemoveRequest={() => setConfirmOpen(true)}
+          onReorderPointerStart={onReorderPointerStart}
+        />
+
+        {expanded && (
+          <SegmentBody
+            segment={segment}
+            currency={currency}
+            locale={locale}
+            bodyId={bodyId}
+            onUpdate={onUpdate}
+            onUpdateExpenses={onUpdateExpenses}
+          />
+        )}
+
+        <SegmentDeleteDialog
+          open={confirmOpen}
+          onConfirm={confirmRemove}
+          onCancel={() => setConfirmOpen(false)}
+        />
+      </article>
+    </>
   );
 }

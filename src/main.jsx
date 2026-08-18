@@ -9,6 +9,7 @@ import './app/FloatingEditorPolish.css';
 import './app/EditorNavigationIcons.css';
 import './app/SegmentInteractionColors.css';
 import './app/WorkspaceMenuMapPolish.css';
+import './app/ItineraryTimelineRedesign.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <I18nProvider>

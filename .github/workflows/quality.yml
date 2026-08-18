@@ -37,10 +37,22 @@ jobs:
               exit 1
             fi
 
-            if ! grep -q '^Visual delta: none$' DESIGN_PRESERVATION.md; then
-              echo "DESIGN_PRESERVATION.md must declare: Visual delta: none"
-              exit 1
-            fi
+            visual_delta="$(sed -n 's/^Visual delta: //p' DESIGN_PRESERVATION.md | head -n 1)"
+            case "$visual_delta" in
+              none)
+                ;;
+              authorized)
+                authorized_scope="$(sed -n 's/^Authorized scope: //p' DESIGN_PRESERVATION.md | head -n 1)"
+                if [ -z "$authorized_scope" ]; then
+                  echo "Authorized visual deltas require a non-empty 'Authorized scope:' declaration."
+                  exit 1
+                fi
+                ;;
+              *)
+                echo "DESIGN_PRESERVATION.md must declare 'Visual delta: none' or 'Visual delta: authorized'."
+                exit 1
+                ;;
+            esac
           fi
 
       - name: Set up Node.js

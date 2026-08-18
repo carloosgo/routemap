@@ -8,7 +8,13 @@ import { config } from '../config.js';
 // Campo de búsqueda de ciudad con autocompletado.
 // Muestra sugerencias a partir del 3er carácter y la bandera de cada país.
 // Al seleccionar, devuelve un objeto City completo (con lat/lon/countryCode).
-export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay = 'full' }) {
+export function CityAutocomplete({
+  value,
+  onSelect,
+  placeholder,
+  selectedDisplay = 'full',
+  autoFocus = false,
+}) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -23,6 +29,15 @@ export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay
   // El modo flag-only oculta solo la representación cerrada; al enfocar reaparece
   // el buscador completo para poder cambiar la ciudad normalmente.
   const displayValue = open ? query : flagOnlySelected ? '' : value?.name || '';
+
+  useEffect(() => {
+    if (!autoFocus) return undefined;
+    const timer = globalThis.setTimeout(() => {
+      inputRef.current?.focus();
+      setOpen(true);
+    }, 0);
+    return () => globalThis.clearTimeout(timer);
+  }, [autoFocus]);
 
   // Cierra el desplegable al hacer clic fuera.
   useEffect(() => {

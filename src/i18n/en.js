@@ -78,6 +78,8 @@ export default {
   citySearchError: 'Cities could not be searched.',
   startDate: 'Start date',
   endDate: 'End date',
+  night: 'night',
+  nights: 'nights',
   datePlaceholder: 'mm/dd/yyyy',
   clearDate: 'Clear date',
   previousMonth: 'Previous month',

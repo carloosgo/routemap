@@ -1,4 +1,3 @@
-import { IconMap, IconNotes } from '@tabler/icons-react';
 import { TripPlacesPanel } from '../modules/places/TripPlacesPanel.jsx';
 import { AppEditorPane } from './AppEditorPane.jsx';
 import { AppWorkspaceMenu } from './AppWorkspaceMenu.jsx';
@@ -111,45 +110,50 @@ export function AppEditorModule({
   );
 
   return (
-    <div className="editor-module" ref={editorMenuRef}>
-      <div className="editor-module__tabs">
+    <div className="editor-module editor-module--sidebar" ref={editorMenuRef}>
+      <nav className="editor-sidebar" aria-label={t('itinerary')}>
         <button
           type="button"
-          className={'editor-module__tab editor-module__nav-tab' +
+          className={'editor-sidebar__item' +
             (activeTab === 'segments' ? ' is-active' : '')}
           onClick={() => setActiveTab('segments')}
+          aria-current={activeTab === 'segments' ? 'page' : undefined}
         >
-          <span className="editor-module__tab-icon" aria-hidden="true">
-            <IconMap />
+          <span className="editor-sidebar__icon" aria-hidden="true">
+            <img src="/icons/tramos.svg" alt="" />
           </span>
-          <span className="editor-module__tab-label">{t('itinerary')}</span>
+          <span className="editor-sidebar__label">{t('itinerary')}</span>
         </button>
+
         <button
           type="button"
-          className={'editor-module__tab editor-module__nav-tab' +
+          className={'editor-sidebar__item' +
             (activeTab === 'places' ? ' is-active' : '')}
           onClick={() => setActiveTab('places')}
-          data-tab-icon="places-map-pin"
+          aria-current={activeTab === 'places' ? 'page' : undefined}
         >
-          <span className="editor-module__tab-icon" aria-hidden="true">
+          <span className="editor-sidebar__icon" aria-hidden="true">
             <img src={lugaresIcon} alt="" />
           </span>
-          <span className="editor-module__tab-label">{t('myRoutes')}</span>
-          {places.length > 0 && <span className="tabbar__badge">{places.length}</span>}
+          <span className="editor-sidebar__label">{t('myRoutes')}</span>
+          {places.length > 0 && (
+            <span className="editor-sidebar__badge">{places.length}</span>
+          )}
         </button>
+
         <button
           type="button"
-          className={'editor-module__tab editor-module__nav-tab' +
+          className={'editor-sidebar__item' +
             (activeTab === 'notes' ? ' is-active' : '')}
           onClick={() => setActiveTab('notes')}
-          data-tab-icon="notes"
+          aria-current={activeTab === 'notes' ? 'page' : undefined}
         >
-          <span className="editor-module__tab-icon" aria-hidden="true">
-            <IconNotes />
+          <span className="editor-sidebar__icon" aria-hidden="true">
+            <img src="/icons/notas.svg" alt="" />
           </span>
-          <span className="editor-module__tab-label">{t('notes')}</span>
+          <span className="editor-sidebar__label">{t('notes')}</span>
           {checklist.length > 0 && (
-            <span className="tabbar__badge">
+            <span className="editor-sidebar__badge">
               {doneCount}/{checklist.length}
             </span>
           )}
@@ -168,8 +172,9 @@ export function AppEditorModule({
           availableLocales={availableLocales}
           t={t}
         />
-      </div>
-      {editorPane}
+      </nav>
+
+      <div className="editor-module__content">{editorPane}</div>
     </div>
   );
 }
