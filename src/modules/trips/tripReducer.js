@@ -9,6 +9,7 @@ import {
   normalizeTrip,
   reorderPlaces,
   reorderSegments,
+  syncSegmentOrigins,
 } from './tripModel.js';
 import {
   createSavedPlaceRoute,
@@ -118,12 +119,15 @@ export function tripReducer(state, action) {
     case TRIP_ACTIONS.addSegment:
       return appendSegment(state);
 
-    case TRIP_ACTIONS.removeSegment:
+    case TRIP_ACTIONS.removeSegment: {
+      const firstOrigin = state.segments[0]?.origin || null;
+      const remaining = state.segments.filter(
+        (segment) => segment.id !== action.segmentId
+      );
       return touch(state, {
-        segments: state.segments.filter(
-          (segment) => segment.id !== action.segmentId
-        ),
+        segments: syncSegmentOrigins(remaining, firstOrigin),
       });
+    }
 
     case TRIP_ACTIONS.reorderSegment:
       return reorderSegments(
@@ -133,14 +137,16 @@ export function tripReducer(state, action) {
         action.placement
       );
 
-    case TRIP_ACTIONS.updateSegment:
+    case TRIP_ACTIONS.updateSegment: {
+      const updated = state.segments.map((segment) =>
+        segment.id === action.segmentId
+          ? { ...segment, ...action.patch }
+          : segment
+      );
       return touch(state, {
-        segments: state.segments.map((segment) =>
-          segment.id === action.segmentId
-            ? { ...segment, ...action.patch }
-            : segment
-        ),
+        segments: syncSegmentOrigins(updated, updated[0]?.origin || null),
       });
+    }
 
     case TRIP_ACTIONS.updateExpenses:
       return touch(state, {
