@@ -5,7 +5,7 @@ import { useSavedTrips } from './modules/trips/useSavedTrips.js';
 import { useTripAutoPersistence } from './modules/trips/useTripAutoPersistence.js';
 import { savedTripErrorTranslationKey } from './modules/trips/savedTripOperations.js';
 import { useFirebaseAuth } from './infrastructure/firebase/useFirebaseAuth.js';
-import { isTripSavable } from './modules/trips/tripModel.js';
+import { isTripSavable, segmentTotal } from './modules/trips/tripModel.js';
 import { AppTopbar } from './app/AppTopbar.jsx';
 import { AppEditorModule } from './app/AppEditorModule.jsx';
 import { AppMapPane } from './app/AppMapPane.jsx';
@@ -20,6 +20,47 @@ import {
 import './App.css';
 import './app/FloatingEditor.css';
 import './app/ItinerarySidebar.css';
+
+function isBlankRecoveredSegment(segment) {
+  return Boolean(
+    segment
+      && !segment.origin
+      && !segment.destination
+      && !segment.startDate
+      && !segment.endDate
+      && !String(segment.note || '').trim()
+      && segmentTotal(segment) === 0
+  );
+}
+
+function normalizeRecoveredDraft(draft) {
+  const segments = Array.isArray(draft?.segments) ? draft.segments : [];
+  if (segments.length <= 1) return draft;
+
+  const hasNamedTrip = Boolean(String(draft?.name || '').trim());
+  const hasPlaces = Array.isArray(draft?.places) && draft.places.length > 0;
+  const hasRoutes = Array.isArray(draft?.routeConnections) && draft.routeConnections.length > 0;
+  const hasChecklist = Array.isArray(draft?.checklist) && draft.checklist.length > 0;
+  const hasNotes = Array.isArray(draft?.notes) && draft.notes.some((note) =>
+    String(note?.title || '').trim() || String(note?.text || '').trim()
+  );
+  const isPristine = !hasNamedTrip
+    && !hasPlaces
+    && !hasRoutes
+    && !hasChecklist
+    && !hasNotes
+    && segments.every(isBlankRecoveredSegment);
+
+  if (!isPristine) return draft;
+
+  // Older local drafts could retain several generated blank rows. They contain
+  // no user data, so collapse only this pristine recovery case to the single
+  // starter segment used by the current editor. Saved/real trips are untouched.
+  return {
+    ...draft,
+    segments: [segments[0]],
+  };
+}
 
 export default function App() {
   const { t, locale, intlLocale, setLocale, availableLocales } = useTranslation();
@@ -74,7 +115,7 @@ export default function App() {
       if (cancelled || !draft) return;
       // Never replace work the user already started during auth/draft startup.
       if (currentTripRef.current !== initialTripRef.current) return;
-      loadTrip(draft);
+      loadTrip(normalizeRecoveredDraft(draft));
     }).catch(() => {
       // Recovery is best-effort here. A later editor write surfaces durability
       // failure through the persistence state instead of silently claiming saved.
