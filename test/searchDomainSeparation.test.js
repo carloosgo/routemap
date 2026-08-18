@@ -16,8 +16,8 @@ test('el autocompletado de ciudades pertenece exclusivamente a Tramos', async ()
   // El timeline mantiene el encabezado como resumen visual. La edición canónica
   // de origen/destino sigue perteneciendo al tramo, dentro de su cuerpo expandido.
   assert.doesNotMatch(header, /CityAutocomplete/);
-  assert.match(body, /<CityAutocomplete[\s\S]*value=\{segment\.origin\}[\s\S]*onChange=\{\(origin\) => onUpdate\(\{ origin \}\)\}/);
-  assert.match(body, /<CityAutocomplete[\s\S]*value=\{segment\.destination\}[\s\S]*onChange=\{\(destination\) => onUpdate\(\{ destination \}\)\}/);
+  assert.match(body, /<CityAutocomplete[\s\S]*value=\{segment\.origin\}[\s\S]*onSelect=\{\(origin\) => onUpdate\(\{ origin \}\)\}/);
+  assert.match(body, /<CityAutocomplete[\s\S]*value=\{segment\.destination\}[\s\S]*onSelect=\{\(destination\) => onUpdate\(\{ destination \}\)\}/);
   assert.match(cityAutocomplete, /useCitySearch/);
   assert.match(citySearch, /getGeocoder\(\)\.search/);
   assert.match(provider, /createGeoapifyCityProvider/);
