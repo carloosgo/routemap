@@ -8,7 +8,13 @@ import { config } from '../config.js';
 // Campo de búsqueda de ciudad con autocompletado.
 // Muestra sugerencias a partir del 3er carácter y la bandera de cada país.
 // Al seleccionar, devuelve un objeto City completo (con lat/lon/countryCode).
-export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay = 'full' }) {
+export function CityAutocomplete({
+  value,
+  onSelect,
+  placeholder,
+  selectedDisplay = 'full',
+  variant = 'default',
+}) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -18,6 +24,7 @@ export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay
 
   const { results, loading, error } = useCitySearch(open ? query : '');
   const flagOnlySelected = selectedDisplay === 'flag-only' && Boolean(value) && !open;
+  const timelineSelected = variant === 'timeline' && Boolean(value) && !open;
 
   // Texto mostrado: si hay ciudad seleccionada y no se está escribiendo, su nombre.
   // El modo flag-only oculta solo la representación cerrada; al enfocar reaparece
@@ -34,6 +41,10 @@ export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay
     document.addEventListener('mousedown', onClickOutside);
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (variant === 'timeline' && open) inputRef.current?.focus();
+  }, [open, variant]);
 
   function handleChange(e) {
     setQuery(e.target.value);
@@ -67,41 +78,63 @@ export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay
   const showHint =
     open && query.trim().length > 0 && query.trim().length < config.citySearchMinChars;
 
+  const className = [
+    'autocomplete',
+    flagOnlySelected ? 'autocomplete--flag-only-selected' : '',
+    variant === 'timeline' ? 'autocomplete--timeline' : '',
+  ].filter(Boolean).join(' ');
+
   return (
-    <div
-      className={'autocomplete' + (flagOnlySelected ? ' autocomplete--flag-only-selected' : '')}
-      ref={containerRef}
-    >
-      <div className="autocomplete__field" onClick={() => inputRef.current?.focus()}>
-        {/* La bandera permanece montada siempre que haya ciudad seleccionada.
-            Solo se atenúa mientras el campo está abierto para no ocultar la
-            referencia visual ni desplazar el ancho del campo. */}
-        {value?.countryCode ? (
-          <img
-            className={'flag' + (open ? ' flag--dim' : '')}
-            src={flagImageUrl(value.countryCode, 20)}
-            alt={value.countryCode}
-            width={20}
-            height={14}
-            loading="lazy"
+    <div className={className} ref={containerRef}>
+      {timelineSelected ? (
+        <button
+          type="button"
+          className="autocomplete__timeline-selected"
+          aria-label={`${t('edit')}: ${value.name}`}
+          onClick={() => {
+            setQuery('');
+            setHighlight(-1);
+            setOpen(true);
+          }}
+        >
+          <span className="autocomplete__timeline-name">{value.name}</span>
+          {value.country && (
+            <span className="autocomplete__timeline-country">{value.country}</span>
+          )}
+        </button>
+      ) : (
+        <div className="autocomplete__field" onClick={() => inputRef.current?.focus()}>
+          {/* En modo timeline el marcador/bandera vive en la columna visual externa.
+              La búsqueda sigue reutilizando este mismo componente y su misma API. */}
+          {variant !== 'timeline' && (
+            value?.countryCode ? (
+              <img
+                className={'flag' + (open ? ' flag--dim' : '')}
+                src={flagImageUrl(value.countryCode, 20)}
+                alt={value.countryCode}
+                width={20}
+                height={14}
+                loading="lazy"
+              />
+            ) : (
+              <IconSearch size={14} className="autocomplete__search-icon" aria-hidden="true" />
+            )
+          )}
+          <input
+            ref={inputRef}
+            type="text"
+            className="input"
+            value={displayValue}
+            placeholder={flagOnlySelected ? '' : placeholder || t('searchCity')}
+            aria-label={placeholder || t('searchCity')}
+            onChange={handleChange}
+            onFocus={() => setOpen(true)}
+            onKeyDown={handleKeyDown}
+            autoComplete="off"
+            spellCheck="false"
           />
-        ) : (
-          <IconSearch size={14} className="autocomplete__search-icon" aria-hidden="true" />
-        )}
-        <input
-          ref={inputRef}
-          type="text"
-          className="input"
-          value={displayValue}
-          placeholder={flagOnlySelected ? '' : placeholder || t('searchCity')}
-          aria-label={placeholder || t('searchCity')}
-          onChange={handleChange}
-          onFocus={() => setOpen(true)}
-          onKeyDown={handleKeyDown}
-          autoComplete="off"
-          spellCheck="false"
-        />
-      </div>
+        </div>
+      )}
 
       {open && (query.trim().length >= config.citySearchMinChars || loading) && (
         <ul className="autocomplete__list" role="listbox">
@@ -134,8 +167,6 @@ export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay
                   loading="lazy"
                 />
               )}
-              {/* Nombre de ciudad en negrita; país en línea secundaria (nunca
-                  el display_name completo de OSM). */}
               <span className="autocomplete__cityinfo">
                 <span className="autocomplete__name">{city.name}</span>
                 {city.country && <span className="autocomplete__meta">, {city.country}</span>}
