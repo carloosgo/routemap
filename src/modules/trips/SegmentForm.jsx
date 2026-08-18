@@ -61,7 +61,12 @@ export function SegmentForm({
 
   return (
     <>
-      {index === 0 && <ItineraryOrigin city={segment.origin} />}
+      {index === 0 && (
+        <ItineraryOrigin
+          city={segment.origin}
+          onSelect={(origin) => onUpdate({ origin })}
+        />
+      )}
 
       <article
         className={
@@ -91,6 +96,7 @@ export function SegmentForm({
           dragging={dragging}
           bodyId={bodyId}
           onToggle={onToggle}
+          onDestinationSelect={(destination) => onUpdate({ destination })}
           onOpenNote={onOpenNote}
           onRemoveRequest={() => setConfirmOpen(true)}
           onReorderPointerStart={onReorderPointerStart}
