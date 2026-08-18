@@ -3,7 +3,6 @@ import { TripPlacesPanel } from '../modules/places/TripPlacesPanel.jsx';
 import { AppEditorPane } from './AppEditorPane.jsx';
 import { AppWorkspaceMenu } from './AppWorkspaceMenu.jsx';
 import lugaresIcon from '../assets/lugares-storefront-v2.svg';
-import './ItineraryTimeline.css';
 
 export function AppEditorModule({
   tripStore,
