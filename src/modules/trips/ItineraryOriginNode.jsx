@@ -1,7 +1,9 @@
 import { IconPennantFilled } from '@tabler/icons-react';
+import { useTranslation } from '../../i18n/index.jsx';
 import { TimelineCityPicker } from './TimelineCityPicker.jsx';
 
 export function ItineraryOriginNode({ city, onSelect, placeholder }) {
+  const { t } = useTranslation();
   return (
     <div className="itinerary-origin-node">
       <span className="itinerary-origin-node__marker" aria-hidden="true">
@@ -11,7 +13,7 @@ export function ItineraryOriginNode({ city, onSelect, placeholder }) {
         <TimelineCityPicker
           city={city}
           onSelect={onSelect}
-          placeholder={placeholder}
+          placeholder={placeholder || t('origin')}
         />
       </div>
     </div>
