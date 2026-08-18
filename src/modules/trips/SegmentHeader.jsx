@@ -19,7 +19,7 @@ export function SegmentHeader({
   dragging,
   bodyId,
   onToggle,
-  onDestinationSelect,
+  onUpdate,
   onOpenNote,
   onRemoveRequest,
   onReorderPointerStart,
@@ -47,7 +47,7 @@ export function SegmentHeader({
       <div className="segment__timeline-city">
         <TimelineCityPicker
           city={segment.destination}
-          onSelect={onDestinationSelect}
+          onSelect={(city) => onUpdate({ destination: city })}
           placeholder={t('destination')}
         />
       </div>
