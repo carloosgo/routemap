@@ -6,8 +6,15 @@ import * as pathModule from 'node:path';
 export const PREPROD_PROJECT = 'atlasmap-dev';
 export const PRODUCTION_PROJECT = 'atlasmap-prod';
 
+export function spawnOptions(platform = process.platform) {
+  return {
+    stdio: 'inherit',
+    shell: platform === 'win32',
+  };
+}
+
 function run(command, args) {
-  const result = childProcess.spawnSync(command, args, { stdio: 'inherit', shell: false });
+  const result = childProcess.spawnSync(command, args, spawnOptions());
   if (result.error) throw result.error;
   if (result.status !== 0) {
     throw new Error(`${command} ${args.join(' ')} terminó con código ${result.status}.`);

@@ -7,6 +7,7 @@ import {
   PREPROD_PROJECT,
   PRODUCTION_PROJECT,
   deployCommand,
+  spawnOptions,
   validateBuiltPreprodBundle,
   validatePreprodHostingConfig,
 } from '../scripts/runPreprodHostingDeploy.mjs';
@@ -61,4 +62,9 @@ test('deploy command sólo publica Hosting en atlasmap-dev', () => {
     '--config',
     'firebase.json',
   ]);
+});
+
+test('Windows ejecuta npm.cmd y npx.cmd mediante shell para evitar spawnSync EINVAL', () => {
+  assert.deepEqual(spawnOptions('win32'), { stdio: 'inherit', shell: true });
+  assert.deepEqual(spawnOptions('linux'), { stdio: 'inherit', shell: false });
 });
