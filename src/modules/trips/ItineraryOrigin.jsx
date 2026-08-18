@@ -1,24 +1,24 @@
-import itineraryStartFlag from '../../assets/itinerary-start-flag.svg';
+import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
 
-export function ItineraryOrigin({ city }) {
+export function ItineraryOrigin({ city, onSelect }) {
   const { t } = useTranslation();
-  const cityName = city?.name || city?.displayName || '';
-  const country = city?.country || '';
-  const placeLabel = [cityName, country].filter(Boolean).join(', ');
 
   return (
     <div className="itinerary-origin" aria-label={t('origin')}>
-      <img
-        className="itinerary-origin__flag"
-        src={itineraryStartFlag}
-        alt=""
-        aria-hidden="true"
-      />
-      <span className="itinerary-origin__label">{t('origin')}</span>
-      <span className={'itinerary-origin__place' + (!placeLabel ? ' is-empty' : '')}>
-        {placeLabel || t('searchCity')}
-      </span>
+      <span className="itinerary-origin__marker" aria-hidden="true" />
+      <div className="itinerary-origin__place">
+        <div className="itinerary-origin__picker">
+          <CityAutocomplete
+            value={city}
+            onSelect={onSelect}
+            placeholder={t('origin')}
+          />
+        </div>
+        {city?.country && (
+          <span className="itinerary-origin__country">{city.country}</span>
+        )}
+      </div>
     </div>
   );
 }
