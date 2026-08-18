@@ -19,7 +19,9 @@ test('SegmentForm coordina el timeline sin absorber edición, encabezado ni diá
     `SegmentForm.jsx volvió a crecer a ${lineCount(form)} líneas`
   );
   assert.match(form, /<ItineraryOrigin/);
+  assert.match(form, /onSelect=\{\(origin\) => onUpdate\(\{ origin \}\)\}/);
   assert.match(form, /<SegmentHeader/);
+  assert.match(form, /onDestinationSelect=\{\(destination\) => onUpdate\(\{ destination \}\)\}/);
   assert.match(form, /<SegmentBody/);
   assert.match(form, /<SegmentDeleteDialog/);
   assert.match(form, /formatSegmentAmount/);
@@ -30,15 +32,16 @@ test('SegmentForm coordina el timeline sin absorber edición, encabezado ni diá
     /CityAutocomplete|CalendarDateInput|ExpenseEditor|ConfirmDialog|IconChevronDown/
   );
 
-  assert.match(origin, /itinerary-start-flag\.svg/);
-  assert.match(origin, /t\('origin'\)/);
+  assert.doesNotMatch(origin, /itinerary-start-flag\.svg/);
+  assert.match(origin, /CityAutocomplete/);
+  assert.match(origin, /value=\{city\}/);
   assert.match(header, /segment__header itinerary-stop/);
-  assert.doesNotMatch(header, /CityAutocomplete/);
+  assert.match(header, /CityAutocomplete/);
+  assert.match(header, /value=\{destination\}/);
+  assert.match(header, /onSelect=\{onDestinationSelect\}/);
   assert.match(header, /aria-controls=\{bodyId\}/);
   assert.match(body, /className="segment__body"/);
-  assert.match(body, /CityAutocomplete/);
-  assert.match(body, /onUpdate\(\{ origin \}\)/);
-  assert.match(body, /onUpdate\(\{ destination \}\)/);
+  assert.doesNotMatch(body, /CityAutocomplete|segment-route-editor/);
   assert.match(body, /CalendarDateInput/);
   assert.match(body, /<ExpenseEditor/);
   assert.match(dialog, /<ConfirmDialog/);
