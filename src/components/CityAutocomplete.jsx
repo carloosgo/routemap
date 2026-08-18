@@ -17,6 +17,7 @@ export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay
 
   const { results, loading, error } = useCitySearch(open ? query : '');
   const flagOnlySelected = selectedDisplay === 'flag-only' && Boolean(value) && !open;
+  const timelineSelected = selectedDisplay === 'timeline' && Boolean(value) && !open;
   const displayValue = open ? query : flagOnlySelected ? '' : value?.name || '';
 
   useEffect(() => {
@@ -69,7 +70,8 @@ export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay
       className={
         'autocomplete' +
         (open ? ' is-open' : '') +
-        (flagOnlySelected ? ' autocomplete--flag-only-selected' : '')
+        (flagOnlySelected ? ' autocomplete--flag-only-selected' : '') +
+        (timelineSelected ? ' autocomplete--timeline-selected' : '')
       }
       ref={containerRef}
     >
@@ -102,6 +104,11 @@ export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay
           autoComplete="off"
           spellCheck="false"
         />
+        {timelineSelected && (
+          <span className="autocomplete__selected-value" aria-hidden="true">
+            {value?.name}
+          </span>
+        )}
       </div>
 
       {open && (query.trim().length >= config.citySearchMinChars || loading) && (
@@ -128,8 +135,8 @@ export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay
                     className="flag"
                     src={flagImageUrl(city.countryCode, 40)}
                     alt={city.countryCode}
-                    width={20}
-                    height={14}
+                    width={24}
+                    height={17}
                     loading="lazy"
                     decoding="async"
                   />
