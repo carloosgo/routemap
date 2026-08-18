@@ -26,6 +26,9 @@ export function SegmentHeader({
 }) {
   const { t } = useTranslation();
   const destination = segment.destination;
+  const dateLines = formattedDates
+    ? formattedDates.split(' – ')
+    : [t('datePlaceholderShort'), t('datePlaceholderShort')];
 
   return (
     <header className="segment__header itinerary-stop">
@@ -45,11 +48,12 @@ export function SegmentHeader({
       <span className={'itinerary-stop__marker' + (!destination?.countryCode ? ' is-empty' : '')}>
         {destination?.countryCode ? (
           <img
-            src={flagImageUrl(destination.countryCode, 24)}
+            src={flagImageUrl(destination.countryCode, 40)}
             alt=""
             width={24}
             height={17}
             loading="lazy"
+            decoding="async"
           />
         ) : null}
       </span>
@@ -68,9 +72,18 @@ export function SegmentHeader({
       </div>
 
       <span className={'itinerary-stop__dates' + (!formattedDates ? ' is-placeholder' : '')}>
-        {formattedDates || t('dateRangeHint')}
+        {dateLines.map((dateLine, index) => (
+          <span className="itinerary-stop__date-line" key={`${dateLine}-${index}`}>
+            {dateLine}
+          </span>
+        ))}
       </span>
-      <span className={'itinerary-stop__nights' + (!formattedNights ? ' is-placeholder' : '')}>
+      <span
+        className={
+          'segment__pill itinerary-stop__nights' +
+          (!formattedNights ? ' is-placeholder' : '')
+        }
+      >
         {formattedNights || t('nightsHint')}
       </span>
       <span className="segment__pill itinerary-stop__amount">{formattedAmount}</span>
