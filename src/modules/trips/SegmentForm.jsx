@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { segmentTotal } from './tripModel.js';
+import { ItineraryOriginNode } from './ItineraryOriginNode.jsx';
 import { SegmentBody } from './SegmentBody.jsx';
 import { SegmentDeleteDialog } from './SegmentDeleteDialog.jsx';
 import { SegmentHeader } from './SegmentHeader.jsx';
@@ -32,6 +33,7 @@ function SegmentDropIndicator({ placement }) {
 
 export function SegmentForm({
   segment,
+  index,
   currency,
   locale,
   expanded,
@@ -40,7 +42,6 @@ export function SegmentForm({
   dropPlacement,
   onToggle,
   onUpdate,
-  onDestinationSelect,
   onUpdateExpenses,
   onRemove,
   onOpenNote,
@@ -58,56 +59,65 @@ export function SegmentForm({
   };
 
   return (
-    <article
-      className={
-        'segment' +
-        (dragging ? ' is-dragging' : '') +
-        (dropPlacement ? ` is-drop-${dropPlacement}` : '')
-      }
-      data-segment-id={segment.id}
-      style={
-        dragging
-          ? {
-              transform: `translateY(${dragOffsetY}px)`,
-              pointerEvents: 'none',
-              zIndex: 20,
-            }
-          : undefined
-      }
-    >
-      <SegmentDropIndicator placement={dropPlacement} />
-
-      <SegmentHeader
-        segment={segment}
-        formattedDateLines={formattedDateLines}
-        formattedAmount={formattedAmount}
-        nightCount={nightCount}
-        expanded={expanded}
-        dragging={dragging}
-        bodyId={bodyId}
-        onToggle={onToggle}
-        onDestinationSelect={onDestinationSelect}
-        onOpenNote={onOpenNote}
-        onRemoveRequest={() => setConfirmOpen(true)}
-        onReorderPointerStart={onReorderPointerStart}
-      />
-
-      {expanded && (
-        <SegmentBody
-          segment={segment}
-          currency={currency}
-          locale={locale}
-          bodyId={bodyId}
-          onUpdate={onUpdate}
-          onUpdateExpenses={onUpdateExpenses}
+    <>
+      {index === 0 && (
+        <ItineraryOriginNode
+          city={segment.origin}
+          onSelect={(city) => onUpdate({ origin: city })}
+          placeholder="Origen"
         />
       )}
+      <article
+        className={
+          'segment' +
+          (dragging ? ' is-dragging' : '') +
+          (dropPlacement ? ` is-drop-${dropPlacement}` : '')
+        }
+        data-segment-id={segment.id}
+        style={
+          dragging
+            ? {
+                transform: `translateY(${dragOffsetY}px)`,
+                pointerEvents: 'none',
+                zIndex: 20,
+              }
+            : undefined
+        }
+      >
+        <SegmentDropIndicator placement={dropPlacement} />
 
-      <SegmentDeleteDialog
-        open={confirmOpen}
-        onConfirm={confirmRemove}
-        onCancel={() => setConfirmOpen(false)}
-      />
-    </article>
+        <SegmentHeader
+          segment={segment}
+          formattedDateLines={formattedDateLines}
+          formattedAmount={formattedAmount}
+          nightCount={nightCount}
+          expanded={expanded}
+          dragging={dragging}
+          bodyId={bodyId}
+          onToggle={onToggle}
+          onUpdate={onUpdate}
+          onOpenNote={onOpenNote}
+          onRemoveRequest={() => setConfirmOpen(true)}
+          onReorderPointerStart={onReorderPointerStart}
+        />
+
+        {expanded && (
+          <SegmentBody
+            segment={segment}
+            currency={currency}
+            locale={locale}
+            bodyId={bodyId}
+            onUpdate={onUpdate}
+            onUpdateExpenses={onUpdateExpenses}
+          />
+        )}
+
+        <SegmentDeleteDialog
+          open={confirmOpen}
+          onConfirm={confirmRemove}
+          onCancel={() => setConfirmOpen(false)}
+        />
+      </article>
+    </>
   );
 }
