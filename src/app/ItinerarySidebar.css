@@ -39,12 +39,17 @@
   .editor-module__tabs > .editor-module__nav-tab,
   .editor-module__tabs > .editor-module__nav-tab.is-active {
     position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
     min-height: 76px;
-    height: auto;
-    flex: 0 0 auto;
+    height: 76px;
+    max-height: 76px;
+    flex: 0 0 76px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -63,6 +68,8 @@
     line-height: 1.15;
     text-align: center;
     white-space: normal;
+    transform: none !important;
+    translate: none !important;
   }
 
   .editor-module__tabs > .editor-module__nav-tab:hover,
@@ -74,6 +81,8 @@
     background: transparent !important;
     box-shadow: none !important;
     outline: none !important;
+    transform: none !important;
+    translate: none !important;
   }
 
   .editor-module__tabs > .editor-module__nav-tab.is-active {
@@ -110,6 +119,13 @@
     line-height: 1.15;
     text-align: center;
     white-space: normal;
+  }
+
+  .editor-module__tabs > .editor-module__nav-tab .tabbar__badge {
+    position: absolute;
+    top: 7px;
+    right: 4px;
+    margin: 0;
   }
 
   /* Separadores cortos y centrados entre opciones. */
