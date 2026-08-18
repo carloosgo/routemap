@@ -58,10 +58,10 @@
 .itinerary-origin__marker img,
 .itinerary-stop__marker img {
   display: block;
-  width: 24px;
-  height: 17px;
-  object-fit: cover;
-  border-radius: 2px;
+  width: 28px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 1px;
   image-rendering: auto;
 }
 
@@ -101,6 +101,11 @@
   box-shadow: none;
 }
 
+.itinerary-stop__picker .autocomplete__field {
+  position: relative;
+  min-height: 32px;
+}
+
 .itinerary-origin__picker .autocomplete__field > .flag,
 .itinerary-stop__picker .autocomplete__field > .flag,
 .itinerary-origin__picker .autocomplete__search-icon,
@@ -124,7 +129,35 @@
 }
 
 .itinerary-stop__picker .input {
+  height: 32px;
+  font-size: 13px;
   font-weight: 700;
+}
+
+.itinerary-stop__picker .autocomplete--timeline-selected .input {
+  color: transparent;
+  caret-color: transparent;
+}
+
+.itinerary-stop__picker .autocomplete__selected-value {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 4px;
+  right: 4px;
+  max-height: 30px;
+  overflow: hidden;
+  transform: translateY(-50%);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: #303642;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: normal;
+  overflow-wrap: break-word;
+  pointer-events: none;
 }
 
 .itinerary-origin__picker .input {
@@ -171,6 +204,13 @@
   background: var(--coral-soft);
 }
 
+.itinerary-origin__picker .autocomplete__list .flag,
+.itinerary-stop__picker .autocomplete__list .flag {
+  width: 24px;
+  height: 17px;
+  object-fit: contain;
+}
+
 .itinerary-origin__country,
 .itinerary-stop__country {
   padding-left: 4px;
@@ -199,11 +239,12 @@
 
 .itinerary-segment .segment__header.itinerary-stop {
   position: relative;
-  min-height: 48px;
+  min-height: 52px;
   display: grid;
-  grid-template-columns: 18px 30px minmax(86px, 1fr) 72px 58px 62px 22px 22px 22px;
+  grid-template-columns: 18px 30px minmax(86px, 1fr) 48px 58px 58px 22px 22px 22px;
   align-items: center;
-  gap: 4px;
+  column-gap: 6px;
+  row-gap: 0;
   padding: 2px 0;
   border: 0;
   background: transparent;
@@ -233,7 +274,7 @@
   align-items: flex-start;
   gap: 1px;
   color: #8b929e;
-  font-size: 9.5px;
+  font-size: 10.5px;
   font-weight: 500;
   line-height: 1.15;
   font-variant-numeric: tabular-nums;
@@ -259,14 +300,22 @@
   font-weight: 600;
 }
 
-.itinerary-stop__nights.is-placeholder {
+/* FloatingEditorPolish aplica gris a los pills genéricos; noches es una
+   semántica específica del timeline y conserva deliberadamente su azul. */
+.floating-editor .itinerary-stop__nights.segment__pill {
+  background: #eef5ff;
+  color: #3977ca;
+}
+
+.itinerary-stop__nights.is-placeholder,
+.floating-editor .itinerary-stop__nights.segment__pill.is-placeholder {
   color: #6f96c9;
   background: #f3f7fd;
 }
 
 .itinerary-stop__amount.segment__pill {
   min-width: 58px;
-  max-width: 62px;
+  max-width: 58px;
   overflow: hidden;
   text-overflow: ellipsis;
   border: 0;
