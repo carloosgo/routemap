@@ -10,47 +10,46 @@ test('legacy header icon injection is no longer loaded', async () => {
   const main = await read('src/main.jsx');
 
   assert.doesNotMatch(html, /custom-header-icons\.css/);
-  assert.match(main, /EditorNavigationIcons\.css/);
+  assert.match(main, /ItineraryTimelineRedesign\.css/);
 });
 
-test('desktop navigation keeps canonical icons while currency remains icon-free', async () => {
+test('desktop editor navigation uses the requested left rail and canonical Atlas icons', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
-  const navigation = `${editor}\n${menu}`;
-  const css = await read('src/app/EditorNavigationIcons.css');
+  const css = await read('src/app/ItineraryTimelineRedesign.css');
 
-  assert.equal((navigation.match(/editor-module__tab-icon/g) || []).length, 3);
-  assert.match(editor, /<img src=\{lugaresIcon\} alt="" \/>/);
+  assert.match(editor, /className="editor-sidebar"/);
+  assert.match(editor, /\/icons\/tramos\.svg/);
+  assert.match(editor, /lugaresIcon/);
+  assert.match(editor, /\/icons\/notas\.svg/);
+  assert.match(menu, /\/icons\/moneda\.svg/);
   assert.match(menu, /const CURRENCIES = \['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'\]/);
-  assert.match(menu, /openMenu === 'currency'/);
   assert.match(menu, /setCurrency\(currency\)/);
-  assert.match(menu, /<span className="editor-module__tab-label">\{trip\.currency\}<\/span>/);
-  assert.match(menu, /<IconLanguage size=\{17\} aria-hidden="true" \/>/);
-  assert.match(menu, /<span>\{t\('language'\)\}<\/span>/);
-  assert.doesNotMatch(menu, /currencyCoinIcon|data-tab-icon="language-selector"/);
-  assert.doesNotMatch(css, /icons\/moneda\.svg/);
-  assert.match(css, /url\('\/icons\/tramos\.svg'\)/);
-  assert.match(css, /url\('\/icons\/notas\.svg'\)/);
-  assert.match(css, /\.editor-module__tab-icon > svg\s*\{\s*display:\s*none;/);
-  assert.match(css, /\.editor-module__nav-tab::before,[\s\S]*content:\s*none !important;/);
+  assert.match(css, /background:\s*#fdfdfd;/);
+  assert.match(css, /\.editor-sidebar__item::after[\s\S]*width:\s*48px;[\s\S]*background:\s*#eceef1;/);
+  assert.match(css, /box-shadow:\s*8px 0 22px rgba\(15, 23, 42, 0\.075\);/);
 });
 
-test('all desktop navigation options share dimensions and keep hover, focus and selection free of gray backgrounds', async () => {
-  const css = await read('src/app/EditorNavigationIcons.css');
+test('itinerary timeline keeps a fixed origin marker, dotted connector and destination rows', async () => {
+  const form = await read('src/modules/trips/SegmentForm.jsx');
+  const origin = await read('src/modules/trips/ItineraryOriginNode.jsx');
+  const header = await read('src/modules/trips/SegmentHeader.jsx');
+  const css = await read('src/app/ItineraryTimelineRedesign.css');
 
-  assert.match(css, /height:\s*36px;/);
-  assert.match(css, /padding:\s*6px 10px;/);
-  assert.match(css, /border-radius:\s*8px;/);
-  assert.match(css, /background:\s*#ffffff;/);
-  assert.match(css, /font-family:\s*var\(--font-body\);/);
-  assert.match(css, /font-size:\s*14px;/);
-  assert.match(css, /font-weight:\s*500(?:\s*!important)?;/);
-  assert.match(css, /\.editor-module__tab-icon\s*\{[\s\S]*width:\s*25px;[\s\S]*height:\s*25px;[\s\S]*flex:\s*0 0 25px;/);
-  assert.match(css, /\.editor-module__tab-icon > img\s*\{[\s\S]*width:\s*25px;[\s\S]*height:\s*25px;/);
-  assert.match(css, /background:\s*#ffffff\s*!important;/);
-  assert.match(css, /box-shadow:\s*none\s*!important;/);
-  assert.doesNotMatch(css, /background:\s*#f4f5f7/);
-  assert.match(css, /color:\s*#4b5563/);
+  assert.match(form, /index === 0/);
+  assert.match(form, /<ItineraryOriginNode/);
+  assert.match(origin, /itinerary-finish-flag\.svg/);
+  assert.match(header, /segment\.destination/);
+  assert.match(header, /format|formattedDateLines/);
+  assert.match(header, /segment__nights/);
+  assert.match(header, /segment__pill/);
+  assert.match(header, /segment__note-btn/);
+  assert.match(header, /segment__toggle/);
+  assert.match(header, /segment__remove/);
+  assert.match(header, /segment__drag-handle/);
+  assert.match(css, /repeating-linear-gradient\(/);
+  assert.match(css, /-webkit-line-clamp:\s*2;/);
+  assert.match(css, /\.timeline-city-picker__country[\s\S]*color:\s*#9097a2;/);
 });
 
 test('places uses a self-contained transparent signpost icon in the Atlas palette', async () => {
