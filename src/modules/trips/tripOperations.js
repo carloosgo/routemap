@@ -11,6 +11,36 @@ function nowISO() {
   return new Date().toISOString();
 }
 
+const CITY_FIELDS = [
+  'id',
+  'name',
+  'displayName',
+  'country',
+  'countryCode',
+  'lat',
+  'lon',
+];
+
+function sameCity(left, right) {
+  if (!left && !right) return true;
+  if (!left || !right) return false;
+  return CITY_FIELDS.every((field) => left[field] === right[field]);
+}
+
+function cloneCity(city) {
+  return city ? { ...city } : null;
+}
+
+export function rechainSegmentOrigins(segments, initialOrigin = null) {
+  return segments.map((segment, index) => {
+    const desiredOrigin = index === 0
+      ? initialOrigin
+      : segments[index - 1]?.destination || null;
+    if (sameCity(segment.origin, desiredOrigin)) return segment;
+    return { ...segment, origin: cloneCity(desiredOrigin) };
+  });
+}
+
 export function nextSegmentDefaults(trip) {
   const segments = trip?.segments || [];
   if (!segments.length) return {};
@@ -31,6 +61,48 @@ export function appendSegment(trip) {
   };
 }
 
+export function updateSegmentDestination(trip, segmentId, destination) {
+  const segments = Array.isArray(trip?.segments) ? trip.segments : [];
+  const index = segments.findIndex((segment) => segment.id === segmentId);
+  if (index < 0) return trip;
+
+  const nextDestination = cloneCity(destination);
+  const nextSegments = [...segments];
+  nextSegments[index] = {
+    ...segments[index],
+    destination: nextDestination,
+  };
+
+  if (index + 1 < nextSegments.length) {
+    const following = nextSegments[index + 1];
+    if (!sameCity(following.origin, nextDestination)) {
+      nextSegments[index + 1] = {
+        ...following,
+        origin: cloneCity(nextDestination),
+      };
+    }
+  }
+
+  return {
+    ...trip,
+    segments: nextSegments,
+    updatedAt: nowISO(),
+  };
+}
+
+export function removeSegmentFromRoute(trip, segmentId) {
+  const segments = Array.isArray(trip?.segments) ? trip.segments : [];
+  const initialOrigin = segments[0]?.origin || null;
+  const filtered = segments.filter((segment) => segment.id !== segmentId);
+  if (filtered.length === segments.length) return trip;
+
+  return {
+    ...trip,
+    segments: rechainSegmentOrigins(filtered, initialOrigin),
+    updatedAt: nowISO(),
+  };
+}
+
 export function reorderSegments(
   trip,
   sourceId,
@@ -47,6 +119,7 @@ export function reorderSegments(
     return trip;
   }
 
+  const initialOrigin = segments[0]?.origin || null;
   const reordered = [...segments];
   const [moved] = reordered.splice(sourceIndex, 1);
   const targetIndex = reordered.findIndex(
@@ -56,7 +129,7 @@ export function reorderSegments(
 
   return {
     ...trip,
-    segments: reordered,
+    segments: rechainSegmentOrigins(reordered, initialOrigin),
     updatedAt: nowISO(),
   };
 }
