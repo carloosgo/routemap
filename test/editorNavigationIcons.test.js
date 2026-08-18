@@ -44,10 +44,19 @@ test('desktop navigation keeps canonical icons and currency lives inside the wor
 test('sidebar geometry has one owner and uses compact centered separators', async () => {
   const iconCss = await read('src/app/EditorNavigationIcons.css');
   const sidebarCss = await read('src/app/ItinerarySidebar.css');
+  const polishCss = await read('src/app/FloatingEditorPolish.css');
 
   assert.doesNotMatch(iconCss, /grid-template-columns|position:\s*fixed|separator|border-right/);
+  assert.doesNotMatch(
+    polishCss,
+    /\.editor-module__tabs \.editor-module__nav-tab(?:\.is-active)?\s*\{/,
+    'FloatingEditorPolish.css no debe volver a definir la geometría de navegación'
+  );
   assert.match(sidebarCss, /grid-template-columns:\s*82px minmax\(0, 1fr\);/);
   assert.match(sidebarCss, /min-height:\s*76px;/);
+  assert.match(sidebarCss, /height:\s*76px;/);
+  assert.match(sidebarCss, /flex:\s*0 0 76px;/);
+  assert.match(sidebarCss, /transform:\s*none\s*!important;/);
   assert.match(sidebarCss, /width:\s*38px;/);
   assert.match(sidebarCss, /height:\s*38px;/);
   assert.match(sidebarCss, /width:\s*26px\s*!important;/);
