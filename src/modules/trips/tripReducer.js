@@ -33,7 +33,6 @@ export const TRIP_ACTIONS = Object.freeze({
   removeSegment: 'REMOVE_SEGMENT',
   reorderSegment: 'REORDER_SEGMENT',
   updateSegment: 'UPDATE_SEGMENT',
-  updateSegmentDestination: 'UPDATE_SEGMENT_DESTINATION',
   updateExpenses: 'UPDATE_EXPENSES',
   addPlace: 'ADD_PLACE',
   removePlace: 'REMOVE_PLACE',
@@ -132,21 +131,30 @@ export function tripReducer(state, action) {
         action.placement
       );
 
-    case TRIP_ACTIONS.updateSegment:
-      return touch(state, {
-        segments: state.segments.map((segment) =>
+    case TRIP_ACTIONS.updateSegment: {
+      const patch = action.patch || {};
+      const hasDestination = Object.prototype.hasOwnProperty.call(
+        patch,
+        'destination'
+      );
+      const routedState = hasDestination
+        ? updateSegmentDestination(state, action.segmentId, patch.destination)
+        : state;
+      const remainingPatch = hasDestination
+        ? Object.fromEntries(
+            Object.entries(patch).filter(([key]) => key !== 'destination')
+          )
+        : patch;
+
+      if (Object.keys(remainingPatch).length === 0) return routedState;
+      return touch(routedState, {
+        segments: routedState.segments.map((segment) =>
           segment.id === action.segmentId
-            ? { ...segment, ...action.patch }
+            ? { ...segment, ...remainingPatch }
             : segment
         ),
       });
-
-    case TRIP_ACTIONS.updateSegmentDestination:
-      return updateSegmentDestination(
-        state,
-        action.segmentId,
-        action.destination
-      );
+    }
 
     case TRIP_ACTIONS.updateExpenses:
       return touch(state, {
