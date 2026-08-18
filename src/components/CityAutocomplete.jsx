@@ -121,7 +121,6 @@ export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay
                 aria-selected={index === highlight}
                 className={'autocomplete__item' + (index === highlight ? ' is-active' : '')}
                 onMouseEnter={() => setHighlight(index)}
-                onPointerDown={(event) => event.preventDefault()}
                 onClick={() => handleSelect(city)}
               >
                 {city.countryCode && (
