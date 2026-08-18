@@ -1,5 +1,6 @@
-import { Fragment, useState } from 'react';
+import { useState } from 'react';
 import { segmentTotal } from './tripModel.js';
+import { ItineraryOrigin } from './ItineraryOrigin.jsx';
 import { SegmentBody } from './SegmentBody.jsx';
 import { SegmentDeleteDialog } from './SegmentDeleteDialog.jsx';
 import { SegmentHeader } from './SegmentHeader.jsx';
@@ -8,8 +9,6 @@ import {
   formatSegmentDates,
   formatSegmentNights,
 } from './segmentFormModel.js';
-import { useTranslation } from '../../i18n/index.jsx';
-import itineraryStartFlag from '../../assets/itinerary-start-flag.svg';
 import './ItineraryTimeline.css';
 
 function SegmentDropIndicator({ placement }) {
@@ -30,28 +29,6 @@ function SegmentDropIndicator({ placement }) {
         zIndex: 30,
       }}
     />
-  );
-}
-
-function ItineraryOrigin({ city }) {
-  const { t } = useTranslation();
-  const cityName = city?.name || city?.displayName || '';
-  const country = city?.country || '';
-  const placeLabel = [cityName, country].filter(Boolean).join(', ');
-
-  return (
-    <div className="itinerary-origin" aria-label={t('origin')}>
-      <img
-        className="itinerary-origin__flag"
-        src={itineraryStartFlag}
-        alt=""
-        aria-hidden="true"
-      />
-      <span className="itinerary-origin__label">{t('origin')}</span>
-      <span className={'itinerary-origin__place' + (!placeLabel ? ' is-empty' : '')}>
-        {placeLabel || t('searchCity')}
-      </span>
-    </div>
   );
 }
 
@@ -83,7 +60,7 @@ export function SegmentForm({
   };
 
   return (
-    <Fragment>
+    <>
       {index === 0 && <ItineraryOrigin city={segment.origin} />}
 
       <article
@@ -107,7 +84,6 @@ export function SegmentForm({
 
         <SegmentHeader
           segment={segment}
-          index={index}
           formattedDates={formattedDates}
           formattedNights={formattedNights}
           formattedAmount={formattedAmount}
@@ -137,6 +113,6 @@ export function SegmentForm({
           onCancel={() => setConfirmOpen(false)}
         />
       </article>
-    </Fragment>
+    </>
   );
 }
