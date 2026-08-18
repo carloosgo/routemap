@@ -12,13 +12,14 @@
 
   .editor-module {
     display: grid;
-    grid-template-columns: 78px minmax(0, 1fr);
+    grid-template-columns: 88px minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
     min-width: 0;
     min-height: 0;
+    overflow: visible;
   }
 
-  .editor-module__tabs {
+  .editor-module .editor-module__tabs {
     grid-column: 1;
     grid-row: 1;
     min-width: 0;
@@ -26,79 +27,178 @@
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 2px;
-    padding: 9px 6px;
+    gap: 0;
+    padding: 8px 6px;
+    overflow: visible !important;
     border-right: 1px solid #eceef1;
     border-bottom: 0;
-    background: #fbfbfc;
+    background: #fdfdfd !important;
+    box-shadow: 1px 0 2px rgba(15, 23, 42, 0.025);
   }
 
-  .editor-module__tab {
+  .editor-module .editor-module__tabs .editor-module__nav-tab,
+  .editor-module .editor-module__tabs .editor-module__nav-tab.is-active {
+    position: relative !important;
+    box-sizing: border-box;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 76px !important;
+    flex: 0 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    margin: 0 !important;
+    padding: 10px 4px 12px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #68707d !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    line-height: 1.15 !important;
+    text-align: center;
+    white-space: normal !important;
+  }
+
+  .editor-module .editor-module__tabs .editor-module__nav-tab:hover,
+  .editor-module .editor-module__tabs .editor-module__nav-tab:focus,
+  .editor-module .editor-module__tabs .editor-module__nav-tab:focus-visible,
+  .editor-module .editor-module__tabs .editor-module__nav-tab:active,
+  .editor-module .editor-module__tabs .editor-module__nav-tab.is-active,
+  .editor-module .editor-module__tabs .editor-module__nav-tab.is-active:hover {
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  .editor-module .editor-module__tabs .editor-module__nav-tab.is-active {
+    color: #26313a !important;
+  }
+
+  .editor-module .editor-module__tabs .editor-module__tab-icon {
+    width: 38px !important;
+    height: 38px !important;
+    flex: 0 0 38px !important;
+    display: grid !important;
+    place-items: center;
+    color: #4e8da0;
+    background-size: 34px 34px !important;
+  }
+
+  .editor-module .editor-module__tabs .editor-module__tab-icon svg,
+  .editor-module .editor-module__tabs .editor-module__tab-icon img,
+  .floating-editor .editor-module__tab svg {
+    width: 34px !important;
+    height: 34px !important;
+    max-width: none;
+    object-fit: contain;
+  }
+
+  .editor-module .editor-module__tabs .editor-module__tab-label {
+    display: block !important;
     width: 100%;
-    min-height: 68px;
-    flex: 0 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    padding: 7px 4px;
-    border-radius: 8px;
-    color: #727986;
-    font-size: 10px;
-    font-weight: 700;
+    min-width: 0;
+    overflow: visible;
+    color: inherit;
+    font: inherit;
     line-height: 1.15;
     text-align: center;
     white-space: normal;
   }
 
-  .editor-module__tab:hover {
-    background: #f2f4f6;
+  /* Separadores horizontales, cortos y muy sutiles entre opciones. */
+  .editor-module .editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab {
+    margin-left: 0 !important;
   }
 
-  .editor-module__tab.is-active {
-    background: transparent;
-    color: #252a32;
-  }
-
-  .editor-module__tab-icon {
-    width: 32px;
-    height: 32px;
-    display: grid;
-    place-items: center;
-    color: #4e8da0;
-  }
-
-  .editor-module__tab-icon svg,
-  .editor-module__tab-icon img,
-  .floating-editor .editor-module__tab svg {
-    width: 28px;
-    height: 28px;
-    object-fit: contain;
-  }
-
-  .editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab {
-    margin-left: 0;
-  }
-
-  .editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab::before {
-    display: none;
+  .editor-module .editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab::before {
+    content: '' !important;
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    right: 10px !important;
+    bottom: auto !important;
+    left: 10px !important;
+    width: auto !important;
+    height: 1px !important;
+    background: #e5e7ea !important;
+    background-image: none !important;
+    box-shadow: 0 1px 1px rgba(15, 23, 42, 0.025);
+    transform: none !important;
+    pointer-events: none;
   }
 
   .editor-module__settings {
     width: 100%;
     margin: auto 0 0;
-    padding-top: 8px;
+    padding-top: 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
+    gap: 0;
+    overflow: visible;
   }
 
   .editor-module__settings::before {
-    width: 48px;
-    height: 1px;
-    margin: 0 0 9px;
-    background: #e5e7ea;
+    display: none !important;
+  }
+
+  .editor-module__settings > .editor-module__menu-anchor {
+    width: 100%;
+    overflow: visible;
+  }
+
+  .editor-module__settings > .editor-module__menu-anchor:first-child {
+    position: relative;
+    padding-top: 1px;
+  }
+
+  .editor-module__settings > .editor-module__menu-anchor:first-child::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    right: 10px !important;
+    bottom: auto !important;
+    left: 10px !important;
+    width: auto !important;
+    height: 1px !important;
+    background: #e5e7ea !important;
+    box-shadow: 0 1px 1px rgba(15, 23, 42, 0.025);
+    transform: none !important;
+    pointer-events: none;
+  }
+
+  .editor-module__settings > .editor-module__menu-anchor:first-child > .editor-module__nav-tab {
+    width: 100% !important;
+    min-height: 58px !important;
+    padding: 8px 4px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    color: #25313b !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    background: transparent !important;
+  }
+
+  .editor-module__settings > .editor-module__menu-anchor:first-child > .editor-module__nav-tab:hover,
+  .editor-module__settings > .editor-module__menu-anchor:first-child > .editor-module__nav-tab.is-active {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .editor-module__tab-chevron {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .editor-module__more-button {
+    margin: 4px auto 2px;
   }
 
   .editor-module__more-menu,
@@ -107,6 +207,11 @@
     right: auto;
     bottom: 0;
     left: calc(100% + 8px);
+    visibility: visible;
+  }
+
+  .editor-module__currency-menu {
+    z-index: 120;
   }
 
   .editor-module > :not(.editor-module__tabs) {
