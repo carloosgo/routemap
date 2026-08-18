@@ -3,7 +3,11 @@ import { segmentTotal } from './tripModel.js';
 import { SegmentBody } from './SegmentBody.jsx';
 import { SegmentDeleteDialog } from './SegmentDeleteDialog.jsx';
 import { SegmentHeader } from './SegmentHeader.jsx';
-import { formatSegmentAmount, formatSegmentDates } from './segmentFormModel.js';
+import {
+  formatSegmentAmount,
+  formatSegmentDateLines,
+  segmentNightCount,
+} from './segmentFormModel.js';
 
 function SegmentDropIndicator({ placement }) {
   if (!placement) return null;
@@ -28,7 +32,6 @@ function SegmentDropIndicator({ placement }) {
 
 export function SegmentForm({
   segment,
-  index,
   currency,
   locale,
   expanded,
@@ -37,6 +40,7 @@ export function SegmentForm({
   dropPlacement,
   onToggle,
   onUpdate,
+  onDestinationSelect,
   onUpdateExpenses,
   onRemove,
   onOpenNote,
@@ -45,7 +49,8 @@ export function SegmentForm({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const bodyId = `segment-body-${segment.id}`;
   const formattedAmount = formatSegmentAmount(segmentTotal(segment), locale);
-  const formattedDates = formatSegmentDates(segment, locale);
+  const formattedDateLines = formatSegmentDateLines(segment, locale);
+  const nightCount = segmentNightCount(segment);
 
   const confirmRemove = () => {
     setConfirmOpen(false);
@@ -74,14 +79,14 @@ export function SegmentForm({
 
       <SegmentHeader
         segment={segment}
-        index={index}
-        formattedDates={formattedDates}
+        formattedDateLines={formattedDateLines}
         formattedAmount={formattedAmount}
+        nightCount={nightCount}
         expanded={expanded}
         dragging={dragging}
         bodyId={bodyId}
         onToggle={onToggle}
-        onUpdate={onUpdate}
+        onDestinationSelect={onDestinationSelect}
         onOpenNote={onOpenNote}
         onRemoveRequest={() => setConfirmOpen(true)}
         onReorderPointerStart={onReorderPointerStart}
