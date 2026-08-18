@@ -1,138 +1,13 @@
 /*
- * Fuente única de verdad para la navegación superior del editor.
- * Los iconos antiguos inyectados desde public/custom-header-icons.css fueron retirados.
+ * Única responsabilidad: recursos visuales de los iconos de navegación.
+ * Geometría, separación y distribución viven en ItinerarySidebar.css.
  */
-.editor-module__tabs {
-  min-width: 0;
-  overflow-x: clip;
-}
-
-.editor-module__tabs .editor-module__nav-tab,
-.editor-module__tabs .editor-module__nav-tab.is-active {
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  flex: 0 1 auto;
-  min-width: 0;
-  gap: 6px;
-  height: 36px;
-  min-height: 36px;
-  margin: 0;
-  padding: 6px 10px;
-  border: 0;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #111827;
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 500 !important;
-  font-style: normal;
-  line-height: 1;
-  letter-spacing: 0;
-  text-transform: none;
-  white-space: nowrap;
-  appearance: none;
-}
-
-/* Ninguna opción muestra fondo o sombra gris al pasar, pulsar o quedar seleccionada. */
-.editor-module__tabs .editor-module__nav-tab:hover,
-.editor-module__tabs .editor-module__nav-tab:focus,
-.editor-module__tabs .editor-module__nav-tab:focus-visible,
-.editor-module__tabs .editor-module__nav-tab:active,
-.editor-module__tabs .editor-module__nav-tab.is-active,
-.editor-module__tabs .editor-module__nav-tab.is-active:hover {
-  background: #ffffff !important;
-  box-shadow: none !important;
-  outline: none;
-}
-
-/* La opción seleccionada conserva el gris usado originalmente para ese estado. */
-.editor-module__tabs .editor-module__nav-tab.is-active,
-.editor-module__tabs .editor-module__nav-tab.is-active:hover,
-.editor-module__tabs .editor-module__nav-tab.is-active:focus,
-.editor-module__tabs .editor-module__nav-tab.is-active:active {
-  color: #4b5563 !important;
-}
-
-/* Ninguna opción puede volver a recibir iconos mediante pseudo-elementos. */
-.editor-module__tabs .editor-module__nav-tab::before,
-.editor-module__tabs .editor-module__nav-tab::after {
-  content: none !important;
-  display: none !important;
-  background-image: none !important;
-}
-
-/* Los separadores no ocupan ancho ni empujan las opciones vecinas. */
-.editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab {
-  position: relative;
-  margin-left: 0 !important;
-}
-
-.editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab::before {
-  content: '' !important;
-  display: block !important;
-  position: absolute !important;
-  top: 50% !important;
-  left: 0 !important;
-  width: 1px !important;
-  height: 18px !important;
-  background: #d7d9df !important;
-  background-image: none !important;
-  transform: translateY(-50%);
-  pointer-events: none;
-}
-
-/* Sustituye el separador del contenedor de ajustes por uno absoluto. */
-.editor-module__settings::before {
-  display: none !important;
-}
-
-.editor-module__settings > .editor-module__menu-anchor:first-child {
-  position: relative;
-  flex: 0 1 auto;
-  min-width: 0;
-}
-
-.editor-module__settings > .editor-module__menu-anchor:first-child::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 1px;
-  height: 18px;
-  background: #d7d9df;
-  transform: translateY(-50%);
-  pointer-events: none;
-}
-
-.editor-module__settings > .editor-module__menu-anchor:first-child > .editor-module__nav-tab {
-  width: 100%;
-  min-width: 0;
-}
-
-.editor-module__tabs .editor-module__tab-icon {
-  display: grid;
-  place-items: center;
-  width: 25px;
-  height: 25px;
-  flex: 0 0 25px;
-  overflow: visible;
-  line-height: 0;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
-}
-
-/* Los SVG de Tabler se sustituyen por los iconos visuales ya definidos para Atlas. */
 .editor-module__tabs .editor-module__tab-icon > svg {
   display: none;
 }
 
 .editor-module__tabs .editor-module__tab-icon > img {
   display: block;
-  width: 25px;
-  height: 25px;
   max-width: none;
   object-fit: contain;
 }
@@ -148,23 +23,4 @@
 /* Mis Rutas conserva como único icono el recurso entregado por el usuario. */
 .editor-module__tabs > .editor-module__nav-tab[data-tab-icon='places-map-pin'] .editor-module__tab-icon {
   background-image: none;
-}
-
-.editor-module__tabs .editor-module__tab-label {
-  display: inline-block;
-  flex: 0 1 auto;
-  min-width: 0;
-  font: inherit;
-  line-height: 1;
-}
-
-.editor-module__tabs .tabbar__badge {
-  flex: 0 0 auto;
-}
-
-.editor-module__tabs .editor-module__tab-chevron {
-  display: block;
-  width: 12px;
-  height: 12px;
-  flex: 0 0 12px;
 }
