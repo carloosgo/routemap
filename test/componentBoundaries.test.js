@@ -21,7 +21,9 @@ test('App coordina módulos sin contener menús, responsive ni diálogo completo
   assert.match(app, /editorState=\{editorState\}/);
   assert.doesNotMatch(app, /editor-module__more-menu|mobiletabs|confirm__scrim/);
 
-  assert.match(editor, /editor-module__tabs/);
+  assert.match(editor, /className="editor-rail"/);
+  assert.match(editor, /editor-module__content/);
+  assert.doesNotMatch(editor, /editor-module__tabs/);
   assert.match(workspace, /workspace__desktop/);
   assert.match(workspace, /workspace__mobile/);
   assert.match(workspace, /mobiletabs/);
