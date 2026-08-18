@@ -1,0 +1,123 @@
+/* Navegación lateral del editor en escritorio.
+   Mobile conserva la navegación horizontal existente. */
+@media (min-width: 721px) {
+  .docked-editor-shell {
+    width: 540px;
+    flex-basis: 540px;
+  }
+
+  .floating-editor {
+    width: 540px;
+  }
+
+  .editor-module {
+    display: grid;
+    grid-template-columns: 78px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .editor-module__tabs {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    padding: 9px 6px;
+    border-right: 1px solid #eceef1;
+    border-bottom: 0;
+    background: #fbfbfc;
+  }
+
+  .editor-module__tab {
+    width: 100%;
+    min-height: 68px;
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 7px 4px;
+    border-radius: 8px;
+    color: #727986;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.15;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .editor-module__tab:hover {
+    background: #f2f4f6;
+  }
+
+  .editor-module__tab.is-active {
+    background: transparent;
+    color: #252a32;
+  }
+
+  .editor-module__tab-icon {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    color: #4e8da0;
+  }
+
+  .editor-module__tab-icon svg,
+  .editor-module__tab-icon img,
+  .floating-editor .editor-module__tab svg {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+  }
+
+  .editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab {
+    margin-left: 0;
+  }
+
+  .editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab::before {
+    display: none;
+  }
+
+  .editor-module__settings {
+    width: 100%;
+    margin: auto 0 0;
+    padding-top: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .editor-module__settings::before {
+    width: 48px;
+    height: 1px;
+    margin: 0 0 9px;
+    background: #e5e7ea;
+  }
+
+  .editor-module__more-menu,
+  .editor-module__currency-menu {
+    top: auto;
+    right: auto;
+    bottom: 0;
+    left: calc(100% + 8px);
+  }
+
+  .editor-module > :not(.editor-module__tabs) {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .editor-module > .editor {
+    min-width: 0;
+    min-height: 0;
+  }
+}
