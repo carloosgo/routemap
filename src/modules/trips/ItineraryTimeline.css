@@ -1,0 +1,278 @@
+/* Timeline visual del itinerario.
+   Es exclusivamente una capa de presentación: los datos siguen viviendo en segment. */
+
+.segments:not(.segments--compact) {
+  --itinerary-axis-x: 31px;
+  position: relative;
+  padding-top: 2px;
+}
+
+.segments:not(.segments--compact)::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: 34px;
+  bottom: 20px;
+  left: var(--itinerary-axis-x);
+  width: 1px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #c9ced7 0 4px,
+    transparent 4px 9px
+  );
+  pointer-events: none;
+}
+
+.itinerary-origin {
+  position: relative;
+  z-index: 2;
+  width: 104px;
+  margin: 0 0 14px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.itinerary-origin__flag {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  margin-bottom: 3px;
+}
+
+.itinerary-origin__label {
+  color: #357d94;
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: .02em;
+}
+
+.itinerary-origin__place {
+  width: 104px;
+  margin-top: 2px;
+  color: #4f5663;
+  font-size: 10px;
+  font-weight: 550;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+}
+
+.itinerary-origin__place.is-empty {
+  color: #a0a6b0;
+  font-weight: 450;
+}
+
+.itinerary-segment.segment {
+  position: relative;
+  z-index: 1;
+  margin: 0 !important;
+  padding: 0 0 13px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.itinerary-segment:last-child {
+  padding-bottom: 0;
+}
+
+.itinerary-segment .segment__header.itinerary-stop {
+  position: relative;
+  min-height: 47px;
+  display: grid;
+  grid-template-columns: 18px 30px minmax(0, 1fr) auto 22px 22px 22px;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 0;
+  background: transparent;
+}
+
+.itinerary-stop__drag {
+  align-self: center;
+}
+
+.itinerary-stop__marker {
+  position: relative;
+  z-index: 3;
+  width: 28px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px var(--bg);
+}
+
+.itinerary-stop__marker img {
+  display: block;
+  width: 24px;
+  height: 17px;
+  object-fit: cover;
+  border-radius: 2px;
+}
+
+.itinerary-stop__marker.is-empty::after {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid #9ca4b1;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.itinerary-stop__summary {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.itinerary-stop__summary:hover,
+.itinerary-stop__summary:focus-visible {
+  background: rgba(255, 255, 255, .72);
+  outline: none;
+}
+
+.itinerary-stop__heading {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.itinerary-stop__city {
+  min-width: 0;
+  max-width: 100%;
+  color: #2f3540;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.itinerary-stop__country {
+  color: #9298a4;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.itinerary-stop__meta {
+  color: #8b929e;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+
+.itinerary-stop__amount.segment__pill {
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itinerary-segment .segment__body {
+  position: relative;
+  z-index: 2;
+  margin: 5px 0 0 52px;
+  padding: 11px;
+  border: 1px solid #e8eaee;
+  border-radius: 11px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, .035);
+}
+
+.segment-route-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.segment-route-editor__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-mute);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.segment-route-editor__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+}
+
+.segment-route-editor__row .autocomplete {
+  min-width: 0;
+}
+
+.segment-route-editor__arrow {
+  color: var(--text-mute);
+}
+
+.itinerary-segment.is-dragging {
+  background: rgba(255, 255, 255, .94);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, .13);
+}
+
+/* En panel estrecho damos prioridad al nombre de la ciudad y agrupamos acciones. */
+@media (min-width: 721px) {
+  .floating-editor .itinerary-segment .segment__header.itinerary-stop {
+    grid-template-columns: 17px 29px minmax(0, 1fr) auto 21px 21px 21px;
+    gap: 3px;
+  }
+
+  .floating-editor .itinerary-stop__city {
+    font-size: 12px;
+  }
+
+  .floating-editor .itinerary-stop__country,
+  .floating-editor .itinerary-stop__meta {
+    font-size: 9.5px;
+  }
+
+  .floating-editor .itinerary-segment .segment__body {
+    margin-left: 49px;
+  }
+}
+
+@media (max-width: 520px) {
+  .itinerary-segment .segment__header.itinerary-stop {
+    grid-template-columns: 18px 28px minmax(0, 1fr) 22px 22px;
+  }
+
+  .itinerary-stop__amount,
+  .itinerary-segment .segment__note-btn {
+    display: none !important;
+  }
+
+  .itinerary-segment .segment__body {
+    margin-left: 47px;
+  }
+
+  .segment-route-editor__row {
+    grid-template-columns: 1fr;
+  }
+
+  .segment-route-editor__arrow {
+    display: none;
+  }
+}
