@@ -78,6 +78,15 @@ export function useTrip(initialTrip) {
       dispatch({ type: TRIP_ACTIONS.updateSegment, segmentId, patch }),
     []
   );
+  const updateSegmentDestination = useCallback(
+    (segmentId, destination) =>
+      dispatch({
+        type: TRIP_ACTIONS.updateSegmentDestination,
+        segmentId,
+        destination,
+      }),
+    []
+  );
   const updateExpenses = useCallback(
     (segmentId, expenses) =>
       dispatch({ type: TRIP_ACTIONS.updateExpenses, segmentId, expenses }),
@@ -145,6 +154,7 @@ export function useTrip(initialTrip) {
     removeSegment,
     reorderSegment,
     updateSegment,
+    updateSegmentDestination,
     updateExpenses,
     addPlace,
     removePlace,
