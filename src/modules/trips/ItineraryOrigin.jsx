@@ -13,11 +13,12 @@ export function ItineraryOrigin({ city, onSelect }) {
       >
         {city?.countryCode ? (
           <img
-            src={flagImageUrl(city.countryCode, 24)}
+            src={flagImageUrl(city.countryCode, 80)}
             alt=""
-            width={24}
-            height={17}
+            width={28}
+            height={20}
             loading="lazy"
+            decoding="async"
           />
         ) : null}
       </span>
