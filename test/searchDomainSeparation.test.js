@@ -6,6 +6,7 @@ const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
 test('el autocompletado de ciudades pertenece exclusivamente a Tramos', async () => {
+  const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const header = await read('src/modules/trips/SegmentHeader.jsx');
   const body = await read('src/modules/trips/SegmentBody.jsx');
   const cityAutocomplete = await read('src/components/CityAutocomplete.jsx');
@@ -13,17 +14,15 @@ test('el autocompletado de ciudades pertenece exclusivamente a Tramos', async ()
   const provider = await read('src/modules/geocoding/geocodingProvider.js');
   const cityClient = await read('src/modules/geocoding/citySearchClient.js');
 
-  // El timeline mantiene el encabezado como resumen visual. La edición canónica
-  // de origen/destino sigue perteneciendo al tramo, dentro de su cuerpo expandido.
-  assert.doesNotMatch(header, /CityAutocomplete/);
-  assert.match(body, /<CityAutocomplete[\s\S]*value=\{segment\.origin\}[\s\S]*onSelect=\{\(origin\) => onUpdate\(\{ origin \}\)\}/);
-  assert.match(body, /<CityAutocomplete[\s\S]*value=\{segment\.destination\}[\s\S]*onSelect=\{\(destination\) => onUpdate\(\{ destination \}\)\}/);
+  assert.match(origin, /<CityAutocomplete[\s\S]*value=\{city\}[\s\S]*onSelect=\{onSelect\}/);
+  assert.match(header, /<CityAutocomplete[\s\S]*value=\{destination\}[\s\S]*onSelect=\{onDestinationSelect\}/);
+  assert.doesNotMatch(body, /CityAutocomplete/);
   assert.match(cityAutocomplete, /useCitySearch/);
   assert.match(citySearch, /getGeocoder\(\)\.search/);
   assert.match(provider, /createGeoapifyCityProvider/);
   assert.match(cityClient, /firebaseCallable\('geoapifyCityAutocomplete'\)/);
 
-  const combined = `${body}\n${cityAutocomplete}\n${citySearch}\n${provider}\n${cityClient}`;
+  const combined = `${origin}\n${header}\n${body}\n${cityAutocomplete}\n${citySearch}\n${provider}\n${cityClient}`;
   assert.doesNotMatch(combined, /usePlaceSearch|searchGooglePlaces|PlaceSearchForm|TripPlacesPanel|googlePlaceSearch/);
 });
 
