@@ -7,8 +7,10 @@ import {
   createTrip,
   insertPlaceByCountry,
   normalizeTrip,
+  removeSegmentFromTrip,
   reorderPlaces,
   reorderSegments,
+  updateSegmentDestination,
 } from './tripModel.js';
 import {
   createSavedPlaceRoute,
@@ -31,6 +33,7 @@ export const TRIP_ACTIONS = Object.freeze({
   removeSegment: 'REMOVE_SEGMENT',
   reorderSegment: 'REORDER_SEGMENT',
   updateSegment: 'UPDATE_SEGMENT',
+  updateSegmentDestination: 'UPDATE_SEGMENT_DESTINATION',
   updateExpenses: 'UPDATE_EXPENSES',
   addPlace: 'ADD_PLACE',
   removePlace: 'REMOVE_PLACE',
@@ -119,11 +122,7 @@ export function tripReducer(state, action) {
       return appendSegment(state);
 
     case TRIP_ACTIONS.removeSegment:
-      return touch(state, {
-        segments: state.segments.filter(
-          (segment) => segment.id !== action.segmentId
-        ),
-      });
+      return removeSegmentFromTrip(state, action.segmentId);
 
     case TRIP_ACTIONS.reorderSegment:
       return reorderSegments(
@@ -141,6 +140,13 @@ export function tripReducer(state, action) {
             : segment
         ),
       });
+
+    case TRIP_ACTIONS.updateSegmentDestination:
+      return updateSegmentDestination(
+        state,
+        action.segmentId,
+        action.destination
+      );
 
     case TRIP_ACTIONS.updateExpenses:
       return touch(state, {

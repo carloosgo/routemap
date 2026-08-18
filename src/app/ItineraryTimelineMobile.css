@@ -1,0 +1,24 @@
+@media (max-width: 720px) {
+  .editor-rail__overflow-anchor {
+    display: flex !important;
+    flex: 0 0 42px;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+  }
+
+  .editor-rail__more-button {
+    width: 32px;
+    height: 32px;
+    margin: 0;
+  }
+
+  .editor-rail__settings {
+    flex: 0 0 auto;
+  }
+
+  .editor-rail__settings .editor-module__menu-anchor:first-child {
+    min-width: 62px;
+  }
+}

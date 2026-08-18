@@ -2,6 +2,7 @@ import { expensesTotal } from '../expenses/expenseModel.js';
 import {
   PLACE_ORDER_VERSION,
   TRIP_LIMITS,
+  createCity,
   createSegment,
   isPlaced,
 } from './tripEntities.js';
@@ -9,6 +10,46 @@ import { reorderPlaceList } from './placeOrdering.js';
 
 function nowISO() {
   return new Date().toISOString();
+}
+
+function cityKey(city) {
+  if (!city) return '';
+  if (city.id) return `id:${city.id}`;
+  return [
+    city.name || '',
+    city.countryCode || '',
+    Number.isFinite(city.lat) ? Number(city.lat).toFixed(6) : '',
+    Number.isFinite(city.lon) ? Number(city.lon).toFixed(6) : '',
+  ].join('|');
+}
+
+function sameCity(left, right) {
+  if (left === right) return true;
+  if (!left || !right) return !left && !right;
+  return cityKey(left) === cityKey(right);
+}
+
+function cloneCity(city) {
+  return city ? createCity(city) : null;
+}
+
+export function rechainSegmentOrigins(segments, initialOrigin = segments?.[0]?.origin || null) {
+  const source = Array.isArray(segments) ? segments : [];
+  let previousDestination = cloneCity(initialOrigin);
+  let changed = false;
+
+  const rechained = source.map((segment) => {
+    const expectedOrigin = previousDestination;
+    previousDestination = cloneCity(segment.destination);
+    if (sameCity(segment.origin, expectedOrigin)) return segment;
+    changed = true;
+    return {
+      ...segment,
+      origin: cloneCity(expectedOrigin),
+    };
+  });
+
+  return changed ? rechained : source;
 }
 
 export function nextSegmentDefaults(trip) {
@@ -31,6 +72,39 @@ export function appendSegment(trip) {
   };
 }
 
+export function updateSegmentDestination(trip, segmentId, destination) {
+  const segments = Array.isArray(trip?.segments) ? trip.segments : [];
+  const index = segments.findIndex((segment) => segment.id === segmentId);
+  if (index < 0) return trip;
+
+  const initialOrigin = cloneCity(segments[0]?.origin);
+  const normalizedDestination = cloneCity(destination);
+  const nextSegments = segments.map((segment, currentIndex) =>
+    currentIndex === index
+      ? { ...segment, destination: normalizedDestination }
+      : segment
+  );
+
+  return {
+    ...trip,
+    segments: rechainSegmentOrigins(nextSegments, initialOrigin),
+    updatedAt: nowISO(),
+  };
+}
+
+export function removeSegmentFromTrip(trip, segmentId) {
+  const segments = Array.isArray(trip?.segments) ? trip.segments : [];
+  const initialOrigin = cloneCity(segments[0]?.origin);
+  const remaining = segments.filter((segment) => segment.id !== segmentId);
+  if (remaining.length === segments.length) return trip;
+
+  return {
+    ...trip,
+    segments: rechainSegmentOrigins(remaining, initialOrigin),
+    updatedAt: nowISO(),
+  };
+}
+
 export function reorderSegments(
   trip,
   sourceId,
@@ -47,6 +121,7 @@ export function reorderSegments(
     return trip;
   }
 
+  const initialOrigin = cloneCity(segments[0]?.origin);
   const reordered = [...segments];
   const [moved] = reordered.splice(sourceIndex, 1);
   const targetIndex = reordered.findIndex(
@@ -56,7 +131,7 @@ export function reorderSegments(
 
   return {
     ...trip,
-    segments: reordered,
+    segments: rechainSegmentOrigins(reordered, initialOrigin),
     updatedAt: nowISO(),
   };
 }

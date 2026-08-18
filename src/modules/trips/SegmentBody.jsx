@@ -9,10 +9,13 @@ export function SegmentBody({
   currency,
   locale,
   bodyId,
+  originEditable = false,
   onUpdate,
+  onUpdateDestination,
   onUpdateExpenses,
 }) {
   const { t } = useTranslation();
+  const originName = segment.origin?.name || segment.origin?.displayName || t('origin');
 
   return (
     <div className="segment__body" id={bodyId}>
@@ -21,15 +24,21 @@ export function SegmentBody({
           <IconRoute size={12} aria-hidden="true" /> {t('segment')}
         </span>
         <div className="segment-route-editor__row">
-          <CityAutocomplete
-            value={segment.origin}
-            onSelect={(origin) => onUpdate({ origin })}
-            placeholder={t('origin')}
-          />
+          {originEditable ? (
+            <CityAutocomplete
+              value={segment.origin}
+              onSelect={(origin) => onUpdate({ origin })}
+              placeholder={t('origin')}
+            />
+          ) : (
+            <span className="segment-route-editor__readonly" title={originName}>
+              {originName}
+            </span>
+          )}
           <IconArrowRight size={13} className="segment-route-editor__arrow" aria-hidden="true" />
           <CityAutocomplete
             value={segment.destination}
-            onSelect={(destination) => onUpdate({ destination })}
+            onSelect={onUpdateDestination}
             placeholder={t('destination')}
           />
         </div>

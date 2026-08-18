@@ -5,76 +5,72 @@ import {
   IconNote,
   IconX,
 } from '@tabler/icons-react';
+import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
 import { flagImageUrl } from '../flags/flags.js';
 import { useTranslation } from '../../i18n/index.jsx';
 import './SegmentHeader.css';
 
+function DestinationMarker({ city, t }) {
+  if (!city?.countryCode) {
+    return <span className="timeline-marker__empty" aria-hidden="true" />;
+  }
+
+  return (
+    <img
+      className="timeline-marker__flag"
+      src={flagImageUrl(city.countryCode, 32)}
+      alt={t('flagOf').replace('{country}', city.country || city.countryCode)}
+      width={28}
+      height={20}
+      loading="lazy"
+    />
+  );
+}
+
 export function SegmentHeader({
   segment,
   formattedDates,
-  formattedNights,
   formattedAmount,
+  nights,
   expanded,
   dragging,
   bodyId,
   onToggle,
+  onUpdateDestination,
   onOpenNote,
   onRemoveRequest,
   onReorderPointerStart,
 }) {
   const { t } = useTranslation();
-  const destination = segment.destination;
-  const cityName = destination?.name || destination?.displayName || t('destination');
-  const country = destination?.country || '';
+  const nightsLabel = nights == null
+    ? null
+    : `${nights} ${t(nights === 1 ? 'night' : 'nights')}`;
 
   return (
-    <header className="segment__header itinerary-stop">
-      <span
-        className="segment__drag-handle itinerary-stop__drag"
-        style={{
-          cursor: dragging ? 'grabbing' : 'grab',
-          touchAction: 'none',
-          userSelect: 'none',
-        }}
-        onPointerDown={onReorderPointerStart}
-        aria-hidden="true"
-      >
-        <IconGripVertical size={14} stroke={1.8} />
+    <header className="segment__header segment__header--timeline">
+      <span className="timeline-marker" aria-hidden={!segment.destination}>
+        <DestinationMarker city={segment.destination} t={t} />
       </span>
 
-      <span className={'itinerary-stop__marker' + (!destination?.countryCode ? ' is-empty' : '')}>
-        {destination?.countryCode ? (
-          <img
-            src={flagImageUrl(destination.countryCode, 24)}
-            alt=""
-            width={24}
-            height={17}
-            loading="lazy"
-          />
-        ) : null}
+      <div className="segment__timeline-city">
+        <CityAutocomplete
+          value={segment.destination}
+          onSelect={onUpdateDestination}
+          placeholder={t('destination')}
+          variant="timeline"
+        />
+      </div>
+
+      <div className="segment__timeline-dates" aria-label={`${t('startDate')} / ${t('endDate')}`}>
+        <span>{formattedDates.start}</span>
+        <span>{formattedDates.end}</span>
+      </div>
+
+      <span className={'segment__nights' + (nightsLabel ? '' : ' is-empty')}>
+        {nightsLabel || '—'}
       </span>
 
-      <button
-        type="button"
-        className="itinerary-stop__summary"
-        onClick={onToggle}
-        aria-expanded={expanded}
-        aria-controls={bodyId}
-      >
-        <span className="itinerary-stop__heading">
-          <span className="itinerary-stop__city">{cityName}</span>
-          {country && <span className="itinerary-stop__country">{country}</span>}
-        </span>
-        {(formattedDates || formattedNights) && (
-          <span className="itinerary-stop__meta">
-            {formattedDates}
-            {formattedDates && formattedNights && <span aria-hidden="true"> · </span>}
-            {formattedNights}
-          </span>
-        )}
-      </button>
-
-      <span className="segment__pill itinerary-stop__amount">{formattedAmount}</span>
+      <span className="segment__pill segment__pill--timeline">{formattedAmount}</span>
 
       <button
         type="button"
@@ -103,12 +99,25 @@ export function SegmentHeader({
 
       <button
         type="button"
-        className="btn btn--icon"
+        className="btn btn--icon segment__remove-btn"
         aria-label={t('removeSegment')}
         onClick={onRemoveRequest}
       >
         <IconX size={14} aria-hidden="true" />
       </button>
+
+      <span
+        className="segment__drag-handle segment__drag-handle--timeline"
+        style={{
+          cursor: dragging ? 'grabbing' : 'grab',
+          touchAction: 'none',
+          userSelect: 'none',
+        }}
+        onPointerDown={onReorderPointerStart}
+        aria-hidden="true"
+      >
+        <IconGripVertical size={15} stroke={1.7} />
+      </span>
     </header>
   );
 }

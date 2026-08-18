@@ -25,10 +25,13 @@ export {
   appendSegment,
   isTripSavable,
   nextSegmentDefaults,
+  rechainSegmentOrigins,
+  removeSegmentFromTrip,
   reorderPlaces,
   reorderSegments,
   routeStops,
   segmentCoords,
   segmentTotal,
   tripTotal,
+  updateSegmentDestination,
 } from './tripOperations.js';

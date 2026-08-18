@@ -5,33 +5,43 @@ export function formatSegmentAmount(amount, locale) {
   }).format(Number(amount) || 0);
 }
 
-export function formatSegmentDates(segment, locale) {
-  if (!segment?.startDate && !segment?.endDate) return null;
+export function formatSegmentDate(value, locale) {
+  return value
+    ? new Date(`${value}T00:00:00`).toLocaleDateString(locale, {
+        day: 'numeric',
+        month: 'short',
+      })
+    : '—';
+}
 
-  const formatDate = (value) =>
-    value
-      ? new Date(`${value}T00:00:00`).toLocaleDateString(locale, {
-          day: 'numeric',
-          month: 'short',
-        })
-      : '—';
+export function formatSegmentDateParts(segment, locale) {
+  return {
+    start: formatSegmentDate(segment?.startDate, locale),
+    end: formatSegmentDate(segment?.endDate, locale),
+    hasValue: Boolean(segment?.startDate || segment?.endDate),
+  };
+}
 
-  return [formatDate(segment.startDate), formatDate(segment.endDate)].join(' – ');
+export function segmentNightCount(segment) {
+  if (!segment?.startDate || !segment?.endDate) return null;
+  const start = Date.parse(`${segment.startDate}T00:00:00Z`);
+  const end = Date.parse(`${segment.endDate}T00:00:00Z`);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
+  return Math.round((end - start) / 86400000);
 }
 
 export function formatSegmentNights(segment, locale) {
-  if (!segment?.startDate || !segment?.endDate) return null;
-
-  const start = new Date(`${segment.startDate}T00:00:00Z`);
-  const end = new Date(`${segment.endDate}T00:00:00Z`);
-  const milliseconds = end.getTime() - start.getTime();
-  if (!Number.isFinite(milliseconds) || milliseconds < 0) return null;
-
-  const nights = Math.round(milliseconds / 86400000);
+  const nights = segmentNightCount(segment);
+  if (nights == null) return null;
   const spanish = String(locale || '').toLowerCase().startsWith('es');
   const label = spanish
     ? nights === 1 ? 'noche' : 'noches'
     : nights === 1 ? 'night' : 'nights';
-
   return `${nights} ${label}`;
+}
+
+export function formatSegmentDates(segment, locale) {
+  const dates = formatSegmentDateParts(segment, locale);
+  if (!dates.hasValue) return null;
+  return [dates.start, dates.end].join(' – ');
 }

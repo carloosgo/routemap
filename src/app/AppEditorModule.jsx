@@ -33,6 +33,7 @@ export function AppEditorModule({
     removeSegment,
     reorderSegment,
     updateSegment,
+    updateSegmentDestination,
     updateExpenses,
     removePlace,
     reorderPlace,
@@ -82,6 +83,7 @@ export function AppEditorModule({
       isExpanded={isExpanded}
       toggleSegment={toggleSegment}
       updateSegment={updateSegment}
+      updateSegmentDestination={updateSegmentDestination}
       updateExpenses={updateExpenses}
       removeSegment={removeSegment}
       reorderSegment={reorderSegment}
@@ -111,49 +113,51 @@ export function AppEditorModule({
   );
 
   return (
-    <div className="editor-module" ref={editorMenuRef}>
-      <div className="editor-module__tabs">
-        <button
-          type="button"
-          className={'editor-module__tab editor-module__nav-tab' +
-            (activeTab === 'segments' ? ' is-active' : '')}
-          onClick={() => setActiveTab('segments')}
-        >
-          <span className="editor-module__tab-icon" aria-hidden="true">
-            <IconMap />
-          </span>
-          <span className="editor-module__tab-label">{t('itinerary')}</span>
-        </button>
-        <button
-          type="button"
-          className={'editor-module__tab editor-module__nav-tab' +
-            (activeTab === 'places' ? ' is-active' : '')}
-          onClick={() => setActiveTab('places')}
-          data-tab-icon="places-map-pin"
-        >
-          <span className="editor-module__tab-icon" aria-hidden="true">
-            <img src={lugaresIcon} alt="" />
-          </span>
-          <span className="editor-module__tab-label">{t('myRoutes')}</span>
-          {places.length > 0 && <span className="tabbar__badge">{places.length}</span>}
-        </button>
-        <button
-          type="button"
-          className={'editor-module__tab editor-module__nav-tab' +
-            (activeTab === 'notes' ? ' is-active' : '')}
-          onClick={() => setActiveTab('notes')}
-          data-tab-icon="notes"
-        >
-          <span className="editor-module__tab-icon" aria-hidden="true">
-            <IconNotes />
-          </span>
-          <span className="editor-module__tab-label">{t('notes')}</span>
-          {checklist.length > 0 && (
-            <span className="tabbar__badge">
-              {doneCount}/{checklist.length}
+    <div className="editor-module editor-module--rail" ref={editorMenuRef}>
+      <nav className="editor-rail" aria-label={t('itinerary')}>
+        <div className="editor-rail__primary">
+          <button
+            type="button"
+            className={'editor-rail__item editor-module__nav-tab' +
+              (activeTab === 'segments' ? ' is-active' : '')}
+            onClick={() => setActiveTab('segments')}
+          >
+            <span className="editor-rail__icon editor-rail__icon--itinerary" aria-hidden="true">
+              <IconMap />
             </span>
-          )}
-        </button>
+            <span className="editor-rail__label">{t('itinerary')}</span>
+          </button>
+          <button
+            type="button"
+            className={'editor-rail__item editor-module__nav-tab' +
+              (activeTab === 'places' ? ' is-active' : '')}
+            onClick={() => setActiveTab('places')}
+            data-tab-icon="places-map-pin"
+          >
+            <span className="editor-rail__icon" aria-hidden="true">
+              <img src={lugaresIcon} alt="" />
+            </span>
+            <span className="editor-rail__label">{t('myRoutes')}</span>
+            {places.length > 0 && <span className="editor-rail__badge">{places.length}</span>}
+          </button>
+          <button
+            type="button"
+            className={'editor-rail__item editor-module__nav-tab' +
+              (activeTab === 'notes' ? ' is-active' : '')}
+            onClick={() => setActiveTab('notes')}
+            data-tab-icon="notes"
+          >
+            <span className="editor-rail__icon editor-rail__icon--notes" aria-hidden="true">
+              <IconNotes />
+            </span>
+            <span className="editor-rail__label">{t('notes')}</span>
+            {checklist.length > 0 && (
+              <span className="editor-rail__badge">
+                {doneCount}/{checklist.length}
+              </span>
+            )}
+          </button>
+        </div>
 
         <AppWorkspaceMenu
           tripStore={tripStore}
@@ -167,9 +171,11 @@ export function AppEditorModule({
           setLocale={setLocale}
           availableLocales={availableLocales}
           t={t}
+          rail
         />
-      </div>
-      {editorPane}
+      </nav>
+
+      <div className="editor-module__content">{editorPane}</div>
     </div>
   );
 }
