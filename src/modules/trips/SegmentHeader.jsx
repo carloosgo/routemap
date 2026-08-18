@@ -49,10 +49,10 @@ export function SegmentHeader({
       <span className={'itinerary-stop__marker' + (!destination?.countryCode ? ' is-empty' : '')}>
         {destination?.countryCode ? (
           <img
-            src={flagImageUrl(destination.countryCode, 40)}
+            src={flagImageUrl(destination.countryCode, 80)}
             alt=""
-            width={24}
-            height={17}
+            width={28}
+            height={20}
             loading="lazy"
             decoding="async"
           />
@@ -65,6 +65,7 @@ export function SegmentHeader({
             value={destination}
             onSelect={onDestinationSelect}
             placeholder={t('destination')}
+            selectedDisplay="timeline"
           />
         </div>
         {destination?.country && (
