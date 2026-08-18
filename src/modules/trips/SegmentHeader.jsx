@@ -5,8 +5,9 @@ import {
   IconNote,
   IconX,
 } from '@tabler/icons-react';
-import { flagImageUrl } from '../flags/flags.js';
+import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
+import { flagImageUrl } from '../flags/flags.js';
 import './SegmentHeader.css';
 
 export function SegmentHeader({
@@ -18,14 +19,13 @@ export function SegmentHeader({
   dragging,
   bodyId,
   onToggle,
+  onDestinationSelect,
   onOpenNote,
   onRemoveRequest,
   onReorderPointerStart,
 }) {
   const { t } = useTranslation();
   const destination = segment.destination;
-  const cityName = destination?.name || destination?.displayName || t('destination');
-  const country = destination?.country || '';
 
   return (
     <header className="segment__header itinerary-stop">
@@ -54,26 +54,21 @@ export function SegmentHeader({
         ) : null}
       </span>
 
-      <button
-        type="button"
-        className="itinerary-stop__summary"
-        onClick={onToggle}
-        aria-expanded={expanded}
-        aria-controls={bodyId}
-      >
-        <span className="itinerary-stop__heading">
-          <span className="itinerary-stop__city">{cityName}</span>
-          {country && <span className="itinerary-stop__country">{country}</span>}
-        </span>
-        {(formattedDates || formattedNights) && (
-          <span className="itinerary-stop__meta">
-            {formattedDates}
-            {formattedDates && formattedNights && <span aria-hidden="true"> · </span>}
-            {formattedNights}
-          </span>
+      <div className="itinerary-stop__place">
+        <div className="itinerary-stop__picker">
+          <CityAutocomplete
+            value={destination}
+            onSelect={onDestinationSelect}
+            placeholder={t('destination')}
+          />
+        </div>
+        {destination?.country && (
+          <span className="itinerary-stop__country">{destination.country}</span>
         )}
-      </button>
+      </div>
 
+      <span className="itinerary-stop__dates">{formattedDates || '—'}</span>
+      <span className="itinerary-stop__nights">{formattedNights || ''}</span>
       <span className="segment__pill itinerary-stop__amount">{formattedAmount}</span>
 
       <button
