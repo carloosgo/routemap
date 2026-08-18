@@ -26,9 +26,10 @@ export function SegmentHeader({
 }) {
   const { t } = useTranslation();
   const destination = segment.destination;
+  const placeholderDateLines = t('dateRangeHint').split(' – ');
   const dateLines = formattedDates
     ? formattedDates.split(' – ')
-    : [t('datePlaceholderShort'), t('datePlaceholderShort')];
+    : [placeholderDateLines[0], placeholderDateLines[1] || placeholderDateLines[0]];
 
   return (
     <header className="segment__header itinerary-stop">
