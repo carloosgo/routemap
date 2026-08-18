@@ -3,7 +3,11 @@ import { segmentTotal } from './tripModel.js';
 import { SegmentBody } from './SegmentBody.jsx';
 import { SegmentDeleteDialog } from './SegmentDeleteDialog.jsx';
 import { SegmentHeader } from './SegmentHeader.jsx';
-import { formatSegmentAmount, formatSegmentDates } from './segmentFormModel.js';
+import {
+  formatSegmentAmount,
+  formatSegmentDateParts,
+  segmentNightCount,
+} from './segmentFormModel.js';
 
 function SegmentDropIndicator({ placement }) {
   if (!placement) return null;
@@ -11,24 +15,13 @@ function SegmentDropIndicator({ placement }) {
   return (
     <span
       aria-hidden="true"
-      style={{
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        top: placement === 'before' ? '-3px' : 'auto',
-        bottom: placement === 'after' ? '-3px' : 'auto',
-        height: '1px',
-        background: 'var(--line-strong)',
-        pointerEvents: 'none',
-        zIndex: 30,
-      }}
+      className={'segment-drop-indicator segment-drop-indicator--' + placement}
     />
   );
 }
 
 export function SegmentForm({
   segment,
-  index,
   currency,
   locale,
   expanded,
@@ -37,6 +30,7 @@ export function SegmentForm({
   dropPlacement,
   onToggle,
   onUpdate,
+  onUpdateDestination,
   onUpdateExpenses,
   onRemove,
   onOpenNote,
@@ -45,7 +39,8 @@ export function SegmentForm({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const bodyId = `segment-body-${segment.id}`;
   const formattedAmount = formatSegmentAmount(segmentTotal(segment), locale);
-  const formattedDates = formatSegmentDates(segment, locale);
+  const formattedDates = formatSegmentDateParts(segment, locale);
+  const nights = segmentNightCount(segment);
 
   const confirmRemove = () => {
     setConfirmOpen(false);
@@ -55,7 +50,7 @@ export function SegmentForm({
   return (
     <article
       className={
-        'segment' +
+        'segment segment--timeline' +
         (dragging ? ' is-dragging' : '') +
         (dropPlacement ? ` is-drop-${dropPlacement}` : '')
       }
@@ -74,14 +69,14 @@ export function SegmentForm({
 
       <SegmentHeader
         segment={segment}
-        index={index}
         formattedDates={formattedDates}
         formattedAmount={formattedAmount}
+        nights={nights}
         expanded={expanded}
         dragging={dragging}
         bodyId={bodyId}
         onToggle={onToggle}
-        onUpdate={onUpdate}
+        onUpdateDestination={onUpdateDestination}
         onOpenNote={onOpenNote}
         onRemoveRequest={() => setConfirmOpen(true)}
         onReorderPointerStart={onReorderPointerStart}
