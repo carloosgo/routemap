@@ -11,46 +11,61 @@ test('legacy header icon injection is no longer loaded', async () => {
 
   assert.doesNotMatch(html, /custom-header-icons\.css/);
   assert.match(main, /EditorNavigationIcons\.css/);
+  assert.match(main, /ItinerarySidebar\.css/);
+  assert.ok(
+    main.indexOf('EditorNavigationIcons.css') < main.indexOf('ItinerarySidebar.css'),
+    'ItinerarySidebar.css debe ser la autoridad final de geometría del sidebar'
+  );
 });
 
-test('desktop navigation keeps canonical icons while currency remains icon-free', async () => {
+test('desktop navigation keeps canonical icons and currency lives inside the workspace menu', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
   const navigation = `${editor}\n${menu}`;
-  const css = await read('src/app/EditorNavigationIcons.css');
+  const iconCss = await read('src/app/EditorNavigationIcons.css');
 
   assert.equal((navigation.match(/editor-module__tab-icon/g) || []).length, 3);
   assert.match(editor, /<img src=\{lugaresIcon\} alt="" \/>/);
   assert.match(menu, /const CURRENCIES = \['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'\]/);
-  assert.match(menu, /openMenu === 'currency'/);
+  assert.match(menu, /openMenu === 'workspace'/);
+  assert.match(menu, /editor-module__currency-options/);
   assert.match(menu, /setCurrency\(currency\)/);
-  assert.match(menu, /<span className="editor-module__tab-label">\{trip\.currency\}<\/span>/);
+  assert.doesNotMatch(menu, /openMenu === 'currency'/);
+  assert.doesNotMatch(menu, /<span className="editor-module__tab-label">\{trip\.currency\}<\/span>/);
   assert.match(menu, /<IconLanguage size=\{17\} aria-hidden="true" \/>/);
   assert.match(menu, /<span>\{t\('language'\)\}<\/span>/);
   assert.doesNotMatch(menu, /currencyCoinIcon|data-tab-icon="language-selector"/);
-  assert.doesNotMatch(css, /icons\/moneda\.svg/);
-  assert.match(css, /url\('\/icons\/tramos\.svg'\)/);
-  assert.match(css, /url\('\/icons\/notas\.svg'\)/);
-  assert.match(css, /\.editor-module__tab-icon > svg\s*\{\s*display:\s*none;/);
-  assert.match(css, /\.editor-module__nav-tab::before,[\s\S]*content:\s*none !important;/);
+  assert.doesNotMatch(iconCss, /icons\/moneda\.svg/);
+  assert.match(iconCss, /url\('\/icons\/tramos\.svg'\)/);
+  assert.match(iconCss, /url\('\/icons\/notas\.svg'\)/);
+  assert.match(iconCss, /\.editor-module__tabs \.editor-module__tab-icon > svg\s*\{\s*display:\s*none;/);
 });
 
-test('all desktop navigation options share dimensions and keep hover, focus and selection free of gray backgrounds', async () => {
-  const css = await read('src/app/EditorNavigationIcons.css');
+test('sidebar geometry has one owner and uses compact centered separators', async () => {
+  const iconCss = await read('src/app/EditorNavigationIcons.css');
+  const sidebarCss = await read('src/app/ItinerarySidebar.css');
 
-  assert.match(css, /height:\s*36px;/);
-  assert.match(css, /padding:\s*6px 10px;/);
-  assert.match(css, /border-radius:\s*8px;/);
-  assert.match(css, /background:\s*#ffffff;/);
-  assert.match(css, /font-family:\s*var\(--font-body\);/);
-  assert.match(css, /font-size:\s*14px;/);
-  assert.match(css, /font-weight:\s*500(?:\s*!important)?;/);
-  assert.match(css, /\.editor-module__tab-icon\s*\{[\s\S]*width:\s*25px;[\s\S]*height:\s*25px;[\s\S]*flex:\s*0 0 25px;/);
-  assert.match(css, /\.editor-module__tab-icon > img\s*\{[\s\S]*width:\s*25px;[\s\S]*height:\s*25px;/);
-  assert.match(css, /background:\s*#ffffff\s*!important;/);
-  assert.match(css, /box-shadow:\s*none\s*!important;/);
-  assert.doesNotMatch(css, /background:\s*#f4f5f7/);
-  assert.match(css, /color:\s*#4b5563/);
+  assert.doesNotMatch(iconCss, /grid-template-columns|position:\s*fixed|separator|border-right/);
+  assert.match(sidebarCss, /grid-template-columns:\s*82px minmax\(0, 1fr\);/);
+  assert.match(sidebarCss, /min-height:\s*76px;/);
+  assert.match(sidebarCss, /width:\s*38px;/);
+  assert.match(sidebarCss, /height:\s*38px;/);
+  assert.match(sidebarCss, /width:\s*26px\s*!important;/);
+  assert.match(sidebarCss, /left:\s*50%\s*!important;/);
+  assert.match(sidebarCss, /transform:\s*translateX\(-50%\)\s*!important;/);
+  assert.match(sidebarCss, /background:\s*#fdfdfd\s*!important;/);
+});
+
+test('workspace menu is anchored above the map and exposes its options without clipping', async () => {
+  const sidebarCss = await read('src/app/ItinerarySidebar.css');
+  const menu = await read('src/app/AppWorkspaceMenu.jsx');
+
+  assert.match(sidebarCss, /\.editor-module__workspace-anchor\s*\{[\s\S]*position:\s*fixed\s*!important;[\s\S]*right:\s*14px\s*!important;[\s\S]*z-index:\s*950\s*!important;/);
+  assert.match(sidebarCss, /\.editor-module__workspace-anchor \.editor-module__more-menu\s*\{[\s\S]*right:\s*calc\(100% \+ 10px\);[\s\S]*z-index:\s*1000;/);
+  assert.match(menu, /editor-module__more-menu/);
+  assert.match(menu, /editor-module__currency-options/);
+  assert.match(menu, /savedTrips/);
+  assert.match(menu, /language/);
 });
 
 test('places uses a self-contained transparent signpost icon in the Atlas palette', async () => {
