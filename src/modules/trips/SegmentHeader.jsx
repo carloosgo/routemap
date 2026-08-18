@@ -68,51 +68,53 @@ export function SegmentHeader({
 
       <span className="segment__pill">{formattedAmount}</span>
 
-      <button
-        type="button"
-        className={'btn btn--icon segment__note-btn' + (segment.note ? ' has-note' : '')}
-        aria-label={t('segmentNote')}
-        title={t('segmentNote')}
-        onClick={onOpenNote}
-      >
-        <IconNote size={14} aria-hidden="true" />
-      </button>
+      <span className="segment__row-actions">
+        <button
+          type="button"
+          className={'btn btn--icon segment__note-btn' + (segment.note ? ' has-note' : '')}
+          aria-label={t('segmentNote')}
+          title={t('segmentNote')}
+          onClick={onOpenNote}
+        >
+          <IconNote size={14} aria-hidden="true" />
+        </button>
 
-      <button
-        type="button"
-        className="btn btn--icon segment__toggle"
-        aria-label={expanded ? t('collapse') : t('expand')}
-        aria-expanded={expanded}
-        aria-controls={bodyId}
-        onClick={onToggle}
-      >
-        {expanded ? (
-          <IconChevronUp size={14} aria-hidden="true" />
-        ) : (
-          <IconChevronDown size={14} aria-hidden="true" />
-        )}
-      </button>
+        <button
+          type="button"
+          className="btn btn--icon segment__toggle"
+          aria-label={expanded ? t('collapse') : t('expand')}
+          aria-expanded={expanded}
+          aria-controls={bodyId}
+          onClick={onToggle}
+        >
+          {expanded ? (
+            <IconChevronUp size={14} aria-hidden="true" />
+          ) : (
+            <IconChevronDown size={14} aria-hidden="true" />
+          )}
+        </button>
 
-      <button
-        type="button"
-        className="btn btn--icon segment__remove"
-        aria-label={t('removeSegment')}
-        onClick={onRemoveRequest}
-      >
-        <IconX size={14} aria-hidden="true" />
-      </button>
+        <button
+          type="button"
+          className="btn btn--icon segment__remove"
+          aria-label={t('removeSegment')}
+          onClick={onRemoveRequest}
+        >
+          <IconX size={14} aria-hidden="true" />
+        </button>
 
-      <span
-        className="segment__drag-handle"
-        style={{
-          cursor: dragging ? 'grabbing' : 'grab',
-          touchAction: 'none',
-          userSelect: 'none',
-        }}
-        onPointerDown={onReorderPointerStart}
-        aria-hidden="true"
-      >
-        <IconGripVertical size={15} stroke={1.7} />
+        <span
+          className="segment__drag-handle"
+          style={{
+            cursor: dragging ? 'grabbing' : 'grab',
+            touchAction: 'none',
+            userSelect: 'none',
+          }}
+          onPointerDown={onReorderPointerStart}
+          aria-hidden="true"
+        >
+          <IconGripVertical size={15} stroke={1.7} />
+        </span>
       </span>
     </header>
   );
