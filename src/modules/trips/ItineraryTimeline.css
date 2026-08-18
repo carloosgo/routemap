@@ -2,7 +2,7 @@
    Es exclusivamente una capa de presentación: los datos siguen viviendo en segment. */
 
 .segments:not(.segments--compact) {
-  --itinerary-axis-x: 31px;
+  --itinerary-axis-x: 37px;
   position: relative;
   padding-top: 2px;
 }
@@ -26,7 +26,7 @@
 .itinerary-origin {
   position: relative;
   z-index: 2;
-  width: 104px;
+  width: 74px;
   margin: 0 0 14px 0;
   display: flex;
   flex-direction: column;
@@ -51,7 +51,7 @@
 }
 
 .itinerary-origin__place {
-  width: 104px;
+  width: 128px;
   margin-top: 2px;
   color: #4f5663;
   font-size: 10px;
