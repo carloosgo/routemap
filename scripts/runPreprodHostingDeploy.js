@@ -1,14 +1,13 @@
 /* global process, console */
-import { readFile, readdir, stat } from 'node:fs/promises';
-import { spawnSync } from 'node:child_process';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import * as fs from 'node:fs/promises';
+import * as childProcess from 'node:child_process';
+import * as pathModule from 'node:path';
 
 export const PREPROD_PROJECT = 'atlasmap-dev';
 export const PRODUCTION_PROJECT = 'atlasmap-prod';
 
 function run(command, args) {
-  const result = spawnSync(command, args, { stdio: 'inherit', shell: false });
+  const result = childProcess.spawnSync(command, args, { stdio: 'inherit', shell: false });
   if (result.error) throw result.error;
   if (result.status !== 0) {
     throw new Error(`${command} ${args.join(' ')} terminó con código ${result.status}.`);
@@ -16,15 +15,15 @@ function run(command, args) {
 }
 
 async function jsonFile(path) {
-  return JSON.parse(await readFile(path, 'utf8'));
+  return JSON.parse(await fs.readFile(path, 'utf8'));
 }
 
 async function textFiles(root) {
-  const entries = await readdir(root);
+  const entries = await fs.readdir(root);
   const files = [];
   for (const entry of entries) {
-    const path = join(root, entry);
-    const info = await stat(path);
+    const path = pathModule.join(root, entry);
+    const info = await fs.stat(path);
     if (info.isDirectory()) files.push(...await textFiles(path));
     else if (/\.(?:html|js|css|json|txt|map)$/i.test(entry)) files.push(path);
   }
@@ -60,7 +59,7 @@ export async function validateBuiltPreprodBundle({ distDir = 'dist' } = {}) {
   if (!files.length) throw new Error('dist/ no contiene archivos de build verificables.');
   let sawPreprod = false;
   for (const path of files) {
-    const text = await readFile(path, 'utf8').catch(() => '');
+    const text = await fs.readFile(path, 'utf8').catch(() => '');
     if (text.includes(PRODUCTION_PROJECT)) {
       throw new Error(`ABORTADO: el bundle contiene ${PRODUCTION_PROJECT} (${path}).`);
     }
@@ -106,12 +105,4 @@ export async function main(argv = process.argv.slice(2)) {
   run(npm, ['run', 'build']);
   await validateBuiltPreprodBundle();
   run(npx, deployCommand());
-}
-
-const invokedPath = process.argv[1] ? fileURLToPath(import.meta.url) === process.argv[1] : false;
-if (invokedPath) {
-  main().catch((error) => {
-    console.error(error?.message || error);
-    process.exitCode = 1;
-  });
 }
