@@ -1,5 +1,5 @@
-import { IconPennantFilled } from '@tabler/icons-react';
 import { useTranslation } from '../../i18n/index.jsx';
+import itineraryFlag from '../../assets/itinerary-finish-flag.svg';
 import { TimelineCityPicker } from './TimelineCityPicker.jsx';
 
 export function ItineraryOriginNode({ city, onSelect, placeholder }) {
@@ -7,7 +7,7 @@ export function ItineraryOriginNode({ city, onSelect, placeholder }) {
   return (
     <div className="itinerary-origin-node">
       <span className="itinerary-origin-node__marker" aria-hidden="true">
-        <IconPennantFilled size={17} stroke={1.6} />
+        <img src={itineraryFlag} alt="" />
       </span>
       <div className="itinerary-origin-node__city">
         <TimelineCityPicker
