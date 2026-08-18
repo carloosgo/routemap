@@ -27,6 +27,20 @@ function requireFirebaseConfig() {
   return config.firebase;
 }
 
+function configureLocalAppCheckDebugProvider() {
+  if (typeof window === 'undefined' || !import.meta.env?.DEV) return;
+  const hostname = String(window.location?.hostname || '').toLowerCase();
+  if (hostname !== 'localhost' && hostname !== '127.0.0.1') return;
+
+  // Firebase recomienda el Debug Provider para desarrollo local cuando App Check
+  // está enforced. Nunca agregamos localhost a los dominios válidos de reCAPTCHA
+  // ni incluimos un debug token en el repositorio. El SDK genera/persiste el token
+  // local y el desarrollador lo registra una sola vez en App Check del proyecto dev.
+  if (globalThis.FIREBASE_APPCHECK_DEBUG_TOKEN === undefined) {
+    globalThis.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  }
+}
+
 function initializeFirebaseAppCheck(app) {
   if (appCheckInstance) return appCheckInstance;
   if (
@@ -37,6 +51,7 @@ function initializeFirebaseAppCheck(app) {
     return null;
   }
 
+  configureLocalAppCheckDebugProvider();
   appCheckInstance = initializeAppCheck(app, {
     provider: new ReCaptchaEnterpriseProvider(config.firebase.appCheckSiteKey),
     isTokenAutoRefreshEnabled: true,
