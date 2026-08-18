@@ -7,19 +7,23 @@ const read = (path) => readFile(new URL(path, root), 'utf8');
 
 test('el autocompletado de ciudades pertenece exclusivamente a Tramos', async () => {
   const header = await read('src/modules/trips/SegmentHeader.jsx');
+  const body = await read('src/modules/trips/SegmentBody.jsx');
   const cityAutocomplete = await read('src/components/CityAutocomplete.jsx');
   const citySearch = await read('src/modules/geocoding/useCitySearch.js');
   const provider = await read('src/modules/geocoding/geocodingProvider.js');
   const cityClient = await read('src/modules/geocoding/citySearchClient.js');
 
-  assert.match(header, /<CityAutocomplete[\s\S]*segment\.origin/);
-  assert.match(header, /<CityAutocomplete[\s\S]*segment\.destination/);
+  // El timeline mantiene el encabezado como resumen visual. La edición canónica
+  // de origen/destino sigue perteneciendo al tramo, dentro de su cuerpo expandido.
+  assert.doesNotMatch(header, /CityAutocomplete/);
+  assert.match(body, /<CityAutocomplete[\s\S]*value=\{segment\.origin\}[\s\S]*onChange=\{\(origin\) => onUpdate\(\{ origin \}\)\}/);
+  assert.match(body, /<CityAutocomplete[\s\S]*value=\{segment\.destination\}[\s\S]*onChange=\{\(destination\) => onUpdate\(\{ destination \}\)\}/);
   assert.match(cityAutocomplete, /useCitySearch/);
   assert.match(citySearch, /getGeocoder\(\)\.search/);
   assert.match(provider, /createGeoapifyCityProvider/);
   assert.match(cityClient, /firebaseCallable\('geoapifyCityAutocomplete'\)/);
 
-  const combined = `${cityAutocomplete}\n${citySearch}\n${provider}\n${cityClient}`;
+  const combined = `${body}\n${cityAutocomplete}\n${citySearch}\n${provider}\n${cityClient}`;
   assert.doesNotMatch(combined, /usePlaceSearch|searchGooglePlaces|PlaceSearchForm|TripPlacesPanel|googlePlaceSearch/);
 });
 
