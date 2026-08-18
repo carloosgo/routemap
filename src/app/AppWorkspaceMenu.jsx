@@ -1,6 +1,6 @@
 import {
   IconBookmark,
-  IconChevronDown,
+  IconCurrencyDollar,
   IconDotsVertical,
   IconLanguage,
   IconPlus,
@@ -29,50 +29,43 @@ export function AppWorkspaceMenu({
 
   return (
     <div className="editor-module__settings">
-      <div className="editor-module__menu-anchor">
-        <button
-          type="button"
-          className={'editor-module__tab editor-module__nav-tab' +
-            (openMenu === 'currency' ? ' is-active' : '')}
-          aria-label={t('currency')}
-          onClick={() => setOpenMenu(openMenu === 'currency' ? null : 'currency')}
-        >
-          <span className="editor-module__tab-label">{trip.currency}</span>
-          <IconChevronDown className="editor-module__tab-chevron" aria-hidden="true" />
-        </button>
-        {openMenu === 'currency' && (
-          <div className="editor-module__currency-menu" aria-label={t('currency')}>
-            {CURRENCIES.map((currency) => (
-              <button
-                type="button"
-                key={currency}
-                className={'editor-module__currency-option' +
-                  (currency === trip.currency ? ' is-active' : '')}
-                onClick={() => {
-                  setCurrency(currency);
-                  setOpenMenu(null);
-                }}
-              >
-                {currency}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="editor-module__menu-anchor">
+      <div className="editor-module__menu-anchor editor-module__workspace-anchor">
         <button
           type="button"
           className={'editor-module__more-button' +
             (openMenu === 'workspace' ? ' is-active' : '')}
           aria-label={t('moreOptions')}
+          aria-expanded={openMenu === 'workspace'}
           onClick={() => setOpenMenu(openMenu === 'workspace' ? null : 'workspace')}
         >
           <IconDotsVertical size={18} aria-hidden="true" />
         </button>
 
         {openMenu === 'workspace' && (
-          <div className="editor-module__more-menu">
+          <div className="editor-module__more-menu" role="menu">
+            <div className="editor-module__menu-heading">
+              <IconCurrencyDollar size={17} aria-hidden="true" />
+              <span>{t('currency')}</span>
+            </div>
+            <div className="editor-module__currency-options" aria-label={t('currency')}>
+              {CURRENCIES.map((currency) => (
+                <button
+                  type="button"
+                  key={currency}
+                  className={'editor-module__currency-option' +
+                    (currency === trip.currency ? ' is-active' : '')}
+                  onClick={() => {
+                    setCurrency(currency);
+                    setOpenMenu(null);
+                  }}
+                >
+                  {currency}
+                </button>
+              ))}
+            </div>
+
+            <div className="editor-module__menu-separator" />
+
             <button
               type="button"
               className="editor-module__menu-item"
