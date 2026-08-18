@@ -5,16 +5,33 @@ export function formatSegmentAmount(amount, locale) {
   }).format(Number(amount) || 0);
 }
 
+export function formatSegmentDate(value, locale) {
+  return value
+    ? new Date(`${value}T00:00:00`).toLocaleDateString(locale, {
+        day: 'numeric',
+        month: 'short',
+      })
+    : '—';
+}
+
+export function formatSegmentDateParts(segment, locale) {
+  return {
+    start: formatSegmentDate(segment?.startDate, locale),
+    end: formatSegmentDate(segment?.endDate, locale),
+    hasValue: Boolean(segment?.startDate || segment?.endDate),
+  };
+}
+
+export function segmentNightCount(segment) {
+  if (!segment?.startDate || !segment?.endDate) return null;
+  const start = Date.parse(`${segment.startDate}T00:00:00Z`);
+  const end = Date.parse(`${segment.endDate}T00:00:00Z`);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
+  return Math.round((end - start) / 86400000);
+}
+
 export function formatSegmentDates(segment, locale) {
-  if (!segment?.startDate && !segment?.endDate) return null;
-
-  const formatDate = (value) =>
-    value
-      ? new Date(`${value}T00:00:00`).toLocaleDateString(locale, {
-          day: 'numeric',
-          month: 'short',
-        })
-      : '—';
-
-  return [formatDate(segment.startDate), formatDate(segment.endDate)].join(' – ');
+  const dates = formatSegmentDateParts(segment, locale);
+  if (!dates.hasValue) return null;
+  return [dates.start, dates.end].join(' – ');
 }
