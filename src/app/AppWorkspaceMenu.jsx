@@ -28,20 +28,25 @@ export function AppWorkspaceMenu({
   const { trips, loading } = savedTrips;
 
   return (
-    <div className="editor-module__settings">
-      <div className="editor-module__menu-anchor">
+    <div className="editor-sidebar__settings">
+      <div className="editor-sidebar__menu-anchor">
         <button
           type="button"
-          className={'editor-module__tab editor-module__nav-tab' +
+          className={'editor-sidebar__item editor-sidebar__currency' +
             (openMenu === 'currency' ? ' is-active' : '')}
           aria-label={t('currency')}
+          aria-expanded={openMenu === 'currency'}
           onClick={() => setOpenMenu(openMenu === 'currency' ? null : 'currency')}
         >
-          <span className="editor-module__tab-label">{trip.currency}</span>
-          <IconChevronDown className="editor-module__tab-chevron" aria-hidden="true" />
+          <span className="editor-sidebar__icon" aria-hidden="true">
+            <img src="/icons/moneda.svg" alt="" />
+          </span>
+          <span className="editor-sidebar__label">{trip.currency}</span>
+          <IconChevronDown className="editor-sidebar__chevron" aria-hidden="true" />
         </button>
+
         {openMenu === 'currency' && (
-          <div className="editor-module__currency-menu" aria-label={t('currency')}>
+          <div className="editor-module__currency-menu editor-sidebar__popover" aria-label={t('currency')}>
             {CURRENCIES.map((currency) => (
               <button
                 type="button"
@@ -60,19 +65,20 @@ export function AppWorkspaceMenu({
         )}
       </div>
 
-      <div className="editor-module__menu-anchor">
+      <div className="editor-sidebar__menu-anchor editor-sidebar__menu-anchor--workspace">
         <button
           type="button"
-          className={'editor-module__more-button' +
+          className={'editor-sidebar__utility' +
             (openMenu === 'workspace' ? ' is-active' : '')}
           aria-label={t('moreOptions')}
+          aria-expanded={openMenu === 'workspace'}
           onClick={() => setOpenMenu(openMenu === 'workspace' ? null : 'workspace')}
         >
           <IconDotsVertical size={18} aria-hidden="true" />
         </button>
 
         {openMenu === 'workspace' && (
-          <div className="editor-module__more-menu">
+          <div className="editor-module__more-menu editor-sidebar__popover">
             <button
               type="button"
               className="editor-module__menu-item"
