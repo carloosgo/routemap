@@ -1,34 +1,36 @@
 import {
-  IconArrowRight,
   IconChevronDown,
   IconChevronUp,
   IconGripVertical,
   IconNote,
   IconX,
 } from '@tabler/icons-react';
-import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
+import { flagImageUrl } from '../flags/flags.js';
 import { useTranslation } from '../../i18n/index.jsx';
 import './SegmentHeader.css';
 
 export function SegmentHeader({
   segment,
   formattedDates,
+  formattedNights,
   formattedAmount,
   expanded,
   dragging,
   bodyId,
   onToggle,
-  onUpdate,
   onOpenNote,
   onRemoveRequest,
   onReorderPointerStart,
 }) {
   const { t } = useTranslation();
+  const destination = segment.destination;
+  const cityName = destination?.name || destination?.displayName || t('destination');
+  const country = destination?.country || '';
 
   return (
-    <header className="segment__header">
+    <header className="segment__header itinerary-stop">
       <span
-        className="segment__drag-handle"
+        className="segment__drag-handle itinerary-stop__drag"
         style={{
           cursor: dragging ? 'grabbing' : 'grab',
           touchAction: 'none',
@@ -40,22 +42,39 @@ export function SegmentHeader({
         <IconGripVertical size={14} stroke={1.8} />
       </span>
 
-      <div className="segment__route">
-        <CityAutocomplete
-          value={segment.origin}
-          onSelect={(city) => onUpdate({ origin: city })}
-          placeholder={t('origin')}
-        />
-        <IconArrowRight size={12} className="segment__arrow" aria-hidden="true" />
-        <CityAutocomplete
-          value={segment.destination}
-          onSelect={(city) => onUpdate({ destination: city })}
-          placeholder={t('destination')}
-        />
-        {formattedDates && <span className="segment__dates">{formattedDates}</span>}
-      </div>
+      <span className={'itinerary-stop__marker' + (!destination?.countryCode ? ' is-empty' : '')}>
+        {destination?.countryCode ? (
+          <img
+            src={flagImageUrl(destination.countryCode, 24)}
+            alt=""
+            width={24}
+            height={17}
+            loading="lazy"
+          />
+        ) : null}
+      </span>
 
-      <span className="segment__pill">{formattedAmount}</span>
+      <button
+        type="button"
+        className="itinerary-stop__summary"
+        onClick={onToggle}
+        aria-expanded={expanded}
+        aria-controls={bodyId}
+      >
+        <span className="itinerary-stop__heading">
+          <span className="itinerary-stop__city">{cityName}</span>
+          {country && <span className="itinerary-stop__country">{country}</span>}
+        </span>
+        {(formattedDates || formattedNights) && (
+          <span className="itinerary-stop__meta">
+            {formattedDates}
+            {formattedDates && formattedNights && <span aria-hidden="true"> · </span>}
+            {formattedNights}
+          </span>
+        )}
+      </button>
+
+      <span className="segment__pill itinerary-stop__amount">{formattedAmount}</span>
 
       <button
         type="button"
