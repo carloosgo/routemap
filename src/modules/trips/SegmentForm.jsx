@@ -64,7 +64,6 @@ export function SegmentForm({
         <ItineraryOriginNode
           city={segment.origin}
           onSelect={(city) => onUpdate({ origin: city })}
-          placeholder="Origen"
         />
       )}
       <article
