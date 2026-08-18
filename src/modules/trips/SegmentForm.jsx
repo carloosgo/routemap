@@ -8,6 +8,7 @@ import {
   formatSegmentDateParts,
   segmentNightCount,
 } from './segmentFormModel.js';
+import './ItineraryTimeline.css';
 
 function SegmentDropIndicator({ placement }) {
   if (!placement) return null;
@@ -22,6 +23,7 @@ function SegmentDropIndicator({ placement }) {
 
 export function SegmentForm({
   segment,
+  index,
   currency,
   locale,
   expanded,
@@ -88,7 +90,9 @@ export function SegmentForm({
           currency={currency}
           locale={locale}
           bodyId={bodyId}
+          originEditable={index === 0}
           onUpdate={onUpdate}
+          onUpdateDestination={onUpdateDestination}
           onUpdateExpenses={onUpdateExpenses}
         />
       )}

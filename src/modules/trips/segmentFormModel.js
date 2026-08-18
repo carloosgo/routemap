@@ -30,6 +30,16 @@ export function segmentNightCount(segment) {
   return Math.round((end - start) / 86400000);
 }
 
+export function formatSegmentNights(segment, locale) {
+  const nights = segmentNightCount(segment);
+  if (nights == null) return null;
+  const spanish = String(locale || '').toLowerCase().startsWith('es');
+  const label = spanish
+    ? nights === 1 ? 'noche' : 'noches'
+    : nights === 1 ? 'night' : 'nights';
+  return `${nights} ${label}`;
+}
+
 export function formatSegmentDates(segment, locale) {
   const dates = formatSegmentDateParts(segment, locale);
   if (!dates.hasValue) return null;
