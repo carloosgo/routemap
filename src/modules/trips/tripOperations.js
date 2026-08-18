@@ -11,6 +11,19 @@ function nowISO() {
   return new Date().toISOString();
 }
 
+export function syncSegmentOrigins(segments, firstOrigin = segments?.[0]?.origin || null) {
+  const safeSegments = Array.isArray(segments) ? segments : [];
+  return safeSegments.map((segment, index) => {
+    const origin = index === 0
+      ? firstOrigin
+      : safeSegments[index - 1]?.destination || null;
+    return {
+      ...segment,
+      origin: origin ? { ...origin } : null,
+    };
+  });
+}
+
 export function nextSegmentDefaults(trip) {
   const segments = trip?.segments || [];
   if (!segments.length) return {};
@@ -47,6 +60,7 @@ export function reorderSegments(
     return trip;
   }
 
+  const firstOrigin = segments[0]?.origin || null;
   const reordered = [...segments];
   const [moved] = reordered.splice(sourceIndex, 1);
   const targetIndex = reordered.findIndex(
@@ -56,7 +70,7 @@ export function reorderSegments(
 
   return {
     ...trip,
-    segments: reordered,
+    segments: syncSegmentOrigins(reordered, firstOrigin),
     updatedAt: nowISO(),
   };
 }
