@@ -17,10 +17,12 @@ import {
   IconTicket,
   IconDots,
 } from '@tabler/icons-react';
+import { CityAutocomplete } from '../components/CityAutocomplete.jsx';
 import { SegmentForm } from '../modules/trips/SegmentForm.jsx';
 import { flagImageUrl } from '../modules/flags/flags.js';
 import { colorForIndex } from '../config.js';
 import { formatMoney } from '../shared/utils.js';
+import itineraryStartFlag from '../assets/itinerary-start-flag.svg';
 
 const MAX_NOTES = 2000;
 
@@ -49,6 +51,25 @@ function CompactFlag({ city }) {
   );
 }
 
+function TimelineStartNode({ segment, updateSegment, t }) {
+  if (!segment) return null;
+  return (
+    <div className="timeline-start-node">
+      <span className="timeline-start-node__marker">
+        <img src={itineraryStartFlag} alt="" aria-hidden="true" />
+      </span>
+      <div className="timeline-start-node__city">
+        <CityAutocomplete
+          value={segment.origin}
+          onSelect={(city) => updateSegment(segment.id, { origin: city })}
+          placeholder={t('origin')}
+          variant="timeline"
+        />
+      </div>
+    </div>
+  );
+}
+
 export function AppEditorPane({
   activeTab,
   trip,
@@ -56,6 +77,7 @@ export function AppEditorPane({
   isExpanded,
   toggleSegment,
   updateSegment,
+  updateSegmentDestination,
   updateExpenses,
   removeSegment,
   reorderSegment,
@@ -193,12 +215,16 @@ export function AppEditorPane({
           <>
             {activeTab === 'segments' && (
               <>
-                <div className="segments">
-                  {trip.segments.map((segment, index) => (
+                <div className="segments itinerary-timeline">
+                  <TimelineStartNode
+                    segment={trip.segments[0]}
+                    updateSegment={updateSegment}
+                    t={t}
+                  />
+                  {trip.segments.map((segment) => (
                     <SegmentForm
                       key={segment.id}
                       segment={segment}
-                      index={index}
                       currency={trip.currency}
                       locale={intlLocale}
                       expanded={isExpanded(segment.id)}
@@ -207,6 +233,7 @@ export function AppEditorPane({
                       dropPlacement={dragState?.targetId === segment.id ? dragState.placement : null}
                       onToggle={() => toggleSegment(segment.id)}
                       onUpdate={(patch) => updateSegment(segment.id, patch)}
+                      onUpdateDestination={(city) => updateSegmentDestination(segment.id, city)}
                       onUpdateExpenses={(expenses) => updateExpenses(segment.id, expenses)}
                       onRemove={() => removeSegment(segment.id)}
                       onOpenNote={() => setOpenNoteSegmentId(segment.id)}
