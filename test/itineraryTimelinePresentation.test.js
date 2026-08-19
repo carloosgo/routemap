@@ -25,11 +25,11 @@ test('timeline compacts city and date while keeping nights and amount identicall
   const css = await read('src/modules/trips/ItineraryTimeline.css');
 
   assert.match(header, /className="itinerary-stop__metrics"/);
-  assert.match(css, /grid-template-columns:\s*18px 30px minmax\(90px, 106px\) minmax\(190px, 1fr\) 22px 22px 22px;/);
+  assert.match(css, /grid-template-columns:\s*18px 30px minmax\(90px, 106px\) minmax\(178px, 1fr\) 22px 22px 22px;/);
   assert.match(css, /\.itinerary-stop__place\s*\{[\s\S]*max-width:\s*106px;/);
-  assert.match(css, /\.itinerary-stop__metrics\s*\{[\s\S]*grid-template-columns:\s*42px 66px 66px;[\s\S]*justify-content:\s*space-between;[\s\S]*column-gap:\s*0;/);
+  assert.match(css, /\.itinerary-stop__metrics\s*\{[\s\S]*min-width:\s*178px;[\s\S]*grid-template-columns:\s*42px 60px 60px;[\s\S]*column-gap:\s*8px;/);
   assert.match(css, /\.itinerary-stop__dates\s*\{[\s\S]*width:\s*42px;[\s\S]*font-size:\s*10\.5px;/);
-  assert.match(css, /\.itinerary-stop__nights\.segment__pill,[\s\S]*\.itinerary-stop__amount\.segment__pill\s*\{[\s\S]*width:\s*66px;[\s\S]*font-size:\s*10\.5px;/);
+  assert.match(css, /\.itinerary-stop__nights\.segment__pill,[\s\S]*\.itinerary-stop__amount\.segment__pill\s*\{[\s\S]*width:\s*60px;[\s\S]*border-radius:\s*5px;[\s\S]*font-size:\s*10\.5px;/);
   assert.match(css, /\.floating-editor \.itinerary-stop__nights\.segment__pill\s*\{[\s\S]*background:\s*#eef5ff;[\s\S]*color:\s*#3977ca;/);
 });
 
