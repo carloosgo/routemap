@@ -61,6 +61,8 @@ export function AppEditorModule({
     setNewItemText,
   } = editorState;
 
+  // Conserva la semántica original de los badges del menú:
+  // Mis Rutas cuenta los lugares guardados y Notas muestra progreso de pendientes.
   const routeCount = Array.isArray(places) ? places.length : 0;
   const checklistCount = Array.isArray(checklist) ? checklist.length : 0;
   const checklistProgress = checklistCount ? `${doneCount}/${checklistCount}` : '';
@@ -121,7 +123,7 @@ export function AppEditorModule({
           type="button"
           role="tab"
           aria-selected={activeTab === 'segments'}
-          className={'editor-module__tab editor-module__nav-tab' +
+          className={'editor-module__tab editor-module__nav-tab editor-module__nav-tab--plain' +
             (activeTab === 'segments' ? ' is-active' : '')}
           onClick={() => setActiveTab('segments')}
         >
@@ -129,7 +131,6 @@ export function AppEditorModule({
             <IconMap />
           </span>
           <span className="editor-module__tab-label">{t('itinerary')}</span>
-          <span className="editor-module__tab-count" aria-hidden="true" />
         </button>
         <button
           type="button"
