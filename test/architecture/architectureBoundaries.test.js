@@ -1,3 +1,4 @@
+// test-contract: architecture
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -23,7 +24,6 @@ const FORBIDDEN_IMPORTS = [
 test('las capas puras no dependen de React, componentes ni estilos', async () => {
   for (const path of PURE_MODULES) {
     const source = await readFile(path, 'utf8');
-
     for (const forbidden of FORBIDDEN_IMPORTS) {
       assert.doesNotMatch(source, forbidden, `${path} viola el límite arquitectónico: ${forbidden}`);
     }
