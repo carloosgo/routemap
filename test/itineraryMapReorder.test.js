@@ -36,39 +36,63 @@ function itinerary() {
 
 const colorForIndex = (index) => `color-${index}`;
 
-test('reordenar un trayecto reencadena tambien geometria, paradas y numeros del mapa', () => {
-  const { trip, cities } = itinerary();
-  const reordered = reorderSegments(trip, 's3', 's1', 'before');
-
-  assert.deepEqual(
-    reordered.segments.map((segment) => segment.id),
-    ['s3', 's1', 's2']
-  );
-  assert.deepEqual(
-    reordered.segments.map((segment) => segment.origin.id),
-    ['a', 'd', 'b']
-  );
-  assert.deepEqual(
-    reordered.segments.map((segment) => segment.destination.id),
-    ['d', 'b', 'c']
-  );
-
-  const data = buildMapFeatureData({
-    segments: reordered.segments,
+function mapDataFor(segments) {
+  return buildMapFeatureData({
+    segments,
     places: [],
     routeConnections: [],
     viewMode: 'segments',
     colorForIndex,
   });
+}
 
+function assertConsecutiveMapChain(reordered, expectedSegmentIds, expectedCityIds) {
+  assert.deepEqual(
+    reordered.segments.map((segment) => segment.id),
+    expectedSegmentIds
+  );
+
+  const actualCityIds = [
+    reordered.segments[0]?.origin?.id,
+    ...reordered.segments.map((segment) => segment.destination?.id),
+  ];
+  assert.deepEqual(actualCityIds, expectedCityIds);
+
+  reordered.segments.forEach((segment, index) => {
+    if (index === 0) return;
+    assert.equal(
+      segment.origin?.id,
+      reordered.segments[index - 1]?.destination?.id,
+      `segmento ${index + 1} debe iniciar donde termina el segmento ${index}`
+    );
+  });
+
+  const data = mapDataFor(reordered.segments);
   assert.deepEqual(
     data.routeFeatures.map((feature) => feature.properties.segmentId),
-    ['s3', 's1', 's2']
+    expectedSegmentIds
   );
   assert.deepEqual(
     data.routeFeatures.map((feature) => feature.properties.sequence),
-    [1, 2, 3]
+    expectedSegmentIds.map((_, index) => index + 1)
   );
+  assert.deepEqual(
+    data.cityFeatures.map((feature) => feature.properties.sequence),
+    expectedCityIds.map((_, index) => index + 1)
+  );
+  assert.deepEqual(
+    data.cityFeatures.map((feature) => feature.properties.name.toLowerCase()),
+    expectedCityIds
+  );
+}
+
+test('reordenar un trayecto reencadena tambien geometria, paradas y numeros del mapa', () => {
+  const { trip, cities } = itinerary();
+  const reordered = reorderSegments(trip, 's3', 's1', 'before');
+
+  assertConsecutiveMapChain(reordered, ['s3', 's1', 's2'], ['a', 'd', 'b', 'c']);
+
+  const data = mapDataFor(reordered.segments);
   assert.deepEqual(
     data.routeFeatures.map((feature) => feature.geometry.coordinates),
     [
@@ -77,14 +101,27 @@ test('reordenar un trayecto reencadena tambien geometria, paradas y numeros del 
       [[cities.b.lon, cities.b.lat], [cities.c.lon, cities.c.lat]],
     ]
   );
-  assert.deepEqual(
-    data.cityFeatures.map((feature) => feature.properties.name),
-    ['A', 'D', 'B', 'C']
-  );
-  assert.deepEqual(
-    data.cityFeatures.map((feature) => feature.properties.sequence),
-    [1, 2, 3, 4]
-  );
+});
+
+test('mover el primer trayecto al final mantiene una sola cadena consecutiva', () => {
+  const { trip } = itinerary();
+  const reordered = reorderSegments(trip, 's1', 's3', 'after');
+
+  assertConsecutiveMapChain(reordered, ['s2', 's3', 's1'], ['a', 'c', 'd', 'b']);
+});
+
+test('mover el trayecto intermedio al final mantiene numeros y origenes consecutivos', () => {
+  const { trip } = itinerary();
+  const reordered = reorderSegments(trip, 's2', 's3', 'after');
+
+  assertConsecutiveMapChain(reordered, ['s1', 's3', 's2'], ['a', 'b', 'd', 'c']);
+});
+
+test('mover un trayecto una sola posicion hacia arriba conserva la cadena', () => {
+  const { trip } = itinerary();
+  const reordered = reorderSegments(trip, 's3', 's2', 'before');
+
+  assertConsecutiveMapChain(reordered, ['s1', 's3', 's2'], ['a', 'b', 'd', 'c']);
 });
 
 test('una ciudad revisitada conserva su posicion consecutiva en vez de desaparecer', () => {
@@ -95,13 +132,7 @@ test('una ciudad revisitada conserva su posicion consecutiva en vez de desaparec
     { id: 's3', origin: cities.a, destination: cities.c, expenses: {} },
   ];
 
-  const data = buildMapFeatureData({
-    segments,
-    places: [],
-    routeConnections: [],
-    viewMode: 'segments',
-    colorForIndex,
-  });
+  const data = mapDataFor(segments);
 
   assert.deepEqual(
     data.cityFeatures.map((feature) => feature.properties.name),
@@ -126,4 +157,19 @@ test('los numeros de marcadores pertenecen al dato y no al orden DOM de Google M
   assert.doesNotMatch(css, /counter-increment:\s*itinerary-city/);
   assert.doesNotMatch(css, /content:\s*counter\(itinerary-city\)/);
   assert.match(css, /\.google-itinerary-city-marker__dot\s*\{[\s\S]*display:grid;/);
+});
+
+test('el drag confirma el reordenamiento fuera del updater de React y conserva un solo pointer activo', async () => {
+  const editor = await read('src/app/AppEditorPane.jsx');
+
+  assert.match(editor, /const dragStateRef = useRef\(null\)/);
+  assert.match(editor, /const activeDragId = dragState\?\.segmentId \|\| null/);
+  assert.match(editor, /current\.pointerId !== event\.pointerId/);
+  assert.match(editor, /dragStateRef\.current = null;\s*setDragState\(null\);\s*if \(current\.targetId && current\.placement\) \{\s*reorderSegment\(/);
+  assert.match(editor, /\}, \[activeDragId, reorderSegment\]\);/);
+  assert.match(editor, /setPointerCapture\?\.\(event\.pointerId\)/);
+  assert.doesNotMatch(
+    editor,
+    /setDragState\(\(current\) => \{[\s\S]{0,500}reorderSegment\(/
+  );
 });
