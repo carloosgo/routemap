@@ -4,15 +4,27 @@ import { TRIP_ACTIONS, tripReducer } from '../src/modules/trips/tripReducer.js';
 import { createSegment, createTrip } from '../src/modules/trips/tripModel.js';
 import { buildMapFeatureData } from '../src/modules/map/routeMapModel.js';
 
-const city = (id, name) => ({
-  id,
-  name,
-  displayName: name,
-  country: 'México',
-  countryCode: 'MX',
-  lat: 19,
-  lon: -99,
-});
+const CITY_COORDINATES = {
+  origin: [19.4326, -99.1332],
+  paris: [48.8566, 2.3522],
+  berlin: [52.52, 13.405],
+  amsterdam: [52.3676, 4.9041],
+  lyon: [45.764, 4.8357],
+  monterrey: [25.6866, -100.3161],
+};
+
+const city = (id, name) => {
+  const [lat, lon] = CITY_COORDINATES[id];
+  return {
+    id,
+    name,
+    displayName: name,
+    country: 'México',
+    countryCode: 'MX',
+    lat,
+    lon,
+  };
+};
 
 function chainedTrip() {
   const origin = city('origin', 'Ciudad de México');

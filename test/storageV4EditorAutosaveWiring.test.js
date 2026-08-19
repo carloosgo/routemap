@@ -16,7 +16,8 @@ test('editor real queda conectado a draft durable y estado de persistencia', asy
 
   assert.ok(app.includes('useTripAutoPersistence'));
   assert.ok(app.includes('getActiveTripDraft'));
-  assert.ok(app.includes('loadTrip(draft)'));
+  assert.ok(app.includes('loadTrip(normalizeRecoveredDraft(draft))'));
+  assert.ok(app.includes("from './app/recoveredTripDraft.js'"));
   assert.ok(app.includes('currentTripRef.current !== initialTripRef.current'));
   assert.ok(app.includes('stageTrip'));
   assert.ok(app.includes('getTripPersistenceState'));

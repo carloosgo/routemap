@@ -30,18 +30,19 @@ test('the selected Atlas controls retain the exact #19a5d0 accent token', async 
   assert.match(polish, /border-color:\s*var\(--atlas-accent\)/);
 });
 
-test('itinerary, routes, notes and currency use the same real button structure and styles', async () => {
+test('itinerary, routes and notes share the real tab button structure while currency stays in workspace', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
-  const navigation = `${editor}\n${menu}`;
   const polish = await read('src/app/FloatingEditorPolish.css');
 
-  assert.equal((navigation.match(/editor-module__nav-tab/g) || []).length, 4);
-  assert.equal((navigation.match(/editor-module__tab-icon/g) || []).length, 3);
-  assert.equal((navigation.match(/editor-module__tab-label/g) || []).length, 4);
+  assert.equal((editor.match(/editor-module__nav-tab/g) || []).length, 3);
+  assert.equal((editor.match(/editor-module__tab-icon/g) || []).length, 3);
+  assert.equal((editor.match(/editor-module__tab-label/g) || []).length, 3);
   assert.match(editor, /t\('itinerary'\)/);
   assert.match(editor, /t\('myRoutes'\)/);
-  assert.match(menu, /openMenu === 'currency'/);
+  assert.match(editor, /t\('notes'\)/);
+  assert.match(menu, /openMenu === 'workspace'/);
+  assert.match(menu, /<span>\{t\('currency'\)\}<\/span>/);
   assert.match(menu, /setCurrency\(currency\)/);
   assert.match(menu, /<span>\{t\('language'\)\}<\/span>/);
   assert.doesNotMatch(menu, /currencyCoinIcon|data-tab-icon="language-selector"/);
@@ -78,20 +79,19 @@ test('places renders the transparent signpost icon through the existing tab asse
   assert.doesNotMatch(icon, /<image\b/);
 });
 
-test('the desktop navigation remains ordered as itinerary, routes, notes and currency', async () => {
+test('the desktop navigation remains ordered as itinerary, routes and notes with currency in workspace', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
-  const navigation = `${editor}\n${menu}`;
 
-  const itineraryIndex = navigation.indexOf("setActiveTab('segments')");
-  const routesIndex = navigation.indexOf("setActiveTab('places')");
-  const notesIndex = navigation.indexOf("setActiveTab('notes')");
-  const currencyIndex = navigation.indexOf("openMenu === 'currency'");
+  const itineraryIndex = editor.indexOf("setActiveTab('segments')");
+  const routesIndex = editor.indexOf("setActiveTab('places')");
+  const notesIndex = editor.indexOf("setActiveTab('notes')");
 
   assert.ok(itineraryIndex >= 0);
   assert.ok(itineraryIndex < routesIndex);
   assert.ok(routesIndex < notesIndex);
-  assert.ok(notesIndex < currencyIndex);
+  assert.match(menu, /openMenu === 'workspace'/);
+  assert.match(menu, /<span>\{t\('currency'\)\}<\/span>/);
 });
 
 test('place save popup hides its close icon and dismisses through outside clicks', async () => {

@@ -61,7 +61,7 @@ test('no agrega segmentos por encima del límite', () => {
   assert.equal(appendSegment(trip), trip);
 });
 
-test('reordena el tramo completo y actualiza el orden usado por la ruta', () => {
+test('reordena el tramo completo y reencadena los orígenes usados por la ruta', () => {
   const trip = normalizeTrip({
     id: 'trip',
     segments: [
@@ -97,7 +97,11 @@ test('reordena el tramo completo y actualiza el orden usado por la ruta', () => 
   assert.equal(reordered.segments[0].note, 'nota c');
   assert.equal(reordered.segments[0].expenses.lodging, 30);
   assert.deepEqual(
+    reordered.segments.map((segment) => segment.origin?.name),
+    ['A', 'F', 'B']
+  );
+  assert.deepEqual(
     routeStops(reordered.segments).map((city) => city.name),
-    ['E', 'F', 'A', 'B', 'C', 'D']
+    ['A', 'F', 'B', 'D']
   );
 });

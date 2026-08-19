@@ -5,12 +5,13 @@ import { useSavedTrips } from './modules/trips/useSavedTrips.js';
 import { useTripAutoPersistence } from './modules/trips/useTripAutoPersistence.js';
 import { savedTripErrorTranslationKey } from './modules/trips/savedTripOperations.js';
 import { useFirebaseAuth } from './infrastructure/firebase/useFirebaseAuth.js';
-import { isTripSavable, segmentTotal } from './modules/trips/tripModel.js';
+import { isTripSavable } from './modules/trips/tripModel.js';
 import { AppTopbar } from './app/AppTopbar.jsx';
 import { AppEditorModule } from './app/AppEditorModule.jsx';
 import { AppMapPane } from './app/AppMapPane.jsx';
 import { AppWorkspace } from './app/AppWorkspace.jsx';
 import { TripDeleteDialog } from './app/TripDeleteDialog.jsx';
+import { normalizeRecoveredDraft } from './app/recoveredTripDraft.js';
 import { useAppEditorState } from './app/useAppEditorState.js';
 import {
   useOutsideClick,
@@ -19,51 +20,6 @@ import {
 } from './app/useAppInteractions.js';
 import './App.css';
 import './app/FloatingEditor.css';
-
-function segmentHasNoTripData(segment, { allowOrigin = false } = {}) {
-  return Boolean(
-    segment
-      && (allowOrigin || !segment.origin)
-      && !segment.destination
-      && !segment.startDate
-      && !segment.endDate
-      && !String(segment.note || '').trim()
-      && segmentTotal(segment) === 0
-  );
-}
-
-function normalizeRecoveredDraft(draft) {
-  const segments = Array.isArray(draft?.segments) ? draft.segments : [];
-  if (segments.length <= 1) return draft;
-
-  const hasPlaces = Array.isArray(draft?.places) && draft.places.length > 0;
-  const hasRoutes = Array.isArray(draft?.routeConnections) && draft.routeConnections.length > 0;
-  const hasChecklist = Array.isArray(draft?.checklist) && draft.checklist.length > 0;
-  const hasNotes = Array.isArray(draft?.notes) && draft.notes.some((note) =>
-    String(note?.title || '').trim() || String(note?.text || '').trim()
-  );
-
-  const starterOnly = segmentHasNoTripData(segments[0], { allowOrigin: true });
-  const trailingRowsAreBlank = segments.slice(1).every((segment) =>
-    segmentHasNoTripData(segment)
-  );
-  const canCollapseStarterDraft = starterOnly
-    && trailingRowsAreBlank
-    && !hasPlaces
-    && !hasRoutes
-    && !hasChecklist
-    && !hasNotes;
-
-  if (!canCollapseStarterDraft) return draft;
-
-  // Compatibilidad con borradores locales creados por la UI anterior: conserva
-  // el nombre y la ciudad de origen, pero elimina filas generadas sin datos.
-  // Viajes con destino, fechas, gastos, notas, lugares o rutas no se modifican.
-  return {
-    ...draft,
-    segments: [segments[0]],
-  };
-}
 
 export default function App() {
   const { t, locale, intlLocale, setLocale, availableLocales } = useTranslation();
