@@ -204,6 +204,7 @@ export default function App() {
       setOpenNoteSegmentId={setOpenNoteSegmentId}
       setTripToDelete={setTripToDelete}
       handleOpenSavedTrip={handleOpenSavedTrip}
+      handleSave={handleSave}
       t={t}
       locale={locale}
       setLocale={setLocale}
