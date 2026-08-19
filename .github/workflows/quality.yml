@@ -67,6 +67,17 @@ jobs:
       - name: Run unit tests
         run: npm test
 
+      - name: Audit test contracts
+        run: npm run test:audit -- --json=test-audit.json
+
+      - name: Upload test contract audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-contract-audit
+          path: test-audit.json
+          if-no-files-found: error
+          retention-days: 3
+
       - name: Test Firestore security rules
         shell: bash
         run: |

@@ -10,6 +10,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "node --test",
+    "test:audit": "node scripts/auditTests.mjs",
+    "verify:local": "npm test && npm run lint && npm run build",
     "preprod:hosting:deploy": "node scripts/runPreprodHostingDeploy.mjs",
     "generate:rules:gate-g-read": "node scripts/generateFirestoreGateGReadRules.mjs",
     "generate:rules:phase-k-e2e": "node scripts/generateFirestorePhaseKE2ERules.mjs",
