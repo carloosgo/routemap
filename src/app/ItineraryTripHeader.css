@@ -1,0 +1,134 @@
+/* Cambios visuales solicitados para la cabecera y métricas del itinerario. */
+.itinerary-trip-header {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 8px 7px;
+  background: #ffffff;
+}
+
+.itinerary-trip-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 28px;
+  padding: 2px 4px;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: var(--atlas-accent);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  outline: none;
+}
+
+.itinerary-trip-title::placeholder {
+  color: #c7cbd1;
+  font-weight: 600;
+  opacity: 1;
+}
+
+.itinerary-trip-title:focus-visible {
+  box-shadow: inset 0 -1px 0 rgba(25, 165, 208, 0.45);
+}
+
+.itinerary-trip-save {
+  min-width: 68px;
+  min-height: 28px;
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--atlas-accent);
+  color: #ffffff;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.itinerary-trip-save:hover,
+.itinerary-trip-save:focus-visible {
+  background: var(--atlas-accent);
+  color: #ffffff;
+  filter: brightness(0.92);
+}
+
+.itinerary-trip-save:focus-visible {
+  outline: 2px solid rgba(25, 165, 208, 0.3);
+  outline-offset: 2px;
+}
+
+/* El nombre y Guardar viven ahora dentro del itinerario, no flotando sobre el mapa. */
+.topbar__save,
+.trip-save-popover,
+.trip-name-pill {
+  display: none !important;
+}
+
+/* Noches conserva la misma semántica visual con o sin fechas calculadas. */
+.itinerary-stop__nights.segment__pill,
+.itinerary-stop__nights.segment__pill.is-placeholder,
+.floating-editor .itinerary-stop__nights.segment__pill,
+.floating-editor .itinerary-stop__nights.segment__pill.is-placeholder {
+  background: #f1f1f1;
+  color: #535353;
+}
+
+/* El costo del trayecto pasa a ser la etiqueta de acento principal. */
+.itinerary-stop__amount.segment__pill,
+.floating-editor .itinerary-stop__amount.segment__pill {
+  background: var(--atlas-accent);
+  color: #ffffff;
+}
+
+@media (min-width: 721px) {
+  /* El menú lateral queda abierto visualmente hacia el contenido. */
+  .editor-module > .editor-module__tabs {
+    border-right: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* En Itinerario la columna de contenido gana una fila compacta para nombre + Guardar. */
+  .editor-module.editor-module--itinerary {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .editor-module.editor-module--itinerary > .editor-module__tabs {
+    grid-row: 1 / -1;
+  }
+
+  .editor-module.editor-module--itinerary > .itinerary-trip-header {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .editor-module.editor-module--itinerary > .editor {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  /* El origen termina aproximadamente donde termina la primera columna de fecha dd/mm. */
+  .itinerary-origin {
+    grid-template-columns: 30px minmax(0, 154px);
+  }
+
+  .itinerary-origin__place {
+    max-width: 154px;
+  }
+}
+
+@media (max-width: 720px) {
+  .itinerary-trip-header {
+    padding: 9px 12px 7px;
+  }
+}
