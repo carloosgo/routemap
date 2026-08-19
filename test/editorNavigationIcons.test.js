@@ -41,7 +41,7 @@ test('desktop navigation keeps canonical icons and currency lives inside the wor
   assert.match(iconCss, /\.editor-module__tabs \.editor-module__tab-icon > svg\s*\{\s*display:\s*none;/);
 });
 
-test('sidebar geometry has one owner and uses compact centered separators', async () => {
+test('sidebar geometry has one owner and active state cannot move an option', async () => {
   const iconCss = await read('src/app/EditorNavigationIcons.css');
   const sidebarCss = await read('src/app/ItinerarySidebar.css');
   const polishCss = await read('src/app/FloatingEditorPolish.css');
@@ -56,13 +56,27 @@ test('sidebar geometry has one owner and uses compact centered separators', asyn
   assert.match(sidebarCss, /min-height:\s*76px;/);
   assert.match(sidebarCss, /height:\s*76px;/);
   assert.match(sidebarCss, /flex:\s*0 0 76px;/);
+  assert.match(sidebarCss, /display:\s*grid\s*!important;/);
+  assert.match(sidebarCss, /grid-template-rows:\s*38px 14px 12px;/);
   assert.match(sidebarCss, /transform:\s*none\s*!important;/);
   assert.match(sidebarCss, /width:\s*38px;/);
   assert.match(sidebarCss, /height:\s*38px;/);
+  assert.match(sidebarCss, /padding:\s*4px 3px\s*!important;/);
   assert.match(sidebarCss, /width:\s*26px\s*!important;/);
   assert.match(sidebarCss, /left:\s*50%\s*!important;/);
   assert.match(sidebarCss, /transform:\s*translateX\(-50%\)\s*!important;/);
   assert.match(sidebarCss, /background:\s*#fdfdfd\s*!important;/);
+});
+
+test('routes and notes counters live below their labels and reserve space without moving icons', async () => {
+  const editor = await read('src/app/AppEditorModule.jsx');
+  const sidebarCss = await read('src/app/ItinerarySidebar.css');
+
+  assert.doesNotMatch(editor, /tabbar__badge/);
+  assert.match(editor, /const routeCount = Array\.isArray\(trip\.routeConnections\)/);
+  assert.match(editor, /const noteCount = Array\.isArray\(notes\)/);
+  assert.equal((editor.match(/editor-module__tab-count/g) || []).length, 3);
+  assert.match(sidebarCss, /\.editor-module__tabs \.editor-module__tab-count\s*\{[\s\S]*grid-row:\s*3;[\s\S]*position:\s*static;[\s\S]*height:\s*12px;/);
 });
 
 test('workspace menu is anchored above the map and exposes its options without clipping', async () => {
