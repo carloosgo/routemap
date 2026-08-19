@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   IconArrowRight,
   IconChecklist,
@@ -84,10 +84,12 @@ export function AppEditorPane({
 }) {
   const segmentCount = trip.segments.length;
   const [dragState, setDragState] = useState(null);
+  const dragStateRef = useRef(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const activeDragId = dragState?.segmentId || null;
 
   useEffect(() => {
-    if (!dragState) return undefined;
+    if (!activeDragId) return undefined;
 
     function visibleDropCandidates(sourceId) {
       return Array.from(document.querySelectorAll('[data-segment-id]'))
@@ -128,32 +130,51 @@ export function AppEditorPane({
     }
 
     function handlePointerMove(event) {
-      const { targetId, placement } = resolveDropTarget(event, dragState.segmentId);
-      setDragState((current) =>
-        current
-          ? { ...current, offsetY: event.clientY - current.startY, targetId, placement }
-          : current
-      );
+      const current = dragStateRef.current;
+      if (
+        !current
+        || current.segmentId !== activeDragId
+        || current.pointerId !== event.pointerId
+      ) {
+        return;
+      }
+      const { targetId, placement } = resolveDropTarget(event, current.segmentId);
+      const next = {
+        ...current,
+        offsetY: event.clientY - current.startY,
+        targetId,
+        placement,
+      };
+      dragStateRef.current = next;
+      setDragState(next);
     }
 
-    function handlePointerEnd() {
-      setDragState((current) => {
-        if (current?.targetId && current.placement) {
-          reorderSegment(current.segmentId, current.targetId, current.placement);
-        }
-        return null;
-      });
+    function handlePointerEnd(event) {
+      const current = dragStateRef.current;
+      if (
+        !current
+        || current.segmentId !== activeDragId
+        || current.pointerId !== event.pointerId
+      ) {
+        return;
+      }
+
+      dragStateRef.current = null;
+      setDragState(null);
+      if (current.targetId && current.placement) {
+        reorderSegment(current.segmentId, current.targetId, current.placement);
+      }
     }
 
     document.addEventListener('pointermove', handlePointerMove);
-    document.addEventListener('pointerup', handlePointerEnd, { once: true });
-    document.addEventListener('pointercancel', handlePointerEnd, { once: true });
+    document.addEventListener('pointerup', handlePointerEnd);
+    document.addEventListener('pointercancel', handlePointerEnd);
     return () => {
       document.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('pointerup', handlePointerEnd);
       document.removeEventListener('pointercancel', handlePointerEnd);
     };
-  }, [dragState, reorderSegment]);
+  }, [activeDragId, reorderSegment]);
 
   return (
     <section className={'editor' + (panelCollapsed ? ' is-panel-collapsed' : '')}>
@@ -213,13 +234,17 @@ export function AppEditorPane({
                       onReorderPointerStart={(event) => {
                         if (event.pointerType === 'mouse' && event.button !== 0) return;
                         event.preventDefault();
-                        setDragState({
+                        event.currentTarget.setPointerCapture?.(event.pointerId);
+                        const nextDragState = {
                           segmentId: segment.id,
+                          pointerId: event.pointerId,
                           startY: event.clientY,
                           offsetY: 0,
                           targetId: null,
                           placement: null,
-                        });
+                        };
+                        dragStateRef.current = nextDragState;
+                        setDragState(nextDragState);
                       }}
                     />
                   ))}
