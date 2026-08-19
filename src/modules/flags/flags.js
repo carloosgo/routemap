@@ -1,6 +1,8 @@
 // Módulo de banderas (independiente).
 // Resuelve la bandera de un país a partir de su código ISO 3166-1 alpha-2.
-// Usamos SVG de FlagCDN para mantener nitidez en cualquier densidad de pantalla.
+
+const FLAG_WIDTHS = new Set([20, 40, 80]);
+const DEFAULT_FLAG_WIDTH = 40;
 
 function normalizeCountryCode(countryCode) {
   if (typeof countryCode !== 'string') return null;
@@ -8,13 +10,15 @@ function normalizeCountryCode(countryCode) {
   return /^[a-z]{2}$/i.test(code) ? code.toLowerCase() : null;
 }
 
-// Mantiene la firma histórica con `width` para no acoplar los consumidores
-// al proveedor. El SVG es vectorial, por lo que no necesita variantes por ancho.
-export function flagImageUrl(countryCode, width) {
-  void width;
+// FlagCDN entrega PNGs ya rasterizados a densidad suficiente. En el timeline
+// solicitamos w80 y lo reducimos a 30×20 CSS px: ese supersampling mantiene
+// más legibles los escudos pequeños (México/España) que un SVG rasterizado
+// directamente al tamaño final por cada navegador.
+export function flagImageUrl(countryCode, width = DEFAULT_FLAG_WIDTH) {
   const code = normalizeCountryCode(countryCode);
   if (!code) return null;
-  return `https://flagcdn.com/${code}.svg`;
+  const safeWidth = FLAG_WIDTHS.has(width) ? width : DEFAULT_FLAG_WIDTH;
+  return `https://flagcdn.com/w${safeWidth}/${code}.png`;
 }
 
 // Alternativa 100% local (sin red): bandera como emoji.
