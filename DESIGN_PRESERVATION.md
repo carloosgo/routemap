@@ -2,7 +2,7 @@
 
 Visual delta: none
 
-La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atlas debe permanecer intacto. Los controles añadidos reutilizan componentes, dimensiones, espaciados, iconografía y estados ya existentes. Los cambios visuales enumerados abajo fueron solicitados y aprobados explícitamente para el mapa del itinerario.
+La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atlas debe permanecer intacto. Los controles añadidos reutilizan componentes, dimensiones, espaciados, iconografía y estados ya existentes. Los cambios visuales enumerados abajo fueron solicitados y aprobados explícitamente para el mapa y el editor del itinerario.
 
 ## Invariantes
 
@@ -16,6 +16,12 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 
 ## Controles incorporados
 
+- Cabecera del itinerario: el nombre del viaje y la acción `Guardar` pasan al inicio de la sección de trayectos, en una misma fila. El título usa 12 px; vacío muestra `Nombre de tu viaje` en gris claro y con contenido usa `var(--atlas-accent)`. El botón conserva el acento Atlas con texto blanco y una geometría compacta.
+- Guardado sobre mapa: el botón circular flotante, su popover y la píldora flotante con el nombre dejan de mostrarse porque la acción y el nombre viven ahora dentro del itinerario.
+- Etiqueta de noches: tanto `0 noches` como cualquier valor calculado usan texto `#535353` sobre fondo `#F1F1F1`.
+- Etiqueta de costo del trayecto: usa `var(--atlas-accent)` como fondo y `#FFFFFF` como texto.
+- Barra lateral del editor: se elimina el borde derecho y su sombra divisoria; la separación entre opciones internas se conserva.
+- Ciudad origen: en escritorio el campo se acorta para terminar aproximadamente en la misma guía vertical que el final de la primera fecha `dd/mm` de los trayectos.
 - Selector `KM / MI`: reutiliza `topmenu`, `topitem`, `dropdown` y `dropdown__opt`.
 - Instalación PWA: reutiliza `topitem` y solo aparece cuando el navegador emite `beforeinstallprompt`.
 - Búsqueda de lugares: conserva los componentes visuales existentes; la sugerencia seleccionada ahora se enfoca directamente y la confirmación permanece anclada a su marcador.
@@ -46,6 +52,8 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 
 ## Validación requerida
 
+- `npm run test:impact`
+- `npm run test:contracts`
 - `npm test`
 - `npm run lint`
 - `npm run build`
