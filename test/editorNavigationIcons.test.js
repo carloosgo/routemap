@@ -43,7 +43,8 @@ test('desktop navigation keeps canonical icons and currency lives inside the wor
   assert.match(iconCss, /\.editor-module__tabs \.editor-module__tab-icon > svg\s*\{\s*display:\s*none;/);
 });
 
-test('sidebar geometry has one owner and active state cannot move an option', async () => {
+test('sidebar keeps active states stable and does not reserve a counter row for itinerary', async () => {
+  const editor = await read('src/app/AppEditorModule.jsx');
   const iconCss = await read('src/app/EditorNavigationIcons.css');
   const sidebarCss = await read('src/app/ItinerarySidebar.css');
   const polishCss = await read('src/app/FloatingEditorPolish.css');
@@ -54,18 +55,17 @@ test('sidebar geometry has one owner and active state cannot move an option', as
     /\.editor-module__tabs \.editor-module__nav-tab(?:\.is-active)?\s*\{/,
     'FloatingEditorPolish.css no debe volver a definir la geometría de navegación'
   );
+  assert.match(editor, /editor-module__nav-tab--plain/);
+  assert.equal((editor.match(/editor-module__tab-count/g) || []).length, 2);
   assert.match(sidebarCss, /grid-template-columns:\s*82px minmax\(0, 1fr\);/);
   assert.match(sidebarCss, /gap:\s*12px;/);
   assert.match(sidebarCss, /min-height:\s*76px;/);
   assert.match(sidebarCss, /height:\s*76px;/);
   assert.match(sidebarCss, /flex:\s*0 0 76px;/);
-  assert.match(sidebarCss, /display:\s*grid\s*!important;/);
   assert.match(sidebarCss, /grid-template-rows:\s*38px 14px 14px;/);
+  assert.match(sidebarCss, /\.editor-module__tabs > \.editor-module__nav-tab--plain,[\s\S]*min-height:\s*62px;[\s\S]*height:\s*62px;[\s\S]*flex:\s*0 0 62px;[\s\S]*grid-template-rows:\s*38px 14px;/);
   assert.match(sidebarCss, /\.editor-module__tabs > \.editor-module__nav-tab \+ \.editor-module__nav-tab\s*\{[\s\S]*margin-left:\s*0\s*!important;[\s\S]*margin-right:\s*0\s*!important;/);
   assert.match(sidebarCss, /transform:\s*none\s*!important;/);
-  assert.match(sidebarCss, /width:\s*38px;/);
-  assert.match(sidebarCss, /height:\s*38px;/);
-  assert.match(sidebarCss, /padding:\s*3px 3px\s*!important;/);
   assert.match(sidebarCss, /width:\s*26px\s*!important;/);
   assert.match(sidebarCss, /top:\s*-6px\s*!important;/);
   assert.match(sidebarCss, /left:\s*50%\s*!important;/);
@@ -73,19 +73,26 @@ test('sidebar geometry has one owner and active state cannot move an option', as
   assert.match(sidebarCss, /background:\s*#fdfdfd\s*!important;/);
 });
 
-test('routes count saved places and notes restore checklist progress below labels', async () => {
+test('routes count saved places and notes expose checklist completion progress', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const sidebarCss = await read('src/app/ItinerarySidebar.css');
 
   assert.match(editor, /const routeCount = Array\.isArray\(places\) \? places\.length : 0;/);
   assert.match(editor, /const checklistCount = Array\.isArray\(checklist\) \? checklist\.length : 0;/);
   assert.match(editor, /const checklistProgress = checklistCount \? `\$\{doneCount\}\/\$\{checklistCount\}` : '';/);
-  assert.equal((editor.match(/editor-module__tab-count/g) || []).length, 3);
+  assert.equal((editor.match(/editor-module__tab-count/g) || []).length, 2);
   assert.equal((editor.match(/tabbar__badge/g) || []).length, 2);
   assert.match(editor, /\{routeCount\}/);
   assert.match(editor, /\{checklistProgress\}/);
   assert.match(sidebarCss, /\.editor-module__tabs \.editor-module__tab-count\s*\{[\s\S]*grid-row:\s*3;[\s\S]*height:\s*14px;[\s\S]*display:\s*flex;/);
   assert.match(sidebarCss, /\.editor-module__tabs \.editor-module__tab-count \.tabbar__badge\s*\{[\s\S]*position:\s*static\s*!important;[\s\S]*display:\s*inline-flex;/);
+});
+
+test('workspace panel toggle stays below modal-bearing editor layer', async () => {
+  const workspaceCss = await read('src/app/DockedWorkspace.css');
+
+  assert.match(workspaceCss, /\.workspace-panel\s*\{[\s\S]*z-index:\s*700;/);
+  assert.match(workspaceCss, /\.workspace-panel__toggle\s*\{[\s\S]*z-index:\s*699;/);
 });
 
 test('workspace menu is anchored above the map and exposes its options without clipping', async () => {
