@@ -33,7 +33,7 @@ test('the selected Atlas controls retain the exact #19a5d0 accent token', async 
 test('itinerary, routes and notes share the real tab button structure while currency stays in workspace', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
-  const polish = await read('src/app/FloatingEditorPolish.css');
+  const sidebar = await read('src/app/ItinerarySidebar.css');
 
   assert.equal((editor.match(/role="tab"/g) || []).length, 3);
   assert.equal((editor.match(/editor-module__tab-icon/g) || []).length, 3);
@@ -47,16 +47,15 @@ test('itinerary, routes and notes share the real tab button structure while curr
   assert.match(menu, /<span>\{t\('language'\)\}<\/span>/);
   assert.doesNotMatch(menu, /currencyCoinIcon|data-tab-icon="language-selector"/);
 
-  assert.match(polish, /\.editor-module__tabs \.editor-module__nav-tab,/);
-  assert.match(polish, /height:\s*36px;/);
-  assert.match(polish, /padding:\s*6px 10px;/);
-  assert.match(polish, /background:\s*#ffffff;/);
-  assert.match(polish, /font-family:\s*var\(--font-body\);/);
-  assert.match(polish, /font-size:\s*14px;/);
-  assert.match(polish, /font-weight:\s*500(?:\s*!important)?;/);
-  assert.match(polish, /\.editor-module__tab-icon\s*\{[\s\S]*width:\s*25px;[\s\S]*height:\s*25px;/);
-  assert.match(polish, /background:\s*#f4f5f7;/);
-  assert.match(polish, /color:\s*#4b5563;/);
+  assert.match(sidebar, /\.editor-module__tabs > \.editor-module__nav-tab,/);
+  assert.match(sidebar, /height:\s*76px;/);
+  assert.match(sidebar, /padding:\s*3px 3px\s*!important;/);
+  assert.match(sidebar, /background:\s*transparent\s*!important;/);
+  assert.match(sidebar, /font-family:\s*var\(--font-body\);/);
+  assert.match(sidebar, /font-size:\s*11px;/);
+  assert.match(sidebar, /font-weight:\s*600;/);
+  assert.match(sidebar, /\.editor-module__tabs \.editor-module__tab-icon\s*\{[\s\S]*width:\s*38px;[\s\S]*height:\s*38px;/);
+  assert.match(sidebar, /color:\s*#68707d;/);
 });
 
 test('places renders the transparent signpost icon through the existing tab asset', async () => {
