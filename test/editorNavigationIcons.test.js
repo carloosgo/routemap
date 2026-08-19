@@ -55,6 +55,7 @@ test('sidebar geometry has one owner and active state cannot move an option', as
     'FloatingEditorPolish.css no debe volver a definir la geometría de navegación'
   );
   assert.match(sidebarCss, /grid-template-columns:\s*82px minmax\(0, 1fr\);/);
+  assert.match(sidebarCss, /gap:\s*12px;/);
   assert.match(sidebarCss, /min-height:\s*76px;/);
   assert.match(sidebarCss, /height:\s*76px;/);
   assert.match(sidebarCss, /flex:\s*0 0 76px;/);
@@ -66,21 +67,25 @@ test('sidebar geometry has one owner and active state cannot move an option', as
   assert.match(sidebarCss, /height:\s*38px;/);
   assert.match(sidebarCss, /padding:\s*3px 3px\s*!important;/);
   assert.match(sidebarCss, /width:\s*26px\s*!important;/);
+  assert.match(sidebarCss, /top:\s*-6px\s*!important;/);
   assert.match(sidebarCss, /left:\s*50%\s*!important;/);
   assert.match(sidebarCss, /transform:\s*translateX\(-50%\)\s*!important;/);
   assert.match(sidebarCss, /background:\s*#fdfdfd\s*!important;/);
 });
 
-test('routes and notes counters keep their original badge styling in a fixed bottom row', async () => {
+test('routes count saved places and notes restore checklist progress below labels', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const sidebarCss = await read('src/app/ItinerarySidebar.css');
 
-  assert.match(editor, /const routeCount = Array\.isArray\(trip\.routeConnections\)/);
-  assert.match(editor, /const noteCount = Array\.isArray\(notes\)/);
+  assert.match(editor, /const routeCount = Array\.isArray\(places\) \? places\.length : 0;/);
+  assert.match(editor, /const checklistCount = Array\.isArray\(checklist\) \? checklist\.length : 0;/);
+  assert.match(editor, /const checklistProgress = checklistCount \? `\$\{doneCount\}\/\$\{checklistCount\}` : '';/);
   assert.equal((editor.match(/editor-module__tab-count/g) || []).length, 3);
   assert.equal((editor.match(/tabbar__badge/g) || []).length, 2);
-  assert.match(sidebarCss, /\.editor-module__tabs \.editor-module__tab-count\s*\{[\s\S]*grid-row:\s*3;[\s\S]*position:\s*static\s*!important;[\s\S]*height:\s*14px;/);
-  assert.match(sidebarCss, /\.editor-module__tabs \.editor-module__tab-count\.tabbar__badge\s*\{[\s\S]*display:\s*inline-flex;[\s\S]*transform:\s*none\s*!important;/);
+  assert.match(editor, /\{routeCount\}/);
+  assert.match(editor, /\{checklistProgress\}/);
+  assert.match(sidebarCss, /\.editor-module__tabs \.editor-module__tab-count\s*\{[\s\S]*grid-row:\s*3;[\s\S]*height:\s*14px;[\s\S]*display:\s*flex;/);
+  assert.match(sidebarCss, /\.editor-module__tabs \.editor-module__tab-count \.tabbar__badge\s*\{[\s\S]*position:\s*static\s*!important;[\s\S]*display:\s*inline-flex;/);
 });
 
 test('workspace menu is anchored above the map and exposes its options without clipping', async () => {
