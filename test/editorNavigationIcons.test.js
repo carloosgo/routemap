@@ -12,15 +12,18 @@ test('legacy header icon injection is no longer loaded', async () => {
   assert.doesNotMatch(html, /custom-header-icons\.css/);
   assert.match(main, /EditorNavigationIcons\.css/);
   assert.match(main, /ItinerarySidebar\.css/);
+  assert.match(main, /TripSummaryHeader\.css/);
   assert.ok(
     main.indexOf('EditorNavigationIcons.css') < main.indexOf('ItinerarySidebar.css'),
     'ItinerarySidebar.css debe ser la autoridad final de geometría del sidebar'
   );
 });
 
-test('desktop navigation keeps canonical icons and currency lives inside the workspace menu', async () => {
+test('desktop navigation keeps canonical icons while trip currency and global language use their proper scopes', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
+  const header = await read('src/app/TripSummaryHeader.jsx');
+  const topbar = await read('src/app/AppTopbar.jsx');
   const navigation = `${editor}\n${menu}`;
   const iconCss = await read('src/app/EditorNavigationIcons.css');
 
@@ -28,15 +31,13 @@ test('desktop navigation keeps canonical icons and currency lives inside the wor
   assert.match(editor, /<img src=\{lugaresIcon\} alt="" \/>/);
   assert.match(editor, /role="tablist"/);
   assert.equal((editor.match(/role="tab"/g) || []).length, 3);
-  assert.match(menu, /const CURRENCIES = \['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'\]/);
   assert.match(menu, /openMenu === 'workspace'/);
-  assert.match(menu, /editor-module__currency-options/);
-  assert.match(menu, /setCurrency\(currency\)/);
-  assert.doesNotMatch(menu, /openMenu === 'currency'/);
-  assert.doesNotMatch(menu, /<span className="editor-module__tab-label">\{trip\.currency\}<\/span>/);
-  assert.match(menu, /<IconLanguage size=\{17\} aria-hidden="true" \/>/);
-  assert.match(menu, /<span>\{t\('language'\)\}<\/span>/);
-  assert.doesNotMatch(menu, /currencyCoinIcon|data-tab-icon="language-selector"/);
+  assert.doesNotMatch(menu, /setCurrency|editor-module__currency-options|t\('language'\)/);
+  assert.match(header, /const CURRENCIES = \['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'\]/);
+  assert.match(header, /setCurrency\(event\.target\.value\)/);
+  assert.match(topbar, /<IconLanguage size=\{15\} aria-hidden="true" \/>/);
+  assert.match(topbar, /t\('language'\)/);
+  assert.match(topbar, /setLocale\(availableLocale\)/);
   assert.doesNotMatch(iconCss, /icons\/moneda\.svg/);
   assert.match(iconCss, /url\('\/icons\/tramos\.svg'\)/);
   assert.match(iconCss, /url\('\/icons\/notas\.svg'\)/);
@@ -95,16 +96,16 @@ test('workspace panel toggle stays below modal-bearing editor layer', async () =
   assert.match(workspaceCss, /\.workspace-panel__toggle\s*\{[\s\S]*z-index:\s*699;/);
 });
 
-test('workspace menu is anchored above the map and exposes its options without clipping', async () => {
+test('workspace menu stays trip-scoped and exposes saved-trip actions without clipping', async () => {
   const sidebarCss = await read('src/app/ItinerarySidebar.css');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
 
   assert.match(sidebarCss, /\.editor-module__workspace-anchor\s*\{[\s\S]*position:\s*fixed\s*!important;[\s\S]*right:\s*14px\s*!important;[\s\S]*z-index:\s*950\s*!important;/);
   assert.match(sidebarCss, /\.editor-module__workspace-anchor \.editor-module__more-menu\s*\{[\s\S]*right:\s*calc\(100% \+ 10px\);[\s\S]*z-index:\s*1000;/);
   assert.match(menu, /editor-module__more-menu/);
-  assert.match(menu, /editor-module__currency-options/);
   assert.match(menu, /savedTrips/);
-  assert.match(menu, /language/);
+  assert.match(menu, /resetTrip/);
+  assert.doesNotMatch(menu, /editor-module__currency-options|setCurrency|language|setLocale/);
 });
 
 test('places uses a self-contained transparent signpost icon in the Atlas palette', async () => {
