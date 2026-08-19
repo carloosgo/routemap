@@ -15,7 +15,7 @@ export function ItineraryOrigin({ city, onSelect }) {
           <img
             src={flagImageUrl(city.countryCode, 80)}
             alt=""
-            width={28}
+            width={30}
             height={20}
             loading="lazy"
             decoding="async"
