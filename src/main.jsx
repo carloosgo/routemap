@@ -10,6 +10,7 @@ import './app/EditorNavigationIcons.css';
 import './app/SegmentInteractionColors.css';
 import './app/WorkspaceMenuMapPolish.css';
 import './app/ItinerarySidebar.css';
+import './app/ItineraryTripHeader.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <I18nProvider>
