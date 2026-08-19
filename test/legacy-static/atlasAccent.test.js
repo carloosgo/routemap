@@ -9,10 +9,11 @@ const read = (path) => readFile(new URL(path, root), 'utf8');
 test('the selected Atlas controls retain the exact #19a5d0 accent token', async () => {
   const tokens = await read('src/index.css');
   const polish = await read('src/app/FloatingEditorPolish.css');
+  const itinerary = await read('src/app/ItineraryTripHeader.css');
+  const accentStyles = `${polish}\n${itinerary}`;
   assert.match(tokens, /--atlas-accent:\s*#19a5d0/);
   for (const selector of [
-    '.topbar__save',
-    '.trip-save-popover__submit',
+    '.itinerary-trip-save',
     '.editor-module__settings .editor-module__more-button',
     '.geo-search__button',
     '.place-save-prompt button',
@@ -21,11 +22,11 @@ test('the selected Atlas controls retain the exact #19a5d0 accent token', async 
     '.place-result-marker:hover',
     ".editor-module__tab[data-tab-icon='places-map-pin'] .tabbar__badge",
   ]) {
-    assert.ok(polish.includes(selector), `Missing Atlas accent selector: ${selector}`);
+    assert.ok(accentStyles.includes(selector), `Missing Atlas accent selector: ${selector}`);
   }
   assert.doesNotMatch(polish, /\.topbar__brand-icon/);
-  assert.match(polish, /background:\s*var\(--atlas-accent\)/);
-  assert.match(polish, /border-color:\s*var\(--atlas-accent\)/);
+  assert.match(accentStyles, /background:\s*var\(--atlas-accent\)/);
+  assert.match(accentStyles, /color:\s*#ffffff/);
 });
 
 test('itinerary, routes and notes share the real tab button structure while currency stays in workspace', async () => {
