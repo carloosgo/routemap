@@ -87,20 +87,24 @@
   display: none !important;
 }
 
-/* Noches conserva la misma semántica visual con o sin fechas calculadas. */
+/* Las métricas usan el mismo lenguaje de badge: color sólido en texto,
+   fondo translúcido y borde suave del mismo tono. */
 .itinerary-stop__nights.segment__pill,
 .itinerary-stop__nights.segment__pill.is-placeholder,
 .floating-editor .itinerary-stop__nights.segment__pill,
 .floating-editor .itinerary-stop__nights.segment__pill.is-placeholder {
-  background: #f1f1f1;
   color: #535353;
+  background: rgba(83, 83, 83, 0.08);
+  border: 1px solid rgba(83, 83, 83, 0.18);
 }
 
-/* El costo del trayecto pasa a ser la etiqueta de acento principal. */
 .itinerary-stop__amount.segment__pill,
 .floating-editor .itinerary-stop__amount.segment__pill {
-  background: var(--atlas-accent);
-  color: #ffffff;
+  color: var(--atlas-accent);
+  background: rgba(25, 165, 208, 0.15);
+  background: color-mix(in srgb, var(--atlas-accent) 15%, transparent);
+  border: 1px solid rgba(25, 165, 208, 0.25);
+  border-color: color-mix(in srgb, var(--atlas-accent) 25%, transparent);
 }
 
 @media (min-width: 721px) {
