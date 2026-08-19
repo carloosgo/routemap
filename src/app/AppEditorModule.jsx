@@ -61,6 +61,9 @@ export function AppEditorModule({
     setNewItemText,
   } = editorState;
 
+  const routeCount = Array.isArray(trip.routeConnections) ? trip.routeConnections.length : 0;
+  const noteCount = Array.isArray(notes) ? notes.length : 0;
+
   const editorPane = activeTab === 'places' ? (
     <TripPlacesPanel
       places={places}
@@ -123,6 +126,7 @@ export function AppEditorModule({
             <IconMap />
           </span>
           <span className="editor-module__tab-label">{t('itinerary')}</span>
+          <span className="editor-module__tab-count" aria-hidden="true" />
         </button>
         <button
           type="button"
@@ -135,7 +139,9 @@ export function AppEditorModule({
             <img src={lugaresIcon} alt="" />
           </span>
           <span className="editor-module__tab-label">{t('myRoutes')}</span>
-          {places.length > 0 && <span className="tabbar__badge">{places.length}</span>}
+          <span className="editor-module__tab-count" aria-label={routeCount ? String(routeCount) : undefined}>
+            {routeCount || ''}
+          </span>
         </button>
         <button
           type="button"
@@ -148,11 +154,9 @@ export function AppEditorModule({
             <IconNotes />
           </span>
           <span className="editor-module__tab-label">{t('notes')}</span>
-          {checklist.length > 0 && (
-            <span className="tabbar__badge">
-              {doneCount}/{checklist.length}
-            </span>
-          )}
+          <span className="editor-module__tab-count" aria-label={noteCount ? String(noteCount) : undefined}>
+            {noteCount || ''}
+          </span>
         </button>
 
         <AppWorkspaceMenu
