@@ -53,14 +53,14 @@
     max-height: 76px;
     flex: 0 0 76px;
     display: grid !important;
-    grid-template-rows: 38px 14px 12px;
+    grid-template-rows: 38px 14px 14px;
     grid-template-columns: 1fr;
     align-content: center;
     align-items: center;
     justify-items: center;
     row-gap: 2px;
-    margin: 0;
-    padding: 4px 3px;
+    margin: 0 !important;
+    padding: 3px 3px !important;
     border: 0;
     border-radius: 0;
     background: transparent !important;
@@ -76,6 +76,15 @@
     translate: none !important;
   }
 
+  /* FloatingEditor.css todavía contiene la regla histórica que agrega
+     margin-left: 9px a los botones 2 y 3. Esa regla hacía que una opción
+     cambiara de posición al pasar a is-active. Se neutraliza aquí para que
+     la navegación se comporte como una sola barra estable. */
+  .editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
   .editor-module__tabs > .editor-module__nav-tab:hover,
   .editor-module__tabs > .editor-module__nav-tab:focus,
   .editor-module__tabs > .editor-module__nav-tab:focus-visible,
@@ -83,7 +92,7 @@
   .editor-module__tabs > .editor-module__nav-tab.is-active,
   .editor-module__tabs > .editor-module__nav-tab.is-active:hover {
     margin: 0 !important;
-    padding: 4px 3px !important;
+    padding: 3px 3px !important;
     background: transparent !important;
     box-shadow: none !important;
     outline: none !important;
@@ -140,28 +149,43 @@
     white-space: nowrap;
   }
 
-  /* El contador tiene una fila reservada aunque esté vacío. Así añadir/quitar
-     datos nunca mueve el icono ni el título de la opción. */
+  /* El contador vive siempre en una tercera fila reservada. Cuando hay valor
+     recupera la clase tabbar__badge original; aquí sólo se fija su posición,
+     no se sustituye su paleta ni su forma. */
   .editor-module__tabs .editor-module__tab-count {
     grid-row: 3;
     grid-column: 1;
-    position: static;
-    width: 100%;
+    position: static !important;
     min-width: 0;
-    height: 12px;
-    margin: 0;
-    padding: 0;
-    display: block;
-    color: #9aa1aa;
-    background: transparent;
-    border: 0;
-    border-radius: 0;
-    font-size: 9px;
-    font-weight: 600;
-    line-height: 12px;
-    text-align: center;
+    height: 14px;
+    margin: 0 !important;
+    transform: none !important;
+    align-self: center;
+    justify-self: center;
+    line-height: 1;
     font-variant-numeric: tabular-nums;
-    transform: none;
+  }
+
+  .editor-module__tabs .editor-module__tab-count:not(.tabbar__badge) {
+    width: 16px;
+    padding: 0;
+    visibility: hidden;
+  }
+
+  .editor-module__tabs .editor-module__tab-count.tabbar__badge {
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: auto;
+    min-width: 16px;
+    max-width: 54px;
+    margin: 0 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    transform: none !important;
   }
 
   /* Separadores cortos y centrados entre opciones. */
