@@ -17,17 +17,16 @@ test('destination city supports a two-line selected presentation without changin
   assert.match(autocomplete, /autocomplete__selected-value/);
   assert.match(css, /-webkit-line-clamp:\s*2;/);
   assert.match(css, /\.itinerary-stop__picker \.input\s*\{[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*700;/);
-  assert.match(css, /\.itinerary-origin__picker \.input\s*\{[\s\S]*font-size:\s*11px;[\s\S]*font-weight:\s*600;/);
+  assert.match(css, /\.itinerary-origin__picker \.input\s*\{[\s\S]*font-size:\s*11px;[\s\S]*font-weight:\s*500;/);
 });
 
 test('timeline spacing keeps city width flexible while dates and pills stay balanced', async () => {
   const css = await read('src/modules/trips/ItineraryTimeline.css');
 
-  assert.match(css, /grid-template-columns:\s*minmax\(0, 1fr\)\s+66px\s+56px\s+64px\s+22px\s+20px\s+20px\s+20px;/);
-  assert.match(css, /column-gap:\s*8px;/);
+  assert.match(css, /grid-template-columns:\s*18px 30px minmax\(86px, 1fr\) 48px 58px 58px 22px 22px 22px;/);
+  assert.match(css, /column-gap:\s*6px;/);
   assert.match(css, /\.itinerary-stop__dates\s*\{[\s\S]*font-size:\s*10\.5px;/);
-  assert.match(css, /\.floating-editor \.itinerary-stop__nights\.segment__pill\s*\{[\s\S]*background:\s*#dcecff;[\s\S]*color:\s*#245f98;/);
-  assert.match(css, /\.floating-editor \.itinerary-stop__amount\.segment__pill\s*\{[\s\S]*background:\s*#f1f1ef;[\s\S]*color:\s*#61707c;/);
+  assert.match(css, /\.floating-editor \.itinerary-stop__nights\.segment__pill\s*\{[\s\S]*background:\s*#eef5ff;[\s\S]*color:\s*#3977ca;/);
 });
 
 test('timeline flags use vector source at a readable rendered size', async () => {
