@@ -35,7 +35,7 @@ test('itinerary, routes and notes share the real tab button structure while curr
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
   const polish = await read('src/app/FloatingEditorPolish.css');
 
-  assert.equal((editor.match(/editor-module__nav-tab/g) || []).length, 3);
+  assert.equal((editor.match(/role="tab"/g) || []).length, 3);
   assert.equal((editor.match(/editor-module__tab-icon/g) || []).length, 3);
   assert.equal((editor.match(/editor-module__tab-label/g) || []).length, 3);
   assert.match(editor, /t\('itinerary'\)/);
