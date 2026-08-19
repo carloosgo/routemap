@@ -8,6 +8,11 @@ function isRouteCity(city) {
   );
 }
 
+function routeCountryCode(city) {
+  const countryCode = String(city?.countryCode || '').trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(countryCode) ? countryCode : '';
+}
+
 function nextDistinctColor(colorForIndex, countryIndex, previousColor) {
   const firstCandidate = colorForIndex(countryIndex);
   if (!previousColor || firstCandidate !== previousColor) return firstCandidate;
@@ -21,20 +26,35 @@ function nextDistinctColor(colorForIndex, countryIndex, previousColor) {
 }
 
 export function visitedCountries(segments, colorForIndex) {
-  const countries = new Map();
-  let previousColor = '';
+  const safeSegments = Array.isArray(segments) ? segments : [];
+  const originCountryCode = routeCountryCode(safeSegments[0]?.origin);
+  const destinations = new Map();
 
-  (segments || []).forEach((segment) => {
-    [segment?.origin, segment?.destination].forEach((city) => {
-      if (!isRouteCity(city)) return;
-      const countryCode = String(city.countryCode || '').trim().toUpperCase();
-      if (!/^[A-Z]{2}$/.test(countryCode) || countries.has(countryCode)) return;
+  safeSegments.forEach((segment) => {
+    const city = segment?.destination;
+    if (!isRouteCity(city)) return;
 
-      const color = nextDistinctColor(colorForIndex, countries.size, previousColor);
-      countries.set(countryCode, { countryCode, city, color });
-      previousColor = color;
-    });
+    const countryCode = routeCountryCode(city);
+    if (
+      !countryCode
+      || countryCode === originCountryCode
+      || destinations.has(countryCode)
+    ) {
+      return;
+    }
+
+    destinations.set(countryCode, { countryCode, city });
   });
 
-  return [...countries.values()];
+  if (destinations.size <= 1) return [];
+
+  const countries = [];
+  let previousColor = '';
+  destinations.forEach(({ countryCode, city }) => {
+    const color = nextDistinctColor(colorForIndex, countries.length, previousColor);
+    countries.push({ countryCode, city, color });
+    previousColor = color;
+  });
+
+  return countries;
 }
