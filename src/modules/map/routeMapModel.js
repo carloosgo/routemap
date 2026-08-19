@@ -126,12 +126,14 @@ export function buildMapFeatureData({
     ? savedPlaceRouteFeatures(routeConnections)
     : [];
   const routeSegments = showSegments ? canonicalSegmentChain(segments) : [];
+  const drawableSegments = routeSegments.filter(
+    (segment) => isPlaced(segment?.origin) && isPlaced(segment?.destination)
+  );
   const routeCities = showSegments ? orderedCities(routeSegments) : [];
   const countryStyles = showPlaces ? placeCountryStyleMap(places) : new Map();
 
   if (showSegments) {
-    routeSegments.forEach((segment, index) => {
-      if (!isPlaced(segment.origin) || !isPlaced(segment.destination)) return;
+    drawableSegments.forEach((segment, index) => {
       routeFeatures.push({
         type: 'Feature',
         properties: {
