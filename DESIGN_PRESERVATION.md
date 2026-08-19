@@ -16,12 +16,15 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 
 ## Controles incorporados
 
-- Cabecera del itinerario: el nombre del viaje y la acción `Guardar` pasan al inicio de la sección de trayectos, en una misma fila. El título usa 20 px; vacío muestra `Nombre de tu viaje` en gris claro y con contenido usa `var(--atlas-accent)`. El botón conserva el acento Atlas con texto blanco y una geometría compacta.
-- Guía maestra de contenido: el botón `Agregar trayecto` define la guía horizontal útil del itinerario. En escritorio, el borde derecho de `Guardar` y ambos extremos del separador de cabecera coinciden exactamente con las mismas guías laterales del botón `Agregar trayecto`, evitando offsets dependientes de resolución o longitud del idioma.
-- Separador de cabecera: entre `Nombre del viaje / Guardar` y el inicio de las ciudades aparece una línea gris punteada de contraste muy bajo, alineada con el ancho útil de `Agregar trayecto`.
+- Header global del viaje: el nombre sale del módulo `Itinerario` y pasa a una franja persistente sobre todo el workspace. Sigue siendo un campo editable directo, sin icono de lápiz, y conserva 20 px como tamaño principal.
+- Identidad del viaje: debajo del nombre, dentro del mismo bloque del header, se muestra el rango global de fechas y el selector de moneda. Moneda es una preferencia del viaje y deja de vivir en el menú `Workspace`.
+- Métricas del header: en la misma fila del título se muestran `Destinos`, `Noches totales`, `Total del viaje` y `Distancia total`, cada una con icono y jerarquía compacta. El layout se comprime de forma progresiva y mantiene desplazamiento horizontal interno de métricas cuando el ancho no permite conservar todas las etiquetas completas.
+- Total del viaje: deja de existir como bloque al final de los trayectos. Su valor vive en el header y, al pulsarlo, abre el mismo desglose por concepto, monto y porcentaje usando el `total` y `breakdown` canónicos de `useAppEditorState`.
+- Distancia total: se deriva localmente de las coordenadas canónicas de origen/destino mediante distancia geodésica; no genera llamadas nuevas a Google, Geoapify ni otros proveedores.
+- Idioma: sale del menú `Workspace` porque es una preferencia global de aplicación/usuario y pasa al menú global de cuenta. No se mezcla con preferencias específicas de un viaje.
+- Editor del itinerario: el espacio que antes ocupaba nombre/Guardar queda dedicado exclusivamente a trayectos y su contenido. `Guardar` vive al final de las métricas del header global.
 - Alineación responsive del itinerario: en escritorio la columna de ciudad absorbe el ancho disponible, mientras fechas, noches, costo y acciones conservan su geometría compacta. La última acción de cada trayecto y el contenido principal comparten la misma guía derecha, evitando espacio blanco sobrante en pantallas amplias.
-- Guardado sobre mapa: el botón circular flotante, su popover y la píldora flotante con el nombre dejan de mostrarse porque la acción y el nombre viven ahora dentro del itinerario.
-- Etiquetas de métricas: `Noches` conserva texto `#535353` sobre fondo `#F1F1F1`; `Costo` conserva fondo `var(--atlas-accent)` con texto `#FFFFFF`. Ambas mantienen únicamente el borde suave incorporado como refinamiento visual.
+- Etiquetas de métricas de trayecto: `Noches` conserva texto `#535353` sobre fondo `#F1F1F1`; `Costo` conserva fondo `var(--atlas-accent)` con texto `#FFFFFF`. Ambas mantienen el borde suave incorporado como refinamiento visual.
 - Barra lateral del editor: se elimina el borde derecho y su sombra divisoria; la separación entre opciones internas se conserva.
 - Ciudad origen: en escritorio el campo se acorta para terminar aproximadamente en la misma guía vertical que el final de la primera fecha `dd/mm` de los trayectos.
 - Selector `KM / MI`: reutiliza `topmenu`, `topitem`, `dropdown` y `dropdown__opt`.
@@ -38,6 +41,8 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 
 ## Rendimiento
 
+- El header reutiliza cálculos ya disponibles (`total` y `breakdown`) y memoriza el resumen derivado del viaje; no crea solicitudes de red nuevas.
+- La distancia se calcula en memoria sobre los trayectos existentes y su complejidad es lineal respecto al número de trayectos.
 - Se mantiene un único `AdvancedMarkerElement` por ciudad para puntos, inicio y final. Los landmarks no crean markers ni nodos DOM adicionales.
 - Todos los landmarks se dibujan como quads en una única `WebGLOverlayView`, compartiendo el contexto WebGL del mapa vectorial que expone Google Maps Platform.
 - Cada asset visible crea como máximo una textura WebGL cacheada; se reutiliza mientras viva el mapa y usa mipmaps para mantener definición al reducirse.
