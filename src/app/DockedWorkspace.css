@@ -52,12 +52,14 @@ main.workspace .workspace__desktop--column .workspace-panel__content.floating-ed
   pointer-events: none;
 }
 
-/* Única pestaña: anclada al borde del panel, sin divisor ni barra propia. */
+/* Única pestaña: anclada al borde del panel, sin divisor ni barra propia.
+   Queda deliberadamente un nivel por debajo del panel para que cualquier
+   diálogo modal renderizado dentro del editor siempre la cubra. */
 .workspace-panel__toggle {
   position: absolute;
   top: 50%;
   left: var(--workspace-panel-width);
-  z-index: 702;
+  z-index: 699;
   width: 20px;
   height: 44px;
   padding: 0;
