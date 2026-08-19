@@ -61,8 +61,9 @@ export function AppEditorModule({
     setNewItemText,
   } = editorState;
 
-  const routeCount = Array.isArray(trip.routeConnections) ? trip.routeConnections.length : 0;
-  const noteCount = Array.isArray(notes) ? notes.length : 0;
+  const routeCount = Array.isArray(places) ? places.length : 0;
+  const checklistCount = Array.isArray(checklist) ? checklist.length : 0;
+  const checklistProgress = checklistCount ? `${doneCount}/${checklistCount}` : '';
 
   const editorPane = activeTab === 'places' ? (
     <TripPlacesPanel
@@ -143,11 +144,12 @@ export function AppEditorModule({
             <img src={lugaresIcon} alt="" />
           </span>
           <span className="editor-module__tab-label">{t('myRoutes')}</span>
-          <span
-            className={'editor-module__tab-count' + (routeCount ? ' tabbar__badge' : '')}
-            aria-label={routeCount ? String(routeCount) : undefined}
-          >
-            {routeCount || ''}
+          <span className="editor-module__tab-count">
+            {routeCount > 0 && (
+              <span className="tabbar__badge" aria-label={String(routeCount)}>
+                {routeCount}
+              </span>
+            )}
           </span>
         </button>
         <button
@@ -163,11 +165,12 @@ export function AppEditorModule({
             <IconNotes />
           </span>
           <span className="editor-module__tab-label">{t('notes')}</span>
-          <span
-            className={'editor-module__tab-count' + (noteCount ? ' tabbar__badge' : '')}
-            aria-label={noteCount ? String(noteCount) : undefined}
-          >
-            {noteCount || ''}
+          <span className="editor-module__tab-count">
+            {checklistCount > 0 && (
+              <span className="tabbar__badge" aria-label={checklistProgress}>
+                {checklistProgress}
+              </span>
+            )}
           </span>
         </button>
 
