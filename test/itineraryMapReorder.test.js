@@ -124,6 +124,19 @@ test('mover un trayecto una sola posicion hacia arriba conserva la cadena', () =
   assertConsecutiveMapChain(reordered, ['s1', 's3', 's2'], ['a', 'b', 'd', 'c']);
 });
 
+test('varios drags consecutivos no acumulan origenes ni trazos obsoletos', () => {
+  const { trip } = itinerary();
+
+  const firstMove = reorderSegments(trip, 's3', 's1', 'before');
+  assertConsecutiveMapChain(firstMove, ['s3', 's1', 's2'], ['a', 'd', 'b', 'c']);
+
+  const secondMove = reorderSegments(firstMove, 's2', 's3', 'before');
+  assertConsecutiveMapChain(secondMove, ['s2', 's3', 's1'], ['a', 'c', 'd', 'b']);
+
+  const thirdMove = reorderSegments(secondMove, 's1', 's2', 'before');
+  assertConsecutiveMapChain(thirdMove, ['s1', 's2', 's3'], ['a', 'b', 'c', 'd']);
+});
+
 test('una ciudad revisitada conserva su posicion consecutiva en vez de desaparecer', () => {
   const { cities } = itinerary();
   const segments = [
