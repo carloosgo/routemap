@@ -39,12 +39,13 @@ test('resume rango global y suma noches sin depender del JSX', () => {
 test('cuenta ciudades únicas de la cadena como destinos del viaje', () => {
   assert.equal(tripDestinationCount(segments), 3);
   assert.equal(tripDestinationCount([...segments, { origin: amsterdam, destination: paris }]), 3);
+  assert.equal(tripDestinationCount([{ origin: {}, destination: null }]), 0);
 });
 
 test('calcula distancia geodésica local sin datos de proveedor', () => {
   const distance = tripTotalDistanceKm(segments);
-  assert.ok(distance > 300);
-  assert.ok(distance < 400);
+  assert.ok(distance > 400);
+  assert.ok(distance < 500);
 });
 
 test('ignora fechas inválidas, tramos invertidos y coordenadas incompletas', () => {
@@ -66,5 +67,5 @@ test('tripSummary compone las métricas en una sola pasada conceptual', () => {
   assert.equal(summary.nights, 7);
   assert.equal(summary.startDate, '2026-08-20');
   assert.equal(summary.endDate, '2026-08-27');
-  assert.ok(summary.distanceKm > 300);
+  assert.ok(summary.distanceKm > 400);
 });
