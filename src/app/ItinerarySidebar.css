@@ -25,7 +25,7 @@
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 0;
+    gap: 12px;
     min-width: 0;
     min-height: 0;
     padding: 8px 6px;
@@ -149,30 +149,26 @@
     white-space: nowrap;
   }
 
-  /* El contador vive siempre en una tercera fila reservada. Cuando hay valor
-     recupera la clase tabbar__badge original; aquí sólo se fija su posición,
-     no se sustituye su paleta ni su forma. */
+  /* La tercera fila siempre existe. El badge original se monta dentro de ella,
+     por lo que mostrar 4 o 1/2 nunca altera la posición del icono ni título. */
   .editor-module__tabs .editor-module__tab-count {
     grid-row: 3;
     grid-column: 1;
     position: static !important;
+    width: 100%;
     min-width: 0;
     height: 14px;
     margin: 0 !important;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transform: none !important;
-    align-self: center;
-    justify-self: center;
-    line-height: 1;
     font-variant-numeric: tabular-nums;
   }
 
-  .editor-module__tabs .editor-module__tab-count:not(.tabbar__badge) {
-    width: 16px;
-    padding: 0;
-    visibility: hidden;
-  }
-
-  .editor-module__tabs .editor-module__tab-count.tabbar__badge {
+  .editor-module__tabs .editor-module__tab-count .tabbar__badge {
+    position: static !important;
     top: auto !important;
     right: auto !important;
     bottom: auto !important;
@@ -188,12 +184,13 @@
     transform: none !important;
   }
 
-  /* Separadores cortos y centrados entre opciones. */
+  /* Hay 12px reales entre opciones; el divisor vive exactamente a la mitad
+     de ese hueco, independientemente de que exista o no un contador. */
   .editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab::before {
     content: '' !important;
     display: block !important;
     position: absolute !important;
-    top: 0 !important;
+    top: -6px !important;
     left: 50% !important;
     right: auto !important;
     width: 26px !important;
