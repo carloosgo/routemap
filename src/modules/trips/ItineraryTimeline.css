@@ -252,7 +252,7 @@
   position: relative;
   min-height: 52px;
   display: grid;
-  grid-template-columns: 18px 30px minmax(90px, 106px) minmax(190px, 1fr) 22px 22px 22px;
+  grid-template-columns: 18px 30px minmax(90px, 106px) minmax(178px, 1fr) 22px 22px 22px;
   align-items: center;
   column-gap: 4px;
   row-gap: 0;
@@ -279,17 +279,16 @@
   box-shadow: none;
 }
 
-/* Fecha, noches y costo comparten una zona métrica. La fecha es más compacta
-   y las dos etiquetas tienen exactamente la misma caja. El espacio sobrante
-   se reparte entre las tres columnas, no dentro de una de ellas. */
+/* Fecha, noches y costo comparten una zona métrica compacta. La fecha es la
+   columna angosta y las dos etiquetas son gemelas; los dos espacios de 8px
+   son explícitos para que la distribución sea estable en todas las filas. */
 .itinerary-stop__metrics {
   width: 100%;
-  min-width: 190px;
+  min-width: 178px;
   display: grid;
-  grid-template-columns: 42px 66px 66px;
+  grid-template-columns: 42px 60px 60px;
   align-items: center;
-  justify-content: space-between;
-  column-gap: 0;
+  column-gap: 8px;
 }
 
 .itinerary-stop__dates {
@@ -318,11 +317,12 @@
 .itinerary-stop__nights.segment__pill,
 .itinerary-stop__amount.segment__pill {
   box-sizing: border-box;
-  width: 66px;
-  min-width: 66px;
-  max-width: 66px;
-  padding: 2px 6px;
+  width: 60px;
+  min-width: 60px;
+  max-width: 60px;
+  padding: 2px 4px;
   border: 0;
+  border-radius: 5px;
   font-size: 10.5px;
   font-weight: 600;
   line-height: 1.2;
