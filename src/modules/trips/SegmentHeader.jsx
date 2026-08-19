@@ -51,7 +51,7 @@ export function SegmentHeader({
           <img
             src={flagImageUrl(destination.countryCode, 80)}
             alt=""
-            width={28}
+            width={30}
             height={20}
             loading="lazy"
             decoding="async"
@@ -73,22 +73,24 @@ export function SegmentHeader({
         )}
       </div>
 
-      <span className={'itinerary-stop__dates' + (!formattedDates ? ' is-placeholder' : '')}>
-        {dateLines.map((dateLine, index) => (
-          <span className="itinerary-stop__date-line" key={`${dateLine}-${index}`}>
-            {dateLine}
-          </span>
-        ))}
-      </span>
-      <span
-        className={
-          'segment__pill itinerary-stop__nights' +
-          (!formattedNights ? ' is-placeholder' : '')
-        }
-      >
-        {formattedNights || t('nightsHint')}
-      </span>
-      <span className="segment__pill itinerary-stop__amount">{formattedAmount}</span>
+      <div className="itinerary-stop__metrics">
+        <span className={'itinerary-stop__dates' + (!formattedDates ? ' is-placeholder' : '')}>
+          {dateLines.map((dateLine, index) => (
+            <span className="itinerary-stop__date-line" key={`${dateLine}-${index}`}>
+              {dateLine}
+            </span>
+          ))}
+        </span>
+        <span
+          className={
+            'segment__pill itinerary-stop__nights' +
+            (!formattedNights ? ' is-placeholder' : '')
+          }
+        >
+          {formattedNights || t('nightsHint')}
+        </span>
+        <span className="segment__pill itinerary-stop__amount">{formattedAmount}</span>
+      </div>
 
       <button
         type="button"
