@@ -1,8 +1,6 @@
 {
   "version": 1,
   "legacyStatic": [
-    "functions/v4PilotBackendBundle.test.js",
-    "test/crispDashedRoutes.test.js",
     "test/editorNavigationIcons.test.js",
     "test/geoapifyEstimateHardening.test.js",
     "test/googleMapResponsiveLayout.test.js",
@@ -12,20 +10,6 @@
     "test/placeSearchFlow.test.js",
     "test/routeMapHardening.test.js",
     "test/savedPlaceSymbol.test.js",
-    "test/storageV4PhaseKAlertDeliveryDrillDev.test.js",
-    "test/storageV4PhaseKAlertPolicyChannelsDev.test.js",
-    "test/storageV4PhaseKDashboardCleanupDev.test.js",
-    "test/storageV4PhaseKMultiDeviceConflictProbe.test.js",
-    "test/storageV4PhaseKNotificationChannelEmailDev.test.js",
-    "test/storageV4PhaseKNotificationChannelEnableDev.test.js",
-    "test/storageV4PhaseKObservabilityApplyDev.test.js",
-    "test/storageV4PhaseKSyncFlushProbe.test.js",
-    "test/storageV4PhaseKSyncUnexpectedErrorsDiagnoseDev.test.js",
-    "test/storageV4PhaseL0CreateProductionProject.test.js",
-    "test/storageV4PhaseL1ConfigureGoogleAuthProd.test.js",
-    "test/storageV4PhaseL1CreateWebAppProd.test.js",
-    "test/storageV4PhaseL2Prod.test.js",
-    "test/storageV4PilotPlan.test.js",
     "test/tripDeletePending.test.js",
     "test/tripReducer.test.js"
   ]

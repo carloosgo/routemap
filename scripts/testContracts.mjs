@@ -13,7 +13,7 @@ export const contractValues = [
 
 const contractSet = new Set(contractValues);
 const ignoredDirectories = new Set(['.git', 'node_modules', 'dist', 'coverage']);
-const architectureNameHint = /(?:architecture|boundar(?:y|ies)|wiring|manifest|contract|composition|separation|guard|security|isolation|preflight|deploy|launcher|rules|appcheck|telemetry|monitoring|metrics|foundation|repository|recovery|restore|budget|checkpoint|provider|rolloutcompatibility|lifecycle|eventarc|remoteconfig|stage|indexeddb|transport|audit|performance|scheduler|precision)/i;
+const architectureNameHint = /(?:architecture|boundar(?:y|ies)|wiring|manifest|contract|composition|separation|guard|security|isolation|preflight|deploy|launcher|rules|appcheck|telemetry|monitoring|metrics|foundation|repository|recovery|restore|budget|checkpoint|provider|rolloutcompatibility|lifecycle|eventarc|remoteconfig|stage|indexeddb|transport|audit|performance|scheduler|precision|storagev4phase[k-l]|storagev4pilotplan|v4pilotbackendbundle)/i;
 
 export function normalizePath(path) {
   return path.split('\\').join('/');
