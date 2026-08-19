@@ -26,6 +26,8 @@ test('desktop navigation keeps canonical icons and currency lives inside the wor
 
   assert.equal((navigation.match(/editor-module__tab-icon/g) || []).length, 3);
   assert.match(editor, /<img src=\{lugaresIcon\} alt="" \/>/);
+  assert.match(editor, /role="tablist"/);
+  assert.equal((editor.match(/role="tab"/g) || []).length, 3);
   assert.match(menu, /const CURRENCIES = \['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'\]/);
   assert.match(menu, /openMenu === 'workspace'/);
   assert.match(menu, /editor-module__currency-options/);
@@ -57,26 +59,28 @@ test('sidebar geometry has one owner and active state cannot move an option', as
   assert.match(sidebarCss, /height:\s*76px;/);
   assert.match(sidebarCss, /flex:\s*0 0 76px;/);
   assert.match(sidebarCss, /display:\s*grid\s*!important;/);
-  assert.match(sidebarCss, /grid-template-rows:\s*38px 14px 12px;/);
+  assert.match(sidebarCss, /grid-template-rows:\s*38px 14px 14px;/);
+  assert.match(sidebarCss, /\.editor-module__tabs > \.editor-module__nav-tab \+ \.editor-module__nav-tab\s*\{[\s\S]*margin-left:\s*0\s*!important;[\s\S]*margin-right:\s*0\s*!important;/);
   assert.match(sidebarCss, /transform:\s*none\s*!important;/);
   assert.match(sidebarCss, /width:\s*38px;/);
   assert.match(sidebarCss, /height:\s*38px;/);
-  assert.match(sidebarCss, /padding:\s*4px 3px\s*!important;/);
+  assert.match(sidebarCss, /padding:\s*3px 3px\s*!important;/);
   assert.match(sidebarCss, /width:\s*26px\s*!important;/);
   assert.match(sidebarCss, /left:\s*50%\s*!important;/);
   assert.match(sidebarCss, /transform:\s*translateX\(-50%\)\s*!important;/);
   assert.match(sidebarCss, /background:\s*#fdfdfd\s*!important;/);
 });
 
-test('routes and notes counters live below their labels and reserve space without moving icons', async () => {
+test('routes and notes counters keep their original badge styling in a fixed bottom row', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const sidebarCss = await read('src/app/ItinerarySidebar.css');
 
-  assert.doesNotMatch(editor, /tabbar__badge/);
   assert.match(editor, /const routeCount = Array\.isArray\(trip\.routeConnections\)/);
   assert.match(editor, /const noteCount = Array\.isArray\(notes\)/);
   assert.equal((editor.match(/editor-module__tab-count/g) || []).length, 3);
-  assert.match(sidebarCss, /\.editor-module__tabs \.editor-module__tab-count\s*\{[\s\S]*grid-row:\s*3;[\s\S]*position:\s*static;[\s\S]*height:\s*12px;/);
+  assert.equal((editor.match(/tabbar__badge/g) || []).length, 2);
+  assert.match(sidebarCss, /\.editor-module__tabs \.editor-module__tab-count\s*\{[\s\S]*grid-row:\s*3;[\s\S]*position:\s*static\s*!important;[\s\S]*height:\s*14px;/);
+  assert.match(sidebarCss, /\.editor-module__tabs \.editor-module__tab-count\.tabbar__badge\s*\{[\s\S]*display:\s*inline-flex;[\s\S]*transform:\s*none\s*!important;/);
 });
 
 test('workspace menu is anchored above the map and exposes its options without clipping', async () => {
