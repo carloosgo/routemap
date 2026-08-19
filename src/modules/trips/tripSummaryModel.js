@@ -21,7 +21,10 @@ function cityKey(city) {
   if (!city) return '';
   if (city.id) return `id:${city.id}`;
   if (placedCity(city)) return `coord:${city.lat.toFixed(5)},${city.lon.toFixed(5)}`;
-  return `${city.name || ''}|${city.countryCode || ''}`.toLowerCase();
+  const name = String(city.name || '').trim();
+  const countryCode = String(city.countryCode || '').trim();
+  if (!name && !countryCode) return '';
+  return `${name}|${countryCode}`.toLowerCase();
 }
 
 function radians(value) {
