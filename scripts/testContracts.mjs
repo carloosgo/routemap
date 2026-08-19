@@ -27,7 +27,7 @@ export function collectTestFiles(directory = repoRoot, files = []) {
       collectTestFiles(absolute, files);
       continue;
     }
-    if (/\.test\.(?:js|mjs|cjs)$/.test(entry.name)) files.push(absolute);
+    if (/\.(?:test|spec)\.(?:js|mjs|cjs)$/.test(entry.name)) files.push(absolute);
   }
   return files;
 }
@@ -95,6 +95,10 @@ export function classifyTest(absolute) {
   if (!category && path.startsWith('test/architecture/')) category = 'architecture';
   if (!category && path.startsWith('test/integration/')) category = 'integration';
   if (!category && path.startsWith('test/legacy-static/')) category = 'legacy-static';
+  if (!category && (path.startsWith('firebase-tests/') || /\.emulator\.spec\./i.test(path))) {
+    category = 'integration';
+    reasons.push('emulator or Firestore rules integration contract');
+  }
 
   if (!category && missingReferences.length) {
     category = 'obsolete-candidate';

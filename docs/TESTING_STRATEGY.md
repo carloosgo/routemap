@@ -18,6 +18,9 @@ Inspecciona strings, regex, nombres de archivos, JSX/CSS literal u orden interno
 ### D. Obsolete candidate — revisión requerida
 Test que referencia una funcionalidad/archivo inexistente sin que la ausencia sea precisamente lo que el test verifica. El auditor entiende `assert.rejects(read(...))` como una comprobación intencional de ausencia.
 
+### Integration — bloqueante
+Pruebas que requieren límites reales de infraestructura, como Firestore Rules o emuladores. El inventario incluye tanto `*.test.*` como `*.spec.*`; `firebase-tests/` y `*.emulator.spec.*` se clasifican explícitamente como integración. Su ejecución puede seguir en comandos CI dedicados en vez de `npm test`.
+
 ## Regla para cualquier cambio funcional
 
 Antes de cerrar una feature o refactor se revisa el delta de contrato:
@@ -62,11 +65,11 @@ Esto verifica compilación; no despliega ningún ambiente.
 - un `obsolete-candidate` bloquea hasta que se revise;
 - no se aumenta la baseline para “hacer verde” una feature.
 
-`npm run test:contracts` aplica esa regla. La baseline no hace no-bloqueantes a las pruebas heredadas: todas siguen ejecutándose en `npm test` mientras se migran.
+`npm run test:contracts` aplica esa regla. La baseline no hace no-bloqueantes a las pruebas heredadas: todas siguen ejecutándose en sus comandos correspondientes mientras se migran.
 
 ## Auditoría
 
-`npm run test:audit` recorre la suite y clasifica cada archivo. En CI se conserva `test-audit.json` como artefacto. La clasificación automática es una señal para revisión, no autorización para borrar una prueba.
+`npm run test:audit` recorre archivos `*.test.*` y `*.spec.*` y clasifica cada uno. En CI se conserva `test-audit.json` como artefacto. La clasificación automática es una señal para revisión, no autorización para borrar una prueba.
 
 ## Migración
 
