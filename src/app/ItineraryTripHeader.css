@@ -23,7 +23,7 @@
   background: transparent;
   color: var(--atlas-accent);
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: 20px;
   font-weight: 700;
   line-height: 1.2;
   text-overflow: ellipsis;
@@ -115,6 +115,26 @@
   .editor-module.editor-module--itinerary > .editor {
     grid-column: 2;
     grid-row: 2;
+  }
+
+  /* Cabecera y trayectos comparten exactamente las mismas guías laterales. */
+  .editor-module.editor-module--itinerary .editor__body {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  /* La fila deja de tener un ancho interno rígido: la ciudad absorbe el
+     espacio sobrante y mantiene fechas, noches, costo y acciones compactos.
+     De esta forma el botón X siempre termina en la misma guía que Guardar. */
+  .editor-module.editor-module--itinerary .itinerary-segment .segment__header.itinerary-stop {
+    box-sizing: border-box;
+    width: 100%;
+    grid-template-columns: 18px 30px minmax(90px, 1fr) 186px 22px 22px 22px;
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-stop__place {
+    width: 100%;
+    max-width: none;
   }
 
   /* El origen termina aproximadamente donde termina la primera columna de fecha dd/mm. */
