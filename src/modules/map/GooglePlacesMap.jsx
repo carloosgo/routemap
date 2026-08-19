@@ -54,10 +54,10 @@ function itineraryCityContent(city, color, t, { endpoint = false, number = null 
   marker.style.setProperty('--itinerary-city-color', color);
   marker.setAttribute('role', 'img');
   const cityName = city.name || city.displayName || t('city');
-  marker.setAttribute('aria-label', endpoint ? `${number}. ${cityName}` : cityName);
+  marker.setAttribute('aria-label', `${number}. ${cityName}`);
   const dot = document.createElement('span');
   dot.className = 'google-itinerary-city-marker__dot';
-  if (endpoint) dot.textContent = String(number);
+  dot.textContent = String(number);
   marker.append(dot);
   return marker;
 }
@@ -472,17 +472,19 @@ export function GooglePlacesMap({
       const [lng, lat] = feature.geometry?.coordinates || [];
       if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return;
       const endpoint = index === 0 || index === cityFeatures.length - 1;
+      const markerNumber = Number(feature.properties?.sequence) || index + 1;
       const content = itineraryCityContent(
         { name: feature.properties?.name },
         feature.properties?.color || colorForIndex(0),
         t,
-        { endpoint, number: index + 1 }
+        { endpoint, number: markerNumber }
       );
       const marker = new AdvancedMarkerElement({
         map,
         position: { lat: Number(lat), lng: Number(lng) },
-        title: feature.properties?.name || t('city'),
+        title: `${markerNumber}. ${feature.properties?.name || t('city')}`,
         content,
+        zIndex: 300 + markerNumber,
       });
       itineraryMarkersRef.current.push(marker);
       bounds.extend({ lat: Number(lat), lng: Number(lng) });
