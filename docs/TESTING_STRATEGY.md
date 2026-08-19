@@ -27,7 +27,7 @@ Antes de cerrar una feature o refactor se revisa el delta de contrato:
 3. ¿Cambió un guardrail arquitectónico intencional?
 4. ¿Qué tests dependen de los archivos modificados?
 
-`npm run test:impact` responde el punto 4 leyendo imports y referencias estáticas. Si aparece un `legacy-static`, debe revisarse dentro del mismo cambio para confirmar si sigue siendo válido, debe convertirse o debe eliminarse.
+`npm run test:impact` responde el punto 4 leyendo imports y referencias estáticas directas. Es una ayuda de impacto, no sustituye el criterio de cobertura. Si aparece un `legacy-static`, debe revisarse dentro del mismo cambio para confirmar si sigue siendo válido, debe convertirse o debe eliminarse.
 
 No se adapta producción para satisfacer una representación interna obsoleta.
 
@@ -42,7 +42,7 @@ No se adapta producción para satisfacer una representación interna obsoleta.
 ## Flujo local antes de push
 
 ```text
-npm run test:impact → npm test → npm run lint → npm run build → push
+npm run test:impact → npm run test:contracts → npm test → npm run lint → npm run build → push
 ```
 
 El atajo oficial es:
@@ -52,6 +52,17 @@ npm run verify:local
 ```
 
 Esto verifica compilación; no despliega ningún ambiente.
+
+## Línea base de deuda
+
+`test/legacy-static-baseline.json` contiene únicamente la deuda C existente que todavía debe migrarse. La regla es monotónica:
+
+- un archivo de la baseline puede desaparecer de C al convertirse en behavior/architecture o eliminarse si su contrato ya no existe;
+- CI no permite agregar una ruta `legacy-static` nueva;
+- un `obsolete-candidate` bloquea hasta que se revise;
+- no se aumenta la baseline para “hacer verde” una feature.
+
+`npm run test:contracts` aplica esa regla. La baseline no hace no-bloqueantes a las pruebas heredadas: todas siguen ejecutándose en `npm test` mientras se migran.
 
 ## Auditoría
 

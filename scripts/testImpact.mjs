@@ -1,3 +1,4 @@
+/* global process, console */
 import { appendFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -35,8 +36,13 @@ const impacted = [];
 
 for (const test of testInventory()) {
   const matched = test.references.filter((reference) => changedSet.has(reference));
+  if (changedSet.has(test.path)) matched.unshift(test.path);
   if (matched.length) {
-    impacted.push({ path: test.path, category: test.category, changedReferences: matched });
+    impacted.push({
+      path: test.path,
+      category: test.category,
+      changedReferences: [...new Set(matched)],
+    });
   }
 }
 

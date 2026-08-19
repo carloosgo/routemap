@@ -49,20 +49,4 @@ export default [
       },
     },
   },
-  {
-    files: ['scripts/**/*.mjs'],
-    languageOptions: {
-      globals: {
-        process: 'readonly',
-        console: 'readonly',
-        Buffer: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        URL: 'readonly',
-        URLSearchParams: 'readonly',
-        fetch: 'readonly',
-        AbortController: 'readonly',
-      },
-    },
-  },
 ];
