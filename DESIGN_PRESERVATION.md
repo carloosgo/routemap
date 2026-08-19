@@ -21,7 +21,7 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Separador de cabecera: entre `Nombre del viaje / Guardar` y el inicio de las ciudades aparece una línea gris punteada de contraste muy bajo, alineada con el ancho útil de `Agregar trayecto`.
 - Alineación responsive del itinerario: en escritorio la columna de ciudad absorbe el ancho disponible, mientras fechas, noches, costo y acciones conservan su geometría compacta. La última acción de cada trayecto y el contenido principal comparten la misma guía derecha, evitando espacio blanco sobrante en pantallas amplias.
 - Guardado sobre mapa: el botón circular flotante, su popover y la píldora flotante con el nombre dejan de mostrarse porque la acción y el nombre viven ahora dentro del itinerario.
-- Etiquetas de métricas: `Noches` y `Costo` usan el mismo lenguaje visual de badge: texto sólido, relleno translúcido y borde suave del mismo tono. `Noches` conserva una familia gris neutra y `Costo` usa `var(--atlas-accent)`, evitando bloques sólidos que compitan visualmente con las acciones principales.
+- Etiquetas de métricas: `Noches` conserva texto `#535353` sobre fondo `#F1F1F1`; `Costo` conserva fondo `var(--atlas-accent)` con texto `#FFFFFF`. Ambas mantienen únicamente el borde suave incorporado como refinamiento visual.
 - Barra lateral del editor: se elimina el borde derecho y su sombra divisoria; la separación entre opciones internas se conserva.
 - Ciudad origen: en escritorio el campo se acorta para terminar aproximadamente en la misma guía vertical que el final de la primera fecha `dd/mm` de los trayectos.
 - Selector `KM / MI`: reutiliza `topmenu`, `topitem`, `dropdown` y `dropdown__opt`.
