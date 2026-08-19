@@ -16,9 +16,10 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 
 ## Controles incorporados
 
-- Cabecera del itinerario: el nombre del viaje y la acción `Guardar` pasan al inicio de la sección de trayectos, en una misma fila. El título usa 20 px; vacío muestra `Nombre de tu viaje` en gris claro y con contenido usa `var(--atlas-accent)`. El botón conserva el acento Atlas con texto blanco y una geometría compacta; en escritorio su borde derecho queda retraído respecto del borde exterior para coincidir con la guía visual de las acciones de cada trayecto.
-- Separador de cabecera: entre `Nombre del viaje / Guardar` y el inicio de las ciudades aparece una línea gris punteada de contraste muy bajo, con márgenes laterales coherentes con el contenido del itinerario.
-- Alineación responsive del itinerario: en escritorio la columna de ciudad absorbe el ancho disponible, mientras fechas, noches, costo y acciones conservan su geometría compacta. La última acción de cada trayecto y el botón `Guardar` comparten la misma guía visual derecha, evitando espacio blanco sobrante en pantallas amplias.
+- Cabecera del itinerario: el nombre del viaje y la acción `Guardar` pasan al inicio de la sección de trayectos, en una misma fila. El título usa 20 px; vacío muestra `Nombre de tu viaje` en gris claro y con contenido usa `var(--atlas-accent)`. El botón conserva el acento Atlas con texto blanco y una geometría compacta.
+- Guía maestra de contenido: el botón `Agregar trayecto` define la guía horizontal útil del itinerario. En escritorio, el borde derecho de `Guardar` y ambos extremos del separador de cabecera coinciden exactamente con las mismas guías laterales del botón `Agregar trayecto`, evitando offsets dependientes de resolución o longitud del idioma.
+- Separador de cabecera: entre `Nombre del viaje / Guardar` y el inicio de las ciudades aparece una línea gris punteada de contraste muy bajo, alineada con el ancho útil de `Agregar trayecto`.
+- Alineación responsive del itinerario: en escritorio la columna de ciudad absorbe el ancho disponible, mientras fechas, noches, costo y acciones conservan su geometría compacta. La última acción de cada trayecto y el contenido principal comparten la misma guía derecha, evitando espacio blanco sobrante en pantallas amplias.
 - Guardado sobre mapa: el botón circular flotante, su popover y la píldora flotante con el nombre dejan de mostrarse porque la acción y el nombre viven ahora dentro del itinerario.
 - Etiqueta de noches: tanto `0 noches` como cualquier valor calculado usan texto `#535353` sobre fondo `#F1F1F1`.
 - Etiqueta de costo del trayecto: usa `var(--atlas-accent)` como fondo y `#FFFFFF` como texto.
