@@ -165,11 +165,24 @@ test('el drag confirma el reordenamiento fuera del updater de React y conserva u
   assert.match(editor, /const dragStateRef = useRef\(null\)/);
   assert.match(editor, /const activeDragId = dragState\?\.segmentId \|\| null/);
   assert.match(editor, /current\.pointerId !== event\.pointerId/);
-  assert.match(editor, /dragStateRef\.current = null;\s*setDragState\(null\);\s*if \(current\.targetId && current\.placement\) \{\s*reorderSegment\(/);
+  assert.match(editor, /function clearActiveDrag\(\) \{\s*dragStateRef\.current = null;\s*setDragState\(null\);\s*\}/);
+  assert.match(editor, /function handlePointerEnd\(event\) \{[\s\S]{0,350}clearActiveDrag\(\);[\s\S]{0,250}reorderSegment\(/);
   assert.match(editor, /\}, \[activeDragId, reorderSegment\]\);/);
   assert.match(editor, /setPointerCapture\?\.\(event\.pointerId\)/);
   assert.doesNotMatch(
     editor,
     /setDragState\(\(current\) => \{[\s\S]{0,500}reorderSegment\(/
   );
+});
+
+test('pointercancel cancela el drag y nunca confirma un reordenamiento', async () => {
+  const editor = await read('src/app/AppEditorPane.jsx');
+  const cancelHandler = editor.match(
+    /function handlePointerCancel\(event\) \{([\s\S]*?)\n    \}/
+  )?.[1] || '';
+
+  assert.match(cancelHandler, /activeDragFor\(event\)/);
+  assert.match(cancelHandler, /clearActiveDrag\(\)/);
+  assert.doesNotMatch(cancelHandler, /reorderSegment\(/);
+  assert.match(editor, /addEventListener\('pointercancel', handlePointerCancel\)/);
 });
