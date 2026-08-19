@@ -29,6 +29,18 @@ function cleanPlaceId(value) {
   return String(value || '').trim().slice(0, 256);
 }
 
+function uniqueCountries(countries) {
+  const unique = new Map();
+  (Array.isArray(countries) ? countries : []).forEach((country) => {
+    const countryCode = cleanCountryCode(country?.countryCode);
+    const countryName = cleanCountryName(country?.country);
+    if (countryCode && countryName && !unique.has(countryCode)) {
+      unique.set(countryCode, { countryCode, country: countryName });
+    }
+  });
+  return unique;
+}
+
 function readCache() {
   const target = storage();
   if (!target) return {};
@@ -103,15 +115,22 @@ async function loadRemoteBatch(countries, signal) {
   }
 }
 
-export async function loadGoogleCountryPlaceIds(countries, { signal } = {}) {
-  const unique = new Map();
-  (Array.isArray(countries) ? countries : []).forEach((country) => {
-    const countryCode = cleanCountryCode(country?.countryCode);
-    const countryName = cleanCountryName(country?.country);
-    if (countryCode && countryName && !unique.has(countryCode)) {
-      unique.set(countryCode, { countryCode, country: countryName });
+export function cachedGoogleCountryPlaceIds(countries) {
+  const unique = uniqueCountries(countries);
+  if (!unique.size) return [];
+  const cache = readCache();
+  const resolved = [];
+  unique.forEach((country, countryCode) => {
+    const cached = cache[countryCode];
+    if (cached?.placeId) {
+      resolved.push({ countryCode, placeId: cached.placeId, localCacheHit: true });
     }
   });
+  return resolved;
+}
+
+export async function loadGoogleCountryPlaceIds(countries, { signal } = {}) {
+  const unique = uniqueCountries(countries);
   if (!unique.size) return [];
 
   const cache = readCache();

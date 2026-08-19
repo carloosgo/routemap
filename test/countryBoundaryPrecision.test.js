@@ -62,12 +62,17 @@ test('Itinerario pinta países visitados con COUNTRY y resuelve IDs mediante Pla
   assert.match(googleMap, /isDataDrivenStylingAvailable/);
   assert.match(googleMap, /map\.addListener\?\.\('mapcapabilities_changed', applyCountryStyle\)/);
   assert.match(googleMap, /countryLayer\.isAvailable/);
+  assert.match(googleMap, /cachedGoogleCountryPlaceIds\(itineraryCountries\)/);
   assert.match(googleMap, /loadGoogleCountryPlaceIds\(itineraryCountries/);
   assert.match(googleMap, /fillColor: color/);
   assert.match(googleMap, /fillOpacity: 0\.16/);
   assert.match(googleMap, /strokeOpacity: 0/);
   assert.match(googleMap, /strokeWeight: 0/);
   assert.match(googleMap, /countryLayer\.style = null/);
+  assert.doesNotMatch(
+    googleMap,
+    /capabilityListener\?\.remove\?\.\(\);\s*countryLayer\.style = null;/
+  );
 
   assert.match(config, /countryColors:/);
   assert.match(config, /export function countryColorForIndex/);
@@ -75,6 +80,7 @@ test('Itinerario pinta países visitados con COUNTRY y resuelve IDs mediante Pla
   assert.match(client, /MAX_COUNTRIES_PER_REQUEST = 10/);
   assert.match(client, /countryPlaceIdCacheKey/);
   assert.match(client, /countryPlaceIdCacheTtlMs/);
+  assert.match(client, /export function cachedGoogleCountryPlaceIds/);
   assert.match(client, /language: config\.defaultLocale/);
   assert.match(client, /country: countryName/);
   assert.match(client, /\[Google Maps\] COUNTRY Place IDs:/);

@@ -27,3 +27,16 @@ test('Itinerario renderiza los guiones como SVG sincronizado con OverlayView.dra
   assert.doesNotMatch(renderer, /new maps\.Polyline/);
   assert.doesNotMatch(renderer, /setTimeout|ResizeObserver|tilesloaded|zoom_changed/);
 });
+
+test('el trazado del itinerario se actualiza sin desmontar el overlay ni esperar a idle', async () => {
+  const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
+  const renderer = await read('src/modules/map/crispDashedRoutes.js');
+
+  assert.match(renderer, /setRoutes\(nextRoutes\)/);
+  assert.match(renderer, /refresh\(\)/);
+  assert.match(googleMap, /itineraryRoutesOverlayRef/);
+  assert.match(googleMap, /routeOverlay\.setRoutes\(routes\)/);
+  assert.match(googleMap, /itineraryRoutesOverlayRef\.current\?\.refresh\(\)/);
+  assert.doesNotMatch(googleMap, /refreshLikeViewChangeAndMountRoutes/);
+  assert.doesNotMatch(googleMap, /crispRoutes\.dispose\(\)/);
+});

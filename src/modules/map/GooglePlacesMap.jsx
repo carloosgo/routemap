@@ -6,7 +6,10 @@ import { isGooglePlaceReference, isPlaced } from '../trips/tripModel.js';
 import { PlaceSearchForm } from './PlaceSearchForm.jsx';
 import { visitedCountries } from './countryColoring.js';
 import { createCrispDashedRoutes } from './crispDashedRoutes.js';
-import { loadGoogleCountryPlaceIds } from './googleCountryBoundariesClient.js';
+import {
+  cachedGoogleCountryPlaceIds,
+  loadGoogleCountryPlaceIds,
+} from './googleCountryBoundariesClient.js';
 import { loadGoogleMaps } from './googleMapsLoader.js';
 import { itineraryLandmarksFromFeatures } from './itineraryLandmarkCatalog.js';
 import { markerElement, savedPlacePopup } from './placeMapDom.js';
@@ -133,6 +136,7 @@ export function GooglePlacesMap({
   const savedRouteLinesRef = useRef([]);
   const itineraryMarkersRef = useRef([]);
   const itineraryLinesRef = useRef([]);
+  const itineraryRoutesOverlayRef = useRef(null);
   const itineraryLandmarkOverlayRef = useRef(null);
   const infoWindowRef = useRef(null);
   const saveNoticeTimerRef = useRef(null);
@@ -319,6 +323,8 @@ export function GooglePlacesMap({
       clearAdvancedMarkers(itineraryMarkersRef);
       clearPolylines(savedRouteLinesRef);
       clearPolylines(itineraryLinesRef);
+      itineraryRoutesOverlayRef.current?.dispose();
+      itineraryRoutesOverlayRef.current = null;
       itineraryLandmarkOverlayRef.current?.dispose();
       itineraryLandmarkOverlayRef.current = null;
       infoWindowRef.current?.close();
@@ -338,6 +344,7 @@ export function GooglePlacesMap({
       maps.event.trigger(map, 'resize');
       if (center) map.setCenter(center);
       if (Number.isFinite(zoom)) map.setZoom(zoom);
+      itineraryRoutesOverlayRef.current?.refresh();
     });
     return () => cancelAnimationFrame(frame);
   }, [ready, viewMode]);
@@ -350,6 +357,28 @@ export function GooglePlacesMap({
 
     let disposed = false;
     let controller = null;
+
+    const applyResolvedCountryStyle = (resolvedCountries) => {
+      if (disposed) return;
+      const colorsByCode = new Map(
+        itineraryCountries.map((country) => [country.countryCode, country.color])
+      );
+      const colorsByPlaceId = new Map();
+      resolvedCountries.forEach((country) => {
+        const color = colorsByCode.get(country.countryCode);
+        if (country?.placeId && color) colorsByPlaceId.set(country.placeId, color);
+      });
+      countryLayer.style = ({ feature }) => {
+        const color = colorsByPlaceId.get(feature?.placeId);
+        if (!color) return null;
+        return {
+          fillColor: color,
+          fillOpacity: 0.16,
+          strokeOpacity: 0,
+          strokeWeight: 0,
+        };
+      };
+    };
 
     const applyCountryStyle = () => {
       if (disposed) return;
@@ -373,29 +402,16 @@ export function GooglePlacesMap({
       }
 
       countryLayerWarningRef.current = false;
+      const cachedCountries = cachedGoogleCountryPlaceIds(itineraryCountries);
+      applyResolvedCountryStyle(cachedCountries);
+      if (cachedCountries.length === itineraryCountries.length) return;
+
       controller = new AbortController();
       const currentController = controller;
       loadGoogleCountryPlaceIds(itineraryCountries, { signal: currentController.signal })
         .then((resolvedCountries) => {
           if (disposed || currentController.signal.aborted) return;
-          const colorsByCode = new Map(
-            itineraryCountries.map((country) => [country.countryCode, country.color])
-          );
-          const colorsByPlaceId = new Map();
-          resolvedCountries.forEach((country) => {
-            const color = colorsByCode.get(country.countryCode);
-            if (country?.placeId && color) colorsByPlaceId.set(country.placeId, color);
-          });
-          countryLayer.style = ({ feature }) => {
-            const color = colorsByPlaceId.get(feature?.placeId);
-            if (!color) return null;
-            return {
-              fillColor: color,
-              fillOpacity: 0.16,
-              strokeOpacity: 0,
-              strokeWeight: 0,
-            };
-          };
+          applyResolvedCountryStyle(resolvedCountries);
         })
         .catch((error) => {
           if (error?.name !== 'AbortError') {
@@ -411,7 +427,6 @@ export function GooglePlacesMap({
       disposed = true;
       controller?.abort();
       capabilityListener?.remove?.();
-      countryLayer.style = null;
     };
   }, [itineraryCountries, placesActive, ready]);
 
@@ -423,6 +438,7 @@ export function GooglePlacesMap({
     clearAdvancedMarkers(itineraryMarkersRef);
     clearPolylines(itineraryLinesRef);
     if (!map || !ready || !AdvancedMarkerElement || !maps || placesActive) {
+      itineraryRoutesOverlayRef.current?.setRoutes([]);
       landmarkOverlay?.setLandmarks([]);
       return undefined;
     }
@@ -442,28 +458,22 @@ export function GooglePlacesMap({
       }))
       .filter((route) => route.path.length >= 2);
 
-    let disposed = false;
-    let crispRoutes = { dispose() {} };
+    let routeOverlay = itineraryRoutesOverlayRef.current;
+    if (!routeOverlay) {
+      routeOverlay = createCrispDashedRoutes({ maps, map, routes });
+      itineraryRoutesOverlayRef.current = routeOverlay;
+    } else {
+      routeOverlay.setRoutes(routes);
+    }
+
     let viewportIdleListener = null;
     let routeRefreshFrame = 0;
 
-    const mountRoutes = () => {
-      if (disposed) return;
-      crispRoutes.dispose();
-      crispRoutes = createCrispDashedRoutes({ maps, map, routes });
-    };
-
-    const refreshLikeViewChangeAndMountRoutes = () => {
-      if (disposed) return;
+    const refreshRoutes = () => {
+      if (routeRefreshFrame) cancelAnimationFrame(routeRefreshFrame);
       routeRefreshFrame = requestAnimationFrame(() => {
-        if (disposed) return;
-        if (!syncMapElementSize(wrapRef.current, nodeRef.current)) return;
-        const center = map.getCenter();
-        const zoom = map.getZoom();
-        maps.event.trigger(map, 'resize');
-        if (center) map.setCenter(center);
-        if (Number.isFinite(zoom)) map.setZoom(zoom);
-        routeRefreshFrame = requestAnimationFrame(mountRoutes);
+        routeRefreshFrame = 0;
+        itineraryRoutesOverlayRef.current?.refresh();
       });
     };
 
@@ -497,7 +507,7 @@ export function GooglePlacesMap({
       viewportIdleListener = map.addListener?.('idle', () => {
         viewportIdleListener?.remove?.();
         viewportIdleListener = null;
-        refreshLikeViewChangeAndMountRoutes();
+        refreshRoutes();
       });
       if (routeCities.length === 1) {
         map.panTo({ lat: routeCities[0].lat, lng: routeCities[0].lon });
@@ -507,17 +517,15 @@ export function GooglePlacesMap({
       } else {
         viewportIdleListener?.remove?.();
         viewportIdleListener = null;
-        mountRoutes();
+        refreshRoutes();
       }
     } else {
-      mountRoutes();
+      refreshRoutes();
     }
 
     return () => {
-      disposed = true;
       viewportIdleListener?.remove?.();
       if (routeRefreshFrame) cancelAnimationFrame(routeRefreshFrame);
-      crispRoutes.dispose();
       landmarkOverlay?.setLandmarks([]);
       clearAdvancedMarkers(itineraryMarkersRef);
       clearPolylines(itineraryLinesRef);
