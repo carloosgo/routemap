@@ -82,8 +82,6 @@
   max-width: 220px;
 }
 
-/* En cada destino el selector ocupa deliberadamente un poco menos que antes.
-   El espacio recuperado pertenece a la zona de fecha/noches/costo. */
 .itinerary-stop__place {
   width: 100%;
   max-width: 106px;
@@ -252,7 +250,7 @@
   position: relative;
   min-height: 52px;
   display: grid;
-  grid-template-columns: 18px 30px minmax(90px, 106px) minmax(178px, 1fr) 22px 22px 22px;
+  grid-template-columns: 18px 30px minmax(90px, 106px) minmax(186px, 1fr) 22px 22px 22px;
   align-items: center;
   column-gap: 4px;
   row-gap: 0;
@@ -279,16 +277,15 @@
   box-shadow: none;
 }
 
-/* Fecha, noches y costo comparten una zona métrica compacta. La fecha es la
-   columna angosta y las dos etiquetas son gemelas; los dos espacios de 8px
-   son explícitos para que la distribución sea estable en todas las filas. */
+/* Fecha, noches y costo comparten una zona compacta con separaciones iguales.
+   Las dos etiquetas tienen exactamente la misma caja. */
 .itinerary-stop__metrics {
   width: 100%;
-  min-width: 178px;
+  min-width: 186px;
   display: grid;
-  grid-template-columns: 42px 60px 60px;
+  grid-template-columns: 42px 66px 66px;
   align-items: center;
-  column-gap: 8px;
+  column-gap: 6px;
 }
 
 .itinerary-stop__dates {
@@ -298,9 +295,9 @@
   align-items: flex-start;
   gap: 1px;
   color: #8b929e;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 500;
-  line-height: 1.15;
+  line-height: 1.1;
   font-variant-numeric: tabular-nums;
 }
 
@@ -317,15 +314,15 @@
 .itinerary-stop__nights.segment__pill,
 .itinerary-stop__amount.segment__pill {
   box-sizing: border-box;
-  width: 60px;
-  min-width: 60px;
-  max-width: 60px;
+  width: 66px;
+  min-width: 66px;
+  max-width: 66px;
   padding: 2px 4px;
   border: 0;
-  border-radius: 5px;
-  font-size: 10.5px;
+  border-radius: 4px;
+  font-size: 11.5px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.15;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -335,8 +332,6 @@
   color: #3977ca;
 }
 
-/* FloatingEditorPolish aplica gris a los pills genéricos; noches es una
-   semántica específica del timeline y conserva deliberadamente su azul. */
 .floating-editor .itinerary-stop__nights.segment__pill {
   background: #eef5ff;
   color: #3977ca;
