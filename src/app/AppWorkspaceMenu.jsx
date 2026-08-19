@@ -1,15 +1,11 @@
 import {
   IconBookmark,
-  IconCurrencyDollar,
   IconDotsVertical,
-  IconLanguage,
   IconPlus,
   IconTrash,
 } from '@tabler/icons-react';
 import { tripTotal } from '../modules/trips/tripModel.js';
 import { formatMoney } from '../shared/utils.js';
-
-const CURRENCIES = ['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'];
 
 export function AppWorkspaceMenu({
   tripStore,
@@ -19,12 +15,9 @@ export function AppWorkspaceMenu({
   handleOpenSavedTrip,
   setTripToDelete,
   intlLocale,
-  locale,
-  setLocale,
-  availableLocales,
   t,
 }) {
-  const { trip, resetTrip, setCurrency } = tripStore;
+  const { trip, resetTrip } = tripStore;
   const { trips, loading } = savedTrips;
 
   return (
@@ -43,29 +36,6 @@ export function AppWorkspaceMenu({
 
         {openMenu === 'workspace' && (
           <div className="editor-module__more-menu" role="menu">
-            <div className="editor-module__menu-heading">
-              <IconCurrencyDollar size={17} aria-hidden="true" />
-              <span>{t('currency')}</span>
-            </div>
-            <div className="editor-module__currency-options" aria-label={t('currency')}>
-              {CURRENCIES.map((currency) => (
-                <button
-                  type="button"
-                  key={currency}
-                  className={'editor-module__currency-option' +
-                    (currency === trip.currency ? ' is-active' : '')}
-                  onClick={() => {
-                    setCurrency(currency);
-                    setOpenMenu(null);
-                  }}
-                >
-                  {currency}
-                </button>
-              ))}
-            </div>
-
-            <div className="editor-module__menu-separator" />
-
             <button
               type="button"
               className="editor-module__menu-item"
@@ -128,29 +98,6 @@ export function AppWorkspaceMenu({
                   );
                 })
               )}
-            </div>
-
-            <div className="editor-module__menu-separator" />
-
-            <div className="editor-module__menu-heading">
-              <IconLanguage size={17} aria-hidden="true" />
-              <span>{t('language')}</span>
-            </div>
-            <div className="editor-module__language-options">
-              {availableLocales.map((availableLocale) => (
-                <button
-                  type="button"
-                  key={availableLocale}
-                  className={'editor-module__language-option' +
-                    (availableLocale === locale ? ' is-active' : '')}
-                  onClick={() => {
-                    setLocale(availableLocale);
-                    setOpenMenu(null);
-                  }}
-                >
-                  {availableLocale.toUpperCase()}
-                </button>
-              ))}
             </div>
           </div>
         )}
