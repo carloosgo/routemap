@@ -39,7 +39,6 @@ export default function App() {
     importLocalTrips,
     getLocalTripCount,
   } = savedTrips;
-
   const [toast, setToast] = useState('');
   const [mobileView, setMobileView] = useState('form');
   const [activeTab, setActiveTab] = useState('segments');
