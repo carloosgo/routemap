@@ -87,22 +87,20 @@
   display: none !important;
 }
 
-/* Las métricas usan el mismo lenguaje de badge: color sólido en texto,
-   fondo translúcido y borde suave del mismo tono. */
+/* Restaura los colores sólidos anteriores y conserva únicamente el borde añadido. */
 .itinerary-stop__nights.segment__pill,
 .itinerary-stop__nights.segment__pill.is-placeholder,
 .floating-editor .itinerary-stop__nights.segment__pill,
 .floating-editor .itinerary-stop__nights.segment__pill.is-placeholder {
   color: #535353;
-  background: rgba(83, 83, 83, 0.08);
+  background: #f1f1f1;
   border: 1px solid rgba(83, 83, 83, 0.18);
 }
 
 .itinerary-stop__amount.segment__pill,
 .floating-editor .itinerary-stop__amount.segment__pill {
-  color: var(--atlas-accent);
-  background: rgba(25, 165, 208, 0.15);
-  background: color-mix(in srgb, var(--atlas-accent) 15%, transparent);
+  color: #ffffff;
+  background: var(--atlas-accent);
   border: 1px solid rgba(25, 165, 208, 0.25);
   border-color: color-mix(in srgb, var(--atlas-accent) 25%, transparent);
 }
