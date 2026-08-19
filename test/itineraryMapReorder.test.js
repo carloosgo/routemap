@@ -191,7 +191,7 @@ test('el drag confirma el reordenamiento fuera del updater de React y conserva u
 test('pointercancel cancela el drag y nunca confirma un reordenamiento', async () => {
   const editor = await read('src/app/AppEditorPane.jsx');
   const cancelHandler = editor.match(
-    /function handlePointerCancel\(event\) \{([\s\S]*?)\n    \}/
+    /function handlePointerCancel\(event\) \{([\s\S]*?)\n {4}\}/
   )?.[1] || '';
 
   assert.match(cancelHandler, /activeDragFor\(event\)/);
