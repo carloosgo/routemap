@@ -115,9 +115,11 @@ export function AppEditorModule({
 
   return (
     <div className="editor-module" ref={editorMenuRef}>
-      <div className="editor-module__tabs">
+      <div className="editor-module__tabs" role="tablist" aria-orientation="vertical">
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'segments'}
           className={'editor-module__tab editor-module__nav-tab' +
             (activeTab === 'segments' ? ' is-active' : '')}
           onClick={() => setActiveTab('segments')}
@@ -130,6 +132,8 @@ export function AppEditorModule({
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'places'}
           className={'editor-module__tab editor-module__nav-tab' +
             (activeTab === 'places' ? ' is-active' : '')}
           onClick={() => setActiveTab('places')}
@@ -139,12 +143,17 @@ export function AppEditorModule({
             <img src={lugaresIcon} alt="" />
           </span>
           <span className="editor-module__tab-label">{t('myRoutes')}</span>
-          <span className="editor-module__tab-count" aria-label={routeCount ? String(routeCount) : undefined}>
+          <span
+            className={'editor-module__tab-count' + (routeCount ? ' tabbar__badge' : '')}
+            aria-label={routeCount ? String(routeCount) : undefined}
+          >
             {routeCount || ''}
           </span>
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={activeTab === 'notes'}
           className={'editor-module__tab editor-module__nav-tab' +
             (activeTab === 'notes' ? ' is-active' : '')}
           onClick={() => setActiveTab('notes')}
@@ -154,7 +163,10 @@ export function AppEditorModule({
             <IconNotes />
           </span>
           <span className="editor-module__tab-label">{t('notes')}</span>
-          <span className="editor-module__tab-count" aria-label={noteCount ? String(noteCount) : undefined}>
+          <span
+            className={'editor-module__tab-count' + (noteCount ? ' tabbar__badge' : '')}
+            aria-label={noteCount ? String(noteCount) : undefined}
+          >
             {noteCount || ''}
           </span>
         </button>
