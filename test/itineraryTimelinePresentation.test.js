@@ -20,16 +20,17 @@ test('destination city supports a two-line selected presentation without changin
   assert.match(css, /\.itinerary-origin__picker \.input\s*\{[\s\S]*font-size:\s*11px;[\s\S]*font-weight:\s*500;/);
 });
 
-test('timeline gives dates, nights and amount one balanced metrics zone without shrinking city below 100px', async () => {
+test('timeline compacts city and date while keeping nights and amount identically sized', async () => {
   const header = await read('src/modules/trips/SegmentHeader.jsx');
   const css = await read('src/modules/trips/ItineraryTimeline.css');
 
   assert.match(header, /className="itinerary-stop__metrics"/);
-  assert.match(css, /grid-template-columns:\s*18px 30px minmax\(100px, 1fr\) 190px 22px 22px 22px;/);
-  assert.match(css, /\.itinerary-stop__metrics\s*\{[\s\S]*grid-template-columns:\s*50px 58px 66px;[\s\S]*column-gap:\s*8px;/);
-  assert.match(css, /\.itinerary-stop__dates\s*\{[\s\S]*font-size:\s*10\.5px;/);
+  assert.match(css, /grid-template-columns:\s*18px 30px minmax\(90px, 106px\) minmax\(190px, 1fr\) 22px 22px 22px;/);
+  assert.match(css, /\.itinerary-stop__place\s*\{[\s\S]*max-width:\s*106px;/);
+  assert.match(css, /\.itinerary-stop__metrics\s*\{[\s\S]*grid-template-columns:\s*42px 66px 66px;[\s\S]*justify-content:\s*space-between;[\s\S]*column-gap:\s*0;/);
+  assert.match(css, /\.itinerary-stop__dates\s*\{[\s\S]*width:\s*42px;[\s\S]*font-size:\s*10\.5px;/);
+  assert.match(css, /\.itinerary-stop__nights\.segment__pill,[\s\S]*\.itinerary-stop__amount\.segment__pill\s*\{[\s\S]*width:\s*66px;[\s\S]*font-size:\s*10\.5px;/);
   assert.match(css, /\.floating-editor \.itinerary-stop__nights\.segment__pill\s*\{[\s\S]*background:\s*#eef5ff;[\s\S]*color:\s*#3977ca;/);
-  assert.match(css, /\.itinerary-stop__amount\.segment__pill\s*\{[\s\S]*width:\s*66px;/);
 });
 
 test('timeline flags use a high-density source with one fixed rounded thumbnail', async () => {
