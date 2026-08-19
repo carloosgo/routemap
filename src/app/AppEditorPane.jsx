@@ -129,15 +129,26 @@ export function AppEditorPane({
       };
     }
 
-    function handlePointerMove(event) {
+    function activeDragFor(event) {
       const current = dragStateRef.current;
       if (
         !current
         || current.segmentId !== activeDragId
         || current.pointerId !== event.pointerId
       ) {
-        return;
+        return null;
       }
+      return current;
+    }
+
+    function clearActiveDrag() {
+      dragStateRef.current = null;
+      setDragState(null);
+    }
+
+    function handlePointerMove(event) {
+      const current = activeDragFor(event);
+      if (!current) return;
       const { targetId, placement } = resolveDropTarget(event, current.segmentId);
       const next = {
         ...current,
@@ -150,29 +161,26 @@ export function AppEditorPane({
     }
 
     function handlePointerEnd(event) {
-      const current = dragStateRef.current;
-      if (
-        !current
-        || current.segmentId !== activeDragId
-        || current.pointerId !== event.pointerId
-      ) {
-        return;
-      }
-
-      dragStateRef.current = null;
-      setDragState(null);
+      const current = activeDragFor(event);
+      if (!current) return;
+      clearActiveDrag();
       if (current.targetId && current.placement) {
         reorderSegment(current.segmentId, current.targetId, current.placement);
       }
     }
 
+    function handlePointerCancel(event) {
+      if (!activeDragFor(event)) return;
+      clearActiveDrag();
+    }
+
     document.addEventListener('pointermove', handlePointerMove);
     document.addEventListener('pointerup', handlePointerEnd);
-    document.addEventListener('pointercancel', handlePointerEnd);
+    document.addEventListener('pointercancel', handlePointerCancel);
     return () => {
       document.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('pointerup', handlePointerEnd);
-      document.removeEventListener('pointercancel', handlePointerEnd);
+      document.removeEventListener('pointercancel', handlePointerCancel);
     };
   }, [activeDragId, reorderSegment]);
 
