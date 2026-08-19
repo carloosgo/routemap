@@ -2,38 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import {
   IconArrowRight,
   IconChecklist,
-  IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
   IconPlus,
   IconTrash,
   IconX,
-  IconPlane,
-  IconTrain,
-  IconBus,
-  IconCar,
-  IconBed,
-  IconToolsKitchen2,
-  IconTicket,
-  IconDots,
 } from '@tabler/icons-react';
 import { SegmentForm } from '../modules/trips/SegmentForm.jsx';
 import { flagImageUrl } from '../modules/flags/flags.js';
 import { colorForIndex } from '../config.js';
-import { formatMoney } from '../shared/utils.js';
 
 const MAX_NOTES = 2000;
-
-const BREAKDOWN_CATS = [
-  { key: 'plane', labelKey: 'flights', Icon: IconPlane, color: '#e2725b' },
-  { key: 'train', labelKey: 'train', Icon: IconTrain, color: '#4f6df5' },
-  { key: 'bus', labelKey: 'bus', Icon: IconBus, color: '#e08a17' },
-  { key: 'taxiUber', labelKey: 'carTaxi', Icon: IconCar, color: '#5a8f3c' },
-  { key: 'lodging', labelKey: 'lodging', Icon: IconBed, color: '#d4a017' },
-  { key: 'food', labelKey: 'meals', Icon: IconToolsKitchen2, color: '#2aa866' },
-  { key: 'attractions', labelKey: 'attractions', Icon: IconTicket, color: '#9b59b6' },
-  { key: 'others', labelKey: 'others', Icon: IconDots, color: '#9499ab' },
-];
 
 function CompactFlag({ city }) {
   if (!city?.countryCode) return <span className="compact-route__empty" aria-hidden="true" />;
@@ -62,11 +41,6 @@ export function AppEditorPane({
   setOpenNoteSegmentId,
   addSegment,
   t,
-  total,
-  hasCosts,
-  showBreakdown,
-  setShowBreakdown,
-  breakdown,
   notes,
   confirmDeleteNote,
   setConfirmDeleteNote,
@@ -82,7 +56,6 @@ export function AppEditorPane({
   newItemText,
   setNewItemText,
 }) {
-  const segmentCount = trip.segments.length;
   const [dragState, setDragState] = useState(null);
   const dragStateRef = useRef(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
@@ -261,54 +234,6 @@ export function AppEditorPane({
                 <button type="button" className="btn btn--add" onClick={addSegment}>
                   + {t('addSegment')}
                 </button>
-
-                <div className="total">
-                  <button
-                    type="button"
-                    className="total__head"
-                    onClick={() => setShowBreakdown((value) => !value)}
-                    disabled={!hasCosts}
-                  >
-                    <span className="total__info">
-                      <span className="total__label">{t('grandTotal')}</span>
-                      <span className="total__meta">
-                        {segmentCount}{' '}
-                        {segmentCount === 1 ? t('segment').toLowerCase() : t('segmentPlural')}
-                        {!hasCosts && ' · ' + t('noResults')}
-                      </span>
-                    </span>
-                    <span className="total__value">{formatMoney(total, trip.currency, intlLocale)}</span>
-                    {hasCosts && (
-                      <IconChevronDown
-                        size={18}
-                        className={'total__chev' + (showBreakdown ? ' is-open' : '')}
-                        aria-hidden="true"
-                      />
-                    )}
-                  </button>
-
-                  {showBreakdown && hasCosts && (
-                    <div className="total__breakdown">
-                      {BREAKDOWN_CATS.filter((category) => breakdown[category.key] > 0).map(
-                        (category) => {
-                          const amount = breakdown[category.key];
-                          const percentage = Math.round((amount / total) * 100);
-                          const Icon = category.Icon;
-                          return (
-                            <div className="brk-row" key={category.key}>
-                              <span className="brk-icon">
-                                <Icon size={18} style={{ color: category.color }} aria-hidden="true" />
-                              </span>
-                              <span className="brk-name">{t(category.labelKey)}</span>
-                              <span className="brk-val">{formatMoney(amount, trip.currency, intlLocale)}</span>
-                              <span className="brk-pct">{percentage}%</span>
-                            </div>
-                          );
-                        }
-                      )}
-                    </div>
-                  )}
-                </div>
               </>
             )}
 
