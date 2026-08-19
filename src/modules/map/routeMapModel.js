@@ -1,4 +1,5 @@
 import { isPlaced } from '../trips/tripModel.js';
+import { syncSegmentOrigins } from '../trips/tripOperations.js';
 import { normalizeRouteGeometry } from '../routes/routeModel.js';
 import { savedPlaceMarkerStyle } from './savedPlaceMarkerPalette.js';
 
@@ -49,18 +50,22 @@ export function cityKey(city) {
   return `${Number(city.lat).toFixed(6)},${Number(city.lon).toFixed(6)}`;
 }
 
+export function canonicalSegmentChain(segments) {
+  const safeSegments = Array.isArray(segments) ? segments : [];
+  return syncSegmentOrigins(safeSegments, safeSegments[0]?.origin || null);
+}
+
 export function orderedCities(segments) {
   const cities = [];
-  const seen = new Set();
-  (segments || []).forEach((segment) =>
-    [segment.origin, segment.destination].forEach((city) => {
-      if (!isPlaced(city)) return;
-      const key = cityKey(city);
-      if (seen.has(key)) return;
-      seen.add(key);
-      cities.push(city);
-    })
-  );
+  canonicalSegmentChain(segments).forEach((segment, index) => {
+    if (index === 0 && isPlaced(segment?.origin)) {
+      cities.push(segment.origin);
+    }
+    if (!isPlaced(segment?.destination)) return;
+    const previous = cities.at(-1);
+    if (previous && cityKey(previous) === cityKey(segment.destination)) return;
+    cities.push(segment.destination);
+  });
   return cities;
 }
 
@@ -120,15 +125,18 @@ export function buildMapFeatureData({
   const placeRouteFeatures = showPlaces
     ? savedPlaceRouteFeatures(routeConnections)
     : [];
-  const routeCities = showSegments ? orderedCities(segments) : [];
+  const routeSegments = showSegments ? canonicalSegmentChain(segments) : [];
+  const routeCities = showSegments ? orderedCities(routeSegments) : [];
   const countryStyles = showPlaces ? placeCountryStyleMap(places) : new Map();
 
   if (showSegments) {
-    segments.forEach((segment, index) => {
+    routeSegments.forEach((segment, index) => {
       if (!isPlaced(segment.origin) || !isPlaced(segment.destination)) return;
       routeFeatures.push({
         type: 'Feature',
         properties: {
+          segmentId: segment.id || '',
+          sequence: index + 1,
           color: colorForIndex(index),
           dashed: dominantTransport(segment) === 'plane',
         },
@@ -145,6 +153,7 @@ export function buildMapFeatureData({
       type: 'Feature',
       properties: {
         name: city.name || city.displayName || 'Ciudad',
+        sequence: index + 1,
         color: colorForIndex(index),
       },
       geometry: { type: 'Point', coordinates: [city.lon, city.lat] },
