@@ -16,16 +16,11 @@ export function AppEditorModule({
   setOpenNoteSegmentId,
   setTripToDelete,
   handleOpenSavedTrip,
-  handleSave,
   t,
-  locale,
-  setLocale,
-  availableLocales,
   intlLocale,
 }) {
   const {
     trip,
-    renameTrip,
     addNote,
     updateNote,
     removeNote,
@@ -44,17 +39,12 @@ export function AppEditorModule({
     setAllRouteConnectionsVisibility,
   } = tripStore;
   const {
-    total,
-    hasCosts,
-    breakdown,
     checklist,
     doneCount,
     notes,
     places,
     confirmDeleteNote,
     setConfirmDeleteNote,
-    showBreakdown,
-    setShowBreakdown,
     isExpanded,
     toggleSegment,
     handleAddItem,
@@ -63,8 +53,6 @@ export function AppEditorModule({
     setNewItemText,
   } = editorState;
 
-  // Conserva la semántica original de los badges del menú:
-  // Mis Rutas cuenta los lugares guardados y Notas muestra progreso de pendientes.
   const routeCount = Array.isArray(places) ? places.length : 0;
   const checklistCount = Array.isArray(checklist) ? checklist.length : 0;
   const checklistProgress = checklistCount ? `${doneCount}/${checklistCount}` : '';
@@ -96,11 +84,6 @@ export function AppEditorModule({
       setOpenNoteSegmentId={setOpenNoteSegmentId}
       addSegment={addSegment}
       t={t}
-      total={total}
-      hasCosts={hasCosts}
-      showBreakdown={showBreakdown}
-      setShowBreakdown={setShowBreakdown}
-      breakdown={breakdown}
       notes={notes}
       confirmDeleteNote={confirmDeleteNote}
       setConfirmDeleteNote={setConfirmDeleteNote}
@@ -188,29 +171,9 @@ export function AppEditorModule({
           handleOpenSavedTrip={handleOpenSavedTrip}
           setTripToDelete={setTripToDelete}
           intlLocale={intlLocale}
-          locale={locale}
-          setLocale={setLocale}
-          availableLocales={availableLocales}
           t={t}
         />
       </div>
-
-      {activeTab === 'segments' && (
-        <div className="itinerary-trip-header">
-          <input
-            type="text"
-            className="itinerary-trip-title"
-            value={trip.name || ''}
-            maxLength={80}
-            placeholder={t('tripNamePlaceholder')}
-            aria-label={t('tripName')}
-            onChange={(event) => renameTrip(event.target.value)}
-          />
-          <button type="button" className="itinerary-trip-save" onClick={handleSave}>
-            {t('saveTrip')}
-          </button>
-        </div>
-      )}
 
       {editorPane}
     </div>
