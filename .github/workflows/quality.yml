@@ -64,6 +64,17 @@ jobs:
       - name: Install Functions dependencies
         run: npm ci --prefix functions
 
+      - name: Review impacted test contracts
+        run: npm run test:impact -- --json=test-impact.json
+
+      - name: Upload test impact report
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-impact
+          path: test-impact.json
+          if-no-files-found: error
+          retention-days: 3
+
       - name: Run unit tests
         run: npm test
 
