@@ -1,6 +1,7 @@
 /* Cambios visuales solicitados para la cabecera y métricas del itinerario. */
 .itinerary-trip-header {
   box-sizing: border-box;
+  position: relative;
   width: 100%;
   min-width: 0;
   min-height: 44px;
@@ -9,8 +10,19 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 9px 8px 7px;
+  padding: 9px 20px 13px 8px;
   background: #ffffff;
+}
+
+.itinerary-trip-header::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 20px;
+  bottom: 2px;
+  border-top: 1px dashed #e4e7eb;
+  opacity: 0.72;
+  pointer-events: none;
 }
 
 .itinerary-trip-title {
@@ -149,6 +161,11 @@
 
 @media (max-width: 720px) {
   .itinerary-trip-header {
-    padding: 9px 12px 7px;
+    padding: 9px 12px 13px;
+  }
+
+  .itinerary-trip-header::after {
+    left: 12px;
+    right: 12px;
   }
 }
