@@ -16,6 +16,7 @@ export function AppEditorModule({
   setOpenNoteSegmentId,
   setTripToDelete,
   handleOpenSavedTrip,
+  handleSave,
   t,
   locale,
   setLocale,
@@ -24,6 +25,7 @@ export function AppEditorModule({
 }) {
   const {
     trip,
+    renameTrip,
     addNote,
     updateNote,
     removeNote,
@@ -117,7 +119,10 @@ export function AppEditorModule({
   );
 
   return (
-    <div className="editor-module" ref={editorMenuRef}>
+    <div
+      className={'editor-module' + (activeTab === 'segments' ? ' editor-module--itinerary' : '')}
+      ref={editorMenuRef}
+    >
       <div className="editor-module__tabs" role="tablist" aria-orientation="vertical">
         <button
           type="button"
@@ -189,6 +194,24 @@ export function AppEditorModule({
           t={t}
         />
       </div>
+
+      {activeTab === 'segments' && (
+        <div className="itinerary-trip-header">
+          <input
+            type="text"
+            className="itinerary-trip-title"
+            value={trip.name || ''}
+            maxLength={80}
+            placeholder={t('tripNamePlaceholder')}
+            aria-label={t('tripName')}
+            onChange={(event) => renameTrip(event.target.value)}
+          />
+          <button type="button" className="itinerary-trip-save" onClick={handleSave}>
+            {t('saveTrip')}
+          </button>
+        </div>
+      )}
+
       {editorPane}
     </div>
   );
