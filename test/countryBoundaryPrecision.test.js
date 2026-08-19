@@ -96,7 +96,7 @@ test('Itinerario pinta países visitados con COUNTRY y resuelve IDs mediante Pla
   assert.match(functionsIndex, /googleCountryPlaceIds/);
 });
 
-test('la lógica de colores de país conserva orden y distinción', () => {
+test('la lógica de colores excluye origen y conserva orden entre varios países destino', () => {
   const segments = [
     {
       origin: { country: 'France', countryCode: 'FR', lat: 48.8566, lon: 2.3522 },
@@ -110,6 +110,6 @@ test('la lógica de colores de país conserva orden y distinción', () => {
   const colors = ['#e23b3b', '#2563eb', '#7c3aed'];
   const countries = visitedCountries(segments, (index) => colors[index]);
 
-  assert.deepEqual(countries.map((entry) => entry.countryCode), ['FR', 'DE', 'NL']);
-  assert.deepEqual(countries.map((entry) => entry.color), colors);
+  assert.deepEqual(countries.map((entry) => entry.countryCode), ['DE', 'NL']);
+  assert.deepEqual(countries.map((entry) => entry.color), colors.slice(0, 2));
 });
