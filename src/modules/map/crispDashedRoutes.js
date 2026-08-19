@@ -124,50 +124,31 @@ export function createCrispDashedRoutes({
   routes = [],
 }) {
   if (!maps?.OverlayView || !map) {
-    return { dispose() {} };
+    return {
+      setRoutes() {},
+      refresh() {},
+      dispose() {},
+    };
   }
 
-  const preparedRoutes = routes.map((route) => ({
+  const prepareRoutes = (nextRoutes) => (nextRoutes || []).map((route) => ({
     ...route,
     path: normalizedLatLngPath(route.path, maps),
   }));
+
   const overlay = new maps.OverlayView();
+  let preparedRoutes = prepareRoutes(routes);
   let svg = null;
   let routePaths = [];
   let drawFrame = 0;
   let disposed = false;
 
-  overlay.onAdd = () => {
-    const pane = overlay.getPanes?.()?.overlayLayer;
-    if (!pane || disposed) return;
-
-    svg = document.createElementNS(SVG_NS, 'svg');
-    svg.setAttribute('aria-hidden', 'true');
-    svg.setAttribute('focusable', 'false');
-    Object.assign(svg.style, {
-      position: 'absolute',
-      left: '0',
-      top: '0',
-      width: '1px',
-      height: '1px',
-      overflow: 'visible',
-      pointerEvents: 'none',
+  const clearRoutePaths = () => {
+    routePaths.forEach(({ element, arrows }) => {
+      element.remove();
+      arrows.forEach((arrow) => arrow.remove());
     });
-
-    routePaths = preparedRoutes.map((route) => {
-      const element = createRoutePath();
-      const arrows = ARROW_FRACTIONS.map(() => createDirectionArrow());
-      svg.append(element, ...arrows);
-      return {
-        element,
-        arrows,
-        path: route.path,
-        lastPathValue: '',
-        lastArrowTransforms: ['', ''],
-      };
-    });
-
-    pane.append(svg);
+    routePaths = [];
   };
 
   const render = () => {
@@ -214,22 +195,73 @@ export function createCrispDashedRoutes({
     });
   };
 
-  overlay.draw = () => {
+  const scheduleRender = () => {
     if (disposed || drawFrame) return;
     drawFrame = requestAnimationFrame(render);
+  };
+
+  const rebuildRoutePaths = () => {
+    if (!svg || disposed) return;
+    clearRoutePaths();
+    routePaths = preparedRoutes.map((route) => {
+      const element = createRoutePath();
+      const arrows = ARROW_FRACTIONS.map(() => createDirectionArrow());
+      svg.append(element, ...arrows);
+      return {
+        element,
+        arrows,
+        path: route.path,
+        lastPathValue: '',
+        lastArrowTransforms: ['', ''],
+      };
+    });
+    scheduleRender();
+  };
+
+  overlay.onAdd = () => {
+    const pane = overlay.getPanes?.()?.overlayLayer;
+    if (!pane || disposed) return;
+
+    svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    Object.assign(svg.style, {
+      position: 'absolute',
+      left: '0',
+      top: '0',
+      width: '1px',
+      height: '1px',
+      overflow: 'visible',
+      pointerEvents: 'none',
+    });
+
+    pane.append(svg);
+    rebuildRoutePaths();
+  };
+
+  overlay.draw = () => {
+    scheduleRender();
   };
 
   overlay.onRemove = () => {
     if (drawFrame) cancelAnimationFrame(drawFrame);
     drawFrame = 0;
+    clearRoutePaths();
     svg?.remove();
     svg = null;
-    routePaths = [];
   };
 
   overlay.setMap(map);
 
   return {
+    setRoutes(nextRoutes) {
+      if (disposed) return;
+      preparedRoutes = prepareRoutes(nextRoutes);
+      rebuildRoutePaths();
+    },
+    refresh() {
+      scheduleRender();
+    },
     dispose() {
       if (disposed) return;
       disposed = true;
