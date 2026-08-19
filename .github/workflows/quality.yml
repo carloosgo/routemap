@@ -96,7 +96,19 @@ jobs:
         run: npm run test:rules:phase-k-e2e
 
       - name: Run ESLint
-        run: npm run lint
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run lint 2>&1 | tee eslint.log
+
+      - name: Upload ESLint failure log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-log
+          path: eslint.log
+          if-no-files-found: ignore
+          retention-days: 3
 
       - name: Build production bundle
         run: npm run build
