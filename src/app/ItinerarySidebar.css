@@ -36,8 +36,8 @@
     box-shadow: 1px 0 2px rgba(15, 23, 42, 0.025);
   }
 
-  /* La geometría es idéntica en todos los estados. El estado activo sólo
-     cambia color, nunca posición, padding, tamaño ni distribución interna. */
+  /* Rutas y Notas reservan una tercera fila para su badge. El estado activo
+     nunca altera dimensiones, padding ni transformaciones. */
   .editor-module__tabs > .editor-module__nav-tab,
   .editor-module__tabs > .editor-module__nav-tab.is-active {
     position: relative;
@@ -76,10 +76,21 @@
     translate: none !important;
   }
 
+  /* Itinerario no tiene contador, por lo que no conserva una fila vacía.
+     Su caja es más corta para que el espacio visual hasta el divisor sea el
+     mismo que en Rutas y Notas. */
+  .editor-module__tabs > .editor-module__nav-tab--plain,
+  .editor-module__tabs > .editor-module__nav-tab--plain.is-active {
+    min-height: 62px;
+    height: 62px;
+    max-height: 62px;
+    flex: 0 0 62px;
+    grid-template-rows: 38px 14px;
+  }
+
   /* FloatingEditor.css todavía contiene la regla histórica que agrega
-     margin-left: 9px a los botones 2 y 3. Esa regla hacía que una opción
-     cambiara de posición al pasar a is-active. Se neutraliza aquí para que
-     la navegación se comporte como una sola barra estable. */
+     margin-left: 9px a los botones 2 y 3. Se neutraliza aquí para que la
+     navegación se comporte como una sola barra estable. */
   .editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab {
     margin-left: 0 !important;
     margin-right: 0 !important;
@@ -149,8 +160,8 @@
     white-space: nowrap;
   }
 
-  /* La tercera fila siempre existe. El badge original se monta dentro de ella,
-     por lo que mostrar 4 o 1/2 nunca altera la posición del icono ni título. */
+  /* Solo Rutas y Notas montan esta fila. El badge conserva su estilo original
+     y el espacio de la fila evita cualquier salto al aparecer/desaparecer. */
   .editor-module__tabs .editor-module__tab-count {
     grid-row: 3;
     grid-column: 1;
@@ -184,8 +195,9 @@
     transform: none !important;
   }
 
-  /* Hay 12px reales entre opciones; el divisor vive exactamente a la mitad
-     de ese hueco, independientemente de que exista o no un contador. */
+  /* Hay 12px reales entre cajas y el divisor vive exactamente en la mitad
+     de ese hueco. Como Itinerario ya no conserva fila vacía, las distancias
+     visuales a los tres grupos quedan equilibradas. */
   .editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab::before {
     content: '' !important;
     display: block !important;
