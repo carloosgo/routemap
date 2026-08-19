@@ -36,6 +36,8 @@
     box-shadow: 1px 0 2px rgba(15, 23, 42, 0.025);
   }
 
+  /* La geometría es idéntica en todos los estados. El estado activo sólo
+     cambia color, nunca posición, padding, tamaño ni distribución interna. */
   .editor-module__tabs > .editor-module__nav-tab,
   .editor-module__tabs > .editor-module__nav-tab.is-active {
     position: relative;
@@ -50,13 +52,15 @@
     height: 76px;
     max-height: 76px;
     flex: 0 0 76px;
-    display: flex;
-    flex-direction: column;
+    display: grid !important;
+    grid-template-rows: 38px 14px 12px;
+    grid-template-columns: 1fr;
+    align-content: center;
     align-items: center;
-    justify-content: center;
-    gap: 7px;
+    justify-items: center;
+    row-gap: 2px;
     margin: 0;
-    padding: 10px 3px 12px;
+    padding: 4px 3px;
     border: 0;
     border-radius: 0;
     background: transparent !important;
@@ -78,6 +82,8 @@
   .editor-module__tabs > .editor-module__nav-tab:active,
   .editor-module__tabs > .editor-module__nav-tab.is-active,
   .editor-module__tabs > .editor-module__nav-tab.is-active:hover {
+    margin: 0 !important;
+    padding: 4px 3px !important;
     background: transparent !important;
     box-shadow: none !important;
     outline: none !important;
@@ -90,15 +96,22 @@
   }
 
   .editor-module__tabs .editor-module__tab-icon {
+    grid-row: 1;
+    grid-column: 1;
+    position: static !important;
     width: 38px;
     height: 38px;
-    flex: 0 0 38px;
+    min-width: 38px;
+    min-height: 38px;
+    margin: 0 !important;
+    padding: 0 !important;
     display: grid;
     place-items: center;
     color: #4e8da0;
     background-size: 34px 34px !important;
     background-position: center;
     background-repeat: no-repeat;
+    transform: none !important;
   }
 
   .editor-module__tabs .editor-module__tab-icon > img,
@@ -106,26 +119,49 @@
     width: 34px !important;
     height: 34px !important;
     max-width: none;
+    margin: 0 !important;
     object-fit: contain;
+    transform: none !important;
   }
 
   .editor-module__tabs .editor-module__tab-label {
+    grid-row: 2;
+    grid-column: 1;
     display: block;
     width: 100%;
     min-width: 0;
+    height: 14px;
+    margin: 0;
     overflow: visible;
     color: inherit;
     font: inherit;
-    line-height: 1.15;
+    line-height: 14px;
     text-align: center;
-    white-space: normal;
+    white-space: nowrap;
   }
 
-  .editor-module__tabs > .editor-module__nav-tab .tabbar__badge {
-    position: absolute;
-    top: 7px;
-    right: 4px;
+  /* El contador tiene una fila reservada aunque esté vacío. Así añadir/quitar
+     datos nunca mueve el icono ni el título de la opción. */
+  .editor-module__tabs .editor-module__tab-count {
+    grid-row: 3;
+    grid-column: 1;
+    position: static;
+    width: 100%;
+    min-width: 0;
+    height: 12px;
     margin: 0;
+    padding: 0;
+    display: block;
+    color: #9aa1aa;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    font-size: 9px;
+    font-weight: 600;
+    line-height: 12px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    transform: none;
   }
 
   /* Separadores cortos y centrados entre opciones. */
