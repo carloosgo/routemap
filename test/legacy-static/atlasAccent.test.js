@@ -10,10 +10,11 @@ test('the selected Atlas controls retain the exact #19a5d0 accent token', async 
   const tokens = await read('src/index.css');
   const polish = await read('src/app/FloatingEditorPolish.css');
   const itinerary = await read('src/app/ItineraryTripHeader.css');
-  const accentStyles = `${polish}\n${itinerary}`;
+  const summary = await read('src/app/TripSummaryHeader.css');
+  const accentStyles = `${polish}\n${itinerary}\n${summary}`;
   assert.match(tokens, /--atlas-accent:\s*#19a5d0/);
   for (const selector of [
-    '.itinerary-trip-save',
+    '.trip-summary__save',
     '.editor-module__settings .editor-module__more-button',
     '.geo-search__button',
     '.place-save-prompt button',
@@ -29,9 +30,11 @@ test('the selected Atlas controls retain the exact #19a5d0 accent token', async 
   assert.match(accentStyles, /color:\s*#ffffff/);
 });
 
-test('itinerary, routes and notes share the real tab button structure while currency stays in workspace', async () => {
+test('itinerary, routes and notes keep the tab structure while trip currency and app language live in their own scopes', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
+  const header = await read('src/app/TripSummaryHeader.jsx');
+  const topbar = await read('src/app/AppTopbar.jsx');
   const sidebar = await read('src/app/ItinerarySidebar.css');
   assert.equal((editor.match(/role="tab"/g) || []).length, 3);
   assert.equal((editor.match(/editor-module__tab-icon/g) || []).length, 3);
@@ -40,10 +43,12 @@ test('itinerary, routes and notes share the real tab button structure while curr
   assert.match(editor, /t\('myRoutes'\)/);
   assert.match(editor, /t\('notes'\)/);
   assert.match(menu, /openMenu === 'workspace'/);
-  assert.match(menu, /<span>\{t\('currency'\)\}<\/span>/);
-  assert.match(menu, /setCurrency\(currency\)/);
-  assert.match(menu, /<span>\{t\('language'\)\}<\/span>/);
-  assert.doesNotMatch(menu, /currencyCoinIcon|data-tab-icon="language-selector"/);
+  assert.doesNotMatch(menu, /setCurrency|t\('currency'\)|t\('language'\)/);
+  assert.match(header, /const CURRENCIES = \['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'\]/);
+  assert.match(header, /setCurrency\(event\.target\.value\)/);
+  assert.match(header, /t\('currency'\)/);
+  assert.match(topbar, /t\('language'\)/);
+  assert.match(topbar, /setLocale\(availableLocale\)/);
   assert.match(sidebar, /\.editor-module__tabs > \.editor-module__nav-tab,/);
   assert.match(sidebar, /height:\s*76px;/);
   assert.match(sidebar, /padding:\s*3px 3px\s*!important;/);
@@ -74,9 +79,10 @@ test('places renders the transparent signpost icon through the existing tab asse
   assert.doesNotMatch(icon, /<image\b/);
 });
 
-test('the desktop navigation remains ordered as itinerary, routes and notes with currency in workspace', async () => {
+test('desktop navigation stays itinerary, routes and notes while the global header owns trip currency', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
+  const header = await read('src/app/TripSummaryHeader.jsx');
   const itineraryIndex = editor.indexOf("setActiveTab('segments')");
   const routesIndex = editor.indexOf("setActiveTab('places')");
   const notesIndex = editor.indexOf("setActiveTab('notes')");
@@ -84,7 +90,8 @@ test('the desktop navigation remains ordered as itinerary, routes and notes with
   assert.ok(itineraryIndex < routesIndex);
   assert.ok(routesIndex < notesIndex);
   assert.match(menu, /openMenu === 'workspace'/);
-  assert.match(menu, /<span>\{t\('currency'\)\}<\/span>/);
+  assert.doesNotMatch(menu, /t\('currency'\)/);
+  assert.match(header, /t\('currency'\)/);
 });
 
 test('place save popup hides its close icon and dismisses through outside clicks', async () => {
