@@ -10,6 +10,7 @@ import { AppTopbar } from './app/AppTopbar.jsx';
 import { AppEditorModule } from './app/AppEditorModule.jsx';
 import { AppMapPane } from './app/AppMapPane.jsx';
 import { AppWorkspace } from './app/AppWorkspace.jsx';
+import { TripSummaryHeader } from './app/TripSummaryHeader.jsx';
 import { TripDeleteDialog } from './app/TripDeleteDialog.jsx';
 import { normalizeRecoveredDraft } from './app/recoveredTripDraft.js';
 import { useAppEditorState } from './app/useAppEditorState.js';
@@ -27,7 +28,7 @@ export default function App() {
   const tripStore = useTrip();
   const savedTrips = useSavedTrips(auth.user);
   const editorState = useAppEditorState(tripStore);
-  const { trip, loadTrip, renameTrip, updateSegment, addPlace } = tripStore;
+  const { trip, loadTrip, renameTrip, setCurrency, updateSegment, addPlace } = tripStore;
   const {
     getTrip,
     getActiveTripDraft,
@@ -72,7 +73,6 @@ export default function App() {
 
     Promise.resolve(getActiveTripDraft()).then((draft) => {
       if (cancelled || !draft) return;
-      // Never replace work the user already started during auth/draft startup.
       if (currentTripRef.current !== initialTripRef.current) return;
       loadTrip(normalizeRecoveredDraft(draft));
     }).catch(() => {
@@ -176,18 +176,32 @@ export default function App() {
     <AppTopbar
       menuWrapRef={menuWrapRef}
       t={t}
-      trip={trip}
-      renameTrip={renameTrip}
       openMenu={openMenu}
       setOpenMenu={setOpenMenu}
-      handleSave={handleSave}
-      canSave={canSave}
       authUser={auth.user}
       authLoading={auth.loading}
       onGoogleSignIn={handleGoogleSignIn}
       onSignOut={handleSignOut}
       onImportLocalTrips={handleImportLocalTrips}
-      desktopPanelCollapsed={desktopPanelCollapsed}
+      locale={locale}
+      setLocale={setLocale}
+      availableLocales={availableLocales}
+    />
+  );
+
+  const tripHeader = (
+    <TripSummaryHeader
+      trip={trip}
+      renameTrip={renameTrip}
+      setCurrency={setCurrency}
+      total={editorState.total}
+      hasCosts={editorState.hasCosts}
+      breakdown={editorState.breakdown}
+      showBreakdown={editorState.showBreakdown}
+      setShowBreakdown={editorState.setShowBreakdown}
+      handleSave={handleSave}
+      t={t}
+      intlLocale={intlLocale}
     />
   );
 
@@ -204,11 +218,7 @@ export default function App() {
       setOpenNoteSegmentId={setOpenNoteSegmentId}
       setTripToDelete={setTripToDelete}
       handleOpenSavedTrip={handleOpenSavedTrip}
-      handleSave={handleSave}
       t={t}
-      locale={locale}
-      setLocale={setLocale}
-      availableLocales={availableLocales}
       intlLocale={intlLocale}
     />
   );
@@ -230,6 +240,7 @@ export default function App() {
   return (
     <div className="app">
       {topbar}
+      {tripHeader}
       <AppWorkspace
         editorModule={editorModule}
         mapPane={mapPane}
