@@ -10,7 +10,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 9px 20px 13px 8px;
+  padding: 9px 8px 13px;
   background: #ffffff;
 }
 
@@ -18,7 +18,7 @@
   content: '';
   position: absolute;
   left: 8px;
-  right: 20px;
+  right: 8px;
   bottom: 2px;
   border-top: 1px dashed #e4e7eb;
   opacity: 0.72;
@@ -129,7 +129,8 @@
     grid-row: 2;
   }
 
-  /* Cabecera y trayectos comparten exactamente las mismas guías laterales. */
+  /* Cabecera, separador, trayectos y Agregar trayecto comparten exactamente
+     las mismas guías laterales del contenido. */
   .editor-module.editor-module--itinerary .editor__body {
     padding-left: 8px;
     padding-right: 8px;
