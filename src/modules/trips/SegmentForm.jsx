@@ -4,16 +4,11 @@ import { SegmentBody } from './SegmentBody.jsx';
 import { SegmentDeleteDialog } from './SegmentDeleteDialog.jsx';
 import { SegmentHeader } from './SegmentHeader.jsx';
 import { SegmentOriginSection } from './SegmentOriginSection.jsx';
-import {
-  formatSegmentAmount,
-  formatSegmentDates,
-  formatSegmentNights,
-} from './segmentFormModel.js';
+import { formatSegmentAmount, formatSegmentDates, formatSegmentNights } from './segmentFormModel.js';
 import './ItineraryTimeline.css';
 
 function SegmentDropIndicator({ placement }) {
   if (!placement) return null;
-
   return (
     <span
       aria-hidden="true"
@@ -75,7 +70,6 @@ export function SegmentForm({
           onUpdateOriginExpenses={onUpdateOriginExpenses}
         />
       )}
-
       <article
         className={
           'segment itinerary-segment' +
@@ -94,7 +88,6 @@ export function SegmentForm({
         }
       >
         <SegmentDropIndicator placement={dropPlacement} />
-
         <SegmentHeader
           segment={segment}
           formattedDates={formattedDates}
@@ -109,7 +102,6 @@ export function SegmentForm({
           onRemoveRequest={() => setConfirmOpen(true)}
           onReorderPointerStart={onReorderPointerStart}
         />
-
         {expanded && (
           <SegmentBody
             segment={segment}
@@ -120,7 +112,6 @@ export function SegmentForm({
             onUpdateExpenses={onUpdateExpenses}
           />
         )}
-
         <SegmentDeleteDialog
           open={confirmOpen}
           onConfirm={confirmRemove}
