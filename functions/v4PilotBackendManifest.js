@@ -17,6 +17,11 @@ export const V4_PILOT_BACKEND_FUNCTION_REGIONS = Object.freeze({
 
 export const V4_PILOT_EVENTARC_TRIGGERS = Object.freeze([
   Object.freeze({
+    name: 'atlas-v4-trip-written',
+    collection: 'trips',
+    document: 'users/{userId}/trips/{tripId}',
+  }),
+  Object.freeze({
     name: 'atlas-v4-segment-written',
     collection: 'segments',
     document: 'users/{userId}/trips/{tripId}/segments/{entityId}',
