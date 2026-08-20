@@ -8,6 +8,7 @@ async function read(path) { return readFile(new URL(path, root), 'utf8'); }
 async function mapSources() {
   const paths = {
     route: 'src/modules/map/RouteMap.jsx',
+    projection: 'src/modules/map/itineraryMapProjection.js',
     google: 'src/modules/map/GooglePlacesMap.jsx',
     model: 'src/modules/map/routeMapModel.js',
     dom: 'src/modules/map/placeMapDom.js',
@@ -26,13 +27,15 @@ async function mapSources() {
 }
 
 test('Itinerario y Mis Rutas comparten una sola instancia de Google Maps', async () => {
-  const { route, google } = await mapSources();
+  const { route, projection, google } = await mapSources();
 
   assert.match(route, /<GooglePlacesMap/);
-  assert.match(route, /segments=\{segments\}/);
+  assert.match(route, /itineraryMapProjectionSignature\(segments\)/);
+  assert.match(route, /segments=\{mapSegments\}/);
   assert.match(route, /places=\{places\}/);
   assert.match(route, /routeConnections=\{routeConnections\}/);
   assert.match(route, /viewMode=\{viewMode\}/);
+  assert.match(projection, /export function itineraryMapProjection/);
   assert.doesNotMatch(route, /ItineraryRouteMap|maplibregl|route-map-layer|placesMapMounted/);
   assert.match(google, /const placesActive = viewMode === 'places'/);
   assert.match(google, /loadGoogleMaps\(\)/);
