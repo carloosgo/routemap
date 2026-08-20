@@ -89,6 +89,7 @@
 
   .editor-module > .editor-module__tabs {
     grid-row: 1 / -1;
+    padding-top: calc(var(--trip-header-height) + 8px);
   }
 
   .editor-module > :not(.editor-module__tabs) {
