@@ -104,7 +104,7 @@ test('hidratar una revisión restaura el viaje completo, origen y su orden', () 
   assert.equal(hydrated.checklist[0].id, 'item-1');
 });
 
-test('la lista usa resúmenes ligeros sin hidratar el contenido', () => {
+test('la lista conserva metadatos de origen sin hidratar colecciones hijas', () => {
   const payload = createTripRevisionPayload(sampleTrip(), 'revision0004');
   const entry = createVersionedTripListEntry(payload.summary.id, payload.summary);
 
@@ -112,8 +112,9 @@ test('la lista usa resúmenes ligeros sin hidratar el contenido', () => {
   assert.equal(entry.placeOrderVersion, PLACE_ORDER_VERSION);
   assert.equal(entry.segmentCount, 1);
   assert.equal(entry.placeCount, 1);
+  assert.equal(entry.originDetails.departureDate, '2026-12-01');
+  assert.equal(entry.originDetails.expenses.lodging, 80);
   assert.equal(Object.hasOwn(entry, 'segments'), false);
-  assert.equal(Object.hasOwn(entry, 'originDetails'), false);
 });
 
 test('se rechazan identificadores de revisión inseguros', () => {
