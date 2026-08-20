@@ -4,8 +4,8 @@
 .segment-expense-form {
   --expense-column-gap: 18px;
   --expense-row-gap: 8px;
-  --expense-amount-width: 74px;
-  --expense-date-bg: #f5f6f7;
+  --expense-amount-width: 82px;
+  --expense-date-bg: #f8f9fa;
   gap: 12px !important;
   padding-top: 9px !important;
 }
@@ -14,8 +14,8 @@
   gap: 0;
 }
 
-/* Las fechas usan exactamente las mismas dos columnas que los conceptos.
-   Cada trigger termina en la guía donde comienza el importe fijo de su columna. */
+/* Las fechas usan exactamente las mismas dos columnas que los conceptos y
+   ocupan el ancho completo de cada columna. */
 .segment-expense-form .dates__row {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: var(--expense-column-gap);
@@ -23,10 +23,10 @@
 }
 
 /* Los dos controles conservan exactamente la misma caja en reposo, hover,
-   focus y estado abierto. El texto queda anclado de forma absoluta para que
-   ningún cambio de estado del botón altere su posición visual. */
+   focus y estado abierto. El texto queda centrado y anclado para que el ancho
+   extra no se perciba como espacio desperdiciado. */
 .segment-expense-form .calendar-date {
-  width: calc(100% - var(--expense-amount-width));
+  width: 100%;
   max-width: none;
   height: 38px;
 }
@@ -42,7 +42,7 @@
   width: 100%;
   height: 38px;
   min-height: 38px;
-  padding: 0 30px 0 12px;
+  padding: 0 30px;
   border: 0 !important;
   border-radius: 6px;
   background: var(--expense-date-bg);
@@ -62,14 +62,16 @@
 .segment-expense-form .calendar-date__placeholder {
   position: absolute;
   top: 50%;
-  left: 12px;
+  left: 50%;
   display: block;
-  max-width: calc(100% - 40px);
+  width: calc(100% - 52px);
+  max-width: calc(100% - 52px);
   overflow: hidden;
   line-height: 1;
+  text-align: center;
   white-space: nowrap;
   text-overflow: ellipsis;
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
   transition: none;
   pointer-events: none;
 }
@@ -99,6 +101,7 @@
   --expense-icon-box: 18px;
   --expense-icon-text-gap: 4px;
   --expense-text-color: #4b5563;
+  --expense-add-color: #8a929d;
   gap: var(--expense-row-gap);
   min-width: 0;
 }
@@ -174,7 +177,7 @@
   min-width: var(--expense-amount-width);
   height: 34px;
   margin-left: auto;
-  padding: 0 6px;
+  padding: 0 4px;
   border: 0;
   border-radius: 6px;
   background: transparent;
@@ -199,7 +202,7 @@
 
 .expenses--journey .moneycard__input {
   min-width: 0;
-  width: 57px;
+  width: 65px;
   padding: 0;
   border: 0;
   outline: none;
@@ -247,13 +250,13 @@
 }
 
 .expenses--journey .moneycard--lineitem .moneycard__amount {
-  width: 92px;
-  min-width: 92px;
+  width: 104px;
+  min-width: 104px;
   padding-right: 4px;
 }
 
 .expenses--journey .moneycard--lineitem .moneycard__input {
-  width: 53px;
+  width: 65px;
 }
 
 .expenses--journey .moneycard__typeinput::placeholder {
@@ -297,7 +300,7 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--expense-text-color);
+  color: var(--expense-add-color);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -308,7 +311,7 @@
 .expenses--journey .expenses__add-other:hover,
 .expenses--journey .expenses__add-other:focus-visible {
   background: transparent;
-  color: var(--expense-text-color);
+  color: var(--expense-add-color);
   box-shadow: none;
   outline: none;
 }
@@ -320,7 +323,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  color: var(--expense-text-color);
+  color: var(--expense-add-color);
   line-height: 1;
 }
 
@@ -414,7 +417,7 @@
   .segment-expense-form {
     --expense-column-gap: 12px;
     --expense-row-gap: 7px;
-    --expense-amount-width: 70px;
+    --expense-amount-width: 78px;
   }
 
   .expenses--journey {
@@ -422,16 +425,16 @@
   }
 
   .expenses--journey .moneycard__input {
-    width: 53px;
+    width: 61px;
   }
 
   .expenses--journey .moneycard--lineitem .moneycard__amount {
-    width: 88px;
-    min-width: 88px;
+    width: 100px;
+    min-width: 100px;
   }
 
   .expenses--journey .moneycard--lineitem .moneycard__input {
-    width: 49px;
+    width: 61px;
   }
 }
 
@@ -439,7 +442,7 @@
   .segment-expense-form {
     --expense-column-gap: 8px;
     --expense-row-gap: 6px;
-    --expense-amount-width: 66px;
+    --expense-amount-width: 74px;
   }
 
   .segment-expense-form .calendar-date {
@@ -453,13 +456,16 @@
   .segment-expense-form .calendar-date__trigger.is-open {
     height: 36px;
     min-height: 36px;
-    padding-left: 10px;
+    padding: 0 28px;
     font-size: 11px;
   }
 
   .segment-expense-form .calendar-date__value,
   .segment-expense-form .calendar-date__placeholder {
-    left: 10px;
+    left: 50%;
+    width: calc(100% - 48px);
+    max-width: calc(100% - 48px);
+    transform: translate(-50%, -50%);
   }
 
   .expenses--journey .moneycard,
@@ -486,16 +492,16 @@
   }
 
   .expenses--journey .moneycard__input {
-    width: 49px;
+    width: 57px;
     font-size: 11px;
   }
 
   .expenses--journey .moneycard--lineitem .moneycard__amount {
-    width: 84px;
-    min-width: 84px;
+    width: 96px;
+    min-width: 96px;
   }
 
   .expenses--journey .moneycard--lineitem .moneycard__input {
-    width: 45px;
+    width: 57px;
   }
 }
