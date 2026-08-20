@@ -44,7 +44,7 @@ test('los totales neutralizan datos inválidos', () => {
   );
 });
 
-test('normalizeExpenses migra transporte antiguo y normaliza comida', () => {
+test('normalizeExpenses migra transporte antiguo, normaliza comida y mueve atracciones a otros', () => {
   const normalized = normalizeExpenses({
     lodging: '75.5',
     food: {
@@ -82,8 +82,11 @@ test('normalizeExpenses migra transporte antiguo y normaliza comida', () => {
       { label: 'Barco', amount: 8 },
     ]
   );
-  assert.equal(normalized.attractions[0].label, 'Museo');
-  assert.equal(normalized.attractions[0].amount, 25);
+  assert.deepEqual(normalized.attractions, []);
+  assert.deepEqual(
+    normalized.others.map(({ label, amount }) => ({ label, amount })),
+    [{ label: 'Museo', amount: 25 }]
+  );
 });
 
 test('tripBreakdown agrega categorías y tolera segmentos inválidos', () => {
@@ -110,5 +113,28 @@ test('tripBreakdown agrega categorías y tolera segmentos inválidos', () => {
     food: 30,
     attractions: 11,
     others: 12,
+  });
+});
+
+test('tripBreakdown incluye gastos de ciudad origen cuando recibe el viaje', () => {
+  const originExpenses = createExpenses();
+  originExpenses.lodging = 80;
+  originExpenses.food.single = 20;
+  originExpenses.transport.plane = 150;
+  const segmentExpenses = createExpenses();
+  segmentExpenses.transport.train = 35;
+
+  assert.deepEqual(tripBreakdown({
+    originDetails: { expenses: originExpenses },
+    segments: [{ expenses: segmentExpenses }],
+  }), {
+    plane: 150,
+    train: 35,
+    bus: 0,
+    taxiUber: 0,
+    lodging: 80,
+    food: 20,
+    attractions: 0,
+    others: 0,
   });
 });
