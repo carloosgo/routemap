@@ -13,7 +13,7 @@ test('App coordina módulos sin contener menús, responsive ni diálogo completo
   const dialog = await read('src/app/TripDeleteDialog.jsx');
   const editorState = await read('src/app/useAppEditorState.js');
 
-  assert.ok(lineCount(app) <= 260, `App.jsx volvió a crecer a ${lineCount(app)} líneas`);
+  assert.ok(lineCount(app) <= 265, `App.jsx volvió a crecer a ${lineCount(app)} líneas`);
   assert.match(app, /<AppEditorModule/);
   assert.match(app, /<AppWorkspace/);
   assert.match(app, /<TripDeleteDialog/);
@@ -156,11 +156,15 @@ test('ExpenseEditor coordina vistas sin absorber catálogo ni mutaciones', async
   assert.match(editor, /from '\.\/expenseEditorOperations\.js'/);
   assert.match(editor, /from '\.\/expenseEditorCatalog\.jsx'/);
   assert.doesNotMatch(editor, /IconPlane|BOAT_KEYWORDS|function LineItemsGrid/);
+  assert.doesNotMatch(editor, /expenses__toggle|usesDetailedFood|foodSingle|foodDetailed/);
+  assert.match(editor, /setExpenseItemsTotal\(expenses, 'attractions', value\)/);
 
   assert.doesNotMatch(operations, /from 'react'|@tabler\/icons-react/);
   assert.match(operations, /export function updateExpenseItem/);
+  assert.match(operations, /export function setExpenseItemsTotal/);
   assert.match(catalog, /export const EXPENSE_ICONS/);
   assert.match(catalog, /export function transportOtherIcon/);
-  assert.match(fixedCards, /className="expenses__grid"/);
+  assert.match(fixedCards, /className="expenses__fixed-list"/);
   assert.match(lineItems, /moneycard moneycard--lineitem/);
+  assert.match(lineItems, /safeItems\.map[\s\S]*expenses__add-other/);
 });

@@ -40,10 +40,11 @@ test('SegmentForm coordina el timeline sin absorber edición, encabezado ni diá
   assert.match(header, /value=\{destination\}/);
   assert.match(header, /onSelect=\{onDestinationSelect\}/);
   assert.match(header, /aria-controls=\{bodyId\}/);
-  assert.match(body, /className="segment__body"/);
+  assert.match(body, /className="segment__body segment-expense-form"/);
   assert.doesNotMatch(body, /CityAutocomplete|segment-route-editor/);
   assert.match(body, /CalendarDateInput/);
   assert.match(body, /<ExpenseEditor/);
+  assert.doesNotMatch(body, /dates__label|dates__arrow/);
   assert.match(dialog, /<ConfirmDialog/);
   assert.doesNotMatch(model, /from 'react'|\.jsx/);
 });

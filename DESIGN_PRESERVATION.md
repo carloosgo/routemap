@@ -1,6 +1,7 @@
 # Contrato de preservación visual
 
-Visual delta: none
+Visual delta: requested
+Requested visual scope: contenido expandido de cada trayecto, incluyendo fechas y editor de gastos, solicitado explícitamente por el product owner
 
 La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atlas debe permanecer intacto. Los controles añadidos reutilizan componentes, dimensiones, espaciados, iconografía y estados ya existentes. Los cambios visuales enumerados abajo fueron solicitados y aprobados explícitamente para el mapa y el editor del itinerario.
 
@@ -24,6 +25,9 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Idioma: sale del menú `Workspace` porque es una preferencia global de aplicación/usuario y pasa al menú global de cuenta. No se mezcla con preferencias específicas de un viaje.
 - Editor del itinerario: el espacio que antes ocupaba nombre/Guardar queda dedicado exclusivamente a trayectos y su contenido. `Guardar` vive al final de las métricas del header global.
 - Alineación responsive del itinerario: en escritorio la columna de ciudad absorbe el ancho disponible, mientras fechas, noches, costo y acciones conservan su geometría compacta. La última acción de cada trayecto y el contenido principal comparten la misma guía derecha, evitando espacio blanco sobrante en pantallas amplias.
+- Formulario expandido del trayecto: las fechas pasan a dos campos paralelos compactos sin etiqueta intermedia; los gastos se muestran como una lista vertical de `Hospedaje`, `Avión`, `Tren`, `Bus`, `Taxi / Uber` y `Atracciones`, conservando los iconos existentes pero sin fondos circulares. Los montos se agrupan en una columna visual estable a la derecha.
+- Otros gastos del trayecto: el botón `+ Otros gastos` vive al final de la lista. Cada clic crea una nueva fila editable inmediatamente debajo de `Atracciones`/gastos adicionales existentes y desplaza el botón hacia abajo. Los datos siguen usando las colecciones existentes de `expenses`; no se introduce una entidad ni un esquema paralelo.
+- Compatibilidad de gastos existentes: el selector `Gasto único / Por comida` deja de formar parte de la UI nueva. Si un viaje existente conserva un monto de alimentos, se muestra una única fila de compatibilidad para que nunca exista un costo oculto; al editarla se normaliza al modo simple sin alterar el contrato persistido.
 - Etiquetas de métricas de trayecto: `Noches` conserva texto `#535353` sobre fondo `#F1F1F1`; `Costo` conserva fondo `var(--atlas-accent)` con texto `#FFFFFF`. Ambas mantienen el borde suave incorporado como refinamiento visual.
 - Barra lateral del editor: se elimina el borde derecho y su sombra divisoria; la separación entre opciones internas se conserva.
 - Ciudad origen: en escritorio el campo se acorta para terminar aproximadamente en la misma guía vertical que el final de la primera fecha `dd/mm` de los trayectos.
@@ -43,6 +47,8 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 
 - El header reutiliza cálculos ya disponibles (`total` y `breakdown`) y memoriza el resumen derivado del viaje; no crea solicitudes de red nuevas.
 - La distancia se calcula en memoria sobre los trayectos existentes y su complejidad es lineal respecto al número de trayectos.
+- El formulario de gastos reutiliza el objeto `segment.expenses`; reordenar la presentación o agregar una fila de `others` no introduce llamadas de red, provider requests ni escrituras fuera del autosave/sync incremental ya existente.
+- `Atracciones` se presenta como un monto agregado sin cambiar su representación canónica como lista: el helper de dominio ajusta el total preservando IDs/etiquetas existentes y, por tanto, no requiere cambios de Rules, Storage v4, migraciones ni Functions.
 - Se mantiene un único `AdvancedMarkerElement` por ciudad para puntos, inicio y final. Los landmarks no crean markers ni nodos DOM adicionales.
 - Todos los landmarks se dibujan como quads en una única `WebGLOverlayView`, compartiendo el contexto WebGL del mapa vectorial que expone Google Maps Platform.
 - Cada asset visible crea como máximo una textura WebGL cacheada; se reutiliza mientras viva el mapa y usa mipmaps para mantener definición al reducirse.

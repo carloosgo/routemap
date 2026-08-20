@@ -12,18 +12,16 @@ export function ExpenseLineItemsGrid({
   onRemove,
 }) {
   const safeItems = Array.isArray(items) ? items : [];
+  const hasContent = Boolean(title || safeItems.length || onAdd);
+
+  if (!hasContent) return null;
 
   return (
     <section className="lineitems-section">
-      <div className="expenses__head">
-        <h4 className="expenses__title">{title}</h4>
-        <button type="button" className="btn btn--ghost btn--sm" onClick={onAdd}>
-          + {addLabel}
-        </button>
-      </div>
+      {title && <h4 className="expenses__title">{title}</h4>}
 
       {safeItems.length > 0 && (
-        <div className="expenses__grid">
+        <div className="expenses__lineitems">
           {safeItems.map((item) => {
             const { icon, bg, color } = getIcon(item);
 
@@ -71,6 +69,13 @@ export function ExpenseLineItemsGrid({
             );
           })}
         </div>
+      )}
+
+      {onAdd && (
+        <button type="button" className="expenses__add-other" onClick={onAdd}>
+          <span className="expenses__add-other-icon" aria-hidden="true">+</span>
+          <span>{addLabel}</span>
+        </button>
       )}
     </section>
   );
