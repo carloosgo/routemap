@@ -21,18 +21,18 @@ import { FixedExpenseCards } from './FixedExpenseCards.jsx';
 import './ExpenseEditor.css';
 
 function CategoryMoneyCard({ definition, label, value, onChange, className = '' }) {
-  return (
-    <div className={className}>
-      <MoneyCard
-        icon={definition.icon}
-        iconBg={definition.bg}
-        iconColor={definition.color}
-        label={label}
-        value={value}
-        onChange={onChange}
-      />
-    </div>
+  const card = (
+    <MoneyCard
+      icon={definition.icon}
+      iconBg={definition.bg}
+      iconColor={definition.color}
+      label={label}
+      value={value}
+      onChange={onChange}
+    />
   );
+
+  return className ? <div className={className}>{card}</div> : card;
 }
 
 export function ExpenseEditor({ expenses, currency, locale, onChange }) {
