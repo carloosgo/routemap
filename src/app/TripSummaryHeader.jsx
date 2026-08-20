@@ -7,6 +7,7 @@ import {
   IconCurrencyDollar,
   IconDots,
   IconLanguage,
+  IconMap2,
   IconMapPin,
   IconMoon,
   IconPlane,
@@ -145,6 +146,13 @@ export function TripSummaryHeader({
 
   return (
     <header className="trip-summary" aria-label={t('tripSummary')}>
+      <div className="trip-summary__brand" aria-label={t('appName')}>
+        <span className="trip-summary__brand-icon" aria-hidden="true">
+          <IconMap2 size={14} />
+        </span>
+        <span className="trip-summary__brand-name">{t('appName')}</span>
+      </div>
+
       <div className="trip-summary__identity">
         <input
           type="text"
