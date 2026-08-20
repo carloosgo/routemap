@@ -1,3 +1,8 @@
+export function isValidSegmentDateRange(startDate, endDate) {
+  if (!startDate || !endDate) return true;
+  return startDate <= endDate;
+}
+
 export function formatSegmentAmount(amount, locale) {
   return new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,

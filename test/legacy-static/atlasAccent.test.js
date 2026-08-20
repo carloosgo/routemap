@@ -6,6 +6,9 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
+const currencySelectorContract = /<SummarySelectorMetric[\s\S]*?Icon=\{IconCurrencyDollar\}[\s\S]*?label=\{t\('currency'\)\}[\s\S]*?value=\{trip\.currency\}[\s\S]*?onChange=\{setCurrency\}/;
+const languageSelectorContract = /<SummarySelectorMetric[\s\S]*?Icon=\{IconLanguage\}[\s\S]*?label=\{t\('language'\)\}[\s\S]*?value=\{locale\}[\s\S]*?onChange=\{setLocale\}/;
+
 test('the selected Atlas controls retain the exact #19a5d0 accent token', async () => {
   const tokens = await read('src/index.css');
   const polish = await read('src/app/FloatingEditorPolish.css');
@@ -34,6 +37,7 @@ test('itinerary, routes and notes keep the tab structure while trip currency and
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
   const header = await read('src/app/TripSummaryHeader.jsx');
+  const selector = await read('src/app/SummarySelectorMetric.jsx');
   const topbar = await read('src/app/AppTopbar.jsx');
   const sidebar = await read('src/app/ItinerarySidebar.css');
   assert.equal((editor.match(/role="tab"/g) || []).length, 3);
@@ -45,10 +49,10 @@ test('itinerary, routes and notes keep the tab structure while trip currency and
   assert.match(menu, /openMenu === 'workspace'/);
   assert.doesNotMatch(menu, /setCurrency|t\('currency'\)|setLocale|t\('language'\)/);
   assert.match(header, /const CURRENCIES = \['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'\]/);
-  assert.match(header, /setCurrency\(event\.target\.value\)/);
-  assert.match(header, /t\('currency'\)/);
-  assert.match(header, /setLocale\(event\.target\.value\)/);
-  assert.match(header, /t\('language'\)/);
+  assert.match(header, currencySelectorContract);
+  assert.match(header, languageSelectorContract);
+  assert.match(selector, /role="listbox"/);
+  assert.doesNotMatch(selector, /<select\b|<option\b/);
   assert.doesNotMatch(topbar, /t\('language'\)|setLocale\(availableLocale\)/);
   assert.match(topbar, /className="topbar__save"/);
   assert.match(sidebar, /\.editor-module__tabs > \.editor-module__nav-tab,/);
@@ -93,8 +97,8 @@ test('desktop navigation stays itinerary, routes and notes while the global head
   assert.ok(routesIndex < notesIndex);
   assert.match(menu, /openMenu === 'workspace'/);
   assert.doesNotMatch(menu, /t\('currency'\)|t\('language'\)|setCurrency|setLocale/);
-  assert.match(header, /t\('currency'\)/);
-  assert.match(header, /t\('language'\)/);
+  assert.match(header, currencySelectorContract);
+  assert.match(header, languageSelectorContract);
 });
 
 test('place save popup hides its close icon and dismisses through outside clicks', async () => {

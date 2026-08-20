@@ -5,6 +5,9 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
+const currencySelectorContract = /<SummarySelectorMetric[\s\S]*?Icon=\{IconCurrencyDollar\}[\s\S]*?label=\{t\('currency'\)\}[\s\S]*?value=\{trip\.currency\}[\s\S]*?onChange=\{setCurrency\}[\s\S]*?menuClassName="trip-summary__selector-menu--currency"/;
+const languageSelectorContract = /<SummarySelectorMetric[\s\S]*?Icon=\{IconLanguage\}[\s\S]*?label=\{t\('language'\)\}[\s\S]*?value=\{locale\}[\s\S]*?onChange=\{setLocale\}[\s\S]*?menuClassName="trip-summary__selector-menu--language"/;
+
 test('legacy header icon injection is no longer loaded', async () => {
   const html = await read('index.html');
   const main = await read('src/main.jsx');
@@ -24,6 +27,7 @@ test('desktop navigation keeps canonical icons while currency and language stay 
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
   const header = await read('src/app/TripSummaryHeader.jsx');
+  const selector = await read('src/app/SummarySelectorMetric.jsx');
   const topbar = await read('src/app/AppTopbar.jsx');
   const navigation = `${editor}\n${menu}`;
   const iconCss = await read('src/app/EditorNavigationIcons.css');
@@ -36,10 +40,11 @@ test('desktop navigation keeps canonical icons while currency and language stay 
   assert.doesNotMatch(menu, /setCurrency|editor-module__currency-options/);
   assert.doesNotMatch(menu, /IconLanguage|t\('language'\)|setLocale/);
   assert.match(header, /const CURRENCIES = \['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'\]/);
-  assert.match(header, /setCurrency\(event\.target\.value\)/);
-  assert.match(header, /<IconLanguage size=\{18\} \/>/);
-  assert.match(header, /setLocale\(event\.target\.value\)/);
-  assert.match(header, /t\('language'\)/);
+  assert.match(header, currencySelectorContract);
+  assert.match(header, languageSelectorContract);
+  assert.match(selector, /role="listbox"/);
+  assert.match(selector, /aria-selected=\{active\}/);
+  assert.doesNotMatch(selector, /<select\b|<option\b/);
   assert.doesNotMatch(topbar, /IconLanguage|t\('language'\)|setLocale\(availableLocale\)/);
   assert.match(topbar, /className="topbar__save"/);
   assert.doesNotMatch(iconCss, /icons\/moneda\.svg/);
@@ -111,9 +116,8 @@ test('workspace menu exposes saved-trip actions without reclaiming trip currency
   assert.match(menu, /savedTrips/);
   assert.match(menu, /resetTrip/);
   assert.doesNotMatch(menu, /t\('language'\)|setLocale|editor-module__currency-options|setCurrency/);
-  assert.match(header, /t\('language'\)/);
-  assert.match(header, /setLocale\(event\.target\.value\)/);
-  assert.match(header, /setCurrency\(event\.target\.value\)/);
+  assert.match(header, languageSelectorContract);
+  assert.match(header, currencySelectorContract);
 });
 
 test('places uses a self-contained transparent signpost icon in the Atlas palette', async () => {

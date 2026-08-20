@@ -64,6 +64,7 @@ function calendarDays(month, weekStartsOnMonday) {
 export function CalendarDateInput({
   value,
   min,
+  max,
   locale = 'es-MX',
   onChange,
   ariaLabel,
@@ -74,9 +75,10 @@ export function CalendarDateInput({
   const popupId = useId();
   const selectedDate = useMemo(() => parseIsoDate(value), [value]);
   const minDate = useMemo(() => parseIsoDate(min), [min]);
+  const maxDate = useMemo(() => parseIsoDate(max), [max]);
   const [open, setOpen] = useState(false);
   const [viewMonth, setViewMonth] = useState(() =>
-    startOfMonth(selectedDate || minDate || new Date())
+    startOfMonth(selectedDate || minDate || maxDate || new Date())
   );
   const isEnglish = locale.toLowerCase().startsWith('en');
   const weekStartsOnMonday = !isEnglish;
@@ -102,8 +104,8 @@ export function CalendarDateInput({
 
   useEffect(() => {
     if (!open) return;
-    setViewMonth(startOfMonth(selectedDate || minDate || new Date()));
-  }, [open, selectedDate, minDate]);
+    setViewMonth(startOfMonth(selectedDate || minDate || maxDate || new Date()));
+  }, [open, selectedDate, minDate, maxDate]);
 
   const monthLabel = capitalize(
     new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(viewMonth)
@@ -138,6 +140,7 @@ export function CalendarDateInput({
 
   const placeholder = t('datePlaceholder');
   const previousMonth = addMonths(viewMonth, -1);
+  const nextMonth = addMonths(viewMonth, 1);
   const previousMonthEnd = new Date(
     previousMonth.getFullYear(),
     previousMonth.getMonth() + 1,
@@ -146,9 +149,13 @@ export function CalendarDateInput({
   const previousDisabled = Boolean(
     minDate && startOfDay(previousMonthEnd) < startOfDay(minDate)
   );
+  const nextDisabled = Boolean(
+    maxDate && startOfDay(nextMonth) > startOfDay(maxDate)
+  );
 
   function selectDate(date) {
     if (minDate && startOfDay(date) < startOfDay(minDate)) return;
+    if (maxDate && startOfDay(date) > startOfDay(maxDate)) return;
     onChange(toIsoDate(date));
     setOpen(false);
   }
@@ -209,7 +216,8 @@ export function CalendarDateInput({
               type="button"
               className="calendar-date__month-button"
               aria-label={t('nextMonth')}
-              onClick={() => setViewMonth(addMonths(viewMonth, 1))}
+              disabled={nextDisabled}
+              onClick={() => setViewMonth(nextMonth)}
             >
               <IconChevronRight size={16} aria-hidden="true" />
             </button>
@@ -224,7 +232,8 @@ export function CalendarDateInput({
           <div className="calendar-date__days">
             {days.map((date) => {
               const disabled = Boolean(
-                minDate && startOfDay(date) < startOfDay(minDate)
+                (minDate && startOfDay(date) < startOfDay(minDate)) ||
+                (maxDate && startOfDay(date) > startOfDay(maxDate))
               );
               const outside = date.getMonth() !== viewMonth.getMonth();
               const selected = sameDay(date, selectedDate);
