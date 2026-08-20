@@ -10,6 +10,8 @@ import {
 
 const indexSource = readFileSync(resolve('functions/index.js'), 'utf8');
 const policySource = readFileSync(resolve('functions/callablePolicy.js'), 'utf8');
+const citySource = readFileSync(resolve('functions/geoapifyCityFunctions.js'), 'utf8');
+const countryPlaceIdsSource = readFileSync(resolve('functions/googleCountryPlaceIdsFunction.js'), 'utf8');
 
 test('manifest fija los 18 callables públicos en us-central1', () => {
   assert.equal(CALLABLE_FUNCTIONS_REGION, 'us-central1');
@@ -33,13 +35,27 @@ test('cada callable del manifest sigue exportado y definido con onCall + callabl
   }
 });
 
-test('política central usa booleano de entorno compatible con Functions v6 y replay protection apagado', () => {
+test('política central conserva default global, opt-out explícito por callable y replay protection apagado', () => {
   assert.match(policySource, /process\.env\.ENFORCE_APP_CHECK/);
   assert.match(policySource, /parseAppCheckEnforcementEnv/);
   assert.doesNotMatch(policySource, /defineBoolean/);
-  assert.match(policySource, /enforceAppCheck:\s*ENFORCE_APP_CHECK/);
+  assert.match(policySource, /Object\.hasOwn\(safeOverrides, 'enforceAppCheck'\)/);
+  assert.match(policySource, /safeOverrides\.enforceAppCheck === true/);
+  assert.match(policySource, /:\s*ENFORCE_APP_CHECK;/);
+  assert.match(policySource, /\benforceAppCheck,/);
   assert.match(policySource, /consumeAppCheckToken:\s*false/);
   assert.doesNotMatch(policySource, /consumeAppCheckToken:\s*true/);
+});
+
+test('callables públicos usados desde localhost conservan opt-out explícito de App Check', () => {
+  assert.match(
+    citySource,
+    /geoapifyCityAutocomplete = onCall\([\s\S]*?callableOptions\(\{[\s\S]*?enforceAppCheck:\s*false[\s\S]*?\}\)/
+  );
+  assert.match(
+    countryPlaceIdsSource,
+    /googleCountryPlaceIds = onCall\([\s\S]*?callableOptions\(\{[\s\S]*?enforceAppCheck:\s*false[\s\S]*?\}\)/
+  );
 });
 
 test('probe HTTP de resiliencia queda explícitamente fuera del manifest callable', () => {

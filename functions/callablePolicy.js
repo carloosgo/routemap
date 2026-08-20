@@ -60,12 +60,15 @@ function requestPrincipal(request) {
 
 export function callableOptions(overrides = {}) {
   const safeOverrides = { ...overrides };
+  const enforceAppCheck = Object.hasOwn(safeOverrides, 'enforceAppCheck')
+    ? safeOverrides.enforceAppCheck === true
+    : ENFORCE_APP_CHECK;
   delete safeOverrides.enforceAppCheck;
   delete safeOverrides.consumeAppCheckToken;
   return {
     ...BASE_CALLABLE_OPTIONS,
     ...safeOverrides,
-    enforceAppCheck: ENFORCE_APP_CHECK,
+    enforceAppCheck,
     consumeAppCheckToken: false,
   };
 }
