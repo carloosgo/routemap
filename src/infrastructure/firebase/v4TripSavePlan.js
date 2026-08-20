@@ -59,6 +59,7 @@ function rootPayload(trip) {
     id: trip.id,
     name: trip.name,
     currency: trip.currency,
+    originDetails: trip.originDetails || null,
   };
 }
 
@@ -90,6 +91,7 @@ function rootIntent({ userId, trip, remoteRoot }) {
     id: remoteRoot.id || trip.id,
     name: remoteRoot.name,
     currency: remoteRoot.currency,
+    originDetails: remoteRoot.originDetails || null,
   });
   if (samePayload(current, desired)) return null;
 
@@ -120,7 +122,7 @@ function childIntentsForCollection({
   const intents = [];
 
   desiredItems.forEach((item, index) => {
-    const entityId = requiredText(item.id, `${entityType}.id`);
+    const entityId = requiredText(item?.id, `${entityType}.id`);
     desiredIds.add(entityId);
     const rank = initialRankForPosition(index);
     const payload = v4EntityPayload(entityType, item, rank);
