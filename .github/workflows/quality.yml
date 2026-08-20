@@ -37,8 +37,14 @@ jobs:
               exit 1
             fi
 
-            if ! grep -q '^Visual delta: none$' DESIGN_PRESERVATION.md; then
-              echo "DESIGN_PRESERVATION.md must declare: Visual delta: none"
+            if ! grep -Eq '^Visual delta: (none|requested)$' DESIGN_PRESERVATION.md; then
+              echo "DESIGN_PRESERVATION.md must declare: Visual delta: none|requested"
+              exit 1
+            fi
+
+            if grep -q '^Visual delta: requested$' DESIGN_PRESERVATION.md \
+              && ! grep -q '^Requested visual scope:' DESIGN_PRESERVATION.md; then
+              echo "Requested visual deltas must declare: Requested visual scope: ..."
               exit 1
             fi
           fi
