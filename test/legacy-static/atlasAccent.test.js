@@ -107,7 +107,8 @@ test('expanded expense editor keeps unified concept sizing, city guide alignment
   assert.match(expenses, /\.moneycard__label,[\s\S]*\.moneycard__typeinput\s*\{[\s\S]*font-size:\s*13px;/);
   assert.match(expenses, /\.expenses__add-other\s*\{[\s\S]*font-size:\s*13px;/);
   assert.match(expenses, /\.expenses__add-other-icon\s*\{[\s\S]*font-size:\s*15px;/);
-  assert.match(expenses, /@media \(min-width:\s*721px\)[\s\S]*\.expenses--journey\s*\{[\s\S]*margin-left:\s*-6px;/);
+  assert.match(expenses, /\.moneycard\s*\{[\s\S]*padding:\s*0 0 0 8px;/);
+  assert.match(expenses, /\.expenses__add-other\s*\{[\s\S]*padding:\s*0 0 0 8px;/);
   assert.match(expenses, /\.calendar-date__trigger,[\s\S]*border:\s*0\s*!important;[\s\S]*box-shadow:\s*none\s*!important;/);
   assert.match(expenses, /\.moneycard:focus-within \.moneycard__amount\s*\{[\s\S]*border:\s*0;[\s\S]*box-shadow:\s*none;/);
   assert.match(expenses, /\.moneycard__input:focus,[\s\S]*border:\s*0\s*!important;[\s\S]*outline:\s*none;/);
