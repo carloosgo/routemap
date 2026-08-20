@@ -16,6 +16,7 @@ export function v4TripListEntry(id, summary = {}) {
     id,
     name: typeof summary.name === 'string' ? summary.name : '',
     currency: typeof summary.currency === 'string' ? summary.currency : 'USD',
+    originDetails: summary.originDetails || null,
     schemaVersion: 4,
     status: summary.status === 'deleted' ? 'deleted' : 'active',
     version: Number(summary.version) || 0,
