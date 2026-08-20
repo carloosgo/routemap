@@ -21,12 +21,13 @@ test('Phase K E2E rules preservan v3 y agregan v4 solo con prefijo sintetico', a
   assert.ok(composed.includes("data.schemaVersion == 4"));
   assert.ok(composed.includes('function phaseKOwnsProbeTrip(userId, tripId)'));
   assert.ok(composed.includes("tripId.matches('^phase-k-e2e-[a-z0-9_-]{8,80}$')"));
-  assert.ok(composed.includes('allow delete: if phaseKOwnsProbeTrip(userId, tripId);'));
+  assert.ok(composed.includes('allow delete: if false;'));
+  assert.ok(!composed.includes('allow delete: if phaseKOwnsProbeTrip(userId, tripId);'));
   assert.ok(composed.includes('phaseKValidClientTripCreate'));
   assert.ok(composed.includes('phaseKValidEntityUpdate'));
 });
 
-test('bloque v4 temporal no conserva grants por ownsUserPath sin el guard del probe', async () => {
+test('bloque v4 temporal limita writes al probe y conserva deletes server-authoritative', async () => {
   const [v3, v4] = await Promise.all([
     readFile(v3Path, 'utf8'),
     readFile(v4Path, 'utf8'),
@@ -39,7 +40,8 @@ test('bloque v4 temporal no conserva grants por ownsUserPath sin el guard del pr
 
   assert.ok(scoped.includes('phaseKOwnsProbeTrip(userId, tripId)'));
   assert.ok(!scoped.includes('phaseKOwnsUserPath(userId)'));
-  assert.ok(!scoped.includes('allow delete: if false;'));
+  assert.ok(scoped.includes('allow delete: if false;'));
+  assert.ok(!scoped.includes('allow delete: if phaseKOwnsProbeTrip(userId, tripId);'));
 });
 
 test('compositor falla cerrado si cambian los puntos estructurales de las rules', () => {
