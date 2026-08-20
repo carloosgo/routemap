@@ -20,6 +20,13 @@ function sampleTrip() {
     ...trip,
     id: 'trip-europe',
     currency: 'EUR',
+    originDetails: {
+      departureDate: '2026-12-01',
+      expenses: {
+        ...trip.originDetails.expenses,
+        lodging: 80,
+      },
+    },
     segments: [
       createSegment({
         id: 'segment-1',
@@ -44,7 +51,7 @@ function sampleTrip() {
   };
 }
 
-test('el documento principal contiene solo metadatos y conteos', () => {
+test('el documento principal contiene metadatos, origen y conteos sin colecciones embebidas', () => {
   const payload = createTripRevisionPayload(
     sampleTrip(),
     'revision0001',
@@ -54,6 +61,8 @@ test('el documento principal contiene solo metadatos y conteos', () => {
   assert.equal(payload.summary.storageVersion, TRIP_STORAGE_VERSION);
   assert.equal(payload.summary.placeOrderVersion, PLACE_ORDER_VERSION);
   assert.equal(payload.summary.activeRevision, 'revision0001');
+  assert.equal(payload.summary.originDetails.departureDate, '2026-12-01');
+  assert.equal(payload.summary.originDetails.expenses.lodging, 80);
   assert.equal(payload.summary.segmentCount, 1);
   assert.equal(payload.summary.placeCount, 1);
   assert.equal(payload.summary.noteCount, 1);
@@ -75,7 +84,7 @@ test('cada colección conserva posición y el tramo no duplica lugares', () => {
   assert.equal(payload.collections.checklist[0].position, 0);
 });
 
-test('hidratar una revisión restaura el viaje completo y su orden', () => {
+test('hidratar una revisión restaura el viaje completo, origen y su orden', () => {
   const payload = createTripRevisionPayload(sampleTrip(), 'revision0003');
   const shuffled = {
     ...payload.collections,
@@ -86,6 +95,8 @@ test('hidratar una revisión restaura el viaje completo y su orden', () => {
 
   assert.equal(hydrated.id, 'trip-europe');
   assert.equal(hydrated.placeOrderVersion, PLACE_ORDER_VERSION);
+  assert.equal(hydrated.originDetails.departureDate, '2026-12-01');
+  assert.equal(hydrated.originDetails.expenses.lodging, 80);
   assert.equal(hydrated.segments[0].id, 'segment-1');
   assert.equal(Object.hasOwn(hydrated.segments[0], 'route'), false);
   assert.equal(hydrated.places[0].id, 'place-1');
@@ -102,6 +113,7 @@ test('la lista usa resúmenes ligeros sin hidratar el contenido', () => {
   assert.equal(entry.segmentCount, 1);
   assert.equal(entry.placeCount, 1);
   assert.equal(Object.hasOwn(entry, 'segments'), false);
+  assert.equal(Object.hasOwn(entry, 'originDetails'), false);
 });
 
 test('se rechazan identificadores de revisión inseguros', () => {
