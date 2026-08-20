@@ -12,6 +12,7 @@ import './app/WorkspaceMenuMapPolish.css';
 import './app/ItinerarySidebar.css';
 import './app/ItineraryTripHeader.css';
 import './app/TripSummaryHeader.css';
+import './app/TripWorkspaceHeaderLayout.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <I18nProvider>
