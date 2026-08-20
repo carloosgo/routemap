@@ -1,6 +1,6 @@
 import {
   IconCloudUpload,
-  IconLanguage,
+  IconDeviceFloppy,
   IconLogin2,
   IconLogout,
   IconMap2,
@@ -12,14 +12,12 @@ export function AppTopbar({
   t,
   openMenu,
   setOpenMenu,
+  handleSave,
   authUser,
   authLoading,
   onGoogleSignIn,
   onSignOut,
   onImportLocalTrips,
-  locale,
-  setLocale,
-  availableLocales,
 }) {
   const accountLabel = authLoading
     ? t('loading')
@@ -92,27 +90,19 @@ export function AppTopbar({
                 {t('continueWithGoogle')}
               </button>
             )}
-
-            <div className="dropdown__label topbar__language-label">
-              <IconLanguage size={15} aria-hidden="true" /> {t('language')}
-            </div>
-            {availableLocales.map((availableLocale) => (
-              <button
-                type="button"
-                key={availableLocale}
-                className={'dropdown__opt' + (availableLocale === locale ? ' is-active' : '')}
-                onClick={() => {
-                  setLocale(availableLocale);
-                  setOpenMenu(null);
-                }}
-                role="menuitem"
-              >
-                {availableLocale.toUpperCase()}
-              </button>
-            ))}
           </div>
         )}
       </div>
+
+      <button
+        type="button"
+        className="topbar__save"
+        onClick={handleSave}
+        aria-label={t('saveTrip')}
+        title={t('saveTrip')}
+      >
+        <IconDeviceFloppy size={22} aria-hidden="true" />
+      </button>
     </header>
   );
 }
