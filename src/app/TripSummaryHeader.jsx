@@ -12,7 +12,6 @@ import {
   IconMoon,
   IconPlane,
   IconRoute,
-  IconTicket,
   IconToolsKitchen2,
   IconTrain,
   IconWallet,
@@ -27,10 +26,9 @@ const BREAKDOWN_CATS = [
   { key: 'plane', labelKey: 'flights', Icon: IconPlane, color: '#e2725b' },
   { key: 'train', labelKey: 'train', Icon: IconTrain, color: '#4f6df5' },
   { key: 'bus', labelKey: 'bus', Icon: IconBus, color: '#e08a17' },
-  { key: 'taxiUber', labelKey: 'carTaxi', Icon: IconCar, color: '#5a8f3c' },
+  { key: 'taxiUber', labelKey: 'taxi', Icon: IconCar, color: '#5a8f3c' },
   { key: 'lodging', labelKey: 'lodging', Icon: IconBed, color: '#d4a017' },
-  { key: 'food', labelKey: 'meals', Icon: IconToolsKitchen2, color: '#2aa866' },
-  { key: 'attractions', labelKey: 'attractions', Icon: IconTicket, color: '#9b59b6' },
+  { key: 'food', labelKey: 'food', Icon: IconToolsKitchen2, color: '#2aa866' },
   { key: 'others', labelKey: 'others', Icon: IconDots, color: '#9499ab' },
 ];
 
