@@ -77,3 +77,13 @@ test('plane becoming the dominant transport invalidates route styling only when 
   );
   assert.equal(itineraryMapProjection([edited])[0].expenses.transport.plane, 1);
 });
+
+test('empty city coordinates never become a synthetic 0,0 location', () => {
+  const segment = sampleSegment();
+  segment.destination.lat = null;
+  segment.destination.lon = '';
+
+  const [projected] = itineraryMapProjection([segment]);
+  assert.equal(projected.destination.lat, null);
+  assert.equal(projected.destination.lon, null);
+});
