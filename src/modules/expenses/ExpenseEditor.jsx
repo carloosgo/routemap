@@ -1,6 +1,11 @@
+import { MoneyCard } from '../../components/MoneyInput.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
 import { formatMoney } from '../../shared/utils.js';
-import { expensesTotal } from './expenseModel.js';
+import {
+  expensesTotal,
+  foodTotal,
+  lineItemsTotal,
+} from './expenseModel.js';
 import { EXPENSE_ICONS, transportOtherIcon } from './expenseEditorCatalog.jsx';
 import {
   appendExpenseItem,
@@ -8,19 +13,33 @@ import {
   patchFood,
   patchTransport,
   removeExpenseItem,
+  setExpenseItemsTotal,
   updateExpenseItem,
-  usesDetailedFood,
 } from './expenseEditorOperations.js';
 import { ExpenseLineItemsGrid } from './ExpenseLineItemsGrid.jsx';
 import { FixedExpenseCards } from './FixedExpenseCards.jsx';
+import './ExpenseEditor.css';
+
+function CategoryMoneyCard({ definition, label, value, onChange, className = '' }) {
+  return (
+    <div className={className}>
+      <MoneyCard
+        icon={definition.icon}
+        iconBg={definition.bg}
+        iconColor={definition.color}
+        label={label}
+        value={value}
+        onChange={onChange}
+      />
+    </div>
+  );
+}
 
 export function ExpenseEditor({ expenses, currency, locale, onChange }) {
   const { t } = useTranslation();
-  const detailedFood = usesDetailedFood(expenses);
 
   const apply = (nextExpenses) => onChange(nextExpenses);
   const onPatch = (part) => apply(patchExpenses(expenses, part));
-  const onSetFood = (part) => apply(patchFood(expenses, part));
   const onSetTransport = (mode, amount) =>
     apply(patchTransport(expenses, mode, amount));
   const onAddItem = (key) => apply(appendExpenseItem(expenses, key));
@@ -28,67 +47,61 @@ export function ExpenseEditor({ expenses, currency, locale, onChange }) {
     apply(updateExpenseItem(expenses, key, id, field, value));
   const onRemoveItem = (key, id) => apply(removeExpenseItem(expenses, key, id));
 
-  return (
-    <div className="expenses">
-      <div className="expenses__toggle">
-        <span className="expenses__togglelabel">{t('food')}:</span>
-        <div className="toggle">
-          <button
-            type="button"
-            className={'toggle__btn' + (!detailedFood ? ' is-active' : '')}
-            onClick={() => onSetFood({ mode: 'single' })}
-          >
-            {t('foodSingle')}
-          </button>
-          <button
-            type="button"
-            className={'toggle__btn' + (detailedFood ? ' is-active' : '')}
-            onClick={() => onSetFood({ mode: 'detailed' })}
-          >
-            {t('foodDetailed')}
-          </button>
-        </div>
-      </div>
+  const legacyFoodTotal = foodTotal(expenses.food);
+  const attractionsTotal = lineItemsTotal(expenses.attractions);
 
+  return (
+    <div className="expenses expenses--journey">
       <FixedExpenseCards
         expenses={expenses}
-        detailedFood={detailedFood}
         t={t}
         onPatch={onPatch}
-        onSetFood={onSetFood}
         onSetTransport={onSetTransport}
       />
 
+      {legacyFoodTotal > 0 && (
+        <CategoryMoneyCard
+          className="expenses__legacy-food"
+          definition={EXPENSE_ICONS.food}
+          label={t('food')}
+          value={legacyFoodTotal}
+          onChange={(value) =>
+            apply(
+              patchFood(expenses, {
+                mode: 'single',
+                single: value,
+                breakfast: 0,
+                lunch: 0,
+                dinner: 0,
+              })
+            )
+          }
+        />
+      )}
+
+      <CategoryMoneyCard
+        definition={EXPENSE_ICONS.attraction}
+        label={t('attractions')}
+        value={attractionsTotal}
+        onChange={(value) => apply(setExpenseItemsTotal(expenses, 'attractions', value))}
+      />
+
       <ExpenseLineItemsGrid
-        title={t('otherTransport')}
         items={expenses.transportOthers}
         getIcon={transportOtherIcon}
-        typePlaceholder={t('itemTypePlaceholder')}
-        addLabel={t('addItem')}
+        typePlaceholder={t('otherTransportPlaceholder')}
         removeLabel={t('delete')}
-        onAdd={() => onAddItem('transportOthers')}
         onUpdate={(id, field, value) =>
           onUpdateItem('transportOthers', id, field, value)
         }
         onRemove={(id) => onRemoveItem('transportOthers', id)}
       />
+
       <ExpenseLineItemsGrid
-        title={t('attractions')}
-        items={expenses.attractions}
-        getIcon={() => EXPENSE_ICONS.attraction}
-        typePlaceholder={t('itemTypePlaceholder')}
-        addLabel={t('addItem')}
-        removeLabel={t('delete')}
-        onAdd={() => onAddItem('attractions')}
-        onUpdate={(id, field, value) => onUpdateItem('attractions', id, field, value)}
-        onRemove={(id) => onRemoveItem('attractions', id)}
-      />
-      <ExpenseLineItemsGrid
-        title={t('otherExpenses')}
         items={expenses.others}
         getIcon={() => EXPENSE_ICONS.other}
-        typePlaceholder={t('itemTypePlaceholder')}
-        addLabel={t('addItem')}
+        typePlaceholder={t('otherExpensePlaceholder')}
+        addLabel={t('otherExpenses')}
         removeLabel={t('delete')}
         onAdd={() => onAddItem('others')}
         onUpdate={(id, field, value) => onUpdateItem('others', id, field, value)}
