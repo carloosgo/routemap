@@ -165,7 +165,7 @@ test('viaje existente genera solo update/delete/restore necesarios y conserva ve
   assert.equal(restored.payload.text, 'texto nuevo');
 });
 
-test('originDetails participa en el root y migra roots antiguos sin crear otra entidad', () => {
+test('originDetails participa en el root y roots antiguos vacíos no fuerzan una escritura', () => {
   const desiredOrigin = originDetails({
     departureDate: '2026-12-01',
     expenses: { ...createExpenses(), lodging: 95 },
@@ -182,13 +182,20 @@ test('originDetails participa en el root y migra roots antiguos sin crear otra e
 
   const legacyRoot = remoteRoot({ version: 6 });
   delete legacyRoot.originDetails;
-  const migration = planV4TripSave({
+  const unchangedLegacy = planV4TripSave({
     uid: 'alice',
     rawTrip: trip(),
     remoteRoot: legacyRoot,
   });
-  assert.equal(migration.rootIntent.serverVersion, 6);
-  assert.deepEqual(migration.rootIntent.payload.originDetails, originDetails());
+  assert.equal(unchangedLegacy.rootIntent, null);
+
+  const changedLegacy = planV4TripSave({
+    uid: 'alice',
+    rawTrip: trip({ originDetails: desiredOrigin }),
+    remoteRoot: legacyRoot,
+  });
+  assert.equal(changedLegacy.rootIntent.serverVersion, 6);
+  assert.deepEqual(changedLegacy.rootIntent.payload.originDetails, desiredOrigin);
 });
 
 test('sin cambios remotos el planner no inventa mutaciones', () => {
