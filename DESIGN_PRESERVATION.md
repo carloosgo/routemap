@@ -1,7 +1,7 @@
 # Contrato de preservación visual
 
 Visual delta: requested
-Requested visual scope: selectores de moneda/idioma del header global y contenido expandido de cada trayecto, incluyendo validación de fechas, alineación exacta de conceptos con la ciudad, rejilla de dos conceptos por línea, ritmo vertical unificado, fechas a ancho completo de columna con gris tenue, importes transparentes con ancho suficiente, formato numérico de montos, eliminación del total por trayecto y reducción vertical del header global, solicitado explícitamente por el product owner
+Requested visual scope: selectores de moneda/idioma del header global y contenido expandido de cada trayecto, incluyendo validación de fechas, alineación exacta de conceptos con la ciudad, rejilla de dos conceptos por línea, ritmo vertical unificado, fechas a ancho completo de columna con gris tenue, importes transparentes con ancho suficiente, formato numérico de montos, eliminación del total por trayecto, reducción vertical del header global y nuevo origen expandible con fecha de salida y gastos reutilizando la geometría del formulario de trayecto, solicitado explícitamente por el product owner
 
 La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atlas debe permanecer intacto. Los controles añadidos reutilizan componentes, dimensiones, espaciados, iconografía y estados ya existentes. Los cambios visuales enumerados abajo fueron solicitados y aprobados explícitamente para el mapa y el editor del itinerario.
 
@@ -38,6 +38,8 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Etiquetas de métricas de trayecto: `Noches` conserva texto `#535353` sobre fondo `#F1F1F1`; `Costo` conserva fondo `var(--atlas-accent)` con texto `#FFFFFF`. Ambas mantienen el borde suave incorporado como refinamiento visual.
 - Barra lateral del editor: se elimina el borde derecho y su sombra divisoria; la separación entre opciones internas se conserva.
 - Ciudad origen: en escritorio el campo se acorta para terminar aproximadamente en la misma guía vertical que el final de la primera fecha `dd/mm` de los trayectos.
+- Origen expandible: únicamente el primer origen del itinerario incorpora un chevron de expansión. Al abrirlo aparece una fecha de salida de una sola columna y el mismo editor visual de gastos usado por los trayectos; no se duplica la ciudad, no se crea una tarjeta visual paralela y el bloque mantiene las guías horizontales del timeline. Sus valores viven en `trip.originDetails`, no en un segmento artificial.
+- Gastos del origen: reutilizan las mismas filas, iconografía, campos monetarios, formato y `Otros gastos` del editor existente. Participan en el `Total del viaje` y su desglose, pero no añaden un total independiente al pie del origen ni modifican el mapa.
 - Selector `KM / MI`: reutiliza `topmenu`, `topitem`, `dropdown` y `dropdown__opt`.
 - Instalación PWA: reutiliza `topitem` y solo aparece cuando el navegador emite `beforeinstallprompt`.
 - Búsqueda de lugares: conserva los componentes visuales existentes; la sugerencia seleccionada ahora se enfoca directamente y la confirmación permanece anclada a su marcador.
@@ -56,6 +58,7 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Los nombres de moneda e idioma se generan localmente con `Intl.DisplayNames`; abrir los dropdowns no realiza solicitudes de red.
 - La distancia se calcula en memoria sobre los trayectos existentes y su complejidad es lineal respecto al número de trayectos.
 - El formulario de gastos reutiliza el objeto `segment.expenses`; reordenar la presentación, agrupar conceptos en dos columnas, alinear sus controles, formatear visualmente un monto o agregar una fila de `others` no introduce llamadas de red, provider requests ni escrituras fuera del autosave/sync incremental ya existente.
+- El origen expandible reutiliza `ExpenseEditor` y el flujo de autosave/sync ya existente. La edición de `originDetails` se coalesce en la misma intención de metadata del root v4; no crea una colección, writer o temporizador de persistencia paralelo.
 - La sanitización y el separador de miles de los montos son funciones locales deterministas; el callback de dominio sigue recibiendo `number`, por lo que Storage v4, Rules y los contratos de expenses no cambian.
 - La validación de rango de fechas es local y determinista; no agrega persistencia, migraciones ni llamadas a servicios.
 - La proyección enviada al mapa contiene únicamente campos que afectan su representación: ciudades y si el avión es el transporte dominante para el estilo discontinuo. Cambiar fechas, hospedaje, atracciones o importes que no alteran ese estilo conserva la misma referencia proyectada y evita desmontar/recrear marcadores, rutas y landmarks; por tanto la edición del formulario no provoca pestañeo del mapa.
