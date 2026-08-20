@@ -2,6 +2,7 @@ import { IconChevronDown } from '@tabler/icons-react';
 import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
 import { flagImageUrl } from '../flags/flags.js';
+import './OriginOptions.css';
 
 export function ItineraryOrigin({ city, expanded, bodyId, onSelect, onToggle }) {
   const { t } = useTranslation();
