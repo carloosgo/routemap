@@ -39,7 +39,7 @@ export function useAppEditorState(tripStore) {
   return {
     total,
     hasCosts: total > 0,
-    breakdown: tripBreakdown(trip.segments),
+    breakdown: tripBreakdown(trip),
     checklist,
     doneCount: checklist.filter((item) => item.done).length,
     notes: trip.notes || [],
