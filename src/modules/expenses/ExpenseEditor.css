@@ -47,15 +47,6 @@
   min-width: 0;
 }
 
-/* En escritorio, la guía izquierda de conceptos coincide con el inicio del
-   nombre de ciudad del encabezado del trayecto. */
-@media (min-width: 721px) {
-  .expenses--journey {
-    width: calc(100% + 6px);
-    margin-left: -6px;
-  }
-}
-
 .expenses--journey .expenses__fixed-list,
 .expenses--journey .expenses__lineitems {
   display: flex;
@@ -64,9 +55,12 @@
   min-width: 0;
 }
 
+/* El body del trayecto comienza a 52 px y la columna de ciudad a 60 px.
+   Ocho píxeles de inset hacen coincidir exactamente iconos/conceptos con la
+   guía izquierda del nombre de ciudad, sin desplazar todo el body. */
 .expenses--journey .moneycard {
   min-height: 44px;
-  padding: 0;
+  padding: 0 0 0 8px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -206,11 +200,12 @@
   outline: none;
 }
 
-/* Otros gastos usa exactamente la misma escala que los conceptos fijos. */
+/* Otros gastos usa exactamente la misma escala y la misma guía izquierda que
+   los conceptos fijos. */
 .expenses--journey .expenses__add-other {
   min-height: 44px;
   width: 100%;
-  padding: 0;
+  padding: 0 0 0 8px;
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -253,7 +248,7 @@
   position: absolute;
   right: 104px;
   bottom: 0;
-  left: 36px;
+  left: 44px;
   height: 1px;
   background: rgba(226, 229, 233, 0.55);
 }
@@ -278,7 +273,7 @@
    vuelva a reducir texto/iconos ni a dibujar cajas de foco. */
 .floating-editor .segment__body .expenses--journey .moneycard {
   min-height: 44px;
-  padding: 0;
+  padding: 0 0 0 8px;
 }
 
 .floating-editor .segment__body .expenses--journey .moneycard__icon {
@@ -318,11 +313,6 @@
 @media (max-width: 720px) {
   .segment-expense-form .dates__row {
     gap: 10px;
-  }
-
-  .expenses--journey {
-    width: 100%;
-    margin-left: 0;
   }
 
   .expenses--journey .moneycard__amount {
