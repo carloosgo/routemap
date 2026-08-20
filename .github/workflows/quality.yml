@@ -82,7 +82,19 @@ jobs:
           retention-days: 3
 
       - name: Run unit tests
-        run: npm test
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee unit-test.log
+
+      - name: Upload unit test failure log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-log
+          path: unit-test.log
+          if-no-files-found: ignore
+          retention-days: 3
 
       - name: Audit and enforce test contracts
         run: npm run test:audit -- --json=test-audit.json --enforce-baseline
