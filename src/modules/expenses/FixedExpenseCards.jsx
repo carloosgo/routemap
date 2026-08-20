@@ -50,7 +50,7 @@ export function FixedExpenseCards({
       />
       <ExpenseMoneyCard
         definition={EXPENSE_ICONS.taxiUber}
-        label={t('taxiUber')}
+        label="Taxi"
         value={expenses.transport.taxiUber}
         onChange={(value) => onSetTransport('taxiUber', value)}
       />
