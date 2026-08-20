@@ -84,10 +84,6 @@ function scopeV4UsersBlock(usersBlock) {
     'phaseKOwnsUserPath(userId)',
     'phaseKOwnsProbeTrip(userId, tripId)'
   );
-  scoped = scoped.replaceAll(
-    'allow delete: if false;',
-    'allow delete: if phaseKOwnsProbeTrip(userId, tripId);'
-  );
   return scoped;
 }
 
