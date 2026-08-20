@@ -100,7 +100,7 @@ export function ExpenseEditor({ expenses, currency, locale, onChange }) {
       <ExpenseLineItemsGrid
         items={expenses.others}
         getIcon={() => EXPENSE_ICONS.other}
-        typePlaceholder={t('otherExpensePlaceholder')}
+        typePlaceholder={t('itemTypePlaceholder')}
         addLabel={t('otherExpenses')}
         removeLabel={t('delete')}
         onAdd={() => onAddItem('others')}
