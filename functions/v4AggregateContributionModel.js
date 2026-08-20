@@ -41,6 +41,14 @@ export function targetAggregateContribution({
       valueContribution: 0,
     };
   }
+  if (entityType === 'origin') {
+    return {
+      entityType,
+      version,
+      countContribution: 0,
+      valueContribution: isActive ? nonNegative(valueOf(after)) : 0,
+    };
+  }
   throw new TypeError('La entidad no participa en agregados v4.');
 }
 
