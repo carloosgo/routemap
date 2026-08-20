@@ -4,6 +4,7 @@ export {
   createChecklistItem,
   createCity,
   createNote,
+  createOriginDetails,
   createPlace,
   createSegment,
   createTrip,
