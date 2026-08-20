@@ -101,17 +101,27 @@ test('desktop navigation stays itinerary, routes and notes while the global head
   assert.match(header, languageSelectorContract);
 });
 
-test('expanded expense editor keeps unified concept sizing, city guide alignment and borderless capture controls', async () => {
+test('expanded expense editor keeps paired concepts, unified spacing and city guide alignment', async () => {
   const expenses = await read('src/modules/expenses/ExpenseEditor.css');
+  const fixed = await read('src/modules/expenses/FixedExpenseCards.jsx');
+  const editor = await read('src/modules/expenses/ExpenseEditor.jsx');
+
+  assert.match(expenses, /--expense-city-guide-inset:\s*12px/);
+  assert.match(expenses, /\.expenses__fixed-list,[\s\S]*\.expenses__lineitems\s*\{[\s\S]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(expenses, /padding-left:\s*var\(--expense-city-guide-inset\)/);
   assert.match(expenses, /\.moneycard__icon svg\s*\{[\s\S]*width:\s*15px;[\s\S]*height:\s*15px;/);
   assert.match(expenses, /\.moneycard__label,[\s\S]*\.moneycard__typeinput\s*\{[\s\S]*font-size:\s*13px;/);
-  assert.match(expenses, /\.expenses__add-other\s*\{[\s\S]*font-size:\s*13px;/);
-  assert.match(expenses, /\.expenses__add-other-icon\s*\{[\s\S]*font-size:\s*15px;/);
-  assert.match(expenses, /\.moneycard\s*\{[\s\S]*padding:\s*0 0 0 8px;/);
-  assert.match(expenses, /\.expenses__add-other\s*\{[\s\S]*padding:\s*0 0 0 8px;/);
+  assert.match(expenses, /\.expenses__add-other\s*\{[\s\S]*padding:\s*0 0 0 var\(--expense-city-guide-inset\);[\s\S]*font-size:\s*13px;/);
   assert.match(expenses, /\.calendar-date__trigger,[\s\S]*border:\s*0\s*!important;[\s\S]*box-shadow:\s*none\s*!important;/);
   assert.match(expenses, /\.moneycard:focus-within \.moneycard__amount\s*\{[\s\S]*border:\s*0;[\s\S]*box-shadow:\s*none;/);
   assert.match(expenses, /\.moneycard__input:focus,[\s\S]*border:\s*0\s*!important;[\s\S]*outline:\s*none;/);
+
+  assert.equal((fixed.match(/<ExpenseMoneyCard/g) || []).length, 6);
+  assert.match(fixed, /definition=\{EXPENSE_ICONS\.attraction\}/);
+  assert.match(fixed, /value=\{attractionsTotal\}/);
+  assert.match(fixed, /onChange=\{onSetAttractions\}/);
+  assert.match(editor, /onSetAttractions=\{\(value\) =>[\s\S]*setExpenseItemsTotal\(expenses, 'attractions', value\)/);
+  assert.doesNotMatch(editor, /<CategoryMoneyCard[\s\S]*definition=\{EXPENSE_ICONS\.attraction\}/);
 });
 
 test('place save popup hides its close icon and dismisses through outside clicks', async () => {
