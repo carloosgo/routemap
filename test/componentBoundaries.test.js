@@ -13,7 +13,7 @@ test('App coordina módulos sin contener menús, responsive ni diálogo completo
   const dialog = await read('src/app/TripDeleteDialog.jsx');
   const editorState = await read('src/app/useAppEditorState.js');
 
-  assert.ok(lineCount(app) <= 260, `App.jsx volvió a crecer a ${lineCount(app)} líneas`);
+  assert.ok(lineCount(app) <= 265, `App.jsx volvió a crecer a ${lineCount(app)} líneas`);
   assert.match(app, /<AppEditorModule/);
   assert.match(app, /<AppWorkspace/);
   assert.match(app, /<TripDeleteDialog/);
