@@ -22,6 +22,8 @@ export const TRIP_ACTIONS = Object.freeze({
   load: 'LOAD',
   rename: 'RENAME',
   setCurrency: 'SET_CURRENCY',
+  updateOriginDetails: 'UPDATE_ORIGIN_DETAILS',
+  updateOriginExpenses: 'UPDATE_ORIGIN_EXPENSES',
   addNote: 'ADD_NOTE',
   updateNote: 'UPDATE_NOTE',
   removeNote: 'REMOVE_NOTE',
@@ -71,6 +73,22 @@ export function tripReducer(state, action) {
 
     case TRIP_ACTIONS.setCurrency:
       return touch(state, { currency: action.currency });
+
+    case TRIP_ACTIONS.updateOriginDetails:
+      return touch(state, {
+        originDetails: {
+          ...state.originDetails,
+          ...action.patch,
+        },
+      });
+
+    case TRIP_ACTIONS.updateOriginExpenses:
+      return touch(state, {
+        originDetails: {
+          ...state.originDetails,
+          expenses: action.expenses,
+        },
+      });
 
     case TRIP_ACTIONS.addNote:
       return touch(state, {
