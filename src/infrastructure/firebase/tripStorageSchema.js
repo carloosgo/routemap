@@ -139,7 +139,6 @@ export function createVersionedTripListEntry(id, data) {
     id,
     name: typeof data.name === 'string' ? data.name : '',
     currency: typeof data.currency === 'string' ? data.currency : 'USD',
-    originDetails: data.originDetails || null,
     placeOrderVersion: Number(data.placeOrderVersion) || 0,
     createdAt: typeof data.createdAt === 'string' ? data.createdAt : '',
     updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : '',
