@@ -1,7 +1,7 @@
 # Contrato de preservación visual
 
 Visual delta: requested
-Requested visual scope: contenido expandido de cada trayecto, incluyendo fechas y editor de gastos, solicitado explícitamente por el product owner
+Requested visual scope: selectores de moneda/idioma del header global y contenido expandido de cada trayecto, incluyendo validación de fechas y editor de gastos, solicitado explícitamente por el product owner
 
 La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atlas debe permanecer intacto. Los controles añadidos reutilizan componentes, dimensiones, espaciados, iconografía y estados ya existentes. Los cambios visuales enumerados abajo fueron solicitados y aprobados explícitamente para el mapa y el editor del itinerario.
 
@@ -20,12 +20,15 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Header global del viaje: el nombre sale del módulo `Itinerario` y pasa a una franja persistente sobre todo el workspace. Sigue siendo un campo editable directo, sin icono de lápiz, y conserva 20 px como tamaño principal.
 - Identidad del viaje: debajo del nombre, dentro del mismo bloque del header, se muestra el rango global de fechas y el selector de moneda. Moneda es una preferencia del viaje y deja de vivir en el menú `Workspace`.
 - Métricas del header: en la misma fila del título se muestran `Destinos`, `Noches totales`, `Total del viaje` y `Distancia total`, cada una con icono y jerarquía compacta. El layout se comprime de forma progresiva y mantiene desplazamiento horizontal interno de métricas cuando el ancho no permite conservar todas las etiquetas completas.
+- Selectores de moneda e idioma: dejan de depender del desplegable nativo del sistema operativo y comparten un dropdown Atlas controlado, con el mismo radio, sombra, estados hover/focus, código, nombre localizado y marca de selección. El menú se renderiza por portal para no quedar recortado por el overflow responsive del header; no cambia la semántica de persistencia de moneda ni de preferencia global de idioma.
 - Total del viaje: deja de existir como bloque al final de los trayectos. Su valor vive en el header y, al pulsarlo, abre el mismo desglose por concepto, monto y porcentaje usando el `total` y `breakdown` canónicos de `useAppEditorState`.
 - Distancia total: se deriva localmente de las coordenadas canónicas de origen/destino mediante distancia geodésica; no genera llamadas nuevas a Google, Geoapify ni otros proveedores.
 - Idioma: sale del menú `Workspace` porque es una preferencia global de aplicación/usuario y pasa al menú global de cuenta. No se mezcla con preferencias específicas de un viaje.
 - Editor del itinerario: el espacio que antes ocupaba nombre/Guardar queda dedicado exclusivamente a trayectos y su contenido. `Guardar` vive al final de las métricas del header global.
 - Alineación responsive del itinerario: en escritorio la columna de ciudad absorbe el ancho disponible, mientras fechas, noches, costo y acciones conservan su geometría compacta. La última acción de cada trayecto y el contenido principal comparten la misma guía derecha, evitando espacio blanco sobrante en pantallas amplias.
 - Formulario expandido del trayecto: las fechas pasan a dos campos paralelos compactos sin etiqueta intermedia; los gastos se muestran como una lista vertical de `Hospedaje`, `Avión`, `Tren`, `Bus`, `Taxi / Uber` y `Atracciones`, conservando los iconos existentes pero sin fondos circulares. Los montos se agrupan en una columna visual estable a la derecha.
+- Validación de fechas del trayecto: el calendario de inicio usa la fecha fin como máximo y el calendario de fin usa la fecha inicio como mínimo. Además, `SegmentBody` valida el parche antes de enviarlo al modelo, de modo que la UI no puede dejar `startDate > endDate` aunque el control se invoque programáticamente.
+- Pulido visual de conceptos y montos: las etiquetas de concepto aumentan 3 px, los SVG de concepto aumentan 2 px, `Otros gastos` comparte exactamente la misma jerarquía tipográfica/iconográfica, se elimina el fondo gris al pasar el mouse por las filas y los campos de fecha/monto dejan de usar relleno gris. Los importes se muestran en negro y el símbolo monetario se aproxima a la cifra reduciendo el ancho interno del input sin alterar el valor persistido.
 - Otros gastos del trayecto: el botón `+ Otros gastos` vive al final de la lista. Cada clic crea una nueva fila editable inmediatamente debajo de `Atracciones`/gastos adicionales existentes y desplaza el botón hacia abajo. Los datos siguen usando las colecciones existentes de `expenses`; no se introduce una entidad ni un esquema paralelo.
 - Compatibilidad de gastos existentes: el selector `Gasto único / Por comida` deja de formar parte de la UI nueva. Si un viaje existente conserva un monto de alimentos, se muestra una única fila de compatibilidad para que nunca exista un costo oculto; al editarla se normaliza al modo simple sin alterar el contrato persistido.
 - Etiquetas de métricas de trayecto: `Noches` conserva texto `#535353` sobre fondo `#F1F1F1`; `Costo` conserva fondo `var(--atlas-accent)` con texto `#FFFFFF`. Ambas mantienen el borde suave incorporado como refinamiento visual.
@@ -46,8 +49,10 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 ## Rendimiento
 
 - El header reutiliza cálculos ya disponibles (`total` y `breakdown`) y memoriza el resumen derivado del viaje; no crea solicitudes de red nuevas.
+- Los nombres de moneda e idioma se generan localmente con `Intl.DisplayNames`; abrir los dropdowns no realiza solicitudes de red.
 - La distancia se calcula en memoria sobre los trayectos existentes y su complejidad es lineal respecto al número de trayectos.
 - El formulario de gastos reutiliza el objeto `segment.expenses`; reordenar la presentación o agregar una fila de `others` no introduce llamadas de red, provider requests ni escrituras fuera del autosave/sync incremental ya existente.
+- La validación de rango de fechas es local y determinista; no agrega persistencia, migraciones ni llamadas a servicios.
 - `Atracciones` se presenta como un monto agregado sin cambiar su representación canónica como lista: el helper de dominio ajusta el total preservando IDs/etiquetas existentes y, por tanto, no requiere cambios de Rules, Storage v4, migraciones ni Functions.
 - Se mantiene un único `AdvancedMarkerElement` por ciudad para puntos, inicio y final. Los landmarks no crean markers ni nodos DOM adicionales.
 - Todos los landmarks se dibujan como quads en una única `WebGLOverlayView`, compartiendo el contexto WebGL del mapa vectorial que expone Google Maps Platform.
