@@ -1,0 +1,54 @@
+/* Integración entre el resumen global y el workspace.
+   En desktop, la navegación lateral conserva los 82px completos desde arriba;
+   el header comienza exactamente en la guía del contenido del editor. */
+@media (min-width: 721px) {
+  .trip-summary {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 82px;
+    box-sizing: border-box;
+    width: auto;
+    height: 76px;
+    min-height: 76px;
+    padding-left: 8px;
+  }
+
+  .editor-module {
+    grid-template-rows: 76px minmax(0, 1fr);
+  }
+
+  .editor-module > .editor-module__tabs {
+    grid-row: 1 / -1;
+  }
+
+  .editor-module > :not(.editor-module__tabs) {
+    grid-row: 2;
+  }
+
+  /* Conserva la geometría histórica de los controles flotantes, desplazada
+     debajo del nuevo header para que sigan viviendo sobre el mapa. */
+  .topbar__save {
+    top: 90px;
+  }
+
+  .editor-module__workspace-anchor {
+    top: 136px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .trip-summary {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    box-sizing: border-box;
+    width: auto;
+  }
+
+  .workspace__mobile {
+    box-sizing: border-box;
+    padding-top: 68px;
+  }
+}
