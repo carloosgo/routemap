@@ -159,8 +159,10 @@ test('ExpenseEditor coordina vistas sin absorber catálogo ni mutaciones', async
 
   assert.doesNotMatch(operations, /from 'react'|@tabler\/icons-react/);
   assert.match(operations, /export function updateExpenseItem/);
+  assert.match(operations, /export function setExpenseItemsTotal/);
   assert.match(catalog, /export const EXPENSE_ICONS/);
   assert.match(catalog, /export function transportOtherIcon/);
-  assert.match(fixedCards, /className="expenses__grid"/);
+  assert.match(fixedCards, /className="expenses__fixed-list"/);
   assert.match(lineItems, /moneycard moneycard--lineitem/);
+  assert.match(lineItems, /expenses__add-other/);
 });
