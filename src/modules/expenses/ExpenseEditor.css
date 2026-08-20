@@ -148,6 +148,14 @@
   padding: 0;
 }
 
+.expenses--journey .moneycard--lineitem .moneycard__amount {
+  padding-right: 6px;
+}
+
+.expenses--journey .moneycard--lineitem .moneycard__input {
+  width: 48px;
+}
+
 .expenses--journey .moneycard__typeinput::placeholder {
   color: #a0a7b0;
   font-weight: 450;
@@ -155,9 +163,9 @@
 }
 
 .expenses--journey .moneycard__remove {
-  width: 22px;
-  height: 22px;
-  margin-right: -7px;
+  width: 18px;
+  height: 18px;
+  margin-right: -1px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -267,6 +275,14 @@
     width: 58px;
   }
 
+  .expenses--journey .moneycard--lineitem .moneycard__amount {
+    padding-right: 5px;
+  }
+
+  .expenses--journey .moneycard--lineitem .moneycard__input {
+    width: 42px;
+  }
+
   .expenses--journey .expenses__legacy-food::after {
     right: 106px;
   }
@@ -298,5 +314,9 @@
     width: 92px;
     min-width: 92px;
     height: 40px;
+  }
+
+  .expenses--journey .moneycard--lineitem .moneycard__input {
+    width: 36px;
   }
 }
