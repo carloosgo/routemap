@@ -1,6 +1,7 @@
 import { CalendarDateInput } from '../../components/CalendarDateInput.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
 import { ExpenseEditor } from '../expenses/ExpenseEditor.jsx';
+import './OriginOptions.css';
 
 export function OriginBody({
   details,
