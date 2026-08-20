@@ -101,25 +101,35 @@ test('desktop navigation stays itinerary, routes and notes while the global head
   assert.match(header, languageSelectorContract);
 });
 
-test('expanded expense editor keeps paired concepts on the city guide with one vertical rhythm', async () => {
+test('expanded expense editor keeps compact fields and one exact vertical rhythm', async () => {
   const expenses = await read('src/modules/expenses/ExpenseEditor.css');
   const fixed = await read('src/modules/expenses/FixedExpenseCards.jsx');
   const editor = await read('src/modules/expenses/ExpenseEditor.jsx');
   const lineItems = await read('src/modules/expenses/ExpenseLineItemsGrid.jsx');
   const catalog = await read('src/modules/expenses/expenseEditorCatalog.jsx');
+  const money = await read('src/components/MoneyInput.jsx');
+  const headerCss = await read('src/app/TripSummaryHeader.css');
 
   assert.match(expenses, /--expense-city-guide-inset:\s*0px/);
-  assert.match(expenses, /--expense-row-gap:\s*6px/);
-  assert.match(expenses, /--expense-text-color:\s*#4b5563/);
-  assert.match(expenses, /\.expenses__fixed-list,[\s\S]*\.expenses__lineitems\s*\{[\s\S]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)[\s\S]*row-gap:\s*var\(--expense-row-gap\)/);
-  assert.match(expenses, /\.moneycard__icon\s*\{[\s\S]*justify-content:\s*flex-start/);
-  assert.match(expenses, /\.moneycard__icon svg\s*\{[\s\S]*width:\s*15px;[\s\S]*height:\s*15px;/);
+  assert.match(expenses, /--expense-row-gap:\s*8px/);
+  assert.match(expenses, /--expense-icon-box:\s*18px/);
+  assert.match(expenses, /--expense-icon-text-gap:\s*4px/);
+  assert.match(expenses, /--expense-field-bg:\s*#f5f6f7/);
+  assert.match(expenses, /\.expenses__fixed-list,[\s\S]*\.expenses__lineitems\s*\{[\s\S]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)[\s\S]*grid-auto-rows:\s*44px[\s\S]*row-gap:\s*var\(--expense-row-gap\)/);
   assert.match(expenses, /\.lineitems-section\s*\{[\s\S]*gap:\s*var\(--expense-row-gap\);[\s\S]*padding-top:\s*var\(--expense-row-gap\);/);
-  assert.match(expenses, /\.expenses__add-other\s*\{[\s\S]*color:\s*var\(--expense-text-color\)/);
-  assert.match(expenses, /\.expenses__add-other-icon\s*\{[\s\S]*justify-content:\s*flex-start/);
-  assert.match(expenses, /\.calendar-date__trigger,[\s\S]*height:\s*38px;[\s\S]*transition:\s*none;/);
-  assert.match(expenses, /\.moneycard__input\s*\{[\s\S]*color:\s*var\(--expense-text-color\)/);
-  assert.match(lineItems, /<IconPlus size=\{15\} \/>/);
+  assert.match(expenses, /\.expenses__add-other\s*\{[\s\S]*height:\s*44px;[\s\S]*gap:\s*var\(--expense-icon-text-gap\)/);
+  assert.match(expenses, /\.calendar-date\s*\{[\s\S]*width:\s*140px;[\s\S]*height:\s*38px;/);
+  assert.match(expenses, /\.calendar-date__trigger,[\s\S]*background:\s*#f5f6f7;[\s\S]*transition:\s*none;/);
+  assert.match(expenses, /\.calendar-date__value,[\s\S]*position:\s*absolute;[\s\S]*transform:\s*translateY\(-50%\)/);
+  assert.match(expenses, /\.moneycard__amount\s*\{[\s\S]*background:\s*var\(--expense-field-bg\)/);
+  assert.match(fixed, /definition=\{EXPENSE_ICONS\.taxiUber\}[\s\S]*label="Taxi"/);
+  assert.doesNotMatch(editor, /expenses__total|segmentTotal|expensesTotal|formatMoney/);
+  assert.match(lineItems, /<MoneyAmountInput/);
+  assert.match(money, /export function MoneyAmountInput/);
+  assert.match(money, /type="text"/);
+  assert.match(money, /pattern="\[0-9,\]\*\(\[\.\]\[0-9\]\{0,2\}\)\?"/);
+  assert.match(headerCss, /\.trip-summary\s*\{[\s\S]*min-height:\s*63px/);
+  assert.match(headerCss, /\.trip-summary__metric\s*\{[\s\S]*height:\s*44px/);
 
   assert.match(catalog, /plane:[\s\S]*'#7c5ce7'/);
   assert.match(catalog, /train:[\s\S]*'#e05252'/);
