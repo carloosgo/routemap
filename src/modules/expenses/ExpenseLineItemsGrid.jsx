@@ -1,4 +1,4 @@
-import { IconX } from '@tabler/icons-react';
+import { IconPlus, IconX } from '@tabler/icons-react';
 
 export function ExpenseLineItemsGrid({
   title,
@@ -73,7 +73,9 @@ export function ExpenseLineItemsGrid({
 
       {onAdd && (
         <button type="button" className="expenses__add-other" onClick={onAdd}>
-          <span className="expenses__add-other-icon" aria-hidden="true">+</span>
+          <span className="expenses__add-other-icon" aria-hidden="true">
+            <IconPlus size={15} />
+          </span>
           <span>{addLabel}</span>
         </button>
       )}
