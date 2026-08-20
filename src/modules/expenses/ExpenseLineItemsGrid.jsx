@@ -1,4 +1,5 @@
 import { IconPlus, IconX } from '@tabler/icons-react';
+import { MoneyAmountInput } from '../../components/MoneyInput.jsx';
 
 export function ExpenseLineItemsGrid({
   title,
@@ -43,18 +44,9 @@ export function ExpenseLineItemsGrid({
                 />
                 <span className="moneycard__amount">
                   <span className="moneycard__currency">$</span>
-                  <input
-                    type="number"
-                    className="moneycard__input"
-                    min="0"
-                    step="0.01"
-                    inputMode="decimal"
-                    value={item.amount === 0 ? '' : item.amount}
-                    placeholder="0.00"
-                    onChange={(event) =>
-                      onUpdate(item.id, 'amount', Number(event.target.value) || 0)
-                    }
-                    onFocus={(event) => event.target.select()}
+                  <MoneyAmountInput
+                    value={item.amount}
+                    onChange={(amount) => onUpdate(item.id, 'amount', amount)}
                   />
                   <button
                     type="button"
