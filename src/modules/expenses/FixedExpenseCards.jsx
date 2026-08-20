@@ -16,9 +16,11 @@ function ExpenseMoneyCard({ definition, label, value, onChange }) {
 
 export function FixedExpenseCards({
   expenses,
+  attractionsTotal,
   t,
   onPatch,
   onSetTransport,
+  onSetAttractions,
 }) {
   return (
     <div className="expenses__fixed-list">
@@ -51,6 +53,12 @@ export function FixedExpenseCards({
         label={t('taxiUber')}
         value={expenses.transport.taxiUber}
         onChange={(value) => onSetTransport('taxiUber', value)}
+      />
+      <ExpenseMoneyCard
+        definition={EXPENSE_ICONS.attraction}
+        label={t('attractions')}
+        value={attractionsTotal}
+        onChange={onSetAttractions}
       />
     </div>
   );
