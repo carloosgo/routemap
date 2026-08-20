@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { segmentTotal } from './tripModel.js';
 import { ItineraryOrigin } from './ItineraryOrigin.jsx';
+import { OriginBody } from './OriginBody.jsx';
 import { SegmentBody } from './SegmentBody.jsx';
 import { SegmentDeleteDialog } from './SegmentDeleteDialog.jsx';
 import { SegmentHeader } from './SegmentHeader.jsx';
@@ -37,6 +38,7 @@ export function SegmentForm({
   index,
   currency,
   locale,
+  originDetails,
   expanded,
   dragging,
   dragOffsetY,
@@ -44,12 +46,16 @@ export function SegmentForm({
   onToggle,
   onUpdate,
   onUpdateExpenses,
+  onUpdateOriginDetails,
+  onUpdateOriginExpenses,
   onRemove,
   onOpenNote,
   onReorderPointerStart,
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [originExpanded, setOriginExpanded] = useState(false);
   const bodyId = `segment-body-${segment.id}`;
+  const originBodyId = `origin-body-${segment.id}`;
   const formattedAmount = formatSegmentAmount(segmentTotal(segment), locale);
   const formattedDates = formatSegmentDates(segment, locale);
   const formattedNights = formatSegmentNights(segment, locale);
@@ -62,10 +68,25 @@ export function SegmentForm({
   return (
     <>
       {index === 0 && (
-        <ItineraryOrigin
-          city={segment.origin}
-          onSelect={(origin) => onUpdate({ origin })}
-        />
+        <section className="itinerary-origin-section">
+          <ItineraryOrigin
+            city={segment.origin}
+            expanded={originExpanded}
+            bodyId={originBodyId}
+            onSelect={(origin) => onUpdate({ origin })}
+            onToggle={() => setOriginExpanded((value) => !value)}
+          />
+          {originExpanded && (
+            <OriginBody
+              details={originDetails}
+              currency={currency}
+              locale={locale}
+              bodyId={originBodyId}
+              onUpdate={onUpdateOriginDetails}
+              onUpdateExpenses={onUpdateOriginExpenses}
+            />
+          )}
+        </section>
       )}
 
       <article
