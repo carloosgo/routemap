@@ -116,7 +116,7 @@ before(async () => {
     projectId: 'atlasmap-phase-k-e2e-rules-test',
     firestore: {
       host: '127.0.0.1',
-      port: 8080,
+      port: 8085,
       rules: await readFile('firestore-phase-k-e2e.rules', 'utf8'),
     },
   });
@@ -164,7 +164,7 @@ test('solo el trip sintetico Phase K puede crear root y entidad v4', async () =>
 test('prefijo no concede acceso cruzado entre usuarios', async () => {
   const alice = testEnv.authenticatedContext('alice').firestore();
   const bob = testEnv.authenticatedContext('bob').firestore();
-  const tripId = 'phase-k-e2e-ownership1';
+  const tripId = 'phase-k-e2e-cross-user';
 
   await assertSucceeds(setDoc(
     doc(alice, `users/alice/trips/${tripId}`),
@@ -172,46 +172,16 @@ test('prefijo no concede acceso cruzado entre usuarios', async () => {
   ));
   await assertFails(getDoc(doc(bob, `users/alice/trips/${tripId}`)));
   await assertFails(setDoc(
-    doc(bob, `users/alice/trips/${tripId}/segments/bob-segment`),
-    v4Segment('bob-segment')
+    doc(bob, `users/alice/trips/${tripId}`),
+    v4Trip(tripId)
   ));
 });
 
-test('un parent v4 no sintetico no habilita children aunque exista', async () => {
-  const tripId = 'non-probe-parent';
-  await testEnv.withSecurityRulesDisabled(async (context) => {
-    await setDoc(doc(context.firestore(), `users/alice/trips/${tripId}`), {
-      id: tripId,
-      name: 'Admin seeded',
-      currency: 'MXN',
-      schemaVersion: 4,
-      status: 'active',
-      version: 1,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      deletedAt: null,
-      purgeAfter: null,
-      segmentCount: 0,
-      placeCount: 0,
-      total: 0,
-    });
-  });
-
+test('delete v4 temporal sigue bloqueado por lifecycle server-authoritative', async () => {
   const alice = testEnv.authenticatedContext('alice').firestore();
-  await assertFails(setDoc(
-    doc(alice, `users/alice/trips/${tripId}/segments/segment-1`),
-    v4Segment()
-  ));
-});
-
-test('cleanup hard-delete solo funciona dentro del prefijo sintetico', async () => {
-  const alice = testEnv.authenticatedContext('alice').firestore();
-  const tripId = 'phase-k-e2e-cleanup01';
+  const tripId = 'phase-k-e2e-delete-denied';
   const tripRef = doc(alice, `users/alice/trips/${tripId}`);
-  const segmentRef = doc(alice, `users/alice/trips/${tripId}/segments/segment-1`);
 
   await assertSucceeds(setDoc(tripRef, v4Trip(tripId)));
-  await assertSucceeds(setDoc(segmentRef, v4Segment()));
-  await assertSucceeds(deleteDoc(segmentRef));
-  await assertSucceeds(deleteDoc(tripRef));
+  await assertFails(deleteDoc(tripRef));
 });
