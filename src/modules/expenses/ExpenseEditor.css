@@ -11,14 +11,17 @@
 }
 
 .segment-expense-form .dates__row {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 140px));
+  justify-content: space-between;
+  gap: 14px;
 }
 
-/* La geometría del trigger no cambia entre reposo/hover/focus/open. Esto evita
-   el pequeño salto visual que se percibía al pasar el mouse por una fecha ya
-   seleccionada. */
+/* Los dos controles conservan exactamente la misma caja en reposo, hover,
+   focus y estado abierto. El texto queda anclado de forma absoluta para que
+   ningún cambio de estado del botón altere su posición visual. */
 .segment-expense-form .calendar-date {
+  width: 140px;
+  max-width: 100%;
   height: 38px;
 }
 
@@ -28,12 +31,15 @@
 .segment-expense-form .calendar-date__trigger:focus-visible,
 .segment-expense-form .calendar-date__trigger.is-open {
   box-sizing: border-box;
+  position: relative;
+  display: block;
+  width: 100%;
   height: 38px;
   min-height: 38px;
-  padding: 0 36px 0 14px;
+  padding: 0 30px 0 12px;
   border: 0 !important;
-  border-radius: 0;
-  background: transparent;
+  border-radius: 6px;
+  background: #f5f6f7;
   box-shadow: none !important;
   outline: none;
   color: #636b76;
@@ -42,13 +48,24 @@
   line-height: 1;
   transform: none;
   transition: none;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .segment-expense-form .calendar-date__value,
 .segment-expense-form .calendar-date__placeholder {
+  position: absolute;
+  top: 50%;
+  left: 12px;
   display: block;
+  max-width: calc(100% - 40px);
+  overflow: hidden;
   line-height: 1;
-  transform: none;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transform: translateY(-50%);
+  transition: none;
+  pointer-events: none;
 }
 
 .segment-expense-form .calendar-date__trigger > svg {
@@ -59,7 +76,7 @@
 .segment-expense-form .calendar-date__clear:hover,
 .segment-expense-form .calendar-date__clear:focus-visible {
   top: 50%;
-  right: 10px;
+  right: 7px;
   width: 18px;
   height: 18px;
   padding: 0;
@@ -74,20 +91,23 @@
 .expenses--journey {
   --expense-city-guide-inset: 0px;
   --expense-column-gap: 18px;
-  --expense-row-gap: 6px;
+  --expense-row-gap: 8px;
+  --expense-icon-box: 18px;
+  --expense-icon-text-gap: 4px;
   --expense-text-color: #4b5563;
+  --expense-field-bg: #f5f6f7;
   gap: 0;
   min-width: 0;
 }
 
 /* El .segment__body ya comienza sobre la misma guía visible que el nombre de
-   ciudad. Por eso la rejilla NO añade inset horizontal. El SVG se alinea al
-   borde izquierdo de su caja y compensa 2 px del espacio interno típico de
-   los Tabler icons para que el trazo visible caiga sobre la guía de ciudad. */
+   ciudad. La caja del icono es deliberadamente estrecha: el SVG conserva su
+   tamaño, pero el texto comienza mucho más cerca del trazo visible. */
 .expenses--journey .expenses__fixed-list,
 .expenses--journey .expenses__lineitems {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 44px;
   column-gap: var(--expense-column-gap);
   row-gap: var(--expense-row-gap);
   min-width: 0;
@@ -96,13 +116,14 @@
 
 .expenses--journey .moneycard {
   min-width: 0;
+  height: 44px;
   min-height: 44px;
   padding: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  gap: 8px;
+  gap: var(--expense-icon-text-gap);
 }
 
 .expenses--journey .moneycard:hover,
@@ -112,9 +133,9 @@
 }
 
 .expenses--journey .moneycard__icon {
-  width: 26px;
+  width: var(--expense-icon-box);
   height: 26px;
-  flex: 0 0 26px;
+  flex: 0 0 var(--expense-icon-box);
   justify-content: flex-start;
   border-radius: 0;
   background: transparent !important;
@@ -146,14 +167,14 @@
 
 .expenses--journey .moneycard__amount {
   box-sizing: border-box;
-  width: 58px;
-  min-width: 58px;
-  height: 40px;
+  width: 74px;
+  min-width: 74px;
+  height: 34px;
   margin-left: auto;
-  padding: 0;
+  padding: 0 6px;
   border: 0;
-  border-radius: 0;
-  background: transparent;
+  border-radius: 6px;
+  background: var(--expense-field-bg);
   box-shadow: none;
   justify-content: flex-start;
   gap: 0;
@@ -161,7 +182,7 @@
 
 .expenses--journey .moneycard:focus-within .moneycard__amount {
   border: 0;
-  background: transparent;
+  background: var(--expense-field-bg);
   box-shadow: none;
 }
 
@@ -175,9 +196,8 @@
 
 .expenses--journey .moneycard__input {
   min-width: 0;
-  width: 45px;
-  padding-left: 0;
-  padding-right: 0;
+  width: 57px;
+  padding: 0;
   border: 0;
   outline: none;
   background: transparent;
@@ -185,6 +205,7 @@
   font-size: 12px;
   font-weight: 500;
   text-align: left;
+  font-variant-numeric: tabular-nums;
 }
 
 .expenses--journey .moneycard__input:focus,
@@ -199,10 +220,12 @@
   color: #7d8792;
 }
 
-/* Cada bloque dinámico arranca exactamente un row-gap después del bloque
-   anterior. El botón + Otros gastos usa el mismo paso vertical que cualquier
-   otra fila, sin margen especial. */
+/* Cada sección dinámica usa el mismo paso vertical de las filas fijas. Con o
+   sin gastos agregados, + Otros gastos empieza exactamente un row-gap después
+   de la fila anterior. */
 .expenses--journey .lineitems-section {
+  display: flex;
+  flex-direction: column;
   gap: var(--expense-row-gap);
   min-width: 0;
   padding-top: var(--expense-row-gap);
@@ -220,13 +243,13 @@
 }
 
 .expenses--journey .moneycard--lineitem .moneycard__amount {
-  width: 70px;
-  min-width: 70px;
-  padding-right: 0;
+  width: 92px;
+  min-width: 92px;
+  padding-right: 4px;
 }
 
 .expenses--journey .moneycard--lineitem .moneycard__input {
-  width: 42px;
+  width: 53px;
 }
 
 .expenses--journey .moneycard__typeinput::placeholder {
@@ -259,12 +282,14 @@
 }
 
 .expenses--journey .expenses__add-other {
+  box-sizing: border-box;
+  height: 44px;
   min-height: 44px;
   width: 100%;
   padding: 0 0 0 var(--expense-city-guide-inset);
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--expense-icon-text-gap);
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -285,9 +310,9 @@
 }
 
 .expenses--journey .expenses__add-other-icon {
-  width: 26px;
+  width: var(--expense-icon-box);
   height: 26px;
-  flex: 0 0 26px;
+  flex: 0 0 var(--expense-icon-box);
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -304,6 +329,7 @@
 
 .expenses--journey .expenses__legacy-food {
   position: relative;
+  margin-top: var(--expense-row-gap);
   padding-left: var(--expense-city-guide-inset);
 }
 
@@ -317,41 +343,30 @@
   background: rgba(226, 229, 233, 0.55);
 }
 
-.expenses--journey .expenses__total {
-  margin-top: 2px;
-  padding: 9px 0 0 var(--expense-city-guide-inset);
-  border-top: 1px dashed #d8dde3;
-  color: #66707b;
-  font-size: 10.5px;
-  line-height: 1.2;
-}
-
-.expenses--journey .expenses__total strong {
-  color: #3f4853;
-  font-size: 11px;
-  font-weight: 700;
-}
-
 /* FloatingEditorPolish.css contiene reglas históricas más específicas. Estas
    reglas fijan la autoridad visual del editor de gastos para que la cascada no
-   vuelva a reducir texto/iconos ni altere la rejilla solicitada. */
+   vuelva a alterar tamaños, ritmos ni fondos solicitados. */
 .floating-editor .segment__body .expenses--journey .expenses__fixed-list,
 .floating-editor .segment__body .expenses--journey .expenses__lineitems {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 44px;
   column-gap: var(--expense-column-gap);
   row-gap: var(--expense-row-gap);
   padding-left: var(--expense-city-guide-inset);
 }
 
 .floating-editor .segment__body .expenses--journey .moneycard {
+  height: 44px;
   min-height: 44px;
   padding: 0;
+  gap: var(--expense-icon-text-gap);
 }
 
 .floating-editor .segment__body .expenses--journey .moneycard__icon {
-  width: 26px;
+  width: var(--expense-icon-box);
   height: 26px;
+  flex-basis: var(--expense-icon-box);
   justify-content: flex-start;
 }
 
@@ -367,6 +382,8 @@
 }
 
 .floating-editor .segment__body .expenses--journey .moneycard__input {
+  padding-top: 0;
+  padding-bottom: 0;
   color: var(--expense-text-color);
   font-size: 12px;
 }
@@ -379,6 +396,7 @@
 .floating-editor .segment__body .expenses--journey .moneycard__amount {
   color: var(--expense-text-color);
   font-size: 12px;
+  background: var(--expense-field-bg);
   box-shadow: none;
 }
 
@@ -390,44 +408,47 @@
 
 @media (max-width: 720px) {
   .segment-expense-form .dates__row {
+    grid-template-columns: repeat(2, minmax(0, 132px));
     gap: 10px;
+  }
+
+  .segment-expense-form .calendar-date {
+    width: 132px;
   }
 
   .expenses--journey {
     --expense-city-guide-inset: 0px;
     --expense-column-gap: 12px;
-    --expense-row-gap: 5px;
-  }
-
-  .expenses--journey .moneycard {
-    gap: 7px;
+    --expense-row-gap: 7px;
   }
 
   .expenses--journey .moneycard__amount {
-    width: 54px;
-    min-width: 54px;
+    width: 70px;
+    min-width: 70px;
   }
 
   .expenses--journey .moneycard__input {
-    width: 41px;
+    width: 53px;
   }
 
   .expenses--journey .moneycard--lineitem .moneycard__amount {
-    width: 66px;
-    min-width: 66px;
+    width: 88px;
+    min-width: 88px;
   }
 
   .expenses--journey .moneycard--lineitem .moneycard__input {
-    width: 38px;
+    width: 49px;
   }
 }
 
 @media (max-width: 420px) {
   .segment-expense-form .dates__row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
 
   .segment-expense-form .calendar-date {
+    width: 100%;
     height: 36px;
   }
 
@@ -442,25 +463,27 @@
     font-size: 11px;
   }
 
+  .segment-expense-form .calendar-date__value,
+  .segment-expense-form .calendar-date__placeholder {
+    left: 10px;
+  }
+
   .expenses--journey {
     --expense-column-gap: 8px;
-    --expense-row-gap: 4px;
+    --expense-row-gap: 6px;
   }
 
   .expenses--journey .moneycard,
   .expenses--journey .expenses__add-other {
+    height: 42px;
     min-height: 42px;
   }
 
-  .expenses--journey .moneycard {
-    gap: 5px;
-  }
-
-  .expenses--journey .moneycard__icon,
-  .expenses--journey .expenses__add-other-icon {
-    width: 24px;
-    height: 24px;
-    flex-basis: 24px;
+  .expenses--journey .expenses__fixed-list,
+  .expenses--journey .expenses__lineitems,
+  .floating-editor .segment__body .expenses--journey .expenses__fixed-list,
+  .floating-editor .segment__body .expenses--journey .expenses__lineitems {
+    grid-auto-rows: 42px;
   }
 
   .expenses--journey .moneycard__label,
@@ -470,22 +493,22 @@
   }
 
   .expenses--journey .moneycard__amount {
-    width: 49px;
-    min-width: 49px;
-    height: 38px;
+    width: 66px;
+    min-width: 66px;
+    height: 32px;
   }
 
   .expenses--journey .moneycard__input {
-    width: 36px;
+    width: 49px;
     font-size: 11px;
   }
 
   .expenses--journey .moneycard--lineitem .moneycard__amount {
-    width: 61px;
-    min-width: 61px;
+    width: 84px;
+    min-width: 84px;
   }
 
   .expenses--journey .moneycard--lineitem .moneycard__input {
-    width: 33px;
+    width: 45px;
   }
 }

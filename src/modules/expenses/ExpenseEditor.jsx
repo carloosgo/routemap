@@ -1,8 +1,6 @@
 import { MoneyCard } from '../../components/MoneyInput.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
-import { formatMoney } from '../../shared/utils.js';
 import {
-  expensesTotal,
   foodTotal,
   lineItemsTotal,
 } from './expenseModel.js';
@@ -35,7 +33,7 @@ function CategoryMoneyCard({ definition, label, value, onChange, className = '' 
   return className ? <div className={className}>{card}</div> : card;
 }
 
-export function ExpenseEditor({ expenses, currency, locale, onChange }) {
+export function ExpenseEditor({ expenses, onChange }) {
   const { t } = useTranslation();
 
   const apply = (nextExpenses) => onChange(nextExpenses);
@@ -104,11 +102,6 @@ export function ExpenseEditor({ expenses, currency, locale, onChange }) {
         onUpdate={(id, field, value) => onUpdateItem('others', id, field, value)}
         onRemove={(id) => onRemoveItem('others', id)}
       />
-
-      <div className="expenses__total">
-        <span>{t('segmentTotal')}</span>
-        <strong>{formatMoney(expensesTotal(expenses), currency, locale)}</strong>
-      </div>
     </div>
   );
 }

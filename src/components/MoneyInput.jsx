@@ -1,4 +1,50 @@
+import { useEffect, useRef, useState } from 'react';
 import { toAmount } from '../shared/utils.js';
+import {
+  formatMoneyDraft,
+  formatMoneyValue,
+  parseMoneyDraft,
+} from './moneyInputModel.js';
+
+export function MoneyAmountInput({
+  value,
+  onChange,
+  ariaLabel,
+  className = 'moneycard__input',
+  placeholder = '0.00',
+}) {
+  const focusedRef = useRef(false);
+  const [draft, setDraft] = useState(() => formatMoneyValue(value));
+
+  useEffect(() => {
+    if (!focusedRef.current) setDraft(formatMoneyValue(value));
+  }, [value]);
+
+  return (
+    <input
+      type="text"
+      className={className}
+      inputMode="decimal"
+      pattern="[0-9,]*([.][0-9]{0,2})?"
+      value={draft}
+      placeholder={placeholder}
+      aria-label={ariaLabel}
+      onChange={(event) => {
+        const nextDraft = formatMoneyDraft(event.target.value);
+        setDraft(nextDraft);
+        onChange(parseMoneyDraft(nextDraft));
+      }}
+      onFocus={(event) => {
+        focusedRef.current = true;
+        event.target.select();
+      }}
+      onBlur={() => {
+        focusedRef.current = false;
+        setDraft(formatMoneyValue(value));
+      }}
+    />
+  );
+}
 
 // Tarjeta de gasto individual: icono + etiqueta a la izquierda, monto
 // editable a la derecha, en una sola fila horizontal (no apilado).
@@ -17,17 +63,10 @@ export function MoneyCard({ icon, iconBg, iconColor, label, value, onChange, ari
       <span className="moneycard__label">{label}</span>
       <span className="moneycard__amount">
         <span className="moneycard__currency">$</span>
-        <input
-          type="number"
-          className="moneycard__input"
-          min="0"
-          step="0.01"
-          inputMode="decimal"
-          value={value === 0 ? '' : value}
-          placeholder="0.00"
-          aria-label={ariaLabel || label}
-          onChange={(e) => onChange(toAmount(e.target.value))}
-          onFocus={(e) => e.target.select()}
+        <MoneyAmountInput
+          value={value}
+          onChange={onChange}
+          ariaLabel={ariaLabel || label}
         />
       </span>
     </div>
