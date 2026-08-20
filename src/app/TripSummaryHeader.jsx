@@ -5,6 +5,7 @@ import {
   IconCalendar,
   IconCar,
   IconChevronDown,
+  IconCurrencyDollar,
   IconDots,
   IconMapPin,
   IconMoon,
@@ -61,17 +62,44 @@ function Metric({ Icon, iconColor, label, value, className = '', children, onCli
     >
       <span
         className="trip-summary__metric-icon"
-        style={{ color: iconColor, background: 'transparent', borderRadius: 0 }}
+        style={{ color: iconColor }}
         aria-hidden="true"
       >
         <Icon size={18} />
       </span>
       <span className="trip-summary__metric-copy">
-        <span className="trip-summary__metric-label">{label}</span>
         <strong className="trip-summary__metric-value">{value}</strong>
+        <span className="trip-summary__metric-label">{label}</span>
       </span>
       {children}
     </Tag>
+  );
+}
+
+function CurrencyMetric({ currency, setCurrency, t }) {
+  return (
+    <label className="trip-summary__metric trip-summary__metric--currency">
+      <span
+        className="trip-summary__metric-icon"
+        style={{ color: '#c9224d' }}
+        aria-hidden="true"
+      >
+        <IconCurrencyDollar size={18} />
+      </span>
+      <span className="trip-summary__metric-copy">
+        <select
+          className="trip-summary__currency trip-summary__metric-value"
+          value={currency}
+          onChange={(event) => setCurrency(event.target.value)}
+          aria-label={t('currency')}
+        >
+          {CURRENCIES.map((currencyOption) => (
+            <option key={currencyOption} value={currencyOption}>{currencyOption}</option>
+          ))}
+        </select>
+        <span className="trip-summary__metric-label">{t('currency')}</span>
+      </span>
+    </label>
   );
 }
 
@@ -116,35 +144,10 @@ export function TripSummaryHeader({
         />
         <div className="trip-summary__meta">
           <span className="trip-summary__date"><IconCalendar size={13} aria-hidden="true" />{dateRange}</span>
-          <span className="trip-summary__meta-separator" aria-hidden="true" />
-          <label className="trip-summary__currency-label">
-            <span>{t('currency')}:</span>
-            <select
-              className="trip-summary__currency"
-              value={trip.currency}
-              onChange={(event) => setCurrency(event.target.value)}
-              aria-label={t('currency')}
-            >
-              {CURRENCIES.map((currency) => <option key={currency} value={currency}>{currency}</option>)}
-            </select>
-          </label>
         </div>
       </div>
 
       <div className="trip-summary__metrics" aria-label={t('tripMetrics')}>
-        <Metric
-          Icon={IconMapPin}
-          iconColor="#7c5ce7"
-          label={t('destinations')}
-          value={`${summary.destinations} ${t('cities')}`}
-        />
-        <Metric
-          Icon={IconMoon}
-          iconColor="#4f6df5"
-          label={t('totalNights')}
-          value={`${summary.nights} ${t('nights')}`}
-        />
-
         <div className="trip-summary__breakdown-anchor" ref={breakdownRef}>
           <Metric
             Icon={IconWallet}
@@ -180,10 +183,27 @@ export function TripSummaryHeader({
         </div>
 
         <Metric
+          Icon={IconMapPin}
+          iconColor="#7c5ce7"
+          label={t('destinations')}
+          value={`${summary.destinations} ${t('cities')}`}
+        />
+        <Metric
+          Icon={IconMoon}
+          iconColor="#4f6df5"
+          label={t('totalNights')}
+          value={`${summary.nights} ${t('nights')}`}
+        />
+        <Metric
           Icon={IconRoute}
           iconColor="#e08a17"
           label={t('totalDistance')}
           value={`≈ ${distance} km`}
+        />
+        <CurrencyMetric
+          currency={trip.currency}
+          setCurrency={setCurrency}
+          t={t}
         />
       </div>
     </header>

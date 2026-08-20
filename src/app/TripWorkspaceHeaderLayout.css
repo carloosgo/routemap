@@ -1,21 +1,90 @@
-/* Integración entre el resumen global y el workspace.
-   En desktop, la navegación lateral conserva los 82px completos desde arriba;
-   el header comienza exactamente en la guía del contenido del editor. */
+/* Integración entre marca, resumen global y workspace.
+   La retícula desktop comparte una sola guía: 82px de navegación, identidad
+   sobre el editor y métricas a partir del borde exacto donde inicia el mapa. */
+.app {
+  --atlas-nav-width: 82px;
+  --workspace-panel-width: clamp(420px, 40vw, 620px);
+  --trip-header-height: 76px;
+}
+
 @media (min-width: 721px) {
   .trip-summary {
     position: fixed;
     top: 0;
     right: 0;
-    left: 82px;
+    left: var(--atlas-nav-width);
     box-sizing: border-box;
     width: auto;
-    height: 76px;
-    min-height: 76px;
+    height: var(--trip-header-height);
+    min-height: var(--trip-header-height);
+    display: grid;
+    grid-template-columns:
+      calc(var(--workspace-panel-width) - var(--atlas-nav-width) - 8px)
+      minmax(0, 1fr);
+    align-items: center;
+    column-gap: 0;
     padding-left: 8px;
   }
 
+  .trip-summary__identity {
+    grid-column: 1;
+    width: 100%;
+    max-width: none;
+    padding-right: 18px;
+  }
+
+  .trip-summary__metrics {
+    grid-column: 2;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  /* Completa visualmente la cabecera en el hueco de la navegación. El logo
+     ocupa exactamente los mismos 82px y no invade el contenido del viaje. */
+  .topbar__brand {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: auto;
+    z-index: 902;
+    box-sizing: border-box;
+    width: var(--atlas-nav-width);
+    height: var(--trip-header-height);
+    padding: 0 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border-right: 1px solid #eceef1;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    background: #ffffff;
+    box-shadow: 1px 0 2px rgba(15, 23, 42, 0.025);
+  }
+
+  .topbar__brand-icon {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+    border-radius: 6px;
+  }
+
+  .topbar__brand-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .topbar__brand-name {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 12px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .editor-module {
-    grid-template-rows: 76px minmax(0, 1fr);
+    grid-template-rows: var(--trip-header-height) minmax(0, 1fr);
   }
 
   .editor-module > .editor-module__tabs {
@@ -27,7 +96,7 @@
   }
 
   /* Conserva la geometría histórica de los controles flotantes, desplazada
-     debajo del nuevo header para que sigan viviendo sobre el mapa. */
+     debajo del header para que sigan viviendo sobre el mapa. */
   .topbar__save {
     top: 90px;
   }

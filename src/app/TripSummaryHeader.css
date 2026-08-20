@@ -1,4 +1,4 @@
-/* Header global del viaje: una sola franja, independiente de la pestaña activa. */
+/* Header global del viaje: identidad sobre el editor y métricas sobre el mapa. */
 .trip-summary {
   position: relative;
   z-index: 760;
@@ -62,48 +62,13 @@
   white-space: nowrap;
 }
 
-.trip-summary__date,
-.trip-summary__currency-label {
+.trip-summary__date {
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  min-width: 0;
-}
-
-.trip-summary__date {
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.trip-summary__meta-separator {
-  width: 1px;
-  height: 13px;
-  flex: 0 0 auto;
-  background: var(--line);
-}
-
-.trip-summary__currency-label {
-  color: var(--text-mute);
-}
-
-.trip-summary__currency {
-  appearance: none;
-  min-width: 42px;
-  padding: 1px 12px 1px 2px;
-  border: 0;
-  background:
-    linear-gradient(45deg, transparent 50%, #9499ab 50%) right 5px center / 4px 4px no-repeat,
-    linear-gradient(135deg, #9499ab 50%, transparent 50%) right 2px center / 4px 4px no-repeat;
-  color: var(--text-dim);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  outline: none;
-}
-
-.trip-summary__currency:focus-visible {
-  box-shadow: 0 0 0 2px rgba(25, 165, 208, 0.2);
-  border-radius: 4px;
 }
 
 .trip-summary__metrics {
@@ -115,13 +80,13 @@
 }
 
 .trip-summary__metric {
-  min-width: 104px;
+  min-width: 100px;
   max-width: 150px;
   height: 52px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 9px;
+  gap: 5px;
+  padding: 6px 8px;
   border: 1px solid #eceef2;
   border-radius: 8px;
   background: #ffffff;
@@ -142,15 +107,15 @@ button.trip-summary__metric[aria-expanded='true'] {
 }
 
 .trip-summary__metric-icon {
-  width: 27px;
+  width: 23px;
   height: 27px;
-  flex: 0 0 27px;
+  flex: 0 0 23px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 7px;
-  background: rgba(25, 165, 208, 0.1);
-  color: var(--atlas-accent);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .trip-summary__metric-copy {
@@ -161,6 +126,7 @@ button.trip-summary__metric[aria-expanded='true'] {
 }
 
 .trip-summary__metric-label {
+  order: 2;
   overflow: hidden;
   color: var(--text-mute);
   font-size: 9px;
@@ -170,9 +136,10 @@ button.trip-summary__metric[aria-expanded='true'] {
 }
 
 .trip-summary__metric-value {
+  order: 1;
   overflow: hidden;
   color: var(--text);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1.1;
   text-overflow: ellipsis;
@@ -180,8 +147,8 @@ button.trip-summary__metric[aria-expanded='true'] {
 }
 
 .trip-summary__metric--total {
-  min-width: 135px;
-  max-width: 175px;
+  min-width: 136px;
+  max-width: 178px;
 }
 
 .trip-summary__metric--total > svg {
@@ -193,6 +160,36 @@ button.trip-summary__metric[aria-expanded='true'] {
 
 .trip-summary__metric--total > svg.is-open {
   transform: rotate(180deg);
+}
+
+.trip-summary__metric--currency {
+  min-width: 90px;
+  max-width: 112px;
+  cursor: default;
+}
+
+.trip-summary__currency {
+  appearance: none;
+  width: auto;
+  min-width: 48px;
+  max-width: 62px;
+  padding: 0 13px 0 0;
+  border: 0;
+  background:
+    linear-gradient(45deg, transparent 50%, #9499ab 50%) right 5px center / 4px 4px no-repeat,
+    linear-gradient(135deg, #9499ab 50%, transparent 50%) right 2px center / 4px 4px no-repeat;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.1;
+  cursor: pointer;
+  outline: none;
+}
+
+.trip-summary__currency:focus-visible {
+  border-radius: 3px;
+  box-shadow: 0 0 0 2px rgba(25, 165, 208, 0.2);
 }
 
 .trip-summary__breakdown-anchor {
@@ -256,31 +253,6 @@ button.trip-summary__metric[aria-expanded='true'] {
   font-variant-numeric: tabular-nums;
 }
 
-.trip-summary__save {
-  min-width: 70px;
-  height: 31px;
-  flex: 0 0 auto;
-  padding: 0 13px;
-  border: 0;
-  border-radius: 7px;
-  background: var(--atlas-accent);
-  color: #ffffff;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.trip-summary__save:hover,
-.trip-summary__save:focus-visible {
-  filter: brightness(0.92);
-}
-
-.trip-summary__save:focus-visible {
-  outline: 2px solid rgba(25, 165, 208, 0.28);
-  outline-offset: 2px;
-}
-
 @media (max-width: 1450px) {
   .trip-summary {
     gap: 9px;
@@ -293,12 +265,16 @@ button.trip-summary__metric[aria-expanded='true'] {
   }
 
   .trip-summary__metric {
-    min-width: 92px;
-    padding-inline: 7px;
+    min-width: 88px;
+    padding-inline: 6px;
   }
 
   .trip-summary__metric--total {
-    min-width: 122px;
+    min-width: 124px;
+  }
+
+  .trip-summary__metric--currency {
+    min-width: 84px;
   }
 }
 
@@ -308,21 +284,20 @@ button.trip-summary__metric[aria-expanded='true'] {
   }
 
   .trip-summary__metric {
-    min-width: 78px;
+    min-width: 74px;
   }
 
   .trip-summary__metric-icon {
-    width: 24px;
-    height: 24px;
-    flex-basis: 24px;
-  }
-
-  .trip-summary__metric-label {
-    display: none;
+    width: 21px;
+    flex-basis: 21px;
   }
 
   .trip-summary__metric--total {
-    min-width: 112px;
+    min-width: 108px;
+  }
+
+  .trip-summary__metric--currency {
+    min-width: 78px;
   }
 }
 
@@ -369,16 +344,16 @@ button.trip-summary__metric[aria-expanded='true'] {
 
   .trip-summary__metric {
     height: 46px;
-    min-width: 72px;
+    min-width: 70px;
   }
 
-  .trip-summary__metric-value {
-    font-size: 11px;
+  .trip-summary__metric-value,
+  .trip-summary__currency {
+    font-size: 12px;
   }
 
-  .trip-summary__save {
-    min-width: 60px;
-    padding-inline: 9px;
+  .trip-summary__metric--total {
+    min-width: 102px;
   }
 
   .trip-summary__breakdown {
