@@ -5,7 +5,6 @@ import {
   IconDeviceFloppy,
   IconArrowRight,
   IconNotes,
-  IconNote,
   IconCheck,
   IconMap,
   IconChecklist,
@@ -133,14 +132,17 @@ export default function App() {
   }, [openMenu]);
 
   const prevTripIdRef = useRef(trip.id);
-  if (prevTripIdRef.current !== trip.id) {
-    prevTripIdRef.current = trip.id;
-    const collapsed = {};
-    (trip.segments || []).forEach((s) => {
-      collapsed[s.id] = false;
-    });
-    setExpandedSegments(collapsed);
-  }
+
+  useEffect(() => {
+  if (prevTripIdRef.current === trip.id) return;
+
+  prevTripIdRef.current = trip.id;
+  const collapsed = {};
+  (trip.segments || []).forEach((s) => {
+    collapsed[s.id] = false;
+  });
+  setExpandedSegments(collapsed);
+}, [trip.id, trip.segments]);
 
   function handleAddItem(e) {
     e.preventDefault();

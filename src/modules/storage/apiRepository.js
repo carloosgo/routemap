@@ -9,7 +9,10 @@ import { normalizeTrip } from '../trips/tripModel.js';
 // el flujo de tu proveedor de auth (Auth0, Cognito, Firebase Auth).
 
 export function createApiRepository(baseUrl) {
-  if (!baseUrl) {
+  const normalizedBaseUrl = (baseUrl || '').replace(/\/+$/, '');
+  const persistedIds = new Set();
+
+  if (!normalizedBaseUrl) {
     console.warn('[storage] VITE_API_BASE_URL no configurada; el driver "api" fallará.');
   }
 
@@ -21,36 +24,48 @@ export function createApiRepository(baseUrl) {
   }
 
   async function request(path, options = {}) {
-    const res = await fetch(`${baseUrl}${path}`, {
+    const res = await fetch(`${normalizedBaseUrl}${path}`, {
       ...options,
       headers: {
+        Accept: 'application/json',
         'Content-Type': 'application/json',
         ...authHeaders(),
         ...(options.headers || {}),
       },
       credentials: 'include', // permite cookies de sesión httpOnly
     });
+
     if (!res.ok) {
-      const body = await res.text().catch(() => '');
-      throw new Error(`API ${res.status}: ${body}`);
+      // No propagamos el cuerpo crudo del servidor al cliente: podría contener
+      // detalles internos. El backend debe registrar el error completo.
+      throw new Error(`No se pudo completar la solicitud (HTTP ${res.status}).`);
     }
+
     if (res.status === 204) return null;
     return res.json();
+  }
+
+  function remember(trip) {
+    if (trip?.id) persistedIds.add(trip.id);
+    return trip;
   }
 
   return {
     async list() {
       const data = await request('/api/trips');
-      return Array.isArray(data) ? data.map(normalizeTrip) : [];
+      const trips = Array.isArray(data) ? data.map(normalizeTrip) : [];
+      persistedIds.clear();
+      trips.forEach(remember);
+      return trips;
     },
 
     async get(id) {
       const data = await request(`/api/trips/${encodeURIComponent(id)}`);
-      return data ? normalizeTrip(data) : null;
+      return data ? remember(normalizeTrip(data)) : null;
     },
 
     async save(trip) {
-      const exists = Boolean(trip.id);
+      const exists = Boolean(trip?.id && persistedIds.has(trip.id));
       const data = await request(
         exists ? `/api/trips/${encodeURIComponent(trip.id)}` : '/api/trips',
         {
@@ -58,11 +73,12 @@ export function createApiRepository(baseUrl) {
           body: JSON.stringify(trip),
         }
       );
-      return normalizeTrip(data);
+      return remember(normalizeTrip(data || trip));
     },
 
     async remove(id) {
       await request(`/api/trips/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      persistedIds.delete(id);
     },
   };
 }

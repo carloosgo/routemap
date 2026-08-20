@@ -1,6 +1,12 @@
 import { uid, sanitizeText } from '../../shared/utils.js';
 import { createExpenses, expensesTotal, normalizeExpenses } from '../expenses/expenseModel.js';
 
+function parseCoordinate(value, min, max) {
+  if (value === '' || value === null || value === undefined) return null;
+  const number = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(number) && number >= min && number <= max ? number : null;
+}
+
 export function createCity(partial) {
   if (!partial) return null;
   return {
@@ -8,14 +14,14 @@ export function createCity(partial) {
     displayName: sanitizeText(partial.displayName || partial.name || '', 200),
     country: sanitizeText(partial.country || '', 100),
     countryCode: (partial.countryCode || '').toUpperCase().slice(0, 2),
-    lat: Number(partial.lat),
-    lon: Number(partial.lon),
+    lat: parseCoordinate(partial.lat, -90, 90),
+    lon: parseCoordinate(partial.lon, -180, 180),
   };
 }
 
 export function createSegment(overrides = {}) {
   return {
-    id: uid(),
+    id: overrides.id || uid(),
     origin: overrides.origin ? createCity(overrides.origin) : null,
     destination: overrides.destination ? createCity(overrides.destination) : null,
     startDate: overrides.startDate || '',
@@ -82,7 +88,15 @@ export function segmentCoords(segment) {
 }
 
 export function isPlaced(city) {
-  return city && Number.isFinite(city.lat) && Number.isFinite(city.lon);
+  return Boolean(
+    city &&
+      Number.isFinite(city.lat) &&
+      city.lat >= -90 &&
+      city.lat <= 90 &&
+      Number.isFinite(city.lon) &&
+      city.lon >= -180 &&
+      city.lon <= 180
+  );
 }
 
 export function routeStops(segments, { dedupeCountry = false } = {}) {
@@ -117,6 +131,7 @@ export function normalizeTrip(raw) {
     segments: Array.isArray(raw.segments)
       ? raw.segments.map((s) =>
           createSegment({
+            id: s.id,
             origin: s.origin,
             destination: s.destination,
             startDate: s.startDate,
@@ -151,5 +166,3 @@ export function normalizeTrip(raw) {
 function nowISO() {
   return new Date().toISOString();
 }
-
-
