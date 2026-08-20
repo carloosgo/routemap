@@ -18,6 +18,10 @@ function fixture() {
     id: 'trip-parity-2026',
     name: 'Parity',
     currency: 'EUR',
+    originDetails: {
+      departureDate: '2026-11-30',
+      expenses: expenses(45),
+    },
     placeOrderVersion: 1,
     createdAt: '2026-01-01T10:00:00.000Z',
     updatedAt: '2026-08-10T20:00:00.000Z',
@@ -76,7 +80,13 @@ test('materializador backend produce exactamente el mismo estado canónico v4 qu
   assert.equal(server.source.tripId, client.source.tripId);
   assert.equal(server.source.sourceUpdatedAt, client.source.updatedAt);
 
-  assert.equal(server.contributions.length, 3);
+  assert.equal(server.contributions.length, 4);
+  const originContribution = server.contributions.find((item) => item.entityType === 'origin');
+  assert.equal(originContribution.entityId, 'trip-parity-2026');
+  assert.equal(originContribution.version, 1);
+  assert.equal(originContribution.countContribution, 0);
+  assert.equal(originContribution.valueContribution, 45);
+
   const segmentContribution = server.contributions.find((item) => item.entityId === 'segment-a');
   assert.equal(segmentContribution.version, 1);
   assert.equal(segmentContribution.countContribution, 1);
