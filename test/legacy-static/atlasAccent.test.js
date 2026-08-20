@@ -14,7 +14,7 @@ test('the selected Atlas controls retain the exact #19a5d0 accent token', async 
   const accentStyles = `${polish}\n${itinerary}\n${summary}`;
   assert.match(tokens, /--atlas-accent:\s*#19a5d0/);
   for (const selector of [
-    '.trip-summary__save',
+    '.topbar__save',
     '.editor-module__settings .editor-module__more-button',
     '.geo-search__button',
     '.place-save-prompt button',
@@ -30,7 +30,7 @@ test('the selected Atlas controls retain the exact #19a5d0 accent token', async 
   assert.match(accentStyles, /color:\s*#ffffff/);
 });
 
-test('itinerary, routes and notes keep the tab structure while trip currency and app language live in their own scopes', async () => {
+test('itinerary, routes and notes keep the tab structure while trip currency and app language live in their requested controls', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
   const header = await read('src/app/TripSummaryHeader.jsx');
@@ -43,12 +43,14 @@ test('itinerary, routes and notes keep the tab structure while trip currency and
   assert.match(editor, /t\('myRoutes'\)/);
   assert.match(editor, /t\('notes'\)/);
   assert.match(menu, /openMenu === 'workspace'/);
-  assert.doesNotMatch(menu, /setCurrency|t\('currency'\)|t\('language'\)/);
+  assert.doesNotMatch(menu, /setCurrency|t\('currency'\)/);
+  assert.match(menu, /t\('language'\)/);
+  assert.match(menu, /setLocale\(availableLocale\)/);
   assert.match(header, /const CURRENCIES = \['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'\]/);
   assert.match(header, /setCurrency\(event\.target\.value\)/);
   assert.match(header, /t\('currency'\)/);
-  assert.match(topbar, /t\('language'\)/);
-  assert.match(topbar, /setLocale\(availableLocale\)/);
+  assert.doesNotMatch(topbar, /t\('language'\)|setLocale\(availableLocale\)/);
+  assert.match(topbar, /className="topbar__save"/);
   assert.match(sidebar, /\.editor-module__tabs > \.editor-module__nav-tab,/);
   assert.match(sidebar, /height:\s*76px;/);
   assert.match(sidebar, /padding:\s*3px 3px\s*!important;/);
@@ -91,6 +93,7 @@ test('desktop navigation stays itinerary, routes and notes while the global head
   assert.ok(routesIndex < notesIndex);
   assert.match(menu, /openMenu === 'workspace'/);
   assert.doesNotMatch(menu, /t\('currency'\)/);
+  assert.match(menu, /t\('language'\)/);
   assert.match(header, /t\('currency'\)/);
 });
 
