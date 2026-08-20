@@ -42,7 +42,7 @@ function sampleSegment() {
 
 test('date and non-route expense edits keep the itinerary map projection stable', () => {
   const original = sampleSegment();
-  const edited = structuredClone(original);
+  const edited = globalThis.structuredClone(original);
   edited.startDate = '2026-08-15';
   edited.endDate = '2026-08-24';
   edited.expenses.lodging = 9999;
@@ -57,7 +57,7 @@ test('date and non-route expense edits keep the itinerary map projection stable'
 
 test('city geometry changes invalidate the itinerary map projection', () => {
   const original = sampleSegment();
-  const edited = structuredClone(original);
+  const edited = globalThis.structuredClone(original);
   edited.destination.lat = 41.2;
 
   assert.notEqual(
@@ -68,7 +68,7 @@ test('city geometry changes invalidate the itinerary map projection', () => {
 
 test('plane becoming the dominant transport invalidates route styling only when needed', () => {
   const original = sampleSegment();
-  const edited = structuredClone(original);
+  const edited = globalThis.structuredClone(original);
   edited.expenses.transport.plane = 50000;
 
   assert.notEqual(
