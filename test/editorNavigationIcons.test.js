@@ -20,7 +20,7 @@ test('legacy header icon injection is no longer loaded', async () => {
   );
 });
 
-test('desktop navigation keeps canonical icons while currency stays in the header and language returns to the three-dot menu', async () => {
+test('desktop navigation keeps canonical icons while currency and language stay in the integrated header', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
   const header = await read('src/app/TripSummaryHeader.jsx');
@@ -34,11 +34,12 @@ test('desktop navigation keeps canonical icons while currency stays in the heade
   assert.equal((editor.match(/role="tab"/g) || []).length, 3);
   assert.match(menu, /openMenu === 'workspace'/);
   assert.doesNotMatch(menu, /setCurrency|editor-module__currency-options/);
-  assert.match(menu, /<IconLanguage size=\{17\} aria-hidden="true" \/>/);
-  assert.match(menu, /t\('language'\)/);
-  assert.match(menu, /setLocale\(availableLocale\)/);
+  assert.doesNotMatch(menu, /IconLanguage|t\('language'\)|setLocale/);
   assert.match(header, /const CURRENCIES = \['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'\]/);
   assert.match(header, /setCurrency\(event\.target\.value\)/);
+  assert.match(header, /<IconLanguage size=\{18\} \/>/);
+  assert.match(header, /setLocale\(event\.target\.value\)/);
+  assert.match(header, /t\('language'\)/);
   assert.doesNotMatch(topbar, /IconLanguage|t\('language'\)|setLocale\(availableLocale\)/);
   assert.match(topbar, /className="topbar__save"/);
   assert.doesNotMatch(iconCss, /icons\/moneda\.svg/);
@@ -99,18 +100,20 @@ test('workspace panel toggle stays below modal-bearing editor layer', async () =
   assert.match(workspaceCss, /\.workspace-panel__toggle\s*\{[\s\S]*z-index:\s*699;/);
 });
 
-test('workspace menu exposes saved-trip actions and language without reclaiming trip currency', async () => {
+test('workspace menu exposes saved-trip actions without reclaiming trip currency or language', async () => {
   const sidebarCss = await read('src/app/ItinerarySidebar.css');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
+  const header = await read('src/app/TripSummaryHeader.jsx');
 
   assert.match(sidebarCss, /\.editor-module__workspace-anchor\s*\{[\s\S]*position:\s*fixed\s*!important;[\s\S]*right:\s*14px\s*!important;[\s\S]*z-index:\s*950\s*!important;/);
   assert.match(sidebarCss, /\.editor-module__workspace-anchor \.editor-module__more-menu\s*\{[\s\S]*right:\s*calc\(100% \+ 10px\);[\s\S]*z-index:\s*1000;/);
   assert.match(menu, /editor-module__more-menu/);
   assert.match(menu, /savedTrips/);
   assert.match(menu, /resetTrip/);
-  assert.match(menu, /t\('language'\)/);
-  assert.match(menu, /setLocale\(availableLocale\)/);
-  assert.doesNotMatch(menu, /editor-module__currency-options|setCurrency/);
+  assert.doesNotMatch(menu, /t\('language'\)|setLocale|editor-module__currency-options|setCurrency/);
+  assert.match(header, /t\('language'\)/);
+  assert.match(header, /setLocale\(event\.target\.value\)/);
+  assert.match(header, /setCurrency\(event\.target\.value\)/);
 });
 
 test('places uses a self-contained transparent signpost icon in the Atlas palette', async () => {
