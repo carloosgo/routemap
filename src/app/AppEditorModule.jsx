@@ -16,6 +16,9 @@ export function AppEditorModule({
   setOpenNoteSegmentId,
   setTripToDelete,
   handleOpenSavedTrip,
+  locale,
+  setLocale,
+  availableLocales,
   t,
   intlLocale,
 }) {
@@ -171,6 +174,9 @@ export function AppEditorModule({
           handleOpenSavedTrip={handleOpenSavedTrip}
           setTripToDelete={setTripToDelete}
           intlLocale={intlLocale}
+          locale={locale}
+          setLocale={setLocale}
+          availableLocales={availableLocales}
           t={t}
         />
       </div>
