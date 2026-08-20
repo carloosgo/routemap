@@ -19,6 +19,7 @@ import {
 } from '@tabler/icons-react';
 import { tripSummary } from '../modules/trips/tripSummaryModel.js';
 import { formatMoney } from '../shared/utils.js';
+import { SummarySelectorMetric } from './SummarySelectorMetric.jsx';
 
 const CURRENCIES = ['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'];
 
@@ -32,6 +33,16 @@ const BREAKDOWN_CATS = [
   { key: 'attractions', labelKey: 'attractions', Icon: IconTicket, color: '#9b59b6' },
   { key: 'others', labelKey: 'others', Icon: IconDots, color: '#9499ab' },
 ];
+
+function displayName(code, type, locale) {
+  try {
+    const name = new Intl.DisplayNames([locale], { type }).of(code);
+    if (!name) return code;
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  } catch {
+    return code;
+  }
+}
 
 function Metric({ Icon, iconColor, label, value, className = '', children, onClick, expanded }) {
   const interactive = typeof onClick === 'function';
@@ -59,62 +70,6 @@ function Metric({ Icon, iconColor, label, value, className = '', children, onCli
   );
 }
 
-function CurrencyMetric({ currency, setCurrency, t }) {
-  return (
-    <label className="trip-summary__metric trip-summary__metric--selector trip-summary__metric--currency">
-      <span
-        className="trip-summary__metric-icon"
-        style={{ color: '#c9224d' }}
-        aria-hidden="true"
-      >
-        <IconCurrencyDollar size={18} />
-      </span>
-      <span className="trip-summary__metric-copy">
-        <select
-          className="trip-summary__select trip-summary__metric-value"
-          value={currency}
-          onChange={(event) => setCurrency(event.target.value)}
-          aria-label={t('currency')}
-        >
-          {CURRENCIES.map((currencyOption) => (
-            <option key={currencyOption} value={currencyOption}>{currencyOption}</option>
-          ))}
-        </select>
-        <span className="trip-summary__metric-label">{t('currency')}</span>
-      </span>
-    </label>
-  );
-}
-
-function LanguageMetric({ locale, setLocale, availableLocales, t }) {
-  return (
-    <label className="trip-summary__metric trip-summary__metric--selector trip-summary__metric--language">
-      <span
-        className="trip-summary__metric-icon"
-        style={{ color: '#357d94' }}
-        aria-hidden="true"
-      >
-        <IconLanguage size={18} />
-      </span>
-      <span className="trip-summary__metric-copy">
-        <select
-          className="trip-summary__select trip-summary__metric-value"
-          value={locale}
-          onChange={(event) => setLocale(event.target.value)}
-          aria-label={t('language')}
-        >
-          {availableLocales.map((availableLocale) => (
-            <option key={availableLocale} value={availableLocale}>
-              {availableLocale.toUpperCase()}
-            </option>
-          ))}
-        </select>
-        <span className="trip-summary__metric-label">{t('language')}</span>
-      </span>
-    </label>
-  );
-}
-
 export function TripSummaryHeader({
   trip,
   renameTrip,
@@ -132,6 +87,20 @@ export function TripSummaryHeader({
 }) {
   const summary = useMemo(() => tripSummary(trip), [trip]);
   const breakdownRef = useRef(null);
+  const currencyOptions = useMemo(
+    () => CURRENCIES.map((code) => ({
+      value: code,
+      label: displayName(code, 'currency', intlLocale),
+    })),
+    [intlLocale]
+  );
+  const languageOptions = useMemo(
+    () => availableLocales.map((code) => ({
+      value: code,
+      label: displayName(code, 'language', intlLocale),
+    })),
+    [availableLocales, intlLocale]
+  );
 
   useEffect(() => {
     if (!showBreakdown) return undefined;
@@ -218,16 +187,23 @@ export function TripSummaryHeader({
           label={t('totalDistance')}
           value={`≈ ${distance} km`}
         />
-        <CurrencyMetric
-          currency={trip.currency}
-          setCurrency={setCurrency}
-          t={t}
+        <SummarySelectorMetric
+          Icon={IconCurrencyDollar}
+          iconColor="#c9224d"
+          label={t('currency')}
+          value={trip.currency}
+          options={currencyOptions}
+          onChange={setCurrency}
+          menuClassName="trip-summary__selector-menu--currency"
         />
-        <LanguageMetric
-          locale={locale}
-          setLocale={setLocale}
-          availableLocales={availableLocales}
-          t={t}
+        <SummarySelectorMetric
+          Icon={IconLanguage}
+          iconColor="#357d94"
+          label={t('language')}
+          value={locale}
+          options={languageOptions}
+          onChange={setLocale}
+          menuClassName="trip-summary__selector-menu--language"
         />
       </div>
     </header>
