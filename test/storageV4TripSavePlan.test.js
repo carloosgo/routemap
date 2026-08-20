@@ -4,11 +4,20 @@ import { createExpenses } from '../src/modules/expenses/expenseModel.js';
 import { initialRankForPosition } from '../src/modules/storage-v4/rankModel.js';
 import { planV4TripSave } from '../src/infrastructure/firebase/v4TripSavePlan.js';
 
+function originDetails(overrides = {}) {
+  return {
+    departureDate: '',
+    expenses: createExpenses(),
+    ...overrides,
+  };
+}
+
 function trip(overrides = {}) {
   return {
     id: 'trip-1',
     name: 'Europa',
     currency: 'EUR',
+    originDetails: originDetails(),
     segments: [],
     places: [],
     routeConnections: [],
@@ -17,6 +26,19 @@ function trip(overrides = {}) {
     checklist: [],
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-02T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function remoteRoot(overrides = {}) {
+  return {
+    id: 'trip-1',
+    name: 'Europa',
+    currency: 'EUR',
+    originDetails: originDetails(),
+    schemaVersion: 4,
+    status: 'active',
+    version: 2,
     ...overrides,
   };
 }
@@ -77,6 +99,7 @@ test('viaje nuevo se descompone en root + entidades v4 sin whole-document write'
     id: 'trip-1',
     name: 'Europa',
     currency: 'EUR',
+    originDetails: originDetails(),
   });
   assert.equal(plan.intents.length, 4);
   assert.deepEqual(
@@ -100,14 +123,7 @@ test('viaje existente genera solo update/delete/restore necesarios y conserva ve
       segments: [segment('segment-keep', 'actualizado')],
       notes: [{ id: 'note-restore', title: '', text: 'texto nuevo' }],
     }),
-    remoteRoot: {
-      id: 'trip-1',
-      name: 'Europa',
-      currency: 'EUR',
-      schemaVersion: 4,
-      status: 'active',
-      version: 7,
-    },
+    remoteRoot: remoteRoot({ version: 7 }),
     remoteCollections: {
       segments: [
         remoteSegment('segment-keep', { note: 'anterior', version: 3 }),
@@ -149,6 +165,32 @@ test('viaje existente genera solo update/delete/restore necesarios y conserva ve
   assert.equal(restored.payload.text, 'texto nuevo');
 });
 
+test('originDetails participa en el root y migra roots antiguos sin crear otra entidad', () => {
+  const desiredOrigin = originDetails({
+    departureDate: '2026-12-01',
+    expenses: { ...createExpenses(), lodging: 95 },
+  });
+  const changed = planV4TripSave({
+    uid: 'alice',
+    rawTrip: trip({ originDetails: desiredOrigin }),
+    remoteRoot: remoteRoot({ version: 5 }),
+  });
+  assert.equal(changed.rootIntent.entityType, 'trip');
+  assert.equal(changed.rootIntent.serverVersion, 5);
+  assert.deepEqual(changed.rootIntent.payload.originDetails, desiredOrigin);
+  assert.deepEqual(changed.childIntents, []);
+
+  const legacyRoot = remoteRoot({ version: 6 });
+  delete legacyRoot.originDetails;
+  const migration = planV4TripSave({
+    uid: 'alice',
+    rawTrip: trip(),
+    remoteRoot: legacyRoot,
+  });
+  assert.equal(migration.rootIntent.serverVersion, 6);
+  assert.deepEqual(migration.rootIntent.payload.originDetails, originDetails());
+});
+
 test('sin cambios remotos el planner no inventa mutaciones', () => {
   const desired = trip({
     segments: [segment('segment-1', 'igual')],
@@ -157,14 +199,7 @@ test('sin cambios remotos el planner no inventa mutaciones', () => {
   const plan = planV4TripSave({
     uid: 'alice',
     rawTrip: desired,
-    remoteRoot: {
-      id: 'trip-1',
-      name: 'Europa',
-      currency: 'EUR',
-      schemaVersion: 4,
-      status: 'active',
-      version: 2,
-    },
+    remoteRoot: remoteRoot(),
     remoteCollections: {
       segments: [remoteSegment('segment-1', { note: 'igual', version: 8 })],
       places: [],
@@ -192,7 +227,7 @@ test('planner falla cerrado ante root no-v4, borrado o hijos huérfanos', () => 
     () => planV4TripSave({
       uid: 'alice',
       rawTrip: trip(),
-      remoteRoot: { id: 'trip-1', schemaVersion: 4, status: 'deleted', version: 2 },
+      remoteRoot: remoteRoot({ status: 'deleted', version: 2 }),
     }),
     /restore explícito/
   );
