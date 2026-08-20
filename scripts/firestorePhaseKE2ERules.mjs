@@ -10,6 +10,7 @@ const V4_FUNCTION_NAMES = Object.freeze([
   'validRank',
   'validStatus',
   'validLifecycle',
+  'validOriginDetails',
   'validCity',
   'validFood',
   'validTransport',
