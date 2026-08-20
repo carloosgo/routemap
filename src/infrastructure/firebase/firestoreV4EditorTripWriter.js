@@ -49,6 +49,7 @@ function rootPayload(remoteRoot, tripId) {
         id: remoteRoot.id || tripId,
         name: typeof remoteRoot.name === 'string' ? remoteRoot.name : '',
         currency: typeof remoteRoot.currency === 'string' ? remoteRoot.currency : 'USD',
+        originDetails: remoteRoot.originDetails,
       }
     : null;
 }
