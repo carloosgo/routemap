@@ -15,30 +15,23 @@
   gap: 18px;
 }
 
-.segment-expense-form .calendar-date__trigger {
-  min-height: 38px;
-  padding: 0 36px 0 14px;
-  border: 1px solid #eceff2;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: none;
-  color: #636b76;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.segment-expense-form .calendar-date__trigger:hover {
-  border-color: #dfe4e8;
-  background: #ffffff;
-  box-shadow: none;
-}
-
+/* Las fechas son controles tipográficos, no cajas. El calendario conserva
+   sus estados internos, pero el trigger no dibuja borde ni anillo al abrirse. */
+.segment-expense-form .calendar-date__trigger,
+.segment-expense-form .calendar-date__trigger:hover,
 .segment-expense-form .calendar-date__trigger:focus,
 .segment-expense-form .calendar-date__trigger:focus-visible,
 .segment-expense-form .calendar-date__trigger.is-open {
-  border-color: rgba(53, 125, 148, 0.52) !important;
-  background: #ffffff;
-  box-shadow: 0 0 0 2px rgba(53, 125, 148, 0.1);
+  min-height: 38px;
+  padding: 0 36px 0 14px;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none !important;
+  outline: none;
+  color: #636b76;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .segment-expense-form .calendar-date__trigger > svg {
@@ -54,6 +47,15 @@
   min-width: 0;
 }
 
+/* En escritorio, la guía izquierda de conceptos coincide con el inicio del
+   nombre de ciudad del encabezado del trayecto. */
+@media (min-width: 721px) {
+  .expenses--journey {
+    width: calc(100% + 6px);
+    margin-left: -6px;
+  }
+}
+
 .expenses--journey .expenses__fixed-list,
 .expenses--journey .expenses__lineitems {
   display: flex;
@@ -63,8 +65,8 @@
 }
 
 .expenses--journey .moneycard {
-  min-height: 54px;
-  padding: 0 0 0 12px;
+  min-height: 44px;
+  padding: 0;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -72,7 +74,8 @@
   gap: 10px;
 }
 
-.expenses--journey .moneycard:hover {
+.expenses--journey .moneycard:hover,
+.expenses--journey .moneycard:focus-within {
   background: transparent;
   box-shadow: none;
 }
@@ -86,8 +89,8 @@
 }
 
 .expenses--journey .moneycard__icon svg {
-  width: 20px;
-  height: 20px;
+  width: 15px;
+  height: 15px;
   stroke-width: 2.15;
 }
 
@@ -95,7 +98,7 @@
 .expenses--journey .moneycard__typeinput {
   min-width: 0;
   color: #46505b;
-  font-size: 15.5px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: 0;
@@ -106,19 +109,21 @@
   box-sizing: border-box;
   width: 96px;
   min-width: 96px;
-  height: 44px;
+  height: 40px;
   margin-left: auto;
   padding: 0 8px;
-  border-radius: 4px;
+  border: 0;
+  border-radius: 0;
   background: transparent;
+  box-shadow: none;
   justify-content: flex-end;
   gap: 0;
-  transition: box-shadow 120ms ease;
 }
 
 .expenses--journey .moneycard:focus-within .moneycard__amount {
+  border: 0;
   background: transparent;
-  box-shadow: inset 0 0 0 1px rgba(53, 125, 148, 0.26);
+  box-shadow: none;
 }
 
 .expenses--journey .moneycard__currency {
@@ -130,13 +135,20 @@
 
 .expenses--journey .moneycard__input {
   width: 62px;
+  border: 0;
+  outline: none;
+  background: transparent;
   color: #111827;
   font-size: 12px;
   font-weight: 500;
   text-align: left;
 }
 
-.expenses--journey .moneycard__input:focus {
+.expenses--journey .moneycard__input:focus,
+.expenses--journey .moneycard__input:focus-visible {
+  border: 0 !important;
+  outline: none;
+  box-shadow: none;
   color: #111827;
 }
 
@@ -194,10 +206,11 @@
   outline: none;
 }
 
+/* Otros gastos usa exactamente la misma escala que los conceptos fijos. */
 .expenses--journey .expenses__add-other {
-  min-height: 52px;
+  min-height: 44px;
   width: 100%;
-  padding: 0 12px;
+  padding: 0;
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -206,7 +219,7 @@
   background: transparent;
   color: #46505b;
   font: inherit;
-  font-size: 15.5px;
+  font-size: 13px;
   font-weight: 600;
   text-align: left;
   cursor: pointer;
@@ -226,8 +239,8 @@
   display: grid;
   place-items: center;
   color: #1f2933;
-  font-size: 20px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   line-height: 1;
 }
 
@@ -240,7 +253,7 @@
   position: absolute;
   right: 104px;
   bottom: 0;
-  left: 48px;
+  left: 36px;
   height: 1px;
   background: rgba(226, 229, 233, 0.55);
 }
@@ -260,6 +273,42 @@
   font-weight: 700;
 }
 
+/* FloatingEditorPolish.css contiene reglas históricas más específicas. Estas
+   reglas fijan la autoridad visual del editor de gastos para que la cascada no
+   vuelva a reducir texto/iconos ni a dibujar cajas de foco. */
+.floating-editor .segment__body .expenses--journey .moneycard {
+  min-height: 44px;
+  padding: 0;
+}
+
+.floating-editor .segment__body .expenses--journey .moneycard__icon {
+  width: 26px;
+  height: 26px;
+}
+
+.floating-editor .segment__body .expenses--journey .moneycard__icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.floating-editor .segment__body .expenses--journey .moneycard__label,
+.floating-editor .segment__body .expenses--journey .moneycard__typeinput {
+  font-size: 13px;
+}
+
+.floating-editor .segment__body .expenses--journey .moneycard__input {
+  font-size: 12px;
+}
+
+.floating-editor .segment__body .expenses--journey .moneycard__currency {
+  font-size: 11px;
+}
+
+.floating-editor .segment__body .expenses--journey .moneycard__amount {
+  font-size: 12px;
+  box-shadow: none;
+}
+
 @media (hover: none) {
   .expenses--journey .moneycard__remove {
     opacity: 1;
@@ -271,8 +320,9 @@
     gap: 10px;
   }
 
-  .expenses--journey .moneycard {
-    padding-left: 8px;
+  .expenses--journey {
+    width: 100%;
+    margin-left: 0;
   }
 
   .expenses--journey .moneycard__amount {
@@ -303,27 +353,29 @@
     gap: 8px;
   }
 
-  .segment-expense-form .calendar-date__trigger {
+  .segment-expense-form .calendar-date__trigger,
+  .segment-expense-form .calendar-date__trigger:hover,
+  .segment-expense-form .calendar-date__trigger:focus,
+  .segment-expense-form .calendar-date__trigger:focus-visible,
+  .segment-expense-form .calendar-date__trigger.is-open {
     min-height: 36px;
     padding-left: 10px;
     font-size: 11px;
   }
 
   .expenses--journey .moneycard {
-    min-height: 50px;
+    min-height: 42px;
     gap: 7px;
   }
 
-  .expenses--journey .moneycard__label,
-  .expenses--journey .moneycard__typeinput,
   .expenses--journey .expenses__add-other {
-    font-size: 15px;
+    min-height: 42px;
   }
 
   .expenses--journey .moneycard__amount {
     width: 86px;
     min-width: 86px;
-    height: 40px;
+    height: 38px;
   }
 
   .expenses--journey .moneycard__input {
