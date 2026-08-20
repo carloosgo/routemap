@@ -101,6 +101,18 @@ test('desktop navigation stays itinerary, routes and notes while the global head
   assert.match(header, languageSelectorContract);
 });
 
+test('expanded expense editor keeps unified concept sizing, city guide alignment and borderless capture controls', async () => {
+  const expenses = await read('src/modules/expenses/ExpenseEditor.css');
+  assert.match(expenses, /\.moneycard__icon svg\s*\{[\s\S]*width:\s*15px;[\s\S]*height:\s*15px;/);
+  assert.match(expenses, /\.moneycard__label,[\s\S]*\.moneycard__typeinput\s*\{[\s\S]*font-size:\s*13px;/);
+  assert.match(expenses, /\.expenses__add-other\s*\{[\s\S]*font-size:\s*13px;/);
+  assert.match(expenses, /\.expenses__add-other-icon\s*\{[\s\S]*font-size:\s*15px;/);
+  assert.match(expenses, /@media \(min-width:\s*721px\)[\s\S]*\.expenses--journey\s*\{[\s\S]*margin-left:\s*-6px;/);
+  assert.match(expenses, /\.calendar-date__trigger,[\s\S]*border:\s*0\s*!important;[\s\S]*box-shadow:\s*none\s*!important;/);
+  assert.match(expenses, /\.moneycard:focus-within \.moneycard__amount\s*\{[\s\S]*border:\s*0;[\s\S]*box-shadow:\s*none;/);
+  assert.match(expenses, /\.moneycard__input:focus,[\s\S]*border:\s*0\s*!important;[\s\S]*outline:\s*none;/);
+});
+
 test('place save popup hides its close icon and dismisses through outside clicks', async () => {
   const polish = await read('src/app/FloatingEditorPolish.css');
   const dismiss = await read('src/modules/map/placeSavePopupDismiss.js');
