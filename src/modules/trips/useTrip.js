@@ -12,13 +12,9 @@ export function useTrip(initialTrip) {
     createInitialTrip
   );
 
-  const resetTrip = useCallback(
-    () => dispatch({ type: TRIP_ACTIONS.reset }),
-    []
-  );
+  const resetTrip = useCallback(() => dispatch({ type: TRIP_ACTIONS.reset }), []);
   const loadTrip = useCallback(
-    (tripToLoad) =>
-      dispatch({ type: TRIP_ACTIONS.load, trip: tripToLoad }),
+    (tripToLoad) => dispatch({ type: TRIP_ACTIONS.load, trip: tripToLoad }),
     []
   );
   const renameTrip = useCallback(
@@ -29,13 +25,17 @@ export function useTrip(initialTrip) {
     (currency) => dispatch({ type: TRIP_ACTIONS.setCurrency, currency }),
     []
   );
-  const addNote = useCallback(
-    () => dispatch({ type: TRIP_ACTIONS.addNote }),
+  const updateOriginDetails = useCallback(
+    (patch) => dispatch({ type: TRIP_ACTIONS.updateOriginDetails, patch }),
     []
   );
+  const updateOriginExpenses = useCallback(
+    (expenses) => dispatch({ type: TRIP_ACTIONS.updateOriginExpenses, expenses }),
+    []
+  );
+  const addNote = useCallback(() => dispatch({ type: TRIP_ACTIONS.addNote }), []);
   const updateNote = useCallback(
-    (id, field, value) =>
-      dispatch({ type: TRIP_ACTIONS.updateNote, id, field, value }),
+    (id, field, value) => dispatch({ type: TRIP_ACTIONS.updateNote, id, field, value }),
     []
   );
   const removeNote = useCallback(
@@ -54,33 +54,26 @@ export function useTrip(initialTrip) {
     (id) => dispatch({ type: TRIP_ACTIONS.removeChecklistItem, id }),
     []
   );
-  const addSegment = useCallback(
-    () => dispatch({ type: TRIP_ACTIONS.addSegment }),
-    []
-  );
+  const addSegment = useCallback(() => dispatch({ type: TRIP_ACTIONS.addSegment }), []);
   const removeSegment = useCallback(
-    (segmentId) =>
-      dispatch({ type: TRIP_ACTIONS.removeSegment, segmentId }),
+    (segmentId) => dispatch({ type: TRIP_ACTIONS.removeSegment, segmentId }),
     []
   );
   const reorderSegment = useCallback(
-    (sourceId, targetId, placement) =>
-      dispatch({
-        type: TRIP_ACTIONS.reorderSegment,
-        sourceId,
-        targetId,
-        placement,
-      }),
+    (sourceId, targetId, placement) => dispatch({
+      type: TRIP_ACTIONS.reorderSegment,
+      sourceId,
+      targetId,
+      placement,
+    }),
     []
   );
   const updateSegment = useCallback(
-    (segmentId, patch) =>
-      dispatch({ type: TRIP_ACTIONS.updateSegment, segmentId, patch }),
+    (segmentId, patch) => dispatch({ type: TRIP_ACTIONS.updateSegment, segmentId, patch }),
     []
   );
   const updateExpenses = useCallback(
-    (segmentId, expenses) =>
-      dispatch({ type: TRIP_ACTIONS.updateExpenses, segmentId, expenses }),
+    (segmentId, expenses) => dispatch({ type: TRIP_ACTIONS.updateExpenses, segmentId, expenses }),
     []
   );
   const addPlace = useCallback(
@@ -92,40 +85,32 @@ export function useTrip(initialTrip) {
     []
   );
   const reorderPlace = useCallback(
-    (sourceId, targetId, placement) =>
-      dispatch({
-        type: TRIP_ACTIONS.reorderPlace,
-        sourceId,
-        targetId,
-        placement,
-      }),
+    (sourceId, targetId, placement) => dispatch({
+      type: TRIP_ACTIONS.reorderPlace,
+      sourceId,
+      targetId,
+      placement,
+    }),
     []
   );
   const upsertRouteConnection = useCallback(
-    (connection) =>
-      dispatch({ type: TRIP_ACTIONS.upsertRouteConnection, connection }),
+    (connection) => dispatch({ type: TRIP_ACTIONS.upsertRouteConnection, connection }),
     []
   );
   const removeRouteConnection = useCallback(
-    (routeId) =>
-      dispatch({ type: TRIP_ACTIONS.removeRouteConnection, routeId }),
+    (routeId) => dispatch({ type: TRIP_ACTIONS.removeRouteConnection, routeId }),
     []
   );
   const setRouteConnectionVisibility = useCallback(
-    (routeId, visible) =>
-      dispatch({
-        type: TRIP_ACTIONS.setRouteConnectionVisibility,
-        routeId,
-        visible,
-      }),
+    (routeId, visible) => dispatch({
+      type: TRIP_ACTIONS.setRouteConnectionVisibility,
+      routeId,
+      visible,
+    }),
     []
   );
   const setAllRouteConnectionsVisibility = useCallback(
-    (visible) =>
-      dispatch({
-        type: TRIP_ACTIONS.setAllRouteConnectionsVisibility,
-        visible,
-      }),
+    (visible) => dispatch({ type: TRIP_ACTIONS.setAllRouteConnectionsVisibility, visible }),
     []
   );
 
@@ -135,6 +120,8 @@ export function useTrip(initialTrip) {
     loadTrip,
     renameTrip,
     setCurrency,
+    updateOriginDetails,
+    updateOriginExpenses,
     addNote,
     updateNote,
     removeNote,
