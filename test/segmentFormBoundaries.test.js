@@ -11,6 +11,7 @@ test('SegmentForm coordina el timeline sin absorber edición, encabezado ni diá
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const header = await read('src/modules/trips/SegmentHeader.jsx');
   const body = await read('src/modules/trips/SegmentBody.jsx');
+  const calendar = await read('src/components/CalendarDateInput.jsx');
   const dialog = await read('src/modules/trips/SegmentDeleteDialog.jsx');
   const model = await read('src/modules/trips/segmentFormModel.js');
 
@@ -48,6 +49,11 @@ test('SegmentForm coordina el timeline sin absorber edición, encabezado ni diá
   assert.match(body, /isValidSegmentDateRange/);
   assert.match(body, /<ExpenseEditor/);
   assert.doesNotMatch(body, /dates__label|dates__arrow/);
+
+  assert.match(calendar, /const maxDate = useMemo/);
+  assert.match(calendar, /disabled=\{nextDisabled\}/);
+  assert.match(calendar, /maxDate && startOfDay\(date\) > startOfDay\(maxDate\)/);
+
   assert.match(dialog, /<ConfirmDialog/);
   assert.match(model, /export function isValidSegmentDateRange/);
   assert.doesNotMatch(model, /from 'react'|\.jsx/);
