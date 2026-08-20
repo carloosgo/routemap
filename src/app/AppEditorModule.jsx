@@ -31,6 +31,8 @@ export function AppEditorModule({
     reorderSegment,
     updateSegment,
     updateExpenses,
+    updateOriginDetails,
+    updateOriginExpenses,
     removePlace,
     reorderPlace,
     upsertRouteConnection,
@@ -79,6 +81,8 @@ export function AppEditorModule({
       toggleSegment={toggleSegment}
       updateSegment={updateSegment}
       updateExpenses={updateExpenses}
+      updateOriginDetails={updateOriginDetails}
+      updateOriginExpenses={updateOriginExpenses}
       removeSegment={removeSegment}
       reorderSegment={reorderSegment}
       setOpenNoteSegmentId={setOpenNoteSegmentId}
