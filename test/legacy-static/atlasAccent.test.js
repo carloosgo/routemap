@@ -30,7 +30,7 @@ test('the selected Atlas controls retain the exact #19a5d0 accent token', async 
   assert.match(accentStyles, /color:\s*#ffffff/);
 });
 
-test('itinerary, routes and notes keep the tab structure while trip currency and app language live in their requested controls', async () => {
+test('itinerary, routes and notes keep the tab structure while trip currency and app language live in the global header', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
   const header = await read('src/app/TripSummaryHeader.jsx');
@@ -43,12 +43,12 @@ test('itinerary, routes and notes keep the tab structure while trip currency and
   assert.match(editor, /t\('myRoutes'\)/);
   assert.match(editor, /t\('notes'\)/);
   assert.match(menu, /openMenu === 'workspace'/);
-  assert.doesNotMatch(menu, /setCurrency|t\('currency'\)/);
-  assert.match(menu, /t\('language'\)/);
-  assert.match(menu, /setLocale\(availableLocale\)/);
+  assert.doesNotMatch(menu, /setCurrency|t\('currency'\)|setLocale|t\('language'\)/);
   assert.match(header, /const CURRENCIES = \['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'\]/);
   assert.match(header, /setCurrency\(event\.target\.value\)/);
   assert.match(header, /t\('currency'\)/);
+  assert.match(header, /setLocale\(event\.target\.value\)/);
+  assert.match(header, /t\('language'\)/);
   assert.doesNotMatch(topbar, /t\('language'\)|setLocale\(availableLocale\)/);
   assert.match(topbar, /className="topbar__save"/);
   assert.match(sidebar, /\.editor-module__tabs > \.editor-module__nav-tab,/);
@@ -81,7 +81,7 @@ test('places renders the transparent signpost icon through the existing tab asse
   assert.doesNotMatch(icon, /<image\b/);
 });
 
-test('desktop navigation stays itinerary, routes and notes while the global header owns trip currency', async () => {
+test('desktop navigation stays itinerary, routes and notes while the global header owns trip currency and app language', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
   const header = await read('src/app/TripSummaryHeader.jsx');
@@ -92,9 +92,9 @@ test('desktop navigation stays itinerary, routes and notes while the global head
   assert.ok(itineraryIndex < routesIndex);
   assert.ok(routesIndex < notesIndex);
   assert.match(menu, /openMenu === 'workspace'/);
-  assert.doesNotMatch(menu, /t\('currency'\)/);
-  assert.match(menu, /t\('language'\)/);
+  assert.doesNotMatch(menu, /t\('currency'\)|t\('language'\)|setCurrency|setLocale/);
   assert.match(header, /t\('currency'\)/);
+  assert.match(header, /t\('language'\)/);
 });
 
 test('place save popup hides its close icon and dismisses through outside clicks', async () => {
