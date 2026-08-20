@@ -49,7 +49,7 @@ function formatDateRange(summary, locale, fallback) {
   return `${start} – ${endFormatter.format(new Date(`${summary.endDate}T00:00:00Z`))}`;
 }
 
-function Metric({ Icon, label, value, className = '', children, onClick, expanded }) {
+function Metric({ Icon, iconColor, label, value, className = '', children, onClick, expanded }) {
   const interactive = typeof onClick === 'function';
   const Tag = interactive ? 'button' : 'div';
   return (
@@ -59,7 +59,13 @@ function Metric({ Icon, label, value, className = '', children, onClick, expande
       onClick={onClick}
       aria-expanded={interactive ? expanded : undefined}
     >
-      <span className="trip-summary__metric-icon" aria-hidden="true"><Icon size={17} /></span>
+      <span
+        className="trip-summary__metric-icon"
+        style={{ color: iconColor, background: 'transparent', borderRadius: 0 }}
+        aria-hidden="true"
+      >
+        <Icon size={18} />
+      </span>
       <span className="trip-summary__metric-copy">
         <span className="trip-summary__metric-label">{label}</span>
         <strong className="trip-summary__metric-value">{value}</strong>
@@ -78,7 +84,6 @@ export function TripSummaryHeader({
   breakdown,
   showBreakdown,
   setShowBreakdown,
-  handleSave,
   t,
   intlLocale,
 }) {
@@ -127,12 +132,23 @@ export function TripSummaryHeader({
       </div>
 
       <div className="trip-summary__metrics" aria-label={t('tripMetrics')}>
-        <Metric Icon={IconMapPin} label={t('destinations')} value={`${summary.destinations} ${t('cities')}`} />
-        <Metric Icon={IconMoon} label={t('totalNights')} value={`${summary.nights} ${t('nights')}`} />
+        <Metric
+          Icon={IconMapPin}
+          iconColor="#7c5ce7"
+          label={t('destinations')}
+          value={`${summary.destinations} ${t('cities')}`}
+        />
+        <Metric
+          Icon={IconMoon}
+          iconColor="#4f6df5"
+          label={t('totalNights')}
+          value={`${summary.nights} ${t('nights')}`}
+        />
 
         <div className="trip-summary__breakdown-anchor" ref={breakdownRef}>
           <Metric
             Icon={IconWallet}
+            iconColor="#2aa866"
             label={t('grandTotal')}
             value={formatMoney(total, trip.currency, intlLocale)}
             className="trip-summary__metric--total"
@@ -163,12 +179,13 @@ export function TripSummaryHeader({
           )}
         </div>
 
-        <Metric Icon={IconRoute} label={t('totalDistance')} value={`≈ ${distance} km`} />
+        <Metric
+          Icon={IconRoute}
+          iconColor="#e08a17"
+          label={t('totalDistance')}
+          value={`≈ ${distance} km`}
+        />
       </div>
-
-      <button type="button" className="trip-summary__save" onClick={handleSave}>
-        {t('saveTrip')}
-      </button>
     </header>
   );
 }
