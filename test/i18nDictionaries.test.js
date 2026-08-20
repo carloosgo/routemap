@@ -6,6 +6,7 @@ import en from '../src/i18n/en.js';
 const localeInvariantKeys = new Set([
   'appName',
   'taxiUber',
+  'taxi',
   'bus',
   'no',
 ]);
