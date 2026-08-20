@@ -36,6 +36,8 @@ export function AppEditorPane({
   toggleSegment,
   updateSegment,
   updateExpenses,
+  updateOriginDetails,
+  updateOriginExpenses,
   removeSegment,
   reorderSegment,
   setOpenNoteSegmentId,
@@ -203,6 +205,7 @@ export function AppEditorPane({
                       index={index}
                       currency={trip.currency}
                       locale={intlLocale}
+                      originDetails={trip.originDetails}
                       expanded={isExpanded(segment.id)}
                       dragging={dragState?.segmentId === segment.id}
                       dragOffsetY={dragState?.segmentId === segment.id ? dragState.offsetY : 0}
@@ -210,6 +213,8 @@ export function AppEditorPane({
                       onToggle={() => toggleSegment(segment.id)}
                       onUpdate={(patch) => updateSegment(segment.id, patch)}
                       onUpdateExpenses={(expenses) => updateExpenses(segment.id, expenses)}
+                      onUpdateOriginDetails={updateOriginDetails}
+                      onUpdateOriginExpenses={updateOriginExpenses}
                       onRemove={() => removeSegment(segment.id)}
                       onOpenNote={() => setOpenNoteSegmentId(segment.id)}
                       onReorderPointerStart={(event) => {
