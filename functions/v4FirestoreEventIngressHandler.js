@@ -54,16 +54,38 @@ export function parseV4FirestoreEventHeaders(headers = {}) {
     ? document.slice('documents/'.length)
     : document;
   const parts = normalizedDocument.split('/');
-  if (parts.length !== 6 || parts[0] !== 'users' || parts[2] !== 'trips') {
+  if (parts[0] !== 'users' || parts[2] !== 'trips') {
     throw new TypeError('Evento Firestore v4 fuera del árbol de viajes soportado.');
   }
 
+  const userId = decodePathSegment(parts[1], 'userId');
+  const tripId = decodePathSegment(parts[3], 'tripId');
+
+  if (parts.length === 4) {
+    const documentPath = `users/${userId}/trips/${tripId}`;
+    return Object.freeze({
+      eventId,
+      type,
+      source,
+      database,
+      document,
+      documentPath,
+      collection: 'trips',
+      userId,
+      tripId,
+      entityId: tripId,
+      entityType: 'origin',
+      mode: 'aggregate',
+    });
+  }
+
+  if (parts.length !== 6) {
+    throw new TypeError('Evento Firestore v4 fuera del árbol de viajes soportado.');
+  }
   const collection = parts[4];
   const route = ENTITY_ROUTES[collection];
   if (!route) throw new TypeError('Evento Firestore v4 para colección no soportada.');
 
-  const userId = decodePathSegment(parts[1], 'userId');
-  const tripId = decodePathSegment(parts[3], 'tripId');
   const entityId = decodePathSegment(parts[5], 'entityId');
   const documentPath = `users/${userId}/trips/${tripId}/${collection}/${entityId}`;
 
@@ -84,12 +106,13 @@ export function parseV4FirestoreEventHeaders(headers = {}) {
 }
 
 /**
- * Reconciles the latest authoritative Firestore state for a child document.
+ * Reconciles the latest authoritative Firestore state for a Storage v4 document.
  *
  * Eventarc delivery is at-least-once and may be out of order. Instead of
  * trusting the protobuf payload snapshot, the ingress re-reads the current
- * child. Aggregate contribution/version fences and monotonic touch timestamps
- * then make duplicate or stale deliveries safe.
+ * document. Aggregate contribution/version fences and monotonic touch timestamps
+ * then make duplicate or stale deliveries safe. Trip-root events contribute the
+ * origin expenses; child events preserve their existing aggregate/touch routes.
  */
 export async function handleV4FirestoreEventIngress({
   db,
@@ -104,8 +127,8 @@ export async function handleV4FirestoreEventIngress({
   const event = parseV4FirestoreEventHeaders(headers);
   const snapshot = await db.doc(event.documentPath).get();
 
-  // Storage v4 uses tombstones for normal deletes. A physically missing child
-  // is therefore purge/cleanup work and has no aggregate/touch value to apply.
+  // Storage v4 uses tombstones for normal deletes. A physically missing document
+  // is purge/cleanup work and has no aggregate/touch value to apply.
   if (!snapshot.exists) {
     return Object.freeze({
       processed: false,
