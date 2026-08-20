@@ -82,8 +82,8 @@
 
 /* El .segment__body ya comienza sobre la misma guía visible que el nombre de
    ciudad. Por eso la rejilla NO añade inset horizontal. El SVG se alinea al
-   borde izquierdo de su caja de 26 px para que el trazo visible del icono,
-   no solo su contenedor, comience exactamente en esa guía. */
+   borde izquierdo de su caja y compensa 2 px del espacio interno típico de
+   los Tabler icons para que el trazo visible caiga sobre la guía de ciudad. */
 .expenses--journey .expenses__fixed-list,
 .expenses--journey .expenses__lineitems {
   display: grid;
@@ -124,6 +124,7 @@
 .expenses--journey .moneycard__icon svg {
   width: 15px;
   height: 15px;
+  transform: translateX(-2px);
   stroke-width: 2.15;
 }
 
@@ -297,6 +298,7 @@
 .expenses--journey .expenses__add-other-icon svg {
   width: 15px;
   height: 15px;
+  transform: translateX(-2px);
   stroke-width: 2.15;
 }
 
@@ -356,6 +358,7 @@
 .floating-editor .segment__body .expenses--journey .moneycard__icon svg {
   width: 15px;
   height: 15px;
+  transform: translateX(-2px);
 }
 
 .floating-editor .segment__body .expenses--journey .moneycard__label,
