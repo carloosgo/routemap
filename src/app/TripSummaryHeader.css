@@ -4,14 +4,14 @@
   z-index: 760;
   flex: 0 0 auto;
   min-width: 0;
-  min-height: 76px;
+  min-height: 65px;
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 9px 232px 9px 22px;
+  padding: 6px 232px 6px 22px;
+  border: 0;
   background: #ffffff;
-  border-bottom: 1px solid var(--line);
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+  box-shadow: 0 4px 9px -7px rgba(15, 23, 42, 0.34);
 }
 
 .trip-summary__identity {
@@ -19,8 +19,7 @@
   min-width: 210px;
   max-width: 380px;
   display: flex;
-  flex-direction: column;
-  gap: 5px;
+  align-items: center;
 }
 
 .trip-summary__title {
@@ -52,44 +51,40 @@
   border-bottom-color: rgba(25, 165, 208, 0.45);
 }
 
-.trip-summary__meta {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  color: var(--text-mute);
-  font-size: 10px;
-  white-space: nowrap;
-}
-
-.trip-summary__date {
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .trip-summary__metrics {
   flex: 0 1 auto;
   min-width: 0;
   display: flex;
-  align-items: stretch;
-  gap: 7px;
+  align-items: center;
+  gap: 0;
+}
+
+.trip-summary__metrics > * {
+  position: relative;
+}
+
+.trip-summary__metrics > * + *::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 1px;
+  height: 22px;
+  transform: translateY(-50%);
+  background: rgba(148, 153, 171, 0.18);
 }
 
 .trip-summary__metric {
   min-width: 100px;
   max-width: 150px;
-  height: 52px;
+  height: 46px;
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 8px;
-  border: 1px solid #eceef2;
-  border-radius: 8px;
-  background: #ffffff;
+  padding: 5px 11px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: inherit;
   font: inherit;
   text-align: left;
@@ -102,7 +97,7 @@ button.trip-summary__metric {
 
 button.trip-summary__metric:hover,
 button.trip-summary__metric[aria-expanded='true'] {
-  border-color: rgba(25, 165, 208, 0.28);
+  border-radius: 6px;
   background: rgba(25, 165, 208, 0.035);
 }
 
@@ -162,13 +157,13 @@ button.trip-summary__metric[aria-expanded='true'] {
   transform: rotate(180deg);
 }
 
-.trip-summary__metric--currency {
+.trip-summary__metric--selector {
   min-width: 90px;
   max-width: 112px;
   cursor: default;
 }
 
-.trip-summary__currency {
+.trip-summary__select {
   appearance: none;
   width: auto;
   min-width: 48px;
@@ -187,7 +182,7 @@ button.trip-summary__metric[aria-expanded='true'] {
   outline: none;
 }
 
-.trip-summary__currency:focus-visible {
+.trip-summary__select:focus-visible {
   border-radius: 3px;
   box-shadow: 0 0 0 2px rgba(25, 165, 208, 0.2);
 }
@@ -266,14 +261,14 @@ button.trip-summary__metric[aria-expanded='true'] {
 
   .trip-summary__metric {
     min-width: 88px;
-    padding-inline: 6px;
+    padding-inline: 7px;
   }
 
   .trip-summary__metric--total {
     min-width: 124px;
   }
 
-  .trip-summary__metric--currency {
+  .trip-summary__metric--selector {
     min-width: 84px;
   }
 }
@@ -285,6 +280,7 @@ button.trip-summary__metric[aria-expanded='true'] {
 
   .trip-summary__metric {
     min-width: 74px;
+    padding-inline: 6px;
   }
 
   .trip-summary__metric-icon {
@@ -296,7 +292,7 @@ button.trip-summary__metric[aria-expanded='true'] {
     min-width: 108px;
   }
 
-  .trip-summary__metric--currency {
+  .trip-summary__metric--selector {
     min-width: 78px;
   }
 }
@@ -325,8 +321,8 @@ button.trip-summary__metric[aria-expanded='true'] {
 
 @media (max-width: 720px) {
   .trip-summary {
-    min-height: 68px;
-    padding: 7px 10px;
+    min-height: 65px;
+    padding: 5px 10px;
   }
 
   .trip-summary__identity {
@@ -338,17 +334,13 @@ button.trip-summary__metric[aria-expanded='true'] {
     font-size: 16px;
   }
 
-  .trip-summary__meta {
-    font-size: 9px;
-  }
-
   .trip-summary__metric {
-    height: 46px;
+    height: 44px;
     min-width: 70px;
   }
 
   .trip-summary__metric-value,
-  .trip-summary__currency {
+  .trip-summary__select {
     font-size: 12px;
   }
 
@@ -358,7 +350,7 @@ button.trip-summary__metric[aria-expanded='true'] {
 
   .trip-summary__breakdown {
     position: fixed;
-    top: 72px;
+    top: 69px;
     left: 10px;
     right: 10px;
     width: auto;

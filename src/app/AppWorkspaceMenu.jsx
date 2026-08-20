@@ -1,7 +1,6 @@
 import {
   IconBookmark,
   IconDotsVertical,
-  IconLanguage,
   IconPlus,
   IconTrash,
 } from '@tabler/icons-react';
@@ -16,9 +15,6 @@ export function AppWorkspaceMenu({
   handleOpenSavedTrip,
   setTripToDelete,
   intlLocale,
-  locale,
-  setLocale,
-  availableLocales,
   t,
 }) {
   const { trip, resetTrip } = tripStore;
@@ -102,29 +98,6 @@ export function AppWorkspaceMenu({
                   );
                 })
               )}
-            </div>
-
-            <div className="editor-module__menu-separator" />
-
-            <div className="editor-module__menu-heading">
-              <IconLanguage size={17} aria-hidden="true" />
-              <span>{t('language')}</span>
-            </div>
-            <div className="editor-module__language-options" aria-label={t('language')}>
-              {availableLocales.map((availableLocale) => (
-                <button
-                  type="button"
-                  key={availableLocale}
-                  className={'editor-module__language-option' +
-                    (availableLocale === locale ? ' is-active' : '')}
-                  onClick={() => {
-                    setLocale(availableLocale);
-                    setOpenMenu(null);
-                  }}
-                >
-                  {availableLocale.toUpperCase()}
-                </button>
-              ))}
             </div>
           </div>
         )}

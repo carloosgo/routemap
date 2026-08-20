@@ -4,7 +4,7 @@
 .app {
   --atlas-nav-width: 82px;
   --workspace-panel-width: clamp(420px, 40vw, 620px);
-  --trip-header-height: 76px;
+  --trip-header-height: 65px;
 }
 
 @media (min-width: 721px) {
@@ -55,11 +55,10 @@
     align-items: center;
     justify-content: center;
     gap: 5px;
-    border-right: 1px solid #eceef1;
-    border-bottom: 1px solid var(--line);
+    border: 0;
     border-radius: 0;
     background: #ffffff;
-    box-shadow: 1px 0 2px rgba(15, 23, 42, 0.025);
+    box-shadow: 0 4px 9px -7px rgba(15, 23, 42, 0.34);
   }
 
   .topbar__brand-icon {
@@ -96,14 +95,14 @@
     grid-row: 2;
   }
 
-  /* Conserva la geometría histórica de los controles flotantes, desplazada
-     debajo del header para que sigan viviendo sobre el mapa. */
+  /* Conserva la geometría de los controles flotantes respecto al borde
+     inferior del header, aunque cambie su altura. */
   .topbar__save {
-    top: 90px;
+    top: calc(var(--trip-header-height) + 14px);
   }
 
   .editor-module__workspace-anchor {
-    top: 136px !important;
+    top: calc(var(--trip-header-height) + 60px) !important;
   }
 }
 
@@ -119,6 +118,6 @@
 
   .workspace__mobile {
     box-sizing: border-box;
-    padding-top: 68px;
+    padding-top: var(--trip-header-height);
   }
 }

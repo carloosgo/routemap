@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef } from 'react';
 import {
   IconBed,
   IconBus,
-  IconCalendar,
   IconCar,
   IconChevronDown,
   IconCurrencyDollar,
   IconDots,
+  IconLanguage,
   IconMapPin,
   IconMoon,
   IconPlane,
@@ -31,24 +31,6 @@ const BREAKDOWN_CATS = [
   { key: 'attractions', labelKey: 'attractions', Icon: IconTicket, color: '#9b59b6' },
   { key: 'others', labelKey: 'others', Icon: IconDots, color: '#9499ab' },
 ];
-
-function formatDateRange(summary, locale, fallback) {
-  if (!summary.startDate || !summary.endDate) return fallback;
-  const formatter = new Intl.DateTimeFormat(locale, {
-    day: 'numeric',
-    month: 'short',
-    year: summary.startDate.slice(0, 4) === summary.endDate.slice(0, 4) ? undefined : 'numeric',
-    timeZone: 'UTC',
-  });
-  const start = formatter.format(new Date(`${summary.startDate}T00:00:00Z`));
-  const endFormatter = new Intl.DateTimeFormat(locale, {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
-  return `${start} – ${endFormatter.format(new Date(`${summary.endDate}T00:00:00Z`))}`;
-}
 
 function Metric({ Icon, iconColor, label, value, className = '', children, onClick, expanded }) {
   const interactive = typeof onClick === 'function';
@@ -78,7 +60,7 @@ function Metric({ Icon, iconColor, label, value, className = '', children, onCli
 
 function CurrencyMetric({ currency, setCurrency, t }) {
   return (
-    <label className="trip-summary__metric trip-summary__metric--currency">
+    <label className="trip-summary__metric trip-summary__metric--selector trip-summary__metric--currency">
       <span
         className="trip-summary__metric-icon"
         style={{ color: '#c9224d' }}
@@ -88,7 +70,7 @@ function CurrencyMetric({ currency, setCurrency, t }) {
       </span>
       <span className="trip-summary__metric-copy">
         <select
-          className="trip-summary__currency trip-summary__metric-value"
+          className="trip-summary__select trip-summary__metric-value"
           value={currency}
           onChange={(event) => setCurrency(event.target.value)}
           aria-label={t('currency')}
@@ -103,10 +85,42 @@ function CurrencyMetric({ currency, setCurrency, t }) {
   );
 }
 
+function LanguageMetric({ locale, setLocale, availableLocales, t }) {
+  return (
+    <label className="trip-summary__metric trip-summary__metric--selector trip-summary__metric--language">
+      <span
+        className="trip-summary__metric-icon"
+        style={{ color: '#357d94' }}
+        aria-hidden="true"
+      >
+        <IconLanguage size={18} />
+      </span>
+      <span className="trip-summary__metric-copy">
+        <select
+          className="trip-summary__select trip-summary__metric-value"
+          value={locale}
+          onChange={(event) => setLocale(event.target.value)}
+          aria-label={t('language')}
+        >
+          {availableLocales.map((availableLocale) => (
+            <option key={availableLocale} value={availableLocale}>
+              {availableLocale.toUpperCase()}
+            </option>
+          ))}
+        </select>
+        <span className="trip-summary__metric-label">{t('language')}</span>
+      </span>
+    </label>
+  );
+}
+
 export function TripSummaryHeader({
   trip,
   renameTrip,
   setCurrency,
+  locale,
+  setLocale,
+  availableLocales,
   total,
   hasCosts,
   breakdown,
@@ -127,7 +141,6 @@ export function TripSummaryHeader({
     return () => document.removeEventListener('pointerdown', closeOnOutsidePointer);
   }, [showBreakdown, setShowBreakdown]);
 
-  const dateRange = formatDateRange(summary, intlLocale, t('noTripDates'));
   const distance = new Intl.NumberFormat(intlLocale, { maximumFractionDigits: 0 }).format(summary.distanceKm);
 
   return (
@@ -142,9 +155,6 @@ export function TripSummaryHeader({
           aria-label={t('tripName')}
           onChange={(event) => renameTrip(event.target.value)}
         />
-        <div className="trip-summary__meta">
-          <span className="trip-summary__date"><IconCalendar size={13} aria-hidden="true" />{dateRange}</span>
-        </div>
       </div>
 
       <div className="trip-summary__metrics" aria-label={t('tripMetrics')}>
@@ -203,6 +213,12 @@ export function TripSummaryHeader({
         <CurrencyMetric
           currency={trip.currency}
           setCurrency={setCurrency}
+          t={t}
+        />
+        <LanguageMetric
+          locale={locale}
+          setLocale={setLocale}
+          availableLocales={availableLocales}
           t={t}
         />
       </div>

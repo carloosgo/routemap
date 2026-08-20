@@ -191,6 +191,9 @@ export default function App() {
       trip={trip}
       renameTrip={renameTrip}
       setCurrency={setCurrency}
+      locale={locale}
+      setLocale={setLocale}
+      availableLocales={availableLocales}
       total={editorState.total}
       hasCosts={editorState.hasCosts}
       breakdown={editorState.breakdown}
@@ -214,9 +217,6 @@ export default function App() {
       setOpenNoteSegmentId={setOpenNoteSegmentId}
       setTripToDelete={setTripToDelete}
       handleOpenSavedTrip={handleOpenSavedTrip}
-      locale={locale}
-      setLocale={setLocale}
-      availableLocales={availableLocales}
       t={t}
       intlLocale={intlLocale}
     />
