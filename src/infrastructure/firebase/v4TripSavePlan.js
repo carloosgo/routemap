@@ -1,4 +1,7 @@
-import { normalizeTrip } from '../../modules/trips/tripModel.js';
+import {
+  createOriginDetails,
+  normalizeTrip,
+} from '../../modules/trips/tripModel.js';
 import { initialRankForPosition } from '../../modules/storage-v4/rankModel.js';
 import { V4_ENTITY_STATUS } from '../../modules/storage-v4/storageV4Contract.js';
 import { v4EntityPayload } from './v4EntityDocuments.js';
@@ -59,7 +62,7 @@ function rootPayload(trip) {
     id: trip.id,
     name: trip.name,
     currency: trip.currency,
-    originDetails: trip.originDetails || null,
+    originDetails: trip.originDetails || createOriginDetails(),
   };
 }
 
@@ -91,7 +94,7 @@ function rootIntent({ userId, trip, remoteRoot }) {
     id: remoteRoot.id || trip.id,
     name: remoteRoot.name,
     currency: remoteRoot.currency,
-    originDetails: remoteRoot.originDetails || null,
+    originDetails: remoteRoot.originDetails || createOriginDetails(),
   });
   if (samePayload(current, desired)) return null;
 
