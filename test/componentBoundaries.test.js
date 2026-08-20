@@ -156,6 +156,8 @@ test('ExpenseEditor coordina vistas sin absorber catálogo ni mutaciones', async
   assert.match(editor, /from '\.\/expenseEditorOperations\.js'/);
   assert.match(editor, /from '\.\/expenseEditorCatalog\.jsx'/);
   assert.doesNotMatch(editor, /IconPlane|BOAT_KEYWORDS|function LineItemsGrid/);
+  assert.doesNotMatch(editor, /expenses__toggle|usesDetailedFood|foodSingle|foodDetailed/);
+  assert.match(editor, /setExpenseItemsTotal\(expenses, 'attractions', value\)/);
 
   assert.doesNotMatch(operations, /from 'react'|@tabler\/icons-react/);
   assert.match(operations, /export function updateExpenseItem/);
@@ -164,5 +166,5 @@ test('ExpenseEditor coordina vistas sin absorber catálogo ni mutaciones', async
   assert.match(catalog, /export function transportOtherIcon/);
   assert.match(fixedCards, /className="expenses__fixed-list"/);
   assert.match(lineItems, /moneycard moneycard--lineitem/);
-  assert.match(lineItems, /expenses__add-other/);
+  assert.match(lineItems, /safeItems\.map[\s\S]*expenses__add-other/);
 });
