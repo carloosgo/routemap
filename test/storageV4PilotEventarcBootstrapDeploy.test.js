@@ -69,7 +69,12 @@ test('deploy Eventarc usa filtros oficiales Firestore y destino privado esperado
   assert.equal(PILOT_EVENTARC_DESTINATION_SERVICE, 'v4firestoreeventingress');
   assert.equal(V4_PILOT_EVENTARC_REGION, 'northamerica-south1');
   assert.equal(V4_PILOT_SERVICE_REGION, 'us-central1');
-  assert.equal(V4_PILOT_EVENTARC_TRIGGERS.length, 5);
+  assert.equal(V4_PILOT_EVENTARC_TRIGGERS.length, 6);
+  assert.deepEqual(V4_PILOT_EVENTARC_TRIGGERS[0], {
+    name: 'atlas-v4-trip-written',
+    collection: 'trips',
+    document: 'users/{userId}/trips/{tripId}',
+  });
   assert.match(source, /--event-filters-path-pattern/);
   assert.match(source, /document=\$\{trigger\.document\}/);
   assert.match(source, /--event-data-content-type/);
