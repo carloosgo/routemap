@@ -4,7 +4,17 @@ import {
   formatSegmentAmount,
   formatSegmentDates,
   formatSegmentNights,
+  isValidSegmentDateRange,
 } from '../src/modules/trips/segmentFormModel.js';
+
+test('isValidSegmentDateRange permite rangos parciales o iguales y rechaza inicio posterior al fin', () => {
+  assert.equal(isValidSegmentDateRange('', ''), true);
+  assert.equal(isValidSegmentDateRange('2026-12-03', ''), true);
+  assert.equal(isValidSegmentDateRange('', '2026-12-07'), true);
+  assert.equal(isValidSegmentDateRange('2026-12-03', '2026-12-03'), true);
+  assert.equal(isValidSegmentDateRange('2026-12-03', '2026-12-07'), true);
+  assert.equal(isValidSegmentDateRange('2026-12-08', '2026-12-07'), false);
+});
 
 test('formatSegmentAmount mantiene dos decimales y neutraliza montos inválidos', () => {
   assert.equal(formatSegmentAmount(12.5, 'en-US'), '12.50');
