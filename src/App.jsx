@@ -177,14 +177,12 @@ export default function App() {
       t={t}
       openMenu={openMenu}
       setOpenMenu={setOpenMenu}
+      handleSave={handleSave}
       authUser={auth.user}
       authLoading={auth.loading}
       onGoogleSignIn={handleGoogleSignIn}
       onSignOut={handleSignOut}
       onImportLocalTrips={handleImportLocalTrips}
-      locale={locale}
-      setLocale={setLocale}
-      availableLocales={availableLocales}
     />
   );
 
@@ -198,7 +196,6 @@ export default function App() {
       breakdown={editorState.breakdown}
       showBreakdown={editorState.showBreakdown}
       setShowBreakdown={editorState.setShowBreakdown}
-      handleSave={handleSave}
       t={t}
       intlLocale={intlLocale}
     />
@@ -217,6 +214,9 @@ export default function App() {
       setOpenNoteSegmentId={setOpenNoteSegmentId}
       setTripToDelete={setTripToDelete}
       handleOpenSavedTrip={handleOpenSavedTrip}
+      locale={locale}
+      setLocale={setLocale}
+      availableLocales={availableLocales}
       t={t}
       intlLocale={intlLocale}
     />
