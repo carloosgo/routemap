@@ -54,9 +54,13 @@ export function ExpenseEditor({ expenses, currency, locale, onChange }) {
     <div className="expenses expenses--journey">
       <FixedExpenseCards
         expenses={expenses}
+        attractionsTotal={attractionsTotal}
         t={t}
         onPatch={onPatch}
         onSetTransport={onSetTransport}
+        onSetAttractions={(value) =>
+          apply(setExpenseItemsTotal(expenses, 'attractions', value))
+        }
       />
 
       {legacyFoodTotal > 0 && (
@@ -78,13 +82,6 @@ export function ExpenseEditor({ expenses, currency, locale, onChange }) {
           }
         />
       )}
-
-      <CategoryMoneyCard
-        definition={EXPENSE_ICONS.attraction}
-        label={t('attractions')}
-        value={attractionsTotal}
-        onChange={(value) => apply(setExpenseItemsTotal(expenses, 'attractions', value))}
-      />
 
       <ExpenseLineItemsGrid
         items={expenses.transportOthers}
