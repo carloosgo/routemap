@@ -43,8 +43,12 @@ test('SegmentForm coordina el timeline sin absorber edición, encabezado ni diá
   assert.match(body, /className="segment__body segment-expense-form"/);
   assert.doesNotMatch(body, /CityAutocomplete|segment-route-editor/);
   assert.match(body, /CalendarDateInput/);
+  assert.match(body, /max=\{segment\.endDate \|\| undefined\}/);
+  assert.match(body, /min=\{segment\.startDate \|\| undefined\}/);
+  assert.match(body, /isValidSegmentDateRange/);
   assert.match(body, /<ExpenseEditor/);
   assert.doesNotMatch(body, /dates__label|dates__arrow/);
   assert.match(dialog, /<ConfirmDialog/);
+  assert.match(model, /export function isValidSegmentDateRange/);
   assert.doesNotMatch(model, /from 'react'|\.jsx/);
 });
