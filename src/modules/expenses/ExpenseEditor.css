@@ -15,11 +15,20 @@
   gap: 18px;
 }
 
+/* La geometría del trigger no cambia entre reposo/hover/focus/open. Esto evita
+   el pequeño salto visual que se percibía al pasar el mouse por una fecha ya
+   seleccionada. */
+.segment-expense-form .calendar-date {
+  height: 38px;
+}
+
 .segment-expense-form .calendar-date__trigger,
 .segment-expense-form .calendar-date__trigger:hover,
 .segment-expense-form .calendar-date__trigger:focus,
 .segment-expense-form .calendar-date__trigger:focus-visible,
 .segment-expense-form .calendar-date__trigger.is-open {
+  box-sizing: border-box;
+  height: 38px;
   min-height: 38px;
   padding: 0 36px 0 14px;
   border: 0 !important;
@@ -30,32 +39,57 @@
   color: #636b76;
   font-size: 12px;
   font-weight: 500;
+  line-height: 1;
+  transform: none;
+  transition: none;
+}
+
+.segment-expense-form .calendar-date__value,
+.segment-expense-form .calendar-date__placeholder {
+  display: block;
+  line-height: 1;
+  transform: none;
 }
 
 .segment-expense-form .calendar-date__trigger > svg {
   display: none;
 }
 
-.segment-expense-form .calendar-date__clear {
+.segment-expense-form .calendar-date__clear,
+.segment-expense-form .calendar-date__clear:hover,
+.segment-expense-form .calendar-date__clear:focus-visible {
+  top: 50%;
   right: 10px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  transform: translateY(-50%);
+  transition: none;
 }
 
 .expenses--journey {
-  --expense-city-guide-inset: 12px;
+  --expense-city-guide-inset: 0px;
   --expense-column-gap: 18px;
+  --expense-row-gap: 6px;
+  --expense-text-color: #4b5563;
   gap: 0;
   min-width: 0;
 }
 
-/* El body empieza a 52 px; el texto visible de la ciudad comienza a 64 px
-   (inicio de la columna de ciudad + 4 px internos). El inset de 12 px lleva
-   el primer concepto exactamente a esa misma guía. */
+/* El .segment__body ya comienza sobre la misma guía visible que el nombre de
+   ciudad. Por eso la rejilla NO añade inset horizontal. El SVG se alinea al
+   borde izquierdo de su caja y compensa 2 px del espacio interno típico de
+   los Tabler icons para que el trazo visible caiga sobre la guía de ciudad. */
 .expenses--journey .expenses__fixed-list,
 .expenses--journey .expenses__lineitems {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: var(--expense-column-gap);
-  row-gap: 0;
+  row-gap: var(--expense-row-gap);
   min-width: 0;
   padding-left: var(--expense-city-guide-inset);
 }
@@ -81,6 +115,7 @@
   width: 26px;
   height: 26px;
   flex: 0 0 26px;
+  justify-content: flex-start;
   border-radius: 0;
   background: transparent !important;
   color: var(--icon-color, #4f6df5);
@@ -89,13 +124,14 @@
 .expenses--journey .moneycard__icon svg {
   width: 15px;
   height: 15px;
+  transform: translateX(-2px);
   stroke-width: 2.15;
 }
 
 .expenses--journey .moneycard__label,
 .expenses--journey .moneycard__typeinput {
   min-width: 0;
-  color: #46505b;
+  color: var(--expense-text-color);
   font-size: 13px;
   font-weight: 600;
   line-height: 1.25;
@@ -131,7 +167,7 @@
 
 .expenses--journey .moneycard__currency {
   flex: 0 0 auto;
-  color: #111827;
+  color: var(--expense-text-color);
   font-size: 11px;
   font-weight: 600;
   margin-right: 1px;
@@ -145,7 +181,7 @@
   border: 0;
   outline: none;
   background: transparent;
-  color: #111827;
+  color: var(--expense-text-color);
   font-size: 12px;
   font-weight: 500;
   text-align: left;
@@ -156,15 +192,20 @@
   border: 0 !important;
   outline: none;
   box-shadow: none;
-  color: #111827;
+  color: var(--expense-text-color);
 }
 
 .expenses--journey .moneycard__input::placeholder {
   color: #7d8792;
 }
 
+/* Cada bloque dinámico arranca exactamente un row-gap después del bloque
+   anterior. El botón + Otros gastos usa el mismo paso vertical que cualquier
+   otra fila, sin margen especial. */
 .expenses--journey .lineitems-section {
-  gap: 0;
+  gap: var(--expense-row-gap);
+  min-width: 0;
+  padding-top: var(--expense-row-gap);
 }
 
 .expenses--journey .lineitems-section:empty {
@@ -217,9 +258,6 @@
   outline: none;
 }
 
-/* El botón y las filas dinámicas comparten la misma guía y la misma escala
-   de los seis conceptos fijos. Los nuevos gastos se distribuyen de dos en dos
-   mediante la misma cuadrícula de .expenses__lineitems. */
 .expenses--journey .expenses__add-other {
   min-height: 44px;
   width: 100%;
@@ -230,7 +268,7 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: #46505b;
+  color: var(--expense-text-color);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -241,7 +279,7 @@
 .expenses--journey .expenses__add-other:hover,
 .expenses--journey .expenses__add-other:focus-visible {
   background: transparent;
-  color: #2f3945;
+  color: var(--expense-text-color);
   box-shadow: none;
   outline: none;
 }
@@ -250,12 +288,18 @@
   width: 26px;
   height: 26px;
   flex: 0 0 26px;
-  display: grid;
-  place-items: center;
-  color: #1f2933;
-  font-size: 15px;
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  color: var(--expense-text-color);
   line-height: 1;
+}
+
+.expenses--journey .expenses__add-other-icon svg {
+  width: 15px;
+  height: 15px;
+  transform: translateX(-2px);
+  stroke-width: 2.15;
 }
 
 .expenses--journey .expenses__legacy-food {
@@ -296,6 +340,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: var(--expense-column-gap);
+  row-gap: var(--expense-row-gap);
   padding-left: var(--expense-city-guide-inset);
 }
 
@@ -307,11 +352,13 @@
 .floating-editor .segment__body .expenses--journey .moneycard__icon {
   width: 26px;
   height: 26px;
+  justify-content: flex-start;
 }
 
 .floating-editor .segment__body .expenses--journey .moneycard__icon svg {
   width: 15px;
   height: 15px;
+  transform: translateX(-2px);
 }
 
 .floating-editor .segment__body .expenses--journey .moneycard__label,
@@ -320,14 +367,17 @@
 }
 
 .floating-editor .segment__body .expenses--journey .moneycard__input {
+  color: var(--expense-text-color);
   font-size: 12px;
 }
 
 .floating-editor .segment__body .expenses--journey .moneycard__currency {
+  color: var(--expense-text-color);
   font-size: 11px;
 }
 
 .floating-editor .segment__body .expenses--journey .moneycard__amount {
+  color: var(--expense-text-color);
   font-size: 12px;
   box-shadow: none;
 }
@@ -344,8 +394,9 @@
   }
 
   .expenses--journey {
-    --expense-city-guide-inset: 15px;
+    --expense-city-guide-inset: 0px;
     --expense-column-gap: 12px;
+    --expense-row-gap: 5px;
   }
 
   .expenses--journey .moneycard {
@@ -376,11 +427,16 @@
     gap: 8px;
   }
 
+  .segment-expense-form .calendar-date {
+    height: 36px;
+  }
+
   .segment-expense-form .calendar-date__trigger,
   .segment-expense-form .calendar-date__trigger:hover,
   .segment-expense-form .calendar-date__trigger:focus,
   .segment-expense-form .calendar-date__trigger:focus-visible,
   .segment-expense-form .calendar-date__trigger.is-open {
+    height: 36px;
     min-height: 36px;
     padding-left: 10px;
     font-size: 11px;
@@ -388,6 +444,7 @@
 
   .expenses--journey {
     --expense-column-gap: 8px;
+    --expense-row-gap: 4px;
   }
 
   .expenses--journey .moneycard,

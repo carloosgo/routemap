@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import { GooglePlacesMap } from './GooglePlacesMap.jsx';
+import { itineraryMapProjectionSignature } from './itineraryMapProjection.js';
 import './RouteMap.css';
 import './GooglePlacesMap.css';
 
@@ -9,9 +11,18 @@ export function RouteMap({
   addPlace,
   viewMode = 'segments',
 }) {
+  const mapSegmentsSignature = useMemo(
+    () => itineraryMapProjectionSignature(segments),
+    [segments]
+  );
+  const mapSegments = useMemo(
+    () => JSON.parse(mapSegmentsSignature),
+    [mapSegmentsSignature]
+  );
+
   return (
     <GooglePlacesMap
-      segments={segments}
+      segments={mapSegments}
       places={places}
       routeConnections={routeConnections}
       addPlace={addPlace}

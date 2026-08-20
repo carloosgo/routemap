@@ -18,10 +18,10 @@ const ICON_SIZE = 15;
 const iconDefinition = (icon, bg, color) => ({ icon, bg, color });
 
 export const EXPENSE_ICONS = Object.freeze({
-  plane: iconDefinition(<IconPlane size={ICON_SIZE} />, '#eef0fd', '#4f6df5'),
-  train: iconDefinition(<IconTrain size={ICON_SIZE} />, '#fff8e6', '#d4a017'),
+  plane: iconDefinition(<IconPlane size={ICON_SIZE} />, '#f1edff', '#7c5ce7'),
+  train: iconDefinition(<IconTrain size={ICON_SIZE} />, '#fff0f0', '#e05252'),
   bus: iconDefinition(<IconBus size={ICON_SIZE} />, '#e6f7ef', '#2aa866'),
-  taxiUber: iconDefinition(<IconCar size={ICON_SIZE} />, '#fce8e8', '#d94f4f'),
+  taxiUber: iconDefinition(<IconCar size={ICON_SIZE} />, '#fdebf4', '#d94f8a'),
   lodging: iconDefinition(
     <IconBuildingSkyscraper size={ICON_SIZE} />,
     '#fff8e6',

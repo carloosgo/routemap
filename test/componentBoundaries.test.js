@@ -33,6 +33,7 @@ test('RouteMap coordina un solo mapa sin absorber implementación de Google o b�
   const routeMap = await read('src/modules/map/RouteMap.jsx');
   const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
   const model = await read('src/modules/map/routeMapModel.js');
+  const projection = await read('src/modules/map/itineraryMapProjection.js');
   const search = await read('src/modules/map/usePlaceSearch.js');
   const form = await read('src/modules/map/PlaceSearchForm.jsx');
 
@@ -41,12 +42,15 @@ test('RouteMap coordina un solo mapa sin absorber implementación de Google o b�
     `RouteMap.jsx volvió a crecer a ${lineCount(routeMap)} líneas`
   );
   assert.match(routeMap, /<GooglePlacesMap/);
-  assert.match(routeMap, /segments=\{segments\}/);
+  assert.match(routeMap, /itineraryMapProjectionSignature\(segments\)/);
+  assert.match(routeMap, /segments=\{mapSegments\}/);
   assert.match(routeMap, /viewMode=\{viewMode\}/);
   assert.doesNotMatch(
     routeMap,
     /buildMapFeatureData|usePlaceSearch|AdvancedMarkerElement|maplibregl|async function submitSearch/
   );
+  assert.match(projection, /export function itineraryMapProjection/);
+  assert.match(projection, /export function itineraryMapProjectionSignature/);
 
   assert.match(googleMap, /buildMapFeatureData/);
   assert.match(googleMap, /usePlaceSearch/);
@@ -95,7 +99,6 @@ test('el repositorio Firestore conserva revisiones separadas y publicación tran
     repository,
     /writeBatch|WRITE_BATCH_LIMIT|documentIdForPosition|TRIP_REVISION_COLLECTIONS/
   );
-
   assert.match(revisions, /const WRITE_BATCH_LIMIT = 400/);
   assert.match(revisions, /export async function writeRevisionPayload/);
   assert.match(revisions, /complete: true/);
