@@ -16,25 +16,23 @@ function ExpenseMoneyCard({ definition, label, value, onChange }) {
 
 export function FixedExpenseCards({
   expenses,
-  detailedFood,
   t,
   onPatch,
-  onSetFood,
   onSetTransport,
 }) {
   return (
-    <div className="expenses__grid">
-      <ExpenseMoneyCard
-        definition={EXPENSE_ICONS.plane}
-        label={t('plane')}
-        value={expenses.transport.plane}
-        onChange={(value) => onSetTransport('plane', value)}
-      />
+    <div className="expenses__fixed-list">
       <ExpenseMoneyCard
         definition={EXPENSE_ICONS.lodging}
         label={t('lodging')}
         value={expenses.lodging}
         onChange={(value) => onPatch({ lodging: value })}
+      />
+      <ExpenseMoneyCard
+        definition={EXPENSE_ICONS.plane}
+        label={t('plane')}
+        value={expenses.transport.plane}
+        onChange={(value) => onSetTransport('plane', value)}
       />
       <ExpenseMoneyCard
         definition={EXPENSE_ICONS.train}
@@ -54,38 +52,6 @@ export function FixedExpenseCards({
         value={expenses.transport.taxiUber}
         onChange={(value) => onSetTransport('taxiUber', value)}
       />
-
-      {!detailedFood && (
-        <ExpenseMoneyCard
-          definition={EXPENSE_ICONS.food}
-          label={t('food')}
-          value={expenses.food.single}
-          onChange={(value) => onSetFood({ single: value })}
-        />
-      )}
-
-      {detailedFood && (
-        <>
-          <ExpenseMoneyCard
-            definition={EXPENSE_ICONS.breakfast}
-            label={t('breakfast')}
-            value={expenses.food.breakfast}
-            onChange={(value) => onSetFood({ breakfast: value })}
-          />
-          <ExpenseMoneyCard
-            definition={EXPENSE_ICONS.lunch}
-            label={t('lunch')}
-            value={expenses.food.lunch}
-            onChange={(value) => onSetFood({ lunch: value })}
-          />
-          <ExpenseMoneyCard
-            definition={EXPENSE_ICONS.dinner}
-            label={t('dinner')}
-            value={expenses.food.dinner}
-            onChange={(value) => onSetFood({ dinner: value })}
-          />
-        </>
-      )}
     </div>
   );
 }
