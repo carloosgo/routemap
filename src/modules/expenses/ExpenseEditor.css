@@ -1,0 +1,302 @@
+/* Rediseño solicitado del contenido expandido de cada trayecto.
+   Mantiene intacto el modelo canónico de expenses y se limita a presentación/UX. */
+
+.segment-expense-form {
+  gap: 12px !important;
+  padding-top: 9px !important;
+}
+
+.segment-expense-form .dates {
+  gap: 0;
+}
+
+.segment-expense-form .dates__row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.segment-expense-form .calendar-date__trigger {
+  min-height: 38px;
+  padding: 0 36px 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #f6f7f8;
+  box-shadow: none;
+  color: #636b76;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.segment-expense-form .calendar-date__trigger:hover,
+.segment-expense-form .calendar-date__trigger:focus,
+.segment-expense-form .calendar-date__trigger:focus-visible,
+.segment-expense-form .calendar-date__trigger.is-open {
+  border-color: transparent !important;
+  background: #f1f3f5;
+  box-shadow: inset 0 0 0 1px rgba(53, 125, 148, 0.28);
+}
+
+.segment-expense-form .calendar-date__trigger > svg {
+  display: none;
+}
+
+.segment-expense-form .calendar-date__clear {
+  right: 10px;
+}
+
+.expenses--journey {
+  gap: 0;
+  min-width: 0;
+}
+
+.expenses--journey .expenses__fixed-list,
+.expenses--journey .expenses__lineitems {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+}
+
+.expenses--journey .moneycard {
+  min-height: 54px;
+  padding: 0 0 0 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  gap: 10px;
+}
+
+.expenses--journey .moneycard:hover {
+  background: rgba(248, 249, 250, 0.55);
+}
+
+.expenses--journey .moneycard__icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 0;
+  background: transparent !important;
+  color: var(--icon-color, #4f6df5);
+}
+
+.expenses--journey .moneycard__icon svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.15;
+}
+
+.expenses--journey .moneycard__label,
+.expenses--journey .moneycard__typeinput {
+  min-width: 0;
+  color: #46505b;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.expenses--journey .moneycard__amount {
+  box-sizing: border-box;
+  width: 112px;
+  min-width: 112px;
+  height: 44px;
+  margin-left: auto;
+  padding: 0 12px;
+  border-radius: 4px;
+  background: #fafbfc;
+  justify-content: flex-end;
+  transition: box-shadow 120ms ease, background 120ms ease;
+}
+
+.expenses--journey .moneycard:focus-within .moneycard__amount {
+  background: #f7f9fa;
+  box-shadow: inset 0 0 0 1px rgba(53, 125, 148, 0.26);
+}
+
+.expenses--journey .moneycard__currency {
+  color: #98a0aa;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.expenses--journey .moneycard__input {
+  width: 68px;
+  color: #8b949f;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.expenses--journey .moneycard__input:focus {
+  color: #46505b;
+}
+
+.expenses--journey .moneycard__input::placeholder {
+  color: #a8afb8;
+}
+
+.expenses--journey .lineitems-section {
+  gap: 0;
+}
+
+.expenses--journey .lineitems-section:empty {
+  display: none;
+}
+
+.expenses--journey .moneycard--lineitem .moneycard__typeinput {
+  height: 32px;
+  padding: 0;
+}
+
+.expenses--journey .moneycard__typeinput::placeholder {
+  color: #a0a7b0;
+  font-weight: 450;
+  text-transform: none;
+}
+
+.expenses--journey .moneycard__remove {
+  width: 22px;
+  height: 22px;
+  margin-right: -7px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 120ms ease, background 120ms ease, color 120ms ease;
+}
+
+.expenses--journey .moneycard--lineitem:hover .moneycard__remove,
+.expenses--journey .moneycard--lineitem:focus-within .moneycard__remove {
+  opacity: 1;
+}
+
+.expenses--journey .moneycard__remove:hover,
+.expenses--journey .moneycard__remove:focus-visible {
+  background: #fff0ef;
+  color: var(--danger);
+  outline: none;
+}
+
+.expenses--journey .expenses__add-other {
+  min-height: 52px;
+  width: 100%;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #46505b;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.expenses--journey .expenses__add-other:hover,
+.expenses--journey .expenses__add-other:focus-visible {
+  background: #f7f8f9;
+  color: #2f3945;
+  outline: none;
+}
+
+.expenses--journey .expenses__add-other-icon {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  color: #1f2933;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.expenses--journey .expenses__legacy-food {
+  position: relative;
+}
+
+.expenses--journey .expenses__legacy-food::after {
+  content: '';
+  position: absolute;
+  right: 120px;
+  bottom: 0;
+  left: 46px;
+  height: 1px;
+  background: rgba(226, 229, 233, 0.55);
+}
+
+.expenses--journey .expenses__total {
+  margin-top: 2px;
+  padding: 9px 0 0;
+  border-top: 1px dashed #d8dde3;
+  color: #66707b;
+  font-size: 10.5px;
+  line-height: 1.2;
+}
+
+.expenses--journey .expenses__total strong {
+  color: #3f4853;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+@media (hover: none) {
+  .expenses--journey .moneycard__remove {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 720px) {
+  .segment-expense-form .dates__row {
+    gap: 10px;
+  }
+
+  .expenses--journey .moneycard {
+    padding-left: 8px;
+  }
+
+  .expenses--journey .moneycard__amount {
+    width: 98px;
+    min-width: 98px;
+    padding: 0 9px;
+  }
+
+  .expenses--journey .moneycard__input {
+    width: 58px;
+  }
+
+  .expenses--journey .expenses__legacy-food::after {
+    right: 106px;
+  }
+}
+
+@media (max-width: 420px) {
+  .segment-expense-form .dates__row {
+    gap: 8px;
+  }
+
+  .segment-expense-form .calendar-date__trigger {
+    min-height: 36px;
+    padding-left: 10px;
+    font-size: 11px;
+  }
+
+  .expenses--journey .moneycard {
+    min-height: 50px;
+    gap: 7px;
+  }
+
+  .expenses--journey .moneycard__label,
+  .expenses--journey .moneycard__typeinput,
+  .expenses--journey .expenses__add-other {
+    font-size: 12px;
+  }
+
+  .expenses--journey .moneycard__amount {
+    width: 92px;
+    min-width: 92px;
+    height: 40px;
+  }
+}
