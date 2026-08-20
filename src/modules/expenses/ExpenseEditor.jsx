@@ -1,9 +1,5 @@
-import { MoneyCard } from '../../components/MoneyInput.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
-import {
-  foodTotal,
-  lineItemsTotal,
-} from './expenseModel.js';
+import { foodTotal } from './expenseModel.js';
 import { EXPENSE_ICONS, transportOtherIcon } from './expenseEditorCatalog.jsx';
 import {
   appendExpenseItem,
@@ -11,27 +7,11 @@ import {
   patchFood,
   patchTransport,
   removeExpenseItem,
-  setExpenseItemsTotal,
   updateExpenseItem,
 } from './expenseEditorOperations.js';
 import { ExpenseLineItemsGrid } from './ExpenseLineItemsGrid.jsx';
 import { FixedExpenseCards } from './FixedExpenseCards.jsx';
 import './ExpenseEditor.css';
-
-function CategoryMoneyCard({ definition, label, value, onChange, className = '' }) {
-  const card = (
-    <MoneyCard
-      icon={definition.icon}
-      iconBg={definition.bg}
-      iconColor={definition.color}
-      label={label}
-      value={value}
-      onChange={onChange}
-    />
-  );
-
-  return className ? <div className={className}>{card}</div> : card;
-}
 
 export function ExpenseEditor({ expenses, onChange }) {
   const { t } = useTranslation();
@@ -44,42 +24,27 @@ export function ExpenseEditor({ expenses, onChange }) {
   const onUpdateItem = (key, id, field, value) =>
     apply(updateExpenseItem(expenses, key, id, field, value));
   const onRemoveItem = (key, id) => apply(removeExpenseItem(expenses, key, id));
-
-  const legacyFoodTotal = foodTotal(expenses.food);
-  const attractionsTotal = lineItemsTotal(expenses.attractions);
+  const fixedFoodTotal = foodTotal(expenses.food);
 
   return (
     <div className="expenses expenses--journey">
       <FixedExpenseCards
         expenses={expenses}
-        attractionsTotal={attractionsTotal}
-        t={t}
-        onPatch={onPatch}
+        foodAmount={fixedFoodTotal}
+        onSetLodging={(lodging) => onPatch({ lodging })}
         onSetTransport={onSetTransport}
-        onSetAttractions={(value) =>
-          apply(setExpenseItemsTotal(expenses, 'attractions', value))
+        onSetFood={(value) =>
+          apply(
+            patchFood(expenses, {
+              mode: 'single',
+              single: value,
+              breakfast: 0,
+              lunch: 0,
+              dinner: 0,
+            })
+          )
         }
       />
-
-      {legacyFoodTotal > 0 && (
-        <CategoryMoneyCard
-          className="expenses__legacy-food"
-          definition={EXPENSE_ICONS.food}
-          label={t('food')}
-          value={legacyFoodTotal}
-          onChange={(value) =>
-            apply(
-              patchFood(expenses, {
-                mode: 'single',
-                single: value,
-                breakfast: 0,
-                lunch: 0,
-                dinner: 0,
-              })
-            )
-          }
-        />
-      )}
 
       <ExpenseLineItemsGrid
         items={expenses.transportOthers}
