@@ -6,8 +6,9 @@ const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 const lineCount = (content) => content.split('\n').length;
 
-test('SegmentForm coordina el timeline sin absorber edición, encabezado ni diálogo', async () => {
+test('SegmentForm coordina el timeline sin absorber edición, origen ni diálogo', async () => {
   const form = await read('src/modules/trips/SegmentForm.jsx');
+  const originSection = await read('src/modules/trips/SegmentOriginSection.jsx');
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const header = await read('src/modules/trips/SegmentHeader.jsx');
   const body = await read('src/modules/trips/SegmentBody.jsx');
@@ -19,8 +20,7 @@ test('SegmentForm coordina el timeline sin absorber edición, encabezado ni diá
     lineCount(form) <= 130,
     `SegmentForm.jsx volvió a crecer a ${lineCount(form)} líneas`
   );
-  assert.match(form, /<ItineraryOrigin/);
-  assert.match(form, /onSelect=\{\(origin\) => onUpdate\(\{ origin \}\)\}/);
+  assert.match(form, /<SegmentOriginSection/);
   assert.match(form, /<SegmentHeader/);
   assert.match(form, /onDestinationSelect=\{\(destination\) => onUpdate\(\{ destination \}\)\}/);
   assert.match(form, /<SegmentBody/);
@@ -30,8 +30,14 @@ test('SegmentForm coordina el timeline sin absorber edición, encabezado ni diá
   assert.match(form, /formatSegmentNights/);
   assert.doesNotMatch(
     form,
-    /CityAutocomplete|CalendarDateInput|ExpenseEditor|ConfirmDialog|IconChevronDown/
+    /CityAutocomplete|CalendarDateInput|ExpenseEditor|ConfirmDialog|IconChevronDown|<ItineraryOrigin|<OriginBody/
   );
+
+  assert.match(originSection, /<ItineraryOrigin/);
+  assert.match(originSection, /onSelect=\{\(origin\) => onUpdate\(\{ origin \}\)\}/);
+  assert.match(originSection, /<OriginBody/);
+  assert.match(originSection, /originDetails/);
+  assert.match(originSection, /onUpdateOriginExpenses/);
 
   assert.doesNotMatch(origin, /itinerary-start-flag\.svg/);
   assert.match(origin, /CityAutocomplete/);
