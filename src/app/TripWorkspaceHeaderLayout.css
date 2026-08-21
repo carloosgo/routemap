@@ -3,8 +3,10 @@
    y métricas comparten la misma retícula y la misma superficie. */
 .app {
   --atlas-nav-width: 82px;
-  --workspace-panel-width: clamp(420px, 40vw, 620px);
-  --trip-header-height: 65px;
+  /* La navegación lateral desapareció: el panel conserva el ancho útil que
+     antes quedaba después de esos 82px, en vez de reservar una franja vacía. */
+  --workspace-panel-width: clamp(458px, calc(40vw - var(--atlas-nav-width)), 540px);
+  --trip-header-height: 63px;
 }
 
 @media (min-width: 721px) {
