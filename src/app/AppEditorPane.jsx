@@ -216,7 +216,7 @@ export function AppEditorPane({
                       onUpdateOriginDetails={updateOriginDetails}
                       onUpdateOriginExpenses={updateOriginExpenses}
                       onRemove={() => removeSegment(segment.id)}
-                      onOpenNote={() => setOpenNoteSegmentId(segment.id)}
+                      onOpenNote={(noteTarget = segment.id) => setOpenNoteSegmentId(noteTarget)}
                       onReorderPointerStart={(event) => {
                         if (event.pointerType === 'mouse' && event.button !== 0) return;
                         event.preventDefault();
