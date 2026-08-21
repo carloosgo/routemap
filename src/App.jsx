@@ -25,7 +25,7 @@ export default function App() {
   const tripStore = useTrip();
   const savedTrips = useSavedTrips(auth.user);
   const editorState = useAppEditorState(tripStore);
-  const { trip, loadTrip, renameTrip, setCurrency, updateSegment, updateOriginDetails, addPlace } = tripStore;
+  const { trip, loadTrip, setCurrency, updateSegment, updateOriginDetails, addPlace } = tripStore;
   const {
     getTrip,
     getActiveTripDraft,
@@ -190,7 +190,7 @@ export default function App() {
   const tripHeader = (
     <TripSummaryHeader
       trip={trip}
-      renameTrip={renameTrip}
+      navigation={{ activeTab, setActiveTab, routeCount: editorState.places?.length || 0, checklistProgress: editorState.checklist?.length ? `${editorState.doneCount}/${editorState.checklist.length}` : '' }}
       setCurrency={setCurrency}
       locale={locale}
       setLocale={setLocale}
@@ -211,7 +211,6 @@ export default function App() {
       savedTrips={savedTrips}
       editorState={editorState}
       activeTab={activeTab}
-      setActiveTab={setActiveTab}
       openMenu={openMenu}
       setOpenMenu={setOpenMenu}
       editorMenuRef={editorMenuRef}
