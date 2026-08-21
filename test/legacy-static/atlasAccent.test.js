@@ -69,14 +69,19 @@ test('itinerary, routes and notes keep one tab structure in the global header', 
   assert.match(navCss, /\.trip-summary__primary-nav-badge--notes\s*\{[\s\S]*background:\s*#fff0eb;[\s\S]*color:\s*#e2725b;/);
 });
 
-test('routes uses the requested new line icon rather than the old transparent signpost tab asset', async () => {
+test('routes keeps its own icon while distance uses the requested span marker', async () => {
   const navigation = await read('src/app/TripHeaderNavigation.jsx');
   const editor = await read('src/app/AppEditorModule.jsx');
   const header = await read('src/app/TripSummaryHeader.jsx');
   const icon = await read('src/assets/lugares-storefront-v2.svg');
 
   assert.match(navigation, /IconRoute/);
-  assert.match(header, /IconRulerMeasure/);
+  assert.match(navigation, /const NAV_ICON_COLOR = '#7c5ce7';/);
+  assert.match(navigation, /style=\{\{ color: NAV_ICON_COLOR \}\}/);
+  assert.match(header, /function DistanceSpanIcon/);
+  assert.match(header, /Icon=\{DistanceSpanIcon\}/);
+  assert.match(header, /Icon=\{IconMapPin\} iconColor="#e05252"/);
+  assert.doesNotMatch(header, /IconRulerMeasure/);
   assert.doesNotMatch(header, /<Metric Icon=\{IconRoute\}/);
   assert.doesNotMatch(navigation, /lugaresIcon|lugares-storefront-v2/);
   assert.doesNotMatch(editor, /lugaresIcon|lugares-storefront-v2/);
