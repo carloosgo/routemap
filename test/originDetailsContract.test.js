@@ -28,6 +28,7 @@ test('originDetails se normaliza dentro del viaje y participa en el total', () =
   raw.originDetails = {
     departureDate: '2026-12-01',
     expenses: originExpenses(),
+    note: 'Llegar temprano a la estación',
   };
   raw.segments = [{
     id: 'segment-1',
@@ -41,24 +42,43 @@ test('originDetails se normaliza dentro del viaje y participa en el total', () =
 
   const normalized = normalizeTrip(raw);
   assert.equal(normalized.originDetails.departureDate, '2026-12-01');
+  assert.equal(normalized.originDetails.note, 'Llegar temprano a la estación');
   assert.equal(
     tripTotal(normalized),
     expensesTotal(normalized.originDetails.expenses) + expensesTotal(normalized.segments[0].expenses)
   );
 });
 
+test('originDetails limita la nota canónica a 500 caracteres', () => {
+  const raw = createTrip('Europa');
+  raw.originDetails = {
+    departureDate: '',
+    expenses: originExpenses(),
+    note: 'x'.repeat(650),
+  };
+
+  const normalized = normalizeTrip(raw);
+  assert.equal(normalized.originDetails.note.length, 500);
+});
+
 test('documento root v4 crea y actualiza originDetails sin permitir total cliente', () => {
   const trip = createTrip('Europa');
   trip.id = 'trip-1';
-  trip.originDetails = { departureDate: '2026-12-01', expenses: originExpenses() };
+  trip.originDetails = {
+    departureDate: '2026-12-01',
+    expenses: originExpenses(),
+    note: 'Nota del origen',
+  };
   const timestamp = { server: true };
 
   const created = v4TripCreateDocument(trip, timestamp);
   assert.equal(created.originDetails.departureDate, '2026-12-01');
+  assert.equal(created.originDetails.note, 'Nota del origen');
   assert.equal(created.total, 0);
 
   const patch = v4TripMetadataPatch(trip, 3, timestamp);
   assert.equal(patch.originDetails.expenses.lodging, 120);
+  assert.equal(patch.originDetails.note, 'Nota del origen');
   assert.equal(patch.version, 4);
   assert.equal(Object.hasOwn(patch, 'total'), false);
 });
@@ -73,6 +93,8 @@ test('rules y writers conservan originDetails en los caminos v3/v4 canónicos', 
 
   for (const rules of [legacyRules, v4Rules]) {
     assert.match(rules, /function validOriginDetails\(data\)/);
+    assert.match(rules, /hasOnly\(\['departureDate', 'expenses', 'note'\]\)/);
+    assert.match(rules, /data\.note\.size\(\) <= 500/);
     assert.match(rules, /validExpenses\(data\.expenses\)/);
   }
   assert.match(v4Rules, /'name', 'currency', 'originDetails', 'version', 'updatedAt'/);
