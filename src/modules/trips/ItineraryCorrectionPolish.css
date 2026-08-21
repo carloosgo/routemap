@@ -53,93 +53,39 @@
   scrollbar-gutter: stable;
 }
 
-/* El contenido expandido entra con una transición corta: conserva la respuesta
-   inmediata del acordeón pero elimina la aparición brusca de golpe. */
-@keyframes itinerary-body-reveal {
-  from {
-    opacity: 0;
-    transform: translateY(-5px) scaleY(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scaleY(1);
-  }
+/* El body permanece montado únicamente durante los 190ms de salida. El grid
+   anima altura y opacidad en ambos sentidos sin medir el DOM ni usar max-height
+   arbitrarios; al terminar el cierre React lo desmonta para recuperar coste. */
+.itinerary-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  min-width: 0;
+  opacity: 0;
+  transition:
+    grid-template-rows 190ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity 150ms ease;
 }
 
+.itinerary-collapse.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.itinerary-collapse__inner {
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Desactiva la animación antigua de entrada; el shell es ahora la única
+   autoridad de movimiento para que abrir y cerrar sean simétricos. */
 .itinerary-segment .segment__body,
 .segments:not(.segments--compact) .itinerary-origin__body {
-  transform-origin: top center;
-  animation: itinerary-body-reveal 190ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: none;
 }
 
 .itinerary-segment {
   scroll-margin-block: 12px;
-}
-
-/* La ciudad conserva exactamente su ancho previo. Desde la fecha en adelante,
-   métricas y acciones comparten una sola zona flexible para repartir el espacio
-   restante sin volver a ensanchar el nombre de la ciudad. */
-@media (min-width: 721px) {
-  .itinerary-segment .segment__header.itinerary-stop {
-    grid-template-columns: 18px 30px minmax(90px, 106px) minmax(0, 1fr);
-    column-gap: 6px;
-  }
-
-  .itinerary-stop__after-place {
-    min-width: 0;
-    width: 100%;
-    display: grid;
-    grid-template-columns: 52px 66px 66px 22px 22px 22px;
-    align-items: center;
-    justify-content: space-between;
-    column-gap: 6px;
-  }
-
-  .itinerary-stop__metrics {
-    display: contents;
-  }
-
-  .itinerary-stop__dates {
-    box-sizing: border-box;
-    width: 52px;
-    padding-left: 4px;
-  }
-
-  .segments:not(.segments--compact) .itinerary-origin {
-    padding-left: 24px;
-    grid-template-columns: 30px minmax(90px, 106px) minmax(0, 1fr);
-    column-gap: 6px;
-  }
-
-  .segments:not(.segments--compact) .itinerary-origin__place {
-    width: 100%;
-    max-width: 106px;
-  }
-
-  /* El cuerpo del origen usa la misma caja y el mismo editor de conceptos que
-     cualquier trayecto. Solo falta la segunda fecha por definición funcional. */
-  .segments:not(.segments--compact) .itinerary-origin__body,
-  .itinerary-segment .segment__body {
-    box-sizing: border-box;
-    margin: 3px 0 5px 52px;
-    padding: 8px 0 3px;
-  }
-
-  .segments:not(.segments--compact) .itinerary-origin__body .dates--origin .dates__row {
-    width: 100%;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: var(--expense-column-gap);
-  }
-
-  .segments:not(.segments--compact) .itinerary-origin__body .dates--origin .calendar-date {
-    grid-column: 1;
-  }
-
-  .segments:not(.segments--compact) .itinerary-origin__body .expenses--journey,
-  .itinerary-segment .segment__body .expenses--journey {
-    width: 100%;
-    min-width: 0;
-  }
 }
 
 @media (max-width: 720px) {
