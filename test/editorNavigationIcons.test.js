@@ -16,30 +16,38 @@ test('legacy header icon injection is no longer loaded', async () => {
   assert.match(main, /EditorNavigationIcons\.css/);
   assert.match(main, /ItinerarySidebar\.css/);
   assert.match(main, /TripSummaryHeader\.css/);
+  assert.match(main, /TripHeaderNavigation\.css/);
   assert.match(main, /TripWorkspaceHeaderLayout\.css/);
   assert.ok(
-    main.indexOf('EditorNavigationIcons.css') < main.indexOf('ItinerarySidebar.css'),
-    'ItinerarySidebar.css debe ser la autoridad base de geometría del sidebar'
+    main.indexOf('ItinerarySidebar.css') < main.indexOf('TripHeaderNavigation.css'),
+    'la prueba del header debe sobreescribir la geometría legacy del sidebar después de cargarla'
   );
 });
 
-test('desktop navigation keeps canonical icons while currency and language stay in the integrated header', async () => {
+test('desktop primary navigation uses new header icons while currency and language stay in the integrated header', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
+  const navigation = await read('src/app/TripHeaderNavigation.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
   const header = await read('src/app/TripSummaryHeader.jsx');
   const selector = await read('src/app/SummarySelectorMetric.jsx');
   const topbar = await read('src/app/AppTopbar.jsx');
-  const navigation = `${editor}\n${menu}`;
-  const iconCss = await read('src/app/EditorNavigationIcons.css');
 
-  assert.equal((navigation.match(/editor-module__tab-icon/g) || []).length, 3);
-  assert.match(editor, /<img src=\{lugaresIcon\} alt="" \/>/);
-  assert.match(editor, /role="tablist"/);
-  assert.equal((editor.match(/role="tab"/g) || []).length, 3);
+  assert.match(navigation, /IconListDetails/);
+  assert.match(navigation, /IconRoute/);
+  assert.match(navigation, /IconNotebook/);
+  assert.match(navigation, /role="tablist"/);
+  assert.match(navigation, /role="tab"/);
+  assert.match(navigation, /id: 'segments'/);
+  assert.match(navigation, /id: 'places'/);
+  assert.match(navigation, /id: 'notes'/);
+  assert.doesNotMatch(navigation, /lugaresIcon|IconMap\b|IconNotes\b/);
+  assert.doesNotMatch(editor, /editor-module__tabs|editor-module__tab-icon|lugaresIcon|IconNotes|IconMap\b/);
+
   assert.match(menu, /openMenu === 'workspace'/);
   assert.doesNotMatch(menu, /setCurrency|editor-module__currency-options/);
   assert.doesNotMatch(menu, /IconLanguage|t\('language'\)|setLocale/);
   assert.match(header, /const CURRENCIES = \['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'\]/);
+  assert.match(header, /<TripHeaderNavigation \{\.\.\.navigation\} t=\{t\} \/>/);
   assert.match(header, currencySelectorContract);
   assert.match(header, languageSelectorContract);
   assert.match(selector, /role="listbox"/);
@@ -47,55 +55,40 @@ test('desktop navigation keeps canonical icons while currency and language stay 
   assert.doesNotMatch(selector, /<select\b|<option\b/);
   assert.doesNotMatch(topbar, /IconLanguage|t\('language'\)|setLocale\(availableLocale\)/);
   assert.match(topbar, /className="topbar__save"/);
-  assert.doesNotMatch(iconCss, /icons\/moneda\.svg/);
-  assert.match(iconCss, /url\('\/icons\/tramos\.svg'\)/);
-  assert.match(iconCss, /url\('\/icons\/notas\.svg'\)/);
-  assert.match(iconCss, /\.editor-module__tabs \.editor-module__tab-icon > svg\s*\{\s*display:\s*none;/);
 });
 
-test('sidebar keeps active states stable and does not reserve a counter row for itinerary', async () => {
+test('header navigation keeps active state and removes the desktop sidebar column', async () => {
+  const navigation = await read('src/app/TripHeaderNavigation.jsx');
+  const navigationCss = await read('src/app/TripHeaderNavigation.css');
   const editor = await read('src/app/AppEditorModule.jsx');
-  const iconCss = await read('src/app/EditorNavigationIcons.css');
   const sidebarCss = await read('src/app/ItinerarySidebar.css');
   const polishCss = await read('src/app/FloatingEditorPolish.css');
 
-  assert.doesNotMatch(iconCss, /grid-template-columns|position:\s*fixed|separator|border-right/);
+  assert.match(navigation, /aria-selected=\{isActive\}/);
+  assert.match(navigation, /trip-summary__primary-nav-item\$\{isActive \? ' is-active' : ''\}/);
+  assert.match(navigation, /onClick=\{\(\) => setActiveTab\(id\)\}/);
+  assert.doesNotMatch(editor, /editor-module__tabs|editor-module__nav-tab/);
+  assert.match(navigationCss, /@media \(min-width: 721px\)[\s\S]*\.editor-module\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\);/);
+  assert.match(navigationCss, /grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(sidebarCss, /grid-template-columns:\s*82px minmax\(0, 1fr\);/);
   assert.doesNotMatch(
     polishCss,
     /\.editor-module__tabs \.editor-module__nav-tab(?:\.is-active)?\s*\{/,
     'FloatingEditorPolish.css no debe volver a definir la geometría de navegación'
   );
-  assert.match(editor, /editor-module__nav-tab--plain/);
-  assert.equal((editor.match(/editor-module__tab-count/g) || []).length, 2);
-  assert.match(sidebarCss, /grid-template-columns:\s*82px minmax\(0, 1fr\);/);
-  assert.match(sidebarCss, /gap:\s*12px;/);
-  assert.match(sidebarCss, /min-height:\s*76px;/);
-  assert.match(sidebarCss, /height:\s*76px;/);
-  assert.match(sidebarCss, /flex:\s*0 0 76px;/);
-  assert.match(sidebarCss, /grid-template-rows:\s*38px 14px 14px;/);
-  assert.match(sidebarCss, /\.editor-module__tabs > \.editor-module__nav-tab--plain,[\s\S]*min-height:\s*62px;[\s\S]*height:\s*62px;[\s\S]*flex:\s*0 0 62px;[\s\S]*grid-template-rows:\s*38px 14px;/);
-  assert.match(sidebarCss, /\.editor-module__tabs > \.editor-module__nav-tab \+ \.editor-module__nav-tab\s*\{[\s\S]*margin-left:\s*0\s*!important;[\s\S]*margin-right:\s*0\s*!important;/);
-  assert.match(sidebarCss, /transform:\s*none\s*!important;/);
-  assert.match(sidebarCss, /width:\s*26px\s*!important;/);
-  assert.match(sidebarCss, /top:\s*-6px\s*!important;/);
-  assert.match(sidebarCss, /left:\s*50%\s*!important;/);
-  assert.match(sidebarCss, /transform:\s*translateX\(-50%\)\s*!important;/);
-  assert.match(sidebarCss, /background:\s*#fdfdfd\s*!important;/);
 });
 
-test('routes count saved places and notes expose checklist completion progress', async () => {
-  const editor = await read('src/app/AppEditorModule.jsx');
-  const sidebarCss = await read('src/app/ItinerarySidebar.css');
+test('routes keep their saved-place count and notes keep checklist completion progress in the header', async () => {
+  const app = await read('src/App.jsx');
+  const navigation = await read('src/app/TripHeaderNavigation.jsx');
+  const css = await read('src/app/TripHeaderNavigation.css');
 
-  assert.match(editor, /const routeCount = Array\.isArray\(places\) \? places\.length : 0;/);
-  assert.match(editor, /const checklistCount = Array\.isArray\(checklist\) \? checklist\.length : 0;/);
-  assert.match(editor, /const checklistProgress = checklistCount \? `\$\{doneCount\}\/\$\{checklistCount\}` : '';/);
-  assert.equal((editor.match(/editor-module__tab-count/g) || []).length, 2);
-  assert.equal((editor.match(/tabbar__badge/g) || []).length, 2);
-  assert.match(editor, /\{routeCount\}/);
-  assert.match(editor, /\{checklistProgress\}/);
-  assert.match(sidebarCss, /\.editor-module__tabs \.editor-module__tab-count\s*\{[\s\S]*grid-row:\s*3;[\s\S]*height:\s*14px;[\s\S]*display:\s*flex;/);
-  assert.match(sidebarCss, /\.editor-module__tabs \.editor-module__tab-count \.tabbar__badge\s*\{[\s\S]*position:\s*static\s*!important;[\s\S]*display:\s*inline-flex;/);
+  assert.match(app, /routeCount: editorState\.places\?\.length \|\| 0/);
+  assert.match(app, /checklistProgress: editorState\.checklist\?\.length \? `\$\{editorState\.doneCount\}\/\$\{editorState\.checklist\.length\}` : ''/);
+  assert.match(navigation, /id === 'places' \? routeCount/);
+  assert.match(navigation, /id === 'notes' \? checklistProgress/);
+  assert.match(navigation, /trip-summary__primary-nav-badge/);
+  assert.match(css, /\.trip-summary__primary-nav-badge\s*\{[\s\S]*background:\s*var\(--atlas-accent\);[\s\S]*color:\s*#ffffff;/);
 });
 
 test('workspace panel toggle stays below modal-bearing editor layer', async () => {
@@ -120,8 +113,9 @@ test('workspace menu exposes saved-trip actions without reclaiming trip currency
   assert.match(header, currencySelectorContract);
 });
 
-test('places uses a self-contained transparent signpost icon in the Atlas palette', async () => {
+test('legacy transparent signpost asset remains available but is no longer the primary routes navigation icon', async () => {
   const icon = await read('src/assets/lugares-storefront-v2.svg');
+  const navigation = await read('src/app/TripHeaderNavigation.jsx');
 
   assert.match(icon, /viewBox="0 0 40 40"/);
   assert.match(icon, /aria-label="Lugares"/);
@@ -133,4 +127,6 @@ test('places uses a self-contained transparent signpost icon in the Atlas palett
   assert.doesNotMatch(icon, /data:image\//);
   assert.doesNotMatch(icon, /<image\b/);
   assert.doesNotMatch(icon, /<metadata>/);
+  assert.match(navigation, /IconRoute/);
+  assert.doesNotMatch(navigation, /lugares-storefront-v2/);
 });
