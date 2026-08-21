@@ -75,3 +75,93 @@
 .itinerary-segment {
   scroll-margin-block: 12px;
 }
+
+/* La ciudad conserva exactamente su ancho previo. Desde la fecha en adelante,
+   métricas y acciones comparten una sola zona flexible para repartir el espacio
+   restante sin volver a ensanchar el nombre de la ciudad. */
+@media (min-width: 721px) {
+  .itinerary-segment .segment__header.itinerary-stop {
+    grid-template-columns: 18px 30px minmax(90px, 106px) minmax(0, 1fr);
+    column-gap: 6px;
+  }
+
+  .itinerary-stop__after-place {
+    min-width: 0;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 52px 66px 66px 22px 22px 22px;
+    align-items: center;
+    justify-content: space-between;
+    column-gap: 6px;
+  }
+
+  .itinerary-stop__metrics {
+    display: contents;
+  }
+
+  .itinerary-stop__dates {
+    box-sizing: border-box;
+    width: 52px;
+    padding-left: 4px;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin {
+    padding-left: 24px;
+    grid-template-columns: 30px minmax(90px, 106px) minmax(0, 1fr);
+    column-gap: 6px;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__place {
+    width: 100%;
+    max-width: 106px;
+  }
+
+  /* El cuerpo del origen usa la misma caja y el mismo editor de conceptos que
+     cualquier trayecto. Solo falta la segunda fecha por definición funcional. */
+  .segments:not(.segments--compact) .itinerary-origin__body,
+  .itinerary-segment .segment__body {
+    box-sizing: border-box;
+    margin: 3px 0 5px 52px;
+    padding: 8px 0 3px;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__body .dates--origin .dates__row {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--expense-column-gap);
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__body .dates--origin .calendar-date {
+    grid-column: 1;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__body .expenses--journey,
+  .itinerary-segment .segment__body .expenses--journey {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .itinerary-segment .segment__header.itinerary-stop {
+    grid-template-columns: 18px 30px minmax(0, 1fr) 50px;
+  }
+
+  .itinerary-segment .itinerary-stop__after-place {
+    display: grid;
+    grid-template-columns: 22px 22px;
+    justify-content: end;
+    gap: 6px;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin {
+    grid-template-columns: 30px minmax(0, 1fr) 78px;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__after-place {
+    display: grid;
+    grid-template-columns: 22px 22px 22px;
+    justify-content: end;
+    gap: 6px;
+  }
+}
