@@ -61,18 +61,23 @@ test('itinerary, routes and notes keep one tab structure in the global header', 
   assert.match(topbar, /className="topbar__save"/);
   assert.match(navCss, /grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(navCss, /font-family:\s*var\(--font-body\);/);
-  assert.match(navCss, /font-size:\s*12px;/);
+  assert.match(navCss, /font-size:\s*14px;/);
   assert.match(navCss, /font-weight:\s*600;/);
   assert.match(navCss, /\.trip-summary__primary-nav-icon\s*\{[\s\S]*width:\s*22px;[\s\S]*height:\s*24px;/);
-  assert.match(navCss, /color:\s*#5f6875;/);
+  assert.match(navCss, /\.trip-summary__primary-nav-label\s*\{[\s\S]*color:\s*#111827;[\s\S]*font-size:\s*14px;/);
+  assert.match(navCss, /\.trip-summary__primary-nav-badge--places\s*\{[\s\S]*background:\s*var\(--atlas-accent\);[\s\S]*color:\s*#ffffff;/);
+  assert.match(navCss, /\.trip-summary__primary-nav-badge--notes\s*\{[\s\S]*background:\s*#fff0eb;[\s\S]*color:\s*#e2725b;/);
 });
 
 test('routes uses the requested new line icon rather than the old transparent signpost tab asset', async () => {
   const navigation = await read('src/app/TripHeaderNavigation.jsx');
   const editor = await read('src/app/AppEditorModule.jsx');
+  const header = await read('src/app/TripSummaryHeader.jsx');
   const icon = await read('src/assets/lugares-storefront-v2.svg');
 
   assert.match(navigation, /IconRoute/);
+  assert.match(header, /IconRulerMeasure/);
+  assert.doesNotMatch(header, /<Metric Icon=\{IconRoute\}/);
   assert.doesNotMatch(navigation, /lugaresIcon|lugares-storefront-v2/);
   assert.doesNotMatch(editor, /lugaresIcon|lugares-storefront-v2/);
   assert.match(icon, /aria-label="Lugares"/);
