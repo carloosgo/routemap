@@ -21,6 +21,7 @@ test('Phase K E2E rules preservan v3 y agregan v4 solo con prefijo sintetico', a
   assert.ok(composed.includes("data.schemaVersion == 4"));
   assert.ok(composed.includes('function phaseKOwnsProbeTrip(userId, tripId)'));
   assert.ok(composed.includes("tripId.matches('^phase-k-e2e-[a-z0-9_-]{8,80}$')"));
+  assert.ok(composed.includes("allow delete: if ownsUserPath(userId)\n          && !tripId.matches('^phase-k-e2e-[a-z0-9_-]{8,80}$');"));
   assert.ok(composed.includes('allow delete: if false;'));
   assert.ok(!composed.includes('allow delete: if phaseKOwnsProbeTrip(userId, tripId);'));
   assert.ok(composed.includes('phaseKValidClientTripCreate'));
