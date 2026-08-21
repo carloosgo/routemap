@@ -36,6 +36,26 @@ test('timeline keeps date and both pills readable, equal and compact', async () 
   assert.match(css, /\.floating-editor \.itinerary-stop__nights\.segment__pill\s*\{[\s\S]*background:\s*#eef5ff;[\s\S]*color:\s*#3977ca;/);
 });
 
+test('origin row mirrors itinerary controls and requested date/card polish', async () => {
+  const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
+  const form = await read('src/modules/trips/SegmentForm.jsx');
+  const polish = await read('src/modules/trips/ItineraryRequestedPolish.css');
+
+  assert.match(form, /import '\.\/ItineraryRequestedPolish\.css';/);
+  assert.match(origin, /itinerary-stop__metrics itinerary-origin__metrics/);
+  assert.match(origin, /itinerary-stop__nights/);
+  assert.match(origin, /itinerary-stop__amount/);
+  assert.match(origin, /segment__note-btn itinerary-origin__note-btn/);
+  assert.match(origin, /IconChevronUp/);
+  assert.match(origin, /IconChevronDown/);
+  assert.match(origin, /itinerary-origin__clear/);
+  assert.match(polish, /grid-template-columns:\s*30px minmax\(90px, 106px\) 186px 22px 22px 22px;/);
+  assert.match(polish, /\.segment-expense-form \.dates__row \.calendar-date\s*\{[\s\S]*width:\s*calc\(100% - 32px\);/);
+  assert.match(polish, /\.expenses--journey \.moneycard__label,[\s\S]*font-size:\s*15px;/);
+  assert.match(polish, /\.expenses--journey \.moneycard__input,[\s\S]*font-size:\s*14px;/);
+  assert.match(polish, /\.expenses--journey \.moneycard__currency,[\s\S]*font-size:\s*13px;/);
+});
+
 test('timeline flags use a high-density source with one fixed rounded thumbnail', async () => {
   const flags = await read('src/modules/flags/flags.js');
   const header = await read('src/modules/trips/SegmentHeader.jsx');

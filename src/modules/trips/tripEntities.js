@@ -15,6 +15,7 @@ export const TRIP_LIMITS = Object.freeze({
   checklist: 500,
   tripName: 120,
   segmentNote: 500,
+  originNote: 500,
   noteTitle: 60,
   noteText: 2000,
   checklistText: 120,
@@ -190,6 +191,7 @@ export function createOriginDetails(partial = {}) {
     expenses: source.expenses
       ? normalizeExpenses(source.expenses)
       : createExpenses(),
+    note: sanitizeText(source.note || '', TRIP_LIMITS.originNote),
   };
 }
 

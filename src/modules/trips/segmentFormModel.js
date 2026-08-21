@@ -10,17 +10,17 @@ export function formatSegmentAmount(amount, locale) {
   }).format(Number(amount) || 0);
 }
 
+export function formatSegmentDate(value, locale) {
+  if (!value) return null;
+  return new Date(`${value}T00:00:00`).toLocaleDateString(locale, {
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
 export function formatSegmentDates(segment, locale) {
   if (!segment?.startDate && !segment?.endDate) return null;
-
-  const formatDate = (value) =>
-    value
-      ? new Date(`${value}T00:00:00`).toLocaleDateString(locale, {
-          day: 'numeric',
-          month: 'short',
-        })
-      : '—';
-
+  const formatDate = (value) => formatSegmentDate(value, locale) || '—';
   return [formatDate(segment.startDate), formatDate(segment.endDate)].join(' – ');
 }
 

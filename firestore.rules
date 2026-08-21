@@ -79,10 +79,14 @@ service cloud.firestore {
 
     function validOriginDetails(data) {
       return data is map
-        && data.keys().hasOnly(['departureDate', 'expenses'])
+        && data.keys().hasOnly(['departureDate', 'expenses', 'note'])
         && data.keys().hasAll(['departureDate', 'expenses'])
         && data.departureDate is string
         && data.departureDate.size() <= 10
+        && (
+          !data.keys().hasAny(['note'])
+          || (data.note is string && data.note.size() <= 500)
+        )
         && validExpenses(data.expenses);
     }
 

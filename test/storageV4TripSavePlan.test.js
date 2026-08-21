@@ -8,6 +8,7 @@ function originDetails(overrides = {}) {
   return {
     departureDate: '',
     expenses: createExpenses(),
+    note: '',
     ...overrides,
   };
 }
@@ -188,6 +189,15 @@ test('originDetails participa en el root y roots antiguos vacíos no fuerzan una
     remoteRoot: legacyRoot,
   });
   assert.equal(unchangedLegacy.rootIntent, null);
+
+  const legacyRootWithoutNote = remoteRoot({ version: 7 });
+  delete legacyRootWithoutNote.originDetails.note;
+  const unchangedLegacyWithoutNote = planV4TripSave({
+    uid: 'alice',
+    rawTrip: trip(),
+    remoteRoot: legacyRootWithoutNote,
+  });
+  assert.equal(unchangedLegacyWithoutNote.rootIntent, null);
 
   const changedLegacy = planV4TripSave({
     uid: 'alice',

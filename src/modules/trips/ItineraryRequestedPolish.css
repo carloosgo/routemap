@@ -1,0 +1,141 @@
+/* Ajustes visuales solicitados para origen y contenido expandido del itinerario.
+   Se mantienen separados del modelo: métricas del origen son derivadas y las
+   fechas continúan usando los mismos CalendarDateInput canónicos. */
+
+/* La fila de origen replica la geometría de cualquier parada: ciudad,
+   métricas, nota, desplegar y cerrar. El padding inicial ocupa el lugar del
+   drag handle para conservar exactamente la guía de bandera/ciudad. */
+.segments:not(.segments--compact) .itinerary-origin {
+  grid-template-columns: 30px minmax(90px, 106px) 186px 22px 22px 22px;
+  column-gap: 6px;
+}
+
+.segments:not(.segments--compact) .itinerary-origin__metrics {
+  width: 186px;
+  min-width: 186px;
+  max-width: 186px;
+}
+
+.segments:not(.segments--compact) .itinerary-origin__note-btn,
+.segments:not(.segments--compact) .itinerary-origin__toggle,
+.segments:not(.segments--compact) .itinerary-origin__clear {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  color: #a1a7b0;
+}
+
+.segments:not(.segments--compact) .itinerary-origin__note-btn:hover,
+.segments:not(.segments--compact) .itinerary-origin__toggle:hover,
+.segments:not(.segments--compact) .itinerary-origin__clear:hover,
+.segments:not(.segments--compact) .itinerary-origin__note-btn:focus-visible,
+.segments:not(.segments--compact) .itinerary-origin__toggle:focus-visible,
+.segments:not(.segments--compact) .itinerary-origin__clear:focus-visible {
+  background: #f4f5f7;
+  color: #586170;
+  outline: none;
+}
+
+/* Ambos campos de fecha del trayecto, y la única fecha del origen, terminan
+   32px antes que la columna de conceptos. Esto corresponde a la guía visual
+   solicitada y no altera el ancho de la rejilla de gastos. */
+.segment-expense-form .dates__row .calendar-date {
+  width: calc(100% - 32px);
+  max-width: calc(100% - 32px);
+  justify-self: start;
+}
+
+/* +2px en las dos jerarquías tipográficas de las tarjetas de gastos. */
+.expenses--journey .moneycard__label,
+.expenses--journey .moneycard__typeinput,
+.floating-editor .segment__body .expenses--journey .moneycard__label,
+.floating-editor .segment__body .expenses--journey .moneycard__typeinput {
+  font-size: 15px;
+}
+
+.expenses--journey .moneycard__input,
+.floating-editor .segment__body .expenses--journey .moneycard__input,
+.floating-editor .segment__body .expenses--journey .moneycard__amount {
+  font-size: 14px;
+}
+
+.expenses--journey .moneycard__currency,
+.floating-editor .segment__body .expenses--journey .moneycard__currency {
+  font-size: 13px;
+}
+
+.expenses--journey .expenses__add-other {
+  font-size: 15px;
+}
+
+/* La nota del origen reutiliza originDetails; aparece sólo cuando se pulsa el
+   icono de nota para no añadir ruido permanente al formulario expandido. */
+.itinerary-origin__note-editor {
+  box-sizing: border-box;
+  position: relative;
+  width: calc(100% - 32px);
+  padding: 8px 10px 7px;
+  border: 0;
+  border-radius: 6px;
+  background: #f8f9fa;
+}
+
+.itinerary-origin__note-editor-head {
+  min-height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.itinerary-origin__note-editor-close {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  padding: 0;
+}
+
+.itinerary-origin__note-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 62px;
+  padding: 5px 0 2px;
+  resize: vertical;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  color: #303642;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.itinerary-origin__note-count {
+  display: block;
+  color: #9298a4;
+  font-size: 10px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .segments:not(.segments--compact) .itinerary-origin {
+    grid-template-columns: 30px minmax(0, 1fr) 22px 22px;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__metrics,
+  .segments:not(.segments--compact) .itinerary-origin__note-btn {
+    display: none !important;
+  }
+}
