@@ -19,6 +19,7 @@ import {
 import { tripSummary } from '../modules/trips/tripSummaryModel.js';
 import { formatMoney } from '../shared/utils.js';
 import { SummarySelectorMetric } from './SummarySelectorMetric.jsx';
+import { TripHeaderNavigation } from './TripHeaderNavigation.jsx';
 
 const CURRENCIES = ['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'];
 
@@ -70,7 +71,7 @@ function Metric({ Icon, iconColor, label, value, className = '', children, onCli
 
 export function TripSummaryHeader({
   trip,
-  renameTrip,
+  navigation,
   setCurrency,
   locale,
   setLocale,
@@ -121,15 +122,7 @@ export function TripSummaryHeader({
       </div>
 
       <div className="trip-summary__identity">
-        <input
-          type="text"
-          className="trip-summary__title"
-          value={trip.name || ''}
-          maxLength={120}
-          placeholder={t('tripNamePlaceholder')}
-          aria-label={t('tripName')}
-          onChange={(event) => renameTrip(event.target.value)}
-        />
+        <TripHeaderNavigation {...navigation} t={t} />
       </div>
 
       <div className="trip-summary__metrics" aria-label={t('tripMetrics')}>
