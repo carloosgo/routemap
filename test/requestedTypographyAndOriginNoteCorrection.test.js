@@ -12,8 +12,8 @@ test('only the six header summary cards use the requested scale and their overri
   const main = await read('src/main.jsx');
   const correction = await read('src/modules/trips/ItineraryCorrectionPolish.css');
 
-  assert.match(header, /\.trip-summary__metric-label\s*\{[^}]*font-size:\s*12px;/s);
-  assert.match(header, /\.trip-summary__metric-value,[\s\S]*font-size:\s*16px;/);
+  assert.match(header, /\.trip-summary__metric-label\s*\{[^}]*font-size:\s*11px;/s);
+  assert.match(header, /\.trip-summary__metric-value,[\s\S]*font-size:\s*14px;/);
   assert.doesNotMatch(header, /trip-summary__title/);
   assert.doesNotMatch(tripHeader, /TripSummaryHeaderTypography\.css/);
   assert.ok(
