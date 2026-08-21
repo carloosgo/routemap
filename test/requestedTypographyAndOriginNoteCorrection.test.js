@@ -6,14 +6,14 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('only the six header summary cards grow and their override loads after canonical header styles', async () => {
+test('only the six header summary cards use the requested scale and their override loads after canonical header styles', async () => {
   const header = await read('src/app/TripSummaryHeaderTypography.css');
   const tripHeader = await read('src/app/TripSummaryHeader.jsx');
   const main = await read('src/main.jsx');
   const correction = await read('src/modules/trips/ItineraryCorrectionPolish.css');
 
-  assert.match(header, /\.trip-summary__metric-label\s*\{[^}]*font-size:\s*14px;/s);
-  assert.match(header, /\.trip-summary__metric-value,[\s\S]*font-size:\s*18px;/);
+  assert.match(header, /\.trip-summary__metric-label\s*\{[^}]*font-size:\s*12px;/s);
+  assert.match(header, /\.trip-summary__metric-value,[\s\S]*font-size:\s*16px;/);
   assert.doesNotMatch(header, /trip-summary__title/);
   assert.doesNotMatch(tripHeader, /TripSummaryHeaderTypography\.css/);
   assert.ok(
