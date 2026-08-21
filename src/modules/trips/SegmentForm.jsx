@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { segmentTotal } from './tripModel.js';
 import { SegmentBody } from './SegmentBody.jsx';
 import { SegmentDeleteDialog } from './SegmentDeleteDialog.jsx';
@@ -9,6 +9,8 @@ import { formatSegmentAmount, formatSegmentDates, formatSegmentNights } from './
 import './ItineraryTimeline.css';
 import './ItineraryRequestedPolish.css';
 import './ItineraryCorrectionPolish.css';
+
+const EXPANDED_REVEAL_DELAY_MS = 210;
 
 function SegmentDropIndicator({ placement }) {
   if (!placement) return null;
@@ -50,10 +52,23 @@ export function SegmentForm({
   onReorderPointerStart,
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const segmentRef = useRef(null);
   const bodyId = `segment-body-${segment.id}`;
   const formattedAmount = formatSegmentAmount(segmentTotal(segment), locale);
   const formattedDates = formatSegmentDates(segment, locale);
   const formattedNights = formatSegmentNights(segment, locale);
+
+  useEffect(() => {
+    if (!expanded || dragging) return undefined;
+    const timeoutId = globalThis.setTimeout(() => {
+      segmentRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'nearest',
+      });
+    }, EXPANDED_REVEAL_DELAY_MS);
+    return () => globalThis.clearTimeout(timeoutId);
+  }, [expanded, dragging]);
 
   const confirmRemove = () => {
     setConfirmOpen(false);
@@ -77,6 +92,7 @@ export function SegmentForm({
         />
       )}
       <article
+        ref={segmentRef}
         className={
           'segment itinerary-segment' +
           (dragging ? ' is-dragging' : '') +
