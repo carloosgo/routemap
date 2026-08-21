@@ -1,8 +1,8 @@
 .trip-summary__metric-label {
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .trip-summary__metric-value,
 .trip-summary__selector-trigger {
-  font-size: 15px;
+  font-size: 17px;
 }
