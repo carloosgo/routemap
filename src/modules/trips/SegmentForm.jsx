@@ -60,6 +60,9 @@ export function SegmentForm({
     onRemove();
   };
 
+  const openSegmentNote = () => onOpenNote(segment.id);
+  const openOriginNote = () => onOpenNote(ORIGIN_NOTE_TARGET);
+
   return (
     <>
       {index === 0 && (
@@ -71,7 +74,7 @@ export function SegmentForm({
           onUpdate={onUpdate}
           onUpdateOriginDetails={onUpdateOriginDetails}
           onUpdateOriginExpenses={onUpdateOriginExpenses}
-          onOpenNote={() => onOpenNote(ORIGIN_NOTE_TARGET)}
+          onOpenNote={openOriginNote}
         />
       )}
       <article
@@ -102,7 +105,7 @@ export function SegmentForm({
           bodyId={bodyId}
           onToggle={onToggle}
           onDestinationSelect={(destination) => onUpdate({ destination })}
-          onOpenNote={onOpenNote}
+          onOpenNote={openSegmentNote}
           onRemoveRequest={() => setConfirmOpen(true)}
           onReorderPointerStart={onReorderPointerStart}
         />
