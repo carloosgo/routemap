@@ -28,22 +28,51 @@
     padding-right: 8px;
   }
 
+  /* La ciudad conserva el ancho anterior a retirar la navegación lateral.
+     El espacio recuperado se entrega a la zona de métricas, no al nombre. */
   .editor-module.editor-module--itinerary .itinerary-segment .segment__header.itinerary-stop {
     box-sizing: border-box;
     width: 100%;
-    grid-template-columns: 18px 30px minmax(90px, 1fr) 186px 22px 22px 22px;
+    grid-template-columns: 18px 30px 106px minmax(186px, 1fr) 22px 22px 22px;
+    column-gap: 8px;
   }
 
   .editor-module.editor-module--itinerary .itinerary-stop__place {
     width: 100%;
+    max-width: 106px;
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-stop__metrics {
+    width: 100%;
+    min-width: 186px;
     max-width: none;
+    grid-template-columns: 42px 66px 66px;
+    justify-content: space-between;
+    column-gap: 0;
   }
 
-  .itinerary-origin {
-    grid-template-columns: 30px minmax(0, 154px);
+  /* El origen ocupa exactamente las mismas columnas visibles que cualquier
+     trayecto. El padding sustituye drag-handle + gap (18 + 8) para que bandera,
+     ciudad, fecha, noches, costo y controles queden sobre las mismas guías. */
+  .segments:not(.segments--compact) .itinerary-origin {
+    box-sizing: border-box;
+    width: 100%;
+    padding-left: 26px;
+    grid-template-columns: 30px 106px minmax(186px, 1fr) 22px 22px 22px;
+    column-gap: 8px;
   }
 
-  .itinerary-origin__place {
-    max-width: 154px;
+  .segments:not(.segments--compact) .itinerary-origin__place {
+    width: 100%;
+    max-width: 106px;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__metrics {
+    width: 100%;
+    min-width: 186px;
+    max-width: none;
+    grid-template-columns: 42px 66px 66px;
+    justify-content: space-between;
+    column-gap: 0;
   }
 }
