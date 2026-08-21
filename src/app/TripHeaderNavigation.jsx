@@ -1,9 +1,11 @@
 import { IconListDetails, IconNotebook, IconRoute } from '@tabler/icons-react';
 
+const NAV_ICON_COLOR = '#7c5ce7';
+
 const NAV_ITEMS = [
-  { id: 'segments', labelKey: 'itinerary', Icon: IconListDetails, color: '#357d94' },
-  { id: 'places', labelKey: 'myRoutes', Icon: IconRoute, color: '#7c5ce7' },
-  { id: 'notes', labelKey: 'notes', Icon: IconNotebook, color: '#e08a17' },
+  { id: 'segments', labelKey: 'itinerary', Icon: IconListDetails },
+  { id: 'places', labelKey: 'myRoutes', Icon: IconRoute },
+  { id: 'notes', labelKey: 'notes', Icon: IconNotebook },
 ];
 
 export function TripHeaderNavigation({
@@ -19,7 +21,7 @@ export function TripHeaderNavigation({
       role="tablist"
       aria-label={`${t('itinerary')}, ${t('myRoutes')}, ${t('notes')}`}
     >
-      {NAV_ITEMS.map(({ id, labelKey, Icon, color }) => {
+      {NAV_ITEMS.map(({ id, labelKey, Icon }) => {
         const isActive = activeTab === id;
         const badge = id === 'places' ? routeCount : id === 'notes' ? checklistProgress : '';
         return (
@@ -32,7 +34,11 @@ export function TripHeaderNavigation({
             className={`trip-summary__primary-nav-item${isActive ? ' is-active' : ''}`}
             onClick={() => setActiveTab(id)}
           >
-            <span className="trip-summary__primary-nav-icon" style={{ color }} aria-hidden="true">
+            <span
+              className="trip-summary__primary-nav-icon"
+              style={{ color: NAV_ICON_COLOR }}
+              aria-hidden="true"
+            >
               <Icon size={18} stroke={1.8} />
             </span>
             <span className="trip-summary__primary-nav-label">{t(labelKey)}</span>

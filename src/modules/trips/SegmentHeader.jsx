@@ -73,58 +73,60 @@ export function SegmentHeader({
         )}
       </div>
 
-      <div className="itinerary-stop__metrics">
-        <span className={'itinerary-stop__dates' + (!formattedDates ? ' is-placeholder' : '')}>
-          {dateLines.map((dateLine, index) => (
-            <span className="itinerary-stop__date-line" key={`${dateLine}-${index}`}>
-              {dateLine}
-            </span>
-          ))}
-        </span>
-        <span
-          className={
-            'segment__pill itinerary-stop__nights' +
-            (!formattedNights ? ' is-placeholder' : '')
-          }
+      <div className="itinerary-stop__after-place">
+        <div className="itinerary-stop__metrics">
+          <span className={'itinerary-stop__dates' + (!formattedDates ? ' is-placeholder' : '')}>
+            {dateLines.map((dateLine, index) => (
+              <span className="itinerary-stop__date-line" key={`${dateLine}-${index}`}>
+                {dateLine}
+              </span>
+            ))}
+          </span>
+          <span
+            className={
+              'segment__pill itinerary-stop__nights' +
+              (!formattedNights ? ' is-placeholder' : '')
+            }
+          >
+            {formattedNights || t('nightsHint')}
+          </span>
+          <span className="segment__pill itinerary-stop__amount">{formattedAmount}</span>
+        </div>
+
+        <button
+          type="button"
+          className={'btn btn--icon segment__note-btn' + (segment.note ? ' has-note' : '')}
+          aria-label={t('segmentNote')}
+          title={t('segmentNote')}
+          onClick={onOpenNote}
         >
-          {formattedNights || t('nightsHint')}
-        </span>
-        <span className="segment__pill itinerary-stop__amount">{formattedAmount}</span>
+          <IconNote size={14} aria-hidden="true" />
+        </button>
+
+        <button
+          type="button"
+          className="btn btn--icon segment__toggle"
+          aria-label={expanded ? t('collapse') : t('expand')}
+          aria-expanded={expanded}
+          aria-controls={bodyId}
+          onClick={onToggle}
+        >
+          {expanded ? (
+            <IconChevronUp size={14} aria-hidden="true" />
+          ) : (
+            <IconChevronDown size={14} aria-hidden="true" />
+          )}
+        </button>
+
+        <button
+          type="button"
+          className="btn btn--icon"
+          aria-label={t('removeSegment')}
+          onClick={onRemoveRequest}
+        >
+          <IconX size={14} aria-hidden="true" />
+        </button>
       </div>
-
-      <button
-        type="button"
-        className={'btn btn--icon segment__note-btn' + (segment.note ? ' has-note' : '')}
-        aria-label={t('segmentNote')}
-        title={t('segmentNote')}
-        onClick={onOpenNote}
-      >
-        <IconNote size={14} aria-hidden="true" />
-      </button>
-
-      <button
-        type="button"
-        className="btn btn--icon segment__toggle"
-        aria-label={expanded ? t('collapse') : t('expand')}
-        aria-expanded={expanded}
-        aria-controls={bodyId}
-        onClick={onToggle}
-      >
-        {expanded ? (
-          <IconChevronUp size={14} aria-hidden="true" />
-        ) : (
-          <IconChevronDown size={14} aria-hidden="true" />
-        )}
-      </button>
-
-      <button
-        type="button"
-        className="btn btn--icon"
-        aria-label={t('removeSegment')}
-        onClick={onRemoveRequest}
-      >
-        <IconX size={14} aria-hidden="true" />
-      </button>
     </header>
   );
 }

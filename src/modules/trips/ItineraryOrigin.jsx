@@ -58,57 +58,59 @@ export function ItineraryOrigin({
         )}
       </div>
 
-      <div className="itinerary-stop__metrics itinerary-origin__metrics">
-        <span className={'itinerary-stop__dates' + (!formattedDate ? ' is-placeholder' : '')}>
-          <span className="itinerary-stop__date-line">
-            {formattedDate || '—'}
+      <div className="itinerary-stop__after-place itinerary-origin__after-place">
+        <div className="itinerary-stop__metrics itinerary-origin__metrics">
+          <span className={'itinerary-stop__dates' + (!formattedDate ? ' is-placeholder' : '')}>
+            <span className="itinerary-stop__date-line">
+              {formattedDate || '—'}
+            </span>
           </span>
-        </span>
-        <span
-          className={
-            'segment__pill itinerary-stop__nights' +
-            (!formattedNights ? ' is-placeholder' : '')
-          }
+          <span
+            className={
+              'segment__pill itinerary-stop__nights' +
+              (!formattedNights ? ' is-placeholder' : '')
+            }
+          >
+            {formattedNights || t('nightsHint')}
+          </span>
+          <span className="segment__pill itinerary-stop__amount">{formattedAmount}</span>
+        </div>
+
+        <button
+          type="button"
+          className={'btn btn--icon segment__note-btn itinerary-origin__note-btn' + (hasNote ? ' has-note' : '')}
+          aria-label={originNoteLabel}
+          title={originNoteLabel}
+          onClick={onOpenNote}
         >
-          {formattedNights || t('nightsHint')}
-        </span>
-        <span className="segment__pill itinerary-stop__amount">{formattedAmount}</span>
+          <IconNote size={14} aria-hidden="true" />
+        </button>
+
+        <button
+          type="button"
+          className="btn btn--icon segment__toggle itinerary-origin__toggle"
+          aria-expanded={expanded}
+          aria-controls={bodyId}
+          aria-label={expanded ? t('collapse') : t('expand')}
+          onClick={onToggle}
+        >
+          {expanded ? (
+            <IconChevronUp size={14} aria-hidden="true" />
+          ) : (
+            <IconChevronDown size={14} aria-hidden="true" />
+          )}
+        </button>
+
+        <button
+          type="button"
+          className="btn btn--icon itinerary-origin__clear"
+          aria-label={clearOriginLabel}
+          title={clearOriginLabel}
+          onClick={onClear}
+        >
+          <IconX size={14} aria-hidden="true" />
+        </button>
       </div>
-
-      <button
-        type="button"
-        className={'btn btn--icon segment__note-btn itinerary-origin__note-btn' + (hasNote ? ' has-note' : '')}
-        aria-label={originNoteLabel}
-        title={originNoteLabel}
-        onClick={onOpenNote}
-      >
-        <IconNote size={14} aria-hidden="true" />
-      </button>
-
-      <button
-        type="button"
-        className="btn btn--icon segment__toggle itinerary-origin__toggle"
-        aria-expanded={expanded}
-        aria-controls={bodyId}
-        aria-label={expanded ? t('collapse') : t('expand')}
-        onClick={onToggle}
-      >
-        {expanded ? (
-          <IconChevronUp size={14} aria-hidden="true" />
-        ) : (
-          <IconChevronDown size={14} aria-hidden="true" />
-        )}
-      </button>
-
-      <button
-        type="button"
-        className="btn btn--icon itinerary-origin__clear"
-        aria-label={clearOriginLabel}
-        title={clearOriginLabel}
-        onClick={onClear}
-      >
-        <IconX size={14} aria-hidden="true" />
-      </button>
     </div>
   );
 }
