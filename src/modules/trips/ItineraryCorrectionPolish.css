@@ -52,3 +52,26 @@
 .editor-module--itinerary .editor__body {
   scrollbar-gutter: stable;
 }
+
+/* El contenido expandido entra con una transición corta: conserva la respuesta
+   inmediata del acordeón pero elimina la aparición brusca de golpe. */
+@keyframes itinerary-body-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) scaleY(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+.itinerary-segment .segment__body,
+.segments:not(.segments--compact) .itinerary-origin__body {
+  transform-origin: top center;
+  animation: itinerary-body-reveal 190ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.itinerary-segment {
+  scroll-margin-block: 12px;
+}

@@ -11,7 +11,7 @@ import {
   IconMapPin,
   IconMoon,
   IconPlane,
-  IconRoute,
+  IconRulerMeasure,
   IconToolsKitchen2,
   IconTrain,
   IconWallet,
@@ -162,7 +162,7 @@ export function TripSummaryHeader({
 
         <Metric Icon={IconMapPin} iconColor="#7c5ce7" label={t('destinations')} value={`${summary.destinations} ${t('cities')}`} />
         <Metric Icon={IconMoon} iconColor="#4f6df5" label={t('totalNights')} value={`${summary.nights} ${t('nights')}`} />
-        <Metric Icon={IconRoute} iconColor="#e08a17" label={t('totalDistance')} value={`≈ ${distance} km`} />
+        <Metric Icon={IconRulerMeasure} iconColor="#e08a17" label={t('totalDistance')} value={`≈ ${distance} km`} />
         <SummarySelectorMetric Icon={IconCurrencyDollar} iconColor="#c9224d" label={t('currency')} value={trip.currency} options={currencyOptions} onChange={setCurrency} menuClassName="trip-summary__selector-menu--currency" />
         <SummarySelectorMetric Icon={IconLanguage} iconColor="#357d94" label={t('language')} value={locale} options={languageOptions} onChange={setLocale} menuClassName="trip-summary__selector-menu--language" />
       </div>

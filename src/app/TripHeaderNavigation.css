@@ -24,9 +24,9 @@
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: #5f6875;
+  color: #111827;
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
@@ -52,7 +52,7 @@
 
 .trip-summary__primary-nav-item.is-active {
   background: rgba(25, 165, 208, 0.075);
-  color: #26313a;
+  color: #111827;
 }
 
 .trip-summary__primary-nav-icon {
@@ -67,6 +67,8 @@
 .trip-summary__primary-nav-label {
   min-width: 0;
   overflow: hidden;
+  color: #111827;
+  font-size: 14px;
   text-overflow: ellipsis;
 }
 
@@ -78,12 +80,20 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: var(--atlas-accent);
-  color: #ffffff;
   font-size: 9px;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+}
+
+.trip-summary__primary-nav-badge--places {
+  background: var(--atlas-accent);
+  color: #ffffff;
+}
+
+.trip-summary__primary-nav-badge--notes {
+  background: #fff0eb;
+  color: #e2725b;
 }
 
 /* La navegación ya vive en el header: el editor recupera el ancho que ocupaba
@@ -107,7 +117,7 @@
   .trip-summary__primary-nav-item {
     gap: 4px;
     padding-inline: 6px;
-    font-size: 11px;
+    font-size: 14px;
   }
 }
 
@@ -122,7 +132,7 @@
   }
 
   .trip-summary__primary-nav-label {
-    font-size: 10px;
+    font-size: 14px;
   }
 }
 

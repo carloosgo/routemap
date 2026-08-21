@@ -1,5 +1,5 @@
 /* Integración entre marca, resumen global y workspace.
-   En escritorio existe una sola cabecera real: marca, identidad del viaje
+   En escritorio existe una sola cabecera real: marca, navegación principal
    y métricas comparten la misma retícula y la misma superficie. */
 .app {
   --atlas-nav-width: 82px;
@@ -43,8 +43,22 @@
   }
 
   .trip-summary__metrics {
+    position: relative;
     grid-column: 3;
     width: 100%;
+    padding-left: 10px;
+  }
+
+  /* Separador explícito entre Notas y Total del viaje. */
+  .trip-summary__metrics::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 1px;
+    height: 22px;
+    transform: translateY(-50%);
+    background: rgba(148, 153, 171, 0.24);
   }
 
   .editor-module {
@@ -68,6 +82,17 @@
 
   .editor-module__workspace-anchor {
     top: calc(var(--trip-header-height) + 60px) !important;
+  }
+
+  /* El mapa vive por debajo de un header fijo. Sus overlays propios deben
+     empezar después de esa superficie para no quedar tapados por ella. */
+  .workspace__desktop--column > .mappane .segnote,
+  .workspace__desktop--column > .mappane .geo-search {
+    top: calc(var(--trip-header-height) + 12px) !important;
+  }
+
+  .workspace__desktop--column > .mappane .segnote {
+    max-height: calc(100% - var(--trip-header-height) - 24px);
   }
 }
 
