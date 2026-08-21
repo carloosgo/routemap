@@ -15,11 +15,7 @@ import { TripDeleteDialog } from './app/TripDeleteDialog.jsx';
 import { toggleTarget } from './app/appInteractionModel.js';
 import { normalizeRecoveredDraft } from './app/recoveredTripDraft.js';
 import { useAppEditorState } from './app/useAppEditorState.js';
-import {
-  useOutsideClick,
-  useOutsideClickSelector,
-  useSaveShortcut,
-} from './app/useAppInteractions.js';
+import { useOutsideClick, useOutsideClickSelector, useSaveShortcut } from './app/useAppInteractions.js';
 import './App.css';
 import './app/FloatingEditor.css';
 
