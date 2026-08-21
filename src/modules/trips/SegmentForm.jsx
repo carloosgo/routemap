@@ -6,6 +6,7 @@ import { SegmentHeader } from './SegmentHeader.jsx';
 import { SegmentOriginSection } from './SegmentOriginSection.jsx';
 import { formatSegmentAmount, formatSegmentDates, formatSegmentNights } from './segmentFormModel.js';
 import './ItineraryTimeline.css';
+import './ItineraryRequestedPolish.css';
 
 function SegmentDropIndicator({ placement }) {
   if (!placement) return null;
