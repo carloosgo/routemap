@@ -156,7 +156,7 @@ test('stage verify falla cerrado si falta Function, runtime o Eventarc', async (
   });
   assert.equal(eventarcResult.staged, false);
   assert.equal(eventarcResult.functionsReady, true);
-  assert.deepEqual(eventarcResult.eventarc.missingTriggers, ['atlas-v4-segment-written']);
+  assert.deepEqual(eventarcResult.eventarc.missingTriggers, [V4_PILOT_EVENTARC_TRIGGERS[0].name]);
   assert.equal(eventarcResult.readinessCandidates.aggregateReady, false);
   assert.equal(eventarcResult.readinessCandidates.lifecycleReady, true);
 });
@@ -177,7 +177,7 @@ test('stage verify detecta Eventarc mal apuntado, filtros incompletos, Rules dis
     ruleset: current.ruleset,
     remoteConfigSummary: safeRemoteConfig(),
   });
-  assert.deepEqual(triggerResult.eventarc.invalidTriggers, ['atlas-v4-segment-written']);
+  assert.deepEqual(triggerResult.eventarc.invalidTriggers, [V4_PILOT_EVENTARC_TRIGGERS[0].name]);
   assert.equal(triggerResult.staged, false);
 
   const wrongFilterTriggers = eventarcInventory();
@@ -193,7 +193,7 @@ test('stage verify detecta Eventarc mal apuntado, filtros incompletos, Rules dis
     ruleset: current.ruleset,
     remoteConfigSummary: safeRemoteConfig(),
   });
-  assert.deepEqual(wrongFilterResult.eventarc.invalidTriggers, ['atlas-v4-place-written']);
+  assert.deepEqual(wrongFilterResult.eventarc.invalidTriggers, [V4_PILOT_EVENTARC_TRIGGERS[1].name]);
 
   const changed = activeRules(`${rules}\n// drift`);
   const driftResult = buildPilotStageVerification({

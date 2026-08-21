@@ -183,6 +183,16 @@ function uniquePlaces(rawPlaces) {
   return places;
 }
 
+export function createOriginDetails(partial = {}) {
+  const source = partial && typeof partial === 'object' ? partial : {};
+  return {
+    departureDate: normalizeDate(source.departureDate),
+    expenses: source.expenses
+      ? normalizeExpenses(source.expenses)
+      : createExpenses(),
+  };
+}
+
 export function createSegment(overrides = {}) {
   return {
     id: normalizeId(overrides.id),
@@ -221,6 +231,7 @@ export function createTrip(name = '') {
     id: uid(),
     name: sanitizeText(name, TRIP_LIMITS.tripName),
     currency: 'USD',
+    originDetails: createOriginDetails(),
     segments: [],
     places: [],
     routeConnections: [],
@@ -267,6 +278,7 @@ export function normalizeTrip(raw) {
     id: normalizeId(raw.id),
     name: sanitizeText(raw.name || '', TRIP_LIMITS.tripName),
     currency: normalizeCurrency(raw.currency),
+    originDetails: createOriginDetails(raw.originDetails),
     segments: rawSegments.map(createSegment),
     places,
     routeConnections,

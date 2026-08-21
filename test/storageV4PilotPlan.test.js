@@ -13,7 +13,7 @@ async function repoInputs() {
   return { v3Rules, v4Rules, indexSource, pilotExportsSource };
 }
 
-test('pilot plan modela tres Functions soportadas + cinco triggers Eventarc sin activarlos', async () => {
+test('pilot plan modela tres Functions soportadas + seis triggers Eventarc sin activarlos', async () => {
   const plan = buildStorageV4PilotPlan(await repoInputs());
 
   assert.equal(plan.project, 'atlasmap-dev');
@@ -29,8 +29,9 @@ test('pilot plan modela tres Functions soportadas + cinco triggers Eventarc sin 
     v4TripPurge: 'us-central1',
   });
   assert.equal(plan.backend.eventarcRegion, 'northamerica-south1');
-  assert.equal(plan.backend.eventarcTriggerCount, 5);
+  assert.equal(plan.backend.eventarcTriggerCount, 6);
   assert.deepEqual(plan.backend.eventarcTriggerNames, [
+    'atlas-v4-trip-written',
     'atlas-v4-segment-written',
     'atlas-v4-place-written',
     'atlas-v4-connection-written',

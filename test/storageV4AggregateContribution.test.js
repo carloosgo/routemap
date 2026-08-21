@@ -136,3 +136,28 @@ test('restore vuelve a aportar y places nunca alteran total monetario', () => {
   });
   assert.equal(placeTarget.valueContribution, 0);
 });
+
+test('origen aporta valor sin alterar conteos y queda protegido por versión', () => {
+  const target = targetAggregateContribution({
+    entityType: 'origin',
+    after: { id: 'trip-1', version: 4, status: 'active', amount: 175 },
+    valueOf: amountOf,
+  });
+  assert.deepEqual(target, {
+    entityType: 'origin',
+    version: 4,
+    countContribution: 0,
+    valueContribution: 175,
+  });
+  assert.deepEqual(aggregateDeltaFromContribution({
+    entityType: 'origin',
+    version: 3,
+    countContribution: 0,
+    valueContribution: 150,
+  }, target), {
+    apply: true,
+    countDelta: 0,
+    valueDelta: 25,
+  });
+  assert.equal(aggregateDeltaFromContribution({ ...target }, target).apply, false);
+});

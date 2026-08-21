@@ -5,19 +5,21 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('destination city supports a two-line selected presentation without changing origin presentation', async () => {
+test('origin y destination soportan presentación seleccionada de dos líneas', async () => {
   const header = await read('src/modules/trips/SegmentHeader.jsx');
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const autocomplete = await read('src/components/CityAutocomplete.jsx');
   const css = await read('src/modules/trips/ItineraryTimeline.css');
+  const originCss = await read('src/modules/trips/OriginOptions.css');
 
   assert.match(header, /selectedDisplay="timeline"/);
-  assert.doesNotMatch(origin, /selectedDisplay="timeline"/);
+  assert.match(origin, /selectedDisplay="timeline"/);
   assert.match(autocomplete, /autocomplete--timeline-selected/);
   assert.match(autocomplete, /autocomplete__selected-value/);
   assert.match(css, /-webkit-line-clamp:\s*2;/);
   assert.match(css, /\.itinerary-stop__picker \.input\s*\{[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*700;/);
-  assert.match(css, /\.itinerary-origin__picker \.input\s*\{[\s\S]*font-size:\s*11px;[\s\S]*font-weight:\s*500;/);
+  assert.match(originCss, /\.itinerary-origin__picker \.input\s*\{[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*700;/);
+  assert.match(originCss, /\.itinerary-origin__picker \.autocomplete__selected-value\s*\{[\s\S]*-webkit-line-clamp:\s*2;[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*700;/);
 });
 
 test('timeline keeps date and both pills readable, equal and compact', async () => {

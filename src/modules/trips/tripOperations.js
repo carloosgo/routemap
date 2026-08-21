@@ -98,7 +98,8 @@ export function segmentTotal(segment) {
 }
 
 export function tripTotal(trip) {
-  return (trip?.segments || []).reduce(
+  const originTotal = expensesTotal(trip?.originDetails?.expenses);
+  return originTotal + (trip?.segments || []).reduce(
     (sum, segment) => sum + segmentTotal(segment),
     0
   );

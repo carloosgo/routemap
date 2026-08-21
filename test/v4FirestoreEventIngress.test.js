@@ -35,7 +35,16 @@ function fakeDb(data, exists = true) {
   };
 }
 
-test('ingress usa ce-document/ce-database y clasifica aggregate/touch', () => {
+test('ingress usa ce-document/ce-database y clasifica root, aggregate y touch', () => {
+  const root = parseV4FirestoreEventHeaders(headers(
+    'users/alice/trips/trip-1'
+  ));
+  assert.equal(root.entityType, 'origin');
+  assert.equal(root.entityId, 'trip-1');
+  assert.equal(root.collection, 'trips');
+  assert.equal(root.mode, 'aggregate');
+  assert.equal(root.documentPath, 'users/alice/trips/trip-1');
+
   const segment = parseV4FirestoreEventHeaders(headers(
     'users/alice/trips/trip-1/segments/seg-1'
   ));
@@ -85,6 +94,27 @@ test('aggregate relee el documento autoritativo y no confía en payload protobuf
   assert.equal(input.before, null);
   assert.equal(input.after, after);
   assert.equal(result.processed, true);
+});
+
+test('root relee originDetails y entra por el agregado existente', async () => {
+  const after = {
+    id: 'trip-1',
+    version: 9,
+    status: 'active',
+    originDetails: { departureDate: '2026-12-01', expenses: {} },
+  };
+  const db = fakeDb(after);
+  let input;
+  await handleV4FirestoreEventIngress({
+    db,
+    headers: headers('users/alice/trips/trip-1'),
+    applyAggregate: async (value) => { input = value; return { applied: true }; },
+    applyTouch: async () => { throw new Error('no debe ejecutarse'); },
+  });
+  assert.deepEqual(db.reads, ['users/alice/trips/trip-1']);
+  assert.equal(input.entityType, 'origin');
+  assert.equal(input.entityId, 'trip-1');
+  assert.equal(input.after, after);
 });
 
 test('touch usa el estado actual y missing físico se trata como cleanup/purge', async () => {

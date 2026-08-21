@@ -3,7 +3,10 @@ import {
   aggregateDeltaFromContribution,
   targetAggregateContribution,
 } from './v4AggregateContributionModel.js';
-import { v4SegmentAggregateValue } from './v4SegmentAggregateValue.js';
+import {
+  v4OriginAggregateValue,
+  v4SegmentAggregateValue,
+} from './v4SegmentAggregateValue.js';
 
 function requiredText(value, field) {
   const normalized = typeof value === 'string' ? value.trim() : '';
@@ -22,7 +25,13 @@ function assertEntityIdentity(entity, entityId, label) {
 function countField(entityType) {
   if (entityType === 'segment') return 'segmentCount';
   if (entityType === 'place') return 'placeCount';
-  throw new TypeError('La entidad no participa en agregados v4.');
+  return null;
+}
+
+function aggregateValueFor(entityType) {
+  if (entityType === 'segment') return v4SegmentAggregateValue;
+  if (entityType === 'origin') return v4OriginAggregateValue;
+  return () => 0;
 }
 
 export async function applyV4AggregateEvent({
@@ -45,7 +54,7 @@ export async function applyV4AggregateEvent({
     entityType,
     before,
     after,
-    valueOf: entityType === 'segment' ? v4SegmentAggregateValue : () => 0,
+    valueOf: aggregateValueFor(entityType),
   });
   const tripRef = db.doc(`users/${ownerId}/trips/${safeTripId}`);
   const contributionId = `${entityType}:${encodeURIComponent(safeEntityId)}`;
@@ -76,14 +85,20 @@ export async function applyV4AggregateEvent({
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    const tripPatch = {
-      [countField(entityType)]: FieldValue.increment(delta.countDelta),
-      updatedAt: FieldValue.serverTimestamp(),
-    };
-    if (entityType === 'segment') {
-      tripPatch.total = FieldValue.increment(delta.valueDelta);
+    const tripPatch = {};
+    const targetCountField = countField(entityType);
+    if (targetCountField) {
+      tripPatch[targetCountField] = FieldValue.increment(delta.countDelta);
     }
-    transaction.update(tripRef, tripPatch);
+    if (entityType === 'segment' || entityType === 'origin') {
+      if (delta.valueDelta !== 0) {
+        tripPatch.total = FieldValue.increment(delta.valueDelta);
+      }
+    }
+    if (Object.keys(tripPatch).length > 0) {
+      tripPatch.updatedAt = FieldValue.serverTimestamp();
+      transaction.update(tripRef, tripPatch);
+    }
     return { applied: true, ...delta, targetVersion: target.version };
   });
 }

@@ -160,7 +160,8 @@ test('ExpenseEditor coordina vistas sin absorber catálogo ni mutaciones', async
   assert.match(editor, /from '\.\/expenseEditorCatalog\.jsx'/);
   assert.doesNotMatch(editor, /IconPlane|BOAT_KEYWORDS|function LineItemsGrid/);
   assert.doesNotMatch(editor, /expenses__toggle|usesDetailedFood|foodSingle|foodDetailed/);
-  assert.match(editor, /setExpenseItemsTotal\(expenses, 'attractions', value\)/);
+  assert.doesNotMatch(editor, /setExpenseItemsTotal\(expenses, 'attractions'/);
+  assert.doesNotMatch(fixedCards, /EXPENSE_ICONS\.attraction/);
 
   assert.doesNotMatch(operations, /from 'react'|@tabler\/icons-react/);
   assert.match(operations, /export function updateExpenseItem/);

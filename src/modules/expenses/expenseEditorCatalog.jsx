@@ -10,7 +10,6 @@ import {
   IconMoon,
   IconCompass,
   IconShip,
-  IconTicket,
   IconCreditCard,
 } from '@tabler/icons-react';
 
@@ -33,7 +32,6 @@ export const EXPENSE_ICONS = Object.freeze({
   dinner: iconDefinition(<IconMoon size={ICON_SIZE} />, '#eef0fd', '#4f6df5'),
   transportOther: iconDefinition(<IconCompass size={ICON_SIZE} />, '#e6f7ef', '#2aa866'),
   boat: iconDefinition(<IconShip size={ICON_SIZE} />, '#e6f7ef', '#2aa866'),
-  attraction: iconDefinition(<IconTicket size={ICON_SIZE} />, '#eef0fd', '#4f6df5'),
   other: iconDefinition(<IconCreditCard size={ICON_SIZE} />, '#f5f5f5', '#888'),
 });
 

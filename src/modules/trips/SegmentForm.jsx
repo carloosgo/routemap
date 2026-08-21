@@ -1,19 +1,14 @@
 import { useState } from 'react';
 import { segmentTotal } from './tripModel.js';
-import { ItineraryOrigin } from './ItineraryOrigin.jsx';
 import { SegmentBody } from './SegmentBody.jsx';
 import { SegmentDeleteDialog } from './SegmentDeleteDialog.jsx';
 import { SegmentHeader } from './SegmentHeader.jsx';
-import {
-  formatSegmentAmount,
-  formatSegmentDates,
-  formatSegmentNights,
-} from './segmentFormModel.js';
+import { SegmentOriginSection } from './SegmentOriginSection.jsx';
+import { formatSegmentAmount, formatSegmentDates, formatSegmentNights } from './segmentFormModel.js';
 import './ItineraryTimeline.css';
 
 function SegmentDropIndicator({ placement }) {
   if (!placement) return null;
-
   return (
     <span
       aria-hidden="true"
@@ -37,6 +32,7 @@ export function SegmentForm({
   index,
   currency,
   locale,
+  originDetails,
   expanded,
   dragging,
   dragOffsetY,
@@ -44,6 +40,8 @@ export function SegmentForm({
   onToggle,
   onUpdate,
   onUpdateExpenses,
+  onUpdateOriginDetails,
+  onUpdateOriginExpenses,
   onRemove,
   onOpenNote,
   onReorderPointerStart,
@@ -62,12 +60,16 @@ export function SegmentForm({
   return (
     <>
       {index === 0 && (
-        <ItineraryOrigin
-          city={segment.origin}
-          onSelect={(origin) => onUpdate({ origin })}
+        <SegmentOriginSection
+          segment={segment}
+          currency={currency}
+          locale={locale}
+          originDetails={originDetails}
+          onUpdate={onUpdate}
+          onUpdateOriginDetails={onUpdateOriginDetails}
+          onUpdateOriginExpenses={onUpdateOriginExpenses}
         />
       )}
-
       <article
         className={
           'segment itinerary-segment' +
@@ -86,7 +88,6 @@ export function SegmentForm({
         }
       >
         <SegmentDropIndicator placement={dropPlacement} />
-
         <SegmentHeader
           segment={segment}
           formattedDates={formattedDates}
@@ -101,7 +102,6 @@ export function SegmentForm({
           onRemoveRequest={() => setConfirmOpen(true)}
           onReorderPointerStart={onReorderPointerStart}
         />
-
         {expanded && (
           <SegmentBody
             segment={segment}
@@ -112,7 +112,6 @@ export function SegmentForm({
             onUpdateExpenses={onUpdateExpenses}
           />
         )}
-
         <SegmentDeleteDialog
           open={confirmOpen}
           onConfirm={confirmRemove}

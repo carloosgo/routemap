@@ -1,6 +1,9 @@
 import { Timestamp } from 'firebase-admin/firestore';
 import { targetAggregateContribution } from './v4AggregateContributionModel.js';
-import { v4SegmentAggregateValue } from './v4SegmentAggregateValue.js';
+import {
+  v4OriginAggregateValue,
+  v4SegmentAggregateValue,
+} from './v4SegmentAggregateValue.js';
 
 const RADIX = 36;
 const RANK_WIDTH = 10;
@@ -13,6 +16,23 @@ const COLLECTION_SPECS = Object.freeze([
   ['notes', 'notes', 'note'],
   ['checklist', 'checklist', 'checklist'],
 ]);
+const EMPTY_ORIGIN_DETAILS = Object.freeze({
+  departureDate: '',
+  expenses: Object.freeze({
+    lodging: 0,
+    food: Object.freeze({
+      mode: 'single',
+      single: 0,
+      breakfast: 0,
+      lunch: 0,
+      dinner: 0,
+    }),
+    transport: Object.freeze({ plane: 0, train: 0, bus: 0, taxiUber: 0 }),
+    transportOthers: Object.freeze([]),
+    attractions: Object.freeze([]),
+    others: Object.freeze([]),
+  }),
+});
 
 function requiredText(value, field, max = 128) {
   const text = typeof value === 'string' ? value.trim() : '';
@@ -216,17 +236,20 @@ export function materializePersistedV3ToV4({ summary, revision, collections } = 
     }
   }
 
-  const computedTotal = outputCollections.segments
+  const originDetails = clone(summary.originDetails || EMPTY_ORIGIN_DETAILS);
+  const originTotal = v4OriginAggregateValue({ originDetails });
+  const computedTotal = originTotal + outputCollections.segments
     .reduce((sum, segment) => sum + v4SegmentAggregateValue(segment), 0);
   const declaredTotal = Number(summary.total);
   if (!Number.isFinite(declaredTotal) || Math.abs(declaredTotal - computedTotal) > 0.000001) {
-    throw new TypeError('El total legacy declarado no coincide con los trayectos persistidos.');
+    throw new TypeError('El total legacy declarado no coincide con los gastos persistidos.');
   }
 
   const root = {
     id: tripId,
     name: typeof summary.name === 'string' ? summary.name : '',
     currency: typeof summary.currency === 'string' ? summary.currency : 'USD',
+    originDetails,
     schemaVersion: 4,
     status: 'active',
     version: 1,
@@ -239,7 +262,16 @@ export function materializePersistedV3ToV4({ summary, revision, collections } = 
     total: computedTotal,
   };
 
-  const contributions = [];
+  const contributions = [{
+    id: `origin:${encodeURIComponent(tripId)}`,
+    entityId: tripId,
+    ...targetAggregateContribution({
+      entityType: 'origin',
+      after: root,
+      valueOf: v4OriginAggregateValue,
+    }),
+    updatedAt,
+  }];
   for (const segment of outputCollections.segments) {
     contributions.push({
       id: `segment:${encodeURIComponent(segment.id)}`,

@@ -130,7 +130,7 @@ test('expanded expense editor keeps compact fields and one exact vertical rhythm
   assert.match(expenses, /\.moneycard__amount\s*\{[\s\S]*width:\s*var\(--expense-amount-width\)[\s\S]*background:\s*transparent/);
   assert.match(expenses, /\.moneycard__input\s*\{[\s\S]*width:\s*65px/);
   assert.match(expenses, /\.moneycard:focus-within \.moneycard__amount\s*\{[\s\S]*background:\s*transparent/);
-  assert.match(fixed, /definition=\{EXPENSE_ICONS\.taxiUber\}[\s\S]*label="Taxi"/);
+  assert.match(fixed, /definition=\{EXPENSE_ICONS\.taxiUber\}[\s\S]*label=\{t\('taxi'\)\}/);
   assert.doesNotMatch(editor, /expenses__total|segmentTotal|expensesTotal|formatMoney/);
   assert.match(lineItems, /<MoneyAmountInput/);
   assert.match(money, /export function MoneyAmountInput/);
@@ -144,11 +144,8 @@ test('expanded expense editor keeps compact fields and one exact vertical rhythm
   assert.match(catalog, /taxiUber:[\s\S]*'#d94f8a'/);
 
   assert.equal((fixed.match(/<ExpenseMoneyCard/g) || []).length, 6);
-  assert.match(fixed, /definition=\{EXPENSE_ICONS\.attraction\}/);
-  assert.match(fixed, /value=\{attractionsTotal\}/);
-  assert.match(fixed, /onChange=\{onSetAttractions\}/);
-  assert.match(editor, /onSetAttractions=\{\(value\) =>[\s\S]*setExpenseItemsTotal\(expenses, 'attractions', value\)/);
-  assert.doesNotMatch(editor, /<CategoryMoneyCard[\s\S]*definition=\{EXPENSE_ICONS\.attraction\}/);
+  assert.doesNotMatch(fixed, /EXPENSE_ICONS\.attraction|attractionsTotal|onSetAttractions/);
+  assert.doesNotMatch(editor, /setExpenseItemsTotal\(expenses, 'attractions'/);
 });
 
 test('place save popup hides its close icon and dismisses through outside clicks', async () => {

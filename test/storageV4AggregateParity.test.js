@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { expensesTotal } from '../src/modules/expenses/expenseModel.js';
 import { segmentTotal } from '../src/modules/trips/tripModel.js';
-import { v4SegmentAggregateValue } from '../functions/v4SegmentAggregateValue.js';
+import {
+  v4OriginAggregateValue,
+  v4SegmentAggregateValue,
+} from '../functions/v4SegmentAggregateValue.js';
 
 const fixtures = [
   {
@@ -39,5 +43,14 @@ const fixtures = [
 test('agregador de servidor coincide con segmentTotal del dominio', () => {
   for (const segment of fixtures) {
     assert.equal(v4SegmentAggregateValue(segment), segmentTotal(segment));
+  }
+});
+
+test('agregador de origen usa exactamente el mismo contrato de expenses', () => {
+  for (const fixture of fixtures) {
+    assert.equal(
+      v4OriginAggregateValue({ originDetails: { expenses: fixture.expenses } }),
+      expensesTotal(fixture.expenses)
+    );
   }
 });

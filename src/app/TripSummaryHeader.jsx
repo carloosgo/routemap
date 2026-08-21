@@ -12,7 +12,6 @@ import {
   IconMoon,
   IconPlane,
   IconRoute,
-  IconTicket,
   IconToolsKitchen2,
   IconTrain,
   IconWallet,
@@ -20,6 +19,7 @@ import {
 import { tripSummary } from '../modules/trips/tripSummaryModel.js';
 import { formatMoney } from '../shared/utils.js';
 import { SummarySelectorMetric } from './SummarySelectorMetric.jsx';
+import './TripSummaryHeaderTypography.css';
 
 const CURRENCIES = ['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'];
 
@@ -27,10 +27,9 @@ const BREAKDOWN_CATS = [
   { key: 'plane', labelKey: 'flights', Icon: IconPlane, color: '#e2725b' },
   { key: 'train', labelKey: 'train', Icon: IconTrain, color: '#4f6df5' },
   { key: 'bus', labelKey: 'bus', Icon: IconBus, color: '#e08a17' },
-  { key: 'taxiUber', labelKey: 'carTaxi', Icon: IconCar, color: '#5a8f3c' },
+  { key: 'taxiUber', labelKey: 'taxi', Icon: IconCar, color: '#5a8f3c' },
   { key: 'lodging', labelKey: 'lodging', Icon: IconBed, color: '#d4a017' },
-  { key: 'food', labelKey: 'meals', Icon: IconToolsKitchen2, color: '#2aa866' },
-  { key: 'attractions', labelKey: 'attractions', Icon: IconTicket, color: '#9b59b6' },
+  { key: 'food', labelKey: 'food', Icon: IconToolsKitchen2, color: '#2aa866' },
   { key: 'others', labelKey: 'others', Icon: IconDots, color: '#9499ab' },
 ];
 
@@ -169,42 +168,11 @@ export function TripSummaryHeader({
           )}
         </div>
 
-        <Metric
-          Icon={IconMapPin}
-          iconColor="#7c5ce7"
-          label={t('destinations')}
-          value={`${summary.destinations} ${t('cities')}`}
-        />
-        <Metric
-          Icon={IconMoon}
-          iconColor="#4f6df5"
-          label={t('totalNights')}
-          value={`${summary.nights} ${t('nights')}`}
-        />
-        <Metric
-          Icon={IconRoute}
-          iconColor="#e08a17"
-          label={t('totalDistance')}
-          value={`≈ ${distance} km`}
-        />
-        <SummarySelectorMetric
-          Icon={IconCurrencyDollar}
-          iconColor="#c9224d"
-          label={t('currency')}
-          value={trip.currency}
-          options={currencyOptions}
-          onChange={setCurrency}
-          menuClassName="trip-summary__selector-menu--currency"
-        />
-        <SummarySelectorMetric
-          Icon={IconLanguage}
-          iconColor="#357d94"
-          label={t('language')}
-          value={locale}
-          options={languageOptions}
-          onChange={setLocale}
-          menuClassName="trip-summary__selector-menu--language"
-        />
+        <Metric Icon={IconMapPin} iconColor="#7c5ce7" label={t('destinations')} value={`${summary.destinations} ${t('cities')}`} />
+        <Metric Icon={IconMoon} iconColor="#4f6df5" label={t('totalNights')} value={`${summary.nights} ${t('nights')}`} />
+        <Metric Icon={IconRoute} iconColor="#e08a17" label={t('totalDistance')} value={`≈ ${distance} km`} />
+        <SummarySelectorMetric Icon={IconCurrencyDollar} iconColor="#c9224d" label={t('currency')} value={trip.currency} options={currencyOptions} onChange={setCurrency} menuClassName="trip-summary__selector-menu--currency" />
+        <SummarySelectorMetric Icon={IconLanguage} iconColor="#357d94" label={t('language')} value={locale} options={languageOptions} onChange={setLocale} menuClassName="trip-summary__selector-menu--language" />
       </div>
     </header>
   );

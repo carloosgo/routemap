@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/index.jsx';
 import { MoneyCard } from '../../components/MoneyInput.jsx';
 import { EXPENSE_ICONS } from './expenseEditorCatalog.jsx';
 
@@ -16,23 +17,24 @@ function ExpenseMoneyCard({ definition, label, value, onChange }) {
 
 export function FixedExpenseCards({
   expenses,
-  attractionsTotal,
-  t,
-  onPatch,
+  foodAmount,
+  onSetLodging,
   onSetTransport,
-  onSetAttractions,
+  onSetFood,
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="expenses__fixed-list">
       <ExpenseMoneyCard
         definition={EXPENSE_ICONS.lodging}
         label={t('lodging')}
         value={expenses.lodging}
-        onChange={(value) => onPatch({ lodging: value })}
+        onChange={onSetLodging}
       />
       <ExpenseMoneyCard
         definition={EXPENSE_ICONS.plane}
-        label={t('plane')}
+        label={t('flights')}
         value={expenses.transport.plane}
         onChange={(value) => onSetTransport('plane', value)}
       />
@@ -50,15 +52,15 @@ export function FixedExpenseCards({
       />
       <ExpenseMoneyCard
         definition={EXPENSE_ICONS.taxiUber}
-        label="Taxi"
+        label={t('taxi')}
         value={expenses.transport.taxiUber}
         onChange={(value) => onSetTransport('taxiUber', value)}
       />
       <ExpenseMoneyCard
-        definition={EXPENSE_ICONS.attraction}
-        label={t('attractions')}
-        value={attractionsTotal}
-        onChange={onSetAttractions}
+        definition={EXPENSE_ICONS.food}
+        label={t('food')}
+        value={foodAmount}
+        onChange={onSetFood}
       />
     </div>
   );

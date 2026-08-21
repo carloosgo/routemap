@@ -99,6 +99,15 @@ service cloud.firestore {
         && validExpenseItems(data.others);
     }
 
+    function validOriginDetails(data) {
+      return data is map
+        && data.keys().hasOnly(['departureDate', 'expenses'])
+        && data.keys().hasAll(['departureDate', 'expenses'])
+        && data.departureDate is string
+        && data.departureDate.size() <= 10
+        && validExpenses(data.expenses);
+    }
+
     function tripPath(userId, tripId) {
       return /databases/$(database)/documents/users/$(userId)/trips/$(tripId);
     }
@@ -111,7 +120,7 @@ service cloud.firestore {
 
     function validTrip(data, tripId) {
       return data.keys().hasOnly([
-          'id', 'name', 'currency', 'schemaVersion', 'status', 'version',
+          'id', 'name', 'currency', 'originDetails', 'schemaVersion', 'status', 'version',
           'createdAt', 'updatedAt', 'deletedAt', 'purgeAfter',
           'segmentCount', 'placeCount', 'total'
         ])
@@ -128,6 +137,10 @@ service cloud.firestore {
         && data.name.size() <= 120
         && data.currency is string
         && data.currency.matches('^[A-Z]{3}$')
+        && (
+          !data.keys().hasAny(['originDetails'])
+          || validOriginDetails(data.originDetails)
+        )
         && data.schemaVersion == 4
         && validLifecycle(data)
         && (data.purgeAfter == null || data.purgeAfter is timestamp)
@@ -162,7 +175,7 @@ service cloud.firestore {
         && request.resource.data.placeCount == resource.data.placeCount
         && request.resource.data.total == resource.data.total
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'name', 'currency', 'version', 'updatedAt'
+          'name', 'currency', 'originDetails', 'version', 'updatedAt'
         ]);
     }
 

@@ -1,6 +1,9 @@
 const DATABASE_MARKER = '  match /databases/{database}/documents {';
 const USERS_MARKER = '    match /users/{userId} {';
+const TRIPS_MARKER = '      match /trips/{tripId} {';
+const REVISIONS_MARKER = '        match /revisions/{revisionId} {';
 const CATCH_ALL_MARKER = '    match /{document=**} {';
+const V3_TRIP_DELETE_RULE = '        allow delete: if ownsUserPath(userId);';
 
 const V4_FUNCTION_NAMES = Object.freeze([
   'signedIn',
@@ -10,6 +13,7 @@ const V4_FUNCTION_NAMES = Object.freeze([
   'validRank',
   'validStatus',
   'validLifecycle',
+  'validOriginDetails',
   'validCity',
   'validFood',
   'validTransport',
@@ -30,6 +34,7 @@ const V4_FUNCTION_NAMES = Object.freeze([
 ]);
 
 export const PHASE_K_E2E_TRIP_PREFIX = 'phase-k-e2e-';
+const PHASE_K_E2E_TRIP_PATTERN = '^phase-k-e2e-[a-z0-9_-]{8,80}$';
 
 function uniqueIndex(source, marker, label) {
   const first = source.indexOf(marker);
@@ -53,6 +58,24 @@ function prefixV4FunctionNames(source) {
     }, source);
 }
 
+function scopeV3TripDeleteForPhaseK(v3Rules) {
+  const tripsIndex = uniqueIndex(v3Rules, TRIPS_MARKER, 'trips v3');
+  const revisionsIndex = uniqueIndex(v3Rules, REVISIONS_MARKER, 'revisions v3');
+  if (tripsIndex >= revisionsIndex) {
+    throw new Error('La estructura del bloque trips v3 no coincide con la esperada.');
+  }
+
+  const rootTripBlock = v3Rules.slice(tripsIndex, revisionsIndex);
+  const deleteIndex = uniqueIndex(rootTripBlock, V3_TRIP_DELETE_RULE, 'delete trip v3');
+  const scopedDeleteRule = [
+    '        allow delete: if ownsUserPath(userId)',
+    `          && !tripId.matches('${PHASE_K_E2E_TRIP_PATTERN}');`,
+  ].join('\n');
+  const scopedRootTripBlock = `${rootTripBlock.slice(0, deleteIndex)}${scopedDeleteRule}${rootTripBlock.slice(deleteIndex + V3_TRIP_DELETE_RULE.length)}`;
+
+  return `${v3Rules.slice(0, tripsIndex)}${scopedRootTripBlock}${v3Rules.slice(revisionsIndex)}`;
+}
+
 function extractV4Sections(v4Rules) {
   const databaseIndex = uniqueIndex(v4Rules, DATABASE_MARKER, 'database v4');
   const usersIndex = uniqueIndex(v4Rules, USERS_MARKER, 'users v4');
@@ -73,7 +96,7 @@ function extractV4Sections(v4Rules) {
 function phaseKProbeGuard() {
   return `    function phaseKOwnsProbeTrip(userId, tripId) {
       return phaseKOwnsUserPath(userId)
-        && tripId.matches('^phase-k-e2e-[a-z0-9_-]{8,80}$');
+        && tripId.matches('${PHASE_K_E2E_TRIP_PATTERN}');
     }`;
 }
 
@@ -82,10 +105,6 @@ function scopeV4UsersBlock(usersBlock) {
   scoped = scoped.replaceAll(
     'phaseKOwnsUserPath(userId)',
     'phaseKOwnsProbeTrip(userId, tripId)'
-  );
-  scoped = scoped.replaceAll(
-    'allow delete: if false;',
-    'allow delete: if phaseKOwnsProbeTrip(userId, tripId);'
   );
   return scoped;
 }
@@ -98,8 +117,9 @@ export function composePhaseKE2ERules(v3Rules, v4Rules) {
     throw new TypeError('Se requieren las Rules v4 como texto.');
   }
 
-  const v3UsersIndex = uniqueIndex(v3Rules, USERS_MARKER, 'users v3');
-  uniqueIndex(v3Rules, CATCH_ALL_MARKER, 'catch-all v3');
+  const scopedV3Rules = scopeV3TripDeleteForPhaseK(v3Rules);
+  const v3UsersIndex = uniqueIndex(scopedV3Rules, USERS_MARKER, 'users v3');
+  uniqueIndex(scopedV3Rules, CATCH_ALL_MARKER, 'catch-all v3');
 
   const { helpers, usersBlock } = extractV4Sections(v4Rules);
   const prefixedHelpers = prefixV4FunctionNames(helpers);
@@ -113,7 +133,7 @@ export function composePhaseKE2ERules(v3Rules, v4Rules) {
     '',
   ].join('\n');
 
-  let composed = `${v3Rules.slice(0, v3UsersIndex)}${helperInsertion}${v3Rules.slice(v3UsersIndex)}`;
+  let composed = `${scopedV3Rules.slice(0, v3UsersIndex)}${helperInsertion}${scopedV3Rules.slice(v3UsersIndex)}`;
   const catchAllIndex = uniqueIndex(composed, CATCH_ALL_MARKER, 'catch-all compuesto');
   const scopedInsertion = [
     '    // Phase K E2E temporal: v4 write solo para trips sinteticos.',

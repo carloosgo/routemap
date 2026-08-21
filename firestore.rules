@@ -77,6 +77,15 @@ service cloud.firestore {
         && data.others.size() <= 200;
     }
 
+    function validOriginDetails(data) {
+      return data is map
+        && data.keys().hasOnly(['departureDate', 'expenses'])
+        && data.keys().hasAll(['departureDate', 'expenses'])
+        && data.departureDate is string
+        && data.departureDate.size() <= 10
+        && validExpenses(data.expenses);
+    }
+
     function revisionPath(userId, tripId, revisionId) {
       return /databases/$(database)/documents/users/$(userId)/trips/$(tripId)/revisions/$(revisionId);
     }
@@ -93,7 +102,7 @@ service cloud.firestore {
 
     function validTripSummary(data, tripId) {
       return data.keys().hasOnly([
-          'id', 'name', 'currency', 'placeOrderVersion', 'createdAt', 'updatedAt',
+          'id', 'name', 'currency', 'originDetails', 'placeOrderVersion', 'createdAt', 'updatedAt',
           'storageVersion', 'activeRevision', 'segmentCount', 'placeCount',
           'routeConnectionCount', 'noteCount', 'checklistCount', 'total'
         ])
@@ -110,6 +119,10 @@ service cloud.firestore {
         && data.name.size() <= 120
         && data.currency is string
         && data.currency.matches('^[A-Z]{3}$')
+        && (
+          !data.keys().hasAny(['originDetails'])
+          || validOriginDetails(data.originDetails)
+        )
         && data.placeOrderVersion == 1
         && data.createdAt is string
         && data.createdAt.size() <= 40

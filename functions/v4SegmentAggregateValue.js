@@ -10,10 +10,9 @@ function lineItemsTotal(items) {
   );
 }
 
-export function v4SegmentAggregateValue(segment) {
-  const expenses = segment?.expenses || {};
-  const food = expenses.food || {};
-  const transport = expenses.transport || {};
+export function v4ExpensesAggregateValue(expenses = {}) {
+  const food = expenses?.food || {};
+  const transport = expenses?.transport || {};
   const foodTotal = food.mode === 'detailed'
     ? amount(food.breakfast) + amount(food.lunch) + amount(food.dinner)
     : amount(food.single);
@@ -26,4 +25,12 @@ export function v4SegmentAggregateValue(segment) {
     + transportTotal
     + lineItemsTotal(expenses.attractions)
     + lineItemsTotal(expenses.others);
+}
+
+export function v4SegmentAggregateValue(segment) {
+  return v4ExpensesAggregateValue(segment?.expenses);
+}
+
+export function v4OriginAggregateValue(trip) {
+  return v4ExpensesAggregateValue(trip?.originDetails?.expenses);
 }

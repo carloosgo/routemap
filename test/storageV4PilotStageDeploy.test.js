@@ -52,7 +52,7 @@ test('pilot stage conserva index fail-closed y separa Eventarc de Functions', as
     'v4TripLifecycle',
     'v4TripPurge',
   ]);
-  assert.equal(plan.eventarcTriggerCount, 5);
+  assert.equal(plan.eventarcTriggerCount, 6);
   assert.equal(plan.eventarcWiringIncluded, false);
   assert.equal(plan.eventarcWiringRequiresIamPreflight, true);
   assert.equal(plan.pilotExportsActivatedInIndex, false);
@@ -119,7 +119,7 @@ test('pilot stage apply despliega tres Functions soportadas, restaura index y de
   assert.equal(currentIndex, stableIndex);
   assert.equal(result.mode, 'backend-and-rules-staged');
   assert.equal(result.functionCount, 3);
-  assert.equal(result.eventarcTriggerCount, 5);
+  assert.equal(result.eventarcTriggerCount, 6);
   assert.equal(result.eventarcWiringPending, true);
   assert.equal(result.ephemeralPilotExportsUsed, true);
   assert.equal(result.functionsIndexRestored, true);
