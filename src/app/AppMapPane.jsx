@@ -123,6 +123,8 @@ export function AppMapPane({
     );
   };
 
+  const notePanel = openNoteSegmentId ? openNotePanel() : null;
+
   return (
     <section className="mappane" aria-label={t('mapRegion')}>
       <RouteMap
@@ -132,7 +134,7 @@ export function AppMapPane({
         addPlace={addPlace}
         viewMode={mapView}
       />
-      {openNoteSegmentId && (
+      {notePanel && (
         <div
           aria-hidden="true"
           style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'transparent' }}
@@ -147,7 +149,7 @@ export function AppMapPane({
           }}
         />
       )}
-      {openNoteSegmentId && openNotePanel()}
+      {notePanel}
       {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
     </section>
   );

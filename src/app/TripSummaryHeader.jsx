@@ -19,7 +19,6 @@ import {
 import { tripSummary } from '../modules/trips/tripSummaryModel.js';
 import { formatMoney } from '../shared/utils.js';
 import { SummarySelectorMetric } from './SummarySelectorMetric.jsx';
-import './TripSummaryHeaderTypography.css';
 
 const CURRENCIES = ['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'];
 

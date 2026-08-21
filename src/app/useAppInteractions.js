@@ -46,19 +46,6 @@ export function useOutsideClick(ref, active, onOutside) {
   }, [active, onOutside, ref]);
 }
 
-function suppressNextClick(element) {
-  if (!element) return;
-
-  element.addEventListener(
-    'click',
-    (event) => {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-    },
-    { capture: true, once: true }
-  );
-}
-
 export function useOutsideClickSelector(selector, active, onOutside) {
   useEffect(() => {
     if (!active) return undefined;
@@ -67,22 +54,10 @@ export function useOutsideClickSelector(selector, active, onOutside) {
       const target = event.target;
       if (!target?.closest) return;
 
-      if (selector === '.segnote') {
-        const noteButton = target.closest('.segment__note-btn');
-
-        if (noteButton) {
-          const clickedSegmentId = noteButton.closest('[data-segment-id]')?.dataset?.segmentId;
-          const openSegmentId = document.querySelector('.segnote[data-segment-id]')?.dataset
-            ?.segmentId;
-
-          if (clickedSegmentId && clickedSegmentId === openSegmentId) {
-            onOutside();
-            suppressNextClick(noteButton);
-          }
-
-          return;
-        }
-      }
+      // Los botones de nota son toggles React compartidos para origen y trayectos.
+      // No los tratamos como outside-click: así mouse, touch y teclado siguen la
+      // misma semántica de abrir/cambiar/cerrar sin una segunda capa DOM.
+      if (selector === '.segnote' && target.closest('.segment__note-btn')) return;
 
       if (!target.closest(selector)) {
         onOutside();

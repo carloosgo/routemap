@@ -13,7 +13,7 @@ export function AppEditorModule({
   openMenu,
   setOpenMenu,
   editorMenuRef,
-  setOpenNoteSegmentId,
+  toggleNoteTarget,
   setTripToDelete,
   handleOpenSavedTrip,
   t,
@@ -85,7 +85,7 @@ export function AppEditorModule({
       updateOriginExpenses={updateOriginExpenses}
       removeSegment={removeSegment}
       reorderSegment={reorderSegment}
-      setOpenNoteSegmentId={setOpenNoteSegmentId}
+      toggleNoteTarget={toggleNoteTarget}
       addSegment={addSegment}
       t={t}
       notes={notes}
