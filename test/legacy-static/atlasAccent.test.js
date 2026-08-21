@@ -183,7 +183,8 @@ test('desktop itinerary geometry stays contained and collapse motion is bidirect
   assert.match(originSection, /<CollapsibleRegion open=\{expanded\}>[\s\S]*<OriginBody/);
   assert.match(main, /TripWorkspaceHeaderLayout\.css';\s*\nimport '\.\/app\/HeaderRequestedPolish\.css';/);
   assert.match(headerPolish, /\.trip-summary__metric:hover/);
-  assert.match(headerPolish, /background:\s*#f6f7f8;/);
+  assert.match(headerPolish, /background:\s*transparent;/);
+  assert.match(headerPolish, /\.trip-summary__primary-nav-item\.is-active[\s\S]*color:\s*#5f6875;/);
 });
 
 test('place save popup hides its close icon and dismisses through outside clicks', async () => {
