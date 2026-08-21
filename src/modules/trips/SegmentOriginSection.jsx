@@ -16,9 +16,9 @@ export function SegmentOriginSection({
   onUpdate,
   onUpdateOriginDetails,
   onUpdateOriginExpenses,
+  onOpenNote,
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [noteOpen, setNoteOpen] = useState(false);
   const bodyId = `origin-body-${segment.id}`;
   const formattedDate = formatSegmentDate(originDetails?.departureDate, locale);
   const formattedNights = formatSegmentNights({
@@ -29,11 +29,6 @@ export function SegmentOriginSection({
     expensesTotal(originDetails?.expenses),
     locale
   );
-
-  const openNote = () => {
-    setExpanded(true);
-    setNoteOpen(true);
-  };
 
   return (
     <section className="itinerary-origin-section">
@@ -46,7 +41,7 @@ export function SegmentOriginSection({
         expanded={expanded}
         bodyId={bodyId}
         onSelect={(origin) => onUpdate({ origin })}
-        onOpenNote={openNote}
+        onOpenNote={onOpenNote}
         onToggle={() => setExpanded((value) => !value)}
         onClear={() => onUpdate({ origin: null })}
       />
@@ -56,8 +51,6 @@ export function SegmentOriginSection({
           currency={currency}
           locale={locale}
           bodyId={bodyId}
-          showNote={noteOpen}
-          onCloseNote={() => setNoteOpen(false)}
           onUpdate={onUpdateOriginDetails}
           onUpdateExpenses={onUpdateOriginExpenses}
         />
