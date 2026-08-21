@@ -4,9 +4,11 @@ import { SegmentBody } from './SegmentBody.jsx';
 import { SegmentDeleteDialog } from './SegmentDeleteDialog.jsx';
 import { SegmentHeader } from './SegmentHeader.jsx';
 import { SegmentOriginSection } from './SegmentOriginSection.jsx';
+import { ORIGIN_NOTE_TARGET } from './tripNoteTargets.js';
 import { formatSegmentAmount, formatSegmentDates, formatSegmentNights } from './segmentFormModel.js';
 import './ItineraryTimeline.css';
 import './ItineraryRequestedPolish.css';
+import './ItineraryCorrectionPolish.css';
 
 function SegmentDropIndicator({ placement }) {
   if (!placement) return null;
@@ -69,6 +71,7 @@ export function SegmentForm({
           onUpdate={onUpdate}
           onUpdateOriginDetails={onUpdateOriginDetails}
           onUpdateOriginExpenses={onUpdateOriginExpenses}
+          onOpenNote={() => onOpenNote(ORIGIN_NOTE_TARGET)}
         />
       )}
       <article
