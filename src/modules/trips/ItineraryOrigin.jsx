@@ -23,6 +23,8 @@ export function ItineraryOrigin({
   onClear,
 }) {
   const { t } = useTranslation();
+  const originNoteLabel = `${t('segmentNote')}: ${t('origin')}`;
+  const clearOriginLabel = `${t('delete')} ${t('origin')}`;
 
   return (
     <div className="itinerary-origin" aria-label={t('origin')}>
@@ -76,8 +78,8 @@ export function ItineraryOrigin({
       <button
         type="button"
         className={'btn btn--icon segment__note-btn itinerary-origin__note-btn' + (hasNote ? ' has-note' : '')}
-        aria-label={t('originNote')}
-        title={t('originNote')}
+        aria-label={originNoteLabel}
+        title={originNoteLabel}
         onClick={onOpenNote}
       >
         <IconNote size={14} aria-hidden="true" />
@@ -101,8 +103,8 @@ export function ItineraryOrigin({
       <button
         type="button"
         className="btn btn--icon itinerary-origin__clear"
-        aria-label={t('clearOrigin')}
-        title={t('clearOrigin')}
+        aria-label={clearOriginLabel}
+        title={clearOriginLabel}
         onClick={onClear}
       >
         <IconX size={14} aria-hidden="true" />
