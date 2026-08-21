@@ -45,3 +45,10 @@
 .expenses--journey .expenses__add-other {
   font-size: 13px;
 }
+
+/* Reserva desde el inicio el canal que ocuparía la barra vertical. Así la
+   anchura útil de las filas no cambia al expandir un trayecto y superar el
+   alto disponible del panel. */
+.editor-module--itinerary .editor__body {
+  scrollbar-gutter: stable;
+}
