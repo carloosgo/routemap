@@ -15,6 +15,7 @@ export function OriginBody({
   onUpdateExpenses,
 }) {
   const { t } = useTranslation();
+  const originNoteLabel = `${t('segmentNote')}: ${t('origin')}`;
 
   return (
     <div className="segment__body segment-expense-form itinerary-origin__body" id={bodyId}>
@@ -32,7 +33,7 @@ export function OriginBody({
       {showNote && (
         <div className="itinerary-origin__note-editor">
           <div className="itinerary-origin__note-editor-head">
-            <span>{t('originNote')}</span>
+            <span>{originNoteLabel}</span>
             <button
               type="button"
               className="btn btn--icon itinerary-origin__note-editor-close"
@@ -45,8 +46,8 @@ export function OriginBody({
           <textarea
             className="itinerary-origin__note-textarea"
             maxLength={500}
-            aria-label={t('originNote')}
-            placeholder={t('originNotePlaceholder')}
+            aria-label={originNoteLabel}
+            placeholder={t('segmentNotePlaceholder')}
             value={details.note || ''}
             onChange={(event) => onUpdate({ note: event.target.value })}
             autoFocus
