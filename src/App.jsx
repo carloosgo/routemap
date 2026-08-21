@@ -12,6 +12,7 @@ import { AppMapPane } from './app/AppMapPane.jsx';
 import { AppWorkspace } from './app/AppWorkspace.jsx';
 import { TripSummaryHeader } from './app/TripSummaryHeader.jsx';
 import { TripDeleteDialog } from './app/TripDeleteDialog.jsx';
+import { toggleTarget } from './app/appInteractionModel.js';
 import { normalizeRecoveredDraft } from './app/recoveredTripDraft.js';
 import { useAppEditorState } from './app/useAppEditorState.js';
 import {
@@ -150,6 +151,10 @@ export default function App() {
 
   const closeMenu = useCallback(() => setOpenMenu(null), []);
   const closeSegmentNote = useCallback(() => setOpenNoteSegmentId(null), []);
+  const toggleNoteTarget = useCallback(
+    (target) => setOpenNoteSegmentId((current) => toggleTarget(current, target)),
+    []
+  );
 
   useSaveShortcut(handleSave);
   useOutsideClick(menuWrapRef, openMenu === 'account', closeMenu);
@@ -214,7 +219,7 @@ export default function App() {
       openMenu={openMenu}
       setOpenMenu={setOpenMenu}
       editorMenuRef={editorMenuRef}
-      setOpenNoteSegmentId={setOpenNoteSegmentId}
+      toggleNoteTarget={toggleNoteTarget}
       setTripToDelete={setTripToDelete}
       handleOpenSavedTrip={handleOpenSavedTrip}
       t={t}
