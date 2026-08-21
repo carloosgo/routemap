@@ -15,6 +15,7 @@ import './app/TripSummaryHeader.css';
 import './app/TripSummaryHeaderTypography.css';
 import './app/TripHeaderNavigation.css';
 import './app/TripWorkspaceHeaderLayout.css';
+import './app/HeaderRequestedPolish.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <I18nProvider>
