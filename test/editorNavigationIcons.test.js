@@ -78,17 +78,17 @@ test('header navigation keeps active state and removes the desktop sidebar colum
   );
 });
 
-test('routes keep their saved-place count and notes keep checklist completion progress in the header', async () => {
+test('routes omit their counter while notes keep checklist completion progress in the header', async () => {
   const app = await read('src/App.jsx');
   const navigation = await read('src/app/TripHeaderNavigation.jsx');
   const css = await read('src/app/TripHeaderNavigation.css');
 
-  assert.match(app, /routeCount: editorState\.places\?\.length \|\| 0/);
   assert.match(app, /checklistProgress: editorState\.checklist\?\.length \? `\$\{editorState\.doneCount\}\/\$\{editorState\.checklist\.length\}` : ''/);
-  assert.match(navigation, /id === 'places' \? routeCount/);
-  assert.match(navigation, /id === 'notes' \? checklistProgress/);
-  assert.match(navigation, /trip-summary__primary-nav-badge/);
-  assert.match(css, /\.trip-summary__primary-nav-badge\s*\{[\s\S]*background:\s*var\(--atlas-accent\);[\s\S]*color:\s*#ffffff;/);
+  assert.doesNotMatch(navigation, /id === 'places' \? routeCount|badge--places/);
+  assert.match(navigation, /const badge = id === 'notes' \? checklistProgress : '';/);
+  assert.match(navigation, /trip-summary__primary-nav-badge--notes/);
+  assert.doesNotMatch(css, /\.trip-summary__primary-nav-badge--places/);
+  assert.match(css, /\.trip-summary__primary-nav-badge--notes\s*\{[\s\S]*background:\s*#fff0eb;[\s\S]*color:\s*#e2725b;/);
 });
 
 test('workspace panel toggle stays below modal-bearing editor layer', async () => {
