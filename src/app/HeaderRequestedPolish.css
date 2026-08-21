@@ -1,0 +1,29 @@
+/* Ajustes finos solicitados para los estados interactivos del header global. */
+
+.trip-summary__primary-nav-item:hover,
+.trip-summary__primary-nav-item:focus-visible,
+.trip-summary__primary-nav-item.is-active,
+button.trip-summary__metric:hover,
+button.trip-summary__metric[aria-expanded='true'],
+.trip-summary__metric--selector:hover,
+.trip-summary__metric--selector:has(.trip-summary__selector-trigger[aria-expanded='true']) {
+  border-radius: 6px;
+  background: rgba(17, 24, 39, 0.028);
+}
+
+.trip-summary__primary-nav-item:focus-visible,
+.trip-summary__selector-trigger:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.trip-summary__selector-trigger:hover,
+.trip-summary__selector-trigger[aria-expanded='true'] {
+  color: var(--text);
+}
+
+.trip-summary__selector-option:hover,
+.trip-summary__selector-option:focus-visible,
+.trip-summary__selector-option.is-active {
+  background: rgba(17, 24, 39, 0.032);
+}
