@@ -36,6 +36,43 @@ test('only the six header summary cards use the requested scale and their overri
   assert.match(correction, /expenses__add-other\s*\{[^}]*font-size:\s*13px;/s);
 });
 
+test('header trial owns the three primary tabs, preserves counters, and retires the legacy sidebar tabs', async () => {
+  const navigation = await read('src/app/TripHeaderNavigation.jsx');
+  const navigationCss = await read('src/app/TripHeaderNavigation.css');
+  const tripHeader = await read('src/app/TripSummaryHeader.jsx');
+  const editorModule = await read('src/app/AppEditorModule.jsx');
+  const app = await read('src/App.jsx');
+  const main = await read('src/main.jsx');
+
+  assert.match(navigation, /IconListDetails/);
+  assert.match(navigation, /IconRoute/);
+  assert.match(navigation, /IconNotebook/);
+  assert.doesNotMatch(navigation, /IconMap\b|IconNotes\b|lugaresIcon/);
+  assert.match(navigation, /id: 'segments'/);
+  assert.match(navigation, /id: 'places'/);
+  assert.match(navigation, /id: 'notes'/);
+  assert.match(navigation, /id === 'places' \? routeCount/);
+  assert.match(navigation, /id === 'notes' \? checklistProgress/);
+  assert.match(navigation, /onClick=\{\(\) => setActiveTab\(id\)\}/);
+
+  assert.match(tripHeader, /<TripHeaderNavigation \{\.\.\.navigation\} t=\{t\} \/>/);
+  assert.doesNotMatch(tripHeader, /className="trip-summary__title"|renameTrip/);
+  assert.doesNotMatch(editorModule, /editor-module__tabs|editor-module__nav-tab|lugaresIcon|IconNotes|IconMap\b/);
+  assert.match(app, /routeCount: editorState\.places\?\.length \|\| 0/);
+  assert.match(app, /checklistProgress: editorState\.checklist\?\.length/);
+
+  assert.match(navigationCss, /grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(navigationCss, /\.editor-module\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\);/s);
+  assert.ok(
+    main.indexOf("./app/ItinerarySidebar.css") < main.indexOf("./app/TripHeaderNavigation.css"),
+    'el override que libera la columna lateral debe cargar después del sidebar canónico'
+  );
+  assert.ok(
+    main.indexOf("./app/TripSummaryHeaderTypography.css") < main.indexOf("./app/TripHeaderNavigation.css"),
+    'la navegación del header debe cargar después de los estilos canónicos de métricas'
+  );
+});
+
 test('origin and segment notes share one toggle path and the same outside-click semantics', async () => {
   const form = await read('src/modules/trips/SegmentForm.jsx');
   const origin = await read('src/modules/trips/SegmentOriginSection.jsx');

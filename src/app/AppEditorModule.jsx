@@ -1,15 +1,12 @@
-import { IconMap, IconNotes } from '@tabler/icons-react';
 import { TripPlacesPanel } from '../modules/places/TripPlacesPanel.jsx';
 import { AppEditorPane } from './AppEditorPane.jsx';
 import { AppWorkspaceMenu } from './AppWorkspaceMenu.jsx';
-import lugaresIcon from '../assets/lugares-storefront-v2.svg';
 
 export function AppEditorModule({
   tripStore,
   savedTrips,
   editorState,
   activeTab,
-  setActiveTab,
   openMenu,
   setOpenMenu,
   editorMenuRef,
@@ -54,10 +51,6 @@ export function AppEditorModule({
     newItemText,
     setNewItemText,
   } = editorState;
-
-  const routeCount = Array.isArray(places) ? places.length : 0;
-  const checklistCount = Array.isArray(checklist) ? checklist.length : 0;
-  const checklistProgress = checklistCount ? `${doneCount}/${checklistCount}` : '';
 
   const editorPane = activeTab === 'places' ? (
     <TripPlacesPanel
@@ -110,75 +103,16 @@ export function AppEditorModule({
       className={'editor-module' + (activeTab === 'segments' ? ' editor-module--itinerary' : '')}
       ref={editorMenuRef}
     >
-      <div className="editor-module__tabs" role="tablist" aria-orientation="vertical">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'segments'}
-          className={'editor-module__tab editor-module__nav-tab editor-module__nav-tab--plain' +
-            (activeTab === 'segments' ? ' is-active' : '')}
-          onClick={() => setActiveTab('segments')}
-        >
-          <span className="editor-module__tab-icon" aria-hidden="true">
-            <IconMap />
-          </span>
-          <span className="editor-module__tab-label">{t('itinerary')}</span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'places'}
-          className={'editor-module__tab editor-module__nav-tab' +
-            (activeTab === 'places' ? ' is-active' : '')}
-          onClick={() => setActiveTab('places')}
-          data-tab-icon="places-map-pin"
-        >
-          <span className="editor-module__tab-icon" aria-hidden="true">
-            <img src={lugaresIcon} alt="" />
-          </span>
-          <span className="editor-module__tab-label">{t('myRoutes')}</span>
-          <span className="editor-module__tab-count">
-            {routeCount > 0 && (
-              <span className="tabbar__badge" aria-label={String(routeCount)}>
-                {routeCount}
-              </span>
-            )}
-          </span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'notes'}
-          className={'editor-module__tab editor-module__nav-tab' +
-            (activeTab === 'notes' ? ' is-active' : '')}
-          onClick={() => setActiveTab('notes')}
-          data-tab-icon="notes"
-        >
-          <span className="editor-module__tab-icon" aria-hidden="true">
-            <IconNotes />
-          </span>
-          <span className="editor-module__tab-label">{t('notes')}</span>
-          <span className="editor-module__tab-count">
-            {checklistCount > 0 && (
-              <span className="tabbar__badge" aria-label={checklistProgress}>
-                {checklistProgress}
-              </span>
-            )}
-          </span>
-        </button>
-
-        <AppWorkspaceMenu
-          tripStore={tripStore}
-          savedTrips={savedTrips}
-          openMenu={openMenu}
-          setOpenMenu={setOpenMenu}
-          handleOpenSavedTrip={handleOpenSavedTrip}
-          setTripToDelete={setTripToDelete}
-          intlLocale={intlLocale}
-          t={t}
-        />
-      </div>
-
+      <AppWorkspaceMenu
+        tripStore={tripStore}
+        savedTrips={savedTrips}
+        openMenu={openMenu}
+        setOpenMenu={setOpenMenu}
+        handleOpenSavedTrip={handleOpenSavedTrip}
+        setTripToDelete={setTripToDelete}
+        intlLocale={intlLocale}
+        t={t}
+      />
       {editorPane}
     </div>
   );

@@ -14,7 +14,8 @@ test('the selected Atlas controls retain the exact #19a5d0 accent token', async 
   const polish = await read('src/app/FloatingEditorPolish.css');
   const itinerary = await read('src/app/ItineraryTripHeader.css');
   const summary = await read('src/app/TripSummaryHeader.css');
-  const accentStyles = `${polish}\n${itinerary}\n${summary}`;
+  const headerNav = await read('src/app/TripHeaderNavigation.css');
+  const accentStyles = `${polish}\n${itinerary}\n${summary}\n${headerNav}`;
   assert.match(tokens, /--atlas-accent:\s*#19a5d0/);
   for (const selector of [
     '.topbar__save',
@@ -24,7 +25,7 @@ test('the selected Atlas controls retain the exact #19a5d0 accent token', async 
     '.toast',
     '.trip-place button:hover',
     '.place-result-marker:hover',
-    ".editor-module__tab[data-tab-icon='places-map-pin'] .tabbar__badge",
+    '.trip-summary__primary-nav-badge',
   ]) {
     assert.ok(accentStyles.includes(selector), `Missing Atlas accent selector: ${selector}`);
   }
@@ -33,48 +34,47 @@ test('the selected Atlas controls retain the exact #19a5d0 accent token', async 
   assert.match(accentStyles, /color:\s*#ffffff/);
 });
 
-test('itinerary, routes and notes keep the tab structure while trip currency and app language live in the global header', async () => {
+test('itinerary, routes and notes keep one tab structure in the global header', async () => {
+  const navigation = await read('src/app/TripHeaderNavigation.jsx');
   const editor = await read('src/app/AppEditorModule.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
   const header = await read('src/app/TripSummaryHeader.jsx');
   const selector = await read('src/app/SummarySelectorMetric.jsx');
   const topbar = await read('src/app/AppTopbar.jsx');
-  const sidebar = await read('src/app/ItinerarySidebar.css');
-  assert.equal((editor.match(/role="tab"/g) || []).length, 3);
-  assert.equal((editor.match(/editor-module__tab-icon/g) || []).length, 3);
-  assert.equal((editor.match(/editor-module__tab-label/g) || []).length, 3);
-  assert.match(editor, /t\('itinerary'\)/);
-  assert.match(editor, /t\('myRoutes'\)/);
-  assert.match(editor, /t\('notes'\)/);
+  const navCss = await read('src/app/TripHeaderNavigation.css');
+
+  assert.match(navigation, /role="tablist"/);
+  assert.match(navigation, /id: 'segments'[\s\S]*id: 'places'[\s\S]*id: 'notes'/);
+  assert.match(navigation, /labelKey: 'itinerary'/);
+  assert.match(navigation, /labelKey: 'myRoutes'/);
+  assert.match(navigation, /labelKey: 'notes'/);
+  assert.match(navigation, /aria-selected=\{isActive\}/);
+  assert.doesNotMatch(editor, /editor-module__tabs|editor-module__nav-tab/);
   assert.match(menu, /openMenu === 'workspace'/);
   assert.doesNotMatch(menu, /setCurrency|t\('currency'\)|setLocale|t\('language'\)/);
-  assert.match(header, /const CURRENCIES = \['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'\]/);
+  assert.match(header, /<TripHeaderNavigation \{\.\.\.navigation\} t=\{t\} \/>/);
   assert.match(header, currencySelectorContract);
   assert.match(header, languageSelectorContract);
   assert.match(selector, /role="listbox"/);
   assert.doesNotMatch(selector, /<select\b|<option\b/);
   assert.doesNotMatch(topbar, /t\('language'\)|setLocale\(availableLocale\)/);
   assert.match(topbar, /className="topbar__save"/);
-  assert.match(sidebar, /\.editor-module__tabs > \.editor-module__nav-tab,/);
-  assert.match(sidebar, /height:\s*76px;/);
-  assert.match(sidebar, /padding:\s*3px 3px\s*!important;/);
-  assert.match(sidebar, /background:\s*transparent\s*!important;/);
-  assert.match(sidebar, /font-family:\s*var\(--font-body\);/);
-  assert.match(sidebar, /font-size:\s*11px;/);
-  assert.match(sidebar, /font-weight:\s*600;/);
-  assert.match(sidebar, /\.editor-module__tabs \.editor-module__tab-icon\s*\{[\s\S]*width:\s*38px;[\s\S]*height:\s*38px;/);
-  assert.match(sidebar, /color:\s*#68707d;/);
+  assert.match(navCss, /grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(navCss, /font-family:\s*var\(--font-body\);/);
+  assert.match(navCss, /font-size:\s*12px;/);
+  assert.match(navCss, /font-weight:\s*600;/);
+  assert.match(navCss, /\.trip-summary__primary-nav-icon\s*\{[\s\S]*width:\s*22px;[\s\S]*height:\s*24px;/);
+  assert.match(navCss, /color:\s*#5f6875;/);
 });
 
-test('places renders the transparent signpost icon through the existing tab asset', async () => {
+test('routes uses the requested new line icon rather than the old transparent signpost tab asset', async () => {
+  const navigation = await read('src/app/TripHeaderNavigation.jsx');
   const editor = await read('src/app/AppEditorModule.jsx');
-  const polish = await read('src/app/FloatingEditorPolish.css');
   const icon = await read('src/assets/lugares-storefront-v2.svg');
-  assert.match(editor, /import lugaresIcon from '\.\.\/assets\/lugares-storefront-v2\.svg'/);
-  assert.match(editor, /<img src=\{lugaresIcon\} alt="" \/>/);
-  assert.doesNotMatch(editor, /IconMapPin/);
-  assert.doesNotMatch(polish, /data-tab-icon='places-map-pin'\]::before/);
-  assert.doesNotMatch(polish, /assets\/lugares\.svg/);
+
+  assert.match(navigation, /IconRoute/);
+  assert.doesNotMatch(navigation, /lugaresIcon|lugares-storefront-v2/);
+  assert.doesNotMatch(editor, /lugaresIcon|lugares-storefront-v2/);
   assert.match(icon, /aria-label="Lugares"/);
   assert.match(icon, /viewBox="0 0 40 40"/);
   assert.match(icon, /#14394b/);
@@ -85,13 +85,13 @@ test('places renders the transparent signpost icon through the existing tab asse
   assert.doesNotMatch(icon, /<image\b/);
 });
 
-test('desktop navigation stays itinerary, routes and notes while the global header owns trip currency and app language', async () => {
-  const editor = await read('src/app/AppEditorModule.jsx');
+test('header navigation order stays itinerary, routes and notes while global header owns currency and language', async () => {
+  const navigation = await read('src/app/TripHeaderNavigation.jsx');
   const menu = await read('src/app/AppWorkspaceMenu.jsx');
   const header = await read('src/app/TripSummaryHeader.jsx');
-  const itineraryIndex = editor.indexOf("setActiveTab('segments')");
-  const routesIndex = editor.indexOf("setActiveTab('places')");
-  const notesIndex = editor.indexOf("setActiveTab('notes')");
+  const itineraryIndex = navigation.indexOf("id: 'segments'");
+  const routesIndex = navigation.indexOf("id: 'places'");
+  const notesIndex = navigation.indexOf("id: 'notes'");
   assert.ok(itineraryIndex >= 0);
   assert.ok(itineraryIndex < routesIndex);
   assert.ok(routesIndex < notesIndex);

@@ -9,6 +9,7 @@ const lineCount = (content) => content.split('\n').length;
 test('App coordina módulos sin contener menús, responsive ni diálogo completos', async () => {
   const app = await read('src/App.jsx');
   const editor = await read('src/app/AppEditorModule.jsx');
+  const headerNavigation = await read('src/app/TripHeaderNavigation.jsx');
   const workspace = await read('src/app/AppWorkspace.jsx');
   const dialog = await read('src/app/TripDeleteDialog.jsx');
   const editorState = await read('src/app/useAppEditorState.js');
@@ -21,7 +22,10 @@ test('App coordina módulos sin contener menús, responsive ni diálogo completo
   assert.match(app, /editorState=\{editorState\}/);
   assert.doesNotMatch(app, /editor-module__more-menu|mobiletabs|confirm__scrim/);
 
-  assert.match(editor, /editor-module__tabs/);
+  assert.doesNotMatch(editor, /editor-module__tabs/);
+  assert.match(headerNavigation, /role="tablist"/);
+  assert.equal((headerNavigation.match(/role="tab"/g) || []).length, 1);
+  assert.match(headerNavigation, /NAV_ITEMS\.map/);
   assert.match(workspace, /workspace__desktop/);
   assert.match(workspace, /workspace__mobile/);
   assert.match(workspace, /mobiletabs/);
