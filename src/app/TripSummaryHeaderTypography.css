@@ -1,8 +1,21 @@
 .trip-summary__metric-label {
   font-size: 14px;
+  line-height: 1;
 }
 
 .trip-summary__metric-value,
 .trip-summary__selector-trigger {
   font-size: 18px;
+  line-height: 1;
+}
+
+@media (max-width: 720px) {
+  .trip-summary__metric-label {
+    font-size: 10px;
+  }
+
+  .trip-summary__metric-value,
+  .trip-summary__selector-trigger {
+    font-size: 14px;
+  }
 }
