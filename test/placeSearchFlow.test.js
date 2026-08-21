@@ -76,16 +76,18 @@ test('legacy places keep country/city while Google persistence keeps only stable
   assert.doesNotMatch(dom, /place\.category/);
 });
 
-test('places, notes and mobile itinerary navigation use distinct icons', async () => {
-  const editor = await read('src/app/AppEditorModule.jsx');
+test('header places, notes and itinerary navigation use distinct new line icons', async () => {
+  const navigation = await read('src/app/TripHeaderNavigation.jsx');
   const workspace = await read('src/app/AppWorkspace.jsx');
-  const navigation = `${editor}\n${workspace}`;
 
-  assert.match(editor, /import lugaresIcon from '\.\.\/assets\/lugares-storefront-v2\.svg'/);
-  assert.match(editor, /data-tab-icon="places-map-pin"[\s\S]*<img src=\{lugaresIcon\} alt="" \/>/);
-  assert.match(editor, /data-tab-icon="notes"[\s\S]*<IconNotes \/>/);
+  assert.match(navigation, /IconListDetails/);
+  assert.match(navigation, /IconRoute/);
+  assert.match(navigation, /IconNotebook/);
+  assert.match(navigation, /id: 'segments'[\s\S]*Icon: IconListDetails/);
+  assert.match(navigation, /id: 'places'[\s\S]*Icon: IconRoute/);
+  assert.match(navigation, /id: 'notes'[\s\S]*Icon: IconNotebook/);
+  assert.doesNotMatch(navigation, /lugares-storefront-v2|IconMapPin|IconNotes\b/);
   assert.match(workspace, /<IconRoute size=\{16\} aria-hidden="true" \/> \{t\('itinerary'\)\}/);
-  assert.doesNotMatch(navigation, /IconMapPin|IconNotebook/);
 });
 
 test('CSP permite todos los hosts dinámicos requeridos por Google Maps JavaScript', async () => {
