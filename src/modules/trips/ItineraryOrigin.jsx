@@ -61,7 +61,7 @@ export function ItineraryOrigin({
       <div className="itinerary-stop__metrics itinerary-origin__metrics">
         <span className={'itinerary-stop__dates' + (!formattedDate ? ' is-placeholder' : '')}>
           <span className="itinerary-stop__date-line">
-            {formattedDate || t('datePlaceholder')}
+            {formattedDate || '—'}
           </span>
         </span>
         <span
