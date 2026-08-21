@@ -11,7 +11,6 @@ import {
   IconMapPin,
   IconMoon,
   IconPlane,
-  IconRulerMeasure,
   IconToolsKitchen2,
   IconTrain,
   IconWallet,
@@ -20,6 +19,7 @@ import { tripSummary } from '../modules/trips/tripSummaryModel.js';
 import { formatMoney } from '../shared/utils.js';
 import { SummarySelectorMetric } from './SummarySelectorMetric.jsx';
 import { TripHeaderNavigation } from './TripHeaderNavigation.jsx';
+import './HeaderRequestedPolish.css';
 
 const CURRENCIES = ['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'];
 
@@ -32,6 +32,23 @@ const BREAKDOWN_CATS = [
   { key: 'food', labelKey: 'food', Icon: IconToolsKitchen2, color: '#2aa866' },
   { key: 'others', labelKey: 'others', Icon: IconDots, color: '#9499ab' },
 ];
+
+function DistanceSpanIcon({ size = 18 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 18 18"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path d="M3.25 5.25V12.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M14.75 5.25V12.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M5.5 9H12.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 function displayName(code, type, locale) {
   try {
@@ -160,9 +177,9 @@ export function TripSummaryHeader({
           )}
         </div>
 
-        <Metric Icon={IconMapPin} iconColor="#7c5ce7" label={t('destinations')} value={`${summary.destinations} ${t('cities')}`} />
+        <Metric Icon={IconMapPin} iconColor="#e05252" label={t('destinations')} value={`${summary.destinations} ${t('cities')}`} />
         <Metric Icon={IconMoon} iconColor="#4f6df5" label={t('totalNights')} value={`${summary.nights} ${t('nights')}`} />
-        <Metric Icon={IconRulerMeasure} iconColor="#e08a17" label={t('totalDistance')} value={`≈ ${distance} km`} />
+        <Metric Icon={DistanceSpanIcon} iconColor="#e08a17" label={t('totalDistance')} value={`≈ ${distance} km`} />
         <SummarySelectorMetric Icon={IconCurrencyDollar} iconColor="#c9224d" label={t('currency')} value={trip.currency} options={currencyOptions} onChange={setCurrency} menuClassName="trip-summary__selector-menu--currency" />
         <SummarySelectorMetric Icon={IconLanguage} iconColor="#357d94" label={t('language')} value={locale} options={languageOptions} onChange={setLocale} menuClassName="trip-summary__selector-menu--language" />
       </div>
