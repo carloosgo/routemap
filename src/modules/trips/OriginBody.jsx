@@ -1,3 +1,4 @@
+import { IconX } from '@tabler/icons-react';
 import { CalendarDateInput } from '../../components/CalendarDateInput.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
 import { ExpenseEditor } from '../expenses/ExpenseEditor.jsx';
@@ -8,6 +9,8 @@ export function OriginBody({
   currency,
   locale,
   bodyId,
+  showNote,
+  onCloseNote,
   onUpdate,
   onUpdateExpenses,
 }) {
@@ -25,6 +28,34 @@ export function OriginBody({
           />
         </div>
       </div>
+
+      {showNote && (
+        <div className="itinerary-origin__note-editor">
+          <div className="itinerary-origin__note-editor-head">
+            <span>{t('originNote')}</span>
+            <button
+              type="button"
+              className="btn btn--icon itinerary-origin__note-editor-close"
+              aria-label={t('closeNote')}
+              onClick={onCloseNote}
+            >
+              <IconX size={14} aria-hidden="true" />
+            </button>
+          </div>
+          <textarea
+            className="itinerary-origin__note-textarea"
+            maxLength={500}
+            aria-label={t('originNote')}
+            placeholder={t('originNotePlaceholder')}
+            value={details.note || ''}
+            onChange={(event) => onUpdate({ note: event.target.value })}
+            autoFocus
+          />
+          <span className="itinerary-origin__note-count">
+            {(details.note || '').length} / 500
+          </span>
+        </div>
+      )}
 
       <ExpenseEditor
         expenses={details.expenses}
