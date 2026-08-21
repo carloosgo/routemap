@@ -62,7 +62,6 @@ export function SegmentForm({
 
   const openSegmentNote = () => onOpenNote(segment.id);
   const openOriginNote = () => onOpenNote(ORIGIN_NOTE_TARGET);
-
   return (
     <>
       {index === 0 && (
