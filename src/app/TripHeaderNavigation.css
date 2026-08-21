@@ -46,12 +46,12 @@
 
 .trip-summary__primary-nav-item:hover,
 .trip-summary__primary-nav-item:focus-visible {
-  background: rgba(25, 165, 208, 0.035);
+  background: #f6f7f8;
   outline: none;
 }
 
 .trip-summary__primary-nav-item.is-active {
-  background: rgba(25, 165, 208, 0.075);
+  background: #f6f7f8;
   color: #111827;
 }
 
@@ -62,6 +62,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  color: var(--atlas-accent);
 }
 
 .trip-summary__primary-nav-label {
@@ -84,11 +85,6 @@
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-}
-
-.trip-summary__primary-nav-badge--places {
-  background: var(--atlas-accent);
-  color: #ffffff;
 }
 
 .trip-summary__primary-nav-badge--notes {

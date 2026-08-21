@@ -25,12 +25,12 @@ test('the selected Atlas controls retain the exact #19a5d0 accent token', async 
     '.toast',
     '.trip-place button:hover',
     '.place-result-marker:hover',
-    '.trip-summary__primary-nav-badge',
+    '.trip-summary__primary-nav-icon',
   ]) {
     assert.ok(accentStyles.includes(selector), `Missing Atlas accent selector: ${selector}`);
   }
   assert.doesNotMatch(polish, /\.topbar__brand-icon/);
-  assert.match(accentStyles, /background:\s*var\(--atlas-accent\)/);
+  assert.match(accentStyles, /var\(--atlas-accent\)/);
   assert.match(accentStyles, /color:\s*#ffffff/);
 });
 
@@ -49,6 +49,8 @@ test('itinerary, routes and notes keep one tab structure in the global header', 
   assert.match(navigation, /labelKey: 'myRoutes'/);
   assert.match(navigation, /labelKey: 'notes'/);
   assert.match(navigation, /aria-selected=\{isActive\}/);
+  assert.doesNotMatch(navigation, /routeCount|badge--places/);
+  assert.match(navigation, /const badge = id === 'notes' \? checklistProgress : '';/);
   assert.doesNotMatch(editor, /editor-module__tabs|editor-module__nav-tab/);
   assert.match(menu, /openMenu === 'workspace'/);
   assert.doesNotMatch(menu, /setCurrency|t\('currency'\)|setLocale|t\('language'\)/);
@@ -63,9 +65,9 @@ test('itinerary, routes and notes keep one tab structure in the global header', 
   assert.match(navCss, /font-family:\s*var\(--font-body\);/);
   assert.match(navCss, /font-size:\s*14px;/);
   assert.match(navCss, /font-weight:\s*600;/);
-  assert.match(navCss, /\.trip-summary__primary-nav-icon\s*\{[\s\S]*width:\s*22px;[\s\S]*height:\s*24px;/);
+  assert.match(navCss, /\.trip-summary__primary-nav-icon\s*\{[\s\S]*width:\s*22px;[\s\S]*height:\s*24px;[\s\S]*color:\s*var\(--atlas-accent\);/);
   assert.match(navCss, /\.trip-summary__primary-nav-label\s*\{[\s\S]*color:\s*#111827;[\s\S]*font-size:\s*14px;/);
-  assert.match(navCss, /\.trip-summary__primary-nav-badge--places\s*\{[\s\S]*background:\s*var\(--atlas-accent\);[\s\S]*color:\s*#ffffff;/);
+  assert.doesNotMatch(navCss, /\.trip-summary__primary-nav-badge--places/);
   assert.match(navCss, /\.trip-summary__primary-nav-badge--notes\s*\{[\s\S]*background:\s*#fff0eb;[\s\S]*color:\s*#e2725b;/);
 });
 
@@ -76,8 +78,7 @@ test('routes keeps its own icon while distance uses the requested span marker', 
   const icon = await read('src/assets/lugares-storefront-v2.svg');
 
   assert.match(navigation, /IconRoute/);
-  assert.match(navigation, /const NAV_ICON_COLOR = '#7c5ce7';/);
-  assert.match(navigation, /style=\{\{ color: NAV_ICON_COLOR \}\}/);
+  assert.doesNotMatch(navigation, /NAV_ICON_COLOR|#7c5ce7/);
   assert.match(header, /function DistanceSpanIcon/);
   assert.match(header, /Icon=\{DistanceSpanIcon\}/);
   assert.match(header, /Icon=\{IconMapPin\} iconColor="#e05252"/);
@@ -156,6 +157,33 @@ test('expanded expense editor keeps compact fields and one exact vertical rhythm
   assert.equal((fixed.match(/<ExpenseMoneyCard/g) || []).length, 6);
   assert.doesNotMatch(fixed, /EXPENSE_ICONS\.attraction|attractionsTotal|onSetAttractions/);
   assert.doesNotMatch(editor, /setExpenseItemsTotal\(expenses, 'attractions'/);
+});
+
+test('desktop itinerary geometry stays contained and collapse motion is bidirectional', async () => {
+  const layout = await read('src/app/TripWorkspaceHeaderLayout.css');
+  const itinerary = await read('src/app/ItineraryTripHeader.css');
+  const correction = await read('src/modules/trips/ItineraryCorrectionPolish.css');
+  const segmentForm = await read('src/modules/trips/SegmentForm.jsx');
+  const originSection = await read('src/modules/trips/SegmentOriginSection.jsx');
+  const main = await read('src/main.jsx');
+  const headerPolish = await read('src/app/HeaderRequestedPolish.css');
+
+  assert.match(layout, /--workspace-panel-width:\s*clamp\(458px, calc\(40vw - var\(--atlas-nav-width\)\), 540px\);/);
+  assert.match(layout, /--trip-header-height:\s*63px;/);
+  assert.match(itinerary, /--itinerary-axis-x:\s*39px;/);
+  assert.match(itinerary, /grid-template-columns:\s*18px 30px 106px minmax\(0, 1fr\);/);
+  assert.match(itinerary, /grid-template-columns:\s*48px 66px 66px 22px 22px 22px;/);
+  assert.match(itinerary, /padding-left:\s*4px;[\s\S]*justify-content:\s*space-between;[\s\S]*column-gap:\s*3px;/);
+  assert.match(itinerary, /--expense-content-end-inset:\s*32px;/);
+  assert.match(itinerary, /padding-right:\s*var\(--expense-content-end-inset\);/);
+  assert.match(itinerary, /dates__row \.calendar-date\s*\{[\s\S]*width:\s*100%;[\s\S]*justify-self:\s*stretch;/);
+  assert.match(correction, /\.itinerary-collapse\s*\{[\s\S]*grid-template-rows:\s*0fr;[\s\S]*190ms/);
+  assert.match(correction, /\.itinerary-collapse\.is-open\s*\{[\s\S]*grid-template-rows:\s*1fr;/);
+  assert.match(segmentForm, /<CollapsibleRegion open=\{expanded\}>[\s\S]*<SegmentBody/);
+  assert.match(originSection, /<CollapsibleRegion open=\{expanded\}>[\s\S]*<OriginBody/);
+  assert.match(main, /TripWorkspaceHeaderLayout\.css';\s*\nimport '\.\/app\/HeaderRequestedPolish\.css';/);
+  assert.match(headerPolish, /\.trip-summary__metric:hover/);
+  assert.match(headerPolish, /background:\s*#f6f7f8;/);
 });
 
 test('place save popup hides its close icon and dismisses through outside clicks', async () => {

@@ -3,7 +3,7 @@ import { segmentTotal } from './tripModel.js';
 import { SegmentBody } from './SegmentBody.jsx';
 import { SegmentDeleteDialog } from './SegmentDeleteDialog.jsx';
 import { SegmentHeader } from './SegmentHeader.jsx';
-import { SegmentOriginSection } from './SegmentOriginSection.jsx';
+import { CollapsibleRegion, SegmentOriginSection } from './SegmentOriginSection.jsx';
 import { ORIGIN_NOTE_TARGET } from './tripNoteTargets.js';
 import { formatSegmentAmount, formatSegmentDates, formatSegmentNights } from './segmentFormModel.js';
 import { useExpandedSegmentReveal } from './useExpandedSegmentReveal.js';
@@ -87,7 +87,7 @@ export function SegmentForm({
           onRemoveRequest={() => setConfirmOpen(true)}
           onReorderPointerStart={onReorderPointerStart}
         />
-        {expanded && (
+        <CollapsibleRegion open={expanded}>
           <SegmentBody
             segment={segment}
             currency={currency}
@@ -96,7 +96,7 @@ export function SegmentForm({
             onUpdate={onUpdate}
             onUpdateExpenses={onUpdateExpenses}
           />
-        )}
+        </CollapsibleRegion>
         <SegmentDeleteDialog
           open={confirmOpen}
           onConfirm={confirmRemove}
