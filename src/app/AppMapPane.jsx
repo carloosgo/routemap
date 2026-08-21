@@ -55,7 +55,7 @@ export function AppMapPane({
           style={{ zIndex: 720 }}
         >
           <div className="segnote__head">
-            <span className="segnote__badge" style={{ background: colorForIndex(0) }}>O</span>
+            <span className="segnote__badge" style={{ background: colorForIndex(0) }} aria-hidden="true" />
             <span className="segnote__title">{t('origin')}: {originName}</span>
             <button
               type="button"
