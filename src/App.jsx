@@ -28,7 +28,7 @@ export default function App() {
   const tripStore = useTrip();
   const savedTrips = useSavedTrips(auth.user);
   const editorState = useAppEditorState(tripStore);
-  const { trip, loadTrip, renameTrip, setCurrency, updateSegment, addPlace } = tripStore;
+  const { trip, loadTrip, renameTrip, setCurrency, updateSegment, updateOriginDetails, addPlace } = tripStore;
   const {
     getTrip,
     getActiveTripDraft,
@@ -229,6 +229,7 @@ export default function App() {
       openNoteSegmentId={openNoteSegmentId}
       setOpenNoteSegmentId={setOpenNoteSegmentId}
       updateSegment={updateSegment}
+      updateOriginDetails={updateOriginDetails}
       addPlace={addPlace}
       persistenceState={persistence.state}
       toast={toast}
