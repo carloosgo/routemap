@@ -14,7 +14,11 @@ export function TripHeaderNavigation({
   t,
 }) {
   return (
-    <div className="trip-summary__primary-nav" role="tablist" aria-label={t('tripNavigation')}>
+    <div
+      className="trip-summary__primary-nav"
+      role="tablist"
+      aria-label={`${t('itinerary')}, ${t('myRoutes')}, ${t('notes')}`}
+    >
       {NAV_ITEMS.map(({ id, labelKey, Icon, color }) => {
         const isActive = activeTab === id;
         const badge = id === 'places' ? routeCount : id === 'notes' ? checklistProgress : '';
