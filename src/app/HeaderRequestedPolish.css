@@ -1,14 +1,15 @@
-/* Ajustes finos solicitados para los estados interactivos del header global. */
+/* Estados interactivos del header global. Este archivo se importa al final de
+   la cascada del header para que hover/active no dependan de especificidad. */
 
 .trip-summary__primary-nav-item:hover,
 .trip-summary__primary-nav-item:focus-visible,
 .trip-summary__primary-nav-item.is-active,
-button.trip-summary__metric:hover,
+.trip-summary__metric:hover,
+.trip-summary__metric:focus-within,
 button.trip-summary__metric[aria-expanded='true'],
-.trip-summary__metric--selector:hover,
 .trip-summary__metric--selector:has(.trip-summary__selector-trigger[aria-expanded='true']) {
   border-radius: 6px;
-  background: rgba(17, 24, 39, 0.028);
+  background: #f6f7f8;
 }
 
 .trip-summary__primary-nav-item:focus-visible,
@@ -25,5 +26,5 @@ button.trip-summary__metric[aria-expanded='true'],
 .trip-summary__selector-option:hover,
 .trip-summary__selector-option:focus-visible,
 .trip-summary__selector-option.is-active {
-  background: rgba(17, 24, 39, 0.032);
+  background: #f6f7f8;
 }
