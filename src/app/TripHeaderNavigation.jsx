@@ -37,7 +37,10 @@ export function TripHeaderNavigation({
             </span>
             <span className="trip-summary__primary-nav-label">{t(labelKey)}</span>
             {badge !== '' && badge !== 0 && (
-              <span className="trip-summary__primary-nav-badge" aria-label={String(badge)}>
+              <span
+                className={`trip-summary__primary-nav-badge trip-summary__primary-nav-badge--${id}`}
+                aria-label={String(badge)}
+              >
                 {badge}
               </span>
             )}
