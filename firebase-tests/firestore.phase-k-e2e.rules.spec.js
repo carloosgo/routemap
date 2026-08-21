@@ -142,6 +142,20 @@ test('rules temporales preservan CRUD v3 existente', async () => {
   await assertSucceeds(getDoc(doc(alice, `users/alice/trips/${tripId}`)));
 });
 
+test('delete v3 normal sigue permitido fuera del prefijo Phase K', async () => {
+  const alice = testEnv.authenticatedContext('alice').firestore();
+  const tripId = 'legacy-delete-works';
+  const revisionId = 'revision002';
+  const revisionRef = doc(alice, `users/alice/trips/${tripId}/revisions/${revisionId}`);
+  const tripRef = doc(alice, `users/alice/trips/${tripId}`);
+  const revision = v3Revision(revisionId);
+
+  await assertSucceeds(setDoc(revisionRef, revision));
+  await assertSucceeds(setDoc(revisionRef, { ...revision, complete: true }));
+  await assertSucceeds(setDoc(tripRef, v3Trip(tripId, revisionId)));
+  await assertSucceeds(deleteDoc(tripRef));
+});
+
 test('write v4 normal sigue bloqueado fuera del prefijo Phase K', async () => {
   const alice = testEnv.authenticatedContext('alice').firestore();
   await assertFails(setDoc(
