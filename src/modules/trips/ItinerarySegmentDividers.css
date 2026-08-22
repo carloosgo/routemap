@@ -1,6 +1,6 @@
-/* Prueba visual solicitada: sustituye el eje punteado vertical de la timeline
-   por separadores horizontales discretos entre trayectos. No altera la
-   estructura, el orden ni el espaciado funcional de las filas. */
+/* Separadores horizontales discretos entre trayectos. El eje vertical de la
+   timeline permanece eliminado. Cada divisor incorpora además una muesca en V
+   extremadamente tenue en ambos bordes para sugerir boletos aún unidos. */
 
 .segments:not(.segments--compact)::before {
   content: none;
@@ -23,6 +23,34 @@
   pointer-events: none;
 }
 
-.itinerary-segment.is-dragging::before {
+.itinerary-segment + .itinerary-segment::after {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  top: -9px;
+  left: -1px;
+  right: -1px;
+  height: 8px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 8' preserveAspectRatio='none'%3E%3Cpath d='M0 0 L4 4 L0 8 M500 0 L496 4 L500 8' fill='none' stroke='%23c9ced7' stroke-width='0.8' opacity='0.58'/%3E%3C/svg%3E") center / 100% 8px no-repeat;
+  pointer-events: none;
+}
+
+.itinerary-segment.is-dragging::before,
+.itinerary-segment.is-dragging::after {
   opacity: 0;
+}
+
+@media (min-width: 721px) {
+  /* La vista compacta reduce el hueco entre filas; el divisor y sus muescas se
+     recentran en ese nuevo espacio. Los -8px llevan el pico hasta el borde real
+     del card, compensando el padding lateral del editor sin tocar su retícula. */
+  .itinerary-segment + .itinerary-segment::before {
+    top: -1px;
+  }
+
+  .itinerary-segment + .itinerary-segment::after {
+    top: -5px;
+    left: -8px;
+    right: -8px;
+  }
 }

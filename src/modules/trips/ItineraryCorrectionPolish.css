@@ -46,13 +46,6 @@
   font-size: 13px;
 }
 
-/* Reserva desde el inicio el canal que ocuparía la barra vertical. Así la
-   anchura útil de las filas no cambia al expandir un trayecto y superar el
-   alto disponible del panel. */
-.editor-module--itinerary .editor__body {
-  scrollbar-gutter: stable;
-}
-
 /* El body permanece montado únicamente durante los 190ms de salida. El grid
    anima altura y opacidad en ambos sentidos sin medir el DOM ni usar max-height
    arbitrarios; al terminar el cierre React lo desmonta para recuperar coste. */
@@ -82,10 +75,6 @@
 .itinerary-segment .segment__body,
 .segments:not(.segments--compact) .itinerary-origin__body {
   animation: none;
-}
-
-.itinerary-segment {
-  scroll-margin-block: 12px;
 }
 
 @media (max-width: 720px) {

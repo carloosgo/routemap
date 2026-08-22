@@ -1,0 +1,71 @@
+/* Vista compacta solicitada para el card flotante del itinerario.
+   En escritorio prioriza hasta 10 países visibles sin scrollbar; el tratamiento
+   de más de 10 trayectos se resolverá en una iteración posterior. */
+
+@media (min-width: 721px) {
+  .editor-module--itinerary .editor__body {
+    overflow-y: hidden;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    scrollbar-gutter: auto;
+  }
+
+  .segments:not(.segments--compact) {
+    padding-top: 0;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin {
+    min-height: 30px;
+    margin-bottom: 2px;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .itinerary-segment.segment {
+    padding-bottom: 2px !important;
+  }
+
+  .itinerary-segment:last-child {
+    padding-bottom: 0 !important;
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-segment .segment__header.itinerary-stop {
+    min-height: 44px;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__marker,
+  .itinerary-stop__marker {
+    height: 22px;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__marker img,
+  .itinerary-stop__marker img {
+    height: 18px;
+  }
+
+  .itinerary-stop__picker .autocomplete__field,
+  .itinerary-stop__picker .input {
+    min-height: 28px;
+    height: 28px;
+  }
+
+  .itinerary-stop__picker .autocomplete__selected-value {
+    max-height: 27px;
+  }
+
+  .itinerary-stop__nights.segment__pill,
+  .itinerary-stop__amount.segment__pill {
+    height: 20px;
+    min-height: 20px;
+  }
+
+  .itinerary-segment .segment__body,
+  .segments:not(.segments--compact) .itinerary-origin__body {
+    margin-top: 2px;
+    margin-bottom: 3px;
+    padding-top: 6px;
+    padding-bottom: 2px;
+  }
+}

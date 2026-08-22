@@ -8,7 +8,6 @@ const lineCount = (content) => content.split('\n').length;
 
 test('SegmentForm coordina el timeline sin absorber edición, origen ni diálogo', async () => {
   const form = await read('src/modules/trips/SegmentForm.jsx');
-  const reveal = await read('src/modules/trips/useExpandedSegmentReveal.js');
   const originSection = await read('src/modules/trips/SegmentOriginSection.jsx');
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const header = await read('src/modules/trips/SegmentHeader.jsx');
@@ -29,17 +28,10 @@ test('SegmentForm coordina el timeline sin absorber edición, origen ni diálogo
   assert.match(form, /formatSegmentAmount/);
   assert.match(form, /formatSegmentDates/);
   assert.match(form, /formatSegmentNights/);
-  assert.match(form, /useExpandedSegmentReveal\(expanded, dragging\)/);
   assert.doesNotMatch(
     form,
-    /CityAutocomplete|CalendarDateInput|ExpenseEditor|ConfirmDialog|IconChevronDown|<ItineraryOrigin|<OriginBody|scrollIntoView/
+    /CityAutocomplete|CalendarDateInput|ExpenseEditor|ConfirmDialog|IconChevronDown|<ItineraryOrigin|<OriginBody|useExpandedSegmentReveal|scrollIntoView/
   );
-
-  assert.match(reveal, /useEffect/);
-  assert.match(reveal, /scrollIntoView\(\{/);
-  assert.match(reveal, /behavior:\s*'smooth'/);
-  assert.match(reveal, /block:\s*'nearest'/);
-  assert.match(reveal, /if \(!expanded \|\| dragging\) return undefined/);
 
   assert.match(originSection, /<ItineraryOrigin/);
   assert.match(originSection, /onSelect=\{\(origin\) => onUpdate\(\{ origin \}\)\}/);
