@@ -1,0 +1,26 @@
+.segment__drag-handle {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  display: grid;
+  place-items: center;
+  color: #a1a7b2;
+  border-radius: 4px;
+}
+
+.segment__drag-handle:hover {
+  color: #667085;
+  background: #f4f5f7;
+}
+
+.compact-route__badge {
+  display: none !important;
+}
+
+@media (min-width: 721px) {
+  .floating-editor .segment__drag-handle {
+    width: 17px;
+    height: 17px;
+    flex-basis: 17px;
+  }
+}

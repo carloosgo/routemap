@@ -19,12 +19,24 @@ export function useSaveShortcut(onSave) {
   }, [onSave]);
 }
 
+function matchingScopeElements(element) {
+  if (!element) return [];
+
+  const scopeClass = Array.from(element.classList || []).find(Boolean);
+  if (!scopeClass) return [element];
+
+  return Array.from(document.getElementsByClassName(scopeClass));
+}
+
 export function useOutsideClick(ref, active, onOutside) {
   useEffect(() => {
     if (!active) return undefined;
 
     function onPointerDown(event) {
-      if (isOutsideTarget(ref.current, event.target)) {
+      const scopes = matchingScopeElements(ref.current);
+      const isInsideAnyScope = scopes.some((scope) => !isOutsideTarget(scope, event.target));
+
+      if (!isInsideAnyScope) {
         onOutside();
       }
     }
@@ -39,7 +51,15 @@ export function useOutsideClickSelector(selector, active, onOutside) {
     if (!active) return undefined;
 
     function onPointerDown(event) {
-      if (!event.target?.closest?.(selector)) {
+      const target = event.target;
+      if (!target?.closest) return;
+
+      // Los botones de nota son toggles React compartidos para origen y trayectos.
+      // No los tratamos como outside-click: así mouse, touch y teclado siguen la
+      // misma semántica de abrir/cambiar/cerrar sin una segunda capa DOM.
+      if (selector === '.segnote' && target.closest('.segment__note-btn')) return;
+
+      if (!target.closest(selector)) {
         onOutside();
       }
     }
@@ -58,4 +78,30 @@ export function useCollapseSegmentsOnTripChange(tripId, segments, setExpandedSeg
     previousTripIdRef.current = tripId;
     setExpandedSegments(createCollapsedSegments(segments));
   }, [segments, setExpandedSegments, tripId]);
+
+  useEffect(() => {
+    const workspace = document.querySelector('.workspace__desktop--floating');
+    const editor = workspace?.querySelector('.floating-editor');
+    if (!workspace || !editor) return undefined;
+
+    function syncSearchSafeLeft() {
+      const workspaceRect = workspace.getBoundingClientRect();
+      const editorRect = editor.getBoundingClientRect();
+      const safeLeft = Math.max(0, editorRect.right - workspaceRect.left + 14);
+      workspace.style.setProperty('--geo-search-safe-left', `${safeLeft}px`);
+    }
+
+    syncSearchSafeLeft();
+
+    const observer = new ResizeObserver(syncSearchSafeLeft);
+    observer.observe(workspace);
+    observer.observe(editor);
+    window.addEventListener('resize', syncSearchSafeLeft);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', syncSearchSafeLeft);
+      workspace.style.removeProperty('--geo-search-safe-left');
+    };
+  }, []);
 }

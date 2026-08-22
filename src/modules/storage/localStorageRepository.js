@@ -1,8 +1,31 @@
-import { normalizeTrip } from '../trips/tripModel.js';
+import {
+  normalizeTrip,
+  placeForPersistence,
+} from '../trips/tripModel.js';
 
 // Implementación de almacenamiento en el navegador (localStorage).
 // Apta para uso individual / modo offline. Para multiusuario global se usa
 // la implementación 'api' contra el backend.
+
+function tripForPersistence(rawTrip) {
+  const trip = normalizeTrip(rawTrip);
+  return {
+    ...trip,
+    places: trip.places.map(placeForPersistence),
+    routeConnections: trip.routeConnections.map((route) =>
+      route.provider === 'google'
+        ? {
+            ...route,
+            distance: 0,
+            duration: 0,
+            geometry: null,
+            calculatedAt: '',
+            transitSteps: [],
+          }
+        : route
+    ),
+  };
+}
 
 export function createLocalStorageRepository(storageKey) {
   const safeStorageKey = typeof storageKey === 'string' ? storageKey.trim() : '';
@@ -38,7 +61,7 @@ export function createLocalStorageRepository(storageKey) {
   }
 
   function writeAll(trips) {
-    storage().setItem(safeStorageKey, JSON.stringify(trips));
+    storage().setItem(safeStorageKey, JSON.stringify(trips.map(tripForPersistence)));
   }
 
   return {

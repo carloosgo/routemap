@@ -1,0 +1,99 @@
+/* Restituye el módulo de trayectos como una tarjeta flotante real sobre el mapa.
+   Sólo modifica la geometría exterior del workspace en escritorio: el contenido,
+   estado, persistencia y navegación del editor permanecen sin cambios. */
+@media (min-width: 721px) {
+  .workspace__desktop--column {
+    position: relative;
+    display: block;
+    background: transparent;
+  }
+
+  /* El mapa vuelve a ocupar todo el workspace. El editor ya no le reserva una
+     columna física: se superpone sobre la superficie cartográfica. */
+  .workspace__desktop--column > .mappane {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+  }
+
+  .workspace-panel {
+    position: absolute;
+    top: calc(var(--trip-header-height) + 14px);
+    bottom: 14px;
+    left: 14px;
+    z-index: 700;
+    width: var(--workspace-panel-width, clamp(458px, calc(40vw - 82px), 540px));
+    min-width: 0;
+    height: auto;
+    overflow: visible;
+    background: transparent;
+    border-radius: 12px;
+    transition: transform 180ms ease, opacity 180ms ease;
+  }
+
+  main.workspace .workspace__desktop--column .workspace-panel__content.floating-editor {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 100% !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(226, 228, 233, 0.94) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.16) !important;
+  }
+
+  /* El panel ahora empieza debajo del header global; elimina el antiguo spacer
+     interno que sólo era necesario cuando el editor arrancaba detrás del header. */
+  .workspace-panel .editor-module {
+    grid-template-rows: minmax(0, 1fr);
+    border-radius: inherit;
+  }
+
+  .workspace-panel .editor-module > :not(.editor-module__tabs) {
+    grid-row: 1;
+  }
+
+  .workspace-panel .editor,
+  .workspace-panel .editor__body {
+    border-radius: inherit;
+  }
+
+  /* La pestaña sigue pegada al costado del módulo, ahora considerando el gutter
+     de 14px que deja visible el mapa alrededor de la tarjeta. */
+  .workspace-panel__toggle {
+    top: calc(50% + 31px);
+    left: calc(14px + var(--workspace-panel-width, clamp(458px, calc(40vw - 82px), 540px)) - 1px);
+    z-index: 701;
+    box-shadow: 3px 1px 9px rgba(15, 23, 42, 0.12);
+  }
+
+  .workspace__desktop--column.is-panel-collapsed {
+    grid-template-columns: none;
+  }
+
+  .workspace__desktop--column.is-panel-collapsed .workspace-panel {
+    transform: translateX(calc(-100% - 14px));
+    opacity: 0;
+  }
+
+  .workspace__desktop--column.is-panel-collapsed .workspace-panel__toggle {
+    left: 14px;
+    transform: translate(0, -50%);
+    border-left: 1px solid #dfe3e8;
+    border-radius: 7px;
+  }
+
+  /* Los overlays del mapa deben comenzar después del panel flotante en vez de
+     aparecer debajo de él. Mantienen el mismo gutter visual de 14px. */
+  .workspace__desktop--column > .mappane .segnote,
+  .workspace__desktop--column > .mappane .geo-search {
+    left: calc(28px + var(--workspace-panel-width, clamp(458px, calc(40vw - 82px), 540px)));
+  }
+}

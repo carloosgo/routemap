@@ -1,65 +1,50 @@
-# Lista de preparación para producción
+# Lista de preparación para producción — registro histórico
 
-## Configuración y secretos
+> **No usar este archivo como fuente de verdad del rollout actual.** Esta checklist nació antes de Atlas Storage v4 y varios puntos aquí listados fueron posteriormente cerrados, redefinidos o movidos a gates explícitos A–L.
+>
+> El estado vigente debe determinarse con los decision records, closeouts y evidencia cloud más recientes. En particular:
+>
+> - `docs/STORAGE_V4_IMPLEMENTATION_STATUS.md`
+> - `docs/STORAGE_V4_PHASE_K_CLOSEOUT_2026-08-14.md`
+> - `docs/STORAGE_V4_OPERATING_STATE_2026-08-15.md` (snapshot histórico; evidencia posterior prevalece)
+> - `docs/STORAGE_V4_PRODUCTION_ROLLOUT.md`
+> - `docs/STORAGE_V4_PHASE_J_DECISION_2026-08-14.md`
+>
+> No convertir una casilla antigua de esta página en un bloqueo nuevo sin contrastarla primero con esas fuentes.
 
-- [ ] Configurar `VITE_MAPBOX_TOKEN` como token público de cliente.
-- [ ] Restringir el token de Mapbox a los dominios de producción autorizados.
-- [ ] Mantener tokens secretos y credenciales exclusivamente en backend/gestor de secretos.
-- [ ] Configurar `VITE_API_BASE_URL` solo cuando exista un backend productivo.
-- [ ] Verificar que archivos `.env*` con secretos no se versionen.
+## Por qué se conserva
 
-## Mapbox
+Esta lista documenta los riesgos que guiaron las primeras fases: secretos, proveedores, mapas, autenticación, backups, App Check, observabilidad, privacidad y calidad. Sigue siendo útil como registro histórico, pero **no refleja por sí sola qué está pendiente hoy**.
 
-- [ ] Revisar el plan, cuota mensual y alertas de gasto antes del lanzamiento.
-- [ ] Activar restricciones de URL y permisos mínimos del token.
-- [ ] Definir qué ocurre al superar cuota o ante indisponibilidad.
-- [ ] Comprobar atribución y términos aplicables a mapas, estilos y datos.
-- [ ] Medir cargas de mapa por sesión y por usuario real.
+## Principios que siguen vigentes
 
-## Geocodificación
+### Configuración y secretos
 
-- [ ] Sustituir el acceso directo al Nominatim público por un proxy propio o proveedor contratado.
-- [ ] Añadir identificación apropiada del servicio, caché servidor y rate limiting.
-- [ ] Evitar registrar consultas personales en logs sin necesidad.
-- [ ] Definir retención y borrado de logs.
+- Mantener las claves privadas de proveedores exclusivamente en Secret Manager/backend.
+- No versionar secretos, debug tokens ni archivos `.env` reales.
+- Revisar restricciones de las claves web públicas y rotar/destruir secretos sólo mediante un procedimiento seguro.
 
-## Backend y cuentas
+### Proveedores, caché y mapas
 
-- [ ] Implementar autenticación, recuperación de cuenta y cierre de sesión.
-- [ ] Validar y autorizar toda operación en servidor.
-- [ ] Separar viajes por propietario y evitar acceso mediante IDs ajenos.
-- [ ] Proteger sesiones, CSRF, CORS y rate limiting.
-- [ ] Añadir migraciones, backups verificados y restauración probada.
-- [ ] Implementar exportación y eliminación de datos.
+- Mantener cuotas, validación, caché y expiración explícitas.
+- Conservar separación entre datos canónicos del usuario y provider cache.
+- Verificar atribuciones/términos de los proveedores y medir rendimiento real antes de hacer tuning especulativo.
+- Mantener comportamiento degradado seguro cuando un proveedor o una caché auxiliar fallen.
 
-## Alojamiento
+### Firebase, datos y rollout
 
-- [ ] Servir por HTTPS.
-- [ ] Configurar CSP, HSTS, Referrer-Policy y Permissions-Policy como cabeceras HTTP.
-- [ ] Servir assets estáticos mediante CDN con compresión Brotli/Gzip.
-- [ ] Configurar fallback de SPA a `index.html` sin interceptar `/api` ni assets inexistentes.
-- [ ] Definir estrategia de caché y versionado de assets estáticos.
-- [ ] Probar despliegue desde varias regiones.
+- Aislar datos por UID mediante Rules y contratos de dominio.
+- Mantener recovery/backups/observabilidad y validar cualquier cambio por entorno.
+- App Check se observa antes de enforcement.
+- READ, migración, WRITE y retiro de v3 se habilitan únicamente en sus gates productivos correspondientes.
+- No usar `atlasmap-prod` como backend de desarrollo.
 
-## Observabilidad
+### Privacidad y calidad
 
-- [ ] Monitorizar errores de frontend sin incluir notas, rutas o datos sensibles.
-- [ ] Monitorizar latencia y errores del backend.
-- [ ] Crear alertas de disponibilidad, cuota y gasto.
-- [ ] Definir identificadores de correlación y política de retención.
+- Mantener minimización, aislamiento y borrado de datos de usuario.
+- Mantener verdes tests, Rules, lint, build y los workflows de seguridad/dependencias.
+- Validar experiencia real en navegadores/dispositivos soportados y accesibilidad del producto.
 
-## Privacidad y legal
+## Nota sobre casillas históricas
 
-- [ ] Publicar política de privacidad y términos aplicables.
-- [ ] Identificar responsable, finalidades, base jurídica y proveedores.
-- [ ] Determinar si se requiere consentimiento de cookies o analítica.
-- [ ] Definir transferencias internacionales y ubicación de datos.
-- [ ] Documentar conservación, exportación y borrado.
-
-## Calidad
-
-- [ ] Mantener verdes pruebas, lint, build, CodeQL y auditoría de dependencias.
-- [ ] Añadir pruebas end-to-end de crear, editar, guardar, abrir y eliminar viajes.
-- [ ] Probar teclado, lectores de pantalla y contraste conforme a WCAG 2.2 AA.
-- [ ] Probar en Safari/iOS, Chrome/Android, Firefox y Edge.
-- [ ] Ejecutar pruebas de carga del backend y de rutas con muchos marcadores.
+Las antiguas casillas de esta checklist fueron retiradas deliberadamente porque mezclaban trabajo ya completado con trabajo todavía condicionado por Phase L. Su presencia provocaba falsos pendientes (por ejemplo TTL, recovery o creación de infraestructura que ya podía tener evidencia posterior). El roadmap A–L y sus closeouts son ahora el mecanismo canónico para determinar readiness.

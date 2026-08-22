@@ -3,7 +3,11 @@ name: Quality checks
 on:
   pull_request:
   push:
-    branches: [main, agent/phase-1-no-design, agent/phase-2-hardening-no-design]
+    branches:
+      - main
+      - agent/phase-1-no-design
+      - agent/phase-2-hardening-no-design
+      - agent/phase-3-firebase-foundation
 
 permissions:
   contents: read
@@ -11,7 +15,7 @@ permissions:
 jobs:
   test-lint-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
 
     steps:
       - name: Checkout repository
@@ -33,8 +37,14 @@ jobs:
               exit 1
             fi
 
-            if ! grep -q '^Visual delta: none$' DESIGN_PRESERVATION.md; then
-              echo "DESIGN_PRESERVATION.md must declare: Visual delta: none"
+            if ! grep -Eq '^Visual delta: (none|requested)$' DESIGN_PRESERVATION.md; then
+              echo "DESIGN_PRESERVATION.md must declare: Visual delta: none|requested"
+              exit 1
+            fi
+
+            if grep -q '^Visual delta: requested$' DESIGN_PRESERVATION.md \
+              && ! grep -q '^Requested visual scope:' DESIGN_PRESERVATION.md; then
+              echo "Requested visual deltas must declare: Requested visual scope: ..."
               exit 1
             fi
           fi
@@ -42,17 +52,103 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
 
-      - name: Install dependencies
+      - name: Set up Java for Firebase emulators
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install application dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm test
+      - name: Install Functions dependencies
+        run: npm ci --prefix functions
+
+      - name: Review impacted test contracts
+        run: npm run test:impact -- --json=test-impact.json
+
+      - name: Upload test impact report
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-impact
+          path: test-impact.json
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Run unit tests
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee unit-test.log
+
+      - name: Upload unit test failure log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-log
+          path: unit-test.log
+          if-no-files-found: ignore
+          retention-days: 3
+
+      - name: Audit and enforce test contracts
+        run: npm run test:audit -- --json=test-audit.json --enforce-baseline
+
+      - name: Upload test contract audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-contract-audit
+          path: test-audit.json
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Test Firestore security rules
+        shell: bash
+        run: |
+          set -o pipefail
+          log_file="$(mktemp)"
+
+          if npm run test:rules 2>&1 | tee "$log_file"; then
+            exit 0
+          fi
+
+          tail_text="$(tail -n 80 "$log_file")"
+          {
+            echo "### Firestore security rules failure"
+            echo '```text'
+            printf '%s\n' "$tail_text"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          escaped="$tail_text"
+          escaped="${escaped//'%'/'%25'}"
+          escaped="${escaped//$'\r'/'%0D'}"
+          escaped="${escaped//$'\n'/'%0A'}"
+          echo "::error title=Firestore security rules failed::$escaped"
+          exit 1
+
+      - name: Test scoped Phase K E2E Firestore rules
+        run: npm run test:rules:phase-k-e2e
 
       - name: Run ESLint
-        run: npm run lint
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run lint 2>&1 | tee eslint.log
+
+      - name: Upload ESLint failure log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-log
+          path: eslint.log
+          if-no-files-found: ignore
+          retention-days: 3
 
       - name: Build production bundle
         run: npm run build

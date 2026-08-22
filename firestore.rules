@@ -1,0 +1,399 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsUserPath(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function validCount(value, maximum) {
+      return value is int && value >= 0 && value <= maximum;
+    }
+
+    function validAmount(value) {
+      return value is number && value >= 0;
+    }
+
+    function validCity(data) {
+      return data is map
+        && data.keys().hasOnly([
+          'id', 'name', 'displayName', 'country', 'countryCode', 'lat', 'lon'
+        ])
+        && data.name is string
+        && data.name.size() <= 120
+        && data.lat is number
+        && data.lat >= -90
+        && data.lat <= 90
+        && data.lon is number
+        && data.lon >= -180
+        && data.lon <= 180;
+    }
+
+    function validFood(data) {
+      return data is map
+        && data.keys().hasOnly([
+          'mode', 'single', 'breakfast', 'lunch', 'dinner'
+        ])
+        && data.keys().hasAll([
+          'mode', 'single', 'breakfast', 'lunch', 'dinner'
+        ])
+        && (data.mode == 'single' || data.mode == 'detailed')
+        && validAmount(data.single)
+        && validAmount(data.breakfast)
+        && validAmount(data.lunch)
+        && validAmount(data.dinner);
+    }
+
+    function validTransport(data) {
+      return data is map
+        && data.keys().hasOnly(['plane', 'train', 'bus', 'taxiUber'])
+        && data.keys().hasAll(['plane', 'train', 'bus', 'taxiUber'])
+        && validAmount(data.plane)
+        && validAmount(data.train)
+        && validAmount(data.bus)
+        && validAmount(data.taxiUber);
+    }
+
+    function validExpenses(data) {
+      return data is map
+        && data.keys().hasOnly([
+          'lodging', 'food', 'transport', 'transportOthers', 'attractions', 'others'
+        ])
+        && data.keys().hasAll([
+          'lodging', 'food', 'transport', 'transportOthers', 'attractions', 'others'
+        ])
+        && validAmount(data.lodging)
+        && validFood(data.food)
+        && validTransport(data.transport)
+        && data.transportOthers is list
+        && data.transportOthers.size() <= 200
+        && data.attractions is list
+        && data.attractions.size() <= 200
+        && data.others is list
+        && data.others.size() <= 200;
+    }
+
+    function validOriginDetails(data) {
+      return data is map
+        && data.keys().hasOnly(['departureDate', 'expenses', 'note'])
+        && data.keys().hasAll(['departureDate', 'expenses'])
+        && data.departureDate is string
+        && data.departureDate.size() <= 10
+        && (
+          !data.keys().hasAny(['note'])
+          || (data.note is string && data.note.size() <= 500)
+        )
+        && validExpenses(data.expenses);
+    }
+
+    function revisionPath(userId, tripId, revisionId) {
+      return /databases/$(database)/documents/users/$(userId)/trips/$(tripId)/revisions/$(revisionId);
+    }
+
+    function completeRevisionExists(userId, tripId, revisionId) {
+      return exists(revisionPath(userId, tripId, revisionId))
+        && get(revisionPath(userId, tripId, revisionId)).data.complete == true;
+    }
+
+    function openRevisionExists(userId, tripId, revisionId) {
+      return exists(revisionPath(userId, tripId, revisionId))
+        && get(revisionPath(userId, tripId, revisionId)).data.complete == false;
+    }
+
+    function validTripSummary(data, tripId) {
+      return data.keys().hasOnly([
+          'id', 'name', 'currency', 'originDetails', 'placeOrderVersion', 'createdAt', 'updatedAt',
+          'storageVersion', 'activeRevision', 'segmentCount', 'placeCount',
+          'routeConnectionCount', 'noteCount', 'checklistCount', 'total'
+        ])
+        && data.keys().hasAll([
+          'id', 'name', 'currency', 'placeOrderVersion', 'createdAt', 'updatedAt',
+          'storageVersion', 'activeRevision', 'segmentCount', 'placeCount',
+          'routeConnectionCount', 'noteCount', 'checklistCount', 'total'
+        ])
+        && data.id == tripId
+        && data.id is string
+        && data.id.size() > 0
+        && data.id.size() <= 128
+        && data.name is string
+        && data.name.size() <= 120
+        && data.currency is string
+        && data.currency.matches('^[A-Z]{3}$')
+        && (
+          !data.keys().hasAny(['originDetails'])
+          || validOriginDetails(data.originDetails)
+        )
+        && data.placeOrderVersion == 1
+        && data.createdAt is string
+        && data.createdAt.size() <= 40
+        && data.updatedAt is string
+        && data.updatedAt.size() <= 40
+        && data.storageVersion == 3
+        && data.activeRevision is string
+        && data.activeRevision.matches('^[a-zA-Z0-9_-]{8,128}$')
+        && validCount(data.segmentCount, 500)
+        && validCount(data.placeCount, 500)
+        && validCount(data.routeConnectionCount, 200)
+        && validCount(data.noteCount, 50)
+        && validCount(data.checklistCount, 500)
+        && validAmount(data.total);
+    }
+
+    function validRevision(data, revisionId) {
+      return data.keys().hasOnly([
+          'id', 'createdAt', 'complete', 'segmentCount', 'placeCount',
+          'routeConnectionCount', 'noteCount', 'checklistCount'
+        ])
+        && data.keys().hasAll([
+          'id', 'createdAt', 'complete', 'segmentCount', 'placeCount',
+          'routeConnectionCount', 'noteCount', 'checklistCount'
+        ])
+        && data.id == revisionId
+        && data.createdAt is string
+        && data.createdAt.size() <= 40
+        && data.complete is bool
+        && validCount(data.segmentCount, 500)
+        && validCount(data.placeCount, 500)
+        && validCount(data.routeConnectionCount, 200)
+        && validCount(data.noteCount, 50)
+        && validCount(data.checklistCount, 500);
+    }
+
+    function validSegment(data) {
+      return data.keys().hasOnly([
+          'id', 'position', 'origin', 'destination', 'startDate', 'endDate',
+          'expenses', 'note'
+        ])
+        && data.keys().hasAll([
+          'id', 'position', 'origin', 'destination', 'startDate', 'endDate',
+          'expenses', 'note'
+        ])
+        && data.id is string
+        && data.id.size() > 0
+        && data.id.size() <= 128
+        && validCount(data.position, 499)
+        && (data.origin == null || validCity(data.origin))
+        && (data.destination == null || validCity(data.destination))
+        && data.startDate is string
+        && data.startDate.size() <= 10
+        && data.endDate is string
+        && data.endDate.size() <= 10
+        && validExpenses(data.expenses)
+        && data.note is string
+        && data.note.size() <= 500;
+    }
+
+    function validPlace(data) {
+      return data.keys().hasOnly([
+          'id', 'position', 'provider', 'googlePlaceId', 'userLabel', 'name', 'address', 'city',
+          'country', 'category', 'countryCode', 'lat', 'lon', 'savedAt'
+        ])
+        && data.keys().hasAll([
+          'id', 'position', 'provider', 'googlePlaceId', 'userLabel', 'name', 'address', 'city',
+          'country', 'category', 'countryCode', 'lat', 'lon', 'savedAt'
+        ])
+        && data.id is string
+        && data.id.size() > 0
+        && data.id.size() <= 128
+        && validCount(data.position, 499)
+        && data.provider is string
+        && (data.provider == 'geoapify' || data.provider == 'google')
+        && data.googlePlaceId is string
+        && data.googlePlaceId.size() <= 256
+        && data.userLabel is string
+        && data.userLabel.size() <= 160
+        && data.name is string
+        && data.name.size() <= 160
+        && data.address is string
+        && data.address.size() <= 260
+        && data.city is string
+        && data.city.size() <= 120
+        && data.country is string
+        && data.country.size() <= 100
+        && data.category is string
+        && data.category.size() <= 80
+        && data.countryCode is string
+        && data.countryCode.matches('^([A-Z]{2})?$')
+        && data.savedAt is string
+        && data.savedAt.size() <= 40
+        && (
+          (
+            data.provider == 'google'
+            && data.googlePlaceId.size() > 0
+            && data.name == ''
+            && data.address == ''
+            && data.city == ''
+            && data.country == ''
+            && data.category == ''
+            && data.countryCode == ''
+            && data.lat == null
+            && data.lon == null
+          )
+          ||
+          (
+            data.provider == 'geoapify'
+            && data.googlePlaceId == ''
+            && data.lat is number
+            && data.lat >= -90
+            && data.lat <= 90
+            && data.lon is number
+            && data.lon >= -180
+            && data.lon <= 180
+          )
+        );
+    }
+
+    function validRouteConnection(data) {
+      return data.keys().hasOnly([
+          'id', 'position', 'fromPlaceId', 'toPlaceId', 'mode', 'visible',
+          'distance', 'duration', 'geometryJson', 'calculatedAt'
+        ])
+        && data.keys().hasAll([
+          'id', 'position', 'fromPlaceId', 'toPlaceId', 'mode', 'visible',
+          'distance', 'duration', 'geometryJson', 'calculatedAt'
+        ])
+        && data.id is string
+        && data.id.size() > 0
+        && data.id.size() <= 128
+        && validCount(data.position, 199)
+        && data.fromPlaceId is string
+        && data.fromPlaceId.size() > 0
+        && data.fromPlaceId.size() <= 128
+        && data.toPlaceId is string
+        && data.toPlaceId.size() > 0
+        && data.toPlaceId.size() <= 128
+        && data.fromPlaceId != data.toPlaceId
+        && data.mode is string
+        && (
+          data.mode == 'drive'
+          || data.mode == 'train'
+          || data.mode == 'bus'
+          || data.mode == 'bicycle'
+          || data.mode == 'walk'
+          || data.mode == 'transit'
+          || data.mode == 'approximated_transit'
+        )
+        && data.visible is bool
+        && validAmount(data.distance)
+        && validAmount(data.duration)
+        && data.geometryJson is string
+        && data.geometryJson.size() > 0
+        && data.geometryJson.size() <= 800000
+        && data.calculatedAt is string
+        && data.calculatedAt.size() <= 40;
+    }
+
+    function validNote(data) {
+      return data.keys().hasOnly(['id', 'position', 'title', 'text'])
+        && data.keys().hasAll(['id', 'position', 'title', 'text'])
+        && data.id is string
+        && data.id.size() > 0
+        && data.id.size() <= 128
+        && validCount(data.position, 49)
+        && data.title is string
+        && data.title.size() <= 60
+        && data.text is string
+        && data.text.size() <= 2000;
+    }
+
+    function validChecklistItem(data) {
+      return data.keys().hasOnly(['id', 'position', 'text', 'done'])
+        && data.keys().hasAll(['id', 'position', 'text', 'done'])
+        && data.id is string
+        && data.id.size() > 0
+        && data.id.size() <= 128
+        && validCount(data.position, 499)
+        && data.text is string
+        && data.text.size() <= 120
+        && data.done is bool;
+    }
+
+    match /users/{userId} {
+      allow read, write: if false;
+
+      match /trips/{tripId} {
+        allow get, list: if ownsUserPath(userId);
+        allow create: if ownsUserPath(userId)
+          && validTripSummary(request.resource.data, tripId)
+          && completeRevisionExists(userId, tripId, request.resource.data.activeRevision);
+        allow update: if ownsUserPath(userId)
+          && validTripSummary(request.resource.data, tripId)
+          && request.resource.data.createdAt == resource.data.createdAt
+          && completeRevisionExists(userId, tripId, request.resource.data.activeRevision);
+        allow delete: if ownsUserPath(userId);
+
+        match /revisions/{revisionId} {
+          allow get, list: if ownsUserPath(userId);
+          allow create: if ownsUserPath(userId)
+            && validRevision(request.resource.data, revisionId)
+            && request.resource.data.complete == false;
+          allow update: if ownsUserPath(userId)
+            && validRevision(request.resource.data, revisionId)
+            && resource.data.complete == false
+            && request.resource.data.complete == true
+            && request.resource.data.id == resource.data.id
+            && request.resource.data.createdAt == resource.data.createdAt
+            && request.resource.data.segmentCount == resource.data.segmentCount
+            && request.resource.data.placeCount == resource.data.placeCount
+            && request.resource.data.routeConnectionCount == resource.data.routeConnectionCount
+            && request.resource.data.noteCount == resource.data.noteCount
+            && request.resource.data.checklistCount == resource.data.checklistCount;
+          allow delete: if ownsUserPath(userId);
+
+          match /segments/{documentId} {
+            allow get, list: if ownsUserPath(userId);
+            allow create: if ownsUserPath(userId)
+              && openRevisionExists(userId, tripId, revisionId)
+              && validSegment(request.resource.data);
+            allow update: if false;
+            allow delete: if ownsUserPath(userId);
+          }
+
+          match /places/{documentId} {
+            allow get, list: if ownsUserPath(userId);
+            allow create: if ownsUserPath(userId)
+              && openRevisionExists(userId, tripId, revisionId)
+              && validPlace(request.resource.data);
+            allow update: if false;
+            allow delete: if ownsUserPath(userId);
+          }
+
+          match /routeConnections/{documentId} {
+            allow get, list: if ownsUserPath(userId);
+            allow create: if ownsUserPath(userId)
+              && openRevisionExists(userId, tripId, revisionId)
+              && validRouteConnection(request.resource.data);
+            allow update: if false;
+            allow delete: if ownsUserPath(userId);
+          }
+
+          match /notes/{documentId} {
+            allow get, list: if ownsUserPath(userId);
+            allow create: if ownsUserPath(userId)
+              && openRevisionExists(userId, tripId, revisionId)
+              && validNote(request.resource.data);
+            allow update: if false;
+            allow delete: if ownsUserPath(userId);
+          }
+
+          match /checklist/{documentId} {
+            allow get, list: if ownsUserPath(userId);
+            allow create: if ownsUserPath(userId)
+              && openRevisionExists(userId, tripId, revisionId)
+              && validChecklistItem(request.resource.data);
+            allow update: if false;
+            allow delete: if ownsUserPath(userId);
+          }
+        }
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "displayName": "Atlas Storage v4 — provider errors — dev",
+  "combiner": "OR",
+  "enabled": false,
+  "notificationChannels": [],
+  "documentation": {
+    "content": "Disabled Phase K template. Fires when outbound provider telemetry records more than five non-success requests in a 5-minute alignment window. Threshold is provisional until a real baseline is measured; enable only with an approved notification channel/owner.",
+    "mimeType": "text/markdown"
+  },
+  "userLabels": {
+    "system": "atlas-storage-v4",
+    "environment": "dev",
+    "phase": "k"
+  },
+  "conditions": [
+    {
+      "displayName": "Provider failures > 5 in 5m",
+      "conditionThreshold": {
+        "filter": "resource.type=\"cloud_run_revision\" AND metric.type=\"logging.googleapis.com/user/atlas_storage_v4_provider_request_events\" AND metric.labels.outcome!=\"success\"",
+        "aggregations": [
+          {
+            "alignmentPeriod": "300s",
+            "perSeriesAligner": "ALIGN_DELTA",
+            "crossSeriesReducer": "REDUCE_SUM"
+          }
+        ],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 5,
+        "duration": "0s",
+        "trigger": { "count": 1 }
+      }
+    }
+  ]
+}

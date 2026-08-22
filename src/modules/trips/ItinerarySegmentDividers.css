@@ -1,0 +1,55 @@
+/* Separadores horizontales discretos entre trayectos. El eje vertical de la
+   timeline permanece eliminado. Se restaura el tratamiento simple del pico:
+   dos triángulos sólidos en azul Atlas sobre un card blanco continuo. */
+
+.segments:not(.segments--compact)::before {
+  content: none;
+}
+
+.itinerary-origin-section + .itinerary-segment::before,
+.itinerary-segment + .itinerary-segment::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: -5px;
+  left: 3px;
+  right: 3px;
+  height: 1px;
+  background: repeating-linear-gradient(
+    to right,
+    #c9ced7 0 3px,
+    transparent 3px 7px
+  );
+  opacity: 0.78;
+  pointer-events: none;
+}
+
+.itinerary-segment.is-dragging::before,
+.itinerary-segment.is-dragging::after {
+  opacity: 0;
+}
+
+@media (min-width: 721px) {
+  /* La línea punteada llega exactamente hasta el vértice interior de cada pico. */
+  .itinerary-origin-section + .itinerary-segment::before,
+  .itinerary-segment + .itinerary-segment::before {
+    top: -1px;
+    left: -4px;
+    right: -4px;
+  }
+
+  /* Recupera el triángulo sólido que sí era legible. El relleno usa el token
+     visual Atlas (#19a5d0), el mismo acento principal de los controles del sistema. */
+  .itinerary-origin-section + .itinerary-segment::after,
+  .itinerary-segment + .itinerary-segment::after {
+    content: '';
+    position: absolute;
+    z-index: 2;
+    top: -5px;
+    left: -8px;
+    right: -8px;
+    height: 8px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 8' preserveAspectRatio='none'%3E%3Cpath d='M0 0 L4 4 L0 8 Z M500 0 L496 4 L500 8 Z' fill='%2319a5d0'/%3E%3C/svg%3E") center / 100% 8px no-repeat;
+    pointer-events: none;
+  }
+}

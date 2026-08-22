@@ -6,57 +6,59 @@ import { useTranslation } from '../i18n/index.jsx';
 import { config } from '../config.js';
 
 // Campo de búsqueda de ciudad con autocompletado.
-// Muestra sugerencias a partir del 3er carácter y la bandera de cada país.
-// Al seleccionar, devuelve un objeto City completo (con lat/lon/countryCode).
-export function CityAutocomplete({ value, onSelect, placeholder }) {
+// Muestra sugerencias a partir del 3er carácter y devuelve un City completo.
+export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay = 'full' }) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(-1);
   const containerRef = useRef(null);
+  const inputRef = useRef(null);
 
   const { results, loading, error } = useCitySearch(open ? query : '');
+  const flagOnlySelected = selectedDisplay === 'flag-only' && Boolean(value) && !open;
+  const timelineSelected = selectedDisplay === 'timeline' && Boolean(value) && !open;
+  const displayValue = open ? query : flagOnlySelected ? '' : value?.name || '';
 
-  // Texto mostrado: si hay ciudad seleccionada y no se está escribiendo, su nombre.
-  const displayValue = open ? query : value?.name || '';
-
-  // Cierra el desplegable al hacer clic fuera.
   useEffect(() => {
-    function onClickOutside(e) {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
+    function onClickOutside(event) {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
         setOpen(false);
+        setHighlight(-1);
       }
     }
-    document.addEventListener('mousedown', onClickOutside);
-    return () => document.removeEventListener('mousedown', onClickOutside);
+    document.addEventListener('pointerdown', onClickOutside);
+    return () => document.removeEventListener('pointerdown', onClickOutside);
   }, []);
 
-  function handleChange(e) {
-    setQuery(e.target.value);
+  function handleChange(event) {
+    setQuery(event.target.value);
     setOpen(true);
     setHighlight(-1);
   }
 
   function handleSelect(city) {
+    if (!city) return;
     onSelect(city);
     setQuery('');
     setOpen(false);
     setHighlight(-1);
   }
 
-  function handleKeyDown(e) {
+  function handleKeyDown(event) {
     if (!open) return;
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setHighlight((h) => Math.min(h + 1, results.length - 1));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setHighlight((h) => Math.max(h - 1, 0));
-    } else if (e.key === 'Enter' && highlight >= 0) {
-      e.preventDefault();
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setHighlight((current) => Math.min(current + 1, results.length - 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setHighlight((current) => Math.max(current - 1, 0));
+    } else if (event.key === 'Enter' && highlight >= 0) {
+      event.preventDefault();
       handleSelect(results[highlight]);
-    } else if (e.key === 'Escape') {
+    } else if (event.key === 'Escape') {
       setOpen(false);
+      setHighlight(-1);
     }
   }
 
@@ -64,34 +66,49 @@ export function CityAutocomplete({ value, onSelect, placeholder }) {
     open && query.trim().length > 0 && query.trim().length < config.citySearchMinChars;
 
   return (
-    <div className="autocomplete" ref={containerRef}>
-      <div className="autocomplete__field">
-        {/* La bandera permanece montada siempre que haya ciudad seleccionada.
-            Solo se atenúa mientras el campo está abierto para no ocultar la
-            referencia visual ni desplazar el ancho del campo. */}
+    <div
+      className={
+        'autocomplete' +
+        (open ? ' is-open' : '') +
+        (flagOnlySelected ? ' autocomplete--flag-only-selected' : '') +
+        (timelineSelected ? ' autocomplete--timeline-selected' : '')
+      }
+      ref={containerRef}
+    >
+      <div className="autocomplete__field" onClick={() => inputRef.current?.focus()}>
         {value?.countryCode ? (
           <img
             className={'flag' + (open ? ' flag--dim' : '')}
-            src={flagImageUrl(value.countryCode, 20)}
+            src={flagImageUrl(value.countryCode, 40)}
             alt={value.countryCode}
             width={20}
             height={14}
             loading="lazy"
+            decoding="async"
           />
         ) : (
           <IconSearch size={14} className="autocomplete__search-icon" aria-hidden="true" />
         )}
         <input
+          ref={inputRef}
           type="text"
           className="input"
           value={displayValue}
-          placeholder={placeholder || t('searchCity')}
+          placeholder={flagOnlySelected ? '' : placeholder || t('searchCity')}
+          aria-label={placeholder || t('searchCity')}
+          aria-expanded={open}
+          aria-autocomplete="list"
           onChange={handleChange}
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
           autoComplete="off"
           spellCheck="false"
         />
+        {timelineSelected && (
+          <span className="autocomplete__selected-value" aria-hidden="true">
+            {value?.name}
+          </span>
+        )}
       </div>
 
       {open && (query.trim().length >= config.citySearchMinChars || loading) && (
@@ -103,34 +120,32 @@ export function CityAutocomplete({ value, onSelect, placeholder }) {
           {!loading && !error && results.length === 0 && (
             <li className="autocomplete__status">{t('noResults')}</li>
           )}
-          {results.map((city, i) => (
-            <li
-              key={city.id}
-              role="option"
-              aria-selected={i === highlight}
-              className={'autocomplete__item' + (i === highlight ? ' is-active' : '')}
-              onMouseEnter={() => setHighlight(i)}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                handleSelect(city);
-              }}
-            >
-              {city.countryCode && (
-                <img
-                  className="flag"
-                  src={flagImageUrl(city.countryCode, 20)}
-                  alt={city.countryCode}
-                  width={20}
-                  height={14}
-                  loading="lazy"
-                />
-              )}
-              {/* Nombre de ciudad en negrita; país en línea secundaria (nunca
-                  el display_name completo de OSM). */}
-              <span className="autocomplete__cityinfo">
-                <span className="autocomplete__name">{city.name}</span>
-                {city.country && <span className="autocomplete__meta">, {city.country}</span>}
-              </span>
+          {results.map((city, index) => (
+            <li key={city.id} className="autocomplete__item-row" role="presentation">
+              <button
+                type="button"
+                role="option"
+                aria-selected={index === highlight}
+                className={'autocomplete__item' + (index === highlight ? ' is-active' : '')}
+                onMouseEnter={() => setHighlight(index)}
+                onClick={() => handleSelect(city)}
+              >
+                {city.countryCode && (
+                  <img
+                    className="flag"
+                    src={flagImageUrl(city.countryCode, 40)}
+                    alt={city.countryCode}
+                    width={24}
+                    height={17}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
+                <span className="autocomplete__cityinfo">
+                  <span className="autocomplete__name">{city.name}</span>
+                  {city.country && <span className="autocomplete__meta">, {city.country}</span>}
+                </span>
+              </button>
             </li>
           ))}
         </ul>

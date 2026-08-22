@@ -1,175 +1,237 @@
-import { useCallback, useRef, useState } from 'react';
-import { IconMap, IconNotes } from '@tabler/icons-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from './i18n/index.jsx';
 import { useTrip } from './modules/trips/useTrip.js';
 import { useSavedTrips } from './modules/trips/useSavedTrips.js';
-import { ResizablePanes } from './components/ResizableSplit.jsx';
-import { isTripSavable, routeStops, tripTotal } from './modules/trips/tripModel.js';
-import { tripBreakdown } from './modules/expenses/expenseModel.js';
+import { useTripAutoPersistence } from './modules/trips/useTripAutoPersistence.js';
+import { savedTripErrorTranslationKey } from './modules/trips/savedTripOperations.js';
+import { useFirebaseAuth } from './infrastructure/firebase/useFirebaseAuth.js';
+import { isTripSavable } from './modules/trips/tripModel.js';
 import { AppTopbar } from './app/AppTopbar.jsx';
-import { AppEditorPane } from './app/AppEditorPane.jsx';
+import { AppEditorModule } from './app/AppEditorModule.jsx';
 import { AppMapPane } from './app/AppMapPane.jsx';
-import {
-  useCollapseSegmentsOnTripChange,
-  useOutsideClick,
-  useOutsideClickSelector,
-  useSaveShortcut,
-} from './app/useAppInteractions.js';
+import { AppWorkspace } from './app/AppWorkspace.jsx';
+import { TripSummaryHeader } from './app/TripSummaryHeader.jsx';
+import { TripDeleteDialog } from './app/TripDeleteDialog.jsx';
+import { toggleTarget } from './app/appInteractionModel.js';
+import { normalizeRecoveredDraft } from './app/recoveredTripDraft.js';
+import { useAppEditorState } from './app/useAppEditorState.js';
+import { useOutsideClick, useOutsideClickSelector, useSaveShortcut } from './app/useAppInteractions.js';
 import './App.css';
+import './app/FloatingEditor.css';
 
 export default function App() {
-  const { t, locale, setLocale, availableLocales } = useTranslation();
+  const { t, locale, intlLocale, setLocale, availableLocales } = useTranslation();
+  const auth = useFirebaseAuth();
+  const tripStore = useTrip();
+  const savedTrips = useSavedTrips(auth.user);
+  const editorState = useAppEditorState(tripStore);
+  const { trip, loadTrip, setCurrency, updateSegment, updateOriginDetails, addPlace } = tripStore;
   const {
-    trip,
-    resetTrip,
-    loadTrip,
-    renameTrip,
-    setCurrency,
-    addNote,
-    updateNote,
-    removeNote,
-    addChecklistItem,
-    toggleChecklistItem,
-    removeChecklistItem,
-    addSegment,
-    removeSegment,
-    reorderSegment,
-    updateSegment,
-    updateExpenses,
-  } = useTrip();
-
-  const { trips, loading, saveTrip, deleteTrip } = useSavedTrips();
+    getTrip,
+    getActiveTripDraft,
+    stageTrip,
+    getTripPersistenceState,
+    saveTrip,
+    deleteTrip,
+    importLocalTrips,
+    getLocalTripCount,
+  } = savedTrips;
   const [toast, setToast] = useState('');
   const [mobileView, setMobileView] = useState('form');
   const [activeTab, setActiveTab] = useState('segments');
-  const [expandedSegments, setExpandedSegments] = useState({});
-  const [newItemText, setNewItemText] = useState('');
-  const [confirmDeleteNote, setConfirmDeleteNote] = useState(null);
+  const [tripToDelete, setTripToDelete] = useState(null);
+  const [deletePending, setDeletePending] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
-  const [showBreakdown, setShowBreakdown] = useState(false);
   const [openNoteSegmentId, setOpenNoteSegmentId] = useState(null);
-  const newItemRef = useRef(null);
+  const [desktopPanelCollapsed, setDesktopPanelCollapsed] = useState(false);
   const menuWrapRef = useRef(null);
+  const editorMenuRef = useRef(null);
+  const deleteInFlightRef = useRef(false);
+  const initialTripRef = useRef(trip);
+  const currentTripRef = useRef(trip);
+  const recoveredDraftScopeRef = useRef(null);
+  currentTripRef.current = trip;
 
-  const intlLocale = locale === 'es' ? 'es-MX' : 'en-US';
   const canSave = isTripSavable(trip);
-  const total = tripTotal(trip);
-  const hasCosts = total > 0;
-  const breakdown = tripBreakdown(trip.segments);
-  const stops = routeStops(trip.segments, { dedupeCountry: true });
-  const checklist = trip.checklist || [];
-  const doneCount = checklist.filter((item) => item.done).length;
-  const notes = trip.notes || [];
+  const persistence = useTripAutoPersistence({
+    trip,
+    stageTrip,
+    getTripPersistenceState,
+    canRemoteSync: canSave,
+  });
+
+  useEffect(() => {
+    if (auth.loading) return undefined;
+    const scope = auth.user?.uid || 'anonymous';
+    if (recoveredDraftScopeRef.current === scope) return undefined;
+    recoveredDraftScopeRef.current = scope;
+    let cancelled = false;
+
+    Promise.resolve(getActiveTripDraft()).then((draft) => {
+      if (cancelled || !draft) return;
+      if (currentTripRef.current !== initialTripRef.current) return;
+      loadTrip(normalizeRecoveredDraft(draft));
+    }).catch(() => {
+      // Recovery is best-effort here. A later editor write surfaces durability
+      // failure through the persistence state instead of silently claiming saved.
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.loading, auth.user?.uid, getActiveTripDraft, loadTrip]);
+
+  const showToast = useCallback((message, duration = 2200) => {
+    setToast(message);
+    setTimeout(() => setToast(''), duration);
+  }, []);
 
   const handleSave = useCallback(async () => {
     if (!isTripSavable(trip)) {
-      setToast(t('saveValidationError'));
-      setTimeout(() => setToast(''), 2500);
+      showToast(t('saveValidationError'), 2500);
       return;
     }
-    await saveTrip(trip);
-    setToast(t('saved'));
-    setTimeout(() => setToast(''), 2000);
-  }, [saveTrip, trip, t]);
+    await persistence.persistLocalNow().catch(() => {});
+    persistence.markSaving();
+    try {
+      await saveTrip(trip);
+      persistence.markSaved();
+      showToast(t('saved'));
+    } catch (error) {
+      persistence.markSaveError(error);
+      showToast(t(savedTripErrorTranslationKey(error, 'savePersistenceError')), 3500);
+    }
+  }, [persistence, saveTrip, showToast, trip, t]);
+
+  const handleGoogleSignIn = useCallback(async () => {
+    try {
+      await auth.signInWithGoogle();
+      setOpenMenu(null);
+      showToast(t('signedIn'));
+    } catch {
+      showToast(t('signInError'), 3000);
+    }
+  }, [auth, showToast, t]);
+
+  const handleSignOut = useCallback(async () => {
+    await auth.signOutUser();
+    setOpenMenu(null);
+    showToast(t('signedOut'));
+  }, [auth, showToast, t]);
+
+  const handleImportLocalTrips = useCallback(async () => {
+    const count = await getLocalTripCount();
+    if (count === 0) {
+      showToast(t('noLocalTrips'));
+      return;
+    }
+    if (!globalThis.confirm(t('confirmImportLocalTrips'))) return;
+    const imported = await importLocalTrips();
+    setOpenMenu(null);
+    showToast(`${t('importedTrips')}: ${imported}`);
+  }, [getLocalTripCount, importLocalTrips, showToast, t]);
+
+  const handleOpenSavedTrip = useCallback(async (savedTrip) => {
+    try {
+      const storedTrip = await getTrip(savedTrip.id);
+      if (!storedTrip) {
+        showToast(t('savedTripMissing'), 3000);
+        return;
+      }
+      loadTrip(storedTrip);
+      setOpenMenu(null);
+    } catch {
+      showToast(t('openTripError'), 3000);
+    }
+  }, [getTrip, loadTrip, showToast, t]);
 
   const closeMenu = useCallback(() => setOpenMenu(null), []);
   const closeSegmentNote = useCallback(() => setOpenNoteSegmentId(null), []);
+  const toggleNoteTarget = useCallback(
+    (target) => setOpenNoteSegmentId((current) => toggleTarget(current, target)),
+    []
+  );
 
   useSaveShortcut(handleSave);
-  useOutsideClick(menuWrapRef, Boolean(openMenu), closeMenu);
+  useOutsideClick(menuWrapRef, openMenu === 'account', closeMenu);
+  useOutsideClick(editorMenuRef, openMenu === 'workspace', closeMenu);
   useOutsideClickSelector('.segnote', Boolean(openNoteSegmentId), closeSegmentNote);
-  useCollapseSegmentsOnTripChange(trip.id, trip.segments, setExpandedSegments);
 
-  function isExpanded(id) {
-    return expandedSegments[id] !== false;
-  }
-
-  function toggleSegment(id) {
-    setExpandedSegments((previous) => ({
-      ...previous,
-      [id]: previous[id] === false,
-    }));
-  }
-
-  function handleAddItem(event) {
-    event.preventDefault();
-    const text = newItemText.trim();
-    if (!text) return;
-    addChecklistItem(text);
-    setNewItemText('');
-    newItemRef.current?.focus();
+  async function confirmRemoveTrip() {
+    if (!tripToDelete || deleteInFlightRef.current) return;
+    deleteInFlightRef.current = true;
+    setDeletePending(true);
+    try {
+      await deleteTrip(tripToDelete.id);
+      setTripToDelete(null);
+    } catch (error) {
+      showToast(t(savedTripErrorTranslationKey(error, 'deletePersistenceError')), 3500);
+    } finally {
+      deleteInFlightRef.current = false;
+      setDeletePending(false);
+    }
   }
 
   const topbar = (
     <AppTopbar
       menuWrapRef={menuWrapRef}
       t={t}
-      activeTab={activeTab}
-      setActiveTab={setActiveTab}
-      checklist={checklist}
-      doneCount={doneCount}
-      trip={trip}
-      renameTrip={renameTrip}
-      resetTrip={resetTrip}
       openMenu={openMenu}
       setOpenMenu={setOpenMenu}
-      trips={trips}
-      loading={loading}
-      loadTrip={loadTrip}
-      deleteTrip={deleteTrip}
-      intlLocale={intlLocale}
-      setCurrency={setCurrency}
-      locale={locale}
-      availableLocales={availableLocales}
-      setLocale={setLocale}
       handleSave={handleSave}
-      canSave={canSave}
+      authUser={auth.user}
+      authLoading={auth.loading}
+      onGoogleSignIn={handleGoogleSignIn}
+      onSignOut={handleSignOut}
+      onImportLocalTrips={handleImportLocalTrips}
     />
   );
 
-  const editorPane = (
-    <AppEditorPane
-      activeTab={activeTab}
+  const tripHeader = (
+    <TripSummaryHeader
       trip={trip}
-      intlLocale={intlLocale}
-      isExpanded={isExpanded}
-      toggleSegment={toggleSegment}
-      updateSegment={updateSegment}
-      updateExpenses={updateExpenses}
-      removeSegment={removeSegment}
-      reorderSegment={reorderSegment}
-      setOpenNoteSegmentId={setOpenNoteSegmentId}
-      addSegment={addSegment}
+      navigation={{ activeTab, setActiveTab, routeCount: editorState.places?.length || 0, checklistProgress: editorState.checklist?.length ? `${editorState.doneCount}/${editorState.checklist.length}` : '' }}
+      setCurrency={setCurrency}
+      locale={locale}
+      setLocale={setLocale}
+      availableLocales={availableLocales}
+      total={editorState.total}
+      hasCosts={editorState.hasCosts}
+      breakdown={editorState.breakdown}
+      showBreakdown={editorState.showBreakdown}
+      setShowBreakdown={editorState.setShowBreakdown}
       t={t}
-      total={total}
-      hasCosts={hasCosts}
-      showBreakdown={showBreakdown}
-      setShowBreakdown={setShowBreakdown}
-      breakdown={breakdown}
-      notes={notes}
-      confirmDeleteNote={confirmDeleteNote}
-      setConfirmDeleteNote={setConfirmDeleteNote}
-      updateNote={updateNote}
-      removeNote={removeNote}
-      addNote={addNote}
-      checklist={checklist}
-      doneCount={doneCount}
-      toggleChecklistItem={toggleChecklistItem}
-      removeChecklistItem={removeChecklistItem}
-      handleAddItem={handleAddItem}
-      newItemRef={newItemRef}
-      newItemText={newItemText}
-      setNewItemText={setNewItemText}
+      intlLocale={intlLocale}
+    />
+  );
+
+  const editorModule = (
+    <AppEditorModule
+      tripStore={tripStore}
+      savedTrips={savedTrips}
+      editorState={editorState}
+      activeTab={activeTab}
+      openMenu={openMenu}
+      setOpenMenu={setOpenMenu}
+      editorMenuRef={editorMenuRef}
+      toggleNoteTarget={toggleNoteTarget}
+      setTripToDelete={setTripToDelete}
+      handleOpenSavedTrip={handleOpenSavedTrip}
+      t={t}
+      intlLocale={intlLocale}
     />
   );
 
   const mapPane = (
     <AppMapPane
       trip={trip}
+      mapView={activeTab === 'places' ? 'places' : 'segments'}
       openNoteSegmentId={openNoteSegmentId}
       setOpenNoteSegmentId={setOpenNoteSegmentId}
       updateSegment={updateSegment}
-      stops={stops}
+      updateOriginDetails={updateOriginDetails}
+      addPlace={addPlace}
+      persistenceState={persistence.state}
       toast={toast}
       t={t}
     />
@@ -178,35 +240,23 @@ export default function App() {
   return (
     <div className="app">
       {topbar}
-      <main className="workspace">
-        <div className="workspace__desktop">
-          <ResizablePanes left={editorPane} right={mapPane} />
-        </div>
-        <div className="workspace__mobile">
-          <div className={'mobilepane' + (mobileView === 'form' ? ' is-active' : '')}>
-            {editorPane}
-          </div>
-          <div className={'mobilepane' + (mobileView === 'map' ? ' is-active' : '')}>
-            {mapPane}
-          </div>
-          <nav className="mobiletabs">
-            <button
-              type="button"
-              className={'mobiletabs__btn' + (mobileView === 'form' ? ' is-active' : '')}
-              onClick={() => setMobileView('form')}
-            >
-              <IconNotes size={16} aria-hidden="true" /> {t('segments')}
-            </button>
-            <button
-              type="button"
-              className={'mobiletabs__btn' + (mobileView === 'map' ? ' is-active' : '')}
-              onClick={() => setMobileView('map')}
-            >
-              <IconMap size={16} aria-hidden="true" /> {t('map')}
-            </button>
-          </nav>
-        </div>
-      </main>
+      {tripHeader}
+      <AppWorkspace
+        editorModule={editorModule}
+        mapPane={mapPane}
+        mobileView={mobileView}
+        setMobileView={setMobileView}
+        desktopPanelCollapsed={desktopPanelCollapsed}
+        setDesktopPanelCollapsed={setDesktopPanelCollapsed}
+        t={t}
+      />
+      <TripDeleteDialog
+        tripToDelete={tripToDelete}
+        setTripToDelete={setTripToDelete}
+        onConfirm={confirmRemoveTrip}
+        isDeleting={deletePending}
+        t={t}
+      />
     </div>
   );
 }
