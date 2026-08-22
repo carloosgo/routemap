@@ -1,128 +1,55 @@
 /* Separadores horizontales discretos entre trayectos. El eje vertical de la
-   timeline permanece eliminado. Cada límite conserva la V aprobada, pero ahora
-   el interior de esa V es un hueco real: se ve el mapa y no un triángulo blanco. */
+   timeline permanece eliminado. Se restaura el tratamiento simple del pico:
+   dos triángulos sólidos en azul Atlas sobre un card blanco continuo. */
 
 .segments:not(.segments--compact)::before {
   content: none;
 }
 
+.itinerary-origin-section + .itinerary-segment::before,
+.itinerary-segment + .itinerary-segment::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: -5px;
+  left: 3px;
+  right: 3px;
+  height: 1px;
+  background: repeating-linear-gradient(
+    to right,
+    #c9ced7 0 3px,
+    transparent 3px 7px
+  );
+  opacity: 0.78;
+  pointer-events: none;
+}
+
+.itinerary-segment.is-dragging::before,
+.itinerary-segment.is-dragging::after {
+  opacity: 0;
+}
+
 @media (min-width: 721px) {
-  .editor-module--itinerary .itinerary-origin-section,
-  .editor-module--itinerary .itinerary-segment {
-    position: relative;
-    z-index: 0;
-    isolation: isolate;
+  /* La línea punteada llega exactamente hasta el vértice interior de cada pico. */
+  .itinerary-origin-section + .itinerary-segment::before,
+  .itinerary-segment + .itinerary-segment::before {
+    top: -1px;
+    left: -4px;
+    right: -4px;
   }
 
-  /* El origen cubre también el padding superior del editor. En su borde inferior
-     deja únicamente la mitad superior de la muesca triangular. */
-  .editor-module--itinerary .itinerary-origin-section::before {
-    content: '';
-    position: absolute;
-    z-index: -1;
-    top: -8px;
-    bottom: 0;
-    left: -12px;
-    right: -12px;
-    background: #ffffff;
-    clip-path: polygon(
-      0 0,
-      100% 0,
-      100% calc(100% - 4px),
-      calc(100% - 4px) 100%,
-      4px 100%,
-      0 calc(100% - 4px)
-    );
-    pointer-events: none;
-  }
-
-  /* Cada trayecto repone el blanco completo de su fila excepto en las dos
-     pequeñas mitades de V. La combinación con las filas contiguas forma un
-     único triángulo abierto hacia cada borde del card. */
-  .editor-module--itinerary .itinerary-segment::before {
-    content: '';
-    position: absolute;
-    z-index: -1;
-    inset: 0 -12px;
-    background:
-      repeating-linear-gradient(
-        to right,
-        #c9ced7 0 3px,
-        transparent 3px 7px
-      ) center top / calc(100% - 8px) 1px no-repeat,
-      #ffffff;
-    clip-path: polygon(
-      0 4px,
-      4px 0,
-      calc(100% - 4px) 0,
-      100% 4px,
-      100% calc(100% - 4px),
-      calc(100% - 4px) 100%,
-      4px 100%,
-      0 calc(100% - 4px)
-    );
-    pointer-events: none;
-  }
-
-  /* El último trayecto conserva el borde inferior recto: no crea una muesca
-     contra el botón Agregar trayecto. */
-  .editor-module--itinerary .itinerary-segment:last-child::before {
-    clip-path: polygon(
-      0 4px,
-      4px 0,
-      calc(100% - 4px) 0,
-      100% 4px,
-      100% 100%,
-      0 100%
-    );
-  }
-
-  /* Conserva el contorno tenue que ya se veía bien. No hay fill: sólo dos
-     segmentos grises muy finos alrededor del hueco transparente. */
-  .editor-module--itinerary .itinerary-origin-section + .itinerary-segment::after,
-  .editor-module--itinerary .itinerary-segment + .itinerary-segment::after {
+  /* Recupera el triángulo sólido que sí era legible. El relleno usa el token
+     visual Atlas (#19a5d0), el mismo acento principal de los controles del sistema. */
+  .itinerary-origin-section + .itinerary-segment::after,
+  .itinerary-segment + .itinerary-segment::after {
     content: '';
     position: absolute;
     z-index: 2;
-    top: -4px;
-    left: -12px;
-    right: -12px;
-    height: 8px;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 8' preserveAspectRatio='none'%3E%3Cpath d='M0 0 L4 4 L0 8 M500 0 L496 4 L500 8' fill='none' stroke='%23c9ced7' stroke-width='0.8' opacity='0.58'/%3E%3C/svg%3E") center / 100% 8px no-repeat;
-    pointer-events: none;
-  }
-
-  /* Al arrastrar, la fila conserva su superficie pero el divisor punteado deja
-     de competir visualmente con el indicador de drop. */
-  .editor-module--itinerary .itinerary-segment.is-dragging::before {
-    background: #ffffff;
-  }
-
-  .editor-module--itinerary .itinerary-segment.is-dragging::after {
-    opacity: 0;
-  }
-}
-
-@media (max-width: 720px) {
-  .itinerary-origin-section + .itinerary-segment::before,
-  .itinerary-segment + .itinerary-segment::before {
-    content: '';
-    position: absolute;
-    z-index: 1;
     top: -5px;
-    left: 3px;
-    right: 3px;
-    height: 1px;
-    background: repeating-linear-gradient(
-      to right,
-      #c9ced7 0 3px,
-      transparent 3px 7px
-    );
-    opacity: 0.78;
+    left: -8px;
+    right: -8px;
+    height: 8px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 8' preserveAspectRatio='none'%3E%3Cpath d='M0 0 L4 4 L0 8 Z M500 0 L496 4 L500 8 Z' fill='%2319a5d0'/%3E%3C/svg%3E") center / 100% 8px no-repeat;
     pointer-events: none;
-  }
-
-  .itinerary-segment.is-dragging::before {
-    opacity: 0;
   }
 }
