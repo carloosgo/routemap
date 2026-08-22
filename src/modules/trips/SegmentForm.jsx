@@ -6,11 +6,11 @@ import { SegmentHeader } from './SegmentHeader.jsx';
 import { CollapsibleRegion, SegmentOriginSection } from './SegmentOriginSection.jsx';
 import { ORIGIN_NOTE_TARGET } from './tripNoteTargets.js';
 import { formatSegmentAmount, formatSegmentDates, formatSegmentNights } from './segmentFormModel.js';
-import { useExpandedSegmentReveal } from './useExpandedSegmentReveal.js';
 import './ItineraryTimeline.css';
 import './ItineraryRequestedPolish.css';
 import './ItineraryCorrectionPolish.css';
 import './ItinerarySegmentDividers.css';
+import './ItineraryCompactTen.css';
 
 function SegmentDropIndicator({ placement }) {
   if (!placement) return null;
@@ -34,7 +34,6 @@ export function SegmentForm({
   onUpdateOriginExpenses, onRemove, onOpenNote, onReorderPointerStart,
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const segmentRef = useExpandedSegmentReveal(expanded, dragging);
   const bodyId = `segment-body-${segment.id}`;
   const formattedAmount = formatSegmentAmount(segmentTotal(segment), locale);
   const formattedDates = formatSegmentDates(segment, locale);
@@ -62,7 +61,6 @@ export function SegmentForm({
         />
       )}
       <article
-        ref={segmentRef}
         className={
           'segment itinerary-segment' +
           (dragging ? ' is-dragging' : '') +
