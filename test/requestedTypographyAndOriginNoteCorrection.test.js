@@ -112,11 +112,13 @@ test('origin and segment notes share one toggle path and the same outside-click 
   assert.match(map, /data-persistence-state=\{persistenceState\}/);
 });
 
-test('itinerary reserves the vertical scrollbar gutter so expanding a segment does not shift rows sideways', async () => {
+test('desktop itinerary deliberately removes the stable scrollbar gutter for the ten-country compact view', async () => {
   const correction = await read('src/modules/trips/ItineraryCorrectionPolish.css');
+  const compact = await read('src/modules/trips/ItineraryCompactTen.css');
 
+  assert.doesNotMatch(correction, /scrollbar-gutter:\s*stable/);
   assert.match(
-    correction,
-    /\.editor-module--itinerary \.editor__body\s*\{[^}]*scrollbar-gutter:\s*stable;/s
+    compact,
+    /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*hidden;[^}]*scrollbar-gutter:\s*auto;/s
   );
 });
