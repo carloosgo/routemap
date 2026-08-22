@@ -1,14 +1,14 @@
 /* Separadores horizontales discretos entre trayectos. El eje vertical de la
-   timeline permanece eliminado. En escritorio, las muescas ya no se dibujan
-   encima del card: se forman dejando transparentes sólo 4 px reales del borde,
-   de modo que se vea el mapa detrás y el efecto lea como un corte verdadero. */
+   timeline permanece eliminado. En escritorio, cada fila pinta su propia
+   superficie blanca hasta el borde del card y deja abierto únicamente el
+   triángulo de la muesca, evitando cualquier franja transparente continua. */
 
 .segments:not(.segments--compact)::before {
   content: none;
 }
 
 /* Divisor base: fino, discreto y sin añadir una segunda tarjeta visual. */
-.itinerary-origin + .itinerary-segment::after,
+.itinerary-origin-section + .itinerary-segment::after,
 .itinerary-segment + .itinerary-segment::after {
   content: '';
   position: absolute;
@@ -32,33 +32,43 @@
 
 @media (min-width: 721px) {
   .editor-module--itinerary .segments:not(.segments--compact) {
+    --ticket-cut-depth: 7px;
+    --ticket-cut-half-height: 5px;
     isolation: isolate;
   }
 
-  /* Superficie blanca del origen. Se extiende hasta los bordes reales del card;
-     arriba queda recta y abajo incorpora media muesca para formar el primer V. */
-  .editor-module--itinerary .itinerary-origin::before {
+  /* El origen usa el wrapper completo para que su superficie también cubra el
+     contenido expandido y el margen previo al primer trayecto. La muesca sólo
+     se abre en el límite inferior real del bloque. */
+  .editor-module--itinerary .itinerary-origin-section::before {
     content: '';
     position: absolute;
     z-index: -1;
-    top: -8px;
-    bottom: -2px;
+    top: -10px;
+    bottom: -8px;
     left: -18px;
     right: -18px;
     background: #ffffff;
     clip-path: polygon(
       0 0,
       100% 0,
-      100% calc(100% - 4px),
-      calc(100% - 4px) 100%,
-      4px 100%,
-      0 calc(100% - 4px)
+      100% calc(100% - var(--ticket-cut-half-height)),
+      calc(100% - var(--ticket-cut-depth)) 100%,
+      var(--ticket-cut-depth) 100%,
+      0 calc(100% - var(--ticket-cut-half-height))
     );
     pointer-events: none;
   }
 
-  /* Cada trayecto pinta únicamente su superficie blanca. El clip afecta a esta
-     capa decorativa, no al contenido ni a dropdowns/autocomplete de la fila. */
+  /* La superficie anterior del origen ya no se necesita: usar el wrapper evita
+     que el margen de 8 px aparezca como una pestaña rectangular del mapa. */
+  .editor-module--itinerary .itinerary-origin::before {
+    content: none;
+  }
+
+  /* Cada trayecto pinta sólo su propia superficie blanca. El pseudo-elemento
+     queda detrás del contenido sin crear un stacking context por fila, por lo
+     que autocomplete y dropdowns conservan su comportamiento actual. */
   .editor-module--itinerary .itinerary-segment::before {
     content: '';
     position: absolute;
@@ -66,14 +76,14 @@
     inset: 0 -18px;
     background: #ffffff;
     clip-path: polygon(
-      0 4px,
-      4px 0,
-      calc(100% - 4px) 0,
-      100% 4px,
-      100% calc(100% - 4px),
-      calc(100% - 4px) 100%,
-      4px 100%,
-      0 calc(100% - 4px)
+      0 var(--ticket-cut-half-height),
+      var(--ticket-cut-depth) 0,
+      calc(100% - var(--ticket-cut-depth)) 0,
+      100% var(--ticket-cut-half-height),
+      100% calc(100% - var(--ticket-cut-half-height)),
+      calc(100% - var(--ticket-cut-depth)) 100%,
+      var(--ticket-cut-depth) 100%,
+      0 calc(100% - var(--ticket-cut-half-height))
     );
     pointer-events: none;
   }
@@ -81,22 +91,22 @@
   /* El último trayecto conserva el borde inferior recto del card. */
   .editor-module--itinerary .itinerary-segment:last-child::before {
     clip-path: polygon(
-      0 4px,
-      4px 0,
-      calc(100% - 4px) 0,
-      100% 4px,
+      0 var(--ticket-cut-half-height),
+      var(--ticket-cut-depth) 0,
+      calc(100% - var(--ticket-cut-depth)) 0,
+      100% var(--ticket-cut-half-height),
       100% 100%,
       0 100%
     );
   }
 
-  /* El vértice interior de cada corte queda a 4 px del borde real. Como el
-     contenido conserva 18 px de padding lateral, -14 px lleva el divisor
-     exactamente hasta ese vértice en ambos extremos. */
-  .editor-module--itinerary .itinerary-origin + .itinerary-segment::after,
+  /* El contenido mantiene 18 px de padding lateral. Con una profundidad de
+     7 px, -11 px lleva el divisor exactamente hasta el vértice interior de la
+     V en ambos lados. */
+  .editor-module--itinerary .itinerary-origin-section + .itinerary-segment::after,
   .editor-module--itinerary .itinerary-segment + .itinerary-segment::after {
     top: 0;
-    left: -14px;
-    right: -14px;
+    left: -11px;
+    right: -11px;
   }
 }
