@@ -42,12 +42,15 @@
 
 @media (min-width: 721px) {
   /* La vista compacta reduce el hueco entre filas; el divisor y sus muescas se
-     recentran en ese nuevo espacio sin modificar el contenido de cada trayecto. */
+     recentran en ese nuevo espacio. Los -8px llevan el pico hasta el borde real
+     del card, compensando el padding lateral del editor sin tocar su retícula. */
   .itinerary-segment + .itinerary-segment::before {
     top: -1px;
   }
 
   .itinerary-segment + .itinerary-segment::after {
     top: -5px;
+    left: -8px;
+    right: -8px;
   }
 }
