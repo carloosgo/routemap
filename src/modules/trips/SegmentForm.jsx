@@ -10,6 +10,7 @@ import { useExpandedSegmentReveal } from './useExpandedSegmentReveal.js';
 import './ItineraryTimeline.css';
 import './ItineraryRequestedPolish.css';
 import './ItineraryCorrectionPolish.css';
+import './ItinerarySegmentDividers.css';
 
 function SegmentDropIndicator({ placement }) {
   if (!placement) return null;
