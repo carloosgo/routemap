@@ -20,20 +20,29 @@ test('desktop itinerary is compact, scrollbar-free and does not auto-reveal expa
   assert.doesNotMatch(correction, /scrollbar-gutter:\s*stable|scroll-margin-block/);
 });
 
-test('segment dividers reach real white ticket cuts without gray triangle fill', async () => {
+test('segment dividers open real transparent ticket cuts and reach their vertices', async () => {
   const dividers = await read('src/modules/trips/ItinerarySegmentDividers.css');
+  const floating = await read('src/app/FloatingItineraryPanel.css');
 
   assert.match(dividers, /#c9ced7 0 3px,[\s\S]*transparent 3px 7px/);
+  assert.match(dividers, /\.itinerary-origin \+ \.itinerary-segment::after/);
   assert.match(dividers, /\.itinerary-segment \+ \.itinerary-segment::after/);
-  assert.match(dividers, /M0 0 L4 4 L0 8 Z M500 0 L496 4 L500 8 Z/);
-  assert.match(dividers, /fill='%23ffffff'/);
-  assert.doesNotMatch(dividers, /stroke='%23c9ced7'|stroke-width='0\.8'|opacity='0\.58'/);
+  assert.doesNotMatch(dividers, /data:image\/svg\+xml|fill='%23ffffff'|stroke='%23c9ced7'/);
+  assert.match(dividers, /\.editor-module--itinerary \.segments:not\(\.segments--compact\)\s*\{[^}]*isolation:\s*isolate;/s);
+  assert.match(dividers, /\.editor-module--itinerary \.itinerary-origin::before\s*\{[^}]*background:\s*#ffffff;[^}]*clip-path:\s*polygon/s);
+  assert.match(dividers, /\.editor-module--itinerary \.itinerary-segment::before\s*\{[^}]*inset:\s*0 -18px;[^}]*background:\s*#ffffff;[^}]*clip-path:\s*polygon/s);
+  assert.match(dividers, /0 4px,[\s\S]*4px 0,[\s\S]*calc\(100% - 4px\) 0,[\s\S]*100% 4px/);
   assert.match(
     dividers,
-    /@media \(min-width:\s*721px\)[\s\S]*\.itinerary-segment \+ \.itinerary-segment::before\s*\{[^}]*left:\s*-4px;[^}]*right:\s*-4px;/s
+    /\.editor-module--itinerary \.itinerary-origin \+ \.itinerary-segment::after,[\s\S]*\.editor-module--itinerary \.itinerary-segment \+ \.itinerary-segment::after\s*\{[^}]*left:\s*-14px;[^}]*right:\s*-14px;/s
+  );
+
+  assert.match(
+    floating,
+    /floating-editor:has\(\.editor-module--itinerary\)\s*\{[^}]*background:\s*transparent\s*!important;[^}]*border-color:\s*transparent\s*!important;/s
   );
   assert.match(
-    dividers,
-    /@media \(min-width:\s*721px\)[\s\S]*\.itinerary-segment \+ \.itinerary-segment::after\s*\{[^}]*left:\s*-8px;[^}]*right:\s*-8px;/s
+    floating,
+    /\.editor-module--itinerary \.editor__body\s*\{[^}]*transparent 0 4px,[^}]*#ffffff 4px calc\(100% - 4px\),[^}]*transparent calc\(100% - 4px\) 100%;/s
   );
 });
