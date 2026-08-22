@@ -1,13 +1,12 @@
 /* Separadores horizontales discretos entre trayectos. El eje vertical de la
-   timeline permanece eliminado. En escritorio, cada fila pinta su propia
-   superficie blanca hasta el borde del card y deja abierto únicamente el
-   triángulo de la muesca, evitando cualquier franja transparente continua. */
+   timeline permanece eliminado. En escritorio, cada límite se resuelve con
+   una única banda blanca recortada: sólo las dos V quedan transparentes. */
 
 .segments:not(.segments--compact)::before {
   content: none;
 }
 
-/* Divisor base: fino, discreto y sin añadir una segunda tarjeta visual. */
+/* Divisor base para móvil y fallback: fino, discreto y sin ocupar layout. */
 .itinerary-origin-section + .itinerary-segment::after,
 .itinerary-segment + .itinerary-segment::after {
   content: '';
@@ -37,76 +36,77 @@
     isolation: isolate;
   }
 
-  /* El origen usa el wrapper completo para que su superficie también cubra el
-     contenido expandido y el margen previo al primer trayecto. La muesca sólo
-     se abre en el límite inferior real del bloque. */
+  /* No debe existir separación física entre wrappers: cualquier hueco entre
+     ellos revelaría el mapa como un rectángulo. La separación visual la crea
+     exclusivamente la banda punteada con sus dos cortes triangulares. */
+  .editor-module--itinerary .itinerary-origin-section {
+    margin-bottom: 0 !important;
+  }
+
+  .editor-module--itinerary .itinerary-origin {
+    margin-bottom: 0 !important;
+  }
+
+  /* Las superficies blancas dejan libre una franja de 5 px a cada lado de la
+     frontera entre filas. La banda ::after de la fila siguiente rellena esos
+     10 px salvo exactamente dentro de las dos V. */
   .editor-module--itinerary .itinerary-origin-section::before {
     content: '';
     position: absolute;
     z-index: -1;
-    top: -10px;
-    bottom: -8px;
+    top: -8px;
+    bottom: var(--ticket-cut-half-height);
     left: -18px;
     right: -18px;
     background: #ffffff;
-    clip-path: polygon(
-      0 0,
-      100% 0,
-      100% calc(100% - var(--ticket-cut-half-height)),
-      calc(100% - var(--ticket-cut-depth)) 100%,
-      var(--ticket-cut-depth) 100%,
-      0 calc(100% - var(--ticket-cut-half-height))
-    );
     pointer-events: none;
   }
 
-  /* La superficie anterior del origen ya no se necesita: usar el wrapper evita
-     que el margen de 8 px aparezca como una pestaña rectangular del mapa. */
   .editor-module--itinerary .itinerary-origin::before {
     content: none;
   }
 
-  /* Cada trayecto pinta sólo su propia superficie blanca. El pseudo-elemento
-     queda detrás del contenido sin crear un stacking context por fila, por lo
-     que autocomplete y dropdowns conservan su comportamiento actual. */
   .editor-module--itinerary .itinerary-segment::before {
     content: '';
     position: absolute;
     z-index: -1;
-    inset: 0 -18px;
+    top: var(--ticket-cut-half-height);
+    bottom: var(--ticket-cut-half-height);
+    left: -18px;
+    right: -18px;
     background: #ffffff;
-    clip-path: polygon(
-      0 var(--ticket-cut-half-height),
-      var(--ticket-cut-depth) 0,
-      calc(100% - var(--ticket-cut-depth)) 0,
-      100% var(--ticket-cut-half-height),
-      100% calc(100% - var(--ticket-cut-half-height)),
-      calc(100% - var(--ticket-cut-depth)) 100%,
-      var(--ticket-cut-depth) 100%,
-      0 calc(100% - var(--ticket-cut-half-height))
-    );
     pointer-events: none;
   }
 
-  /* El último trayecto conserva el borde inferior recto del card. */
   .editor-module--itinerary .itinerary-segment:last-child::before {
-    clip-path: polygon(
-      0 var(--ticket-cut-half-height),
-      var(--ticket-cut-depth) 0,
-      calc(100% - var(--ticket-cut-depth)) 0,
-      100% var(--ticket-cut-half-height),
-      100% 100%,
-      0 100%
-    );
+    bottom: 0;
   }
 
-  /* El contenido mantiene 18 px de padding lateral. Con una profundidad de
-     7 px, -11 px lleva el divisor exactamente hasta el vértice interior de la
-     V en ambos lados. */
+  /* Una sola pieza blanca dibuja el límite completo. El clip-path es un
+     rectángulo con dos mordidas triangulares reales: no hay franja lateral
+     transparente, ni triángulos pintados encima. El gradiente punteado vive en
+     el centro de la misma pieza, por lo que termina exactamente en cada punta. */
   .editor-module--itinerary .itinerary-origin-section + .itinerary-segment::after,
   .editor-module--itinerary .itinerary-segment + .itinerary-segment::after {
-    top: 0;
-    left: -11px;
-    right: -11px;
+    top: calc(-1 * var(--ticket-cut-half-height));
+    left: -18px;
+    right: -18px;
+    height: calc(2 * var(--ticket-cut-half-height));
+    opacity: 1;
+    background:
+      repeating-linear-gradient(
+        to right,
+        #c9ced7 0 3px,
+        transparent 3px 7px
+      ) center / 100% 1px no-repeat,
+      #ffffff;
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      calc(100% - var(--ticket-cut-depth)) 50%,
+      100% 100%,
+      0 100%,
+      var(--ticket-cut-depth) 50%
+    );
   }
 }
