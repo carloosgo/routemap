@@ -20,21 +20,29 @@ test('desktop itinerary is compact, scrollbar-free and does not auto-reveal expa
   assert.doesNotMatch(correction, /scrollbar-gutter:\s*stable|scroll-margin-block/);
 });
 
-test('segment dividers open real transparent ticket cuts and reach their vertices', async () => {
+test('segment dividers expose only the V-shaped ticket cuts and reach their vertices', async () => {
   const dividers = await read('src/modules/trips/ItinerarySegmentDividers.css');
   const floating = await read('src/app/FloatingItineraryPanel.css');
 
   assert.match(dividers, /#c9ced7 0 3px,[\s\S]*transparent 3px 7px/);
-  assert.match(dividers, /\.itinerary-origin \+ \.itinerary-segment::after/);
+  assert.match(dividers, /\.itinerary-origin-section \+ \.itinerary-segment::after/);
   assert.match(dividers, /\.itinerary-segment \+ \.itinerary-segment::after/);
+  assert.doesNotMatch(dividers, /\.itinerary-origin \+ \.itinerary-segment::after/);
   assert.doesNotMatch(dividers, /data:image\/svg\+xml|fill='%23ffffff'|stroke='%23c9ced7'/);
-  assert.match(dividers, /\.editor-module--itinerary \.segments:not\(\.segments--compact\)\s*\{[^}]*isolation:\s*isolate;/s);
-  assert.match(dividers, /\.editor-module--itinerary \.itinerary-origin::before\s*\{[^}]*background:\s*#ffffff;[^}]*clip-path:\s*polygon/s);
-  assert.match(dividers, /\.editor-module--itinerary \.itinerary-segment::before\s*\{[^}]*inset:\s*0 -18px;[^}]*background:\s*#ffffff;[^}]*clip-path:\s*polygon/s);
-  assert.match(dividers, /0 4px,[\s\S]*4px 0,[\s\S]*calc\(100% - 4px\) 0,[\s\S]*100% 4px/);
   assert.match(
     dividers,
-    /\.editor-module--itinerary \.itinerary-origin \+ \.itinerary-segment::after,[\s\S]*\.editor-module--itinerary \.itinerary-segment \+ \.itinerary-segment::after\s*\{[^}]*left:\s*-14px;[^}]*right:\s*-14px;/s
+    /\.editor-module--itinerary \.segments:not\(\.segments--compact\)\s*\{[^}]*--ticket-cut-depth:\s*7px;[^}]*--ticket-cut-half-height:\s*5px;[^}]*isolation:\s*isolate;/s
+  );
+  assert.match(
+    dividers,
+    /\.editor-module--itinerary \.itinerary-origin-section::before\s*\{[^}]*bottom:\s*-8px;[^}]*background:\s*#ffffff;[^}]*clip-path:\s*polygon/s
+  );
+  assert.match(dividers, /\.editor-module--itinerary \.itinerary-origin::before\s*\{[^}]*content:\s*none;/s);
+  assert.match(dividers, /\.editor-module--itinerary \.itinerary-segment::before\s*\{[^}]*inset:\s*0 -18px;[^}]*background:\s*#ffffff;[^}]*clip-path:\s*polygon/s);
+  assert.match(dividers, /0 var\(--ticket-cut-half-height\),[\s\S]*var\(--ticket-cut-depth\) 0,[\s\S]*calc\(100% - var\(--ticket-cut-depth\)\) 0,[\s\S]*100% var\(--ticket-cut-half-height\)/);
+  assert.match(
+    dividers,
+    /\.editor-module--itinerary \.itinerary-origin-section \+ \.itinerary-segment::after,[\s\S]*\.editor-module--itinerary \.itinerary-segment \+ \.itinerary-segment::after\s*\{[^}]*left:\s*-11px;[^}]*right:\s*-11px;/s
   );
 
   assert.match(
@@ -43,6 +51,7 @@ test('segment dividers open real transparent ticket cuts and reach their vertice
   );
   assert.match(
     floating,
-    /\.editor-module--itinerary \.editor__body\s*\{[\s\S]*background:\s*linear-gradient\([\s\S]*transparent 0 4px,[\s\S]*#ffffff 4px calc\(100% - 4px\),[\s\S]*transparent calc\(100% - 4px\) 100%[\s\S]*\)\s*!important;/s
+    /\.workspace-panel \.editor-module--itinerary,[\s\S]*\.workspace-panel \.editor-module--itinerary \.editor,[\s\S]*\.workspace-panel \.editor-module--itinerary \.editor__body\s*\{[^}]*background:\s*transparent\s*!important;/s
   );
+  assert.doesNotMatch(floating, /transparent 0 4px|#ffffff 4px calc\(100% - 4px\)/);
 });
