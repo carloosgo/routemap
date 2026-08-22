@@ -1,17 +1,17 @@
 /* Separadores horizontales discretos entre trayectos. El eje vertical de la
-   timeline permanece eliminado. En escritorio, cada límite se resuelve con
-   una única banda blanca recortada: sólo las dos V quedan transparentes. */
+   timeline permanece eliminado. La solución vuelve al tratamiento simple que
+   ya mostraba el pico: una V lineal muy tenue sobre un card blanco continuo,
+   sin superficies transparentes ni reconstrucción del fondo por filas. */
 
 .segments:not(.segments--compact)::before {
   content: none;
 }
 
-/* Divisor base para móvil y fallback: fino, discreto y sin ocupar layout. */
-.itinerary-origin-section + .itinerary-segment::after,
-.itinerary-segment + .itinerary-segment::after {
+.itinerary-origin-section + .itinerary-segment::before,
+.itinerary-segment + .itinerary-segment::before {
   content: '';
   position: absolute;
-  z-index: 3;
+  z-index: 1;
   top: -5px;
   left: 3px;
   right: 3px;
@@ -25,88 +25,33 @@
   pointer-events: none;
 }
 
+.itinerary-segment.is-dragging::before,
 .itinerary-segment.is-dragging::after {
   opacity: 0;
 }
 
 @media (min-width: 721px) {
-  .editor-module--itinerary .segments:not(.segments--compact) {
-    --ticket-cut-depth: 7px;
-    --ticket-cut-half-height: 5px;
-    isolation: isolate;
+  /* El divisor se extiende hasta la punta interior de las dos V. */
+  .itinerary-origin-section + .itinerary-segment::before,
+  .itinerary-segment + .itinerary-segment::before {
+    top: -1px;
+    left: -4px;
+    right: -4px;
   }
 
-  /* No debe existir separación física entre wrappers: cualquier hueco entre
-     ellos revelaría el mapa como un rectángulo. La separación visual la crea
-     exclusivamente la banda punteada con sus dos cortes triangulares. */
-  .editor-module--itinerary .itinerary-origin-section {
-    margin-bottom: 0 !important;
-  }
-
-  .editor-module--itinerary .itinerary-origin {
-    margin-bottom: 0 !important;
-  }
-
-  /* Las superficies blancas dejan libre una franja de 5 px a cada lado de la
-     frontera entre filas. La banda ::after de la fila siguiente rellena esos
-     10 px salvo exactamente dentro de las dos V. */
-  .editor-module--itinerary .itinerary-origin-section::before {
+  /* Recupera el pico de la primera versión aprobada. No tiene relleno: sólo
+     reutiliza el mismo gris muy tenue del divisor para dibujar el contorno de
+     la V. El card continúa siendo una única superficie blanca sólida. */
+  .itinerary-origin-section + .itinerary-segment::after,
+  .itinerary-segment + .itinerary-segment::after {
     content: '';
     position: absolute;
-    z-index: -1;
-    top: -8px;
-    bottom: var(--ticket-cut-half-height);
-    left: -18px;
-    right: -18px;
-    background: #ffffff;
+    z-index: 2;
+    top: -5px;
+    left: -8px;
+    right: -8px;
+    height: 8px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 8' preserveAspectRatio='none'%3E%3Cpath d='M0 0 L4 4 L0 8 M500 0 L496 4 L500 8' fill='none' stroke='%23c9ced7' stroke-width='0.8' opacity='0.58'/%3E%3C/svg%3E") center / 100% 8px no-repeat;
     pointer-events: none;
-  }
-
-  .editor-module--itinerary .itinerary-origin::before {
-    content: none;
-  }
-
-  .editor-module--itinerary .itinerary-segment::before {
-    content: '';
-    position: absolute;
-    z-index: -1;
-    top: var(--ticket-cut-half-height);
-    bottom: var(--ticket-cut-half-height);
-    left: -18px;
-    right: -18px;
-    background: #ffffff;
-    pointer-events: none;
-  }
-
-  .editor-module--itinerary .itinerary-segment:last-child::before {
-    bottom: 0;
-  }
-
-  /* Una sola pieza blanca dibuja el límite completo. El clip-path es un
-     rectángulo con dos mordidas triangulares reales: no hay franja lateral
-     transparente, ni triángulos pintados encima. El gradiente punteado vive en
-     el centro de la misma pieza, por lo que termina exactamente en cada punta. */
-  .editor-module--itinerary .itinerary-origin-section + .itinerary-segment::after,
-  .editor-module--itinerary .itinerary-segment + .itinerary-segment::after {
-    top: calc(-1 * var(--ticket-cut-half-height));
-    left: -18px;
-    right: -18px;
-    height: calc(2 * var(--ticket-cut-half-height));
-    opacity: 1;
-    background:
-      repeating-linear-gradient(
-        to right,
-        #c9ced7 0 3px,
-        transparent 3px 7px
-      ) center / 100% 1px no-repeat,
-      #ffffff;
-    clip-path: polygon(
-      0 0,
-      100% 0,
-      calc(100% - var(--ticket-cut-depth)) 50%,
-      100% 100%,
-      0 100%,
-      var(--ticket-cut-depth) 50%
-    );
   }
 }
