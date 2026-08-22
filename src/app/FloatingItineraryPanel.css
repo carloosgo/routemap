@@ -49,6 +49,50 @@
     box-shadow: 0 10px 30px rgba(15, 23, 42, 0.16) !important;
   }
 
+  /* En Itinerario los cortes laterales deben ser huecos reales. Para que el
+     mapa pueda verse a través de ellos, la carcasa exterior deja de pintar una
+     placa blanca completa y el cuerpo conserva blanco sólo desde 4 px hacia
+     dentro. Las superficies de cada fila reponen esos 4 px salvo justo en la V. */
+  main.workspace .workspace__desktop--column .workspace-panel__content.floating-editor:has(.editor-module--itinerary) {
+    background: transparent !important;
+    border-color: transparent !important;
+  }
+
+  .workspace-panel .editor-module--itinerary,
+  .workspace-panel .editor-module--itinerary .editor {
+    background: transparent !important;
+  }
+
+  .workspace-panel .editor-module--itinerary .editor__body {
+    background: linear-gradient(
+      to right,
+      transparent 0 4px,
+      #ffffff 4px calc(100% - 4px),
+      transparent calc(100% - 4px) 100%
+    ) !important;
+  }
+
+  /* El botón inferior repone la superficie blanca hasta el borde y cubre el
+     espacio restante bajo la lista sin bloquear los cortes entre trayectos. */
+  .workspace-panel .editor-module--itinerary .btn--add {
+    position: relative;
+    z-index: 0;
+    isolation: isolate;
+    background: #ffffff;
+  }
+
+  .workspace-panel .editor-module--itinerary .btn--add::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    top: -14px;
+    bottom: -16px;
+    left: -18px;
+    right: -18px;
+    background: #ffffff;
+    pointer-events: none;
+  }
+
   /* El panel ahora empieza debajo del header global; elimina el antiguo spacer
      interno que sólo era necesario cuando el editor arrancaba detrás del header. */
   .workspace-panel .editor-module {

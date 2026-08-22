@@ -1,16 +1,18 @@
 /* Separadores horizontales discretos entre trayectos. El eje vertical de la
-   timeline permanece eliminado. Cada divisor incorpora además una muesca en V
-   blanca y extremadamente tenue en ambos bordes para sugerir un corte real de
-   boleto sin añadir fondos grises ni convertir cada fila en una tarjeta aparte. */
+   timeline permanece eliminado. En escritorio, las muescas ya no se dibujan
+   encima del card: se forman dejando transparentes sólo 4 px reales del borde,
+   de modo que se vea el mapa detrás y el efecto lea como un corte verdadero. */
 
 .segments:not(.segments--compact)::before {
   content: none;
 }
 
-.itinerary-segment + .itinerary-segment::before {
+/* Divisor base: fino, discreto y sin añadir una segunda tarjeta visual. */
+.itinerary-origin + .itinerary-segment::after,
+.itinerary-segment + .itinerary-segment::after {
   content: '';
   position: absolute;
-  z-index: 1;
+  z-index: 3;
   top: -5px;
   left: 3px;
   right: 3px;
@@ -24,36 +26,77 @@
   pointer-events: none;
 }
 
-.itinerary-segment + .itinerary-segment::after {
-  content: '';
-  position: absolute;
-  z-index: 2;
-  top: -9px;
-  left: -1px;
-  right: -1px;
-  height: 8px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 8' preserveAspectRatio='none'%3E%3Cpath d='M0 0 L4 4 L0 8 Z M500 0 L496 4 L500 8 Z' fill='%23ffffff'/%3E%3C/svg%3E") center / 100% 8px no-repeat;
-  pointer-events: none;
-}
-
-.itinerary-segment.is-dragging::before,
 .itinerary-segment.is-dragging::after {
   opacity: 0;
 }
 
 @media (min-width: 721px) {
-  /* La vista compacta reduce el hueco entre filas. Los -8px llevan el borde
-     exterior de la muesca hasta el borde real del card y los -4px del divisor
-     hacen que la línea punteada termine exactamente en el vértice blanco. */
-  .itinerary-segment + .itinerary-segment::before {
-    top: -1px;
-    left: -4px;
-    right: -4px;
+  .editor-module--itinerary .segments:not(.segments--compact) {
+    isolation: isolate;
   }
 
-  .itinerary-segment + .itinerary-segment::after {
-    top: -5px;
-    left: -8px;
-    right: -8px;
+  /* Superficie blanca del origen. Se extiende hasta los bordes reales del card;
+     arriba queda recta y abajo incorpora media muesca para formar el primer V. */
+  .editor-module--itinerary .itinerary-origin::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    top: -8px;
+    bottom: -2px;
+    left: -18px;
+    right: -18px;
+    background: #ffffff;
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% calc(100% - 4px),
+      calc(100% - 4px) 100%,
+      4px 100%,
+      0 calc(100% - 4px)
+    );
+    pointer-events: none;
+  }
+
+  /* Cada trayecto pinta únicamente su superficie blanca. El clip afecta a esta
+     capa decorativa, no al contenido ni a dropdowns/autocomplete de la fila. */
+  .editor-module--itinerary .itinerary-segment::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0 -18px;
+    background: #ffffff;
+    clip-path: polygon(
+      0 4px,
+      4px 0,
+      calc(100% - 4px) 0,
+      100% 4px,
+      100% calc(100% - 4px),
+      calc(100% - 4px) 100%,
+      4px 100%,
+      0 calc(100% - 4px)
+    );
+    pointer-events: none;
+  }
+
+  /* El último trayecto conserva el borde inferior recto del card. */
+  .editor-module--itinerary .itinerary-segment:last-child::before {
+    clip-path: polygon(
+      0 4px,
+      4px 0,
+      calc(100% - 4px) 0,
+      100% 4px,
+      100% 100%,
+      0 100%
+    );
+  }
+
+  /* El vértice interior de cada corte queda a 4 px del borde real. Como el
+     contenido conserva 18 px de padding lateral, -14 px lleva el divisor
+     exactamente hasta ese vértice en ambos extremos. */
+  .editor-module--itinerary .itinerary-origin + .itinerary-segment::after,
+  .editor-module--itinerary .itinerary-segment + .itinerary-segment::after {
+    top: 0;
+    left: -14px;
+    right: -14px;
   }
 }
