@@ -8,7 +8,7 @@
 }
 
 /* Divisor base: fino, discreto y sin añadir una segunda tarjeta visual. */
-.itinerary-origin + .itinerary-segment::after,
+.itinerary-origin-section + .itinerary-segment::after,
 .itinerary-segment + .itinerary-segment::after {
   content: '';
   position: absolute;
