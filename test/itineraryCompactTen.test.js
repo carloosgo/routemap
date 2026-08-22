@@ -43,6 +43,6 @@ test('segment dividers open real transparent ticket cuts and reach their vertice
   );
   assert.match(
     floating,
-    /\.editor-module--itinerary \.editor__body\s*\{[^}]*transparent 0 4px,[^}]*#ffffff 4px calc\(100% - 4px\),[^}]*transparent calc\(100% - 4px\) 100%;/s
+    /\.editor-module--itinerary \.editor__body\s*\{[\s\S]*background:\s*linear-gradient\([\s\S]*transparent 0 4px,[\s\S]*#ffffff 4px calc\(100% - 4px\),[\s\S]*transparent calc\(100% - 4px\) 100%[\s\S]*\)\s*!important;/s
   );
 });
