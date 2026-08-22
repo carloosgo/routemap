@@ -1,0 +1,28 @@
+/* Prueba visual solicitada: sustituye el eje punteado vertical de la timeline
+   por separadores horizontales discretos entre trayectos. No altera la
+   estructura, el orden ni el espaciado funcional de las filas. */
+
+.segments:not(.segments--compact)::before {
+  content: none;
+}
+
+.itinerary-segment + .itinerary-segment::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: -5px;
+  left: 24px;
+  right: 8px;
+  height: 1px;
+  background: repeating-linear-gradient(
+    to right,
+    #c9ced7 0 3px,
+    transparent 3px 7px
+  );
+  opacity: 0.78;
+  pointer-events: none;
+}
+
+.itinerary-segment.is-dragging::before {
+  opacity: 0;
+}
