@@ -49,42 +49,6 @@
     box-shadow: 0 10px 30px rgba(15, 23, 42, 0.16) !important;
   }
 
-  /* En Itinerario las muescas laterales son huecos reales. La carcasa y el
-     cuerpo dejan de pintar una placa continua; cada wrapper de origen/trayecto
-     repone el blanco hasta el borde y recorta únicamente su V. Así desaparece
-     la franja celeste rectangular que antes quedaba visible entre filas. */
-  main.workspace .workspace__desktop--column .workspace-panel__content.floating-editor:has(.editor-module--itinerary) {
-    background: transparent !important;
-    border-color: transparent !important;
-  }
-
-  .workspace-panel .editor-module--itinerary,
-  .workspace-panel .editor-module--itinerary .editor,
-  .workspace-panel .editor-module--itinerary .editor__body {
-    background: transparent !important;
-  }
-
-  /* El botón inferior repone la superficie blanca hasta el borde y cubre el
-     espacio restante bajo la lista sin bloquear los cortes entre trayectos. */
-  .workspace-panel .editor-module--itinerary .btn--add {
-    position: relative;
-    z-index: 0;
-    isolation: isolate;
-    background: #ffffff;
-  }
-
-  .workspace-panel .editor-module--itinerary .btn--add::before {
-    content: '';
-    position: absolute;
-    z-index: -1;
-    top: -14px;
-    bottom: -16px;
-    left: -18px;
-    right: -18px;
-    background: #ffffff;
-    pointer-events: none;
-  }
-
   /* El panel ahora empieza debajo del header global; elimina el antiguo spacer
      interno que sólo era necesario cuando el editor arrancaba detrás del header. */
   .workspace-panel .editor-module {
