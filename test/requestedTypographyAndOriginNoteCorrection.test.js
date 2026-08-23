@@ -108,7 +108,7 @@ test('origin and segment notes keep one toggle path while details use the parall
   assert.match(map, /data-persistence-state=\{persistenceState\}/);
 });
 
-test('desktop itinerary uses cost-only rows, visible scrollbar, visual icon spacing and shared panel geometry', async () => {
+test('desktop itinerary uses tighter insets and shared centered panel geometry', async () => {
   const correction = await read('src/modules/trips/ItineraryCorrectionPolish.css');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
   const floating = await read('src/app/FloatingItineraryPanel.css');
@@ -116,8 +116,10 @@ test('desktop itinerary uses cost-only rows, visible scrollbar, visual icon spac
 
   assert.doesNotMatch(correction, /scrollbar-gutter:\s*stable/);
   assert.doesNotMatch(floating, /:has\(\.editor-module--itinerary\)/);
-  assert.match(floating, /\.workspace__desktop--column\s*\{[^}]*--floating-panel-left:\s*34px;[^}]*--floating-panel-top-gap:\s*10px;[^}]*--floating-panel-width:\s*426px;/s);
-  assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;[^}]*scrollbar-width:\s*thin;[^}]*padding:\s*0 12px 6px;/s);
+  assert.match(floating, /\.workspace__desktop--column\s*\{[^}]*--floating-panel-left:\s*34px;[^}]*--floating-panel-width:\s*426px;[^}]*--floating-panel-height:\s*506px;/s);
+  assert.match(floating, /top:\s*calc\(50% \+ 31\.5px\);/);
+  assert.match(floating, /transform:\s*translateY\(-50%\);/);
+  assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;[^}]*scrollbar-width:\s*thin;[^}]*padding:\s*0 8px 6px;/s);
   assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
   assert.match(compact, /min-height:\s*40px;[^}]*height:\s*40px;/s);
   assert.match(compact, /grid-template-columns:\s*110px repeat\(3, 14px\);/);
