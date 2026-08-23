@@ -40,3 +40,10 @@ button.trip-summary__metric:focus-visible,
 .trip-summary__selector-option.is-active {
   background: transparent;
 }
+
+/* El rango de fechas ocupa la primera métrica, inmediatamente después de
+   Notas. Conserva espacio suficiente para dos fechas completas sin comprimir
+   Total, Destinos, Noches, Moneda o Idioma. */
+.trip-summary__metrics {
+  grid-template-columns: 1.45fr 1.2fr 1fr 1fr 0.88fr 0.88fr;
+}
