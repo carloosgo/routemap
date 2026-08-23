@@ -49,9 +49,6 @@ export function ItineraryOrigin({
             selectedDisplay="timeline"
           />
         </div>
-        {city?.country && (
-          <span className="itinerary-origin__country">{city.country}</span>
-        )}
       </div>
 
       <div className="itinerary-stop__after-place itinerary-origin__after-place">

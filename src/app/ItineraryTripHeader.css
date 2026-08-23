@@ -34,18 +34,18 @@
     --itinerary-axis-x: 39px;
   }
 
-  /* Una sola retícula gobierna cada parada. La ciudad conserva sus 106px y
-     toda la zona posterior se entrega al grupo fecha/métricas/acciones. */
+  /* Una sola retícula gobierna cada parada. La ciudad dispone de 126px y
+     toda la zona posterior se entrega a métricas y acciones. */
   .editor-module.editor-module--itinerary .itinerary-segment .segment__header.itinerary-stop {
     box-sizing: border-box;
     width: 100%;
-    grid-template-columns: 18px 30px 106px minmax(0, 1fr);
+    grid-template-columns: 18px 30px 126px minmax(0, 1fr);
     column-gap: 6px;
   }
 
   .editor-module.editor-module--itinerary .itinerary-stop__place {
     width: 100%;
-    max-width: 106px;
+    max-width: 126px;
   }
 
   .editor-module.editor-module--itinerary .itinerary-stop__after-place {
@@ -84,13 +84,13 @@
     box-sizing: border-box;
     width: 100%;
     padding-left: 24px;
-    grid-template-columns: 30px 106px minmax(0, 1fr);
+    grid-template-columns: 30px 126px minmax(0, 1fr);
     column-gap: 6px;
   }
 
   .segments:not(.segments--compact) .itinerary-origin__place {
     width: 100%;
-    max-width: 106px;
+    max-width: 126px;
   }
 
   /* Los bodies terminan dentro del mismo borde útil que las filas. El inset

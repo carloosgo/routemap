@@ -5,36 +5,34 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('origin y destination soportan presentación seleccionada de dos líneas', async () => {
+test('origin y destination usan ciudad seleccionada de una sola linea a 13px/600', async () => {
   const header = await read('src/modules/trips/SegmentHeader.jsx');
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const autocomplete = await read('src/components/CityAutocomplete.jsx');
-  const css = await read('src/modules/trips/ItineraryTimeline.css');
-  const originCss = await read('src/modules/trips/OriginOptions.css');
+  const compact = await read('src/modules/trips/ItineraryCompactTen.css');
 
   assert.match(header, /selectedDisplay="timeline"/);
   assert.match(origin, /selectedDisplay="timeline"/);
   assert.match(autocomplete, /autocomplete--timeline-selected/);
   assert.match(autocomplete, /autocomplete__selected-value/);
-  assert.match(css, /-webkit-line-clamp:\s*2;/);
-  assert.match(css, /\.itinerary-stop__picker \.input\s*\{[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*700;/);
-  assert.match(originCss, /\.itinerary-origin__picker \.input\s*\{[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*700;/);
-  assert.match(originCss, /\.itinerary-origin__picker \.autocomplete__selected-value\s*\{[\s\S]*-webkit-line-clamp:\s*2;[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*700;/);
+  assert.match(compact, /autocomplete__selected-value[\s\S]*transform:\s*none;[\s\S]*-webkit-line-clamp:\s*1;[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*600;/s);
+  assert.doesNotMatch(header, /itinerary-stop__country/);
+  assert.doesNotMatch(origin, /itinerary-origin__country/);
 });
 
-test('timeline preserves city and flag geometry while compact view shows only plain nights and cost', async () => {
+test('timeline preserves flag geometry and gives city and plain metrics enough room', async () => {
   const header = await read('src/modules/trips/SegmentHeader.jsx');
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const css = await read('src/modules/trips/ItineraryTimeline.css');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
 
   assert.match(header, /className="itinerary-stop__metrics"/);
-  assert.match(css, /\.itinerary-stop__place\s*\{[\s\S]*max-width:\s*106px;/);
   assert.match(css, /\.itinerary-origin__marker img,[\s\S]*\.itinerary-stop__marker img[\s\S]*width:\s*30px;[\s\S]*height:\s*20px;/);
   assert.doesNotMatch(header, /itinerary-stop__dates|segment__pill/);
   assert.doesNotMatch(origin, /itinerary-stop__dates|segment__pill/);
-  assert.match(compact, /grid-template-columns:\s*76px 92px 22px 22px 22px;/);
-  assert.match(compact, /\.itinerary-stop__nights,[\s\S]*\.itinerary-stop__amount\s*\{[^}]*background:\s*transparent\s*!important;[^}]*font-size:\s*13px;/s);
+  assert.match(compact, /grid-template-columns:\s*18px 30px 126px minmax\(0, 1fr\);/);
+  assert.match(compact, /grid-template-columns:\s*64px minmax\(86px, 1fr\) 22px 22px 22px;/);
+  assert.match(compact, /\.itinerary-stop__nights,[\s\S]*\.itinerary-stop__amount\s*\{[^}]*font-size:\s*13px;[^}]*font-weight:\s*400;[^}]*overflow:\s*visible;/s);
 });
 
 test('origin mirrors note expand close controls while expand still opens the separate details module', async () => {

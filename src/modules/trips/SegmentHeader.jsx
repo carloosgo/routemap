@@ -60,9 +60,6 @@ export function SegmentHeader({
             selectedDisplay="timeline"
           />
         </div>
-        {destination?.country && (
-          <span className="itinerary-stop__country">{destination.country}</span>
-        )}
       </div>
 
       <div className="itinerary-stop__after-place">
