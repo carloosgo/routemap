@@ -9,7 +9,7 @@
     scrollbar-gutter: stable;
     scrollbar-width: thin;
     -ms-overflow-style: auto;
-    padding: 0 12px 6px;
+    padding: 0 8px 6px;
     gap: 0;
   }
 
@@ -87,8 +87,7 @@
 
   /* Costo / Nota / Desplegar / Cerrar se miden por su ancho visual real.
      Los tres SVG son de 14px y usan exactamente 8px entre sí; el mismo gap
-     separa el borde derecho del costo del icono de Nota. El padding derecho
-     conserva el X en la posición visual que ya estaba aprobada. */
+     separa el borde derecho del costo del icono de Nota. */
   .editor-module.editor-module--itinerary .itinerary-stop__after-place,
   .segments:not(.segments--compact) .itinerary-origin__after-place {
     box-sizing: border-box;
