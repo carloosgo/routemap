@@ -6,12 +6,11 @@ export function AppEditorModule({
   tripStore,
   savedTrips,
   editorState,
+  itineraryPanels,
   activeTab,
   openMenu,
   setOpenMenu,
   editorMenuRef,
-  toggleNoteTarget,
-  toggleDetailsTarget,
   setTripToDelete,
   handleOpenSavedTrip,
   t,
@@ -28,9 +27,6 @@ export function AppEditorModule({
     removeSegment,
     reorderSegment,
     updateSegment,
-    updateExpenses,
-    updateOriginDetails,
-    updateOriginExpenses,
     removePlace,
     reorderPlace,
     upsertRouteConnection,
@@ -70,13 +66,10 @@ export function AppEditorModule({
       trip={trip}
       intlLocale={intlLocale}
       updateSegment={updateSegment}
-      updateExpenses={updateExpenses}
-      updateOriginDetails={updateOriginDetails}
-      updateOriginExpenses={updateOriginExpenses}
       removeSegment={removeSegment}
       reorderSegment={reorderSegment}
-      toggleNoteTarget={toggleNoteTarget}
-      toggleDetailsTarget={toggleDetailsTarget}
+      toggleNoteTarget={itineraryPanels.toggleNote}
+      toggleDetailsTarget={itineraryPanels.toggleDetails}
       addSegment={addSegment}
       t={t}
       notes={notes}
