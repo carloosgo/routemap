@@ -3,9 +3,21 @@
    estado, persistencia y navegación del editor permanecen sin cambios. */
 @media (min-width: 721px) {
   .workspace__desktop--column {
+    --floating-panel-left: 14px;
+    --floating-panel-top-gap: 14px;
+    --floating-panel-width: var(--workspace-panel-width, clamp(458px, calc(40vw - 82px), 540px));
     position: relative;
     display: block;
     background: transparent;
+  }
+
+  /* El resumen de Itinerario ahora necesita menos ancho porque sólo conserva
+     Costo + acciones. La tarjeta se desplaza ligeramente hacia el centro del
+     mapa sin alterar el ancho de Mis Rutas o Notas. */
+  .workspace__desktop--column:has(.editor-module--itinerary) {
+    --floating-panel-left: 34px;
+    --floating-panel-top-gap: 10px;
+    --floating-panel-width: 426px;
   }
 
   /* El mapa vuelve a ocupar todo el workspace. El editor ya no le reserva una
@@ -21,11 +33,11 @@
 
   .workspace-panel {
     position: absolute;
-    top: calc(var(--trip-header-height) + 14px);
+    top: calc(var(--trip-header-height) + var(--floating-panel-top-gap));
     bottom: 14px;
-    left: 14px;
+    left: var(--floating-panel-left);
     z-index: 700;
-    width: var(--workspace-panel-width, clamp(458px, calc(40vw - 82px), 540px));
+    width: var(--floating-panel-width);
     min-width: 0;
     height: auto;
     overflow: visible;
@@ -65,11 +77,9 @@
     border-radius: inherit;
   }
 
-  /* La pestaña sigue pegada al costado del módulo, ahora considerando el gutter
-     de 14px que deja visible el mapa alrededor de la tarjeta. */
   .workspace-panel__toggle {
     top: calc(50% + 31px);
-    left: calc(14px + var(--workspace-panel-width, clamp(458px, calc(40vw - 82px), 540px)) - 1px);
+    left: calc(var(--floating-panel-left) + var(--floating-panel-width) - 1px);
     z-index: 701;
     box-shadow: 3px 1px 9px rgba(15, 23, 42, 0.12);
   }
@@ -79,7 +89,7 @@
   }
 
   .workspace__desktop--column.is-panel-collapsed .workspace-panel {
-    transform: translateX(calc(-100% - 14px));
+    transform: translateX(calc(-100% - var(--floating-panel-left)));
     opacity: 0;
   }
 
@@ -90,10 +100,10 @@
     border-radius: 7px;
   }
 
-  /* Los overlays del mapa deben comenzar después del panel flotante en vez de
-     aparecer debajo de él. Mantienen el mismo gutter visual de 14px. */
+  /* Los overlays del mapa comienzan después del ancho real del panel activo y
+     conservan 14px de separación visual. */
   .workspace__desktop--column > .mappane .segnote,
   .workspace__desktop--column > .mappane .geo-search {
-    left: calc(28px + var(--workspace-panel-width, clamp(458px, calc(40vw - 82px), 540px)));
+    left: calc(var(--floating-panel-left) + var(--floating-panel-width) + 14px);
   }
 }
