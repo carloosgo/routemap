@@ -117,8 +117,9 @@ test('desktop itinerary uses tighter insets and shared centered panel geometry',
   assert.doesNotMatch(correction, /scrollbar-gutter:\s*stable/);
   assert.doesNotMatch(floating, /:has\(\.editor-module--itinerary\)/);
   assert.match(floating, /\.workspace__desktop--column\s*\{[^}]*--floating-panel-left:\s*34px;[^}]*--floating-panel-width:\s*426px;[^}]*--floating-panel-height:\s*506px;/s);
-  assert.match(floating, /top:\s*calc\(50% \+ 31\.5px\);/);
-  assert.match(floating, /transform:\s*translateY\(-50%\);/);
+  assert.match(floating, /\.workspace-panel\s*\{[^}]*top:\s*var\(--trip-header-height\);[^}]*bottom:\s*0;[^}]*display:\s*flex;[^}]*align-items:\s*center;/s);
+  assert.doesNotMatch(floating, /\.workspace-panel\s*\{[^}]*transform:\s*translateY\(-50%\);/s);
+  assert.match(floating, /\.workspace-panel__content\.floating-editor\s*\{[^}]*height:\s*min\(var\(--floating-panel-height\), calc\(100% - 20px\)\)\s*!important;/s);
   assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;[^}]*scrollbar-width:\s*thin;[^}]*padding:\s*0 8px 6px;/s);
   assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
   assert.match(compact, /min-height:\s*40px;[^}]*height:\s*40px;/s);
