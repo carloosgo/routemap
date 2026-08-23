@@ -22,22 +22,25 @@
     height: 100%;
   }
 
+  /* El aside ocupa únicamente el área útil debajo del header y centra ahí la
+     tarjeta mediante flex. Evitamos transform en estado abierto porque un
+     ancestro transformado convierte en local cualquier hijo position:fixed
+     (por ejemplo el botón global de tres puntos). */
   .workspace-panel {
     position: absolute;
-    /* 31.5px es la mitad del header contractual de 63px: así el centro del
-       panel coincide con el centro exacto del área útil bajo el header. */
-    top: calc(50% + 31.5px);
-    bottom: auto;
+    top: var(--trip-header-height);
+    bottom: 0;
     left: var(--floating-panel-left);
     z-index: 700;
     width: var(--floating-panel-width);
     min-width: 0;
-    height: var(--floating-panel-height);
-    max-height: calc(100% - var(--trip-header-height) - 20px);
+    height: auto;
+    display: flex;
+    align-items: center;
     overflow: visible;
+    pointer-events: none;
     background: transparent;
     border-radius: 12px;
-    transform: translateY(-50%);
     transition: transform 180ms ease, opacity 180ms ease;
   }
 
@@ -47,9 +50,10 @@
     width: 100% !important;
     min-width: 0 !important;
     max-width: none !important;
-    height: 100% !important;
+    height: min(var(--floating-panel-height), calc(100% - 20px)) !important;
     margin: 0 !important;
     overflow: hidden !important;
+    pointer-events: auto;
     background: #ffffff !important;
     border: 1px solid rgba(226, 228, 233, 0.94) !important;
     border-radius: 12px !important;
@@ -77,12 +81,19 @@
     box-shadow: 3px 1px 9px rgba(15, 23, 42, 0.12);
   }
 
+  /* Mientras se edita un trayecto, la pestaña de colapso no debe cruzar por
+     encima del modal contextual. Se retira sólo durante ese flujo. */
+  .workspace__desktop--column:has(.segment-details-modal) .workspace-panel__toggle {
+    opacity: 0;
+    pointer-events: none;
+  }
+
   .workspace__desktop--column.is-panel-collapsed {
     grid-template-columns: none;
   }
 
   .workspace__desktop--column.is-panel-collapsed .workspace-panel {
-    transform: translate(calc(-100% - var(--floating-panel-left)), -50%);
+    transform: translateX(calc(-100% - var(--floating-panel-left)));
     opacity: 0;
   }
 
