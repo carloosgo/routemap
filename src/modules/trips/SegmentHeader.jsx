@@ -1,5 +1,5 @@
 import {
-  IconChevronRight,
+  IconChevronDown,
   IconGripVertical,
   IconNote,
   IconX,
@@ -11,7 +11,6 @@ import './SegmentHeader.css';
 
 export function SegmentHeader({
   segment,
-  formattedDates,
   formattedNights,
   formattedAmount,
   dragging,
@@ -23,10 +22,6 @@ export function SegmentHeader({
 }) {
   const { t } = useTranslation();
   const destination = segment.destination;
-  const placeholderDateLines = t('dateRangeHint').split(' – ');
-  const dateLines = formattedDates
-    ? formattedDates.split(' – ')
-    : [placeholderDateLines[0], placeholderDateLines[1] || placeholderDateLines[0]];
 
   return (
     <header className="segment__header itinerary-stop">
@@ -72,22 +67,14 @@ export function SegmentHeader({
 
       <div className="itinerary-stop__after-place">
         <div className="itinerary-stop__metrics">
-          <span className={'itinerary-stop__dates' + (!formattedDates ? ' is-placeholder' : '')}>
-            {dateLines.map((dateLine, index) => (
-              <span className="itinerary-stop__date-line" key={`${dateLine}-${index}`}>
-                {dateLine}
-              </span>
-            ))}
-          </span>
           <span
             className={
-              'segment__pill itinerary-stop__nights' +
-              (!formattedNights ? ' is-placeholder' : '')
+              'itinerary-stop__nights' + (!formattedNights ? ' is-placeholder' : '')
             }
           >
             {formattedNights || t('nightsHint')}
           </span>
-          <span className="segment__pill itinerary-stop__amount">{formattedAmount}</span>
+          <span className="itinerary-stop__amount">{formattedAmount}</span>
         </div>
 
         <button
@@ -102,21 +89,21 @@ export function SegmentHeader({
 
         <button
           type="button"
+          className="btn btn--icon segment__toggle segment__details-btn itinerary-stop__details-btn"
+          aria-label={t('openSegmentDetails')}
+          title={t('openSegmentDetails')}
+          onClick={onOpenDetails}
+        >
+          <IconChevronDown size={14} aria-hidden="true" />
+        </button>
+
+        <button
+          type="button"
           className="btn btn--icon"
           aria-label={t('removeSegment')}
           onClick={onRemoveRequest}
         >
           <IconX size={14} aria-hidden="true" />
-        </button>
-
-        <button
-          type="button"
-          className="segment__details-btn itinerary-stop__details-btn"
-          aria-label={t('openSegmentDetails')}
-          title={t('openSegmentDetails')}
-          onClick={onOpenDetails}
-        >
-          <IconChevronRight size={14} stroke={2.2} aria-hidden="true" />
         </button>
       </div>
     </header>
