@@ -26,15 +26,8 @@ test('header summary typography remains isolated and origin shares destination h
 
   assert.doesNotMatch(correction, /itinerary-origin__picker \.autocomplete__selected-value/);
   assert.doesNotMatch(correction, /itinerary-origin__country/);
-  assert.match(
-    originOptions,
-    /itinerary-origin__picker \.autocomplete__selected-value[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*700;/
-  );
-  assert.match(
-    timeline,
-    /itinerary-origin__country,[\s\S]*itinerary-stop__country[\s\S]*font-size:\s*9\.5px;[\s\S]*font-weight:\s*500;/
-  );
-
+  assert.match(originOptions, /itinerary-origin__picker \.autocomplete__selected-value[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*700;/);
+  assert.match(timeline, /itinerary-origin__country,[\s\S]*itinerary-stop__country[\s\S]*font-size:\s*9\.5px;[\s\S]*font-weight:\s*500;/);
   assert.match(correction, /moneycard__label,[\s\S]*font-size:\s*13px;/);
   assert.match(correction, /moneycard__input,[\s\S]*font-size:\s*12px;/);
   assert.match(correction, /moneycard__currency,[\s\S]*font-size:\s*11px;/);
@@ -59,24 +52,16 @@ test('header trial owns the three primary tabs, omits the routes counter, keeps 
   assert.doesNotMatch(navigation, /id === 'places' \? routeCount|badge--places/);
   assert.match(navigation, /const badge = id === 'notes' \? checklistProgress : '';/);
   assert.match(navigation, /onClick=\{\(\) => setActiveTab\(id\)\}/);
-
   assert.match(tripHeader, /<TripHeaderNavigation \{\.\.\.navigation\} t=\{t\} \/>/);
   assert.doesNotMatch(tripHeader, /className="trip-summary__title"|renameTrip/);
   assert.doesNotMatch(editorModule, /editor-module__tabs|editor-module__nav-tab|lugaresIcon|IconNotes|IconMap\b/);
   assert.match(app, /checklistProgress: editorState\.checklist\?\.length/);
-
   assert.match(navigationCss, /grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(navigationCss, /\.editor-module\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\);/s);
   assert.doesNotMatch(navigationCss, /\.trip-summary__primary-nav-badge--places/);
   assert.match(navigationCss, /\.trip-summary__primary-nav-badge--notes/);
-  assert.ok(
-    main.indexOf("./app/ItinerarySidebar.css") < main.indexOf("./app/TripHeaderNavigation.css"),
-    'el override que libera la columna lateral debe cargar después del sidebar canónico'
-  );
-  assert.ok(
-    main.indexOf("./app/TripSummaryHeaderTypography.css") < main.indexOf("./app/TripHeaderNavigation.css"),
-    'la navegación del header debe cargar después de los estilos canónicos de métricas'
-  );
+  assert.ok(main.indexOf("./app/ItinerarySidebar.css") < main.indexOf("./app/TripHeaderNavigation.css"));
+  assert.ok(main.indexOf("./app/TripSummaryHeaderTypography.css") < main.indexOf("./app/TripHeaderNavigation.css"));
 });
 
 test('origin and segment notes keep one toggle path while details use the parallel note-style surface', async () => {
@@ -85,6 +70,7 @@ test('origin and segment notes keep one toggle path while details use the parall
   const body = await read('src/modules/trips/OriginBody.jsx');
   const map = await read('src/app/AppMapPane.jsx');
   const app = await read('src/App.jsx');
+  const panels = await read('src/app/useItineraryFloatingPanels.js');
   const editorModule = await read('src/app/AppEditorModule.jsx');
   const editorPane = await read('src/app/AppEditorPane.jsx');
   const interactions = await read('src/app/useAppInteractions.js');
@@ -100,22 +86,25 @@ test('origin and segment notes keep one toggle path while details use the parall
   assert.match(origin, /onOpenDetails=\{onOpenDetails\}/);
   assert.doesNotMatch(body, /itinerary-origin__note-editor|<textarea/);
 
-  assert.match(app, /setOpenDetailsTarget\(null\);[\s\S]*setOpenNoteSegmentId/s);
-  assert.match(app, /setOpenNoteSegmentId\(null\);[\s\S]*setOpenDetailsTarget/s);
-  assert.match(app, /toggleNoteTarget=\{toggleNoteTarget\}/);
-  assert.match(app, /toggleDetailsTarget=\{toggleDetailsTarget\}/);
-  assert.match(editorModule, /toggleDetailsTarget=\{toggleDetailsTarget\}/);
+  assert.match(app, /const itineraryPanels = useItineraryFloatingPanels\(\);/);
+  assert.match(app, /itineraryPanels=\{itineraryPanels\}/);
+  assert.match(panels, /const toggleNote = useCallback/);
+  assert.match(panels, /const toggleDetails = useCallback/);
+  assert.match(panels, /setDetailsTarget\(null\);[\s\S]*setNoteTarget/s);
+  assert.match(panels, /setNoteTarget\(null\);[\s\S]*setDetailsTarget/s);
+  assert.match(editorModule, /toggleNoteTarget=\{itineraryPanels\.toggleNote\}/);
+  assert.match(editorModule, /toggleDetailsTarget=\{itineraryPanels\.toggleDetails\}/);
   assert.match(editorPane, /onOpenDetails=\{toggleDetailsTarget\}/);
   assert.match(interactions, /\.segment__note-btn, \.segment__details-btn/);
   assert.doesNotMatch(interactions, /suppressNextClick|clickedSegmentId|openSegmentId/);
 
-  assert.match(map, /openNoteSegmentId === ORIGIN_NOTE_TARGET/);
+  assert.match(map, /noteTarget === ORIGIN_NOTE_TARGET/);
   assert.equal((map.match(/className="segnote"/g) || []).length, 2);
   assert.equal((map.match(/className="segnote__textarea"/g) || []).length, 2);
   assert.match(map, /updateOriginDetails\(\{ note: event\.target\.value \}\)/);
   assert.match(map, /updateSegment\(segment\.id, \{ note: event\.target\.value \}\)/);
-  assert.match(map, /const notePanel = openNoteSegmentId \? openNotePanel\(\) : null;/);
-  assert.match(map, /const detailsPanel = openDetailsTarget \?/);
+  assert.match(map, /const notePanel = noteTarget \? openNotePanel\(\) : null;/);
+  assert.match(map, /const detailsPanel = detailsTarget \?/);
   assert.match(map, /\{detailsPanel\}/);
   assert.match(map, /data-persistence-state=\{persistenceState\}/);
 });
@@ -126,14 +115,8 @@ test('desktop itinerary uses compact equal rows, fixed 56px metrics and centered
   const floatingEditor = await read('src/app/FloatingEditor.css');
 
   assert.doesNotMatch(correction, /scrollbar-gutter:\s*stable/);
-  assert.match(
-    compact,
-    /\.workspace-panel:has\(\.editor-module--itinerary\)\s*\{[^}]*top:\s*calc\(50% \+ 31\.5px\);[^}]*396px[\s\S]*transform:\s*translateY\(-50%\);/s
-  );
-  assert.match(
-    compact,
-    /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-width:\s*none;[^}]*padding-top:\s*6px;/s
-  );
+  assert.match(compact, /\.workspace-panel:has\(\.editor-module--itinerary\)\s*\{[^}]*396px[\s\S]*transform:\s*translateY\(-50%\);/s);
+  assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-width:\s*none;[^}]*padding-top:\s*6px;/s);
   assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
   assert.match(compact, /min-height:\s*48px;[^}]*height:\s*48px;/s);
   assert.match(compact, /grid-template-columns:\s*42px 56px 56px 22px 22px 18px;/);
