@@ -16,12 +16,13 @@ test('isValidSegmentDateRange permite rangos parciales o iguales y rechaza inici
   assert.equal(isValidSegmentDateRange('2026-12-08', '2026-12-07'), false);
 });
 
-test('formatSegmentAmount mantiene dos decimales y neutraliza montos inválidos', () => {
-  assert.equal(formatSegmentAmount(12.5, 'en-US'), '12.50');
-  assert.equal(formatSegmentAmount('invalid', 'en-US'), '0.00');
+test('formatSegmentAmount muestra moneda localizada y neutraliza montos inválidos', () => {
+  assert.equal(formatSegmentAmount(12.5, 'en-US', 'USD'), '$12.50');
+  assert.equal(formatSegmentAmount('invalid', 'en-US', 'USD'), '$0.00');
+  assert.equal(formatSegmentAmount(1299, 'en-US', 'EUR'), '€1,299.00');
 });
 
-test('formatSegmentDates conserva el rango, fechas parciales y ausencia de fechas', () => {
+test('formatSegmentDates conserva el rango, fechas parciales y ausencia de fechas para el editor detallado', () => {
   assert.equal(
     formatSegmentDates(
       { startDate: '2026-12-03', endDate: '2026-12-07' },
