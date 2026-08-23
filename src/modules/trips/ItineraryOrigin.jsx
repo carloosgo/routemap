@@ -1,6 +1,5 @@
 import {
-  IconChevronDown,
-  IconChevronUp,
+  IconChevronRight,
   IconNote,
   IconX,
 } from '@tabler/icons-react';
@@ -15,11 +14,9 @@ export function ItineraryOrigin({
   formattedNights,
   formattedAmount,
   hasNote,
-  expanded,
-  bodyId,
   onSelect,
   onOpenNote,
-  onToggle,
+  onOpenDetails,
   onClear,
 }) {
   const { t } = useTranslation();
@@ -88,27 +85,22 @@ export function ItineraryOrigin({
 
         <button
           type="button"
-          className="btn btn--icon segment__toggle itinerary-origin__toggle"
-          aria-expanded={expanded}
-          aria-controls={bodyId}
-          aria-label={expanded ? t('collapse') : t('expand')}
-          onClick={onToggle}
-        >
-          {expanded ? (
-            <IconChevronUp size={14} aria-hidden="true" />
-          ) : (
-            <IconChevronDown size={14} aria-hidden="true" />
-          )}
-        </button>
-
-        <button
-          type="button"
           className="btn btn--icon itinerary-origin__clear"
           aria-label={clearOriginLabel}
           title={clearOriginLabel}
           onClick={onClear}
         >
           <IconX size={14} aria-hidden="true" />
+        </button>
+
+        <button
+          type="button"
+          className="segment__details-btn itinerary-origin__details-btn"
+          aria-label={t('openSegmentDetails')}
+          title={t('openSegmentDetails')}
+          onClick={onOpenDetails}
+        >
+          <IconChevronRight size={14} stroke={2.2} aria-hidden="true" />
         </button>
       </div>
     </div>

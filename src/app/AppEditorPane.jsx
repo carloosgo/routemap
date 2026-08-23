@@ -32,15 +32,11 @@ export function AppEditorPane({
   activeTab,
   trip,
   intlLocale,
-  isExpanded,
-  toggleSegment,
   updateSegment,
-  updateExpenses,
-  updateOriginDetails,
-  updateOriginExpenses,
   removeSegment,
   reorderSegment,
   toggleNoteTarget,
+  toggleDetailsTarget,
   addSegment,
   t,
   notes,
@@ -203,20 +199,15 @@ export function AppEditorPane({
                       key={segment.id}
                       segment={segment}
                       index={index}
-                      currency={trip.currency}
                       locale={intlLocale}
                       originDetails={trip.originDetails}
-                      expanded={isExpanded(segment.id)}
                       dragging={dragState?.segmentId === segment.id}
                       dragOffsetY={dragState?.segmentId === segment.id ? dragState.offsetY : 0}
                       dropPlacement={dragState?.targetId === segment.id ? dragState.placement : null}
-                      onToggle={() => toggleSegment(segment.id)}
                       onUpdate={(patch) => updateSegment(segment.id, patch)}
-                      onUpdateExpenses={(expenses) => updateExpenses(segment.id, expenses)}
-                      onUpdateOriginDetails={updateOriginDetails}
-                      onUpdateOriginExpenses={updateOriginExpenses}
                       onRemove={() => removeSegment(segment.id)}
                       onOpenNote={toggleNoteTarget}
+                      onOpenDetails={toggleDetailsTarget}
                       onReorderPointerStart={(event) => {
                         if (event.pointerType === 'mouse' && event.button !== 0) return;
                         event.preventDefault();

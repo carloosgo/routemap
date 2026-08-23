@@ -12,10 +12,10 @@ import { AppMapPane } from './app/AppMapPane.jsx';
 import { AppWorkspace } from './app/AppWorkspace.jsx';
 import { TripSummaryHeader } from './app/TripSummaryHeader.jsx';
 import { TripDeleteDialog } from './app/TripDeleteDialog.jsx';
-import { toggleTarget } from './app/appInteractionModel.js';
 import { normalizeRecoveredDraft } from './app/recoveredTripDraft.js';
 import { useAppEditorState } from './app/useAppEditorState.js';
-import { useOutsideClick, useOutsideClickSelector, useSaveShortcut } from './app/useAppInteractions.js';
+import { useItineraryFloatingPanels } from './app/useItineraryFloatingPanels.js';
+import { useOutsideClick, useSaveShortcut } from './app/useAppInteractions.js';
 import './App.css';
 import './app/FloatingEditor.css';
 
@@ -25,24 +25,15 @@ export default function App() {
   const tripStore = useTrip();
   const savedTrips = useSavedTrips(auth.user);
   const editorState = useAppEditorState(tripStore);
-  const { trip, loadTrip, setCurrency, updateSegment, updateOriginDetails, addPlace } = tripStore;
-  const {
-    getTrip,
-    getActiveTripDraft,
-    stageTrip,
-    getTripPersistenceState,
-    saveTrip,
-    deleteTrip,
-    importLocalTrips,
-    getLocalTripCount,
-  } = savedTrips;
+  const itineraryPanels = useItineraryFloatingPanels();
+  const { trip, loadTrip, setCurrency, updateSegment, updateExpenses, updateOriginDetails, updateOriginExpenses, addPlace } = tripStore;
+  const { getTrip, getActiveTripDraft, stageTrip, getTripPersistenceState, saveTrip, deleteTrip, importLocalTrips, getLocalTripCount } = savedTrips;
   const [toast, setToast] = useState('');
   const [mobileView, setMobileView] = useState('form');
   const [activeTab, setActiveTab] = useState('segments');
   const [tripToDelete, setTripToDelete] = useState(null);
   const [deletePending, setDeletePending] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
-  const [openNoteSegmentId, setOpenNoteSegmentId] = useState(null);
   const [desktopPanelCollapsed, setDesktopPanelCollapsed] = useState(false);
   const menuWrapRef = useRef(null);
   const editorMenuRef = useRef(null);
@@ -53,12 +44,7 @@ export default function App() {
   currentTripRef.current = trip;
 
   const canSave = isTripSavable(trip);
-  const persistence = useTripAutoPersistence({
-    trip,
-    stageTrip,
-    getTripPersistenceState,
-    canRemoteSync: canSave,
-  });
+  const persistence = useTripAutoPersistence({ trip, stageTrip, getTripPersistenceState, canRemoteSync: canSave });
 
   useEffect(() => {
     if (auth.loading) return undefined;
@@ -140,22 +126,16 @@ export default function App() {
       }
       loadTrip(storedTrip);
       setOpenMenu(null);
+      itineraryPanels.close();
     } catch {
       showToast(t('openTripError'), 3000);
     }
-  }, [getTrip, loadTrip, showToast, t]);
+  }, [getTrip, itineraryPanels, loadTrip, showToast, t]);
 
   const closeMenu = useCallback(() => setOpenMenu(null), []);
-  const closeSegmentNote = useCallback(() => setOpenNoteSegmentId(null), []);
-  const toggleNoteTarget = useCallback(
-    (target) => setOpenNoteSegmentId((current) => toggleTarget(current, target)),
-    []
-  );
-
   useSaveShortcut(handleSave);
   useOutsideClick(menuWrapRef, openMenu === 'account', closeMenu);
   useOutsideClick(editorMenuRef, openMenu === 'workspace', closeMenu);
-  useOutsideClickSelector('.segnote', Boolean(openNoteSegmentId), closeSegmentNote);
 
   async function confirmRemoveTrip() {
     if (!tripToDelete || deleteInFlightRef.current) return;
@@ -210,11 +190,11 @@ export default function App() {
       tripStore={tripStore}
       savedTrips={savedTrips}
       editorState={editorState}
+      itineraryPanels={itineraryPanels}
       activeTab={activeTab}
       openMenu={openMenu}
       setOpenMenu={setOpenMenu}
       editorMenuRef={editorMenuRef}
-      toggleNoteTarget={toggleNoteTarget}
       setTripToDelete={setTripToDelete}
       handleOpenSavedTrip={handleOpenSavedTrip}
       t={t}
@@ -226,11 +206,13 @@ export default function App() {
     <AppMapPane
       trip={trip}
       mapView={activeTab === 'places' ? 'places' : 'segments'}
-      openNoteSegmentId={openNoteSegmentId}
-      setOpenNoteSegmentId={setOpenNoteSegmentId}
+      itineraryPanels={itineraryPanels}
       updateSegment={updateSegment}
+      updateExpenses={updateExpenses}
       updateOriginDetails={updateOriginDetails}
+      updateOriginExpenses={updateOriginExpenses}
       addPlace={addPlace}
+      intlLocale={intlLocale}
       persistenceState={persistence.state}
       toast={toast}
       t={t}

@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { segmentTotal } from './tripModel.js';
-import { SegmentBody } from './SegmentBody.jsx';
 import { SegmentDeleteDialog } from './SegmentDeleteDialog.jsx';
 import { SegmentHeader } from './SegmentHeader.jsx';
-import { CollapsibleRegion, SegmentOriginSection } from './SegmentOriginSection.jsx';
+import { SegmentOriginSection } from './SegmentOriginSection.jsx';
 import { ORIGIN_NOTE_TARGET } from './tripNoteTargets.js';
 import { formatSegmentAmount, formatSegmentDates, formatSegmentNights } from './segmentFormModel.js';
 import './ItineraryTimeline.css';
@@ -29,12 +28,20 @@ function SegmentDropIndicator({ placement }) {
 }
 
 export function SegmentForm({
-  segment, index, currency, locale, originDetails, expanded, dragging, dragOffsetY,
-  dropPlacement, onToggle, onUpdate, onUpdateExpenses, onUpdateOriginDetails,
-  onUpdateOriginExpenses, onRemove, onOpenNote, onReorderPointerStart,
+  segment,
+  index,
+  locale,
+  originDetails,
+  dragging,
+  dragOffsetY,
+  dropPlacement,
+  onUpdate,
+  onRemove,
+  onOpenNote,
+  onOpenDetails,
+  onReorderPointerStart,
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const bodyId = `segment-body-${segment.id}`;
   const formattedAmount = formatSegmentAmount(segmentTotal(segment), locale);
   const formattedDates = formatSegmentDates(segment, locale);
   const formattedNights = formatSegmentNights(segment, locale);
@@ -46,18 +53,19 @@ export function SegmentForm({
 
   const openSegmentNote = () => onOpenNote(segment.id);
   const openOriginNote = () => onOpenNote(ORIGIN_NOTE_TARGET);
+  const openSegmentDetails = () => onOpenDetails(segment.id);
+  const openOriginDetails = () => onOpenDetails(ORIGIN_NOTE_TARGET);
+
   return (
     <>
       {index === 0 && (
         <SegmentOriginSection
           segment={segment}
-          currency={currency}
           locale={locale}
           originDetails={originDetails}
           onUpdate={onUpdate}
-          onUpdateOriginDetails={onUpdateOriginDetails}
-          onUpdateOriginExpenses={onUpdateOriginExpenses}
           onOpenNote={openOriginNote}
+          onOpenDetails={openOriginDetails}
         />
       )}
       <article
@@ -77,25 +85,13 @@ export function SegmentForm({
           formattedDates={formattedDates}
           formattedNights={formattedNights}
           formattedAmount={formattedAmount}
-          expanded={expanded}
           dragging={dragging}
-          bodyId={bodyId}
-          onToggle={onToggle}
           onDestinationSelect={(destination) => onUpdate({ destination })}
           onOpenNote={openSegmentNote}
+          onOpenDetails={openSegmentDetails}
           onRemoveRequest={() => setConfirmOpen(true)}
           onReorderPointerStart={onReorderPointerStart}
         />
-        <CollapsibleRegion open={expanded}>
-          <SegmentBody
-            segment={segment}
-            currency={currency}
-            locale={locale}
-            bodyId={bodyId}
-            onUpdate={onUpdate}
-            onUpdateExpenses={onUpdateExpenses}
-          />
-        </CollapsibleRegion>
         <SegmentDeleteDialog
           open={confirmOpen}
           onConfirm={confirmRemove}

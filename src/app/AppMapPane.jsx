@@ -1,5 +1,6 @@
 import { IconArrowRight, IconCheck, IconX } from '@tabler/icons-react';
 import { RouteMap } from '../modules/map/RouteMap.jsx';
+import { ItineraryDetailsModal } from '../modules/trips/ItineraryDetailsModal.jsx';
 import { ORIGIN_NOTE_TARGET } from '../modules/trips/tripNoteTargets.js';
 import { colorForIndex } from '../config.js';
 
@@ -19,15 +20,18 @@ function persistenceLabelKey(state) {
 export function AppMapPane({
   trip,
   mapView = 'segments',
-  openNoteSegmentId,
-  setOpenNoteSegmentId,
+  itineraryPanels,
   updateSegment,
+  updateExpenses,
   updateOriginDetails,
+  updateOriginExpenses,
   addPlace,
+  intlLocale,
   persistenceState = 'saved',
   toast,
   t,
 }) {
+  const { noteTarget, detailsTarget, close } = itineraryPanels;
   const persistenceLabel = t(persistenceLabelKey(persistenceState));
   const persistenceHasCheck = persistenceState === 'saved' || persistenceState === 'local';
 
@@ -41,7 +45,7 @@ export function AppMapPane({
   );
 
   const openNotePanel = () => {
-    if (openNoteSegmentId === ORIGIN_NOTE_TARGET) {
+    if (noteTarget === ORIGIN_NOTE_TARGET) {
       const originName = trip.segments?.[0]?.origin?.name || t('origin');
       const note = trip.originDetails?.note || '';
       const originNoteLabel = `${t('segmentNote')}: ${t('origin')}`;
@@ -57,12 +61,7 @@ export function AppMapPane({
           <div className="segnote__head">
             <span className="segnote__badge" style={{ background: colorForIndex(0) }} aria-hidden="true" />
             <span className="segnote__title">{t('origin')}: {originName}</span>
-            <button
-              type="button"
-              className="segnote__x"
-              aria-label={t('closeNote')}
-              onClick={() => setOpenNoteSegmentId(null)}
-            >
+            <button type="button" className="segnote__x" aria-label={t('closeNote')} onClick={close}>
               <IconX size={16} aria-hidden="true" />
             </button>
           </div>
@@ -80,9 +79,9 @@ export function AppMapPane({
       );
     }
 
-    const segment = trip.segments.find((item) => item.id === openNoteSegmentId);
+    const segment = trip.segments.find((item) => item.id === noteTarget);
     if (!segment) return null;
-    const index = trip.segments.findIndex((item) => item.id === openNoteSegmentId);
+    const index = trip.segments.findIndex((item) => item.id === noteTarget);
     const originName = segment.origin?.name || t('origin');
     const destinationName = segment.destination?.name || t('destination');
     const note = segment.note || '';
@@ -100,12 +99,7 @@ export function AppMapPane({
           <span className="segnote__title">
             {originName}<IconArrowRight size={11} aria-hidden="true" />{destinationName}
           </span>
-          <button
-            type="button"
-            className="segnote__x"
-            aria-label={t('closeNote')}
-            onClick={() => setOpenNoteSegmentId(null)}
-          >
+          <button type="button" className="segnote__x" aria-label={t('closeNote')} onClick={close}>
             <IconX size={16} aria-hidden="true" />
           </button>
         </div>
@@ -123,7 +117,21 @@ export function AppMapPane({
     );
   };
 
-  const notePanel = openNoteSegmentId ? openNotePanel() : null;
+  const notePanel = noteTarget ? openNotePanel() : null;
+  const detailsPanel = detailsTarget ? (
+    <ItineraryDetailsModal
+      target={detailsTarget}
+      trip={trip}
+      locale={intlLocale}
+      onClose={close}
+      updateSegment={updateSegment}
+      updateExpenses={updateExpenses}
+      updateOriginDetails={updateOriginDetails}
+      updateOriginExpenses={updateOriginExpenses}
+      t={t}
+    />
+  ) : null;
+  const hasFloatingPanel = Boolean(notePanel || detailsPanel);
 
   return (
     <section className="mappane" aria-label={t('mapRegion')}>
@@ -134,7 +142,7 @@ export function AppMapPane({
         addPlace={addPlace}
         viewMode={mapView}
       />
-      {notePanel && (
+      {hasFloatingPanel && (
         <div
           aria-hidden="true"
           style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'transparent' }}
@@ -145,11 +153,12 @@ export function AppMapPane({
           onPointerUp={(event) => {
             event.preventDefault();
             event.stopPropagation();
-            setOpenNoteSegmentId(null);
+            close();
           }}
         />
       )}
       {notePanel}
+      {detailsPanel}
       {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
     </section>
   );
