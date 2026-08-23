@@ -11,6 +11,7 @@ export function AppEditorModule({
   setOpenMenu,
   editorMenuRef,
   toggleNoteTarget,
+  toggleDetailsTarget,
   setTripToDelete,
   handleOpenSavedTrip,
   t,
@@ -44,8 +45,6 @@ export function AppEditorModule({
     places,
     confirmDeleteNote,
     setConfirmDeleteNote,
-    isExpanded,
-    toggleSegment,
     handleAddItem,
     newItemRef,
     newItemText,
@@ -70,8 +69,6 @@ export function AppEditorModule({
       activeTab={activeTab}
       trip={trip}
       intlLocale={intlLocale}
-      isExpanded={isExpanded}
-      toggleSegment={toggleSegment}
       updateSegment={updateSegment}
       updateExpenses={updateExpenses}
       updateOriginDetails={updateOriginDetails}
@@ -79,6 +76,7 @@ export function AppEditorModule({
       removeSegment={removeSegment}
       reorderSegment={reorderSegment}
       toggleNoteTarget={toggleNoteTarget}
+      toggleDetailsTarget={toggleDetailsTarget}
       addSegment={addSegment}
       t={t}
       notes={notes}
