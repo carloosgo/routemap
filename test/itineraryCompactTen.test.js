@@ -84,7 +84,8 @@ test('note expand and close keep their order while expand opens a symmetric note
   assert.match(modalCss, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/);
   assert.match(modalCss, /calendar-date__value,[\s\S]*width:\s*calc\(100% - 38px\);/s);
   assert.match(modalCss, /grid-template-columns:\s*18px minmax\(0, 1fr\) 70px;/);
-  assert.match(modalCss, /\.moneycard__label,[\s\S]*overflow:\s*visible;[\s\S]*text-overflow:\s*clip;/s);
+  assert.match(modalCss, /\.moneycard__label\s*\{[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*clip;[^}]*white-space:\s*normal;/s);
+  assert.match(modalCss, /\.moneycard__typeinput\s*\{[^}]*overflow:\s*hidden;[^}]*white-space:\s*nowrap;/s);
   assert.match(modalCss, /\.moneycard__amount\s*\{[^}]*width:\s*70px;[^}]*min-width:\s*70px;/s);
 
   assert.match(app, /const itineraryPanels = useItineraryFloatingPanels\(\);/);
