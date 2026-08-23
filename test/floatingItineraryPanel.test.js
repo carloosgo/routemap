@@ -6,23 +6,25 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('desktop primary panels share one floating geometry over the full-width map', async () => {
+test('desktop primary panels share one centered fixed geometry over the full-width map', async () => {
   const css = await read('src/app/FloatingItineraryPanel.css');
   const main = await read('src/main.jsx');
 
   assert.match(css, /@media \(min-width:\s*721px\)/);
-  assert.match(css, /\.workspace__desktop--column\s*\{[^}]*--floating-panel-left:\s*34px;[^}]*--floating-panel-top-gap:\s*10px;[^}]*--floating-panel-width:\s*426px;[^}]*display:\s*block;/s);
+  assert.match(css, /\.workspace__desktop--column\s*\{[^}]*--floating-panel-left:\s*34px;[^}]*--floating-panel-width:\s*426px;[^}]*--floating-panel-height:\s*506px;[^}]*display:\s*block;/s);
   assert.doesNotMatch(css, /:has\(\.editor-module--itinerary\)/);
   assert.doesNotMatch(css, /--floating-panel-width:\s*var\(--workspace-panel-width/);
+  assert.doesNotMatch(css, /--floating-panel-top-gap/);
   assert.match(css, /\.workspace__desktop--column > \.mappane\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;/s);
   assert.match(
     css,
-    /\.workspace-panel\s*\{[^}]*top:\s*calc\(var\(--trip-header-height\) \+ var\(--floating-panel-top-gap\)\);[^}]*bottom:\s*14px;[^}]*left:\s*var\(--floating-panel-left\);[^}]*width:\s*var\(--floating-panel-width\);/s
+    /\.workspace-panel\s*\{[^}]*top:\s*calc\(50% \+ 31\.5px\);[^}]*bottom:\s*auto;[^}]*left:\s*var\(--floating-panel-left\);[^}]*width:\s*var\(--floating-panel-width\);[^}]*height:\s*var\(--floating-panel-height\);[^}]*max-height:\s*calc\(100% - var\(--trip-header-height\) - 20px\);[^}]*transform:\s*translateY\(-50%\);/s
   );
   assert.match(
     css,
     /\.workspace-panel__content\.floating-editor\s*\{[^}]*border-radius:\s*12px\s*!important;[^}]*box-shadow:\s*0 10px 30px rgba\(15, 23, 42, 0\.16\)\s*!important;/s
   );
+  assert.match(css, /\.workspace__desktop--column\.is-panel-collapsed \.workspace-panel\s*\{[^}]*transform:\s*translate\(calc\(-100% - var\(--floating-panel-left\)\), -50%\);/s);
   assert.match(
     css,
     /\.workspace__desktop--column > \.mappane \.segnote,[\s\S]*left:\s*calc\(var\(--floating-panel-left\) \+ var\(--floating-panel-width\) \+ 14px\);/s
@@ -30,7 +32,7 @@ test('desktop primary panels share one floating geometry over the full-width map
   assert.match(main, /import '\.\/app\/FloatingItineraryPanel\.css';/);
   assert.ok(
     main.indexOf('FloatingItineraryPanel.css') > main.indexOf('NotePanelPlacement.css'),
-    'la geometría flotante debe ser la última autoridad de layout del workspace'
+    'la geometría flotante debe seguir cargándose después de la colocación de notas'
   );
 });
 
