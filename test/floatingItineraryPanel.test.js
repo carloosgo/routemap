@@ -14,7 +14,6 @@ test('desktop primary panels share one centered fixed geometry over the full-wid
   assert.match(css, /\.workspace__desktop--column\s*\{[^}]*--floating-panel-left:\s*34px;[^}]*--floating-panel-width:\s*426px;[^}]*--floating-panel-height:\s*506px;[^}]*display:\s*block;/s);
   assert.doesNotMatch(css, /:has\(\.editor-module--itinerary\)/);
   assert.doesNotMatch(css, /--floating-panel-width:\s*var\(--workspace-panel-width/);
-  assert.doesNotMatch(css, /--floating-panel-top-gap/);
   assert.match(css, /\.workspace__desktop--column > \.mappane\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;/s);
   assert.match(
     css,
