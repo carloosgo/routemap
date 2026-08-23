@@ -1,55 +1,108 @@
 /* Separadores horizontales discretos entre trayectos. El eje vertical de la
-   timeline permanece eliminado. Se restaura el tratamiento simple del pico:
-   dos triángulos sólidos en azul Atlas sobre un card blanco continuo. */
+   timeline permanece eliminado. Conserva exactamente la geometría triangular
+   aprobada, pero el azul Atlas desaparece: cada pico es ahora un hueco real. */
 
 .segments:not(.segments--compact)::before {
   content: none;
 }
 
-.itinerary-origin-section + .itinerary-segment::before,
-.itinerary-segment + .itinerary-segment::before {
-  content: '';
-  position: absolute;
-  z-index: 1;
-  top: -5px;
-  left: 3px;
-  right: 3px;
-  height: 1px;
-  background: repeating-linear-gradient(
-    to right,
-    #c9ced7 0 3px,
-    transparent 3px 7px
-  );
-  opacity: 0.78;
-  pointer-events: none;
-}
-
-.itinerary-segment.is-dragging::before,
-.itinerary-segment.is-dragging::after {
-  opacity: 0;
-}
-
 @media (min-width: 721px) {
-  /* La línea punteada llega exactamente hasta el vértice interior de cada pico. */
-  .itinerary-origin-section + .itinerary-segment::before,
-  .itinerary-segment + .itinerary-segment::before {
-    top: -1px;
-    left: -4px;
-    right: -4px;
+  .editor-module--itinerary .itinerary-origin-section,
+  .editor-module--itinerary .itinerary-segment {
+    position: relative;
+    z-index: 0;
+    isolation: isolate;
   }
 
-  /* Recupera el triángulo sólido que sí era legible. El relleno usa el token
-     visual Atlas (#19a5d0), el mismo acento principal de los controles del sistema. */
-  .itinerary-origin-section + .itinerary-segment::after,
-  .itinerary-segment + .itinerary-segment::after {
+  /* El origen repone el blanco desde el borde superior del editor y deja
+     únicamente la mitad superior de la V transparente en su borde inferior. */
+  .editor-module--itinerary .itinerary-origin-section::before {
     content: '';
     position: absolute;
-    z-index: 2;
-    top: -5px;
-    left: -8px;
-    right: -8px;
-    height: 8px;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 8' preserveAspectRatio='none'%3E%3Cpath d='M0 0 L4 4 L0 8 Z M500 0 L496 4 L500 8 Z' fill='%2319a5d0'/%3E%3C/svg%3E") center / 100% 8px no-repeat;
+    z-index: -1;
+    top: -8px;
+    bottom: 0;
+    left: -12px;
+    right: -12px;
+    background: #ffffff;
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% calc(100% - 4px),
+      calc(100% - 4px) 100%,
+      4px 100%,
+      0 calc(100% - 4px)
+    );
     pointer-events: none;
+  }
+
+  /* Cada trayecto pinta su superficie blanca completa salvo las dos mitades de
+     V. Al tocarse dos filas, ambas mitades forman un único triángulo transparente
+     de 4 px de profundidad. La línea punteada llega al vértice interior. */
+  .editor-module--itinerary .itinerary-segment::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0 -12px;
+    background:
+      repeating-linear-gradient(
+        to right,
+        #c9ced7 0 3px,
+        transparent 3px 7px
+      ) center top / calc(100% - 8px) 1px no-repeat,
+      #ffffff;
+    clip-path: polygon(
+      0 4px,
+      4px 0,
+      calc(100% - 4px) 0,
+      100% 4px,
+      100% calc(100% - 4px),
+      calc(100% - 4px) 100%,
+      4px 100%,
+      0 calc(100% - 4px)
+    );
+    pointer-events: none;
+  }
+
+  /* El último trayecto no abre una muesca contra Agregar trayecto. */
+  .editor-module--itinerary .itinerary-segment:last-child::before {
+    clip-path: polygon(
+      0 4px,
+      4px 0,
+      calc(100% - 4px) 0,
+      100% 4px,
+      100% 100%,
+      0 100%
+    );
+  }
+
+  /* Durante drag se conserva la superficie blanca pero se elimina el patrón
+     punteado para no competir con el indicador de reordenamiento. */
+  .editor-module--itinerary .itinerary-segment.is-dragging::before {
+    background: #ffffff;
+  }
+}
+
+@media (max-width: 720px) {
+  .itinerary-origin-section + .itinerary-segment::before,
+  .itinerary-segment + .itinerary-segment::before {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    top: -5px;
+    left: 3px;
+    right: 3px;
+    height: 1px;
+    background: repeating-linear-gradient(
+      to right,
+      #c9ced7 0 3px,
+      transparent 3px 7px
+    );
+    opacity: 0.78;
+    pointer-events: none;
+  }
+
+  .itinerary-segment.is-dragging::before {
+    opacity: 0;
   }
 }
