@@ -9,7 +9,6 @@ import './ItineraryTimeline.css';
 import './ItineraryRequestedPolish.css';
 import './ItineraryCorrectionPolish.css';
 import './ItinerarySegmentDividers.css';
-import './ItineraryCompactTen.css';
 
 function SegmentDropIndicator({ placement }) {
   if (!placement) return null;
