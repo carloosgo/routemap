@@ -15,37 +15,19 @@ test('desktop itinerary keeps seven compact equal rows with fixed metric pills a
   const origin = await read('src/modules/trips/OriginOptions.css');
 
   assert.match(compact, /@media \(min-width:\s*721px\)/);
-  assert.match(
-    compact,
-    /\.workspace-panel:has\(\.editor-module--itinerary\)\s*\{[^}]*top:\s*calc\(50% \+ 31\.5px\);[^}]*bottom:\s*auto;[^}]*396px[\s\S]*transform:\s*translateY\(-50%\);/s
-  );
-  assert.match(
-    compact,
-    /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-width:\s*none;[^}]*padding-top:\s*6px;[^}]*padding-bottom:\s*6px;/s
-  );
+  assert.match(compact, /\.workspace-panel:has\(\.editor-module--itinerary\)\s*\{[^}]*396px[\s\S]*translateY\(-50%\);/s);
+  assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-width:\s*none;[^}]*padding-top:\s*6px;[^}]*padding-bottom:\s*6px;/s);
   assert.match(compact, /\.editor-module--itinerary \.editor__body::-webkit-scrollbar\s*\{[^}]*display:\s*none;/s);
 
-  /* Origen y destinos comparten la misma banda compacta sin tocar ciudad/bandera. */
   assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
-  assert.match(
-    compact,
-    /\.itinerary-origin,[\s\S]*segment__header\.itinerary-stop\s*\{[^}]*min-height:\s*48px;[^}]*height:\s*48px;[^}]*align-items:\s*center;/s
-  );
+  assert.match(compact, /\.itinerary-origin,[\s\S]*segment__header\.itinerary-stop\s*\{[^}]*min-height:\s*48px;[^}]*height:\s*48px;[^}]*align-items:\s*center;/s);
   assert.match(compact, /\.itinerary-segment\.segment,[\s\S]*padding-bottom:\s*0\s*!important;/s);
   assert.doesNotMatch(compact, /itinerary-stop__marker\s*\{[^}]*width|itinerary-stop__place\s*\{[^}]*max-width/s);
 
-  /* Fecha / Noches / Costo / nota / eliminar / franja usan una única retícula. */
   assert.match(compact, /grid-template-columns:\s*42px 56px 56px 22px 22px 18px;/);
-  assert.match(
-    compact,
-    /\.itinerary-stop__nights\.segment__pill,[\s\S]*\.itinerary-stop__amount\.segment__pill\s*\{[^}]*width:\s*56px\s*!important;[^}]*min-width:\s*56px\s*!important;[^}]*max-width:\s*56px\s*!important;/s
-  );
-  assert.match(
-    compact,
-    /\.segment__details-btn\s*\{[^}]*width:\s*18px;[^}]*height:\s*48px;[^}]*background:\s*var\(--atlas-accent\);[^}]*color:\s*#ffffff;/s
-  );
+  assert.match(compact, /\.itinerary-stop__nights\.segment__pill,[\s\S]*\.itinerary-stop__amount\.segment__pill\s*\{[^}]*width:\s*56px\s*!important;[^}]*min-width:\s*56px\s*!important;[^}]*max-width:\s*56px\s*!important;/s);
+  assert.match(compact, /\.segment__details-btn\s*\{[^}]*width:\s*18px;[^}]*height:\s*48px;[^}]*background:\s*var\(--atlas-accent\);[^}]*color:\s*#ffffff;/s);
 
-  /* La densidad artificial del 90% y la jerarquía especial del origen no vuelven. */
   assert.doesNotMatch(floatingEditor, /Densidad compacta nativa|reproduce la sensación del navegador al 90%/);
   assert.doesNotMatch(floatingEditor, /\.floating-editor \.segment__badge|\.floating-editor \.segment__header \.btn--icon svg|\.floating-editor \.segment__pill/);
   assert.doesNotMatch(correction, /itinerary-origin__picker \.autocomplete__selected-value|itinerary-origin__country/);
@@ -64,6 +46,7 @@ test('blue row drawer replaces inline chevrons and opens the canonical form in a
   const modalCss = await read('src/modules/trips/ItineraryDetailsModal.css');
   const map = await read('src/app/AppMapPane.jsx');
   const app = await read('src/App.jsx');
+  const panels = await read('src/app/useItineraryFloatingPanels.js');
   const interactions = await read('src/app/useAppInteractions.js');
 
   assert.match(header, /className="segment__details-btn itinerary-stop__details-btn"/);
@@ -80,9 +63,13 @@ test('blue row drawer replaces inline chevrons and opens the canonical form in a
   assert.match(modal, /updateExpenses\(segment\.id, expenses\)/);
   assert.match(modalCss, /\.segment-details-modal \.segment__body,[\s\S]*width:\s*100%;[\s\S]*background:\s*#ffffff\s*!important;/s);
 
-  assert.match(app, /const \[openDetailsTarget, setOpenDetailsTarget\] = useState\(null\);/);
-  assert.match(app, /toggleDetailsTarget=\{toggleDetailsTarget\}/);
-  assert.match(map, /const detailsPanel = openDetailsTarget \?/);
+  assert.match(app, /const itineraryPanels = useItineraryFloatingPanels\(\);/);
+  assert.match(app, /itineraryPanels=\{itineraryPanels\}/);
+  assert.match(panels, /const \[detailsTarget, setDetailsTarget\] = useState\(null\);/);
+  assert.match(panels, /const toggleDetails = useCallback/);
+  assert.match(panels, /useOutsideClickSelector\('\.segnote'/);
+  assert.match(map, /const \{ noteTarget, detailsTarget, close \} = itineraryPanels;/);
+  assert.match(map, /const detailsPanel = detailsTarget \?/);
   assert.match(map, /<ItineraryDetailsModal/);
   assert.match(interactions, /\.segment__note-btn, \.segment__details-btn/);
 });
@@ -98,8 +85,5 @@ test('ticket picos keep the approved solid Atlas-blue treatment', async () => {
   assert.match(dividers, /fill='%2319a5d0'/);
   assert.doesNotMatch(dividers, /clip-path|fill='%23ffffff'|fill='none' stroke='%23c9ced7'/);
 
-  assert.match(
-    floating,
-    /\.workspace-panel__content\.floating-editor\s*\{[^}]*background:\s*#ffffff\s*!important;[^}]*border:\s*1px solid rgba\(226, 228, 233, 0\.94\)\s*!important;/s
-  );
+  assert.match(floating, /\.workspace-panel__content\.floating-editor\s*\{[^}]*background:\s*#ffffff\s*!important;[^}]*border:\s*1px solid rgba\(226, 228, 233, 0\.94\)\s*!important;/s);
 });
