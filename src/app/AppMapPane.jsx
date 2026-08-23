@@ -1,5 +1,6 @@
 import { IconArrowRight, IconCheck, IconX } from '@tabler/icons-react';
 import { RouteMap } from '../modules/map/RouteMap.jsx';
+import { ItineraryDetailsModal } from '../modules/trips/ItineraryDetailsModal.jsx';
 import { ORIGIN_NOTE_TARGET } from '../modules/trips/tripNoteTargets.js';
 import { colorForIndex } from '../config.js';
 
@@ -21,9 +22,14 @@ export function AppMapPane({
   mapView = 'segments',
   openNoteSegmentId,
   setOpenNoteSegmentId,
+  openDetailsTarget,
+  setOpenDetailsTarget,
   updateSegment,
+  updateExpenses,
   updateOriginDetails,
+  updateOriginExpenses,
   addPlace,
+  intlLocale,
   persistenceState = 'saved',
   toast,
   t,
@@ -124,6 +130,20 @@ export function AppMapPane({
   };
 
   const notePanel = openNoteSegmentId ? openNotePanel() : null;
+  const detailsPanel = openDetailsTarget ? (
+    <ItineraryDetailsModal
+      target={openDetailsTarget}
+      trip={trip}
+      locale={intlLocale}
+      onClose={() => setOpenDetailsTarget(null)}
+      updateSegment={updateSegment}
+      updateExpenses={updateExpenses}
+      updateOriginDetails={updateOriginDetails}
+      updateOriginExpenses={updateOriginExpenses}
+      t={t}
+    />
+  ) : null;
+  const hasFloatingPanel = Boolean(notePanel || detailsPanel);
 
   return (
     <section className="mappane" aria-label={t('mapRegion')}>
@@ -134,7 +154,7 @@ export function AppMapPane({
         addPlace={addPlace}
         viewMode={mapView}
       />
-      {notePanel && (
+      {hasFloatingPanel && (
         <div
           aria-hidden="true"
           style={{ position: 'absolute', inset: 0, zIndex: 10, background: 'transparent' }}
@@ -146,10 +166,12 @@ export function AppMapPane({
             event.preventDefault();
             event.stopPropagation();
             setOpenNoteSegmentId(null);
+            setOpenDetailsTarget(null);
           }}
         />
       )}
       {notePanel}
+      {detailsPanel}
       {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
     </section>
   );
