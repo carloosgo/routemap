@@ -88,11 +88,19 @@
   grid-column: 1;
 }
 
-.segment-details-modal .expenses--journey .moneycard__label,
+.segment-details-modal .expenses--journey .moneycard__label {
+  grid-column: 2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: normal;
+  line-height: 1.15;
+}
+
 .segment-details-modal .expenses--journey .moneycard__typeinput {
   grid-column: 2;
   min-width: 0;
-  overflow: visible;
+  overflow: hidden;
   text-overflow: clip;
   white-space: nowrap;
 }
