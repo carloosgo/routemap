@@ -50,18 +50,61 @@ export function MoneyAmountInput({
 // editable a la derecha, en una sola fila horizontal (no apilado).
 // Es la unidad visual repetida para cada concepto (Tren, Hospedaje, Bus,
 // Avión, Desayuno, Museo, etc.) — todas con el mismo diseño exacto.
-export function MoneyCard({ icon, iconBg, iconColor, label, value, onChange, ariaLabel }) {
+export function MoneyCard({
+  icon,
+  iconBg,
+  iconColor,
+  label,
+  value,
+  onChange,
+  ariaLabel,
+  centered = false,
+}) {
+  const centeredRowStyle = centered
+    ? {
+        display: 'grid',
+        gridTemplateColumns: '18px minmax(0, 82px) 70px',
+        alignItems: 'center',
+        justifyContent: 'center',
+        columnGap: '4px',
+        width: 'min(178px, 100%)',
+        maxWidth: '100%',
+        justifySelf: 'center',
+      }
+    : undefined;
+
   return (
-    <div className="moneycard">
+    <div className="moneycard" style={centeredRowStyle}>
       <span
         className="moneycard__icon"
-        style={{ '--icon-bg': iconBg, '--icon-color': iconColor }}
+        style={{
+          '--icon-bg': iconBg,
+          '--icon-color': iconColor,
+          ...(centered ? { gridColumn: 1 } : {}),
+        }}
         aria-hidden="true"
       >
         {icon}
       </span>
-      <span className="moneycard__label">{label}</span>
-      <span className="moneycard__amount">
+      <span
+        className="moneycard__label"
+        style={centered ? { gridColumn: 2, minWidth: 0 } : undefined}
+      >
+        {label}
+      </span>
+      <span
+        className="moneycard__amount"
+        style={centered
+          ? {
+              gridColumn: 3,
+              width: '70px',
+              minWidth: '70px',
+              marginLeft: 0,
+              paddingLeft: 0,
+              paddingRight: 0,
+            }
+          : undefined}
+      >
         <span className="moneycard__currency">$</span>
         <MoneyAmountInput
           value={value}
