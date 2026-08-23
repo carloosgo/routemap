@@ -6,7 +6,7 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('desktop itinerary keeps equal rows, visible scrollbar, dates and unclipped cost', async () => {
+test('desktop itinerary keeps compact equal rows, visible scrollbar and cost-only summary', async () => {
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
   const floating = await read('src/app/FloatingItineraryPanel.css');
   const floatingEditor = await read('src/app/FloatingEditor.css');
@@ -16,35 +16,37 @@ test('desktop itinerary keeps equal rows, visible scrollbar, dates and unclipped
   const originRow = await read('src/modules/trips/ItineraryOrigin.jsx');
 
   assert.match(compact, /@media \(min-width:\s*721px\)/);
-  assert.doesNotMatch(compact, /workspace-panel:has\(\.editor-module--itinerary\)/);
-  assert.match(floating, /\.workspace-panel\s*\{[^}]*top:\s*calc\(var\(--trip-header-height\) \+ 14px\);[^}]*bottom:\s*14px;/s);
-  assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;[^}]*scrollbar-width:\s*thin;[^}]*padding-top:\s*0;/s);
+  assert.match(floating, /\.workspace__desktop--column:has\(\.editor-module--itinerary\)/);
+  assert.match(floating, /--floating-panel-left:\s*34px;/);
+  assert.match(floating, /--floating-panel-top-gap:\s*10px;/);
+  assert.match(floating, /--floating-panel-width:\s*426px;/);
+  assert.match(floating, /top:\s*calc\(var\(--trip-header-height\) \+ var\(--floating-panel-top-gap\)\);/);
+
+  assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;[^}]*scrollbar-width:\s*thin;[^}]*padding:\s*0 12px 6px;/s);
   assert.match(compact, /\.editor-module--itinerary \.editor__body::-webkit-scrollbar\s*\{[^}]*width:\s*7px;[^}]*display:\s*block;/s);
 
   assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
-  assert.match(compact, /\.itinerary-origin,[\s\S]*segment__header\.itinerary-stop\s*\{[^}]*min-height:\s*48px;[^}]*height:\s*48px;[^}]*align-items:\s*center;/s);
+  assert.match(compact, /\.itinerary-origin,[\s\S]*segment__header\.itinerary-stop\s*\{[^}]*min-height:\s*40px;[^}]*height:\s*40px;[^}]*align-items:\s*center;/s);
   assert.match(compact, /grid-template-columns:\s*18px 30px 126px minmax\(0, 1fr\);/);
   assert.match(compact, /grid-template-columns:\s*30px 126px minmax\(0, 1fr\);/);
   assert.match(compact, /max-width:\s*126px;/);
   assert.match(compact, /autocomplete__selected-value[\s\S]*transform:\s*none;[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*600;[\s\S]*white-space:\s*nowrap;/s);
 
-  assert.match(compact, /grid-template-columns:\s*58px minmax\(94px, 1fr\) 22px 22px 22px;/);
-  assert.match(compact, /\.itinerary-stop__dates\s*\{[^}]*width:\s*58px;[^}]*color:\s*#3d3d3d;[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;/s);
-  assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*color:\s*#117b80;[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;[^}]*text-align:\s*right;[^}]*overflow:\s*visible;/s);
-  assert.doesNotMatch(compact, /\.itinerary-stop__nights|segment__pill|background:\s*var\(--atlas-accent\)/);
-  assert.doesNotMatch(header, /itinerary-stop__country|itinerary-stop__nights/);
-  assert.doesNotMatch(originRow, /itinerary-origin__country|itinerary-stop__nights/);
-  assert.match(header, /itinerary-stop__dates[\s\S]*itinerary-stop__amount/);
-  assert.match(originRow, /itinerary-stop__dates[\s\S]*itinerary-stop__amount/);
+  assert.match(compact, /grid-template-columns:\s*110px 22px 22px 22px;/);
+  assert.match(compact, /width:\s*max-content;[\s\S]*justify-self:\s*end;/s);
+  assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*110px;[^}]*color:\s*#117b80;[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;[^}]*text-align:\s*right;[^}]*overflow:\s*visible;/s);
+  assert.doesNotMatch(compact, /\.itinerary-stop__dates|\.itinerary-stop__nights|segment__pill|background:\s*var\(--atlas-accent\)/);
+  assert.doesNotMatch(header, /itinerary-stop__country|itinerary-stop__nights|itinerary-stop__dates/);
+  assert.doesNotMatch(originRow, /itinerary-origin__country|itinerary-stop__nights|itinerary-stop__dates/);
+  assert.match(header, /itinerary-stop__amount/);
+  assert.match(originRow, /itinerary-stop__amount/);
 
   assert.doesNotMatch(floatingEditor, /Densidad compacta nativa|reproduce la sensación del navegador al 90%/);
   assert.doesNotMatch(floatingEditor, /\.floating-editor \.segment__badge|\.floating-editor \.segment__header \.btn--icon svg|\.floating-editor \.segment__pill/);
   assert.doesNotMatch(correction, /itinerary-origin__picker \.autocomplete__selected-value/);
 
-  assert.match(form, /formatSegmentDate/);
-  assert.match(form, /formattedStartDate/);
-  assert.match(form, /formattedEndDate/);
-  assert.doesNotMatch(form, /formatSegmentNights|formattedNights|CollapsibleRegion|<SegmentBody|onToggle=|expanded=/);
+  assert.match(form, /formatSegmentAmount/);
+  assert.doesNotMatch(form, /formatSegmentDate|formatSegmentNights|formattedStartDate|formattedEndDate|formattedNights|CollapsibleRegion|<SegmentBody|onToggle=|expanded=/);
   assert.doesNotMatch(form, /useExpandedSegmentReveal|scrollIntoView/);
 });
 
@@ -65,11 +67,10 @@ test('note expand and close keep their order while expand opens the note-style d
   assert.doesNotMatch(header, /IconChevronRight|IconChevronUp|aria-expanded|aria-controls/);
   assert.doesNotMatch(origin, /IconChevronRight|IconChevronUp|aria-expanded|aria-controls/);
 
-  assert.match(header, /itinerary-stop__dates/);
-  assert.match(origin, /itinerary-stop__dates/);
-  assert.doesNotMatch(header, /itinerary-stop__nights|segment__pill/);
-  assert.doesNotMatch(origin, /itinerary-stop__nights|segment__pill/);
+  assert.doesNotMatch(header, /itinerary-stop__dates|itinerary-stop__nights|segment__pill/);
+  assert.doesNotMatch(origin, /itinerary-stop__dates|itinerary-stop__nights|segment__pill/);
   assert.match(header, /itinerary-stop__amount/);
+  assert.match(origin, /itinerary-stop__amount/);
 
   assert.match(modal, /className="segnote segment-details-modal"/);
   assert.match(modal, /<SegmentBody/);

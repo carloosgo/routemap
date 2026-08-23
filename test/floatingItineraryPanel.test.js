@@ -11,11 +11,12 @@ test('desktop itinerary panel floats over a full-width map with rounded corners'
   const main = await read('src/main.jsx');
 
   assert.match(css, /@media \(min-width:\s*721px\)/);
-  assert.match(css, /\.workspace__desktop--column\s*\{[^}]*display:\s*block;/s);
+  assert.match(css, /\.workspace__desktop--column\s*\{[^}]*--floating-panel-left:\s*14px;[^}]*--floating-panel-top-gap:\s*14px;[^}]*--floating-panel-width:\s*var\(--workspace-panel-width,[^}]*display:\s*block;/s);
+  assert.match(css, /\.workspace__desktop--column:has\(\.editor-module--itinerary\)\s*\{[^}]*--floating-panel-left:\s*34px;[^}]*--floating-panel-top-gap:\s*10px;[^}]*--floating-panel-width:\s*426px;/s);
   assert.match(css, /\.workspace__desktop--column > \.mappane\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;/s);
   assert.match(
     css,
-    /\.workspace-panel\s*\{[^}]*top:\s*calc\(var\(--trip-header-height\) \+ 14px\);[^}]*bottom:\s*14px;[^}]*left:\s*14px;/s
+    /\.workspace-panel\s*\{[^}]*top:\s*calc\(var\(--trip-header-height\) \+ var\(--floating-panel-top-gap\)\);[^}]*bottom:\s*14px;[^}]*left:\s*var\(--floating-panel-left\);[^}]*width:\s*var\(--floating-panel-width\);/s
   );
   assert.match(
     css,
@@ -23,7 +24,7 @@ test('desktop itinerary panel floats over a full-width map with rounded corners'
   );
   assert.match(
     css,
-    /\.workspace__desktop--column > \.mappane \.segnote,[\s\S]*left:\s*calc\(28px \+ var\(--workspace-panel-width/s
+    /\.workspace__desktop--column > \.mappane \.segnote,[\s\S]*left:\s*calc\(var\(--floating-panel-left\) \+ var\(--floating-panel-width\) \+ 14px\);/s
   );
   assert.match(main, /import '\.\/app\/FloatingItineraryPanel\.css';/);
   assert.ok(

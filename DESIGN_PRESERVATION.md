@@ -1,7 +1,7 @@
 # Contrato de preservación visual
 
 Visual delta: requested
-Requested visual scope: selectores de moneda/idioma del header global; contenido y validación de cada trayecto; navegación primaria dentro del header; panel flotante sobre el mapa; eliminación del eje vertical y uso de divisores punteados sin picos laterales; unificación de ciudad origen con destinos; vista compacta con scrollbar visible; filas de 48 px sin reducir bandera; eliminación del país en el resumen de fila; campo ciudad de 126 px; sustitución de Noches por Fecha en dos líneas; Costo como texto plano; restauración de Nota / Desplegar / Cerrar con espaciado uniforme; divisores limitados desde el inicio de la bandera hasta el final visual del tache de cerrar; reducción del espacio superior antes de la ciudad origen; mantenimiento del formulario de fechas/gastos en una superficie flotante sobre el mapa al estilo `.segnote`; recentrado del contenido del formulario y separación estructural de etiqueta/importe para evitar solapamientos; y altura del panel de Itinerario igual a la de Mis Rutas y Notas, solicitado explícitamente por el product owner.
+Requested visual scope: selectores de moneda/idioma del header global; contenido y validación de cada trayecto; navegación primaria dentro del header; panel flotante sobre el mapa; eliminación del eje vertical y uso de divisores punteados sin picos laterales; unificación de ciudad origen con destinos; vista compacta con scrollbar visible; filas de 40 px sin reducir bandera; eliminación del país y de la fecha en el resumen de fila; campo ciudad de 126 px; Costo como único dato textual del resumen antes de Nota / Desplegar / Cerrar; divisores limitados desde el inicio de la bandera hasta el final visual del tache de cerrar; reducción real del espacio superior antes de la ciudad origen; reducción del panel de Itinerario a 426 px y desplazamiento ligero hacia el centro del mapa; mantenimiento del formulario de fechas/gastos en una superficie flotante sobre el mapa al estilo `.segnote`; recentrado del contenido del formulario y separación estructural de etiqueta/importe para evitar solapamientos; y conservación del resto de vistas y arquitectura, solicitado explícitamente por el product owner.
 
 La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atlas debe permanecer intacto. Los controles añadidos reutilizan componentes, dimensiones, espaciados, iconografía, dominio y persistencia ya existentes. Los cambios enumerados abajo son los deltas visuales aprobados.
 
@@ -31,18 +31,17 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 ## Panel flotante del itinerario
 
 - En escritorio el mapa ocupa el 100% del workspace y el módulo de itinerario se superpone como tarjeta blanca flotante con radio de 12 px y sombra ligera.
-- El ancho sigue siendo `--workspace-panel-width`; las banderas conservan 30 × 20 px y el campo ciudad usa 126 px para favorecer una sola línea sin volver a miniaturizar el resto de la fila.
+- Cuando está activo `Itinerario`, la tarjeta usa un ancho específico de 426 px, queda a 34 px del borde izquierdo y comienza 10 px debajo del header. `Mis Rutas` y `Notas` conservan `--workspace-panel-width` y su geometría previa.
+- Las banderas conservan 30 × 20 px y el campo ciudad usa 126 px. La reducción del panel no se obtiene escalando tipografía, iconos, banderas o inputs.
 - La antigua densidad artificial equivalente al navegador al 90% queda retirada: no se escalan ni comprimen tipografías, banderas, iconos, inputs o controles para simular zoom.
-- Itinerario no impone una altura propia. Hereda el mismo `top: calc(var(--trip-header-height) + 14px)` y `bottom: 14px` del panel flotante que usan Mis Rutas y Notas, por lo que las tres vistas tienen la misma altura exterior.
-- La lista recupera un scrollbar visible (`scrollbar-width: thin` / 7 px en WebKit) y `scrollbar-gutter: stable`; no se usa `scrollIntoView` ni se reposiciona el panel al abrir detalles.
-- El bloque de filas empieza sin padding superior adicional en `editor__body`, para aprovechar el espacio por encima de la ciudad origen sin pegarla al borde del card.
-- La ciudad origen no es un bloque visual especial: usa la misma altura, tipografía, bandera, guía de ciudad, fecha, costo y acciones que cualquier destino. La única diferencia geométrica permitida es ocupar con padding el espacio del drag handle que el origen no necesita.
-- Origen y destinos usan una banda exacta de 48 px. Todos los elementos quedan centrados verticalmente entre divisores.
+- La lista mantiene un scrollbar visible (`scrollbar-width: thin` / 7 px en WebKit) y `scrollbar-gutter: stable`; no se usa `scrollIntoView` ni se reposiciona el panel al abrir detalles.
+- `editor__body` usa 0 px arriba y 12 px a cada lado. La banda de origen y cada destino baja de 48 px a 40 px sin cambiar el tamaño interno de sus elementos, reduciendo de forma real el espacio por encima de la primera ciudad.
+- La ciudad origen no es un bloque visual especial: usa la misma altura, tipografía, bandera, guía de ciudad, costo y acciones que cualquier destino. La única diferencia geométrica permitida es ocupar el espacio del drag handle que el origen no necesita.
+- Origen y destinos usan una banda exacta de 40 px. Todos los elementos quedan centrados verticalmente entre divisores.
 - El país deja de mostrarse en la fila; sólo aparece el nombre de la ciudad. El nombre seleccionado usa 13 px / 600, una sola línea y no utiliza `translateY`, para evitar suavizado subpíxel innecesario.
-- Después de la ciudad, la retícula visible contiene únicamente `Fecha / Costo / Nota / Desplegar / Cerrar`.
-- `Fecha` recupera dos líneas dentro de un track fijo de 58 px. Usa 12 px / 400 y color exacto `#3d3d3d`; para la ciudad origen se conserva la misma geometría y la segunda línea puede mostrarse como `—` cuando sólo existe fecha de salida.
-- `Costo` se muestra como texto plano de 12 px / 400 y color exacto `#117b80`, alineado a la derecha de su track para permanecer cerca de las acciones y sin invadir la fecha.
-- `Fecha`, `Costo`, `Nota`, `Desplegar` y `Cerrar` usan tracks independientes con separación uniforme de 6 px; `justify-content: space-between` no se utiliza.
+- La fecha y el número de noches no aparecen en el resumen compacto. Después de la ciudad, la retícula visible contiene únicamente `Costo / Nota / Desplegar / Cerrar`.
+- El bloque `Costo / Nota / Desplegar / Cerrar` deja de expandirse a todo el espacio disponible: usa una retícula de `110px 22px 22px 22px`, separación uniforme de 6 px, `width: max-content` y alineación al extremo derecho.
+- `Costo` se muestra como texto plano de 12 px / 400 y color exacto `#117b80`, alineado a la derecha dentro de un track de 110 px. No utiliza pill, fondo, borde ni peso bold.
 - El botón de nota, el botón de desplegar y el botón eliminar/cerrar conservan el aspecto icon-only. En origen, el botón X sigue limpiando únicamente la ciudad seleccionada y no borra silenciosamente fechas, gastos o nota.
 
 ## Divisores y control de detalle
@@ -58,6 +57,7 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 ## Formulario de fechas y gastos en modal
 
 - El formulario continúa fuera de la lista. `SegmentForm` y la fila de origen no montan `SegmentBody`/`OriginBody` debajo de la fila ni usan `aria-expanded` para este flujo.
+- Aunque la fecha se elimina del resumen de cada fila, las fechas canónicas siguen editándose únicamente dentro del modal de detalles.
 - Al pulsar el control Desplegar, se abre sobre el mapa una superficie `segnote segment-details-modal`, reutilizando radio, sombra, cabecera, cierre y posición del modal de notas.
 - Sólo puede estar activa una superficie contextual entre nota y detalles; abrir una cierra la otra. Pulsar fuera o cerrar la cabecera descarta la superficie sin alterar datos.
 - El modal de un destino reutiliza el `SegmentBody` canónico y sus callbacks existentes `updateSegment`/`updateExpenses`.
@@ -84,7 +84,7 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 ## Resto del mapa y aplicación
 
 - `AppWorkspaceMenu` conserva su anclaje flotante y el colapso completo del módulo izquierdo sigue liberando el mapa.
-- Los overlays de nota, detalles y búsqueda permanecen por debajo del header fijo y a la derecha del panel cuando corresponde.
+- Los overlays de nota, detalles y búsqueda permanecen por debajo del header fijo y a la derecha del ancho real del panel activo. En Itinerario se recalculan a partir de 34 px + 426 px + 14 px de gutter.
 - El selector `KM / MI` reutiliza `topmenu`, `topitem`, `dropdown` y `dropdown__opt`.
 - La instalación PWA sólo aparece cuando el navegador emite `beforeinstallprompt`.
 - La búsqueda de lugares conserva sus componentes y proveedores actuales; seleccionar una sugerencia enfoca su resultado y la confirmación permanece anclada al marcador.
@@ -98,8 +98,8 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - La distancia permanece como cálculo local lineal sobre los trayectos.
 - El formulario de gastos reutiliza `segment.expenses`/`originDetails.expenses`; mantenerlo en el modal no añade writers, timers, colecciones, mutaciones o provider requests.
 - Sólo se monta el formulario detallado del target activo; las otras filas permanecen compactas y no mantienen editores de gastos ocultos en el DOM.
-- El scrollbar visible es presentación únicamente: no recorta, reordena ni transforma `trip.segments` y no introduce paginación, virtualización ni un segundo estado de dominio.
-- El formateo de moneda y fechas de la fila es local mediante `Intl.NumberFormat`/`toLocaleDateString`; no modifica números o fechas canónicas persistidas ni introduce consultas.
+- El scrollbar visible y el ancho específico del Itinerario son presentación únicamente: no recortan, reordenan ni transforman `trip.segments` y no introducen paginación, virtualización ni un segundo estado de dominio.
+- El formateo de moneda de la fila es local mediante `Intl.NumberFormat`; eliminar la fecha del resumen evita trabajo de presentación pero no modifica las fechas canónicas persistidas.
 - La sanitización de importes, validación de fechas y formato siguen siendo funciones locales deterministas.
 - La proyección enviada al mapa contiene únicamente los campos que afectan representación; editar fechas o costos no debe recrear rutas/marcadores si la proyección cartográfica no cambia.
 - Storage v4, Firestore Rules, Functions, App Check, migraciones, providers y autosave conservan exactamente sus rutas actuales.

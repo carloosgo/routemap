@@ -20,7 +20,7 @@ test('origin y destination usan ciudad seleccionada de una sola linea a 13px/600
   assert.doesNotMatch(origin, /itinerary-origin__country/);
 });
 
-test('timeline preserves flag geometry and gives date cost and actions independent tracks', async () => {
+test('timeline preserves flag geometry and gives cost and actions independent tracks', async () => {
   const header = await read('src/modules/trips/SegmentHeader.jsx');
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const css = await read('src/modules/trips/ItineraryTimeline.css');
@@ -28,14 +28,13 @@ test('timeline preserves flag geometry and gives date cost and actions independe
 
   assert.match(header, /className="itinerary-stop__metrics"/);
   assert.match(css, /\.itinerary-origin__marker img,[\s\S]*\.itinerary-stop__marker img[\s\S]*width:\s*30px;[\s\S]*height:\s*20px;/);
-  assert.match(header, /itinerary-stop__dates[\s\S]*itinerary-stop__date-line[\s\S]*itinerary-stop__amount/);
-  assert.match(origin, /itinerary-stop__dates[\s\S]*itinerary-stop__date-line[\s\S]*itinerary-stop__amount/);
-  assert.doesNotMatch(header, /itinerary-stop__nights|segment__pill/);
-  assert.doesNotMatch(origin, /itinerary-stop__nights|segment__pill/);
+  assert.doesNotMatch(header, /itinerary-stop__dates|itinerary-stop__date-line|itinerary-stop__nights|segment__pill/);
+  assert.doesNotMatch(origin, /itinerary-stop__dates|itinerary-stop__date-line|itinerary-stop__nights|segment__pill/);
+  assert.match(header, /itinerary-stop__amount/);
+  assert.match(origin, /itinerary-stop__amount/);
   assert.match(compact, /grid-template-columns:\s*18px 30px 126px minmax\(0, 1fr\);/);
-  assert.match(compact, /grid-template-columns:\s*58px minmax\(94px, 1fr\) 22px 22px 22px;/);
-  assert.match(compact, /\.itinerary-stop__dates\s*\{[^}]*color:\s*#3d3d3d;[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;/s);
-  assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*color:\s*#117b80;[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;/s);
+  assert.match(compact, /grid-template-columns:\s*110px 22px 22px 22px;/);
+  assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*110px;[^}]*color:\s*#117b80;[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;/s);
 });
 
 test('origin mirrors note expand close controls while expand still opens the separate details module', async () => {
@@ -47,9 +46,8 @@ test('origin mirrors note expand close controls while expand still opens the sep
 
   assert.match(form, /import '\.\/ItineraryCompactTen\.css';/);
   assert.match(origin, /itinerary-stop__metrics itinerary-origin__metrics/);
-  assert.match(origin, /itinerary-stop__dates/);
   assert.match(origin, /itinerary-stop__amount/);
-  assert.doesNotMatch(origin, /itinerary-stop__nights/);
+  assert.doesNotMatch(origin, /itinerary-stop__dates|itinerary-stop__nights/);
   assert.match(origin, /segment__note-btn itinerary-origin__note-btn/);
   assert.match(origin, /segment__toggle segment__details-btn itinerary-origin__details-btn/);
   assert.match(origin, /itinerary-origin__clear/);
@@ -57,7 +55,7 @@ test('origin mirrors note expand close controls while expand still opens the sep
   assert.match(header, /segment__toggle segment__details-btn itinerary-stop__details-btn/);
   assert.match(header, /IconChevronDown/);
   assert.doesNotMatch(origin, /IconChevronRight|IconChevronUp|aria-expanded|aria-controls/);
-  assert.doesNotMatch(compact, /height:\s*48px;[^}]*background:\s*var\(--atlas-accent\)/s);
+  assert.doesNotMatch(compact, /height:\s*40px;[^}]*background:\s*var\(--atlas-accent\)/s);
   assert.match(modal, /<OriginBody/);
   assert.match(modal, /<SegmentBody/);
 });
