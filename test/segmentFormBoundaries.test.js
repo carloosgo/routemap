@@ -6,7 +6,7 @@ const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 const lineCount = (content) => content.split('\n').length;
 
-test('SegmentForm coordina filas compactas y el modal posee la edición detallada', async () => {
+test('SegmentForm coordina filas compactas sin fecha visible y el modal posee la edición detallada', async () => {
   const form = await read('src/modules/trips/SegmentForm.jsx');
   const originSection = await read('src/modules/trips/SegmentOriginSection.jsx');
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
@@ -21,30 +21,32 @@ test('SegmentForm coordina filas compactas y el modal posee la edición detallad
   assert.ok(lineCount(form) <= 130, `SegmentForm.jsx volvió a crecer a ${lineCount(form)} líneas`);
   assert.match(form, /<SegmentOriginSection/);
   assert.match(form, /<SegmentHeader/);
+  assert.match(form, /currency=\{currency\}/);
   assert.match(form, /onDestinationSelect=\{\(destination\) => onUpdate\(\{ destination \}\)\}/);
   assert.match(form, /<SegmentDeleteDialog/);
   assert.match(form, /onOpenDetails=\{openSegmentDetails\}/);
-  assert.match(form, /formatSegmentAmount/);
-  assert.match(form, /formatSegmentDates/);
+  assert.match(form, /formatSegmentAmount\(segmentTotal\(segment\), locale, currency\)/);
   assert.match(form, /formatSegmentNights/);
-  assert.doesNotMatch(form, /<SegmentBody|CollapsibleRegion|expanded=|onToggle=|CityAutocomplete|CalendarDateInput|ExpenseEditor|ConfirmDialog|IconChevronDown|<ItineraryOrigin|<OriginBody|useExpandedSegmentReveal|scrollIntoView/);
+  assert.doesNotMatch(form, /formatSegmentDates|formattedDates|<SegmentBody|CollapsibleRegion|expanded=|onToggle=|CityAutocomplete|CalendarDateInput|ExpenseEditor|ConfirmDialog|IconChevronDown|<ItineraryOrigin|<OriginBody|useExpandedSegmentReveal|scrollIntoView/);
 
   assert.match(originSection, /<ItineraryOrigin/);
   assert.match(originSection, /onSelect=\{\(origin\) => onUpdate\(\{ origin \}\)\}/);
   assert.match(originSection, /onOpenDetails=\{onOpenDetails\}/);
   assert.match(originSection, /originDetails/);
-  assert.doesNotMatch(originSection, /<OriginBody|CollapsibleRegion|useState/);
+  assert.match(originSection, /formatSegmentAmount\([\s\S]*locale,[\s\S]*currency/);
+  assert.doesNotMatch(originSection, /formatSegmentDate|formattedDate|<OriginBody|CollapsibleRegion|useState/);
 
   assert.doesNotMatch(origin, /itinerary-start-flag\.svg/);
   assert.match(origin, /CityAutocomplete/);
   assert.match(origin, /value=\{city\}/);
-  assert.match(origin, /segment__details-btn itinerary-origin__details-btn/);
+  assert.match(origin, /segment__toggle segment__details-btn itinerary-origin__details-btn/);
+  assert.doesNotMatch(origin, /itinerary-stop__dates|segment__pill/);
   assert.match(header, /segment__header itinerary-stop/);
   assert.match(header, /CityAutocomplete/);
   assert.match(header, /value=\{destination\}/);
   assert.match(header, /onSelect=\{onDestinationSelect\}/);
-  assert.match(header, /segment__details-btn itinerary-stop__details-btn/);
-  assert.doesNotMatch(header, /aria-controls|aria-expanded|segment__toggle/);
+  assert.match(header, /segment__toggle segment__details-btn itinerary-stop__details-btn/);
+  assert.doesNotMatch(header, /itinerary-stop__dates|segment__pill|aria-controls|aria-expanded/);
 
   assert.match(modal, /<SegmentBody/);
   assert.match(modal, /<OriginBody/);

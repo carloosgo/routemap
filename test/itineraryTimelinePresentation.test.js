@@ -22,21 +22,24 @@ test('origin y destination soportan presentación seleccionada de dos líneas', 
   assert.match(originCss, /\.itinerary-origin__picker \.autocomplete__selected-value\s*\{[\s\S]*-webkit-line-clamp:\s*2;[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*700;/);
 });
 
-test('timeline preserves city and flag geometry while compact view standardizes both pills to 56px', async () => {
+test('timeline preserves city and flag geometry while compact view shows only plain nights and cost', async () => {
   const header = await read('src/modules/trips/SegmentHeader.jsx');
+  const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const css = await read('src/modules/trips/ItineraryTimeline.css');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
 
   assert.match(header, /className="itinerary-stop__metrics"/);
   assert.match(css, /\.itinerary-stop__place\s*\{[\s\S]*max-width:\s*106px;/);
   assert.match(css, /\.itinerary-origin__marker img,[\s\S]*\.itinerary-stop__marker img[\s\S]*width:\s*30px;[\s\S]*height:\s*20px;/);
-  assert.match(css, /\.itinerary-stop__dates\s*\{[\s\S]*width:\s*42px;[\s\S]*font-size:\s*11\.5px;/);
-  assert.match(compact, /grid-template-columns:\s*42px 56px 56px 22px 22px 18px;/);
-  assert.match(compact, /\.itinerary-stop__nights\.segment__pill,[\s\S]*\.itinerary-stop__amount\.segment__pill\s*\{[^}]*width:\s*56px\s*!important;[^}]*min-width:\s*56px\s*!important;[^}]*max-width:\s*56px\s*!important;/s);
+  assert.doesNotMatch(header, /itinerary-stop__dates|segment__pill/);
+  assert.doesNotMatch(origin, /itinerary-stop__dates|segment__pill/);
+  assert.match(compact, /grid-template-columns:\s*76px 92px 22px 22px 22px;/);
+  assert.match(compact, /\.itinerary-stop__nights,[\s\S]*\.itinerary-stop__amount\s*\{[^}]*background:\s*transparent\s*!important;[^}]*font-size:\s*13px;/s);
 });
 
-test('origin mirrors itinerary controls and uses the same blue details drawer instead of inline chevrons', async () => {
+test('origin mirrors note expand close controls while expand still opens the separate details module', async () => {
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
+  const header = await read('src/modules/trips/SegmentHeader.jsx');
   const form = await read('src/modules/trips/SegmentForm.jsx');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
   const modal = await read('src/modules/trips/ItineraryDetailsModal.jsx');
@@ -46,11 +49,13 @@ test('origin mirrors itinerary controls and uses the same blue details drawer in
   assert.match(origin, /itinerary-stop__nights/);
   assert.match(origin, /itinerary-stop__amount/);
   assert.match(origin, /segment__note-btn itinerary-origin__note-btn/);
+  assert.match(origin, /segment__toggle segment__details-btn itinerary-origin__details-btn/);
   assert.match(origin, /itinerary-origin__clear/);
-  assert.match(origin, /segment__details-btn itinerary-origin__details-btn/);
-  assert.match(origin, /IconChevronRight/);
-  assert.doesNotMatch(origin, /IconChevronUp|IconChevronDown|aria-expanded|itinerary-origin__toggle/);
-  assert.match(compact, /\.segment__details-btn\s*\{[^}]*height:\s*48px;[^}]*background:\s*var\(--atlas-accent\);/s);
+  assert.match(origin, /IconChevronDown/);
+  assert.match(header, /segment__toggle segment__details-btn itinerary-stop__details-btn/);
+  assert.match(header, /IconChevronDown/);
+  assert.doesNotMatch(origin, /IconChevronRight|IconChevronUp|aria-expanded|aria-controls/);
+  assert.doesNotMatch(compact, /height:\s*48px;[^}]*background:\s*var\(--atlas-accent\)/s);
   assert.match(modal, /<OriginBody/);
   assert.match(modal, /<SegmentBody/);
 });

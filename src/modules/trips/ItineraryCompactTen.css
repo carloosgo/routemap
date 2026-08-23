@@ -4,24 +4,8 @@
    ritmo entre filas y en la distribución posterior a la ciudad. */
 
 @media (min-width: 721px) {
-  /* Siete filas de 48 px + respiración exterior + acción Agregar trayecto. */
-  .workspace-panel:has(.editor-module--itinerary) {
-    top: calc(50% + 31.5px);
-    bottom: auto;
-    height: min(
-      calc(100% - var(--trip-header-height) - 28px),
-      396px
-    );
-    transform: translateY(-50%);
-  }
-
-  .workspace__desktop--column.is-panel-collapsed .workspace-panel:has(.editor-module--itinerary) {
-    transform: translate(calc(-100% - 14px), -50%);
-  }
-
-  /* La lista sigue pudiendo desplazarse si un viaje heredado contiene más
-     filas, pero nunca muestra una barra. En la vista objetivo caben siete
-     entradas contando el origen. */
+  /* Itinerario deja de imponer una altura propia: hereda exactamente el mismo
+     top/bottom del panel flotante que usan Mis Rutas y Notas. */
   .editor-module--itinerary .editor__body {
     overflow-y: auto;
     overflow-x: hidden;
@@ -66,8 +50,8 @@
     padding-bottom: 0 !important;
   }
 
-  /* Después de ciudad todas las filas comparten exactamente la misma retícula:
-     fecha / noches / costo / nota / eliminar / pestaña de detalle. */
+  /* La fecha desaparece del resumen. Después de ciudad todas las filas usan
+     la misma retícula: Noches / Costo / Nota / Desplegar / Cerrar. */
   .editor-module.editor-module--itinerary .itinerary-stop__after-place,
   .segments:not(.segments--compact) .itinerary-origin__after-place {
     box-sizing: border-box;
@@ -75,10 +59,10 @@
     min-width: 0;
     padding-left: 4px;
     display: grid;
-    grid-template-columns: 42px 56px 56px 22px 22px 18px;
+    grid-template-columns: 76px 92px 22px 22px 22px;
     align-items: center;
     justify-content: space-between;
-    column-gap: 0;
+    column-gap: 6px;
   }
 
   .editor-module.editor-module--itinerary .itinerary-stop__metrics,
@@ -86,31 +70,40 @@
     display: contents;
   }
 
-  .editor-module.editor-module--itinerary .itinerary-stop__dates,
-  .segments:not(.segments--compact) .itinerary-origin .itinerary-stop__dates {
+  /* Noches y costo son texto plano: sin pill, fondo, borde, radio ni caja
+     forzada. Sus tracks sí son constantes para mantener todas las filas
+     perfectamente alineadas incluso cuando cambian los valores. */
+  .editor-module--itinerary .itinerary-stop__nights,
+  .editor-module--itinerary .itinerary-stop__amount {
     box-sizing: border-box;
-    width: 42px;
-    min-width: 42px;
-    max-width: 42px;
-    padding-left: 0;
-  }
-
-  /* Noches y costo son dos cajas estandarizadas de 56 px. No flexionan, no
-     crecen con el texto y no heredan el antiguo min-width de 58 px. */
-  .editor-module--itinerary .itinerary-stop__nights.segment__pill,
-  .editor-module--itinerary .itinerary-stop__amount.segment__pill {
-    box-sizing: border-box;
-    width: 56px !important;
-    min-width: 56px !important;
-    max-width: 56px !important;
-    height: 22px;
-    padding: 3px 4px;
-    justify-self: start;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    height: auto;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent !important;
+    box-shadow: none;
+    color: #8b929e;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.2;
+    text-align: left;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
+  .editor-module--itinerary .itinerary-stop__nights.is-placeholder {
+    color: #b3b8c1;
+  }
+
+  /* Nota, desplegar y cerrar recuperan el control icon-only de 22 px que
+     existía antes de la franja azul. Desplegar conserva el nuevo destino:
+     abre el formulario en el módulo flotante sobre el mapa. */
   .editor-module.editor-module--itinerary .itinerary-stop__after-place > .btn--icon,
   .segments:not(.segments--compact) .itinerary-origin__after-place > .btn--icon {
     width: 22px;
@@ -119,33 +112,20 @@
     padding: 0;
   }
 
-  /* La franja azul sustituye al antiguo chevron. Se extiende hasta el borde
-     derecho del card (8 px de padding del editor) y ocupa la altura completa
-     de la fila sin alterar ninguna otra dimensión. */
   .editor-module--itinerary .segment__details-btn {
-    box-sizing: border-box;
-    align-self: stretch;
-    justify-self: end;
-    width: 18px;
-    min-width: 18px;
-    height: 48px;
-    margin: 0 -8px 0 0;
-    padding: 0;
-    display: grid;
-    place-items: center;
+    margin: 0;
     border: 0;
     border-radius: 0;
-    background: var(--atlas-accent);
-    color: #ffffff;
-    cursor: pointer;
+    background: transparent;
+    color: #a1a7b0;
     box-shadow: none;
   }
 
   .editor-module--itinerary .segment__details-btn:hover,
   .editor-module--itinerary .segment__details-btn:focus-visible {
-    background: var(--atlas-accent);
-    color: #ffffff;
-    filter: brightness(0.94);
+    background: #f4f5f7;
+    color: #586170;
+    filter: none;
     outline: none;
   }
 

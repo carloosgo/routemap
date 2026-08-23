@@ -200,6 +200,7 @@ export function AppEditorPane({
                       segment={segment}
                       index={index}
                       locale={intlLocale}
+                      currency={trip.currency}
                       originDetails={trip.originDetails}
                       dragging={dragState?.segmentId === segment.id}
                       dragOffsetY={dragState?.segmentId === segment.id ? dragState.offsetY : 0}
