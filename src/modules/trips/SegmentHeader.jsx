@@ -1,6 +1,5 @@
 import {
-  IconChevronDown,
-  IconChevronUp,
+  IconChevronRight,
   IconGripVertical,
   IconNote,
   IconX,
@@ -15,12 +14,10 @@ export function SegmentHeader({
   formattedDates,
   formattedNights,
   formattedAmount,
-  expanded,
   dragging,
-  bodyId,
-  onToggle,
   onDestinationSelect,
   onOpenNote,
+  onOpenDetails,
   onRemoveRequest,
   onReorderPointerStart,
 }) {
@@ -105,26 +102,21 @@ export function SegmentHeader({
 
         <button
           type="button"
-          className="btn btn--icon segment__toggle"
-          aria-label={expanded ? t('collapse') : t('expand')}
-          aria-expanded={expanded}
-          aria-controls={bodyId}
-          onClick={onToggle}
-        >
-          {expanded ? (
-            <IconChevronUp size={14} aria-hidden="true" />
-          ) : (
-            <IconChevronDown size={14} aria-hidden="true" />
-          )}
-        </button>
-
-        <button
-          type="button"
           className="btn btn--icon"
           aria-label={t('removeSegment')}
           onClick={onRemoveRequest}
         >
           <IconX size={14} aria-hidden="true" />
+        </button>
+
+        <button
+          type="button"
+          className="segment__details-btn itinerary-stop__details-btn"
+          aria-label={t('openSegmentDetails')}
+          title={t('openSegmentDetails')}
+          onClick={onOpenDetails}
+        >
+          <IconChevronRight size={14} stroke={2.2} aria-hidden="true" />
         </button>
       </div>
     </header>
