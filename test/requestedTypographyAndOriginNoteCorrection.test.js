@@ -6,11 +6,13 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('only the six header summary cards use the requested scale and their override loads after canonical header styles', async () => {
+test('header summary typography remains isolated and origin no longer has a special smaller hierarchy', async () => {
   const header = await read('src/app/TripSummaryHeaderTypography.css');
   const tripHeader = await read('src/app/TripSummaryHeader.jsx');
   const main = await read('src/main.jsx');
   const correction = await read('src/modules/trips/ItineraryCorrectionPolish.css');
+  const originOptions = await read('src/modules/trips/OriginOptions.css');
+  const timeline = await read('src/modules/trips/ItineraryTimeline.css');
 
   assert.match(header, /\.trip-summary__metric-label\s*\{[^}]*font-size:\s*11px;/s);
   assert.match(header, /\.trip-summary__metric-value,[\s\S]*font-size:\s*14px;/);
@@ -22,14 +24,17 @@ test('only the six header summary cards use the requested scale and their overri
     'la escala solicitada debe cargarse después del stylesheet canónico del header'
   );
 
+  assert.doesNotMatch(correction, /itinerary-origin__picker \.autocomplete__selected-value/);
+  assert.doesNotMatch(correction, /itinerary-origin__country/);
   assert.match(
-    correction,
-    /itinerary-origin__picker \.autocomplete__selected-value[\s\S]*color:\s*#5f6875;[\s\S]*font-size:\s*12\.5px;[\s\S]*font-weight:\s*500;/
+    originOptions,
+    /itinerary-origin__picker \.autocomplete__selected-value[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*700;/
   );
   assert.match(
-    correction,
-    /itinerary-origin__country[\s\S]*font-size:\s*10\.5px;[\s\S]*font-weight:\s*400;/
+    timeline,
+    /itinerary-origin__country,[\s\S]*itinerary-stop__country[\s\S]*font-size:\s*9\.5px;[\s\S]*font-weight:\s*500;/
   );
+
   assert.match(correction, /moneycard__label,[\s\S]*font-size:\s*13px;/);
   assert.match(correction, /moneycard__input,[\s\S]*font-size:\s*12px;/);
   assert.match(correction, /moneycard__currency,[\s\S]*font-size:\s*11px;/);
@@ -112,7 +117,7 @@ test('origin and segment notes share one toggle path and the same outside-click 
   assert.match(map, /data-persistence-state=\{persistenceState\}/);
 });
 
-test('desktop itinerary uses the seven-city natural-scale viewport instead of the former ten-country compact density', async () => {
+test('desktop itinerary uses seven equal rows, hides the scrollbar chrome and centers the floating card', async () => {
   const correction = await read('src/modules/trips/ItineraryCorrectionPolish.css');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
   const floatingEditor = await read('src/app/FloatingEditor.css');
@@ -120,12 +125,15 @@ test('desktop itinerary uses the seven-city natural-scale viewport instead of th
   assert.doesNotMatch(correction, /scrollbar-gutter:\s*stable/);
   assert.match(
     compact,
-    /\.workspace-panel:has\(\.editor-module--itinerary\)\s*\{[^}]*bottom:\s*auto;[^}]*506px/s
+    /\.workspace-panel:has\(\.editor-module--itinerary\)\s*\{[^}]*top:\s*calc\(50% \+ 31\.5px\);[^}]*transform:\s*translateY\(-50%\);/s
   );
   assert.match(
     compact,
-    /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*overflow-x:\s*hidden;[^}]*scrollbar-gutter:\s*auto;/s
+    /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-width:\s*none;[^}]*padding-top:\s*0;/s
   );
+  assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
+  assert.match(compact, /min-height:\s*62px;[^}]*height:\s*62px;/s);
+  assert.match(compact, /grid-template-columns:\s*42px max-content max-content;/);
   assert.doesNotMatch(compact, /min-height:\s*44px|height:\s*18px|height:\s*20px/);
   assert.doesNotMatch(floatingEditor, /Densidad compacta nativa|reproduce la sensación del navegador al 90%/);
 });

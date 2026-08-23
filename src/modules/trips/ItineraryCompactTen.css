@@ -1,22 +1,87 @@
-/* Límite visual del itinerario en escritorio.
-   La ciudad de origen cuenta como la primera de las 7 entradas visibles.
-   A diferencia de la iteración anterior, este archivo NO compacta filas,
-   banderas, iconos, textos, inputs ni pills: conserva la escala natural del
-   sistema y limita únicamente la altura útil del card flotante. Cuando hay
-   más contenido, el scroll sigue perteneciendo al editor canónico. */
+/* Vista de siete entradas del itinerario en escritorio.
+   La ciudad de origen cuenta como la primera fila y comparte exactamente el
+   mismo ritmo vertical que cualquier destino. No se miniaturizan banderas,
+   iconos, textos, inputs ni pills. */
 
 @media (min-width: 721px) {
+  /* El card se centra en el área útil situada bajo el header global de 63 px.
+     Mantiene la altura máxima existente, pero deja de quedar pegado arriba. */
   .workspace-panel:has(.editor-module--itinerary) {
+    top: calc(50% + 31.5px);
     bottom: auto;
     height: min(
       calc(100% - var(--trip-header-height) - 28px),
       506px
     );
+    transform: translateY(-50%);
   }
 
+  .workspace__desktop--column.is-panel-collapsed .workspace-panel:has(.editor-module--itinerary) {
+    transform: translate(calc(-100% - 14px), -50%);
+  }
+
+  /* Se conserva el scroll funcional para contenido expandido o viajes antiguos
+     con más entradas, pero su barra visual desaparece por completo. */
   .editor-module--itinerary .editor__body {
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-gutter: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-top: 0;
+    padding-bottom: 8px;
+  }
+
+  .editor-module--itinerary .editor__body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+
+  .segments:not(.segments--compact) {
+    padding-top: 0;
+  }
+
+  /* Origen y destino usan una fila real de 62 px. Se eliminan el margen extra
+     del origen y el padding inferior de los segmentos que antes desplazaban el
+     contenido hacia la línea superior. */
+  .segments:not(.segments--compact) .itinerary-origin-section {
+    margin: 0;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin,
+  .editor-module.editor-module--itinerary .itinerary-segment .segment__header.itinerary-stop {
+    box-sizing: border-box;
+    min-height: 62px;
+    height: 62px;
+    margin: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    align-items: center;
+  }
+
+  .itinerary-segment.segment,
+  .itinerary-segment:last-child {
+    padding-bottom: 0 !important;
+  }
+
+  /* Las métricas conservan la guía de 186 px para no mover nota/chevron/cerrar,
+     pero Noches y Costo recuperan ancho natural en vez de cajas gemelas de 66 px. */
+  .itinerary-stop__metrics,
+  .segments:not(.segments--compact) .itinerary-origin__metrics {
+    grid-template-columns: 42px max-content max-content;
+    justify-content: start;
+    align-items: center;
+    column-gap: 6px;
+  }
+
+  .itinerary-stop__nights.segment__pill,
+  .itinerary-stop__amount.segment__pill {
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    padding-left: 7px;
+    padding-right: 7px;
+    justify-self: start;
   }
 }

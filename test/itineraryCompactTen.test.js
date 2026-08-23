@@ -6,31 +6,49 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('desktop itinerary shows seven natural-scale entries without the old 90-percent density overrides', async () => {
+test('desktop itinerary keeps seven natural rows aligned, centered and without a visible scrollbar', async () => {
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
   const floatingEditor = await read('src/app/FloatingEditor.css');
   const form = await read('src/modules/trips/SegmentForm.jsx');
   const correction = await read('src/modules/trips/ItineraryCorrectionPolish.css');
+  const timeline = await read('src/modules/trips/ItineraryTimeline.css');
+  const origin = await read('src/modules/trips/OriginOptions.css');
 
   assert.match(compact, /@media \(min-width:\s*721px\)/);
   assert.match(
     compact,
-    /\.workspace-panel:has\(\.editor-module--itinerary\)\s*\{[^}]*bottom:\s*auto;[^}]*height:\s*min\([\s\S]*506px[\s\S]*\);/s
+    /\.workspace-panel:has\(\.editor-module--itinerary\)\s*\{[^}]*top:\s*calc\(50% \+ 31\.5px\);[^}]*bottom:\s*auto;[^}]*506px[\s\S]*transform:\s*translateY\(-50%\);/s
   );
   assert.match(
     compact,
-    /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*overflow-x:\s*hidden;[^}]*scrollbar-gutter:\s*auto;/s
+    /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-width:\s*none;[^}]*padding-top:\s*0;[^}]*padding-bottom:\s*8px;/s
+  );
+  assert.match(compact, /\.editor-module--itinerary \.editor__body::-webkit-scrollbar\s*\{[^}]*display:\s*none;/s);
+
+  /* Origen y destinos deben ocupar la misma banda vertical. */
+  assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
+  assert.match(
+    compact,
+    /\.itinerary-origin,[\s\S]*segment__header\.itinerary-stop\s*\{[^}]*min-height:\s*62px;[^}]*height:\s*62px;[^}]*align-items:\s*center;/s
+  );
+  assert.match(compact, /\.itinerary-segment\.segment,[\s\S]*padding-bottom:\s*0\s*!important;/s);
+
+  /* Noches y Costo mantienen la guía de métricas pero recuperan ancho natural. */
+  assert.match(compact, /grid-template-columns:\s*42px max-content max-content;/);
+  assert.match(
+    compact,
+    /\.itinerary-stop__nights\.segment__pill,[\s\S]*\.itinerary-stop__amount\.segment__pill\s*\{[^}]*width:\s*auto;[^}]*min-width:\s*0;[^}]*max-width:\s*none;/s
   );
 
-  /* La prueba anterior aplanaba toda la interfaz para imitar zoom 90%. Esa
-     densidad ya no puede volver: el sizing normal vive en los estilos base. */
-  assert.doesNotMatch(compact, /min-height:\s*44px|height:\s*18px|height:\s*20px|padding-bottom:\s*2px\s*!important/);
+  /* La densidad artificial del 90% y la jerarquía especial del origen no vuelven. */
   assert.doesNotMatch(floatingEditor, /Densidad compacta nativa|reproduce la sensación del navegador al 90%/);
   assert.doesNotMatch(floatingEditor, /\.floating-editor \.segment__badge|\.floating-editor \.segment__header \.btn--icon svg|\.floating-editor \.segment__pill/);
+  assert.doesNotMatch(correction, /itinerary-origin__picker \.autocomplete__selected-value|itinerary-origin__country/);
+  assert.match(origin, /itinerary-origin__picker \.autocomplete__selected-value[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*700;/);
+  assert.match(timeline, /itinerary-origin__country,[\s\S]*itinerary-stop__country[\s\S]*font-size:\s*9\.5px;[\s\S]*font-weight:\s*500;/);
 
   assert.match(form, /import '\.\/ItineraryCompactTen\.css';/);
   assert.doesNotMatch(form, /useExpandedSegmentReveal|scrollIntoView/);
-  assert.doesNotMatch(correction, /scrollbar-gutter:\s*stable|scroll-margin-block/);
 });
 
 test('ticket picos use solid Atlas-blue triangles on a continuous white card', async () => {
