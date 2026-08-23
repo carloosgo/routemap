@@ -6,13 +6,13 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('header summary typography remains isolated and origin shares destination hierarchy', async () => {
+test('header typography stays isolated while itinerary city text matches note/search weight', async () => {
   const header = await read('src/app/TripSummaryHeaderTypography.css');
   const tripHeader = await read('src/app/TripSummaryHeader.jsx');
   const main = await read('src/main.jsx');
   const correction = await read('src/modules/trips/ItineraryCorrectionPolish.css');
-  const originOptions = await read('src/modules/trips/OriginOptions.css');
-  const timeline = await read('src/modules/trips/ItineraryTimeline.css');
+  const compact = await read('src/modules/trips/ItineraryCompactTen.css');
+  const appCss = await read('src/App.css');
 
   assert.match(header, /\.trip-summary__metric-label\s*\{[^}]*font-size:\s*11px;/s);
   assert.match(header, /\.trip-summary__metric-value,[\s\S]*font-size:\s*14px;/);
@@ -24,9 +24,9 @@ test('header summary typography remains isolated and origin shares destination h
   );
 
   assert.doesNotMatch(correction, /itinerary-origin__picker \.autocomplete__selected-value/);
-  assert.doesNotMatch(correction, /itinerary-origin__country/);
-  assert.match(originOptions, /itinerary-origin__picker \.autocomplete__selected-value[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*700;/);
-  assert.match(timeline, /itinerary-origin__country,[\s\S]*itinerary-stop__country[\s\S]*font-size:\s*9\.5px;[\s\S]*font-weight:\s*500;/);
+  assert.match(compact, /autocomplete__selected-value[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*600;/s);
+  assert.match(appCss, /\.segnote__title\s*\{[^}]*font-size:\s*13px;[^}]*font-weight:\s*600;/s);
+  assert.match(appCss, /\.autocomplete__name\s*\{[^}]*font-size:\s*13px;[^}]*font-weight:\s*600;/s);
   assert.match(correction, /moneycard__label,[\s\S]*font-size:\s*13px;/);
   assert.match(correction, /moneycard__input,[\s\S]*font-size:\s*12px;/);
   assert.match(correction, /moneycard__currency,[\s\S]*font-size:\s*11px;/);
@@ -108,7 +108,7 @@ test('origin and segment notes keep one toggle path while details use the parall
   assert.match(map, /data-persistence-state=\{persistenceState\}/);
 });
 
-test('desktop itinerary uses plain metrics and the same floating-panel height as routes and notes', async () => {
+test('desktop itinerary keeps plain metrics readable and actions uniformly spaced', async () => {
   const correction = await read('src/modules/trips/ItineraryCorrectionPolish.css');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
   const floating = await read('src/app/FloatingItineraryPanel.css');
@@ -120,8 +120,9 @@ test('desktop itinerary uses plain metrics and the same floating-panel height as
   assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-width:\s*none;[^}]*padding-top:\s*6px;/s);
   assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
   assert.match(compact, /min-height:\s*48px;[^}]*height:\s*48px;/s);
-  assert.match(compact, /grid-template-columns:\s*76px 92px 22px 22px 22px;/);
-  assert.match(compact, /background:\s*transparent\s*!important;[\s\S]*font-size:\s*13px;/);
-  assert.doesNotMatch(compact, /56px\s*!important|background:\s*var\(--atlas-accent\)/);
+  assert.match(compact, /grid-template-columns:\s*64px minmax\(86px, 1fr\) 22px 22px 22px;/);
+  assert.match(compact, /column-gap:\s*4px;/);
+  assert.match(compact, /font-size:\s*13px;[\s\S]*font-weight:\s*400;/);
+  assert.doesNotMatch(compact, /justify-content:\s*space-between|56px\s*!important|background:\s*var\(--atlas-accent\)/);
   assert.doesNotMatch(floatingEditor, /Densidad compacta nativa|reproduce la sensación del navegador al 90%/);
 });
