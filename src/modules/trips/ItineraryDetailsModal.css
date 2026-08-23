@@ -1,0 +1,60 @@
+/* El editor de fechas/gastos usa la misma superficie flotante de las notas,
+   pero con ancho suficiente para conservar la rejilla canónica de dos columnas.
+   El contenido no vive dentro de la fila: así dropdowns/calendarios no alteran
+   la altura compacta del itinerario. */
+.segment-details-modal {
+  width: min(
+    430px,
+    calc(100% - var(--workspace-panel-width, 458px) - 42px)
+  );
+  min-width: 360px;
+  max-height: calc(100% - var(--trip-header-height, 63px) - 24px);
+  overflow: hidden;
+}
+
+.segment-details-modal__content {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+}
+
+.segment-details-modal .segment__body,
+.segment-details-modal .itinerary-origin__body {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 14px 14px 16px !important;
+  border: 0 !important;
+  border-radius: 0;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.segment-details-modal .itinerary-origin__body .dates--origin .dates__row {
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--expense-column-gap);
+}
+
+.segment-details-modal .itinerary-origin__body .dates--origin .calendar-date {
+  grid-column: 1;
+}
+
+@media (max-width: 980px) and (min-width: 721px) {
+  .segment-details-modal {
+    min-width: 320px;
+    width: calc(100% - var(--workspace-panel-width, 458px) - 42px);
+  }
+}
+
+@media (max-width: 720px) {
+  .segment-details-modal {
+    left: 12px !important;
+    right: 12px;
+    width: auto;
+    min-width: 0;
+    max-height: calc(100% - 24px);
+  }
+}
