@@ -27,7 +27,7 @@ test('desktop itinerary keeps compact equal rows, plain metrics and the same pan
   assert.doesNotMatch(compact, /itinerary-stop__marker\s*\{[^}]*width|itinerary-stop__place\s*\{[^}]*max-width/s);
 
   assert.match(compact, /grid-template-columns:\s*76px 92px 22px 22px 22px;/);
-  assert.match(compact, /\.itinerary-stop__nights,[\s\S]*\.itinerary-stop__amount\s*\{[^}]*background:\s*transparent\s*!important;[^}]*border:\s*0;[^}]*font-size:\s*13px;/s);
+  assert.match(compact, /\.itinerary-stop__nights,[\s\S]*\.itinerary-stop__amount\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent\s*!important;[^}]*font-size:\s*13px;/s);
   assert.doesNotMatch(compact, /\.itinerary-stop__nights\.segment__pill|width:\s*56px\s*!important|background:\s*var\(--atlas-accent\)/);
 
   assert.doesNotMatch(floatingEditor, /Densidad compacta nativa|reproduce la sensación del navegador al 90%/);
