@@ -10,7 +10,8 @@ import './OriginOptions.css';
 
 export function ItineraryOrigin({
   city,
-  formattedNights,
+  formattedStartDate,
+  formattedEndDate,
   formattedAmount,
   hasNote,
   onSelect,
@@ -53,12 +54,9 @@ export function ItineraryOrigin({
 
       <div className="itinerary-stop__after-place itinerary-origin__after-place">
         <div className="itinerary-stop__metrics itinerary-origin__metrics">
-          <span
-            className={
-              'itinerary-stop__nights' + (!formattedNights ? ' is-placeholder' : '')
-            }
-          >
-            {formattedNights || t('nightsHint')}
+          <span className="itinerary-stop__dates" aria-label={`${formattedStartDate} – ${formattedEndDate}`}>
+            <span className="itinerary-stop__date-line">{formattedStartDate}</span>
+            <span className="itinerary-stop__date-line">{formattedEndDate}</span>
           </span>
           <span className="itinerary-stop__amount">{formattedAmount}</span>
         </div>

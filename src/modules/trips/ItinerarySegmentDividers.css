@@ -1,5 +1,6 @@
-/* Separadores horizontales discretos entre trayectos. El eje vertical de la
-   timeline permanece eliminado y ya no se dibujan picos laterales. */
+/* Separadores horizontales discretos entre trayectos. El eje vertical y los
+   picos laterales permanecen eliminados. Cada divisor empieza donde comienza
+   la bandera y termina donde acaba visualmente el icono de cerrar. */
 
 .segments:not(.segments--compact)::before {
   content: none;
@@ -11,8 +12,8 @@
   position: absolute;
   z-index: 1;
   top: -1px;
-  left: 0;
-  right: 0;
+  left: 24px;
+  right: 4px;
   height: 1px;
   background: repeating-linear-gradient(
     to right,

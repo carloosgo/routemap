@@ -4,7 +4,7 @@ import { SegmentDeleteDialog } from './SegmentDeleteDialog.jsx';
 import { SegmentHeader } from './SegmentHeader.jsx';
 import { SegmentOriginSection } from './SegmentOriginSection.jsx';
 import { ORIGIN_NOTE_TARGET } from './tripNoteTargets.js';
-import { formatSegmentAmount, formatSegmentNights } from './segmentFormModel.js';
+import { formatSegmentAmount, formatSegmentDate } from './segmentFormModel.js';
 import './ItineraryTimeline.css';
 import './ItineraryRequestedPolish.css';
 import './ItineraryCorrectionPolish.css';
@@ -44,7 +44,8 @@ export function SegmentForm({
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const formattedAmount = formatSegmentAmount(segmentTotal(segment), locale, currency);
-  const formattedNights = formatSegmentNights(segment, locale);
+  const formattedStartDate = formatSegmentDate(segment.startDate, locale) || '—';
+  const formattedEndDate = formatSegmentDate(segment.endDate, locale) || '—';
 
   const confirmRemove = () => {
     setConfirmOpen(false);
@@ -83,7 +84,8 @@ export function SegmentForm({
         <SegmentDropIndicator placement={dropPlacement} />
         <SegmentHeader
           segment={segment}
-          formattedNights={formattedNights}
+          formattedStartDate={formattedStartDate}
+          formattedEndDate={formattedEndDate}
           formattedAmount={formattedAmount}
           dragging={dragging}
           onDestinationSelect={(destination) => onUpdate({ destination })}

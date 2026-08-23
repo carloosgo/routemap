@@ -6,7 +6,7 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('desktop itinerary keeps compact equal rows, wider city text and unclipped plain metrics', async () => {
+test('desktop itinerary keeps equal rows, visible scrollbar, dates and unclipped cost', async () => {
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
   const floating = await read('src/app/FloatingItineraryPanel.css');
   const floatingEditor = await read('src/app/FloatingEditor.css');
@@ -18,8 +18,8 @@ test('desktop itinerary keeps compact equal rows, wider city text and unclipped 
   assert.match(compact, /@media \(min-width:\s*721px\)/);
   assert.doesNotMatch(compact, /workspace-panel:has\(\.editor-module--itinerary\)/);
   assert.match(floating, /\.workspace-panel\s*\{[^}]*top:\s*calc\(var\(--trip-header-height\) \+ 14px\);[^}]*bottom:\s*14px;/s);
-  assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-width:\s*none;[^}]*padding-top:\s*6px;[^}]*padding-bottom:\s*6px;/s);
-  assert.match(compact, /\.editor-module--itinerary \.editor__body::-webkit-scrollbar\s*\{[^}]*display:\s*none;/s);
+  assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;[^}]*scrollbar-width:\s*thin;[^}]*padding-top:\s*0;/s);
+  assert.match(compact, /\.editor-module--itinerary \.editor__body::-webkit-scrollbar\s*\{[^}]*width:\s*7px;[^}]*display:\s*block;/s);
 
   assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
   assert.match(compact, /\.itinerary-origin,[\s\S]*segment__header\.itinerary-stop\s*\{[^}]*min-height:\s*48px;[^}]*height:\s*48px;[^}]*align-items:\s*center;/s);
@@ -28,18 +28,23 @@ test('desktop itinerary keeps compact equal rows, wider city text and unclipped 
   assert.match(compact, /max-width:\s*126px;/);
   assert.match(compact, /autocomplete__selected-value[\s\S]*transform:\s*none;[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*600;[\s\S]*white-space:\s*nowrap;/s);
 
-  assert.match(compact, /grid-template-columns:\s*64px minmax\(86px, 1fr\) 22px 22px 22px;/);
-  assert.match(compact, /\.itinerary-stop__nights,[\s\S]*\.itinerary-stop__amount\s*\{[^}]*font-size:\s*13px;[^}]*font-weight:\s*400;[^}]*overflow:\s*visible;/s);
-  assert.doesNotMatch(compact, /\.itinerary-stop__nights\.segment__pill|width:\s*56px\s*!important|background:\s*var\(--atlas-accent\)/);
-  assert.doesNotMatch(header, /itinerary-stop__country/);
-  assert.doesNotMatch(originRow, /itinerary-origin__country/);
+  assert.match(compact, /grid-template-columns:\s*58px minmax\(94px, 1fr\) 22px 22px 22px;/);
+  assert.match(compact, /\.itinerary-stop__dates\s*\{[^}]*width:\s*58px;[^}]*color:\s*#3d3d3d;[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;/s);
+  assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*color:\s*#117b80;[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;[^}]*text-align:\s*right;[^}]*overflow:\s*visible;/s);
+  assert.doesNotMatch(compact, /\.itinerary-stop__nights|segment__pill|background:\s*var\(--atlas-accent\)/);
+  assert.doesNotMatch(header, /itinerary-stop__country|itinerary-stop__nights/);
+  assert.doesNotMatch(originRow, /itinerary-origin__country|itinerary-stop__nights/);
+  assert.match(header, /itinerary-stop__dates[\s\S]*itinerary-stop__amount/);
+  assert.match(originRow, /itinerary-stop__dates[\s\S]*itinerary-stop__amount/);
 
   assert.doesNotMatch(floatingEditor, /Densidad compacta nativa|reproduce la sensación del navegador al 90%/);
   assert.doesNotMatch(floatingEditor, /\.floating-editor \.segment__badge|\.floating-editor \.segment__header \.btn--icon svg|\.floating-editor \.segment__pill/);
   assert.doesNotMatch(correction, /itinerary-origin__picker \.autocomplete__selected-value/);
 
-  assert.match(form, /import '\.\/ItineraryCompactTen\.css';/);
-  assert.doesNotMatch(form, /formatSegmentDates|formattedDates|CollapsibleRegion|<SegmentBody|onToggle=|expanded=/);
+  assert.match(form, /formatSegmentDate/);
+  assert.match(form, /formattedStartDate/);
+  assert.match(form, /formattedEndDate/);
+  assert.doesNotMatch(form, /formatSegmentNights|formattedNights|CollapsibleRegion|<SegmentBody|onToggle=|expanded=/);
   assert.doesNotMatch(form, /useExpandedSegmentReveal|scrollIntoView/);
 });
 
@@ -60,9 +65,10 @@ test('note expand and close keep their order while expand opens the note-style d
   assert.doesNotMatch(header, /IconChevronRight|IconChevronUp|aria-expanded|aria-controls/);
   assert.doesNotMatch(origin, /IconChevronRight|IconChevronUp|aria-expanded|aria-controls/);
 
-  assert.doesNotMatch(header, /itinerary-stop__dates|segment__pill/);
-  assert.doesNotMatch(origin, /itinerary-stop__dates|segment__pill/);
-  assert.match(header, /itinerary-stop__nights/);
+  assert.match(header, /itinerary-stop__dates/);
+  assert.match(origin, /itinerary-stop__dates/);
+  assert.doesNotMatch(header, /itinerary-stop__nights|segment__pill/);
+  assert.doesNotMatch(origin, /itinerary-stop__nights|segment__pill/);
   assert.match(header, /itinerary-stop__amount/);
 
   assert.match(modal, /className="segnote segment-details-modal"/);
@@ -85,13 +91,14 @@ test('note expand and close keep their order while expand opens the note-style d
   assert.match(interactions, /\.segment__note-btn, \.segment__details-btn/);
 });
 
-test('itinerary dividers stay dotted without lateral triangles', async () => {
+test('itinerary dividers stay dotted from flag start to close icon end', async () => {
   const dividers = await read('src/modules/trips/ItinerarySegmentDividers.css');
   const floating = await read('src/app/FloatingItineraryPanel.css');
 
   assert.match(dividers, /#c9ced7 0 3px,[\s\S]*transparent 3px 7px/);
   assert.match(dividers, /\.itinerary-origin-section \+ \.itinerary-segment::before/);
   assert.match(dividers, /\.itinerary-segment \+ \.itinerary-segment::before/);
+  assert.match(dividers, /left:\s*24px;[\s\S]*right:\s*4px;/);
   assert.doesNotMatch(dividers, /::after|M0 0 L4 4|fill='%2319a5d0'|clip-path/);
 
   assert.match(floating, /\.workspace-panel__content\.floating-editor\s*\{[^}]*background:\s*#ffffff\s*!important;[^}]*border:\s*1px solid rgba\(226, 228, 233, 0\.94\)\s*!important;/s);
