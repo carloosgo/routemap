@@ -47,13 +47,23 @@ function formatHeaderDate(iso, locale) {
   if (!iso) return '';
   const date = new Date(`${iso}T00:00:00Z`);
   if (Number.isNaN(date.getTime())) return iso;
+
   try {
-    return new Intl.DateTimeFormat(locale, {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
+    const day = new Intl.DateTimeFormat(locale, {
+      day: 'numeric',
       timeZone: 'UTC',
     }).format(date);
+    const rawMonth = new Intl.DateTimeFormat(locale, {
+      month: 'short',
+      timeZone: 'UTC',
+    }).format(date).replace(/\./g, '').trim();
+    const monthChars = Array.from(rawMonth);
+    const shortMonth = (monthChars.length > 3 ? monthChars.slice(0, 3).join('') : rawMonth);
+    const month = shortMonth
+      ? shortMonth.slice(0, 1).toLocaleUpperCase(locale) + shortMonth.slice(1)
+      : '';
+
+    return `${day} ${month}`.trim();
   } catch {
     return iso;
   }
@@ -127,7 +137,7 @@ export function TripSummaryHeader({
   }, [showBreakdown, setShowBreakdown]);
 
   const tripDateRange = summary.startDate && summary.endDate
-    ? `${formatHeaderDate(summary.startDate, intlLocale)} – ${formatHeaderDate(summary.endDate, intlLocale)}`
+    ? `${formatHeaderDate(summary.startDate, intlLocale)} - ${formatHeaderDate(summary.endDate, intlLocale)}`
     : t('noTripDates');
 
   return (
