@@ -20,10 +20,7 @@ function persistenceLabelKey(state) {
 export function AppMapPane({
   trip,
   mapView = 'segments',
-  openNoteSegmentId,
-  setOpenNoteSegmentId,
-  openDetailsTarget,
-  setOpenDetailsTarget,
+  itineraryPanels,
   updateSegment,
   updateExpenses,
   updateOriginDetails,
@@ -34,6 +31,7 @@ export function AppMapPane({
   toast,
   t,
 }) {
+  const { noteTarget, detailsTarget, close } = itineraryPanels;
   const persistenceLabel = t(persistenceLabelKey(persistenceState));
   const persistenceHasCheck = persistenceState === 'saved' || persistenceState === 'local';
 
@@ -47,7 +45,7 @@ export function AppMapPane({
   );
 
   const openNotePanel = () => {
-    if (openNoteSegmentId === ORIGIN_NOTE_TARGET) {
+    if (noteTarget === ORIGIN_NOTE_TARGET) {
       const originName = trip.segments?.[0]?.origin?.name || t('origin');
       const note = trip.originDetails?.note || '';
       const originNoteLabel = `${t('segmentNote')}: ${t('origin')}`;
@@ -63,12 +61,7 @@ export function AppMapPane({
           <div className="segnote__head">
             <span className="segnote__badge" style={{ background: colorForIndex(0) }} aria-hidden="true" />
             <span className="segnote__title">{t('origin')}: {originName}</span>
-            <button
-              type="button"
-              className="segnote__x"
-              aria-label={t('closeNote')}
-              onClick={() => setOpenNoteSegmentId(null)}
-            >
+            <button type="button" className="segnote__x" aria-label={t('closeNote')} onClick={close}>
               <IconX size={16} aria-hidden="true" />
             </button>
           </div>
@@ -86,9 +79,9 @@ export function AppMapPane({
       );
     }
 
-    const segment = trip.segments.find((item) => item.id === openNoteSegmentId);
+    const segment = trip.segments.find((item) => item.id === noteTarget);
     if (!segment) return null;
-    const index = trip.segments.findIndex((item) => item.id === openNoteSegmentId);
+    const index = trip.segments.findIndex((item) => item.id === noteTarget);
     const originName = segment.origin?.name || t('origin');
     const destinationName = segment.destination?.name || t('destination');
     const note = segment.note || '';
@@ -106,12 +99,7 @@ export function AppMapPane({
           <span className="segnote__title">
             {originName}<IconArrowRight size={11} aria-hidden="true" />{destinationName}
           </span>
-          <button
-            type="button"
-            className="segnote__x"
-            aria-label={t('closeNote')}
-            onClick={() => setOpenNoteSegmentId(null)}
-          >
+          <button type="button" className="segnote__x" aria-label={t('closeNote')} onClick={close}>
             <IconX size={16} aria-hidden="true" />
           </button>
         </div>
@@ -129,13 +117,13 @@ export function AppMapPane({
     );
   };
 
-  const notePanel = openNoteSegmentId ? openNotePanel() : null;
-  const detailsPanel = openDetailsTarget ? (
+  const notePanel = noteTarget ? openNotePanel() : null;
+  const detailsPanel = detailsTarget ? (
     <ItineraryDetailsModal
-      target={openDetailsTarget}
+      target={detailsTarget}
       trip={trip}
       locale={intlLocale}
-      onClose={() => setOpenDetailsTarget(null)}
+      onClose={close}
       updateSegment={updateSegment}
       updateExpenses={updateExpenses}
       updateOriginDetails={updateOriginDetails}
@@ -165,8 +153,7 @@ export function AppMapPane({
           onPointerUp={(event) => {
             event.preventDefault();
             event.stopPropagation();
-            setOpenNoteSegmentId(null);
-            setOpenDetailsTarget(null);
+            close();
           }}
         />
       )}
