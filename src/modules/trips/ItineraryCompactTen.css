@@ -1,6 +1,6 @@
 /* Vista compacta del itinerario en escritorio.
    Origen y destinos comparten la misma banda vertical. La bandera conserva
-   30x20 y la ciudad 126px; fecha, costo y acciones usan tracks independientes. */
+   30x20 y la ciudad 126px; costo y acciones usan tracks estables e independientes. */
 
 @media (min-width: 721px) {
   .editor-module--itinerary .editor__body {
@@ -9,8 +9,7 @@
     scrollbar-gutter: stable;
     scrollbar-width: thin;
     -ms-overflow-style: auto;
-    padding-top: 0;
-    padding-bottom: 6px;
+    padding: 0 12px 6px;
     gap: 0;
   }
 
@@ -29,11 +28,14 @@
     margin: 0;
   }
 
+  /* La banda baja de 48px a 40px sin escalar ningún elemento interno. Esto
+     recupera aire útil sobre la primera ciudad y mantiene bandera, ciudad e
+     iconos en sus tamaños naturales. */
   .segments:not(.segments--compact) .itinerary-origin,
   .editor-module.editor-module--itinerary .itinerary-segment .segment__header.itinerary-stop {
     box-sizing: border-box;
-    min-height: 48px;
-    height: 48px;
+    min-height: 40px;
+    height: 40px;
     margin: 0;
     padding-top: 0;
     padding-bottom: 0;
@@ -85,19 +87,21 @@
     font-weight: 600;
   }
 
-  /* Fecha / Costo / Nota / Desplegar / Cerrar. Fecha y costo tienen tracks
-     propios; el costo se alinea a la derecha de su track para mantenerse
-     visualmente cerca de las acciones sin invadir la fecha. */
+  /* Costo / Nota / Desplegar / Cerrar. El bloque deja de estirarse a todo el
+     ancho disponible: cada control conserva una columna propia y el conjunto
+     se alinea al extremo derecho de la fila. */
   .editor-module.editor-module--itinerary .itinerary-stop__after-place,
   .segments:not(.segments--compact) .itinerary-origin__after-place {
     box-sizing: border-box;
-    width: 100%;
+    width: max-content;
+    max-width: 100%;
     min-width: 0;
-    padding-left: 4px;
+    padding-left: 0;
     display: grid;
-    grid-template-columns: 58px minmax(94px, 1fr) 22px 22px 22px;
+    grid-template-columns: 110px 22px 22px 22px;
     align-items: center;
-    justify-content: stretch;
+    justify-content: end;
+    justify-self: end;
     column-gap: 6px;
   }
 
@@ -106,33 +110,11 @@
     display: contents;
   }
 
-  .editor-module--itinerary .itinerary-stop__dates {
-    box-sizing: border-box;
-    width: 58px;
-    min-width: 58px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 0;
-    padding: 0;
-    color: #3d3d3d;
-    font-size: 12px;
-    font-weight: 400;
-    line-height: 14px;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .editor-module--itinerary .itinerary-stop__date-line {
-    display: block;
-    white-space: nowrap;
-  }
-
   .editor-module--itinerary .itinerary-stop__amount {
     box-sizing: border-box;
-    width: 100%;
-    min-width: 0;
-    max-width: none;
+    width: 110px;
+    min-width: 110px;
+    max-width: 110px;
     height: auto;
     min-height: 0;
     padding: 0;
