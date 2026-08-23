@@ -3,11 +3,19 @@ export function isValidSegmentDateRange(startDate, endDate) {
   return startDate <= endDate;
 }
 
-export function formatSegmentAmount(amount, locale) {
-  return new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(Number(amount) || 0);
+export function formatSegmentAmount(amount, locale, currency = 'USD') {
+  const safeAmount = Number(amount) || 0;
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      currencyDisplay: 'narrowSymbol',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(safeAmount);
+  } catch {
+    return `${safeAmount.toFixed(2)} ${currency}`;
+  }
 }
 
 export function formatSegmentDate(value, locale) {
