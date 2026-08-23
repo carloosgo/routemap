@@ -25,6 +25,9 @@ test('timeline preserves flag geometry and spaces cost and actions by visual ico
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const css = await read('src/modules/trips/ItineraryTimeline.css');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
+  const legacyLayout = await read('src/app/ItineraryTripHeader.css');
+  const main = await read('src/main.jsx');
+  const form = await read('src/modules/trips/SegmentForm.jsx');
 
   assert.match(header, /className="itinerary-stop__metrics"/);
   assert.match(css, /\.itinerary-origin__marker img,[\s\S]*\.itinerary-stop__marker img[\s\S]*width:\s*30px;[\s\S]*height:\s*20px;/);
@@ -37,16 +40,24 @@ test('timeline preserves flag geometry and spaces cost and actions by visual ico
   assert.match(compact, /padding-right:\s*4px;[\s\S]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;/s);
   assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*110px;[^}]*color:\s*#117b80;[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;/s);
+
+  assert.doesNotMatch(legacyLayout, /grid-template-columns:\s*48px 66px 66px 22px 22px 22px/);
+  assert.doesNotMatch(legacyLayout, /itinerary-stop__after-place > \.btn--icon[\s\S]*width:\s*22px/s);
+  assert.doesNotMatch(form, /import '\.\/ItineraryCompactTen\.css';/);
+  assert.match(main, /import '\.\/modules\/trips\/ItineraryCompactTen\.css';/);
+  assert.ok(
+    main.indexOf("./modules/trips/ItineraryCompactTen.css") > main.indexOf("./app/ItineraryTripHeader.css") &&
+      main.indexOf("./modules/trips/ItineraryCompactTen.css") > main.indexOf("./app/FloatingItineraryPanel.css"),
+    'la retícula compacta debe cargarse al final para que ninguna geometría legacy la pise'
+  );
 });
 
 test('origin mirrors note expand close controls while expand still opens the separate details module', async () => {
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const header = await read('src/modules/trips/SegmentHeader.jsx');
-  const form = await read('src/modules/trips/SegmentForm.jsx');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
   const modal = await read('src/modules/trips/ItineraryDetailsModal.jsx');
 
-  assert.match(form, /import '\.\/ItineraryCompactTen\.css';/);
   assert.match(origin, /itinerary-stop__metrics itinerary-origin__metrics/);
   assert.match(origin, /itinerary-stop__amount/);
   assert.doesNotMatch(origin, /itinerary-stop__dates|itinerary-stop__nights/);
