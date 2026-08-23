@@ -6,7 +6,7 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('desktop primary panels share one centered fixed geometry over the full-width map', async () => {
+test('desktop primary panels share one centered fixed geometry without trapping fixed controls', async () => {
   const css = await read('src/app/FloatingItineraryPanel.css');
   const main = await read('src/main.jsx');
 
@@ -17,13 +17,15 @@ test('desktop primary panels share one centered fixed geometry over the full-wid
   assert.match(css, /\.workspace__desktop--column > \.mappane\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;/s);
   assert.match(
     css,
-    /\.workspace-panel\s*\{[^}]*top:\s*calc\(50% \+ 31\.5px\);[^}]*bottom:\s*auto;[^}]*left:\s*var\(--floating-panel-left\);[^}]*width:\s*var\(--floating-panel-width\);[^}]*height:\s*var\(--floating-panel-height\);[^}]*max-height:\s*calc\(100% - var\(--trip-header-height\) - 20px\);[^}]*transform:\s*translateY\(-50%\);/s
+    /\.workspace-panel\s*\{[^}]*top:\s*var\(--trip-header-height\);[^}]*bottom:\s*0;[^}]*left:\s*var\(--floating-panel-left\);[^}]*width:\s*var\(--floating-panel-width\);[^}]*height:\s*auto;[^}]*display:\s*flex;[^}]*align-items:\s*center;[^}]*pointer-events:\s*none;/s
   );
+  assert.doesNotMatch(css, /\.workspace-panel\s*\{[^}]*transform:\s*translateY\(-50%\);/s);
   assert.match(
     css,
-    /\.workspace-panel__content\.floating-editor\s*\{[^}]*border-radius:\s*12px\s*!important;[^}]*box-shadow:\s*0 10px 30px rgba\(15, 23, 42, 0\.16\)\s*!important;/s
+    /\.workspace-panel__content\.floating-editor\s*\{[^}]*height:\s*min\(var\(--floating-panel-height\), calc\(100% - 20px\)\)\s*!important;[^}]*pointer-events:\s*auto;[^}]*border-radius:\s*12px\s*!important;[^}]*box-shadow:\s*0 10px 30px rgba\(15, 23, 42, 0\.16\)\s*!important;/s
   );
-  assert.match(css, /\.workspace__desktop--column\.is-panel-collapsed \.workspace-panel\s*\{[^}]*transform:\s*translate\(calc\(-100% - var\(--floating-panel-left\)\), -50%\);/s);
+  assert.match(css, /\.workspace__desktop--column:has\(\.segment-details-modal\) \.workspace-panel__toggle\s*\{[^}]*opacity:\s*0;[^}]*pointer-events:\s*none;/s);
+  assert.match(css, /\.workspace__desktop--column\.is-panel-collapsed \.workspace-panel\s*\{[^}]*transform:\s*translateX\(calc\(-100% - var\(--floating-panel-left\)\)\);/s);
   assert.match(
     css,
     /\.workspace__desktop--column > \.mappane \.segnote,[\s\S]*left:\s*calc\(var\(--floating-panel-left\) \+ var\(--floating-panel-width\) \+ 14px\);/s
