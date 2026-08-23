@@ -3,6 +3,7 @@
 @media (min-width: 721px) {
   .workspace__desktop--column {
     --floating-panel-left: 34px;
+    --floating-panel-top-gap: 10px; /* token legacy conservado; ya no posiciona el panel */
     --floating-panel-width: 426px;
     --floating-panel-height: 506px;
     position: relative;
