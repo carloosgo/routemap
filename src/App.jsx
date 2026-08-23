@@ -25,7 +25,16 @@ export default function App() {
   const tripStore = useTrip();
   const savedTrips = useSavedTrips(auth.user);
   const editorState = useAppEditorState(tripStore);
-  const { trip, loadTrip, setCurrency, updateSegment, updateOriginDetails, addPlace } = tripStore;
+  const {
+    trip,
+    loadTrip,
+    setCurrency,
+    updateSegment,
+    updateExpenses,
+    updateOriginDetails,
+    updateOriginExpenses,
+    addPlace,
+  } = tripStore;
   const {
     getTrip,
     getActiveTripDraft,
@@ -43,6 +52,7 @@ export default function App() {
   const [deletePending, setDeletePending] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
   const [openNoteSegmentId, setOpenNoteSegmentId] = useState(null);
+  const [openDetailsTarget, setOpenDetailsTarget] = useState(null);
   const [desktopPanelCollapsed, setDesktopPanelCollapsed] = useState(false);
   const menuWrapRef = useRef(null);
   const editorMenuRef = useRef(null);
@@ -140,22 +150,35 @@ export default function App() {
       }
       loadTrip(storedTrip);
       setOpenMenu(null);
+      setOpenNoteSegmentId(null);
+      setOpenDetailsTarget(null);
     } catch {
       showToast(t('openTripError'), 3000);
     }
   }, [getTrip, loadTrip, showToast, t]);
 
   const closeMenu = useCallback(() => setOpenMenu(null), []);
-  const closeSegmentNote = useCallback(() => setOpenNoteSegmentId(null), []);
-  const toggleNoteTarget = useCallback(
-    (target) => setOpenNoteSegmentId((current) => toggleTarget(current, target)),
-    []
-  );
+  const closeFloatingEditor = useCallback(() => {
+    setOpenNoteSegmentId(null);
+    setOpenDetailsTarget(null);
+  }, []);
+  const toggleNoteTarget = useCallback((target) => {
+    setOpenDetailsTarget(null);
+    setOpenNoteSegmentId((current) => toggleTarget(current, target));
+  }, []);
+  const toggleDetailsTarget = useCallback((target) => {
+    setOpenNoteSegmentId(null);
+    setOpenDetailsTarget((current) => toggleTarget(current, target));
+  }, []);
 
   useSaveShortcut(handleSave);
   useOutsideClick(menuWrapRef, openMenu === 'account', closeMenu);
   useOutsideClick(editorMenuRef, openMenu === 'workspace', closeMenu);
-  useOutsideClickSelector('.segnote', Boolean(openNoteSegmentId), closeSegmentNote);
+  useOutsideClickSelector(
+    '.segnote',
+    Boolean(openNoteSegmentId || openDetailsTarget),
+    closeFloatingEditor
+  );
 
   async function confirmRemoveTrip() {
     if (!tripToDelete || deleteInFlightRef.current) return;
@@ -215,6 +238,7 @@ export default function App() {
       setOpenMenu={setOpenMenu}
       editorMenuRef={editorMenuRef}
       toggleNoteTarget={toggleNoteTarget}
+      toggleDetailsTarget={toggleDetailsTarget}
       setTripToDelete={setTripToDelete}
       handleOpenSavedTrip={handleOpenSavedTrip}
       t={t}
@@ -228,9 +252,14 @@ export default function App() {
       mapView={activeTab === 'places' ? 'places' : 'segments'}
       openNoteSegmentId={openNoteSegmentId}
       setOpenNoteSegmentId={setOpenNoteSegmentId}
+      openDetailsTarget={openDetailsTarget}
+      setOpenDetailsTarget={setOpenDetailsTarget}
       updateSegment={updateSegment}
+      updateExpenses={updateExpenses}
       updateOriginDetails={updateOriginDetails}
+      updateOriginExpenses={updateOriginExpenses}
       addPlace={addPlace}
+      intlLocale={intlLocale}
       persistenceState={persistence.state}
       toast={toast}
       t={t}
