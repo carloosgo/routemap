@@ -157,12 +157,15 @@ test('expanded expense editor keeps compact fields and one exact vertical rhythm
   assert.doesNotMatch(editor, /setExpenseItemsTotal\(expenses, 'attractions'/);
 });
 
-test('desktop itinerary geometry stays contained while detail forms move to the note-style map modal', async () => {
+test('desktop itinerary geometry stays contained while detail forms remain in the note-style map modal', async () => {
   const layout = await read('src/app/TripWorkspaceHeaderLayout.css');
   const itinerary = await read('src/app/ItineraryTripHeader.css');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
+  const floating = await read('src/app/FloatingItineraryPanel.css');
   const segmentForm = await read('src/modules/trips/SegmentForm.jsx');
   const originSection = await read('src/modules/trips/SegmentOriginSection.jsx');
+  const header = await read('src/modules/trips/SegmentHeader.jsx');
+  const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const modal = await read('src/modules/trips/ItineraryDetailsModal.jsx');
   const main = await read('src/main.jsx');
   const headerPolish = await read('src/app/HeaderRequestedPolish.css');
@@ -170,10 +173,14 @@ test('desktop itinerary geometry stays contained while detail forms move to the 
   assert.match(layout, /--workspace-panel-width:\s*clamp\(458px, calc\(40vw - var\(--atlas-nav-width\)\), 540px\);/);
   assert.match(layout, /--trip-header-height:\s*63px;/);
   assert.match(itinerary, /grid-template-columns:\s*18px 30px 106px minmax\(0, 1fr\);/);
-  assert.match(compact, /grid-template-columns:\s*42px 56px 56px 22px 22px 18px;/);
-  assert.match(compact, /\.segment__details-btn\s*\{[^}]*background:\s*var\(--atlas-accent\);/s);
-  assert.doesNotMatch(segmentForm, /CollapsibleRegion|<SegmentBody|expanded=|onToggle=/);
-  assert.doesNotMatch(originSection, /CollapsibleRegion|<OriginBody|useState/);
+  assert.match(compact, /grid-template-columns:\s*76px 92px 22px 22px 22px;/);
+  assert.match(compact, /\.itinerary-stop__nights,[\s\S]*\.itinerary-stop__amount\s*\{[^}]*background:\s*transparent\s*!important;/s);
+  assert.doesNotMatch(compact, /workspace-panel:has\(\.editor-module--itinerary\)|background:\s*var\(--atlas-accent\)/);
+  assert.match(floating, /\.workspace-panel\s*\{[^}]*top:\s*calc\(var\(--trip-header-height\) \+ 14px\);[^}]*bottom:\s*14px;/s);
+  assert.doesNotMatch(segmentForm, /formatSegmentDates|formattedDates|CollapsibleRegion|<SegmentBody|expanded=|onToggle=/);
+  assert.doesNotMatch(originSection, /formatSegmentDate|formattedDate|CollapsibleRegion|<OriginBody|useState/);
+  assert.match(header, /segment__note-btn[\s\S]*segment__toggle segment__details-btn[\s\S]*removeSegment/s);
+  assert.match(origin, /segment__note-btn[\s\S]*segment__toggle segment__details-btn[\s\S]*itinerary-origin__clear/s);
   assert.match(modal, /className="segnote segment-details-modal"/);
   assert.match(modal, /<SegmentBody/);
   assert.match(modal, /<OriginBody/);
