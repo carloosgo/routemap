@@ -28,25 +28,31 @@
   width: 100%;
   max-width: none;
   margin: 0;
-  padding: 16px 12px 18px !important;
+  padding: 14px 8px 16px !important;
   border: 0 !important;
   border-radius: 0;
   background: #ffffff !important;
   box-shadow: none !important;
 }
 
-/* Dentro del modal la línea central gobierna fechas y conceptos. No existe
-   una caja interior más estrecha: ambas mitades usan exactamente el mismo
-   ancho disponible y el mismo gap. */
+/* La línea central gobierna fechas y conceptos. El padding exterior se mantiene
+   corto y el gap central es único para que ambas mitades tengan el mismo ancho. */
 .segment-details-modal .segment-expense-form {
-  --expense-column-gap: 14px;
+  --expense-column-gap: 10px;
 }
 
 .segment-details-modal .segment-expense-form .dates,
-.segment-details-modal .expenses--journey {
+.segment-details-modal .expenses--journey,
+.segment-details-modal .segment-expense-form .dates__row,
+.segment-details-modal .expenses--journey .expenses__fixed-list,
+.segment-details-modal .expenses--journey .expenses__lineitems {
+  box-sizing: border-box;
   width: 100%;
   max-width: none;
-  margin: 0;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .segment-details-modal .segment-expense-form .dates__row,
@@ -66,17 +72,38 @@
   grid-column: 1;
 }
 
-/* La fecha aprovecha casi todo el control. El icono del calendario ya está
-   oculto y sólo se reserva el área necesaria para el botón de limpiar. */
-.segment-details-modal .segment-expense-form .calendar-date__value,
-.segment-details-modal .segment-expense-form .calendar-date__placeholder {
-  width: calc(100% - 38px);
-  max-width: calc(100% - 38px);
+/* Cada fecha ocupa toda su mitad. Sólo se reserva el espacio real del botón X;
+   no hay un colchón lateral que acorte visualmente el campo. */
+.segment-details-modal .segment-expense-form .calendar-date,
+.segment-details-modal .segment-expense-form .calendar-date__trigger {
+  box-sizing: border-box;
+  width: 100% !important;
+  max-width: none !important;
 }
 
-/* Cada concepto conserva tres tracks, pero el importe deja más ancho útil a
-   la etiqueta. Con las dos mitades simétricas, Hospedaje y Autobús caben sin
-   invadir el monto ni recurrir a ellipsis en el ancho normal del modal. */
+.segment-details-modal .segment-expense-form .calendar-date__trigger,
+.segment-details-modal .segment-expense-form .calendar-date__trigger:hover,
+.segment-details-modal .segment-expense-form .calendar-date__trigger:focus,
+.segment-details-modal .segment-expense-form .calendar-date__trigger:focus-visible,
+.segment-details-modal .segment-expense-form .calendar-date__trigger.is-open {
+  padding-left: 12px;
+  padding-right: 26px;
+}
+
+.segment-details-modal .segment-expense-form .calendar-date__value,
+.segment-details-modal .segment-expense-form .calendar-date__placeholder {
+  width: calc(100% - 30px);
+  max-width: calc(100% - 30px);
+}
+
+.segment-details-modal .segment-expense-form .calendar-date__clear,
+.segment-details-modal .segment-expense-form .calendar-date__clear:hover,
+.segment-details-modal .segment-expense-form .calendar-date__clear:focus-visible {
+  right: 5px;
+}
+
+/* Cada concepto usa icono / etiqueta flexible / importe. Con mitades idénticas,
+   Hospedaje y Autobús conservan el nombre completo sin invadir la cantidad. */
 .segment-details-modal .expenses--journey .moneycard {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr) 70px;
@@ -129,12 +156,12 @@
 
   .segment-details-modal .segment__body,
   .segment-details-modal .itinerary-origin__body {
-    padding-left: 10px !important;
-    padding-right: 10px !important;
+    padding-left: 7px !important;
+    padding-right: 7px !important;
   }
 
   .segment-details-modal .segment-expense-form {
-    --expense-column-gap: 12px;
+    --expense-column-gap: 8px;
   }
 
   .segment-details-modal .expenses--journey .moneycard {
