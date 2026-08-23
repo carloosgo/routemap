@@ -112,13 +112,20 @@ test('origin and segment notes share one toggle path and the same outside-click 
   assert.match(map, /data-persistence-state=\{persistenceState\}/);
 });
 
-test('desktop itinerary deliberately removes the stable scrollbar gutter for the ten-country compact view', async () => {
+test('desktop itinerary uses the seven-city natural-scale viewport instead of the former ten-country compact density', async () => {
   const correction = await read('src/modules/trips/ItineraryCorrectionPolish.css');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
+  const floatingEditor = await read('src/app/FloatingEditor.css');
 
   assert.doesNotMatch(correction, /scrollbar-gutter:\s*stable/);
   assert.match(
     compact,
-    /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*hidden;[^}]*scrollbar-gutter:\s*auto;/s
+    /\.workspace-panel:has\(\.editor-module--itinerary\)\s*\{[^}]*bottom:\s*auto;[^}]*506px/s
   );
+  assert.match(
+    compact,
+    /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*overflow-x:\s*hidden;[^}]*scrollbar-gutter:\s*auto;/s
+  );
+  assert.doesNotMatch(compact, /min-height:\s*44px|height:\s*18px|height:\s*20px/);
+  assert.doesNotMatch(floatingEditor, /Densidad compacta nativa|reproduce la sensación del navegador al 90%/);
 });
