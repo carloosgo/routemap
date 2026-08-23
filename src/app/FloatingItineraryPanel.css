@@ -1,27 +1,17 @@
-/* Restituye el módulo de trayectos como una tarjeta flotante real sobre el mapa.
-   Sólo modifica la geometría exterior del workspace en escritorio: el contenido,
-   estado, persistencia y navegación del editor permanecen sin cambios. */
+/* Geometría exterior compartida por Itinerario, Mis Rutas y Notas.
+   Las tres vistas usan la misma tarjeta flotante, ancho y posición sobre el mapa. */
 @media (min-width: 721px) {
   .workspace__desktop--column {
-    --floating-panel-left: 14px;
-    --floating-panel-top-gap: 14px;
-    --floating-panel-width: var(--workspace-panel-width, clamp(458px, calc(40vw - 82px), 540px));
+    --floating-panel-left: 34px;
+    --floating-panel-top-gap: 10px;
+    --floating-panel-width: 426px;
     position: relative;
     display: block;
     background: transparent;
   }
 
-  /* El resumen de Itinerario ahora necesita menos ancho porque sólo conserva
-     Costo + acciones. La tarjeta se desplaza ligeramente hacia el centro del
-     mapa sin alterar el ancho de Mis Rutas o Notas. */
-  .workspace__desktop--column:has(.editor-module--itinerary) {
-    --floating-panel-left: 34px;
-    --floating-panel-top-gap: 10px;
-    --floating-panel-width: 426px;
-  }
-
-  /* El mapa vuelve a ocupar todo el workspace. El editor ya no le reserva una
-     columna física: se superpone sobre la superficie cartográfica. */
+  /* El mapa ocupa todo el workspace; el panel se superpone sin reservar una
+     columna física. Las tres pestañas primarias conservan idéntica geometría. */
   .workspace__desktop--column > .mappane {
     position: absolute;
     inset: 0;
@@ -61,8 +51,6 @@
     box-shadow: 0 10px 30px rgba(15, 23, 42, 0.16) !important;
   }
 
-  /* El panel ahora empieza debajo del header global; elimina el antiguo spacer
-     interno que sólo era necesario cuando el editor arrancaba detrás del header. */
   .workspace-panel .editor-module {
     grid-template-rows: minmax(0, 1fr);
     border-radius: inherit;
@@ -100,8 +88,8 @@
     border-radius: 7px;
   }
 
-  /* Los overlays del mapa comienzan después del ancho real del panel activo y
-     conservan 14px de separación visual. */
+  /* Los overlays del mapa comienzan después del panel compartido y mantienen
+     14px de separación visual. */
   .workspace__desktop--column > .mappane .segnote,
   .workspace__desktop--column > .mappane .geo-search {
     left: calc(var(--floating-panel-left) + var(--floating-panel-width) + 14px);
