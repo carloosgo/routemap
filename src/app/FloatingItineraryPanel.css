@@ -1,10 +1,10 @@
 /* Geometría exterior compartida por Itinerario, Mis Rutas y Notas.
-   Las tres vistas usan la misma tarjeta flotante, ancho y posición sobre el mapa. */
+   Las tres vistas usan la misma tarjeta flotante, ancho, alto y posición. */
 @media (min-width: 721px) {
   .workspace__desktop--column {
     --floating-panel-left: 34px;
-    --floating-panel-top-gap: 10px;
     --floating-panel-width: 426px;
+    --floating-panel-height: 506px;
     position: relative;
     display: block;
     background: transparent;
@@ -23,16 +23,20 @@
 
   .workspace-panel {
     position: absolute;
-    top: calc(var(--trip-header-height) + var(--floating-panel-top-gap));
-    bottom: 14px;
+    /* 31.5px es la mitad del header contractual de 63px: así el centro del
+       panel coincide con el centro exacto del área útil bajo el header. */
+    top: calc(50% + 31.5px);
+    bottom: auto;
     left: var(--floating-panel-left);
     z-index: 700;
     width: var(--floating-panel-width);
     min-width: 0;
-    height: auto;
+    height: var(--floating-panel-height);
+    max-height: calc(100% - var(--trip-header-height) - 20px);
     overflow: visible;
     background: transparent;
     border-radius: 12px;
+    transform: translateY(-50%);
     transition: transform 180ms ease, opacity 180ms ease;
   }
 
@@ -66,7 +70,7 @@
   }
 
   .workspace-panel__toggle {
-    top: calc(50% + 31px);
+    top: calc(50% + 31.5px);
     left: calc(var(--floating-panel-left) + var(--floating-panel-width) - 1px);
     z-index: 701;
     box-shadow: 3px 1px 9px rgba(15, 23, 42, 0.12);
@@ -77,7 +81,7 @@
   }
 
   .workspace__desktop--column.is-panel-collapsed .workspace-panel {
-    transform: translateX(calc(-100% - var(--floating-panel-left)));
+    transform: translate(calc(-100% - var(--floating-panel-left)), -50%);
     opacity: 0;
   }
 
