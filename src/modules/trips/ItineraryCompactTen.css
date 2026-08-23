@@ -28,9 +28,7 @@
     margin: 0;
   }
 
-  /* La banda baja de 48px a 40px sin escalar ningún elemento interno. Esto
-     recupera aire útil sobre la primera ciudad y mantiene bandera, ciudad e
-     iconos en sus tamaños naturales. */
+  /* La banda permanece en 40px sin escalar ningún elemento interno. */
   .segments:not(.segments--compact) .itinerary-origin,
   .editor-module.editor-module--itinerary .itinerary-segment .segment__header.itinerary-stop {
     box-sizing: border-box;
@@ -87,9 +85,10 @@
     font-weight: 600;
   }
 
-  /* Costo / Nota / Desplegar / Cerrar. El bloque deja de estirarse a todo el
-     ancho disponible: cada control conserva una columna propia y el conjunto
-     se alinea al extremo derecho de la fila. */
+  /* Costo / Nota / Desplegar / Cerrar se miden por su ancho visual real.
+     Los tres SVG son de 14px y usan exactamente 8px entre sí; el mismo gap
+     separa el borde derecho del costo del icono de Nota. El padding derecho
+     conserva el X en la posición visual que ya estaba aprobada. */
   .editor-module.editor-module--itinerary .itinerary-stop__after-place,
   .segments:not(.segments--compact) .itinerary-origin__after-place {
     box-sizing: border-box;
@@ -97,12 +96,13 @@
     max-width: 100%;
     min-width: 0;
     padding-left: 0;
+    padding-right: 4px;
     display: grid;
-    grid-template-columns: 110px 22px 22px 22px;
+    grid-template-columns: 110px repeat(3, 14px);
     align-items: center;
     justify-content: end;
     justify-self: end;
-    column-gap: 6px;
+    column-gap: 8px;
   }
 
   .editor-module.editor-module--itinerary .itinerary-stop__metrics,
@@ -135,16 +135,26 @@
 
   .editor-module.editor-module--itinerary .itinerary-stop__after-place > .btn--icon,
   .segments:not(.segments--compact) .itinerary-origin__after-place > .btn--icon {
-    width: 22px;
-    min-width: 22px;
+    position: relative;
+    width: 14px;
+    min-width: 14px;
     height: 22px;
     padding: 0;
     justify-self: center;
   }
 
-  .editor-module.editor-module--itinerary .itinerary-stop__after-place > .btn--icon:last-child,
-  .segments:not(.segments--compact) .itinerary-origin__after-place > .btn--icon:last-child {
-    justify-self: end;
+  /* Amplía el área clicable sin reservar ancho visual extra en la retícula. */
+  .editor-module.editor-module--itinerary .itinerary-stop__after-place > .btn--icon::before,
+  .segments:not(.segments--compact) .itinerary-origin__after-place > .btn--icon::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-stop__after-place > .btn--icon svg,
+  .segments:not(.segments--compact) .itinerary-origin__after-place > .btn--icon svg {
+    width: 14px;
+    height: 14px;
   }
 
   .editor-module--itinerary .segment__details-btn {
