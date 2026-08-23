@@ -1,7 +1,7 @@
 # Contrato de preservación visual
 
 Visual delta: requested
-Requested visual scope: selectores de moneda/idioma del header global; contenido y validación de cada trayecto; navegación primaria dentro del header; panel flotante sobre el mapa; eliminación del eje vertical y uso de divisores punteados sin picos laterales; unificación de ciudad origen con destinos; vista compacta con scrollbar visible; filas de 40 px sin reducir bandera; eliminación del país y de la fecha en el resumen de fila; campo ciudad de 126 px; Costo como único dato textual del resumen antes de Nota / Desplegar / Cerrar; espaciado visual uniforme de 8 px entre Costo, Nota, Desplegar y Cerrar usando el ancho real de iconos de 14 px; autoridad final de `ItineraryCompactTen.css` para impedir que geometrías legacy de Fecha/Noches/acciones vuelvan a pisar la retícula compacta; reducción del inset lateral del itinerario a 8 px; divisores limitados desde el inicio de la bandera hasta el final visual del tache de cerrar; unificación de Itinerario, Mis Rutas y Notas al mismo panel flotante de 426 × 506 px, centrado verticalmente bajo el header; mantenimiento del formulario de fechas/gastos en una superficie flotante sobre el mapa al estilo `.segnote`; aprovechamiento completo y simétrico del ancho del modal de detalles, con dos mitades iguales, fechas más legibles y etiquetas largas sin truncamiento innecesario; y conservación del resto de la arquitectura, solicitado explícitamente por el product owner.
+Requested visual scope: selectores de moneda/idioma del header global; contenido y validación de cada trayecto; navegación primaria dentro del header; panel flotante sobre el mapa; eliminación del eje vertical y uso de divisores punteados sin picos laterales; unificación de ciudad origen con destinos; vista compacta con scrollbar visible; filas de 40 px sin reducir bandera; eliminación del país y de la fecha en el resumen de fila; campo ciudad de 126 px; Costo como único dato textual del resumen antes de Nota / Desplegar / Cerrar; espaciado visual uniforme de 8 px entre Costo, Nota, Desplegar y Cerrar usando el ancho real de iconos de 14 px; autoridad final de `ItineraryCompactTen.css` para impedir que geometrías legacy de Fecha/Noches/acciones vuelvan a pisar la retícula compacta; reducción del inset lateral del itinerario a 8 px; divisores limitados desde el inicio de la bandera hasta el final visual del tache de cerrar; unificación de Itinerario, Mis Rutas y Notas al mismo panel flotante de 426 × 506 px, centrado verticalmente bajo el header sin transformar el contenedor abierto; conservación del anclaje viewport del botón global de tres puntos; ocultación temporal de la pestaña de colapso mientras está abierto el modal de detalles; mantenimiento del formulario de fechas/gastos en una superficie flotante sobre el mapa al estilo `.segnote`; aprovechamiento completo y simétrico del ancho del modal de detalles, con dos mitades iguales, fechas extendidas al ancho de cada mitad y etiquetas largas sin truncamiento innecesario; y conservación del resto de la arquitectura, solicitado explícitamente por el product owner.
 
 La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atlas debe permanecer intacto. Los controles añadidos reutilizan componentes, dimensiones, espaciados, iconografía, dominio y persistencia ya existentes. Los cambios enumerados abajo son los deltas visuales aprobados.
 
@@ -31,8 +31,9 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 ## Panel flotante compartido
 
 - En escritorio el mapa ocupa el 100% del workspace y `Itinerario`, `Mis Rutas` y `Notas` se muestran dentro de la misma tarjeta blanca flotante con radio de 12 px y sombra ligera.
-- Las tres vistas usan exactamente la misma geometría: ancho de 426 px y alto de 506 px. El panel queda a `left: 34px` y se centra verticalmente en el área útil bajo el header contractual de 63 px; cambiar de pestaña no mueve ni redimensiona la tarjeta.
-- En viewports bajos el panel puede reducir su alto mediante `max-height`, sin cambiar el tamaño de filas, banderas, iconos o tipografías; el contenido interno conserva scrollbar.
+- Las tres vistas usan exactamente la misma geometría: ancho de 426 px y alto objetivo de 506 px. El panel queda a `left: 34px` y se centra verticalmente en el área útil bajo el header contractual de 63 px; cambiar de pestaña no mueve ni redimensiona la tarjeta.
+- El centrado vertical se realiza haciendo que `.workspace-panel` ocupe el área útil bajo el header y centre su contenido con flex; el panel abierto no usa `transform`, para que controles descendientes `position: fixed` conserven el viewport como containing block.
+- En viewports bajos la tarjeta puede reducir su alto a `calc(100% - 20px)` sin cambiar el tamaño de filas, banderas, iconos o tipografías; el contenido interno conserva scrollbar.
 - Las banderas conservan 30 × 20 px y el campo ciudad usa 126 px. La reducción del panel no se obtiene escalando tipografía, iconos, banderas o inputs.
 - La antigua densidad artificial equivalente al navegador al 90% queda retirada: no se escalan ni comprimen tipografías, banderas, iconos, inputs o controles para simular zoom.
 - La lista mantiene un scrollbar visible (`scrollbar-width: thin` / 7 px en WebKit) y `scrollbar-gutter: stable`; no se usa `scrollIntoView` ni se reposiciona el panel al abrir detalles.
@@ -64,17 +65,19 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Aunque la fecha se elimina del resumen de cada fila, las fechas canónicas siguen editándose únicamente dentro del modal de detalles.
 - Al pulsar el control Desplegar, se abre sobre el mapa una superficie `segnote segment-details-modal`, reutilizando radio, sombra, cabecera, cierre y posición del modal de notas.
 - Sólo puede estar activa una superficie contextual entre nota y detalles; abrir una cierra la otra. Pulsar fuera o cerrar la cabecera descarta la superficie sin alterar datos.
+- Mientras el modal de detalles está abierto, la pestaña de colapso del panel principal se oculta temporalmente y no recibe eventos; así no puede atravesar ni competir con la superficie de captura.
 - El modal de un destino reutiliza el `SegmentBody` canónico y sus callbacks existentes `updateSegment`/`updateExpenses`.
 - El modal del origen reutiliza `OriginBody`, `updateOriginDetails` y `updateOriginExpenses`; no crea un segmento artificial ni una ruta de persistencia distinta.
 - El modal calcula su ancho con la geometría real del panel compartido (`left 34px + width 426px`) y aprovecha todo el ancho interior disponible; desaparece la antigua caja interna limitada a 394 px.
-- Fechas y conceptos comparten exactamente dos columnas `1fr / 1fr` respecto al eje central, con gap de 14 px en escritorio. Ninguna mitad puede reservar un sobrante lateral propio.
-- El body del modal usa padding horizontal simétrico de 12 px. En viewports intermedios puede reducirse a 10 px y el gap central a 12 px para conservar legibilidad.
-- Los controles de fecha ocupan el 100% de su mitad y su texto dispone de `calc(100% - 38px)`; se reserva únicamente el espacio necesario para limpiar el valor, evitando truncamientos como `dd/mm/aa...` cuando existe ancho suficiente.
+- Fechas y conceptos comparten exactamente dos columnas `1fr / 1fr` respecto al eje central, con gap de 10 px en escritorio. Ninguna mitad puede reservar un sobrante lateral propio.
+- El body del modal usa padding horizontal simétrico de 8 px. En viewports intermedios puede reducirse a 7 px y el gap central a 8 px para conservar legibilidad.
+- Los contenedores de fechas y conceptos eliminan padding lateral residual y ocupan el 100% del body del modal.
+- Cada control de fecha ocupa el 100% de su mitad; el trigger también fuerza `width: 100%` y el texto dispone de `calc(100% - 30px)`. Sólo se reserva el espacio real del botón de limpiar, ubicado a 5 px del borde derecho.
 - Cada concepto del modal usa una retícula explícita `18px / etiqueta flexible / 70px`. El gap interno es 4 px; el importe conserva su track propio y etiquetas como `Hospedaje` o `Autobús` no usan ellipsis en el ancho normal del modal.
 - En viewports intermedios/móviles el track de importe puede bajar a 66 px, manteniendo las dos mitades y evitando solapamientos.
 - La fecha única del origen ocupa la primera celda de la misma rejilla hipotética de dos fechas, de modo que la segunda columna de conceptos mantiene la misma guía que los destinos.
 - El calendario de inicio usa fecha fin como máximo y el de fin usa fecha inicio como mínimo; `SegmentBody` sigue bloqueando `startDate > endDate` también ante cambios programáticos.
-- Los triggers de fecha conservan exactamente la misma altura, fondo y estados de interacción; únicamente aumenta el ancho útil de texto dentro del modal.
+- Los triggers de fecha conservan exactamente la misma altura, fondo y estados de interacción; únicamente aumenta el ancho útil de campo y texto dentro del modal.
 - Las etiquetas de conceptos conservan 13 px; SVG 15 px; caja horizontal del icono 18 px; importes 12 px; prefijo monetario 11 px; `Otros gastos` 13 px. El modal no vuelve a aplicar la vieja miniaturización de `FloatingEditorPolish.css` al contenido.
 - Los campos de cantidad siguen filtrando caracteres inválidos, limitan a dos decimales, presentan separador de miles y envían `number` canónico al dominio.
 - `Tren` usa rojo, `Avión` morado y `Taxi` rosa; el campo persistido continúa siendo `taxiUber`.
@@ -91,7 +94,7 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 
 ## Resto del mapa y aplicación
 
-- `AppWorkspaceMenu` conserva su anclaje flotante y el colapso completo del módulo izquierdo sigue liberando el mapa.
+- `AppWorkspaceMenu` conserva su anclaje flotante fijo al viewport. El centrado del panel abierto no usa `transform`, por lo que el botón azul de tres puntos no se desplaza con la tarjeta; el colapso completo del módulo izquierdo sigue liberando el mapa.
 - Los overlays de nota, detalles y búsqueda permanecen por debajo del header fijo y a la derecha del panel compartido, calculados a partir de 34 px + 426 px + 14 px de gutter.
 - El selector `KM / MI` reutiliza `topmenu`, `topitem`, `dropdown` y `dropdown__opt`.
 - La instalación PWA sólo aparece cuando el navegador emite `beforeinstallprompt`.

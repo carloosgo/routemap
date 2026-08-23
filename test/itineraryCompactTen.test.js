@@ -18,8 +18,9 @@ test('desktop itinerary keeps compact equal rows, visible scrollbar and cost-onl
   assert.match(compact, /@media \(min-width:\s*721px\)/);
   assert.doesNotMatch(floating, /:has\(\.editor-module--itinerary\)/);
   assert.match(floating, /\.workspace__desktop--column\s*\{[^}]*--floating-panel-left:\s*34px;[^}]*--floating-panel-width:\s*426px;[^}]*--floating-panel-height:\s*506px;/s);
-  assert.match(floating, /top:\s*calc\(50% \+ 31\.5px\);/);
-  assert.match(floating, /height:\s*var\(--floating-panel-height\);/);
+  assert.match(floating, /\.workspace-panel\s*\{[^}]*top:\s*var\(--trip-header-height\);[^}]*bottom:\s*0;[^}]*display:\s*flex;[^}]*align-items:\s*center;/s);
+  assert.match(floating, /height:\s*min\(var\(--floating-panel-height\), calc\(100% - 20px\)\)\s*!important;/);
+  assert.doesNotMatch(floating, /\.workspace-panel\s*\{[^}]*transform:\s*translateY\(-50%\);/s);
 
   assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;[^}]*scrollbar-width:\s*thin;[^}]*padding:\s*0 8px 6px;/s);
   assert.match(compact, /\.editor-module--itinerary \.editor__body::-webkit-scrollbar\s*\{[^}]*width:\s*7px;[^}]*display:\s*block;/s);
@@ -56,6 +57,7 @@ test('note expand and close keep their order while expand opens a symmetric note
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const modal = await read('src/modules/trips/ItineraryDetailsModal.jsx');
   const modalCss = await read('src/modules/trips/ItineraryDetailsModal.css');
+  const floating = await read('src/app/FloatingItineraryPanel.css');
   const map = await read('src/app/AppMapPane.jsx');
   const app = await read('src/App.jsx');
   const panels = await read('src/app/useItineraryFloatingPanels.js');
@@ -78,15 +80,18 @@ test('note expand and close keep their order while expand opens a symmetric note
   assert.match(modal, /<OriginBody/);
   assert.match(modal, /updateSegment\(segment\.id, patch\)/);
   assert.match(modal, /updateExpenses\(segment\.id, expenses\)/);
-  assert.match(modalCss, /\.segment-details-modal \.segment__body,[\s\S]*width:\s*100%;[\s\S]*padding:\s*16px 12px 18px\s*!important;[\s\S]*background:\s*#ffffff\s*!important;/s);
-  assert.match(modalCss, /--expense-column-gap:\s*14px;/);
-  assert.match(modalCss, /\.segment-expense-form \.dates,[\s\S]*max-width:\s*none;[\s\S]*margin:\s*0;/s);
+  assert.match(modalCss, /\.segment-details-modal \.segment__body,[\s\S]*width:\s*100%;[\s\S]*padding:\s*14px 8px 16px\s*!important;[\s\S]*background:\s*#ffffff\s*!important;/s);
+  assert.match(modalCss, /--expense-column-gap:\s*10px;/);
+  assert.match(modalCss, /\.segment-expense-form \.dates,[\s\S]*width:\s*100%;[\s\S]*max-width:\s*none;/s);
   assert.match(modalCss, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/);
-  assert.match(modalCss, /calendar-date__value,[\s\S]*width:\s*calc\(100% - 38px\);/s);
+  assert.match(modalCss, /\.segment-expense-form \.calendar-date,[\s\S]*width:\s*100%\s*!important;[\s\S]*max-width:\s*none\s*!important;/s);
+  assert.match(modalCss, /calendar-date__value,[\s\S]*width:\s*calc\(100% - 30px\);/s);
+  assert.match(modalCss, /calendar-date__clear,[\s\S]*right:\s*5px;/s);
   assert.match(modalCss, /grid-template-columns:\s*18px minmax\(0, 1fr\) 70px;/);
   assert.match(modalCss, /\.moneycard__label\s*\{[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*clip;[^}]*white-space:\s*normal;/s);
   assert.match(modalCss, /\.moneycard__typeinput\s*\{[^}]*overflow:\s*hidden;[^}]*white-space:\s*nowrap;/s);
   assert.match(modalCss, /\.moneycard__amount\s*\{[^}]*width:\s*70px;[^}]*min-width:\s*70px;/s);
+  assert.match(floating, /:has\(\.segment-details-modal\) \.workspace-panel__toggle\s*\{[^}]*opacity:\s*0;[^}]*pointer-events:\s*none;/s);
 
   assert.match(app, /const itineraryPanels = useItineraryFloatingPanels\(\);/);
   assert.match(app, /itineraryPanels=\{itineraryPanels\}/);
