@@ -18,6 +18,7 @@ import './app/TripWorkspaceHeaderLayout.css';
 import './app/HeaderRequestedPolish.css';
 import './app/NotePanelPlacement.css';
 import './app/FloatingItineraryPanel.css';
+import './modules/trips/ItineraryCompactTen.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <I18nProvider>
