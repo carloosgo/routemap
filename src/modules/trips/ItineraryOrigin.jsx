@@ -1,5 +1,5 @@
 import {
-  IconChevronRight,
+  IconChevronDown,
   IconNote,
   IconX,
 } from '@tabler/icons-react';
@@ -10,7 +10,6 @@ import './OriginOptions.css';
 
 export function ItineraryOrigin({
   city,
-  formattedDate,
   formattedNights,
   formattedAmount,
   hasNote,
@@ -57,20 +56,14 @@ export function ItineraryOrigin({
 
       <div className="itinerary-stop__after-place itinerary-origin__after-place">
         <div className="itinerary-stop__metrics itinerary-origin__metrics">
-          <span className={'itinerary-stop__dates' + (!formattedDate ? ' is-placeholder' : '')}>
-            <span className="itinerary-stop__date-line">
-              {formattedDate || '—'}
-            </span>
-          </span>
           <span
             className={
-              'segment__pill itinerary-stop__nights' +
-              (!formattedNights ? ' is-placeholder' : '')
+              'itinerary-stop__nights' + (!formattedNights ? ' is-placeholder' : '')
             }
           >
             {formattedNights || t('nightsHint')}
           </span>
-          <span className="segment__pill itinerary-stop__amount">{formattedAmount}</span>
+          <span className="itinerary-stop__amount">{formattedAmount}</span>
         </div>
 
         <button
@@ -85,22 +78,22 @@ export function ItineraryOrigin({
 
         <button
           type="button"
+          className="btn btn--icon segment__toggle segment__details-btn itinerary-origin__details-btn"
+          aria-label={t('openSegmentDetails')}
+          title={t('openSegmentDetails')}
+          onClick={onOpenDetails}
+        >
+          <IconChevronDown size={14} aria-hidden="true" />
+        </button>
+
+        <button
+          type="button"
           className="btn btn--icon itinerary-origin__clear"
           aria-label={clearOriginLabel}
           title={clearOriginLabel}
           onClick={onClear}
         >
           <IconX size={14} aria-hidden="true" />
-        </button>
-
-        <button
-          type="button"
-          className="segment__details-btn itinerary-origin__details-btn"
-          aria-label={t('openSegmentDetails')}
-          title={t('openSegmentDetails')}
-          onClick={onOpenDetails}
-        >
-          <IconChevronRight size={14} stroke={2.2} aria-hidden="true" />
         </button>
       </div>
     </div>
