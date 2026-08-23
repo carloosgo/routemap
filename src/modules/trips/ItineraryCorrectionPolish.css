@@ -1,26 +1,7 @@
-/* Correcciones de la revisión visual posterior al rediseño del origen. */
+/* Correcciones de la revisión visual posterior al rediseño del itinerario. */
 
-/* Recupera la jerarquía original del nodo inicial de la timeline: el origen
-   debe seguir siendo más ligero y secundario que las ciudades-destino. */
-.segments:not(.segments--compact) .itinerary-origin__picker .autocomplete__selected-value {
-  color: #5f6875;
-  font-size: 12.5px;
-  font-weight: 500;
-  line-height: 1.18;
-}
-
-.segments:not(.segments--compact) .itinerary-origin__picker .input {
-  color: #5f6875;
-  font-size: 11.5px;
-  font-weight: 500;
-}
-
-.segments:not(.segments--compact) .itinerary-origin__country {
-  color: #9299a5;
-  font-size: 10.5px;
-  font-weight: 400;
-  line-height: 1.2;
-}
+/* El origen ya no recibe una jerarquía tipográfica distinta: vuelve a heredar
+   exactamente la misma escala y peso que las ciudades-destino de la timeline. */
 
 /* El aumento de tipografía corresponde a las tarjetas-resumen de la cabecera,
    no a los conceptos del editor de gastos. Restauramos aquí sus escalas previas. */
