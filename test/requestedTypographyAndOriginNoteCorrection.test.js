@@ -20,8 +20,7 @@ test('header summary typography remains isolated and origin shares destination h
   assert.doesNotMatch(tripHeader, /TripSummaryHeaderTypography\.css/);
   assert.ok(
     main.indexOf("./app/TripSummaryHeader.css") <
-      main.indexOf("./app/TripSummaryHeaderTypography.css"),
-    'la escala solicitada debe cargarse después del stylesheet canónico del header'
+      main.indexOf("./app/TripSummaryHeaderTypography.css")
   );
 
   assert.doesNotMatch(correction, /itinerary-origin__picker \.autocomplete__selected-value/);
@@ -109,18 +108,20 @@ test('origin and segment notes keep one toggle path while details use the parall
   assert.match(map, /data-persistence-state=\{persistenceState\}/);
 });
 
-test('desktop itinerary uses compact equal rows, fixed 56px metrics and centered floating card', async () => {
+test('desktop itinerary uses plain metrics and the same floating-panel height as routes and notes', async () => {
   const correction = await read('src/modules/trips/ItineraryCorrectionPolish.css');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
+  const floating = await read('src/app/FloatingItineraryPanel.css');
   const floatingEditor = await read('src/app/FloatingEditor.css');
 
   assert.doesNotMatch(correction, /scrollbar-gutter:\s*stable/);
-  assert.match(compact, /\.workspace-panel:has\(\.editor-module--itinerary\)\s*\{[^}]*396px[\s\S]*transform:\s*translateY\(-50%\);/s);
+  assert.doesNotMatch(compact, /workspace-panel:has\(\.editor-module--itinerary\)/);
+  assert.match(floating, /\.workspace-panel\s*\{[^}]*top:\s*calc\(var\(--trip-header-height\) \+ 14px\);[^}]*bottom:\s*14px;/s);
   assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-width:\s*none;[^}]*padding-top:\s*6px;/s);
   assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
   assert.match(compact, /min-height:\s*48px;[^}]*height:\s*48px;/s);
-  assert.match(compact, /grid-template-columns:\s*42px 56px 56px 22px 22px 18px;/);
-  assert.match(compact, /width:\s*56px\s*!important;[\s\S]*max-width:\s*56px\s*!important;/);
-  assert.doesNotMatch(compact, /grid-template-columns:\s*42px max-content max-content/);
+  assert.match(compact, /grid-template-columns:\s*76px 92px 22px 22px 22px;/);
+  assert.match(compact, /background:\s*transparent\s*!important;[\s\S]*font-size:\s*13px;/);
+  assert.doesNotMatch(compact, /56px\s*!important|background:\s*var\(--atlas-accent\)/);
   assert.doesNotMatch(floatingEditor, /Densidad compacta nativa|reproduce la sensación del navegador al 90%/);
 });
