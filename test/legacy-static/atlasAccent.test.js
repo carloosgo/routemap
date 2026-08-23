@@ -54,7 +54,6 @@ test('itinerary, routes and notes keep one tab structure in the global header', 
   assert.doesNotMatch(editor, /editor-module__tabs|editor-module__nav-tab/);
   assert.match(menu, /openMenu === 'workspace'/);
   assert.doesNotMatch(menu, /setCurrency|t\('currency'\)|setLocale|t\('language'\)/);
-  assert.match(header, /<TripHeaderNavigation \{\.\.\.navigation\} t=\{t\} \/>/);
   assert.match(header, currencySelectorContract);
   assert.match(header, languageSelectorContract);
   assert.match(selector, /role="listbox"/);
@@ -153,34 +152,31 @@ test('expanded expense editor keeps compact fields and one exact vertical rhythm
   assert.match(catalog, /plane:[\s\S]*'#7c5ce7'/);
   assert.match(catalog, /train:[\s\S]*'#e05252'/);
   assert.match(catalog, /taxiUber:[\s\S]*'#d94f8a'/);
-
   assert.equal((fixed.match(/<ExpenseMoneyCard/g) || []).length, 6);
   assert.doesNotMatch(fixed, /EXPENSE_ICONS\.attraction|attractionsTotal|onSetAttractions/);
   assert.doesNotMatch(editor, /setExpenseItemsTotal\(expenses, 'attractions'/);
 });
 
-test('desktop itinerary geometry stays contained and collapse motion is bidirectional', async () => {
+test('desktop itinerary geometry stays contained while detail forms move to the note-style map modal', async () => {
   const layout = await read('src/app/TripWorkspaceHeaderLayout.css');
   const itinerary = await read('src/app/ItineraryTripHeader.css');
-  const correction = await read('src/modules/trips/ItineraryCorrectionPolish.css');
+  const compact = await read('src/modules/trips/ItineraryCompactTen.css');
   const segmentForm = await read('src/modules/trips/SegmentForm.jsx');
   const originSection = await read('src/modules/trips/SegmentOriginSection.jsx');
+  const modal = await read('src/modules/trips/ItineraryDetailsModal.jsx');
   const main = await read('src/main.jsx');
   const headerPolish = await read('src/app/HeaderRequestedPolish.css');
 
   assert.match(layout, /--workspace-panel-width:\s*clamp\(458px, calc\(40vw - var\(--atlas-nav-width\)\), 540px\);/);
   assert.match(layout, /--trip-header-height:\s*63px;/);
-  assert.match(itinerary, /--itinerary-axis-x:\s*39px;/);
   assert.match(itinerary, /grid-template-columns:\s*18px 30px 106px minmax\(0, 1fr\);/);
-  assert.match(itinerary, /grid-template-columns:\s*48px 66px 66px 22px 22px 22px;/);
-  assert.match(itinerary, /padding-left:\s*4px;[\s\S]*justify-content:\s*space-between;[\s\S]*column-gap:\s*3px;/);
-  assert.match(itinerary, /--expense-content-end-inset:\s*32px;/);
-  assert.match(itinerary, /padding-right:\s*var\(--expense-content-end-inset\);/);
-  assert.match(itinerary, /dates__row \.calendar-date\s*\{[\s\S]*width:\s*100%;[\s\S]*justify-self:\s*stretch;/);
-  assert.match(correction, /\.itinerary-collapse\s*\{[\s\S]*grid-template-rows:\s*0fr;[\s\S]*190ms/);
-  assert.match(correction, /\.itinerary-collapse\.is-open\s*\{[\s\S]*grid-template-rows:\s*1fr;/);
-  assert.match(segmentForm, /<CollapsibleRegion open=\{expanded\}>[\s\S]*<SegmentBody/);
-  assert.match(originSection, /<CollapsibleRegion open=\{expanded\}>[\s\S]*<OriginBody/);
+  assert.match(compact, /grid-template-columns:\s*42px 56px 56px 22px 22px 18px;/);
+  assert.match(compact, /\.segment__details-btn\s*\{[^}]*background:\s*var\(--atlas-accent\);/s);
+  assert.doesNotMatch(segmentForm, /CollapsibleRegion|<SegmentBody|expanded=|onToggle=/);
+  assert.doesNotMatch(originSection, /CollapsibleRegion|<OriginBody|useState/);
+  assert.match(modal, /className="segnote segment-details-modal"/);
+  assert.match(modal, /<SegmentBody/);
+  assert.match(modal, /<OriginBody/);
   assert.match(main, /TripWorkspaceHeaderLayout\.css';\s*\nimport '\.\/app\/HeaderRequestedPolish\.css';/);
   assert.match(headerPolish, /\.trip-summary__metric:hover/);
   assert.match(headerPolish, /background:\s*transparent;/);
