@@ -23,7 +23,7 @@ test('desktop itinerary keeps seven natural rows aligned, centered and without a
     compact,
     /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-width:\s*none;[^}]*padding-top:\s*0;[^}]*padding-bottom:\s*8px;/s
   );
-  assert.match(compact, /\.editor-module--itinerary \.editor__body::\-webkit-scrollbar\s*\{[^}]*display:\s*none;/s);
+  assert.match(compact, /\.editor-module--itinerary \.editor__body::-webkit-scrollbar\s*\{[^}]*display:\s*none;/s);
 
   /* Origen y destinos deben ocupar la misma banda vertical. */
   assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
