@@ -3,9 +3,15 @@
 @media (min-width: 721px) {
   .workspace__desktop--column {
     --floating-panel-left: 34px;
-    --floating-panel-top-gap: 10px; /* token legacy conservado; ya no posiciona el panel */
+    --floating-panel-top-gap: 10px;
     --floating-panel-width: 426px;
     --floating-panel-height: 506px;
+    /* Coincide con la posición real de la tarjeta: centrada bajo el header y,
+       cuando falta altura, limitada al gutter superior contractual de 10px. */
+    --floating-panel-card-top: max(
+      calc(var(--trip-header-height) + var(--floating-panel-top-gap)),
+      calc((100% + var(--trip-header-height) - var(--floating-panel-height)) / 2)
+    );
     position: relative;
     display: block;
     background: transparent;
@@ -105,9 +111,14 @@
   }
 
   /* Los overlays del mapa comienzan después del panel compartido y mantienen
-     14px de separación visual. */
+     14px de separación visual. Nota y detalles comparten además exactamente
+     la misma cota superior que la tarjeta principal. */
   .workspace__desktop--column > .mappane .segnote,
   .workspace__desktop--column > .mappane .geo-search {
     left: calc(var(--floating-panel-left) + var(--floating-panel-width) + 14px);
+  }
+
+  .workspace__desktop--column > .mappane .segnote {
+    top: var(--floating-panel-card-top) !important;
   }
 }

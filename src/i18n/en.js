@@ -9,6 +9,7 @@ export default {
   tripSummary: 'Trip summary',
   tripMetrics: 'Trip metrics',
   noTripDates: 'No dates',
+  tripDates: 'Trip dates',
   destinations: 'Destinations',
   cities: 'cities',
   totalNights: 'Total nights',

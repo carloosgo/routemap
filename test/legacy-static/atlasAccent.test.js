@@ -70,7 +70,7 @@ test('itinerary, routes and notes keep one tab structure in the global header', 
   assert.match(navCss, /\.trip-summary__primary-nav-badge--notes\s*\{[\s\S]*background:\s*#fff0eb;[\s\S]*color:\s*#e2725b;/);
 });
 
-test('routes keeps its own icon while distance uses the requested span marker', async () => {
+test('routes keeps its own icon while the header replaces distance with the trip date range', async () => {
   const navigation = await read('src/app/TripHeaderNavigation.jsx');
   const editor = await read('src/app/AppEditorModule.jsx');
   const header = await read('src/app/TripSummaryHeader.jsx');
@@ -78,10 +78,11 @@ test('routes keeps its own icon while distance uses the requested span marker', 
 
   assert.match(navigation, /IconRoute/);
   assert.doesNotMatch(navigation, /NAV_ICON_COLOR|#7c5ce7/);
-  assert.match(header, /function DistanceSpanIcon/);
-  assert.match(header, /Icon=\{DistanceSpanIcon\}/);
+  assert.match(header, /IconCalendar/);
+  assert.match(header, /label=\{t\('tripDates'\)\}/);
+  assert.match(header, /summary\.startDate[\s\S]*summary\.endDate/);
   assert.match(header, /Icon=\{IconMapPin\} iconColor="#e05252"/);
-  assert.doesNotMatch(header, /IconRulerMeasure/);
+  assert.doesNotMatch(header, /DistanceSpanIcon|distanceKm|totalDistance|≈\s*\$\{distance\}\s*km/);
   assert.doesNotMatch(header, /<Metric Icon=\{IconRoute\}/);
   assert.doesNotMatch(navigation, /lugaresIcon|lugares-storefront-v2/);
   assert.doesNotMatch(editor, /lugaresIcon|lugares-storefront-v2/);
