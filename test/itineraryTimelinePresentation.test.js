@@ -20,7 +20,7 @@ test('origin y destination usan ciudad seleccionada de una sola linea a 13px/600
   assert.doesNotMatch(origin, /itinerary-origin__country/);
 });
 
-test('timeline preserves flag geometry and gives cost and actions independent tracks', async () => {
+test('timeline preserves flag geometry and spaces cost and actions by visual icon width', async () => {
   const header = await read('src/modules/trips/SegmentHeader.jsx');
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const css = await read('src/modules/trips/ItineraryTimeline.css');
@@ -33,7 +33,9 @@ test('timeline preserves flag geometry and gives cost and actions independent tr
   assert.match(header, /itinerary-stop__amount/);
   assert.match(origin, /itinerary-stop__amount/);
   assert.match(compact, /grid-template-columns:\s*18px 30px 126px minmax\(0, 1fr\);/);
-  assert.match(compact, /grid-template-columns:\s*110px 22px 22px 22px;/);
+  assert.match(compact, /grid-template-columns:\s*110px repeat\(3, 14px\);/);
+  assert.match(compact, /padding-right:\s*4px;[\s\S]*column-gap:\s*8px;/s);
+  assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;/s);
   assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*110px;[^}]*color:\s*#117b80;[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;/s);
 });
 

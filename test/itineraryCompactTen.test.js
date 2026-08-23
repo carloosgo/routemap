@@ -16,10 +16,8 @@ test('desktop itinerary keeps compact equal rows, visible scrollbar and cost-onl
   const originRow = await read('src/modules/trips/ItineraryOrigin.jsx');
 
   assert.match(compact, /@media \(min-width:\s*721px\)/);
-  assert.match(floating, /\.workspace__desktop--column:has\(\.editor-module--itinerary\)/);
-  assert.match(floating, /--floating-panel-left:\s*34px;/);
-  assert.match(floating, /--floating-panel-top-gap:\s*10px;/);
-  assert.match(floating, /--floating-panel-width:\s*426px;/);
+  assert.doesNotMatch(floating, /:has\(\.editor-module--itinerary\)/);
+  assert.match(floating, /\.workspace__desktop--column\s*\{[^}]*--floating-panel-left:\s*34px;[^}]*--floating-panel-top-gap:\s*10px;[^}]*--floating-panel-width:\s*426px;/s);
   assert.match(floating, /top:\s*calc\(var\(--trip-header-height\) \+ var\(--floating-panel-top-gap\)\);/);
 
   assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;[^}]*scrollbar-width:\s*thin;[^}]*padding:\s*0 12px 6px;/s);
@@ -32,8 +30,10 @@ test('desktop itinerary keeps compact equal rows, visible scrollbar and cost-onl
   assert.match(compact, /max-width:\s*126px;/);
   assert.match(compact, /autocomplete__selected-value[\s\S]*transform:\s*none;[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*600;[\s\S]*white-space:\s*nowrap;/s);
 
-  assert.match(compact, /grid-template-columns:\s*110px 22px 22px 22px;/);
-  assert.match(compact, /width:\s*max-content;[\s\S]*justify-self:\s*end;/s);
+  assert.match(compact, /grid-template-columns:\s*110px repeat\(3, 14px\);/);
+  assert.match(compact, /padding-right:\s*4px;[\s\S]*column-gap:\s*8px;/s);
+  assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;[\s\S]*height:\s*22px;/s);
+  assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon::before,[\s\S]*inset:\s*-4px;/s);
   assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*110px;[^}]*color:\s*#117b80;[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;[^}]*text-align:\s*right;[^}]*overflow:\s*visible;/s);
   assert.doesNotMatch(compact, /\.itinerary-stop__dates|\.itinerary-stop__nights|segment__pill|background:\s*var\(--atlas-accent\)/);
   assert.doesNotMatch(header, /itinerary-stop__country|itinerary-stop__nights|itinerary-stop__dates/);

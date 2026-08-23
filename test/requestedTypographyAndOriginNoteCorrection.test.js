@@ -108,22 +108,22 @@ test('origin and segment notes keep one toggle path while details use the parall
   assert.match(map, /data-persistence-state=\{persistenceState\}/);
 });
 
-test('desktop itinerary uses cost-only rows, visible scrollbar and narrower centered geometry', async () => {
+test('desktop itinerary uses cost-only rows, visible scrollbar, visual icon spacing and shared panel geometry', async () => {
   const correction = await read('src/modules/trips/ItineraryCorrectionPolish.css');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
   const floating = await read('src/app/FloatingItineraryPanel.css');
   const floatingEditor = await read('src/app/FloatingEditor.css');
 
   assert.doesNotMatch(correction, /scrollbar-gutter:\s*stable/);
-  assert.match(floating, /\.workspace__desktop--column:has\(\.editor-module--itinerary\)/);
-  assert.match(floating, /--floating-panel-left:\s*34px;/);
-  assert.match(floating, /--floating-panel-top-gap:\s*10px;/);
-  assert.match(floating, /--floating-panel-width:\s*426px;/);
+  assert.doesNotMatch(floating, /:has\(\.editor-module--itinerary\)/);
+  assert.match(floating, /\.workspace__desktop--column\s*\{[^}]*--floating-panel-left:\s*34px;[^}]*--floating-panel-top-gap:\s*10px;[^}]*--floating-panel-width:\s*426px;/s);
   assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;[^}]*scrollbar-width:\s*thin;[^}]*padding:\s*0 12px 6px;/s);
   assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
   assert.match(compact, /min-height:\s*40px;[^}]*height:\s*40px;/s);
-  assert.match(compact, /grid-template-columns:\s*110px 22px 22px 22px;/);
-  assert.match(compact, /column-gap:\s*6px;/);
+  assert.match(compact, /grid-template-columns:\s*110px repeat\(3, 14px\);/);
+  assert.match(compact, /padding-right:\s*4px;/);
+  assert.match(compact, /column-gap:\s*8px;/);
+  assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;/s);
   assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*color:\s*#117b80;[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;/s);
   assert.doesNotMatch(compact, /justify-content:\s*space-between|itinerary-stop__dates|itinerary-stop__nights|56px\s*!important|background:\s*var\(--atlas-accent\)/);
   assert.doesNotMatch(floatingEditor, /Densidad compacta nativa|reproduce la sensación del navegador al 90%/);

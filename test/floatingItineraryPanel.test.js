@@ -6,13 +6,14 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('desktop itinerary panel floats over a full-width map with rounded corners', async () => {
+test('desktop primary panels share one floating geometry over the full-width map', async () => {
   const css = await read('src/app/FloatingItineraryPanel.css');
   const main = await read('src/main.jsx');
 
   assert.match(css, /@media \(min-width:\s*721px\)/);
-  assert.match(css, /\.workspace__desktop--column\s*\{[^}]*--floating-panel-left:\s*14px;[^}]*--floating-panel-top-gap:\s*14px;[^}]*--floating-panel-width:\s*var\(--workspace-panel-width,[^}]*display:\s*block;/s);
-  assert.match(css, /\.workspace__desktop--column:has\(\.editor-module--itinerary\)\s*\{[^}]*--floating-panel-left:\s*34px;[^}]*--floating-panel-top-gap:\s*10px;[^}]*--floating-panel-width:\s*426px;/s);
+  assert.match(css, /\.workspace__desktop--column\s*\{[^}]*--floating-panel-left:\s*34px;[^}]*--floating-panel-top-gap:\s*10px;[^}]*--floating-panel-width:\s*426px;[^}]*display:\s*block;/s);
+  assert.doesNotMatch(css, /:has\(\.editor-module--itinerary\)/);
+  assert.doesNotMatch(css, /--floating-panel-width:\s*var\(--workspace-panel-width/);
   assert.match(css, /\.workspace__desktop--column > \.mappane\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;/s);
   assert.match(
     css,
