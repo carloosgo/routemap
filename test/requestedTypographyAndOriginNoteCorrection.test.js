@@ -6,7 +6,7 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('header summary typography remains isolated and origin no longer has a special smaller hierarchy', async () => {
+test('header summary typography remains isolated and origin shares destination hierarchy', async () => {
   const header = await read('src/app/TripSummaryHeaderTypography.css');
   const tripHeader = await read('src/app/TripSummaryHeader.jsx');
   const main = await read('src/main.jsx');
@@ -79,7 +79,7 @@ test('header trial owns the three primary tabs, omits the routes counter, keeps 
   );
 });
 
-test('origin and segment notes share one toggle path and the same outside-click semantics', async () => {
+test('origin and segment notes keep one toggle path while details use the parallel note-style surface', async () => {
   const form = await read('src/modules/trips/SegmentForm.jsx');
   const origin = await read('src/modules/trips/SegmentOriginSection.jsx');
   const body = await read('src/modules/trips/OriginBody.jsx');
@@ -92,19 +92,21 @@ test('origin and segment notes share one toggle path and the same outside-click 
   assert.match(form, /ORIGIN_NOTE_TARGET/);
   assert.match(form, /const openSegmentNote = \(\) => onOpenNote\(segment\.id\);/);
   assert.match(form, /const openOriginNote = \(\) => onOpenNote\(ORIGIN_NOTE_TARGET\);/);
+  assert.match(form, /const openSegmentDetails = \(\) => onOpenDetails\(segment\.id\);/);
+  assert.match(form, /const openOriginDetails = \(\) => onOpenDetails\(ORIGIN_NOTE_TARGET\);/);
   assert.match(form, /onOpenNote=\{openOriginNote\}/);
   assert.match(form, /onOpenNote=\{openSegmentNote\}/);
   assert.match(origin, /onOpenNote=\{onOpenNote\}/);
+  assert.match(origin, /onOpenDetails=\{onOpenDetails\}/);
   assert.doesNotMatch(body, /itinerary-origin__note-editor|<textarea/);
 
-  assert.match(app, /toggleTarget\(current, target\)/);
+  assert.match(app, /setOpenDetailsTarget\(null\);[\s\S]*setOpenNoteSegmentId/s);
+  assert.match(app, /setOpenNoteSegmentId\(null\);[\s\S]*setOpenDetailsTarget/s);
   assert.match(app, /toggleNoteTarget=\{toggleNoteTarget\}/);
-  assert.match(editorModule, /toggleNoteTarget=\{toggleNoteTarget\}/);
-  assert.match(editorPane, /onOpenNote=\{toggleNoteTarget\}/);
-  assert.match(
-    interactions,
-    /selector === '\.segnote' && target\.closest\('\.segment__note-btn'\)\) return;/
-  );
+  assert.match(app, /toggleDetailsTarget=\{toggleDetailsTarget\}/);
+  assert.match(editorModule, /toggleDetailsTarget=\{toggleDetailsTarget\}/);
+  assert.match(editorPane, /onOpenDetails=\{toggleDetailsTarget\}/);
+  assert.match(interactions, /\.segment__note-btn, \.segment__details-btn/);
   assert.doesNotMatch(interactions, /suppressNextClick|clickedSegmentId|openSegmentId/);
 
   assert.match(map, /openNoteSegmentId === ORIGIN_NOTE_TARGET/);
@@ -113,11 +115,12 @@ test('origin and segment notes share one toggle path and the same outside-click 
   assert.match(map, /updateOriginDetails\(\{ note: event\.target\.value \}\)/);
   assert.match(map, /updateSegment\(segment\.id, \{ note: event\.target\.value \}\)/);
   assert.match(map, /const notePanel = openNoteSegmentId \? openNotePanel\(\) : null;/);
-  assert.match(map, /\{notePanel && \(/);
+  assert.match(map, /const detailsPanel = openDetailsTarget \?/);
+  assert.match(map, /\{detailsPanel\}/);
   assert.match(map, /data-persistence-state=\{persistenceState\}/);
 });
 
-test('desktop itinerary uses seven equal rows, hides the scrollbar chrome and centers the floating card', async () => {
+test('desktop itinerary uses compact equal rows, fixed 56px metrics and centered floating card', async () => {
   const correction = await read('src/modules/trips/ItineraryCorrectionPolish.css');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
   const floatingEditor = await read('src/app/FloatingEditor.css');
@@ -125,15 +128,16 @@ test('desktop itinerary uses seven equal rows, hides the scrollbar chrome and ce
   assert.doesNotMatch(correction, /scrollbar-gutter:\s*stable/);
   assert.match(
     compact,
-    /\.workspace-panel:has\(\.editor-module--itinerary\)\s*\{[^}]*top:\s*calc\(50% \+ 31\.5px\);[^}]*transform:\s*translateY\(-50%\);/s
+    /\.workspace-panel:has\(\.editor-module--itinerary\)\s*\{[^}]*top:\s*calc\(50% \+ 31\.5px\);[^}]*396px[\s\S]*transform:\s*translateY\(-50%\);/s
   );
   assert.match(
     compact,
-    /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-width:\s*none;[^}]*padding-top:\s*0;/s
+    /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-width:\s*none;[^}]*padding-top:\s*6px;/s
   );
   assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
-  assert.match(compact, /min-height:\s*62px;[^}]*height:\s*62px;/s);
-  assert.match(compact, /grid-template-columns:\s*42px max-content max-content;/);
-  assert.doesNotMatch(compact, /min-height:\s*44px|height:\s*18px|height:\s*20px/);
+  assert.match(compact, /min-height:\s*48px;[^}]*height:\s*48px;/s);
+  assert.match(compact, /grid-template-columns:\s*42px 56px 56px 22px 22px 18px;/);
+  assert.match(compact, /width:\s*56px\s*!important;[\s\S]*max-width:\s*56px\s*!important;/);
+  assert.doesNotMatch(compact, /grid-template-columns:\s*42px max-content max-content/);
   assert.doesNotMatch(floatingEditor, /Densidad compacta nativa|reproduce la sensación del navegador al 90%/);
 });
