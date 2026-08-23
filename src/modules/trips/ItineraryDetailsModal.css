@@ -5,7 +5,10 @@
 .segment-details-modal {
   width: min(
     446px,
-    calc(100% - var(--workspace-panel-width, 458px) - 28px)
+    calc(
+      100% - var(--floating-panel-left, 34px) -
+      var(--floating-panel-width, 426px) - 28px
+    )
   );
   min-width: 360px;
   max-height: calc(100% - var(--trip-header-height, 63px) - 24px);
@@ -25,21 +28,32 @@
   width: 100%;
   max-width: none;
   margin: 0;
-  padding: 16px 18px 18px !important;
+  padding: 16px 12px 18px !important;
   border: 0 !important;
   border-radius: 0;
   background: #ffffff !important;
   box-shadow: none !important;
 }
 
-/* Fechas y conceptos comparten una caja centrada. El modal puede crecer en
-   pantallas anchas, pero el contenido mantiene un ancho cómodo y simétrico. */
+/* Dentro del modal la línea central gobierna fechas y conceptos. No existe
+   una caja interior más estrecha: ambas mitades usan exactamente el mismo
+   ancho disponible y el mismo gap. */
+.segment-details-modal .segment-expense-form {
+  --expense-column-gap: 14px;
+}
+
 .segment-details-modal .segment-expense-form .dates,
 .segment-details-modal .expenses--journey {
   width: 100%;
-  max-width: 394px;
-  margin-left: auto;
-  margin-right: auto;
+  max-width: none;
+  margin: 0;
+}
+
+.segment-details-modal .segment-expense-form .dates__row,
+.segment-details-modal .expenses--journey .expenses__fixed-list,
+.segment-details-modal .expenses--journey .expenses__lineitems {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--expense-column-gap);
 }
 
 .segment-details-modal .itinerary-origin__body .dates--origin .dates__row {
@@ -52,18 +66,22 @@
   grid-column: 1;
 }
 
-/* Dentro del modal cada concepto usa tracks explícitos. La etiqueta nunca
-   comparte espacio con el importe, evitando el solapamiento de Hospedaje. */
-.segment-details-modal .expenses--journey .expenses__fixed-list,
-.segment-details-modal .expenses--journey .expenses__lineitems {
-  column-gap: 20px;
+/* La fecha aprovecha casi todo el control. El icono del calendario ya está
+   oculto y sólo se reserva el área necesaria para el botón de limpiar. */
+.segment-details-modal .segment-expense-form .calendar-date__value,
+.segment-details-modal .segment-expense-form .calendar-date__placeholder {
+  width: calc(100% - 38px);
+  max-width: calc(100% - 38px);
 }
 
+/* Cada concepto conserva tres tracks, pero el importe deja más ancho útil a
+   la etiqueta. Con las dos mitades simétricas, Hospedaje y Autobús caben sin
+   invadir el monto ni recurrir a ellipsis en el ancho normal del modal. */
 .segment-details-modal .expenses--journey .moneycard {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) 74px;
+  grid-template-columns: 18px minmax(0, 1fr) 70px;
   align-items: center;
-  column-gap: 6px;
+  column-gap: 4px;
 }
 
 .segment-details-modal .expenses--journey .moneycard__icon {
@@ -74,39 +92,54 @@
 .segment-details-modal .expenses--journey .moneycard__typeinput {
   grid-column: 2;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
 .segment-details-modal .expenses--journey .moneycard__amount {
   grid-column: 3;
-  width: 74px;
-  min-width: 74px;
+  width: 70px;
+  min-width: 70px;
   margin-left: 0;
   padding-left: 0;
   padding-right: 0;
 }
 
 .segment-details-modal .expenses--journey .moneycard__input {
-  width: 56px;
+  width: 52px;
 }
 
 @media (max-width: 980px) and (min-width: 721px) {
   .segment-details-modal {
     min-width: 320px;
-    width: calc(100% - var(--workspace-panel-width, 458px) - 28px);
+    width: calc(
+      100% - var(--floating-panel-left, 34px) -
+      var(--floating-panel-width, 426px) - 28px
+    );
   }
 
   .segment-details-modal .segment__body,
   .segment-details-modal .itinerary-origin__body {
-    padding-left: 16px !important;
-    padding-right: 16px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
   }
 
-  .segment-details-modal .expenses--journey .expenses__fixed-list,
-  .segment-details-modal .expenses--journey .expenses__lineitems {
-    column-gap: 16px;
+  .segment-details-modal .segment-expense-form {
+    --expense-column-gap: 12px;
+  }
+
+  .segment-details-modal .expenses--journey .moneycard {
+    grid-template-columns: 18px minmax(0, 1fr) 66px;
+  }
+
+  .segment-details-modal .expenses--journey .moneycard__amount {
+    width: 66px;
+    min-width: 66px;
+  }
+
+  .segment-details-modal .expenses--journey .moneycard__input {
+    width: 48px;
   }
 }
 
@@ -120,11 +153,15 @@
   }
 
   .segment-details-modal .expenses--journey .moneycard {
-    grid-template-columns: 18px minmax(0, 1fr) 72px;
+    grid-template-columns: 18px minmax(0, 1fr) 66px;
   }
 
   .segment-details-modal .expenses--journey .moneycard__amount {
-    width: 72px;
-    min-width: 72px;
+    width: 66px;
+    min-width: 66px;
+  }
+
+  .segment-details-modal .expenses--journey .moneycard__input {
+    width: 48px;
   }
 }
