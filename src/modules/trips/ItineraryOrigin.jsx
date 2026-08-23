@@ -8,6 +8,19 @@ import { useTranslation } from '../../i18n/index.jsx';
 import { flagImageUrl } from '../flags/flags.js';
 import './OriginOptions.css';
 
+const NOTE_DOT_STYLE = Object.freeze({
+  position: 'absolute',
+  top: '2px',
+  left: '-2px',
+  width: '4px',
+  height: '4px',
+  boxSizing: 'border-box',
+  borderRadius: '50%',
+  border: '1px solid var(--surface, #fff)',
+  background: '#417c8f',
+  pointerEvents: 'none',
+});
+
 export function ItineraryOrigin({
   city,
   formattedAmount,
@@ -57,12 +70,14 @@ export function ItineraryOrigin({
 
         <button
           type="button"
-          className={'btn btn--icon segment__note-btn itinerary-origin__note-btn' + (hasNote ? ' has-note' : '')}
+          className="btn btn--icon segment__note-btn itinerary-origin__note-btn"
+          style={hasNote ? { color: '#417c8f' } : undefined}
           aria-label={originNoteLabel}
           title={originNoteLabel}
           onClick={onOpenNote}
         >
           <IconNote size={14} aria-hidden="true" />
+          {hasNote && <span aria-hidden="true" style={NOTE_DOT_STYLE} />}
         </button>
 
         <button

@@ -9,6 +9,19 @@ import { useTranslation } from '../../i18n/index.jsx';
 import { flagImageUrl } from '../flags/flags.js';
 import './SegmentHeader.css';
 
+const NOTE_DOT_STYLE = Object.freeze({
+  position: 'absolute',
+  top: '2px',
+  left: '-2px',
+  width: '4px',
+  height: '4px',
+  boxSizing: 'border-box',
+  borderRadius: '50%',
+  border: '1px solid var(--surface, #fff)',
+  background: '#417c8f',
+  pointerEvents: 'none',
+});
+
 export function SegmentHeader({
   segment,
   formattedAmount,
@@ -21,6 +34,7 @@ export function SegmentHeader({
 }) {
   const { t } = useTranslation();
   const destination = segment.destination;
+  const hasNote = Boolean(segment.note);
 
   return (
     <header className="segment__header itinerary-stop">
@@ -68,12 +82,14 @@ export function SegmentHeader({
 
         <button
           type="button"
-          className={'btn btn--icon segment__note-btn' + (segment.note ? ' has-note' : '')}
+          className="btn btn--icon segment__note-btn"
+          style={hasNote ? { color: '#417c8f' } : undefined}
           aria-label={t('segmentNote')}
           title={t('segmentNote')}
           onClick={onOpenNote}
         >
           <IconNote size={14} aria-hidden="true" />
+          {hasNote && <span aria-hidden="true" style={NOTE_DOT_STYLE} />}
         </button>
 
         <button

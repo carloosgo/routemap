@@ -11,6 +11,7 @@ function ExpenseMoneyCard({ definition, label, value, onChange }) {
       label={label}
       value={value}
       onChange={onChange}
+      centered
     />
   );
 }
