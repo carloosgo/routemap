@@ -1,8 +1,5 @@
 import { expensesTotal } from '../expenses/expenseModel.js';
-import {
-  formatSegmentAmount,
-  formatSegmentDate,
-} from './segmentFormModel.js';
+import { formatSegmentAmount } from './segmentFormModel.js';
 import { ItineraryOrigin } from './ItineraryOrigin.jsx';
 
 export function SegmentOriginSection({
@@ -14,8 +11,6 @@ export function SegmentOriginSection({
   onOpenNote,
   onOpenDetails,
 }) {
-  const formattedStartDate = formatSegmentDate(originDetails?.departureDate, locale) || '—';
-  const formattedEndDate = '—';
   const formattedAmount = formatSegmentAmount(
     expensesTotal(originDetails?.expenses),
     locale,
@@ -26,8 +21,6 @@ export function SegmentOriginSection({
     <section className="itinerary-origin-section">
       <ItineraryOrigin
         city={segment.origin}
-        formattedStartDate={formattedStartDate}
-        formattedEndDate={formattedEndDate}
         formattedAmount={formattedAmount}
         hasNote={Boolean(originDetails?.note)}
         onSelect={(origin) => onUpdate({ origin })}
