@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import {
   IconBed,
   IconBus,
+  IconCalendar,
   IconCar,
   IconChevronDown,
   IconCurrencyDollar,
@@ -32,23 +33,6 @@ const BREAKDOWN_CATS = [
   { key: 'others', labelKey: 'others', Icon: IconDots, color: '#9499ab' },
 ];
 
-function DistanceSpanIcon({ size = 18 }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 18 18"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <path d="M3.25 5.25V12.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M14.75 5.25V12.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M5.5 9H12.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function displayName(code, type, locale) {
   try {
     const name = new Intl.DisplayNames([locale], { type }).of(code);
@@ -56,6 +40,22 @@ function displayName(code, type, locale) {
     return name.charAt(0).toUpperCase() + name.slice(1);
   } catch {
     return code;
+  }
+}
+
+function formatHeaderDate(iso, locale) {
+  if (!iso) return '';
+  const date = new Date(`${iso}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return iso;
+  try {
+    return new Intl.DateTimeFormat(locale, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(date);
+  } catch {
+    return iso;
   }
 }
 
@@ -126,7 +126,9 @@ export function TripSummaryHeader({
     return () => document.removeEventListener('pointerdown', closeOnOutsidePointer);
   }, [showBreakdown, setShowBreakdown]);
 
-  const distance = new Intl.NumberFormat(intlLocale, { maximumFractionDigits: 0 }).format(summary.distanceKm);
+  const tripDateRange = summary.startDate && summary.endDate
+    ? `${formatHeaderDate(summary.startDate, intlLocale)} – ${formatHeaderDate(summary.endDate, intlLocale)}`
+    : t('noTripDates');
 
   return (
     <header className="trip-summary" aria-label={t('tripSummary')}>
@@ -142,6 +144,14 @@ export function TripSummaryHeader({
       </div>
 
       <div className="trip-summary__metrics" aria-label={t('tripMetrics')}>
+        <Metric
+          Icon={IconCalendar}
+          iconColor="#19a5d0"
+          label={t('tripDates')}
+          value={tripDateRange}
+          className="trip-summary__metric--dates"
+        />
+
         <div className="trip-summary__breakdown-anchor" ref={breakdownRef}>
           <Metric
             Icon={IconWallet}
@@ -178,7 +188,6 @@ export function TripSummaryHeader({
 
         <Metric Icon={IconMapPin} iconColor="#e05252" label={t('destinations')} value={`${summary.destinations} ${t('cities')}`} />
         <Metric Icon={IconMoon} iconColor="#4f6df5" label={t('totalNights')} value={`${summary.nights} ${t('nights')}`} />
-        <Metric Icon={DistanceSpanIcon} iconColor="#e08a17" label={t('totalDistance')} value={`≈ ${distance} km`} />
         <SummarySelectorMetric Icon={IconCurrencyDollar} iconColor="#c9224d" label={t('currency')} value={trip.currency} options={currencyOptions} onChange={setCurrency} menuClassName="trip-summary__selector-menu--currency" />
         <SummarySelectorMetric Icon={IconLanguage} iconColor="#357d94" label={t('language')} value={locale} options={languageOptions} onChange={setLocale} menuClassName="trip-summary__selector-menu--language" />
       </div>
