@@ -179,3 +179,13 @@
     padding-bottom: 8px;
   }
 }
+
+/* El punto indica que existe contenido, pero no debe competir visualmente con
+   el icono de nota. La zona clicable del botón permanece intacta. */
+.segment__note-btn.has-note::after {
+  top: 5px;
+  right: 5px;
+  width: 4px;
+  height: 4px;
+  border-width: 1px;
+}
