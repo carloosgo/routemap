@@ -1,11 +1,8 @@
 /* Vista compacta de siete entradas del itinerario en escritorio.
-   Origen y destinos usan la misma banda vertical. Bandera y campo ciudad
-   conservan sus dimensiones canónicas; la compactación vive únicamente en el
-   ritmo entre filas y en la distribución posterior a la ciudad. */
+   Origen y destinos usan la misma banda vertical. La bandera conserva 30x20;
+   la ciudad gana aire horizontal y el resto de la fila usa tracks estables. */
 
 @media (min-width: 721px) {
-  /* Itinerario deja de imponer una altura propia: hereda exactamente el mismo
-     top/bottom del panel flotante que usan Mis Rutas y Notas. */
   .editor-module--itinerary .editor__body {
     overflow-y: auto;
     overflow-x: hidden;
@@ -32,8 +29,6 @@
     margin: 0;
   }
 
-  /* La banda visible es idéntica para origen y destino. 48 px conserva 14 px
-     de respiración alrededor de la bandera de 20 px sin tocar su tamaño. */
   .segments:not(.segments--compact) .itinerary-origin,
   .editor-module.editor-module--itinerary .itinerary-segment .segment__header.itinerary-stop {
     box-sizing: border-box;
@@ -50,8 +45,50 @@
     padding-bottom: 0 !important;
   }
 
-  /* La fecha desaparece del resumen. Después de ciudad todas las filas usan
-     la misma retícula: Noches / Costo / Nota / Desplegar / Cerrar. */
+  /* La ciudad gana 20px sin tocar la bandera. Ya no hay país debajo, así que
+     el nombre seleccionado usa una sola línea nítida y estable. */
+  .editor-module.editor-module--itinerary .itinerary-segment .segment__header.itinerary-stop {
+    grid-template-columns: 18px 30px 126px minmax(0, 1fr);
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-stop__place,
+  .segments:not(.segments--compact) .itinerary-origin__place {
+    max-width: 126px;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin {
+    grid-template-columns: 30px 126px minmax(0, 1fr);
+  }
+
+  .editor-module--itinerary .itinerary-stop__picker .autocomplete__selected-value,
+  .segments:not(.segments--compact) .itinerary-origin__picker .autocomplete__selected-value {
+    top: 0;
+    bottom: 0;
+    left: 4px;
+    right: 4px;
+    max-height: none;
+    transform: none;
+    display: flex;
+    align-items: center;
+    -webkit-line-clamp: 1;
+    color: #303642;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    overflow-wrap: normal;
+  }
+
+  .editor-module--itinerary .itinerary-stop__picker .input,
+  .segments:not(.segments--compact) .itinerary-origin__picker .input {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  /* Noches / Costo / Nota / Desplegar / Cerrar. Los dos primeros tracks ya
+     no se recortan y los tres botones quedan a una distancia uniforme de 4px. */
   .editor-module.editor-module--itinerary .itinerary-stop__after-place,
   .segments:not(.segments--compact) .itinerary-origin__after-place {
     box-sizing: border-box;
@@ -59,10 +96,10 @@
     min-width: 0;
     padding-left: 4px;
     display: grid;
-    grid-template-columns: 76px 92px 22px 22px 22px;
+    grid-template-columns: 64px minmax(86px, 1fr) 22px 22px 22px;
     align-items: center;
-    justify-content: space-between;
-    column-gap: 6px;
+    justify-content: stretch;
+    column-gap: 4px;
   }
 
   .editor-module.editor-module--itinerary .itinerary-stop__metrics,
@@ -70,9 +107,6 @@
     display: contents;
   }
 
-  /* Noches y costo son texto plano: sin pill, fondo, borde, radio ni caja
-     forzada. Sus tracks sí son constantes para mantener todas las filas
-     perfectamente alineadas incluso cuando cambian los valores. */
   .editor-module--itinerary .itinerary-stop__nights,
   .editor-module--itinerary .itinerary-stop__amount {
     box-sizing: border-box;
@@ -86,30 +120,33 @@
     border-radius: 0;
     background: transparent !important;
     box-shadow: none;
-    color: #8b929e;
+    color: #77808c;
     font-size: 13px;
-    font-weight: 500;
-    line-height: 1.2;
+    font-weight: 400;
+    line-height: 16px;
     text-align: left;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible;
+    text-overflow: clip;
   }
 
   .editor-module--itinerary .itinerary-stop__nights.is-placeholder {
-    color: #b3b8c1;
+    color: #a8afb8;
   }
 
-  /* Nota, desplegar y cerrar recuperan el control icon-only de 22 px que
-     existía antes de la franja azul. Desplegar conserva el nuevo destino:
-     abre el formulario en el módulo flotante sobre el mapa. */
   .editor-module.editor-module--itinerary .itinerary-stop__after-place > .btn--icon,
   .segments:not(.segments--compact) .itinerary-origin__after-place > .btn--icon {
     width: 22px;
     min-width: 22px;
     height: 22px;
     padding: 0;
+    justify-self: center;
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-stop__after-place > .btn--icon:last-child,
+  .segments:not(.segments--compact) .itinerary-origin__after-place > .btn--icon:last-child {
+    justify-self: end;
   }
 
   .editor-module--itinerary .segment__details-btn {
