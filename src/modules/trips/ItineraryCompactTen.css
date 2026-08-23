@@ -1,17 +1,16 @@
-/* Vista de siete entradas del itinerario en escritorio.
-   La ciudad de origen cuenta como la primera fila y comparte exactamente el
-   mismo ritmo vertical que cualquier destino. No se miniaturizan banderas,
-   iconos, textos, inputs ni pills. */
+/* Vista compacta de siete entradas del itinerario en escritorio.
+   Origen y destinos usan la misma banda vertical. Bandera y campo ciudad
+   conservan sus dimensiones canónicas; la compactación vive únicamente en el
+   ritmo entre filas y en la distribución posterior a la ciudad. */
 
 @media (min-width: 721px) {
-  /* El card se centra en el área útil situada bajo el header global de 63 px.
-     Mantiene la altura máxima existente, pero deja de quedar pegado arriba. */
+  /* Siete filas de 48 px + respiración exterior + acción Agregar trayecto. */
   .workspace-panel:has(.editor-module--itinerary) {
     top: calc(50% + 31.5px);
     bottom: auto;
     height: min(
       calc(100% - var(--trip-header-height) - 28px),
-      506px
+      396px
     );
     transform: translateY(-50%);
   }
@@ -20,16 +19,18 @@
     transform: translate(calc(-100% - 14px), -50%);
   }
 
-  /* Se conserva el scroll funcional para contenido expandido o viajes antiguos
-     con más entradas, pero su barra visual desaparece por completo. */
+  /* La lista sigue pudiendo desplazarse si un viaje heredado contiene más
+     filas, pero nunca muestra una barra. En la vista objetivo caben siete
+     entradas contando el origen. */
   .editor-module--itinerary .editor__body {
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-gutter: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    padding-top: 0;
-    padding-bottom: 8px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    gap: 6px;
   }
 
   .editor-module--itinerary .editor__body::-webkit-scrollbar {
@@ -38,22 +39,22 @@
     display: none;
   }
 
-  .segments:not(.segments--compact) {
+  .editor-module--itinerary .segments:not(.segments--compact) {
     padding-top: 0;
+    gap: 0;
   }
 
-  /* Origen y destino usan una fila real de 62 px. Se eliminan el margen extra
-     del origen y el padding inferior de los segmentos que antes desplazaban el
-     contenido hacia la línea superior. */
   .segments:not(.segments--compact) .itinerary-origin-section {
     margin: 0;
   }
 
+  /* La banda visible es idéntica para origen y destino. 48 px conserva 14 px
+     de respiración alrededor de la bandera de 20 px sin tocar su tamaño. */
   .segments:not(.segments--compact) .itinerary-origin,
   .editor-module.editor-module--itinerary .itinerary-segment .segment__header.itinerary-stop {
     box-sizing: border-box;
-    min-height: 62px;
-    height: 62px;
+    min-height: 48px;
+    height: 48px;
     margin: 0;
     padding-top: 0;
     padding-bottom: 0;
@@ -65,23 +66,92 @@
     padding-bottom: 0 !important;
   }
 
-  /* Las métricas conservan la guía de 186 px para no mover nota/chevron/cerrar,
-     pero Noches y Costo recuperan ancho natural en vez de cajas gemelas de 66 px. */
-  .itinerary-stop__metrics,
-  .segments:not(.segments--compact) .itinerary-origin__metrics {
-    grid-template-columns: 42px max-content max-content;
-    justify-content: start;
+  /* Después de ciudad todas las filas comparten exactamente la misma retícula:
+     fecha / noches / costo / nota / eliminar / pestaña de detalle. */
+  .editor-module.editor-module--itinerary .itinerary-stop__after-place,
+  .segments:not(.segments--compact) .itinerary-origin__after-place {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding-left: 4px;
+    display: grid;
+    grid-template-columns: 42px 56px 56px 22px 22px 18px;
     align-items: center;
-    column-gap: 6px;
+    justify-content: space-between;
+    column-gap: 0;
   }
 
-  .itinerary-stop__nights.segment__pill,
-  .itinerary-stop__amount.segment__pill {
-    width: auto;
-    min-width: 0;
-    max-width: none;
-    padding-left: 7px;
-    padding-right: 7px;
+  .editor-module.editor-module--itinerary .itinerary-stop__metrics,
+  .segments:not(.segments--compact) .itinerary-origin__metrics {
+    display: contents;
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-stop__dates,
+  .segments:not(.segments--compact) .itinerary-origin .itinerary-stop__dates {
+    box-sizing: border-box;
+    width: 42px;
+    min-width: 42px;
+    max-width: 42px;
+    padding-left: 0;
+  }
+
+  /* Noches y costo son dos cajas estandarizadas de 56 px. No flexionan, no
+     crecen con el texto y no heredan el antiguo min-width de 58 px. */
+  .editor-module--itinerary .itinerary-stop__nights.segment__pill,
+  .editor-module--itinerary .itinerary-stop__amount.segment__pill {
+    box-sizing: border-box;
+    width: 56px !important;
+    min-width: 56px !important;
+    max-width: 56px !important;
+    height: 22px;
+    padding: 3px 4px;
     justify-self: start;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-stop__after-place > .btn--icon,
+  .segments:not(.segments--compact) .itinerary-origin__after-place > .btn--icon {
+    width: 22px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0;
+  }
+
+  /* La franja azul sustituye al antiguo chevron. Se extiende hasta el borde
+     derecho del card (8 px de padding del editor) y ocupa la altura completa
+     de la fila sin alterar ninguna otra dimensión. */
+  .editor-module--itinerary .segment__details-btn {
+    box-sizing: border-box;
+    align-self: stretch;
+    justify-self: end;
+    width: 18px;
+    min-width: 18px;
+    height: 48px;
+    margin: 0 -8px 0 0;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 0;
+    background: var(--atlas-accent);
+    color: #ffffff;
+    cursor: pointer;
+    box-shadow: none;
+  }
+
+  .editor-module--itinerary .segment__details-btn:hover,
+  .editor-module--itinerary .segment__details-btn:focus-visible {
+    background: var(--atlas-accent);
+    color: #ffffff;
+    filter: brightness(0.94);
+    outline: none;
+  }
+
+  .editor-module--itinerary .btn--add {
+    margin-top: 0;
+    padding-top: 8px;
+    padding-bottom: 8px;
   }
 }
