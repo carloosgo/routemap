@@ -3,6 +3,7 @@ import { colorForIndex } from '../../config.js';
 import { OriginBody } from './OriginBody.jsx';
 import { SegmentBody } from './SegmentBody.jsx';
 import { ORIGIN_NOTE_TARGET } from './tripNoteTargets.js';
+import './ItineraryDetailsModal.css';
 
 export function ItineraryDetailsModal({
   target,
