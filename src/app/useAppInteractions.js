@@ -13,7 +13,6 @@ export function useSaveShortcut(onSave) {
         onSave();
       }
     }
-
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onSave]);
@@ -54,10 +53,13 @@ export function useOutsideClickSelector(selector, active, onOutside) {
       const target = event.target;
       if (!target?.closest) return;
 
-      // Los botones de nota son toggles React compartidos para origen y trayectos.
-      // No los tratamos como outside-click: así mouse, touch y teclado siguen la
-      // misma semántica de abrir/cambiar/cerrar sin una segunda capa DOM.
-      if (selector === '.segnote' && target.closest('.segment__note-btn')) return;
+      // Nota y detalle son toggles React compartidos para origen y trayectos.
+      // No se consideran outside-click para conservar la misma semántica de
+      // abrir/cambiar/cerrar con mouse, touch y teclado.
+      if (
+        selector === '.segnote'
+        && target.closest('.segment__note-btn, .segment__details-btn')
+      ) return;
 
       if (!target.closest(selector)) {
         onOutside();
