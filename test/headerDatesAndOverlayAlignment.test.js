@@ -6,17 +6,18 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('note and detail overlays share the itinerary card top while the filled-note dot stays small', async () => {
+test('note and detail overlays align to the integrated panel top while the filled-note dot stays small', async () => {
   const floating = await read('src/app/FloatingItineraryPanel.css');
   const segmentHeader = await read('src/modules/trips/SegmentHeader.jsx');
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
 
-  assert.match(floating, /--floating-panel-card-top:\s*max\(/);
-  assert.match(floating, /calc\(var\(--trip-header-height\) \+ var\(--floating-panel-top-gap\)\)/);
-  assert.match(floating, /calc\(\(100% \+ var\(--trip-header-height\) - var\(--floating-panel-height\)\) \/ 2\)/);
   assert.match(
     floating,
-    /\.workspace__desktop--column > \.mappane \.segnote\s*\{[^}]*top:\s*var\(--floating-panel-card-top\)\s*!important;/s
+    /\.workspace__desktop--column > \.mappane \.segnote\s*\{[^}]*top:\s*var\(--trip-header-height\)\s*!important;/s
+  );
+  assert.match(
+    floating,
+    /\.workspace__desktop--column > \.mappane \.segnote,[\s\S]*left:\s*14px;/s
   );
 
   for (const source of [segmentHeader, origin]) {
