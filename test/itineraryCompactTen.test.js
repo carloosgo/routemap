@@ -37,7 +37,7 @@ test('desktop itinerary keeps compact equal rows, visible scrollbar and cost-onl
   assert.match(compact, /padding-right:\s*4px;[\s\S]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;[\s\S]*height:\s*22px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon::before,[\s\S]*inset:\s*-4px;/s);
-  assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*90px;[^}]*min-width:\s*90px;[^}]*color:\s*#117b80;[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;[^}]*text-align:\s*right;[^}]*overflow:\s*visible;/s);
+  assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*90px;[^}]*min-width:\s*90px;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;[^}]*text-align:\s*right;[^}]*overflow:\s*visible;/s);
   assert.doesNotMatch(compact, /\.itinerary-stop__dates|\.itinerary-stop__nights|segment__pill|background:\s*var\(--atlas-accent\)/);
   assert.doesNotMatch(header, /itinerary-stop__country|itinerary-stop__nights|itinerary-stop__dates/);
   assert.doesNotMatch(originRow, /itinerary-origin__country|itinerary-stop__nights|itinerary-stop__dates/);
