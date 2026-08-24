@@ -1,6 +1,7 @@
 import { IconArrowRight, IconCheck, IconX } from '@tabler/icons-react';
 import { RouteMap } from '../modules/map/RouteMap.jsx';
 import { ItineraryDetailsModal } from '../modules/trips/ItineraryDetailsModal.jsx';
+import { buildItineraryStopSequence } from '../modules/trips/itineraryStopSequence.js';
 import { ORIGIN_NOTE_TARGET } from '../modules/trips/tripNoteTargets.js';
 import { colorForIndex } from '../config.js';
 
@@ -34,6 +35,7 @@ export function AppMapPane({
   const { noteTarget, detailsTarget, close } = itineraryPanels;
   const persistenceLabel = t(persistenceLabelKey(persistenceState));
   const persistenceHasCheck = persistenceState === 'saved' || persistenceState === 'local';
+  const stopSequence = buildItineraryStopSequence(trip.segments, colorForIndex);
 
   const noteFooter = (length) => (
     <div className="segnote__foot">
@@ -82,6 +84,7 @@ export function AppMapPane({
     const segment = trip.segments.find((item) => item.id === noteTarget);
     if (!segment) return null;
     const index = trip.segments.findIndex((item) => item.id === noteTarget);
+    const stop = stopSequence[index];
     const originName = segment.origin?.name || t('origin');
     const destinationName = segment.destination?.name || t('destination');
     const note = segment.note || '';
@@ -95,7 +98,9 @@ export function AppMapPane({
         style={{ zIndex: 720 }}
       >
         <div className="segnote__head">
-          <span className="segnote__badge" style={{ background: colorForIndex(index) }}>{index + 1}</span>
+          {stop?.number != null && (
+            <span className="segnote__badge" style={{ background: stop.color }}>{stop.number}</span>
+          )}
           <span className="segnote__title">
             {originName}<IconArrowRight size={11} aria-hidden="true" />{destinationName}
           </span>
