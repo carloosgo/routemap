@@ -14,7 +14,7 @@ const city = (id, lat, lon) => ({
 
 const colorForIndex = (index) => `color-${index}`;
 
-test('los trazos visibles conservan secuencia y color continuos aunque haya un tramo incompleto', () => {
+test('los trazos visibles conservan la numeracion y color canonicos aunque haya un tramo incompleto', () => {
   const a = city('a', 0, 0);
   const b = city('b', 0.1, 0.1);
   const d = city('d', 0.3, 0.3);
@@ -40,14 +40,14 @@ test('los trazos visibles conservan secuencia y color continuos aunque haya un t
   );
   assert.deepEqual(
     data.routeFeatures.map((feature) => feature.properties.sequence),
-    [1, 2]
+    [1, 3]
   );
   assert.deepEqual(
     data.routeFeatures.map((feature) => feature.properties.color),
-    ['color-0', 'color-1']
+    ['color-0', 'color-2']
   );
   assert.deepEqual(
     data.cityFeatures.map((feature) => feature.properties.sequence),
-    [1, 2, 3, 4]
+    [null, 1, 2, 3]
   );
 });
