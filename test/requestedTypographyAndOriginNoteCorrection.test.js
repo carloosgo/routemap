@@ -108,7 +108,7 @@ test('origin and segment notes keep one toggle path while details use the parall
   assert.match(map, /data-persistence-state=\{persistenceState\}/);
 });
 
-test('desktop itinerary uses tighter insets and shared centered panel geometry', async () => {
+test('desktop itinerary uses tighter insets while the primary workspace is integrated', async () => {
   const correction = await read('src/modules/trips/ItineraryCorrectionPolish.css');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
   const floating = await read('src/app/FloatingItineraryPanel.css');
@@ -116,10 +116,10 @@ test('desktop itinerary uses tighter insets and shared centered panel geometry',
 
   assert.doesNotMatch(correction, /scrollbar-gutter:\s*stable/);
   assert.doesNotMatch(floating, /:has\(\.editor-module--itinerary\)/);
-  assert.match(floating, /\.workspace__desktop--column\s*\{[^}]*--floating-panel-left:\s*34px;[^}]*--floating-panel-width:\s*426px;[^}]*--floating-panel-height:\s*506px;/s);
-  assert.match(floating, /\.workspace-panel\s*\{[^}]*top:\s*var\(--trip-header-height\);[^}]*bottom:\s*0;[^}]*display:\s*flex;[^}]*align-items:\s*center;/s);
-  assert.doesNotMatch(floating, /\.workspace-panel\s*\{[^}]*transform:\s*translateY\(-50%\);/s);
-  assert.match(floating, /\.workspace-panel__content\.floating-editor\s*\{[^}]*height:\s*min\(var\(--floating-panel-height\), calc\(100% - 20px\)\)\s*!important;/s);
+  assert.match(floating, /\.workspace__desktop--column\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*var\(--workspace-panel-width\) minmax\(0, 1fr\);/s);
+  assert.match(floating, /\.workspace-panel\s*\{[^}]*position:\s*relative;[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*display:\s*block;/s);
+  assert.match(floating, /\.workspace-panel__content\.floating-editor\s*\{[^}]*height:\s*100%\s*!important;[^}]*border-radius:\s*0\s*!important;[^}]*box-shadow:\s*none\s*!important;/s);
+  assert.doesNotMatch(floating, /scale\(|zoom:/);
   assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;[^}]*scrollbar-width:\s*thin;[^}]*padding:\s*0 8px 6px;/s);
   assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
   assert.match(compact, /min-height:\s*40px;[^}]*height:\s*40px;/s);
