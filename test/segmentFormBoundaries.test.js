@@ -17,6 +17,7 @@ test('SegmentForm coordina filas compactas sin fecha visible y el modal posee la
   const calendar = await read('src/components/CalendarDateInput.jsx');
   const dialog = await read('src/modules/trips/SegmentDeleteDialog.jsx');
   const model = await read('src/modules/trips/segmentFormModel.js');
+  const dateRules = await read('src/modules/trips/tripDateRules.js');
 
   assert.ok(lineCount(form) <= 130, `SegmentForm.jsx volvió a crecer a ${lineCount(form)} líneas`);
   assert.match(form, /<SegmentOriginSection/);
@@ -52,14 +53,18 @@ test('SegmentForm coordina filas compactas sin fecha visible y el modal posee la
   assert.match(modal, /<SegmentBody/);
   assert.match(modal, /<OriginBody/);
   assert.match(modal, /className="segnote segment-details-modal"/);
+  assert.match(modal, /validateOriginDepartureDateChange/);
+  assert.match(modal, /validateSegmentDatePatch/);
+  assert.match(modal, /setDateError\(t\(validation\.errorKey\)\)/);
   assert.match(body, /className="segment__body segment-expense-form"/);
   assert.doesNotMatch(body, /CityAutocomplete|segment-route-editor/);
   assert.match(body, /CalendarDateInput/);
   assert.match(body, /max=\{segment\.endDate \|\| undefined\}/);
   assert.match(body, /min=\{segment\.startDate \|\| undefined\}/);
-  assert.match(body, /isValidSegmentDateRange/);
+  assert.match(body, /segment-details-modal__date-error/);
   assert.match(body, /<ExpenseEditor/);
   assert.match(originBody, /<ExpenseEditor/);
+  assert.match(originBody, /segment-details-modal__date-error/);
   assert.doesNotMatch(body, /dates__label|dates__arrow/);
 
   assert.match(calendar, /const maxDate = useMemo/);
@@ -68,4 +73,6 @@ test('SegmentForm coordina filas compactas sin fecha visible y el modal posee la
   assert.match(dialog, /<ConfirmDialog/);
   assert.match(model, /export function isValidSegmentDateRange/);
   assert.doesNotMatch(model, /from 'react'|\.jsx/);
+  assert.match(dateRules, /export function validateOriginDepartureDateChange/);
+  assert.match(dateRules, /export function validateSegmentDatePatch/);
 });
