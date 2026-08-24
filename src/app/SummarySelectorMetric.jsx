@@ -80,6 +80,7 @@ export function SummarySelectorMetric({
             }}
           >
             <span className="trip-summary__selector-code">{option.value.toUpperCase()}</span>
+            <span className="trip-summary__selector-separator" aria-hidden="true">|</span>
             <span className="trip-summary__selector-name">{option.label}</span>
             <span className="trip-summary__selector-check" aria-hidden="true">
               {active && <IconCheck size={14} />}
