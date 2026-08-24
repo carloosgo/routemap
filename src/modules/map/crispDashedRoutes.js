@@ -143,11 +143,13 @@ export function createCrispDashedRoutes({
   let drawFrame = 0;
   let disposed = false;
 
+  const removeRoutePath = ({ element, arrows }) => {
+    element.remove();
+    arrows.forEach((arrow) => arrow.remove());
+  };
+
   const clearRoutePaths = () => {
-    routePaths.forEach(({ element, arrows }) => {
-      element.remove();
-      arrows.forEach((arrow) => arrow.remove());
-    });
+    routePaths.forEach(removeRoutePath);
     routePaths = [];
   };
 
@@ -200,21 +202,35 @@ export function createCrispDashedRoutes({
     drawFrame = requestAnimationFrame(render);
   };
 
-  const rebuildRoutePaths = () => {
+  const createRoutePathState = (route) => {
+    const element = createRoutePath();
+    const arrows = ARROW_FRACTIONS.map(() => createDirectionArrow());
+    svg.append(element, ...arrows);
+    return {
+      element,
+      arrows,
+      path: route.path,
+      lastPathValue: '',
+      lastArrowTransforms: ['', ''],
+    };
+  };
+
+  const reconcileRoutePaths = () => {
     if (!svg || disposed) return;
-    clearRoutePaths();
-    routePaths = preparedRoutes.map((route) => {
-      const element = createRoutePath();
-      const arrows = ARROW_FRACTIONS.map(() => createDirectionArrow());
-      svg.append(element, ...arrows);
-      return {
-        element,
-        arrows,
-        path: route.path,
-        lastPathValue: '',
-        lastArrowTransforms: ['', ''],
-      };
+
+    preparedRoutes.forEach((route, index) => {
+      const current = routePaths[index];
+      if (current) {
+        current.path = route.path;
+      } else {
+        routePaths[index] = createRoutePathState(route);
+      }
     });
+
+    while (routePaths.length > preparedRoutes.length) {
+      removeRoutePath(routePaths.pop());
+    }
+
     scheduleRender();
   };
 
@@ -236,7 +252,7 @@ export function createCrispDashedRoutes({
     });
 
     pane.append(svg);
-    rebuildRoutePaths();
+    reconcileRoutePaths();
   };
 
   overlay.draw = () => {
@@ -257,7 +273,7 @@ export function createCrispDashedRoutes({
     setRoutes(nextRoutes) {
       if (disposed) return;
       preparedRoutes = prepareRoutes(nextRoutes);
-      rebuildRoutePaths();
+      reconcileRoutePaths();
     },
     refresh() {
       scheduleRender();

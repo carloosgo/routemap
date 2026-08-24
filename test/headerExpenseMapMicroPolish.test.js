@@ -1,0 +1,71 @@
+// test-contract: architecture
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+const root = new URL('../', import.meta.url);
+const read = (path) => readFile(new URL(path, root), 'utf8');
+
+test('header keeps neutral total hover, purple calendar and divided selector rows', async () => {
+  const [header, selector, polish] = await Promise.all([
+    read('src/app/TripSummaryHeader.jsx'),
+    read('src/app/SummarySelectorMetric.jsx'),
+    read('src/app/TripSummaryHeaderMicroPolish.css'),
+  ]);
+
+  assert.match(header, /Icon=\{IconCalendar\}[\s\S]{0,80}iconColor="#7c5ce7"/);
+  assert.match(header, /import '\.\/TripSummaryHeaderMicroPolish\.css';/);
+  assert.match(selector, /trip-summary__selector-code[\s\S]{0,180}trip-summary__selector-separator[\s\S]{0,80}>\|</);
+  assert.match(polish, /trip-summary__metric--total:hover[\s\S]{0,180}background:\s*transparent\s*!important;/);
+  assert.match(polish, /grid-template-columns:\s*36px 8px minmax\(0, 1fr\) 18px;/);
+  assert.match(polish, /border-bottom:\s*1px dashed #eef0f3;/);
+});
+
+test('destination number sits left of the unchanged 30px flag inside the same 53px slot', async () => {
+  const [header, css] = await Promise.all([
+    read('src/modules/trips/SegmentHeader.jsx'),
+    read('src/modules/trips/ItinerarySequenceLeft.css'),
+  ]);
+
+  assert.match(header, /import '\.\/ItinerarySequenceLeft\.css';/);
+  assert.match(css, /width:\s*53px;/);
+  assert.match(css, /gap:\s*4px;/);
+  assert.match(css, /itinerary-stop__sequence-badge[\s\S]*position:\s*static;[\s\S]*order:\s*-1;[\s\S]*flex:\s*0 0 19px;[\s\S]*transform:\s*none;/s);
+});
+
+test('dynamic expense concepts reuse fixed expense columns and vertical rhythm', async () => {
+  const [editor, alignment, money] = await Promise.all([
+    read('src/modules/expenses/ExpenseEditor.jsx'),
+    read('src/modules/expenses/ExpenseLineItemAlignment.css'),
+    read('src/components/MoneyInput.jsx'),
+  ]);
+
+  assert.match(editor, /import '\.\/ExpenseLineItemAlignment\.css';/);
+  assert.match(money, /gridTemplateColumns:\s*'18px minmax\(64px, 82px\) minmax\(60px, 70px\)'/);
+  assert.match(alignment, /grid-template-columns:\s*18px minmax\(64px, 82px\) minmax\(60px, 70px\);/);
+  assert.match(alignment, /width:\s*min\(178px, calc\(100% - 12px\)\);/);
+  assert.match(alignment, /\.expenses--journey\s*\{[\s\S]*gap:\s*var\(--expense-row-gap\);/s);
+  assert.match(alignment, /\.lineitems-section\s*\{[\s\S]*gap:\s*var\(--expense-row-gap\);[\s\S]*padding-top:\s*0;/s);
+});
+
+test('expense labels are singular in both languages', async () => {
+  const [es, en] = await Promise.all([
+    read('src/i18n/es.js'),
+    read('src/i18n/en.js'),
+  ]);
+
+  assert.match(es, /flights:\s*'Vuelo'/);
+  assert.match(es, /otherExpenses:\s*'Otro'/);
+  assert.match(en, /flights:\s*'Flight'/);
+  assert.match(en, /otherExpenses:\s*'Other'/);
+});
+
+test('map keeps old itinerary markers through the next animation frame during refresh', async () => {
+  const map = await read('src/modules/map/GooglePlacesMap.jsx');
+  const clearFn = map.match(/function clearAdvancedMarkers\(markersRef\) \{([\s\S]*?)\n\}/)?.[1] || '';
+
+  assert.match(clearFn, /const markers = markersRef\.current;/);
+  assert.match(clearFn, /markersRef\.current = \[\];/);
+  assert.match(clearFn, /const detach = \(\) =>/);
+  assert.match(clearFn, /requestAnimationFrame\(detach\)/);
+});

@@ -72,8 +72,19 @@ function itineraryCityContent(city, color, t, { origin = false, number = null } 
 }
 
 function clearAdvancedMarkers(markersRef) {
-  markersRef.current.forEach((marker) => { marker.map = null; });
+  const markers = markersRef.current;
   markersRef.current = [];
+  if (!markers.length) return;
+
+  const detach = () => {
+    markers.forEach((marker) => { marker.map = null; });
+  };
+
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(detach);
+  } else {
+    detach();
+  }
 }
 
 function clearPolylines(linesRef) {

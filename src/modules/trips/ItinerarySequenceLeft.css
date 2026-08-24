@@ -1,0 +1,21 @@
+/* El número comparte los mismos 53px de la bandera, pero queda a su izquierda.
+   La bandera conserva 30x20 y la ciudad mantiene intactos sus 126px. */
+@media (min-width: 721px) {
+  .editor-module.editor-module--itinerary .itinerary-stop__marker,
+  .segments:not(.segments--compact) .itinerary-origin__marker {
+    box-sizing: border-box;
+    width: 53px;
+    min-width: 53px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-stop__sequence-badge {
+    position: static;
+    order: -1;
+    flex: 0 0 19px;
+    transform: none;
+  }
+}

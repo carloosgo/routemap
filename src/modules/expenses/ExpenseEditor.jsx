@@ -12,6 +12,7 @@ import {
 import { ExpenseLineItemsGrid } from './ExpenseLineItemsGrid.jsx';
 import { FixedExpenseCards } from './FixedExpenseCards.jsx';
 import './ExpenseEditor.css';
+import './ExpenseLineItemAlignment.css';
 
 export function ExpenseEditor({ expenses, onChange }) {
   const { t } = useTranslation();
