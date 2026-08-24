@@ -17,10 +17,10 @@ test('desktop itinerary keeps compact equal rows, visible scrollbar and cost-onl
 
   assert.match(compact, /@media \(min-width:\s*721px\)/);
   assert.doesNotMatch(floating, /:has\(\.editor-module--itinerary\)/);
-  assert.match(floating, /\.workspace__desktop--column\s*\{[^}]*--floating-panel-left:\s*34px;[^}]*--floating-panel-width:\s*426px;[^}]*--floating-panel-height:\s*506px;/s);
-  assert.match(floating, /\.workspace-panel\s*\{[^}]*top:\s*var\(--trip-header-height\);[^}]*bottom:\s*0;[^}]*display:\s*flex;[^}]*align-items:\s*center;/s);
-  assert.match(floating, /height:\s*min\(var\(--floating-panel-height\), calc\(100% - 20px\)\)\s*!important;/);
-  assert.doesNotMatch(floating, /\.workspace-panel\s*\{[^}]*transform:\s*translateY\(-50%\);/s);
+  assert.match(floating, /\.workspace__desktop--column\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*var\(--workspace-panel-width\) minmax\(0, 1fr\);/s);
+  assert.match(floating, /\.workspace-panel\s*\{[^}]*position:\s*relative;[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*display:\s*block;/s);
+  assert.match(floating, /\.workspace-panel__content\.floating-editor\s*\{[^}]*width:\s*100%\s*!important;[^}]*height:\s*100%\s*!important;[^}]*transform:\s*none\s*!important;/s);
+  assert.doesNotMatch(floating, /scale\(|zoom:/);
 
   assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;[^}]*scrollbar-width:\s*thin;[^}]*padding:\s*0 8px 6px;/s);
   assert.match(compact, /\.editor-module--itinerary \.editor__body::-webkit-scrollbar\s*\{[^}]*width:\s*7px;[^}]*display:\s*block;/s);
@@ -57,6 +57,8 @@ test('note expand and close keep their order while expand opens a symmetric note
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const modal = await read('src/modules/trips/ItineraryDetailsModal.jsx');
   const modalCss = await read('src/modules/trips/ItineraryDetailsModal.css');
+  const money = await read('src/components/MoneyInput.jsx');
+  const fixed = await read('src/modules/expenses/FixedExpenseCards.jsx');
   const floating = await read('src/app/FloatingItineraryPanel.css');
   const map = await read('src/app/AppMapPane.jsx');
   const app = await read('src/App.jsx');
@@ -87,7 +89,10 @@ test('note expand and close keep their order while expand opens a symmetric note
   assert.match(modalCss, /\.segment-expense-form \.calendar-date,[\s\S]*width:\s*100%\s*!important;[\s\S]*max-width:\s*none\s*!important;/s);
   assert.match(modalCss, /calendar-date__value,[\s\S]*width:\s*calc\(100% - 30px\);/s);
   assert.match(modalCss, /calendar-date__clear,[\s\S]*right:\s*5px;/s);
-  assert.match(modalCss, /grid-template-columns:\s*18px minmax\(0, 1fr\) 70px;/);
+  assert.match(fixed, /<MoneyCard[\s\S]*centered/);
+  assert.match(money, /gridTemplateColumns:\s*'18px minmax\(0, 82px\) 70px'/);
+  assert.match(money, /justifyContent:\s*'center'/);
+  assert.match(money, /justifySelf:\s*'center'/);
   assert.match(modalCss, /\.moneycard__label\s*\{[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*clip;[^}]*white-space:\s*normal;/s);
   assert.match(modalCss, /\.moneycard__typeinput\s*\{[^}]*overflow:\s*hidden;[^}]*white-space:\s*nowrap;/s);
   assert.match(modalCss, /\.moneycard__amount\s*\{[^}]*width:\s*70px;[^}]*min-width:\s*70px;/s);
@@ -114,5 +119,5 @@ test('itinerary dividers stay dotted from flag start to close icon end', async (
   assert.match(dividers, /left:\s*24px;[\s\S]*right:\s*4px;/);
   assert.doesNotMatch(dividers, /::after|M0 0 L4 4|fill='%2319a5d0'|clip-path/);
 
-  assert.match(floating, /\.workspace-panel__content\.floating-editor\s*\{[^}]*background:\s*#ffffff\s*!important;[^}]*border:\s*1px solid rgba\(226, 228, 233, 0\.94\)\s*!important;/s);
+  assert.match(floating, /\.workspace-panel__content\.floating-editor\s*\{[^}]*background:\s*var\(--bg\)\s*!important;[^}]*border:\s*0\s*!important;[^}]*border-radius:\s*0\s*!important;[^}]*box-shadow:\s*none\s*!important;/s);
 });
