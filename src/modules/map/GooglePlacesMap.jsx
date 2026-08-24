@@ -51,23 +51,35 @@ function savedMarkerContent(place, t, color) {
   return button;
 }
 
-function itineraryCityContent(city, color, t, { origin = false, number = null } = {}) {
-  const marker = document.createElement('div');
+function updateItineraryCityContent(marker, city, color, t, {
+  origin = false,
+  number = null,
+} = {}) {
   marker.className = 'google-itinerary-city-marker' + (origin ? ' is-origin' : '');
   if (color) marker.style.setProperty('--itinerary-city-color', color);
+  else marker.style.removeProperty('--itinerary-city-color');
   marker.setAttribute('role', 'img');
   const cityName = city.name || city.displayName || t('city');
+  let dot = marker.querySelector?.('.google-itinerary-city-marker__dot') || null;
 
   if (origin) {
     marker.setAttribute('aria-label', `${t('origin')}: ${cityName}`);
-    return marker;
+    dot?.remove();
+    return;
   }
 
   marker.setAttribute('aria-label', `${number}. ${cityName}`);
-  const dot = document.createElement('span');
-  dot.className = 'google-itinerary-city-marker__dot';
+  if (!dot) {
+    dot = document.createElement('span');
+    dot.className = 'google-itinerary-city-marker__dot';
+    marker.append(dot);
+  }
   dot.textContent = String(number);
-  marker.append(dot);
+}
+
+function itineraryCityContent(city, color, t, options = {}) {
+  const marker = document.createElement('div');
+  updateItineraryCityContent(marker, city, color, t, options);
   return marker;
 }
 
@@ -85,6 +97,21 @@ function clearAdvancedMarkers(markersRef) {
   } else {
     detach();
   }
+}
+
+function clearItineraryMarkers(markersByKeyRef) {
+  markersByKeyRef.current.forEach(({ marker }) => {
+    marker.map = null;
+  });
+  markersByKeyRef.current.clear();
+}
+
+function itineraryFeatureKey(feature) {
+  const [lng, lat] = feature?.geometry?.coordinates || [];
+  const numericLat = Number(lat);
+  const numericLng = Number(lng);
+  if (!Number.isFinite(numericLat) || !Number.isFinite(numericLng)) return '';
+  return `${numericLat.toFixed(6)},${numericLng.toFixed(6)}`;
 }
 
 function clearPolylines(linesRef) {
@@ -151,8 +178,7 @@ export function GooglePlacesMap({
   const savedPlaceMarkersRef = useRef([]);
   const resultPlaceMarkersRef = useRef([]);
   const savedRouteLinesRef = useRef([]);
-  const itineraryMarkersRef = useRef([]);
-  const itineraryLinesRef = useRef([]);
+  const itineraryMarkersByKeyRef = useRef(new Map());
   const itineraryRoutesOverlayRef = useRef(null);
   const itineraryLandmarkOverlayRef = useRef(null);
   const infoWindowRef = useRef(null);
@@ -337,9 +363,8 @@ export function GooglePlacesMap({
       clearTimeout(saveNoticeTimerRef.current);
       clearAdvancedMarkers(savedPlaceMarkersRef);
       clearAdvancedMarkers(resultPlaceMarkersRef);
-      clearAdvancedMarkers(itineraryMarkersRef);
+      clearItineraryMarkers(itineraryMarkersByKeyRef);
       clearPolylines(savedRouteLinesRef);
-      clearPolylines(itineraryLinesRef);
       itineraryRoutesOverlayRef.current?.dispose();
       itineraryRoutesOverlayRef.current = null;
       itineraryLandmarkOverlayRef.current?.dispose();
@@ -452,9 +477,8 @@ export function GooglePlacesMap({
     const AdvancedMarkerElement = map?.__AdvancedMarkerElement;
     const maps = globalThis.google?.maps;
     const landmarkOverlay = itineraryLandmarkOverlayRef.current;
-    clearAdvancedMarkers(itineraryMarkersRef);
-    clearPolylines(itineraryLinesRef);
     if (!map || !ready || !AdvancedMarkerElement || !maps || placesActive) {
+      if (placesActive) clearItineraryMarkers(itineraryMarkersByKeyRef);
       itineraryRoutesOverlayRef.current?.setRoutes([]);
       landmarkOverlay?.setLandmarks([]);
       return undefined;
@@ -495,34 +519,69 @@ export function GooglePlacesMap({
     };
 
     const bounds = new maps.LatLngBounds();
+    const nextMarkerKeys = new Set();
     cityFeatures.forEach((feature) => {
       const [lng, lat] = feature.geometry?.coordinates || [];
       if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return;
+      const markerKey = itineraryFeatureKey(feature);
+      if (!markerKey) return;
       const isOrigin = feature.properties?.role === 'origin';
       const markerNumber = isOrigin ? null : Number(feature.properties?.sequence) || null;
       if (!isOrigin && markerNumber == null) return;
       const cityName = feature.properties?.name || t('city');
-      const content = itineraryCityContent(
-        { name: cityName },
-        feature.properties?.color || colorForIndex(0),
-        t,
-        { origin: isOrigin, number: markerNumber }
-      );
-      const marker = new AdvancedMarkerElement({
-        map,
-        position: { lat: Number(lat), lng: Number(lng) },
-        title: isOrigin ? cityName : `${markerNumber}. ${cityName}`,
-        content,
-        zIndex: isOrigin ? 350 : 300 + markerNumber,
-      });
-      itineraryMarkersRef.current.push(marker);
-      bounds.extend({ lat: Number(lat), lng: Number(lng) });
+      const markerColor = feature.properties?.color || colorForIndex(0);
+      const markerPosition = { lat: Number(lat), lng: Number(lng) };
+      const markerTitle = isOrigin ? cityName : `${markerNumber}. ${cityName}`;
+      const markerZIndex = isOrigin ? 350 : 300 + markerNumber;
+      const existing = itineraryMarkersByKeyRef.current.get(markerKey);
+
+      if (existing) {
+        updateItineraryCityContent(
+          existing.content,
+          { name: cityName },
+          markerColor,
+          t,
+          { origin: isOrigin, number: markerNumber }
+        );
+        existing.marker.position = markerPosition;
+        existing.marker.title = markerTitle;
+        existing.marker.zIndex = markerZIndex;
+        existing.marker.map = map;
+      } else {
+        const content = itineraryCityContent(
+          { name: cityName },
+          markerColor,
+          t,
+          { origin: isOrigin, number: markerNumber }
+        );
+        const marker = new AdvancedMarkerElement({
+          map,
+          position: markerPosition,
+          title: markerTitle,
+          content,
+          zIndex: markerZIndex,
+        });
+        itineraryMarkersByKeyRef.current.set(markerKey, { marker, content });
+      }
+
+      nextMarkerKeys.add(markerKey);
+      bounds.extend(markerPosition);
+    });
+
+    itineraryMarkersByKeyRef.current.forEach((state, markerKey) => {
+      if (nextMarkerKeys.has(markerKey)) return;
+      state.marker.map = null;
+      itineraryMarkersByKeyRef.current.delete(markerKey);
     });
 
     const viewportKey = routeCities.map(cityKey).sort().join('|');
-    const viewportChanged = viewportKey !== lastItineraryViewportKeyRef.current;
-    if (viewportChanged) {
-      lastItineraryViewportKeyRef.current = viewportKey;
+    const firstItineraryProjection = lastItineraryViewportKeyRef.current === null;
+    lastItineraryViewportKeyRef.current = viewportKey;
+
+    /* El viewport pertenece al usuario después de la primera proyección. Cargar
+       un itinerario ya existente puede encuadrarlo una vez; agregar, eliminar o
+       reordenar ciudades nunca vuelve a ejecutar pan/zoom/fitBounds. */
+    if (firstItineraryProjection && routeCities.length > 0) {
       viewportIdleListener = map.addListener?.('idle', () => {
         viewportIdleListener?.remove?.();
         viewportIdleListener = null;
@@ -531,7 +590,7 @@ export function GooglePlacesMap({
       if (routeCities.length === 1) {
         map.panTo({ lat: routeCities[0].lat, lng: routeCities[0].lon });
         map.setZoom(10);
-      } else if (routeCities.length > 1 && !bounds.isEmpty()) {
+      } else if (!bounds.isEmpty()) {
         map.fitBounds(bounds, 84);
       } else {
         viewportIdleListener?.remove?.();
@@ -545,9 +604,8 @@ export function GooglePlacesMap({
     return () => {
       viewportIdleListener?.remove?.();
       if (routeRefreshFrame) cancelAnimationFrame(routeRefreshFrame);
-      landmarkOverlay?.setLandmarks([]);
-      clearAdvancedMarkers(itineraryMarkersRef);
-      clearPolylines(itineraryLinesRef);
+      /* No desmontar aquí trazos, landmarks ni marcadores: el siguiente efecto
+         los reconcilia sobre los mismos nodos y evita un frame intermedio vacío. */
     };
   }, [placesActive, ready, segments, t]);
 
