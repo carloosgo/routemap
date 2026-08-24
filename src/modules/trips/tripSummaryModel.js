@@ -95,11 +95,14 @@ export function tripDestinationCount(segments) {
 }
 
 export function tripCountryCount(segments) {
+  const safeSegments = Array.isArray(segments) ? segments : [];
+  const originCountryKey = countryKey(safeSegments[0]?.origin);
   const seen = new Set();
-  for (const segment of Array.isArray(segments) ? segments : []) {
+
+  for (const segment of safeSegments) {
     for (const city of [segment?.origin, segment?.destination]) {
       const key = countryKey(city);
-      if (key) seen.add(key);
+      if (key && key !== originCountryKey) seen.add(key);
     }
   }
   return seen.size;
