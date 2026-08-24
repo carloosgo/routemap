@@ -29,6 +29,8 @@ function SegmentDropIndicator({ placement }) {
 export function SegmentForm({
   segment,
   index,
+  sequenceNumber,
+  sequenceColor,
   locale,
   currency,
   originDetails,
@@ -82,6 +84,8 @@ export function SegmentForm({
         <SegmentHeader
           segment={segment}
           formattedAmount={formattedAmount}
+          sequenceNumber={sequenceNumber}
+          sequenceColor={sequenceColor}
           dragging={dragging}
           onDestinationSelect={(destination) => onUpdate({ destination })}
           onOpenNote={openSegmentNote}
