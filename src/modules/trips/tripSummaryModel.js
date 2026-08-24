@@ -1,3 +1,5 @@
+import { tripBoundaryDates } from './tripDateRules.js';
+
 const DAY_MS = 86400000;
 const EARTH_RADIUS_KM = 6371.0088;
 
@@ -50,21 +52,8 @@ function haversineKm(from, to) {
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(a)));
 }
 
-export function tripDateRange(segments) {
-  const timestamps = [];
-  for (const segment of Array.isArray(segments) ? segments : []) {
-    const start = validDate(segment?.startDate);
-    const end = validDate(segment?.endDate);
-    if (start != null) timestamps.push(start);
-    if (end != null) timestamps.push(end);
-  }
-  if (!timestamps.length) return { startDate: '', endDate: '' };
-  const start = Math.min(...timestamps);
-  const end = Math.max(...timestamps);
-  return {
-    startDate: new Date(start).toISOString().slice(0, 10),
-    endDate: new Date(end).toISOString().slice(0, 10),
-  };
+export function tripDateRange(tripOrSegments) {
+  return tripBoundaryDates(tripOrSegments);
 }
 
 export function tripTotalNights(segments) {
@@ -108,7 +97,7 @@ export function tripTotalDistanceKm(segments) {
 export function tripSummary(trip) {
   const segments = Array.isArray(trip?.segments) ? trip.segments : [];
   return {
-    ...tripDateRange(segments),
+    ...tripDateRange(trip),
     destinations: tripDestinationCount(segments),
     countries: tripCountryCount(segments),
     nights: tripTotalNights(segments),
