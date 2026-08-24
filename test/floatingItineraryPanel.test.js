@@ -33,7 +33,7 @@ test('desktop primary panels keep one integrated left column with depth only tow
   assert.match(css, /\.workspace__desktop--column > \.mappane \.segnote\s*\{[^}]*top:\s*calc\(var\(--trip-header-height\) \+ 12px\)\s*!important;/s);
 
   assert.match(compact, /min-height:\s*40px;[\s\S]*height:\s*40px;/s);
-  assert.match(compact, /grid-template-columns:\s*18px 30px 126px minmax\(0, 1fr\);/);
+  assert.match(compact, /grid-template-columns:\s*18px 53px 126px minmax\(0, 1fr\);/);
   assert.match(compact, /grid-template-columns:\s*110px repeat\(3, 14px\);/);
 
   assert.match(main, /import '\.\/app\/FloatingItineraryPanel\.css';/);
