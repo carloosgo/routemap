@@ -13,7 +13,7 @@ test('los numeros de marcadores pertenecen al dato y no al orden DOM de Google M
   ]);
   assert.match(google, /dot\.textContent = String\(number\)/);
   assert.match(google, /feature\.properties\?\.sequence/);
-  assert.match(google, /zIndex:\s*300 \+ markerNumber/);
+  assert.match(google, /zIndex:\s*isOrigin \? 350 : 300 \+ markerNumber/);
   assert.doesNotMatch(css, /counter-reset:\s*itinerary-city/);
   assert.doesNotMatch(css, /counter-increment:\s*itinerary-city/);
   assert.doesNotMatch(css, /content:\s*counter\(itinerary-city\)/);
