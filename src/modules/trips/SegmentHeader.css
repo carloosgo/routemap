@@ -13,6 +13,20 @@
   background: #f4f5f7;
 }
 
+.itinerary-stop__sequence-badge {
+  display: grid;
+  flex: 0 0 19px;
+  width: 19px;
+  height: 19px;
+  place-items: center;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
 .compact-route__badge {
   display: none !important;
 }
@@ -22,5 +36,11 @@
     width: 17px;
     height: 17px;
     flex-basis: 17px;
+  }
+}
+
+@media (max-width: 720px) {
+  .itinerary-stop__sequence-badge {
+    display: none;
   }
 }
