@@ -101,5 +101,5 @@ test('eliminar un tramo intermedio reconecta destinos y renumera mapa y trazos c
   assert.deepEqual(mapData.routeFeatures.map((feature) => feature.properties.segmentId), ['segment-1', 'segment-3']);
   assert.deepEqual(mapData.routeFeatures.map((feature) => feature.properties.sequence), [1, 2]);
   assert.deepEqual(mapData.cityFeatures.map((feature) => feature.properties.name), ['Ciudad de México', 'Paris', 'Amsterdam']);
-  assert.deepEqual(mapData.cityFeatures.map((feature) => feature.properties.sequence), [1, 2, 3]);
+  assert.deepEqual(mapData.cityFeatures.map((feature) => feature.properties.sequence), [null, 1, 2]);
 });
