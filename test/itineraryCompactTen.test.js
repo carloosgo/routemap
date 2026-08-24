@@ -90,7 +90,8 @@ test('note expand and close keep their order while expand opens a symmetric note
   assert.match(modalCss, /calendar-date__value,[\s\S]*width:\s*calc\(100% - 30px\);/s);
   assert.match(modalCss, /calendar-date__clear,[\s\S]*right:\s*5px;/s);
   assert.match(fixed, /<MoneyCard[\s\S]*centered/);
-  assert.match(money, /gridTemplateColumns:\s*'18px minmax\(0, 82px\) 70px'/);
+  assert.match(money, /gridTemplateColumns:\s*'18px minmax\(64px, 82px\) minmax\(60px, 70px\)'/);
+  assert.match(money, /width:\s*'min\(178px, calc\(100% - 12px\)\)'/);
   assert.match(money, /justifyContent:\s*'center'/);
   assert.match(money, /justifySelf:\s*'center'/);
   assert.match(modalCss, /\.moneycard__label\s*\{[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*clip;[^}]*white-space:\s*normal;/s);

@@ -2,6 +2,8 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { IconCheck, IconChevronDown } from '@tabler/icons-react';
 
+const HEADER_POPOVER_GAP = 8;
+
 export function SummarySelectorMetric({
   Icon,
   iconColor,
@@ -23,8 +25,10 @@ export function SummarySelectorMetric({
     function positionMenu() {
       const rect = rootRef.current?.getBoundingClientRect();
       if (!rect) return;
+      const headerRect = rootRef.current?.closest('.trip-summary')?.getBoundingClientRect();
+      const headerBottom = headerRect?.bottom ?? rect.bottom;
       setMenuPosition({
-        top: Math.round(rect.bottom + 6),
+        top: Math.round(headerBottom + HEADER_POPOVER_GAP),
         right: Math.max(8, Math.round(window.innerWidth - rect.right)),
       });
     }

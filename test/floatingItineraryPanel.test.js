@@ -24,7 +24,9 @@ test('desktop primary panels keep one integrated left column with depth only tow
     css,
     /\.workspace-panel__content\.floating-editor\s*\{[^}]*width:\s*100%\s*!important;[^}]*height:\s*100%\s*!important;[^}]*border:\s*0\s*!important;[^}]*border-radius:\s*0\s*!important;[^}]*box-shadow:\s*none\s*!important;/s
   );
-  assert.match(headerCss, /\.trip-summary\s*\{[^}]*border-bottom:\s*1px solid #eef0f2;[^}]*box-shadow:\s*none;/s);
+  assert.match(headerCss, /\.trip-summary\s*\{[^}]*border:\s*0;[^}]*box-shadow:\s*none;/s);
+  assert.match(headerCss, /\.trip-summary::after\s*\{[^}]*right:\s*0;[^}]*bottom:\s*0;[^}]*left:\s*0;[^}]*height:\s*1px;[^}]*background:\s*#eef0f2;/s);
+  assert.doesNotMatch(headerCss, /\.trip-summary\s*\{[^}]*border-bottom:/s);
   assert.match(css, /\.workspace-panel__toggle\s*\{[^}]*left:\s*var\(--workspace-panel-width\);[^}]*z-index:\s*701;/s);
   assert.match(css, /\.workspace__desktop--column\.is-panel-collapsed\s*\{[^}]*grid-template-columns:\s*0 minmax\(0, 1fr\);/s);
   assert.match(css, /\.workspace__desktop--column > \.mappane \.segnote,[\s\S]*left:\s*14px;/s);
