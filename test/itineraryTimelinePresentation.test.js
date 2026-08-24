@@ -20,26 +20,33 @@ test('origin y destination usan ciudad seleccionada de una sola linea a 13px/600
   assert.doesNotMatch(origin, /itinerary-origin__country/);
 });
 
-test('timeline preserves flag geometry and spaces cost and actions by visual icon width', async () => {
+test('timeline uses independent drag, sequence, flag and city tracks with one spacing rhythm', async () => {
   const header = await read('src/modules/trips/SegmentHeader.jsx');
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const css = await read('src/modules/trips/ItineraryTimeline.css');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
+  const sequence = await read('src/modules/trips/ItinerarySequenceLeft.css');
+  const dividers = await read('src/modules/trips/ItinerarySegmentDividers.css');
   const legacyLayout = await read('src/app/ItineraryTripHeader.css');
   const main = await read('src/main.jsx');
   const form = await read('src/modules/trips/SegmentForm.jsx');
 
+  assert.match(header, /className="itinerary-stop__sequence"[\s\S]*className="itinerary-stop__sequence-badge"[\s\S]*className=\{'itinerary-stop__marker'/s);
   assert.match(header, /className="itinerary-stop__metrics"/);
   assert.match(css, /\.itinerary-origin__marker img,[\s\S]*\.itinerary-stop__marker img[\s\S]*width:\s*30px;[\s\S]*height:\s*20px;/);
   assert.doesNotMatch(header, /itinerary-stop__dates|itinerary-stop__date-line|itinerary-stop__nights|segment__pill/);
   assert.doesNotMatch(origin, /itinerary-stop__dates|itinerary-stop__date-line|itinerary-stop__nights|segment__pill/);
   assert.match(header, /itinerary-stop__amount/);
   assert.match(origin, /itinerary-stop__amount/);
-  assert.match(compact, /grid-template-columns:\s*18px 53px 126px minmax\(0, 1fr\);/);
-  assert.match(compact, /grid-template-columns:\s*110px repeat\(3, 14px\);/);
+  assert.match(compact, /--itinerary-compact-gap:\s*10px;/);
+  assert.match(compact, /grid-template-columns:\s*14px 19px 30px 126px minmax\(0, 1fr\);/);
+  assert.match(compact, /padding-left:\s*53px;[\s\S]*grid-template-columns:\s*30px 126px minmax\(0, 1fr\);/s);
+  assert.match(sequence, /\.itinerary-stop__sequence[\s\S]*width:\s*19px;[\s\S]*\.itinerary-stop__marker[\s\S]*width:\s*30px;/s);
+  assert.match(dividers, /left:\s*53px;/);
+  assert.match(compact, /grid-template-columns:\s*90px repeat\(3, 14px\);/);
   assert.match(compact, /padding-right:\s*4px;[\s\S]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;/s);
-  assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*110px;[^}]*color:\s*#117b80;[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;/s);
+  assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*90px;[^}]*color:\s*#117b80;[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;/s);
 
   assert.doesNotMatch(legacyLayout, /grid-template-columns:\s*48px 66px 66px 22px 22px 22px/);
   assert.doesNotMatch(legacyLayout, /itinerary-stop__after-place > \.btn--icon[\s\S]*width:\s*22px/s);
