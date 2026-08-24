@@ -8,6 +8,7 @@ import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
 import { flagImageUrl } from '../flags/flags.js';
 import './SegmentHeader.css';
+import './ItinerarySequenceLeft.css';
 
 const NOTE_DOT_STYLE = Object.freeze({
   position: 'absolute',
