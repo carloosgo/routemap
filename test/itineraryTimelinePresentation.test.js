@@ -46,7 +46,7 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   assert.match(compact, /grid-template-columns:\s*90px repeat\(3, 14px\);/);
   assert.match(compact, /padding-right:\s*4px;[\s\S]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;/s);
-  assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*90px;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;/s);
+  assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*90px;[^}]*padding:\s*0 2px 0 0;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;/s);
 
   assert.doesNotMatch(legacyLayout, /grid-template-columns:\s*48px 66px 66px 22px 22px 22px/);
   assert.doesNotMatch(legacyLayout, /itinerary-stop__after-place > \.btn--icon[\s\S]*width:\s*22px/s);
