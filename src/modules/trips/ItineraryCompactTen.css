@@ -1,6 +1,6 @@
 /* Vista compacta del itinerario en escritorio.
    Origen y destinos comparten la misma banda vertical. La bandera conserva
-   30x20 y la ciudad 126px; costo y acciones usan tracks estables e independientes. */
+   30x20; destinos reservan 19px para su número y la ciudad conserva 126px. */
 
 @media (min-width: 721px) {
   .editor-module--itinerary .editor__body {
@@ -46,7 +46,7 @@
   }
 
   .editor-module.editor-module--itinerary .itinerary-segment .segment__header.itinerary-stop {
-    grid-template-columns: 18px 30px 126px minmax(0, 1fr);
+    grid-template-columns: 18px 53px 126px minmax(0, 1fr);
   }
 
   .editor-module.editor-module--itinerary .itinerary-stop__place,
@@ -55,7 +55,7 @@
   }
 
   .segments:not(.segments--compact) .itinerary-origin {
-    grid-template-columns: 30px 126px minmax(0, 1fr);
+    grid-template-columns: 53px 126px minmax(0, 1fr);
   }
 
   .editor-module--itinerary .itinerary-stop__picker .autocomplete__selected-value,
