@@ -140,6 +140,8 @@ export function TripSummaryHeader({
     ? `${formatHeaderDate(summary.startDate, intlLocale)} - ${formatHeaderDate(summary.endDate, intlLocale)}`
     : t('noTripDates');
 
+  const countryLabel = `${summary.countries} ${t(summary.countries === 1 ? 'country' : 'countries')}`;
+
   return (
     <header className="trip-summary" aria-label={t('tripSummary')}>
       <div className="trip-summary__brand" aria-label={t('appName')}>
@@ -196,7 +198,7 @@ export function TripSummaryHeader({
           )}
         </div>
 
-        <Metric Icon={IconMapPin} iconColor="#e05252" label={t('destinations')} value={`${summary.destinations} ${t('cities')}`} />
+        <Metric Icon={IconMapPin} iconColor="#e05252" label={countryLabel} value={`${summary.destinations} ${t('cities')}`} />
         <Metric Icon={IconMoon} iconColor="#4f6df5" label={t('totalNights')} value={`${summary.nights} ${t('nights')}`} />
         <SummarySelectorMetric Icon={IconCurrencyDollar} iconColor="#c9224d" label={t('currency')} value={trip.currency} options={currencyOptions} onChange={setCurrency} menuClassName="trip-summary__selector-menu--currency" />
         <SummarySelectorMetric Icon={IconLanguage} iconColor="#357d94" label={t('language')} value={locale} options={languageOptions} onChange={setLocale} menuClassName="trip-summary__selector-menu--language" />
