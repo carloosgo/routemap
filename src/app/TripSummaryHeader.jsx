@@ -20,6 +20,7 @@ import { tripSummary } from '../modules/trips/tripSummaryModel.js';
 import { formatMoney } from '../shared/utils.js';
 import { SummarySelectorMetric } from './SummarySelectorMetric.jsx';
 import { TripHeaderNavigation } from './TripHeaderNavigation.jsx';
+import './TripSummaryHeaderMicroPolish.css';
 
 const CURRENCIES = ['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'];
 
@@ -162,7 +163,7 @@ export function TripSummaryHeader({
       <div className="trip-summary__metrics" aria-label={t('tripMetrics')}>
         <Metric
           Icon={IconCalendar}
-          iconColor="#19a5d0"
+          iconColor="#7c5ce7"
           label={t('tripDates')}
           value={tripDateRange}
           className="trip-summary__metric--dates"
