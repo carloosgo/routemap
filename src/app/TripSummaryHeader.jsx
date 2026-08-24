@@ -69,6 +69,13 @@ function formatHeaderDate(iso, locale) {
   }
 }
 
+function formatTripDateRange(summary, locale, emptyLabel) {
+  const start = formatHeaderDate(summary.startDate, locale);
+  const end = formatHeaderDate(summary.endDate, locale);
+  if (start && end) return `${start} - ${end}`;
+  return start || end || emptyLabel;
+}
+
 function Metric({ Icon, iconColor, label, value, className = '', children, onClick, expanded }) {
   const interactive = typeof onClick === 'function';
   const Tag = interactive ? 'button' : 'div';
@@ -136,10 +143,7 @@ export function TripSummaryHeader({
     return () => document.removeEventListener('pointerdown', closeOnOutsidePointer);
   }, [showBreakdown, setShowBreakdown]);
 
-  const tripDateRange = summary.startDate && summary.endDate
-    ? `${formatHeaderDate(summary.startDate, intlLocale)} - ${formatHeaderDate(summary.endDate, intlLocale)}`
-    : t('noTripDates');
-
+  const tripDateRange = formatTripDateRange(summary, intlLocale, t('noTripDates'));
   const countryLabel = `${summary.countries} ${t(summary.countries === 1 ? 'country' : 'countries')}`;
 
   return (
