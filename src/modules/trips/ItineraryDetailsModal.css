@@ -66,6 +66,14 @@
   grid-column: 1;
 }
 
+.segment-details-modal__date-error {
+  margin: 6px 0 0;
+  color: #b42318;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
 /* Cada fecha ocupa toda su mitad. Sólo se reserva el espacio real del botón X;
    no hay un colchón lateral que acorte visualmente el campo. */
 .segment-details-modal .segment-expense-form .calendar-date,
