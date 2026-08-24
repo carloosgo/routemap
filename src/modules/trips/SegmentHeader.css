@@ -14,8 +14,10 @@
 }
 
 .itinerary-stop__sequence-badge {
+  position: absolute;
+  top: 50%;
+  left: 34px;
   display: grid;
-  flex: 0 0 19px;
   width: 19px;
   height: 19px;
   place-items: center;
@@ -25,6 +27,8 @@
   font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
 .compact-route__badge {
