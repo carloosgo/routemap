@@ -54,6 +54,17 @@ export function SegmentHeader({
         <IconGripVertical size={14} stroke={1.8} />
       </span>
 
+      <span className="itinerary-stop__sequence" aria-hidden="true">
+        {sequenceNumber != null && (
+          <span
+            className="itinerary-stop__sequence-badge"
+            style={sequenceColor ? { background: sequenceColor } : undefined}
+          >
+            {sequenceNumber}
+          </span>
+        )}
+      </span>
+
       <span className={'itinerary-stop__marker' + (!destination?.countryCode ? ' is-empty' : '')}>
         {destination?.countryCode ? (
           <img
@@ -66,14 +77,6 @@ export function SegmentHeader({
             decoding="async"
           />
         ) : null}
-        {sequenceNumber != null && (
-          <span
-            className="itinerary-stop__sequence-badge"
-            style={sequenceColor ? { background: sequenceColor } : undefined}
-          >
-            {sequenceNumber}
-          </span>
-        )}
       </span>
 
       <div className="itinerary-stop__place">
