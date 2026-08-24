@@ -27,6 +27,14 @@ function cityKey(city) {
   return `${name}|${countryCode}`.toLowerCase();
 }
 
+function countryKey(city) {
+  if (!city) return '';
+  const countryCode = String(city.countryCode || '').trim().toUpperCase();
+  if (countryCode) return `code:${countryCode}`;
+  const country = String(city.country || '').trim().toLowerCase();
+  return country ? `name:${country}` : '';
+}
+
 function radians(value) {
   return (value * Math.PI) / 180;
 }
@@ -79,6 +87,17 @@ export function tripDestinationCount(segments) {
   return seen.size;
 }
 
+export function tripCountryCount(segments) {
+  const seen = new Set();
+  for (const segment of Array.isArray(segments) ? segments : []) {
+    for (const city of [segment?.origin, segment?.destination]) {
+      const key = countryKey(city);
+      if (key) seen.add(key);
+    }
+  }
+  return seen.size;
+}
+
 export function tripTotalDistanceKm(segments) {
   return (Array.isArray(segments) ? segments : []).reduce(
     (sum, segment) => sum + haversineKm(segment?.origin, segment?.destination),
@@ -91,6 +110,7 @@ export function tripSummary(trip) {
   return {
     ...tripDateRange(segments),
     destinations: tripDestinationCount(segments),
+    countries: tripCountryCount(segments),
     nights: tripTotalNights(segments),
     distanceKm: tripTotalDistanceKm(segments),
   };
