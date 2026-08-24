@@ -25,6 +25,8 @@ const NOTE_DOT_STYLE = Object.freeze({
 export function SegmentHeader({
   segment,
   formattedAmount,
+  sequenceNumber,
+  sequenceColor,
   dragging,
   onDestinationSelect,
   onOpenNote,
@@ -54,6 +56,7 @@ export function SegmentHeader({
       <span className={'itinerary-stop__marker' + (!destination?.countryCode ? ' is-empty' : '')}>
         {destination?.countryCode ? (
           <img
+            className="itinerary-stop__marker-flag"
             src={flagImageUrl(destination.countryCode, 80)}
             alt=""
             width={30}
@@ -62,6 +65,14 @@ export function SegmentHeader({
             decoding="async"
           />
         ) : null}
+        {sequenceNumber != null && (
+          <span
+            className="itinerary-stop__sequence-badge"
+            style={sequenceColor ? { background: sequenceColor } : undefined}
+          >
+            {sequenceNumber}
+          </span>
+        )}
       </span>
 
       <div className="itinerary-stop__place">
