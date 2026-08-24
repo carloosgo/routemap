@@ -56,15 +56,27 @@ test('trip dates use localized three-letter months and remain the first header m
   assert.match(en, /tripDates:\s*'Trip dates'/);
 });
 
-test('fixed concepts are centered as one icon-label-amount block inside each date column', async () => {
+test('fixed concepts stay centered as a responsive icon-label-amount block inside each date column', async () => {
   const money = await read('src/components/MoneyInput.jsx');
   const fixed = await read('src/modules/expenses/FixedExpenseCards.jsx');
 
   assert.match(fixed, /<MoneyCard[\s\S]*centered/);
   assert.match(money, /centered = false/);
-  assert.match(money, /gridTemplateColumns:\s*'18px minmax\(0, 82px\) 70px'/);
+  assert.match(money, /gridTemplateColumns:\s*'18px minmax\(64px, 82px\) minmax\(60px, 70px\)'/);
   assert.match(money, /justifyContent:\s*'center'/);
-  assert.match(money, /width:\s*'min\(178px, 100%\)'/);
+  assert.match(money, /width:\s*'min\(178px, calc\(100% - 12px\)\)'/);
   assert.match(money, /justifySelf:\s*'center'/);
-  assert.match(money, /gridColumn:\s*3[\s\S]*width:\s*'70px'[\s\S]*marginLeft:\s*0/s);
+  assert.match(money, /gridColumn:\s*3[\s\S]*width:\s*'100%'[\s\S]*minWidth:\s*'60px'[\s\S]*maxWidth:\s*'70px'[\s\S]*marginLeft:\s*0/s);
+});
+
+test('header popovers open below the full header instead of overlapping it', async () => {
+  const selector = await read('src/app/SummarySelectorMetric.jsx');
+  const headerCss = await read('src/app/TripSummaryHeader.css');
+
+  assert.match(selector, /const HEADER_POPOVER_GAP = 8;/);
+  assert.match(selector, /closest\('\.trip-summary'\)\?\.getBoundingClientRect\(\)/);
+  assert.match(selector, /const headerBottom = headerRect\?\.bottom \?\? rect\.bottom;/);
+  assert.match(selector, /top:\s*Math\.round\(headerBottom \+ HEADER_POPOVER_GAP\)/);
+  assert.match(headerCss, /\.trip-summary__breakdown\s*\{[^}]*top:\s*calc\(100% \+ 18px\);/s);
+  assert.match(headerCss, /@media \(max-width:\s*720px\)[\s\S]*\.trip-summary__breakdown\s*\{[^}]*top:\s*71px;/s);
 });
