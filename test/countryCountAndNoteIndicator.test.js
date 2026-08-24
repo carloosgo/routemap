@@ -7,7 +7,7 @@ import { tripCountryCount, tripSummary } from '../src/modules/trips/tripSummaryM
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('trip summary counts unique countries across origin and destinations', () => {
+test('trip summary counts unique visited countries while excluding the origin country', () => {
   const segments = [
     {
       origin: { name: 'Mexico City', country: 'Mexico', countryCode: 'MX' },
@@ -21,13 +21,17 @@ test('trip summary counts unique countries across origin and destinations', () =
       origin: { name: 'Barcelona', country: 'Spain', countryCode: 'ES' },
       destination: { name: 'Paris', country: 'France', countryCode: 'FR' },
     },
+    {
+      origin: { name: 'Paris', country: 'France', countryCode: 'FR' },
+      destination: { name: 'Mexico City', country: 'Mexico', countryCode: 'MX' },
+    },
   ];
 
-  assert.equal(tripCountryCount(segments), 3);
-  assert.equal(tripSummary({ segments }).countries, 3);
+  assert.equal(tripCountryCount(segments), 2);
+  assert.equal(tripSummary({ segments }).countries, 2);
 });
 
-test('country count falls back to normalized country name when code is unavailable', () => {
+test('country count falls back to normalized country name and still excludes origin country', () => {
   const segments = [
     {
       origin: { name: 'City A', country: 'Portugal' },
@@ -39,7 +43,7 @@ test('country count falls back to normalized country name when code is unavailab
     },
   ];
 
-  assert.equal(tripCountryCount(segments), 2);
+  assert.equal(tripCountryCount(segments), 1);
 });
 
 test('note indicator overlays the upper-left stroke of the note icon and is slightly larger', async () => {
