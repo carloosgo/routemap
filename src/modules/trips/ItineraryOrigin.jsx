@@ -10,10 +10,10 @@ import './OriginOptions.css';
 
 const NOTE_DOT_STYLE = Object.freeze({
   position: 'absolute',
-  top: '2px',
-  left: '-2px',
-  width: '4px',
-  height: '4px',
+  top: '3px',
+  left: '-1px',
+  width: '5px',
+  height: '5px',
   boxSizing: 'border-box',
   borderRadius: '50%',
   border: '1px solid var(--surface, #fff)',
