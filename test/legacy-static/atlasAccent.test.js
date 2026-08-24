@@ -65,7 +65,7 @@ test('itinerary, routes and notes keep one tab structure in the global header', 
   assert.match(navCss, /font-size:\s*14px;/);
   assert.match(navCss, /font-weight:\s*600;/);
   assert.match(navCss, /\.trip-summary__primary-nav-icon\s*\{[\s\S]*width:\s*22px;[\s\S]*height:\s*24px;[\s\S]*color:\s*var\(--atlas-accent\);/);
-  assert.match(navCss, /\.trip-summary__primary-nav-label\s*\{[\s\S]*color:\s*#111827;[\s\S]*font-size:\s*14px;/);
+  assert.match(navCss, /\.trip-summary__primary-nav-label\s*\{[\s\S]*color:\s*#000000;[\s\S]*font-size:\s*14px;/);
   assert.doesNotMatch(navCss, /\.trip-summary__primary-nav-badge--places/);
   assert.match(navCss, /\.trip-summary__primary-nav-badge--notes\s*\{[\s\S]*background:\s*#fff0eb;[\s\S]*color:\s*#e2725b;/);
 });
