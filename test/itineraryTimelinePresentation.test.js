@@ -35,7 +35,7 @@ test('timeline preserves flag geometry and spaces cost and actions by visual ico
   assert.doesNotMatch(origin, /itinerary-stop__dates|itinerary-stop__date-line|itinerary-stop__nights|segment__pill/);
   assert.match(header, /itinerary-stop__amount/);
   assert.match(origin, /itinerary-stop__amount/);
-  assert.match(compact, /grid-template-columns:\s*18px 30px 126px minmax\(0, 1fr\);/);
+  assert.match(compact, /grid-template-columns:\s*18px 53px 126px minmax\(0, 1fr\);/);
   assert.match(compact, /grid-template-columns:\s*110px repeat\(3, 14px\);/);
   assert.match(compact, /padding-right:\s*4px;[\s\S]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;/s);
