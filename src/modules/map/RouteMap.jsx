@@ -3,6 +3,7 @@ import { GooglePlacesMap } from './GooglePlacesMap.jsx';
 import { itineraryMapProjectionSignature } from './itineraryMapProjection.js';
 import './RouteMap.css';
 import './GooglePlacesMap.css';
+import './ItineraryNumberMarkers.css';
 
 export function RouteMap({
   segments,
