@@ -1,5 +1,5 @@
 .trip-summary__metric-label {
-  color: #000000;
+  color: var(--text-mute);
   font-size: 11px;
 }
 
