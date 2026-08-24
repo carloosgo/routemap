@@ -12,6 +12,8 @@ export default {
   tripDates: 'Trip dates',
   destinations: 'Destinations',
   cities: 'cities',
+  country: 'country',
+  countries: 'countries',
   totalNights: 'Total nights',
   nights: 'nights',
   totalDistance: 'Total distance',
