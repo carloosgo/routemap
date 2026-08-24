@@ -39,6 +39,7 @@
     pointer-events: auto;
     background: var(--bg);
     border-radius: 0;
+    box-shadow: 8px 0 18px -14px rgba(15, 23, 42, 0.34);
     transform: none;
     opacity: 1;
   }
@@ -96,10 +97,10 @@
     left: 14px;
   }
 
-  /* Nota y detalles conservan la alineación superior con el panel visible,
-     inmediatamente por debajo del header fijo. */
+  /* Nota y detalles dejan una pequeña respiración visual bajo el header sin
+     mover el panel integrado ni la búsqueda. */
   .workspace__desktop--column > .mappane .segnote {
-    top: var(--trip-header-height) !important;
+    top: calc(var(--trip-header-height) + 12px) !important;
   }
 
   /* Evita que la pestaña de colapso atraviese el modal de detalles. */
