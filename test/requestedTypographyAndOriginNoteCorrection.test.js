@@ -127,7 +127,7 @@ test('desktop itinerary uses tighter insets while the primary workspace is integ
   assert.match(compact, /padding-right:\s*4px;/);
   assert.match(compact, /column-gap:\s*8px;/);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;/s);
-  assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*90px;[^}]*min-width:\s*90px;[^}]*color:\s*#117b80;[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;/s);
+  assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*90px;[^}]*min-width:\s*90px;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;/s);
   assert.doesNotMatch(compact, /justify-content:\s*space-between|itinerary-stop__dates|itinerary-stop__nights|56px\s*!important|background:\s*var\(--atlas-accent\)/);
   assert.doesNotMatch(floatingEditor, /Densidad compacta nativa|reproduce la sensación del navegador al 90%/);
 });
