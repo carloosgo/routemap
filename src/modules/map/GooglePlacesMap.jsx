@@ -580,7 +580,7 @@ export function GooglePlacesMap({
 
     /* El viewport pertenece al usuario después de la primera proyección. Cargar
        un itinerario ya existente puede encuadrarlo una vez; agregar, eliminar o
-       reordenar ciudades nunca vuelve a ejecutar pan/zoom/fitBounds. */
+       reordenar ciudades nunca vuelve a ejecutar movimientos automáticos de cámara. */
     if (firstItineraryProjection && routeCities.length > 0) {
       viewportIdleListener = map.addListener?.('idle', () => {
         viewportIdleListener?.remove?.();
