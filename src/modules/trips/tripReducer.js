@@ -16,6 +16,10 @@ import {
   savedPlaceRoutePairKey,
 } from '../routes/routeModel.js';
 import { sanitizeText, uid } from '../../shared/utils.js';
+import {
+  validateOriginDepartureDateChange,
+  validateSegmentDatePatch,
+} from './tripDateRules.js';
 
 export const TRIP_ACTIONS = Object.freeze({
   reset: 'RESET',
@@ -74,13 +78,19 @@ export function tripReducer(state, action) {
     case TRIP_ACTIONS.setCurrency:
       return touch(state, { currency: action.currency });
 
-    case TRIP_ACTIONS.updateOriginDetails:
+    case TRIP_ACTIONS.updateOriginDetails: {
+      const patch = action.patch || {};
+      if (Object.hasOwn(patch, 'departureDate')) {
+        const validation = validateOriginDepartureDateChange(state, patch.departureDate);
+        if (!validation.valid) return state;
+      }
       return touch(state, {
         originDetails: {
           ...state.originDetails,
-          ...action.patch,
+          ...patch,
         },
       });
+    }
 
     case TRIP_ACTIONS.updateOriginExpenses:
       return touch(state, {
@@ -156,9 +166,15 @@ export function tripReducer(state, action) {
       );
 
     case TRIP_ACTIONS.updateSegment: {
+      const patch = action.patch || {};
+      if (Object.hasOwn(patch, 'startDate') || Object.hasOwn(patch, 'endDate')) {
+        const validation = validateSegmentDatePatch(state, action.segmentId, patch);
+        if (!validation.valid) return state;
+      }
+
       const updated = state.segments.map((segment) =>
         segment.id === action.segmentId
-          ? { ...segment, ...action.patch }
+          ? { ...segment, ...patch }
           : segment
       );
       return touch(state, {
