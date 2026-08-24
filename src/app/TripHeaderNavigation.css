@@ -68,7 +68,7 @@
 .trip-summary__primary-nav-label {
   min-width: 0;
   overflow: hidden;
-  color: #111827;
+  color: #000000;
   font-size: 14px;
   text-overflow: ellipsis;
 }
