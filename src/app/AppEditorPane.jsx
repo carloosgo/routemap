@@ -9,6 +9,7 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import { SegmentForm } from '../modules/trips/SegmentForm.jsx';
+import { buildItineraryStopSequence } from '../modules/trips/itineraryStopSequence.js';
 import { flagImageUrl } from '../modules/flags/flags.js';
 import { colorForIndex } from '../config.js';
 
@@ -58,6 +59,7 @@ export function AppEditorPane({
   const dragStateRef = useRef(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const activeDragId = dragState?.segmentId || null;
+  const stopSequence = buildItineraryStopSequence(trip.segments, colorForIndex);
 
   useEffect(() => {
     if (!activeDragId) return undefined;
@@ -174,20 +176,25 @@ export function AppEditorPane({
       <div className="editor__body">
         {panelCollapsed ? (
           <div className="segments segments--compact" aria-label={t('segments')}>
-            {trip.segments.map((segment, index) => (
-              <div className="compact-route" key={segment.id}>
-                <span
-                  className="segment__badge compact-route__badge"
-                  style={{ background: colorForIndex(index) }}
-                  aria-hidden="true"
-                >
-                  {index + 1}
-                </span>
-                <CompactFlag city={segment.origin} />
-                <IconArrowRight size={11} className="compact-route__arrow" aria-hidden="true" />
-                <CompactFlag city={segment.destination} />
-              </div>
-            ))}
+            {trip.segments.map((segment, index) => {
+              const stop = stopSequence[index];
+              return (
+                <div className="compact-route" key={segment.id}>
+                  {stop?.number != null && (
+                    <span
+                      className="segment__badge compact-route__badge"
+                      style={{ background: stop.color }}
+                      aria-hidden="true"
+                    >
+                      {stop.number}
+                    </span>
+                  )}
+                  <CompactFlag city={segment.origin} />
+                  <IconArrowRight size={11} className="compact-route__arrow" aria-hidden="true" />
+                  <CompactFlag city={segment.destination} />
+                </div>
+              );
+            })}
           </div>
         ) : (
           <>
@@ -199,6 +206,8 @@ export function AppEditorPane({
                       key={segment.id}
                       segment={segment}
                       index={index}
+                      sequenceNumber={stopSequence[index]?.number ?? null}
+                      sequenceColor={stopSequence[index]?.color || null}
                       locale={intlLocale}
                       currency={trip.currency}
                       originDetails={trip.originDetails}
