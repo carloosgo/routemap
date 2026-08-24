@@ -1,0 +1,15 @@
+.google-itinerary-city-marker {
+  background: var(--itinerary-city-color, #111111);
+}
+
+.google-itinerary-city-marker.is-origin {
+  border: 0;
+  border-radius: 0;
+  background: transparent url("../../assets/itinerary-start-flag.svg") center/18px 18px no-repeat;
+  box-shadow: none;
+  transform: translateX(4px);
+}
+
+.google-itinerary-city-marker.is-origin .google-itinerary-city-marker__dot {
+  display: none;
+}
