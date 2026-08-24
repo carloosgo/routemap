@@ -4,5 +4,6 @@
 
 .trip-summary__metric-value,
 .trip-summary__selector-trigger {
+  color: #000000;
   font-size: 14px;
 }
