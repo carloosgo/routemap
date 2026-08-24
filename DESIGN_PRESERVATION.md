@@ -55,7 +55,7 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Los botones icon-only pueden extender su área clicable mediante una capa transparente absoluta, pero esa capa no participa en el ancho de la retícula ni altera las distancias visuales.
 - `Costo` se muestra como texto plano de 12 px / 400 y color exacto `#117b80`, alineado a la derecha dentro de un track de 90 px. No utiliza pill, fondo, borde ni peso bold.
 - El botón de nota, el botón de desplegar y el botón eliminar/cerrar conservan el aspecto icon-only. En origen, el botón X sigue limpiando únicamente la ciudad seleccionada y no borra silenciosamente fechas, gastos o nota.
-- Cuando una nota contiene información, su indicador circular se reduce a un núcleo de 4 × 4 px con borde de 1 px; sólo cambia el punto visual y permanece intacta la caja clicable del botón de nota.
+- Note marker geometry is 5px with top 3px and left -1px; sólo cambia el punto visual cuando una nota contiene información y permanece intacta la caja clicable del botón de nota.
 - Al colapsar el panel, la primera columna pasa a 0 y el mapa recupera físicamente el ancho completo disponible. La pestaña de colapso se mantiene anclada al borde real de `--workspace-panel-width`; en estado visible usa `z-index: 701`, justo por encima del panel (`700`) y de su sombra, sin superar al header (`760`).
 
 ## Divisores y control de detalle
