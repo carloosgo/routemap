@@ -6,7 +6,7 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('note and detail overlays sit slightly below the integrated panel top while the filled-note dot stays small', async () => {
+test('note and detail overlays sit slightly below the integrated panel top while the filled-note dot overlays the icon', async () => {
   const floating = await read('src/app/FloatingItineraryPanel.css');
   const segmentHeader = await read('src/modules/trips/SegmentHeader.jsx');
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
@@ -22,16 +22,16 @@ test('note and detail overlays sit slightly below the integrated panel top while
 
   for (const source of [segmentHeader, origin]) {
     assert.match(source, /const NOTE_DOT_STYLE = Object\.freeze\(\{/);
-    assert.match(source, /top:\s*'2px'/);
-    assert.match(source, /left:\s*'-2px'/);
-    assert.match(source, /width:\s*'4px'/);
-    assert.match(source, /height:\s*'4px'/);
+    assert.match(source, /top:\s*'3px'/);
+    assert.match(source, /left:\s*'-1px'/);
+    assert.match(source, /width:\s*'5px'/);
+    assert.match(source, /height:\s*'5px'/);
     assert.match(source, /border:\s*'1px solid var\(--surface, #fff\)'/);
     assert.doesNotMatch(source, /\? ' has-note' : ''/);
   }
 });
 
-test('trip dates use localized three-letter months and remain the first header metric after Notes', async () => {
+test('trip dates use localized three-letter months, allow one authoritative boundary, and remain the first header metric after Notes', async () => {
   const header = await read('src/app/TripSummaryHeader.jsx');
   const polish = await read('src/app/HeaderRequestedPolish.css');
   const es = await read('src/i18n/es.js');
@@ -44,11 +44,13 @@ test('trip dates use localized three-letter months and remain the first header m
   assert.ok(totalIndex >= 0, 'Trip total metric is missing');
   assert.ok(datesIndex < totalIndex, 'Trip dates must appear before total as the first metric after Notes');
   assert.match(header, /Icon=\{IconCalendar\}/);
-  assert.match(header, /summary\.startDate && summary\.endDate/);
+  assert.match(header, /function formatTripDateRange\(summary, locale, emptyLabel\)/);
+  assert.match(header, /if \(start && end\) return `\$\{start\} - \$\{end\}`;/);
+  assert.match(header, /return start \|\| end \|\| emptyLabel;/);
+  assert.match(header, /formatTripDateRange\(summary, intlLocale, t\('noTripDates'\)\)/);
   assert.match(header, /day:\s*'numeric'/);
   assert.match(header, /month:\s*'short'/);
   assert.match(header, /monthChars\.length > 3 \? monthChars\.slice\(0, 3\)\.join\(''\)/);
-  assert.match(header, /formatHeaderDate\(summary\.startDate, intlLocale\)\} - \$\{formatHeaderDate\(summary\.endDate, intlLocale\)/);
   assert.doesNotMatch(header, /day:\s*'2-digit'[\s\S]*month:\s*'2-digit'[\s\S]*year:\s*'numeric'/);
   assert.doesNotMatch(header, /DistanceSpanIcon|summary\.distanceKm|totalDistance|\bkm\b/);
   assert.match(polish, /grid-template-columns:\s*1\.45fr 1\.2fr 1fr 1fr 0\.88fr 0\.88fr;/);
