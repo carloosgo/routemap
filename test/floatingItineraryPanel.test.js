@@ -19,13 +19,13 @@ test('desktop primary panels keep one integrated left column with depth only tow
   assert.match(headerLayout, /\.trip-summary__metrics::before\s*\{/);
 
   assert.match(css, /\.workspace__desktop--column > \.mappane\s*\{[^}]*position:\s*relative;[^}]*inset:\s*auto;/s);
-  assert.match(css, /\.workspace-panel\s*\{[^}]*position:\s*relative;[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*display:\s*block;[^}]*border-radius:\s*0;[^}]*box-shadow:\s*8px 0 18px -14px rgba\(15, 23, 42, 0\.34\);/s);
+  assert.match(css, /\.workspace-panel\s*\{[^}]*position:\s*relative;[^}]*z-index:\s*700;[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*display:\s*block;[^}]*border-radius:\s*0;[^}]*box-shadow:\s*8px 0 18px -14px rgba\(15, 23, 42, 0\.34\);/s);
   assert.match(
     css,
     /\.workspace-panel__content\.floating-editor\s*\{[^}]*width:\s*100%\s*!important;[^}]*height:\s*100%\s*!important;[^}]*border:\s*0\s*!important;[^}]*border-radius:\s*0\s*!important;[^}]*box-shadow:\s*none\s*!important;/s
   );
-  assert.match(headerCss, /\.trip-summary\s*\{[^}]*box-shadow:\s*none;/s);
-  assert.match(css, /\.workspace-panel__toggle\s*\{[^}]*left:\s*var\(--workspace-panel-width\);/s);
+  assert.match(headerCss, /\.trip-summary\s*\{[^}]*border-bottom:\s*1px solid #eef0f2;[^}]*box-shadow:\s*none;/s);
+  assert.match(css, /\.workspace-panel__toggle\s*\{[^}]*left:\s*var\(--workspace-panel-width\);[^}]*z-index:\s*701;/s);
   assert.match(css, /\.workspace__desktop--column\.is-panel-collapsed\s*\{[^}]*grid-template-columns:\s*0 minmax\(0, 1fr\);/s);
   assert.match(css, /\.workspace__desktop--column > \.mappane \.segnote,[\s\S]*left:\s*14px;/s);
   assert.match(css, /\.workspace__desktop--column > \.mappane \.segnote\s*\{[^}]*top:\s*calc\(var\(--trip-header-height\) \+ 12px\)\s*!important;/s);
