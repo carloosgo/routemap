@@ -21,16 +21,19 @@ test('header keeps neutral total hover, purple calendar and divided selector row
   assert.match(polish, /border-bottom:\s*1px dashed #eef0f3;/);
 });
 
-test('destination number sits left of the unchanged 30px flag inside the same 53px slot', async () => {
-  const [header, css] = await Promise.all([
+test('destination number and 30px flag use independent tracks with the shared itinerary gap', async () => {
+  const [header, css, compact] = await Promise.all([
     read('src/modules/trips/SegmentHeader.jsx'),
     read('src/modules/trips/ItinerarySequenceLeft.css'),
+    read('src/modules/trips/ItineraryCompactTen.css'),
   ]);
 
   assert.match(header, /import '\.\/ItinerarySequenceLeft\.css';/);
-  assert.match(css, /width:\s*53px;/);
-  assert.match(css, /gap:\s*4px;/);
-  assert.match(css, /itinerary-stop__sequence-badge[\s\S]*position:\s*static;[\s\S]*order:\s*-1;[\s\S]*flex:\s*0 0 19px;[\s\S]*transform:\s*none;/s);
+  assert.match(css, /itinerary-stop__sequence\s*\{[\s\S]*width:\s*19px;[\s\S]*min-width:\s*19px;/s);
+  assert.match(css, /itinerary-stop__sequence-badge[\s\S]*position:\s*static;[\s\S]*width:\s*19px;[\s\S]*height:\s*19px;[\s\S]*transform:\s*none;/s);
+  assert.match(css, /itinerary-stop__marker\s*\{[\s\S]*width:\s*30px;[\s\S]*min-width:\s*30px;/s);
+  assert.match(compact, /--itinerary-compact-gap:\s*10px;/);
+  assert.match(compact, /grid-template-columns:\s*14px 19px 30px 126px minmax\(0, 1fr\);[\s\S]*column-gap:\s*var\(--itinerary-compact-gap\);/s);
 });
 
 test('dynamic expense concepts reuse fixed expense columns and vertical rhythm', async () => {
