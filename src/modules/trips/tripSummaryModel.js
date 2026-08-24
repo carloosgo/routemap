@@ -52,7 +52,25 @@ function haversineKm(from, to) {
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(a)));
 }
 
+function globalSegmentDateRange(segments) {
+  const timestamps = [];
+  for (const segment of Array.isArray(segments) ? segments : []) {
+    const start = validDate(segment?.startDate);
+    const end = validDate(segment?.endDate);
+    if (start != null) timestamps.push(start);
+    if (end != null) timestamps.push(end);
+  }
+  if (!timestamps.length) return { startDate: '', endDate: '' };
+  return {
+    startDate: new Date(Math.min(...timestamps)).toISOString().slice(0, 10),
+    endDate: new Date(Math.max(...timestamps)).toISOString().slice(0, 10),
+  };
+}
+
 export function tripDateRange(tripOrSegments) {
+  // Preserve the standalone segment-array utility contract. The trip header passes
+  // the full trip object so it can use origin departure + last entered leg end.
+  if (Array.isArray(tripOrSegments)) return globalSegmentDateRange(tripOrSegments);
   return tripBoundaryDates(tripOrSegments);
 }
 
