@@ -1,4 +1,5 @@
 import { isPlaced } from '../trips/tripModel.js';
+import { buildItineraryStopSequence } from '../trips/itineraryStopSequence.js';
 import { syncSegmentOrigins } from '../trips/tripOperations.js';
 import { normalizeRouteGeometry } from '../routes/routeModel.js';
 import { savedPlaceMarkerStyle } from './savedPlaceMarkerPalette.js';
@@ -69,6 +70,11 @@ export function orderedCities(segments) {
   return cities;
 }
 
+export function itineraryViewportKey(segments) {
+  const keys = orderedCities(segments).map(cityKey).filter(Boolean);
+  return [...new Set(keys)].sort().join('|');
+}
+
 function normalizedCountryName(value) {
   return String(value || '')
     .normalize('NFD')
@@ -126,20 +132,22 @@ export function buildMapFeatureData({
     ? savedPlaceRouteFeatures(routeConnections)
     : [];
   const routeSegments = showSegments ? canonicalSegmentChain(segments) : [];
-  const drawableSegments = routeSegments.filter(
-    (segment) => isPlaced(segment?.origin) && isPlaced(segment?.destination)
-  );
   const routeCities = showSegments ? orderedCities(routeSegments) : [];
+  const stopSequence = showSegments
+    ? buildItineraryStopSequence(routeSegments, colorForIndex)
+    : [];
   const countryStyles = showPlaces ? placeCountryStyleMap(places) : new Map();
 
   if (showSegments) {
-    drawableSegments.forEach((segment, index) => {
+    routeSegments.forEach((segment, index) => {
+      if (!isPlaced(segment?.origin) || !isPlaced(segment?.destination)) return;
+      const stop = stopSequence[index];
       routeFeatures.push({
         type: 'Feature',
         properties: {
           segmentId: segment.id || '',
-          sequence: index + 1,
-          color: colorForIndex(index),
+          sequence: stop?.number ?? null,
+          color: stop?.color || colorForIndex(index),
           dashed: dominantTransport(segment) === 'plane',
         },
         geometry: {
@@ -148,19 +156,43 @@ export function buildMapFeatureData({
         },
       });
     });
-  }
 
-  routeCities.forEach((city, index) => {
-    cityFeatures.push({
-      type: 'Feature',
-      properties: {
-        name: city.name || city.displayName || 'Ciudad',
-        sequence: index + 1,
-        color: colorForIndex(index),
-      },
-      geometry: { type: 'Point', coordinates: [city.lon, city.lat] },
+    const origin = routeSegments[0]?.origin;
+    if (isPlaced(origin)) {
+      cityFeatures.push({
+        type: 'Feature',
+        properties: {
+          name: origin.name || origin.displayName || 'Ciudad',
+          role: 'origin',
+          sequence: null,
+          color: null,
+        },
+        geometry: { type: 'Point', coordinates: [origin.lon, origin.lat] },
+      });
+    }
+
+    let previousCityKey = isPlaced(origin) ? cityKey(origin) : '';
+    routeSegments.forEach((segment, index) => {
+      const destination = segment?.destination;
+      if (!isPlaced(destination)) return;
+      const destinationKey = cityKey(destination);
+      const stop = stopSequence[index];
+      if (stop?.isTerminalReturn) return;
+      if (previousCityKey && destinationKey === previousCityKey) return;
+
+      cityFeatures.push({
+        type: 'Feature',
+        properties: {
+          name: destination.name || destination.displayName || 'Ciudad',
+          role: 'destination',
+          sequence: stop?.number ?? null,
+          color: stop?.color || colorForIndex(index),
+        },
+        geometry: { type: 'Point', coordinates: [destination.lon, destination.lat] },
+      });
+      previousCityKey = destinationKey;
     });
-  });
+  }
 
   if (showPlaces) {
     places.filter(isPlaced).forEach((place) => {
