@@ -76,11 +76,12 @@
     pointer-events: none;
   }
 
-  /* La pestaña se ancla al límite real de la columna integrada. */
+  /* La pestaña se ancla al límite real de la columna integrada y permanece
+     visualmente por encima de la sombra del panel. */
   .workspace-panel__toggle {
     top: 50%;
     left: var(--workspace-panel-width);
-    z-index: 699;
+    z-index: 701;
     transform: translate(-1px, -50%);
     box-shadow: none;
   }
