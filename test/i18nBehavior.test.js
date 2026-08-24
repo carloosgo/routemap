@@ -59,6 +59,7 @@ test('fechas y monedas respetan es-MX y en-US', () => {
 test('la búsqueda de ciudades usa el idioma activo y separa ambos niveles de caché', async () => {
   const hook = await read('src/modules/geocoding/useCitySearch.js');
   const client = await read('src/modules/geocoding/citySearchClient.js');
+  const cache = await read('src/modules/geocoding/citySearchCache.js');
   const backend = await read('functions/geoapifyCityFunctions.js');
 
   assert.match(hook, /const \{ t, locale \} = useTranslation\(\)/);
@@ -70,10 +71,11 @@ test('la búsqueda de ciudades usa el idioma activo y separa ambos niveles de ca
   assert.match(client, /const safeLanguage = normalizeLanguage\(language\)/);
   assert.match(client, /const cacheKey = `\$\{queryKey\}\|\$\{safeLanguage\}\|\$\{safeLimit\}`/);
   assert.match(client, /language: safeLanguage/);
+  assert.match(cache, /atlas:geoapify-city-cache:v2/);
 
   assert.match(backend, /const language = requestedLanguage\(request\.data\?\.language\)/);
   assert.match(backend, /lang: language/);
-  assert.match(backend, /const key = `city:\$\{queryKey\}:lang=\$\{language\}:limit=\$\{limit\}`/);
+  assert.match(backend, /const key = `city:v2:\$\{queryKey\}:lang=\$\{language\}:limit=\$\{limit\}`/);
 });
 
 test('placeholders y mensajes sensibles al idioma viven en los diccionarios', async () => {
