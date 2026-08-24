@@ -1,24 +1,17 @@
 import { CalendarDateInput } from '../../components/CalendarDateInput.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
 import { ExpenseEditor } from '../expenses/ExpenseEditor.jsx';
-import { isValidSegmentDateRange } from './segmentFormModel.js';
 
 export function SegmentBody({
   segment,
   currency,
   locale,
   bodyId,
+  dateError = '',
   onUpdate,
   onUpdateExpenses,
 }) {
   const { t } = useTranslation();
-
-  function updateDate(patch) {
-    const startDate = Object.hasOwn(patch, 'startDate') ? patch.startDate : segment.startDate;
-    const endDate = Object.hasOwn(patch, 'endDate') ? patch.endDate : segment.endDate;
-    if (!isValidSegmentDateRange(startDate, endDate)) return;
-    onUpdate(patch);
-  }
 
   return (
     <div className="segment__body segment-expense-form" id={bodyId}>
@@ -29,7 +22,7 @@ export function SegmentBody({
             max={segment.endDate || undefined}
             locale={locale}
             ariaLabel={t('startDate')}
-            onChange={(startDate) => updateDate({ startDate })}
+            onChange={(startDate) => onUpdate({ startDate })}
           />
           <CalendarDateInput
             value={segment.endDate}
@@ -37,9 +30,14 @@ export function SegmentBody({
             locale={locale}
             ariaLabel={t('endDate')}
             align="end"
-            onChange={(endDate) => updateDate({ endDate })}
+            onChange={(endDate) => onUpdate({ endDate })}
           />
         </div>
+        {dateError && (
+          <p className="segment-details-modal__date-error" role="alert">
+            {dateError}
+          </p>
+        )}
       </div>
 
       <ExpenseEditor
