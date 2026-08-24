@@ -1,21 +1,27 @@
-/* El número comparte los mismos 53px de la bandera, pero queda a su izquierda.
-   La bandera conserva 30x20 y la ciudad mantiene intactos sus 126px. */
+/* Número y bandera son elementos independientes. El número ocupa su propio
+   track de 19px y la bandera conserva 30x20; la separación exterior la gobierna
+   la retícula compacta para que todos los pasos usen el mismo gap. */
 @media (min-width: 721px) {
-  .editor-module.editor-module--itinerary .itinerary-stop__marker,
-  .segments:not(.segments--compact) .itinerary-origin__marker {
-    box-sizing: border-box;
-    width: 53px;
-    min-width: 53px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 4px;
+  .editor-module.editor-module--itinerary .itinerary-stop__sequence {
+    width: 19px;
+    min-width: 19px;
+    height: 22px;
+    display: grid;
+    place-items: center;
   }
 
   .editor-module.editor-module--itinerary .itinerary-stop__sequence-badge {
     position: static;
-    order: -1;
-    flex: 0 0 19px;
+    width: 19px;
+    height: 19px;
     transform: none;
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-stop__marker {
+    box-sizing: border-box;
+    width: 30px;
+    min-width: 30px;
+    display: grid;
+    place-items: center;
   }
 }
