@@ -20,7 +20,7 @@ test('itinerary map preserves viewport after first projection and reconciles mar
   assert.doesNotMatch(source, /const viewportChanged/);
   assert.match(source, /agregar, eliminar o[\s\S]*reordenar ciudades nunca vuelve a ejecutar pan\/zoom\/fitBounds/s);
 
-  const cleanup = source.match(/return \(\) => \{[\s\S]*?No desmontar aquí trazos, landmarks ni marcadores[\s\S]*?\};/s)?.[0] || '';
+  const cleanup = source.match(/return \(\) => \{\s*viewportIdleListener\?\.remove\?\.\(\);[\s\S]*?No desmontar aquí trazos, landmarks ni marcadores[\s\S]*?\};/s)?.[0] || '';
   assert.ok(cleanup, 'el efecto de itinerario debe conservar sus nodos entre proyecciones');
   assert.doesNotMatch(cleanup, /clearItineraryMarkers|setRoutes\(\[\]\)|setLandmarks\(\[\]\)/);
 });
