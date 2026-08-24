@@ -1,7 +1,12 @@
+import { useEffect, useState } from 'react';
 import { IconArrowRight, IconX } from '@tabler/icons-react';
 import { colorForIndex } from '../../config.js';
 import { OriginBody } from './OriginBody.jsx';
 import { SegmentBody } from './SegmentBody.jsx';
+import {
+  validateOriginDepartureDateChange,
+  validateSegmentDatePatch,
+} from './tripDateRules.js';
 import { ORIGIN_NOTE_TARGET } from './tripNoteTargets.js';
 import './ItineraryDetailsModal.css';
 
@@ -16,12 +21,30 @@ export function ItineraryDetailsModal({
   updateOriginExpenses,
   t,
 }) {
+  const [dateError, setDateError] = useState('');
+
+  useEffect(() => {
+    setDateError('');
+  }, [target]);
+
   if (!target) return null;
 
   if (target === ORIGIN_NOTE_TARGET) {
     const firstSegment = trip.segments?.[0];
     if (!firstSegment) return null;
     const originName = firstSegment.origin?.name || t('origin');
+
+    const handleOriginUpdate = (patch) => {
+      if (Object.hasOwn(patch, 'departureDate')) {
+        const validation = validateOriginDepartureDateChange(trip, patch.departureDate);
+        if (!validation.valid) {
+          setDateError(t(validation.errorKey));
+          return;
+        }
+        setDateError('');
+      }
+      updateOriginDetails(patch);
+    };
 
     return (
       <div
@@ -49,7 +72,8 @@ export function ItineraryDetailsModal({
             currency={trip.currency}
             locale={locale}
             bodyId="origin-details-modal-body"
-            onUpdate={updateOriginDetails}
+            dateError={dateError}
+            onUpdate={handleOriginUpdate}
             onUpdateExpenses={updateOriginExpenses}
           />
         </div>
@@ -62,6 +86,18 @@ export function ItineraryDetailsModal({
   const index = trip.segments.findIndex((item) => item.id === target);
   const originName = segment.origin?.name || t('origin');
   const destinationName = segment.destination?.name || t('destination');
+
+  const handleSegmentUpdate = (patch) => {
+    if (Object.hasOwn(patch, 'startDate') || Object.hasOwn(patch, 'endDate')) {
+      const validation = validateSegmentDatePatch(trip, segment.id, patch);
+      if (!validation.valid) {
+        setDateError(t(validation.errorKey));
+        return;
+      }
+      setDateError('');
+    }
+    updateSegment(segment.id, patch);
+  };
 
   return (
     <div
@@ -91,7 +127,8 @@ export function ItineraryDetailsModal({
           currency={trip.currency}
           locale={locale}
           bodyId={`segment-details-modal-${segment.id}`}
-          onUpdate={(patch) => updateSegment(segment.id, patch)}
+          dateError={dateError}
+          onUpdate={handleSegmentUpdate}
           onUpdateExpenses={(expenses) => updateExpenses(segment.id, expenses)}
         />
       </div>
