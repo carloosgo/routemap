@@ -138,15 +138,27 @@ test('renderer crea una sola OverlayView y actualiza rutas sin desmontarla', () 
     assert.equal(svg.children[0].getAttribute('d'), 'M 20.00 10.00 L 22.00 11.00');
     assert.equal(svg.children[1].getAttribute('transform') !== null, true);
     assert.equal(svg.children[2].getAttribute('transform') !== null, true);
+    const routeElement = svg.children[0];
+    const firstArrow = svg.children[1];
+    const secondArrow = svg.children[2];
 
     renderer.setRoutes([{
       path: [{ lat: 30, lng: 40 }, { lat: 31, lng: 44 }],
       color: '#654321',
     }]);
+
+    // El trazado anterior sigue presente hasta que el mismo nodo recibe la
+    // geometría nueva; no existe un frame intermedio sin ruta.
+    assert.equal(svg.children[0], routeElement);
+    assert.equal(svg.children[1], firstArrow);
+    assert.equal(svg.children[2], secondArrow);
+    assert.equal(svg.children[0].getAttribute('d'), 'M 20.00 10.00 L 22.00 11.00');
+
     env.flushFrames();
 
     assert.equal(env.overlays.length, 1);
     assert.equal(svg.children.length, 3);
+    assert.equal(svg.children[0], routeElement);
     assert.equal(svg.children[0].getAttribute('d'), 'M 40.00 30.00 L 44.00 31.00');
 
     renderer.refresh();
