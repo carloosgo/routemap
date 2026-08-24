@@ -51,12 +51,18 @@ function savedMarkerContent(place, t, color) {
   return button;
 }
 
-function itineraryCityContent(city, color, t, { endpoint = false, number = null } = {}) {
+function itineraryCityContent(city, color, t, { origin = false, number = null } = {}) {
   const marker = document.createElement('div');
-  marker.className = 'google-itinerary-city-marker' + (endpoint ? ' is-endpoint' : '');
-  marker.style.setProperty('--itinerary-city-color', color);
+  marker.className = 'google-itinerary-city-marker' + (origin ? ' is-origin' : '');
+  if (color) marker.style.setProperty('--itinerary-city-color', color);
   marker.setAttribute('role', 'img');
   const cityName = city.name || city.displayName || t('city');
+
+  if (origin) {
+    marker.setAttribute('aria-label', `${t('origin')}: ${cityName}`);
+    return marker;
+  }
+
   marker.setAttribute('aria-label', `${number}. ${cityName}`);
   const dot = document.createElement('span');
   dot.className = 'google-itinerary-city-marker__dot';
@@ -478,29 +484,31 @@ export function GooglePlacesMap({
     };
 
     const bounds = new maps.LatLngBounds();
-    cityFeatures.forEach((feature, index) => {
+    cityFeatures.forEach((feature) => {
       const [lng, lat] = feature.geometry?.coordinates || [];
       if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return;
-      const endpoint = index === 0 || index === cityFeatures.length - 1;
-      const markerNumber = Number(feature.properties?.sequence) || index + 1;
+      const isOrigin = feature.properties?.role === 'origin';
+      const markerNumber = isOrigin ? null : Number(feature.properties?.sequence) || null;
+      if (!isOrigin && markerNumber == null) return;
+      const cityName = feature.properties?.name || t('city');
       const content = itineraryCityContent(
-        { name: feature.properties?.name },
+        { name: cityName },
         feature.properties?.color || colorForIndex(0),
         t,
-        { endpoint, number: markerNumber }
+        { origin: isOrigin, number: markerNumber }
       );
       const marker = new AdvancedMarkerElement({
         map,
         position: { lat: Number(lat), lng: Number(lng) },
-        title: `${markerNumber}. ${feature.properties?.name || t('city')}`,
+        title: isOrigin ? cityName : `${markerNumber}. ${cityName}`,
         content,
-        zIndex: 300 + markerNumber,
+        zIndex: isOrigin ? 350 : 300 + markerNumber,
       });
       itineraryMarkersRef.current.push(marker);
       bounds.extend({ lat: Number(lat), lng: Number(lng) });
     });
 
-    const viewportKey = routeCities.map(cityKey).join('|');
+    const viewportKey = routeCities.map(cityKey).sort().join('|');
     const viewportChanged = viewportKey !== lastItineraryViewportKeyRef.current;
     if (viewportChanged) {
       lastItineraryViewportKeyRef.current = viewportKey;
