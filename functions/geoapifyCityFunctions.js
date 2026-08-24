@@ -11,11 +11,12 @@ import {
   limitedFetch,
   normalized,
   requireGeoapifyKey,
-  validCoordinate,
 } from './geoapifySupport.js';
+import { normalizeGeoapifyCityResults } from './geoapifyCityUtils.js';
 
 const MIN_QUERY_CHARS = 3;
 const MAX_RESULTS = 5;
+const MAX_PROVIDER_RESULTS = 10;
 const MAX_QUERY_CHARS = 120;
 const ALLOWED_LANGUAGES = new Set(['es', 'en']);
 
@@ -28,38 +29,16 @@ function requestedLanguage(value) {
   return ALLOWED_LANGUAGES.has(language) ? language : 'es';
 }
 
-function mapCity(item) {
-  if (
-    !item
-    || !validCoordinate(item.lat, -90, 90)
-    || !validCoordinate(item.lon, -180, 180)
-  ) {
-    return null;
-  }
-
-  const name = String(item.city || item.name || '').trim();
-  const country = String(item.country || '').trim();
-  const countryCode = String(item.country_code || '').trim().toUpperCase();
-  if (!name || !/^[A-Z]{2}$/.test(countryCode)) return null;
-
-  return {
-    id: String(item.place_id || `${item.lon}:${item.lat}`).slice(0, 256),
-    name: name.slice(0, 120),
-    displayName: String(item.formatted || [name, country].filter(Boolean).join(', ')).slice(0, 200),
-    country: country.slice(0, 100),
-    countryCode,
-    lat: Number(item.lat),
-    lon: Number(item.lon),
-  };
-}
-
 async function loadCities(query, limit, language) {
+  // Pedimos candidatos extra porque OSM puede representar una misma ciudad
+  // como nodo de centro y como boundary administrativa. Se deduplican después.
+  const providerLimit = Math.min(Math.max(limit * 2, limit), MAX_PROVIDER_RESULTS);
   const params = new URLSearchParams({
     text: query,
     type: 'city',
     format: 'json',
     lang: language,
-    limit: String(limit),
+    limit: String(providerLimit),
     apiKey: requireGeoapifyKey(
       GEOAPIFY_CITY_API_KEY,
       'GEOAPIFY_CITY_API_KEY'
@@ -68,17 +47,8 @@ async function loadCities(query, limit, language) {
   const payload = await limitedFetch(
     `https://api.geoapify.com/v1/geocode/autocomplete?${params}`
   );
-  const seen = new Set();
-  return (payload.results || [])
-    .map(mapCity)
-    .filter((city) => {
-      if (!city) return false;
-      const key = `${normalized(city.name)}|${city.countryCode}|${city.lat.toFixed(5)}|${city.lon.toFixed(5)}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .slice(0, limit);
+
+  return normalizeGeoapifyCityResults(payload.results, { language, limit });
 }
 
 export const geoapifyCityAutocomplete = onCall(
@@ -98,7 +68,8 @@ export const geoapifyCityAutocomplete = onCall(
 
       const limit = requestedLimit(request.data?.limit);
       const language = requestedLanguage(request.data?.language);
-      const key = `city:${queryKey}:lang=${language}:limit=${limit}`;
+      // v2 invalida respuestas previas que podían contener duplicados o nombres nativos.
+      const key = `city:v2:${queryKey}:lang=${language}:limit=${limit}`;
       const cachedResult = await cached(
         'citySearchCache',
         key,
