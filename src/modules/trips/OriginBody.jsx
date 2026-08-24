@@ -8,6 +8,7 @@ export function OriginBody({
   currency,
   locale,
   bodyId,
+  dateError = '',
   onUpdate,
   onUpdateExpenses,
 }) {
@@ -24,6 +25,11 @@ export function OriginBody({
             onChange={(departureDate) => onUpdate({ departureDate })}
           />
         </div>
+        {dateError && (
+          <p className="segment-details-modal__date-error" role="alert">
+            {dateError}
+          </p>
+        )}
       </div>
 
       <ExpenseEditor
