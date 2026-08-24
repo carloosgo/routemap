@@ -95,7 +95,8 @@ test('UI consumes canonical numbering while preserving gray labels and colored m
   assert.match(mapPane, /buildItineraryStopSequence\(trip\.segments, colorForIndex\)/);
   assert.match(mapPane, /\{stop\.number\}/);
   assert.match(segmentHeader, /className="itinerary-stop__sequence-badge"/);
-  assert.match(compact, /grid-template-columns:\s*18px 53px 126px minmax\(0, 1fr\);/);
+  assert.match(compact, /--itinerary-compact-gap:\s*10px;/);
+  assert.match(compact, /grid-template-columns:\s*14px 19px 30px 126px minmax\(0, 1fr\);/);
   assert.match(headerType, /\.trip-summary__metric-label\s*\{[^}]*color:\s*var\(--text-mute\);/s);
   assert.match(headerType, /\.trip-summary__metric-value,[\s\S]*color:\s*#000000;/);
   assert.match(googleMap, /const isOrigin = feature\.properties\?\.role === 'origin';/);
