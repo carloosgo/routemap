@@ -12,6 +12,8 @@ export default {
   tripDates: 'Fechas del viaje',
   destinations: 'Destinos',
   cities: 'ciudades',
+  country: 'país',
+  countries: 'países',
   totalNights: 'Noches totales',
   nights: 'noches',
   totalDistance: 'Distancia total',
