@@ -37,7 +37,10 @@ function assertConsecutiveMapChain(reordered, expectedSegmentIds, expectedCityId
   const data = mapDataFor(reordered.segments);
   assert.deepEqual(data.routeFeatures.map((feature) => feature.properties.segmentId), expectedSegmentIds);
   assert.deepEqual(data.routeFeatures.map((feature) => feature.properties.sequence), expectedSegmentIds.map((_, index) => index + 1));
-  assert.deepEqual(data.cityFeatures.map((feature) => feature.properties.sequence), expectedCityIds.map((_, index) => index + 1));
+  assert.deepEqual(
+    data.cityFeatures.map((feature) => feature.properties.sequence),
+    [null, ...expectedSegmentIds.map((_, index) => index + 1)]
+  );
   assert.deepEqual(data.cityFeatures.map((feature) => feature.properties.name.toLowerCase()), expectedCityIds);
 }
 
@@ -86,5 +89,5 @@ test('una ciudad revisitada conserva su posicion consecutiva en vez de desaparec
     { id: 's3', origin: cities.a, destination: cities.c, expenses: {} },
   ]);
   assert.deepEqual(data.cityFeatures.map((feature) => feature.properties.name), ['A', 'B', 'A', 'C']);
-  assert.deepEqual(data.cityFeatures.map((feature) => feature.properties.sequence), [1, 2, 3, 4]);
+  assert.deepEqual(data.cityFeatures.map((feature) => feature.properties.sequence), [null, 1, 2, 3]);
 });
