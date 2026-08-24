@@ -63,11 +63,11 @@ export function MoneyCard({
   const centeredRowStyle = centered
     ? {
         display: 'grid',
-        gridTemplateColumns: '18px minmax(0, 82px) 70px',
+        gridTemplateColumns: '18px minmax(64px, 82px) minmax(60px, 70px)',
         alignItems: 'center',
         justifyContent: 'center',
         columnGap: '4px',
-        width: 'min(178px, 100%)',
+        width: 'min(178px, calc(100% - 12px))',
         maxWidth: '100%',
         justifySelf: 'center',
       }
@@ -97,8 +97,9 @@ export function MoneyCard({
         style={centered
           ? {
               gridColumn: 3,
-              width: '70px',
-              minWidth: '70px',
+              width: '100%',
+              minWidth: '60px',
+              maxWidth: '70px',
               marginLeft: 0,
               paddingLeft: 0,
               paddingRight: 0,
