@@ -28,7 +28,7 @@ test('desktop itinerary keeps compact equal rows, visible scrollbar and cost-onl
   assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
   assert.match(compact, /\.itinerary-origin,[\s\S]*segment__header\.itinerary-stop\s*\{[^}]*min-height:\s*40px;[^}]*height:\s*40px;[^}]*align-items:\s*center;/s);
   assert.match(compact, /grid-template-columns:\s*14px 19px 30px 126px minmax\(0, 1fr\);/);
-  assert.match(compact, /grid-template-columns:\s*73px 30px 126px minmax\(0, 1fr\);/);
+  assert.match(compact, /\.itinerary-origin\s*\{[^}]*padding-left:\s*53px;[^}]*grid-template-columns:\s*30px 126px minmax\(0, 1fr\);[^}]*column-gap:\s*var\(--itinerary-compact-gap\);/s);
   assert.match(compact, /column-gap:\s*var\(--itinerary-compact-gap\);/);
   assert.match(compact, /max-width:\s*126px;/);
   assert.match(compact, /autocomplete__selected-value[\s\S]*transform:\s*none;[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*600;[\s\S]*white-space:\s*nowrap;/s);
@@ -118,7 +118,7 @@ test('itinerary dividers stay dotted from flag start to close icon end', async (
   assert.match(dividers, /#c9ced7 0 3px,[\s\S]*transparent 3px 7px/);
   assert.match(dividers, /\.itinerary-origin-section \+ \.itinerary-segment::before/);
   assert.match(dividers, /\.itinerary-segment \+ \.itinerary-segment::before/);
-  assert.match(dividers, /left:\s*73px;[\s\S]*right:\s*4px;/);
+  assert.match(dividers, /left:\s*53px;[\s\S]*right:\s*4px;/);
   assert.doesNotMatch(dividers, /::after|M0 0 L4 4|fill='%2319a5d0'|clip-path/);
 
   assert.match(floating, /\.workspace-panel__content\.floating-editor\s*\{[^}]*background:\s*var\(--bg\)\s*!important;[^}]*border:\s*0\s*!important;[^}]*border-radius:\s*0\s*!important;[^}]*box-shadow:\s*none\s*!important;/s);
