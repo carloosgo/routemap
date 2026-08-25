@@ -1,4 +1,4 @@
-const CITY_CACHE_KEY = 'atlas:geoapify-city-cache:v4';
+const CITY_CACHE_KEY = 'atlas:geoapify-city-cache:v5';
 const MAX_CACHE_ENTRIES = 250;
 
 function readEntries() {

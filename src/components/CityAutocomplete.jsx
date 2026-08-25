@@ -5,6 +5,13 @@ import { flagImageUrl } from '../modules/flags/flags.js';
 import { useTranslation } from '../i18n/index.jsx';
 import { config } from '../config.js';
 
+function cityDisplayMeta(city) {
+  const name = String(city?.name || '').trim();
+  const displayName = String(city?.displayName || '').trim();
+  if (name && displayName.startsWith(name)) return displayName.slice(name.length);
+  return city?.country ? `, ${city.country}` : '';
+}
+
 // Campo de búsqueda de ciudad con autocompletado.
 // Muestra sugerencias a partir del 3er carácter y devuelve un City completo.
 export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay = 'full' }) {
@@ -120,34 +127,37 @@ export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay
           {!loading && !error && results.length === 0 && (
             <li className="autocomplete__status">{t('noResults')}</li>
           )}
-          {results.map((city, index) => (
-            <li key={city.id} className="autocomplete__item-row" role="presentation">
-              <button
-                type="button"
-                role="option"
-                aria-selected={index === highlight}
-                className={'autocomplete__item' + (index === highlight ? ' is-active' : '')}
-                onMouseEnter={() => setHighlight(index)}
-                onClick={() => handleSelect(city)}
-              >
-                {city.countryCode && (
-                  <img
-                    className="flag"
-                    src={flagImageUrl(city.countryCode, 40)}
-                    alt={city.countryCode}
-                    width={24}
-                    height={17}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                )}
-                <span className="autocomplete__cityinfo">
-                  <span className="autocomplete__name">{city.name}</span>
-                  {city.country && <span className="autocomplete__meta">, {city.country}</span>}
-                </span>
-              </button>
-            </li>
-          ))}
+          {results.map((city, index) => {
+            const meta = cityDisplayMeta(city);
+            return (
+              <li key={city.id} className="autocomplete__item-row" role="presentation">
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={index === highlight}
+                  className={'autocomplete__item' + (index === highlight ? ' is-active' : '')}
+                  onMouseEnter={() => setHighlight(index)}
+                  onClick={() => handleSelect(city)}
+                >
+                  {city.countryCode && (
+                    <img
+                      className="flag"
+                      src={flagImageUrl(city.countryCode, 40)}
+                      alt={city.countryCode}
+                      width={24}
+                      height={17}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  )}
+                  <span className="autocomplete__cityinfo">
+                    <span className="autocomplete__name">{city.name}</span>
+                    {meta && <span className="autocomplete__meta">{meta}</span>}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
 
