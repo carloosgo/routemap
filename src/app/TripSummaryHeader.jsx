@@ -18,6 +18,7 @@ import {
 } from '@tabler/icons-react';
 import { tripSummary } from '../modules/trips/tripSummaryModel.js';
 import { formatMoney } from '../shared/utils.js';
+import { HEADER_ICON_COLOR } from './headerVisualTokens.js';
 import { SummarySelectorMetric } from './SummarySelectorMetric.jsx';
 import { TripHeaderNavigation } from './TripHeaderNavigation.jsx';
 import './TripSummaryHeaderMicroPolish.css';
@@ -163,7 +164,7 @@ export function TripSummaryHeader({
       <div className="trip-summary__metrics" aria-label={t('tripMetrics')}>
         <Metric
           Icon={IconCalendar}
-          iconColor="#7c5ce7"
+          iconColor={HEADER_ICON_COLOR}
           label={t('tripDates')}
           value={tripDateRange}
           className="trip-summary__metric--dates"
@@ -172,14 +173,21 @@ export function TripSummaryHeader({
         <div className="trip-summary__breakdown-anchor" ref={breakdownRef}>
           <Metric
             Icon={IconWallet}
-            iconColor="#2aa866"
+            iconColor={HEADER_ICON_COLOR}
             label={t('grandTotal')}
             value={formatMoney(total, trip.currency, intlLocale)}
             className="trip-summary__metric--total"
             onClick={() => hasCosts && setShowBreakdown((value) => !value)}
             expanded={showBreakdown}
           >
-            {hasCosts && <IconChevronDown size={14} className={showBreakdown ? 'is-open' : ''} aria-hidden="true" />}
+            {hasCosts && (
+              <IconChevronDown
+                size={14}
+                style={{ color: HEADER_ICON_COLOR }}
+                className={showBreakdown ? 'is-open' : ''}
+                aria-hidden="true"
+              />
+            )}
           </Metric>
 
           {showBreakdown && hasCosts && (
@@ -203,10 +211,10 @@ export function TripSummaryHeader({
           )}
         </div>
 
-        <Metric Icon={IconMapPin} iconColor="#e05252" label={countryLabel} value={`${summary.destinations} ${t('cities')}`} />
-        <Metric Icon={IconMoon} iconColor="#4f6df5" label={t('totalNights')} value={`${summary.nights} ${t('nights')}`} />
-        <SummarySelectorMetric Icon={IconCurrencyDollar} iconColor="#c9224d" label={t('currency')} value={trip.currency} options={currencyOptions} onChange={setCurrency} menuClassName="trip-summary__selector-menu--currency" />
-        <SummarySelectorMetric Icon={IconLanguage} iconColor="#357d94" label={t('language')} value={locale} options={languageOptions} onChange={setLocale} menuClassName="trip-summary__selector-menu--language" />
+        <Metric Icon={IconMapPin} iconColor={HEADER_ICON_COLOR} label={countryLabel} value={`${summary.destinations} ${t('cities')}`} />
+        <Metric Icon={IconMoon} iconColor={HEADER_ICON_COLOR} label={t('totalNights')} value={`${summary.nights} ${t('nights')}`} />
+        <SummarySelectorMetric Icon={IconCurrencyDollar} iconColor={HEADER_ICON_COLOR} label={t('currency')} value={trip.currency} options={currencyOptions} onChange={setCurrency} menuClassName="trip-summary__selector-menu--currency" />
+        <SummarySelectorMetric Icon={IconLanguage} iconColor={HEADER_ICON_COLOR} label={t('language')} value={locale} options={languageOptions} onChange={setLocale} menuClassName="trip-summary__selector-menu--language" />
       </div>
     </header>
   );
