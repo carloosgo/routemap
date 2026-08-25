@@ -7,25 +7,6 @@ const NAV_ITEMS = [
   { id: 'notes', labelKey: 'notes', Icon: IconNotebook },
 ];
 
-function NavDividerMask({ index }) {
-  if (index === 0) return null;
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        position: 'absolute',
-        left: index === 1 ? '-5px' : '-8px',
-        top: '9px',
-        bottom: '9px',
-        width: '1px',
-        background: '#ffffff',
-        pointerEvents: 'none',
-        zIndex: 1,
-      }}
-    />
-  );
-}
-
 export function TripHeaderNavigation({
   activeTab,
   setActiveTab,
@@ -38,7 +19,7 @@ export function TripHeaderNavigation({
       role="tablist"
       aria-label={`${t('itinerary')}, ${t('myRoutes')}, ${t('notes')}`}
     >
-      {NAV_ITEMS.map(({ id, labelKey, Icon }, index) => {
+      {NAV_ITEMS.map(({ id, labelKey, Icon }) => {
         const isActive = activeTab === id;
         const badge = id === 'notes' ? checklistProgress : '';
         return (
@@ -51,7 +32,6 @@ export function TripHeaderNavigation({
             className={`trip-summary__primary-nav-item${isActive ? ' is-active' : ''}`}
             onClick={() => setActiveTab(id)}
           >
-            <NavDividerMask index={index} />
             <span
               className="trip-summary__primary-nav-icon"
               style={{ color: isActive ? HEADER_ACTIVE_ICON_COLOR : HEADER_ICON_COLOR }}
