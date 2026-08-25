@@ -78,37 +78,7 @@ function formatTripDateRange(summary, locale, emptyLabel) {
   return start || end || emptyLabel;
 }
 
-function LeadingDividerMask({ hidden }) {
-  if (!hidden) return null;
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        position: 'absolute',
-        top: '50%',
-        left: 0,
-        width: '1px',
-        height: '22px',
-        transform: 'translateY(-50%)',
-        background: '#ffffff',
-        pointerEvents: 'none',
-        zIndex: 1,
-      }}
-    />
-  );
-}
-
-function Metric({
-  Icon,
-  iconColor,
-  label,
-  value,
-  className = '',
-  children,
-  onClick,
-  expanded,
-  hideLeadingDivider = false,
-}) {
+function Metric({ Icon, iconColor, label, value, className = '', children, onClick, expanded }) {
   const interactive = typeof onClick === 'function';
   const Tag = interactive ? 'button' : 'div';
   return (
@@ -118,7 +88,6 @@ function Metric({
       onClick={onClick}
       aria-expanded={interactive ? expanded : undefined}
     >
-      <LeadingDividerMask hidden={hideLeadingDivider} />
       <span
         className="trip-summary__metric-icon"
         style={{ color: iconColor }}
@@ -210,7 +179,6 @@ export function TripSummaryHeader({
             className="trip-summary__metric--total"
             onClick={() => hasCosts && setShowBreakdown((value) => !value)}
             expanded={showBreakdown}
-            hideLeadingDivider
           >
             {hasCosts && (
               <IconChevronDown
@@ -248,14 +216,12 @@ export function TripSummaryHeader({
           iconColor={HEADER_ICON_COLOR}
           label={countryLabel}
           value={`${summary.destinations} ${t('cities')}`}
-          hideLeadingDivider
         />
         <Metric
           Icon={IconMoon}
           iconColor={HEADER_ICON_COLOR}
           label={t('totalNights')}
           value={`${summary.nights} ${t('nights')}`}
-          hideLeadingDivider
         />
         <SummarySelectorMetric
           Icon={IconCurrencyDollar}
@@ -265,6 +231,7 @@ export function TripSummaryHeader({
           options={currencyOptions}
           onChange={setCurrency}
           menuClassName="trip-summary__selector-menu--currency"
+          className="trip-summary__metric--currency"
         />
         <SummarySelectorMetric
           Icon={IconLanguage}
@@ -274,7 +241,6 @@ export function TripSummaryHeader({
           options={languageOptions}
           onChange={setLocale}
           menuClassName="trip-summary__selector-menu--language"
-          hideLeadingDivider
         />
       </div>
     </header>
