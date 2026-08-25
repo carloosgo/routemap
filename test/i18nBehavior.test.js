@@ -72,15 +72,17 @@ test('la búsqueda de ciudades usa el idioma activo y separa ambos niveles de ca
   assert.match(client, /const safeLanguage = normalizeLanguage\(language\)/);
   assert.match(client, /const cacheKey = `\$\{queryKey\}\|\$\{safeLanguage\}\|\$\{safeLimit\}`/);
   assert.match(client, /language: safeLanguage/);
-  assert.match(cache, /atlas:geoapify-city-cache:v6/);
+  assert.match(cache, /atlas:geoapify-city-cache:v7/);
 
   assert.match(backend, /const MAX_RESULTS = 5/);
   assert.doesNotMatch(backend, /MAX_PROVIDER_RESULTS|providerLimit/);
   assert.match(backend, /const language = requestedLanguage\(request\.data\?\.language\)/);
-  assert.match(backend, /const key = `city:v6:\$\{queryKey\}:lang=\$\{language\}:limit=\$\{limit\}`/);
+  assert.match(backend, /const key = `city:v7:\$\{queryKey\}:lang=\$\{language\}:limit=\$\{limit\}`/);
   assert.match(cityUtils, /limit: String\(safeLimit\)/);
   assert.match(cityUtils, /lang: safeLanguage/);
   assert.match(cityUtils, /bias: 'countrycode:none'/);
+  assert.match(cityUtils, /address_line1/);
+  assert.match(cityUtils, /formatted/);
 });
 
 test('placeholders y mensajes sensibles al idioma viven en los diccionarios', async () => {
