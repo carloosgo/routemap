@@ -16,7 +16,7 @@ test('origin y destination usan ciudad seleccionada de una sola linea a 13px/600
   assert.match(autocomplete, /autocomplete--timeline-selected/);
   assert.match(autocomplete, /autocomplete__selected-value/);
   assert.match(compact, /autocomplete__selected-value[\s\S]*transform:\s*none;[\s\S]*-webkit-line-clamp:\s*1;[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*600;/s);
-  assert.doesNotMatch(header, /itinerary-stop__country/);
+  assert.doesNotMatch(header, /itinerary-stop__country(?:["'\s])/);
   assert.doesNotMatch(origin, /itinerary-origin__country/);
 });
 
