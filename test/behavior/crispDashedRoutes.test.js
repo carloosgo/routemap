@@ -5,6 +5,7 @@ import { createCrispDashedRoutes } from '../../src/modules/map/crispDashedRoutes
 
 function createRendererEnvironment() {
   const polylines = [];
+  const listeners = new Map();
   let overlayViewConstructions = 0;
 
   class Polyline {
@@ -14,6 +15,7 @@ function createRendererEnvironment() {
       this.path = options.path;
       this.setPathCalls = 0;
       this.setMapCalls = [];
+      this.setOptionsCalls = [];
       polylines.push(this);
     }
 
@@ -26,6 +28,11 @@ function createRendererEnvironment() {
       this.map = map;
       this.setMapCalls.push(map);
     }
+
+    setOptions(options) {
+      this.options = { ...this.options, ...options };
+      this.setOptionsCalls.push(options);
+    }
   }
 
   class OverlayView {
@@ -35,17 +42,35 @@ function createRendererEnvironment() {
     }
   }
 
+  const map = {
+    id: 'map',
+    addListener(eventName, handler) {
+      listeners.set(eventName, handler);
+      return {
+        remove() {
+          if (listeners.get(eventName) === handler) listeners.delete(eventName);
+        },
+      };
+    },
+  };
+
   return {
     maps: { Polyline, OverlayView },
-    map: { id: 'map' },
+    map,
     polylines,
+    trigger(eventName) {
+      listeners.get(eventName)?.();
+    },
+    hasListener(eventName) {
+      return listeners.has(eventName);
+    },
     get overlayViewConstructions() {
       return overlayViewConstructions;
     },
   };
 }
 
-test('renderer delegates dashed itinerary routes to native Google Maps polylines', () => {
+test('renderer delegates thin dashed itinerary routes to native Google Maps polylines', () => {
   const env = createRendererEnvironment();
   const renderer = createCrispDashedRoutes({
     maps: env.maps,
@@ -58,11 +83,13 @@ test('renderer delegates dashed itinerary routes to native Google Maps polylines
 
   assert.equal(env.overlayViewConstructions, 0);
   assert.equal(env.polylines.length, 1);
+  assert.equal(env.hasListener('idle'), true);
 
   const polyline = env.polylines[0];
   assert.equal(polyline.map, env.map);
   assert.deepEqual(polyline.path, [{ lat: 10, lng: 20 }, { lat: 11, lng: 22 }]);
   assert.equal(polyline.options.strokeOpacity, 0);
+  assert.equal(polyline.options.strokeWeight, 1);
   assert.equal(polyline.options.clickable, false);
   assert.equal(polyline.options.geodesic, false);
   assert.equal(polyline.options.icons.length, 1);
@@ -71,15 +98,25 @@ test('renderer delegates dashed itinerary routes to native Google Maps polylines
   assert.equal(polyline.options.icons[0].icon.path, 'M 0,-2 0,2');
   assert.equal(polyline.options.icons[0].icon.strokeColor, '#111111');
   assert.equal(polyline.options.icons[0].icon.strokeOpacity, 1);
-  assert.equal(polyline.options.icons[0].icon.strokeWeight, 2);
+  assert.equal(polyline.options.icons[0].icon.strokeWeight, 1);
+  assert.equal(polyline.options.icons[0].icon.scale, 1);
 
   renderer.refresh();
   assert.equal(polyline.map, env.map);
   assert.equal(polyline.setPathCalls, 0);
+  assert.equal(polyline.setOptionsCalls.length, 1);
+  assert.equal(polyline.setOptionsCalls[0].icons[0].icon.strokeWeight, 1);
   assert.deepEqual(polyline.setMapCalls, []);
+
+  env.trigger('idle');
+  assert.equal(polyline.setOptionsCalls.length, 2);
+  assert.equal(polyline.setOptionsCalls[1].icons[0].repeat, '10px');
 
   renderer.dispose();
   assert.equal(polyline.map, null);
+  assert.equal(env.hasListener('idle'), false);
+  env.trigger('idle');
+  assert.equal(polyline.setOptionsCalls.length, 2);
 });
 
 test('renderer reuses native polylines when routes change and removes only surplus routes', () => {
