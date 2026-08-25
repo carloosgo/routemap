@@ -46,7 +46,11 @@ async function loadCities(query, limit, language) {
     `https://api.geoapify.com/v1/geocode/autocomplete?${params}`
   );
 
-  return normalizeGeoapifyCityResults(payload.results, { language, limit });
+  return normalizeGeoapifyCityResults(payload.results, {
+    language,
+    limit,
+    query,
+  });
 }
 
 export const geoapifyCityAutocomplete = onCall(
@@ -66,9 +70,9 @@ export const geoapifyCityAutocomplete = onCall(
 
       const limit = requestedLimit(request.data?.limit);
       const language = requestedLanguage(request.data?.language);
-      // v4 invalida resultados previos a la normalización simple por región,
+      // v5 invalida candidatos previos sin validación de tipo/relevancia,
       // sin cambiar límites, TTL ni cantidad solicitada al proveedor.
-      const key = `city:v4:${queryKey}:lang=${language}:limit=${limit}`;
+      const key = `city:v5:${queryKey}:lang=${language}:limit=${limit}`;
       const cachedResult = await cached(
         'citySearchCache',
         key,
