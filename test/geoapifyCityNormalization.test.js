@@ -25,6 +25,60 @@ function city(overrides = {}) {
   };
 }
 
+test('en español una búsqueda por alias inglés conserva el nombre visible localizado', () => {
+  const results = normalizeGeoapifyCityResults([
+    city({
+      place_id: 'rome-it',
+      name: 'Rome',
+      city: 'Rome',
+      country_code: 'it',
+      country: 'Italy',
+      state: 'Lazio',
+      lat: 41.8933,
+      lon: 12.4829,
+      address_line1: 'Roma',
+      formatted: 'Roma, Lacio, Italia',
+      rank: {
+        confidence: 1,
+        confidence_city_level: 1,
+        match_type: 'full_match',
+      },
+    }),
+  ], { language: 'es', query: 'rome' });
+
+  assert.equal(results.length, 1);
+  assert.equal(results[0].name, 'Roma');
+  assert.equal(results[0].displayName, 'Roma, Italia');
+});
+
+test('la localización explícita de Geoapify tiene prioridad sobre el nombre inglés', () => {
+  const results = normalizeGeoapifyCityResults([
+    city({
+      place_id: 'bruges-be',
+      name: 'Bruges',
+      city: 'Bruges',
+      country_code: 'be',
+      country: 'Belgium',
+      state: 'West Flanders',
+      lat: 51.2085,
+      lon: 3.225,
+      name_international: {
+        es: 'Brujas',
+        en: 'Bruges',
+      },
+      rank: {
+        confidence: 1,
+        confidence_city_level: 1,
+        match_type: 'full_match',
+      },
+    }),
+  ], { language: 'es', query: 'bruges' });
+
+  assert.equal(results.length, 1);
+  assert.equal(results[0].name, 'Brujas');
+  assert.equal(results[0].displayName, 'Brujas, Bélgica');
+});
+
 test('Tokio usa el alias localizado y descarta candidatos sin nombre latino utilizable', () => {
   const results = normalizeGeoapifyCityResults([
     city({
