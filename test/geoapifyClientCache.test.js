@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { sanitizeCitySearchResults } from '../src/modules/geocoding/citySearchClient.js';
 import { createPersistentCache } from '../src/modules/places/geoapifyClientCache.js';
 
 function createMemoryStorage(initial = {}) {
@@ -126,4 +127,23 @@ test('caché local corrupta falla en modo best-effort', () => {
   } finally {
     globalThis.localStorage = previousStorage;
   }
+});
+
+test('autocomplete en español descarta nombres crudos no latinos y conserva nombres localizados', () => {
+  const results = sanitizeCitySearchResults([
+    { name: 'Tokio', displayName: 'Tokio, Japón' },
+    { name: '東京23区', displayName: '東京23区, Japón' },
+    { name: '東洋町', displayName: '東洋町, Japón' },
+    { name: 'Toki', displayName: 'Toki, Ucrania' },
+    { name: 'München', displayName: 'München, Alemania' },
+    { name: 'São Paulo', displayName: 'São Paulo, Brasil' },
+    null,
+    { displayName: 'Sin nombre' },
+  ], { language: 'es' });
+
+  assert.deepEqual(
+    results.map((result) => result.name),
+    ['Tokio', 'Toki', 'München', 'São Paulo']
+  );
+  assert.equal(results.some((result) => result.displayName === '東京23区, Japón'), false);
 });

@@ -3,6 +3,7 @@ import { firebaseCallable } from '../../infrastructure/firebase/callableFunction
 import { cacheCities, getCachedCities } from './citySearchCache.js';
 
 const SUPPORTED_LANGUAGES = new Set(['es', 'en']);
+const LATIN_NAME_PATTERN = /\p{Script=Latin}/u;
 
 function normalizeQuery(value) {
   return String(value || '')
@@ -25,6 +26,21 @@ function throwIfAborted(signal) {
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 }
 
+export function sanitizeCitySearchResults(
+  results,
+  { language = config.defaultLocale } = {}
+) {
+  const safeLanguage = normalizeLanguage(language);
+  const requireLatinName = SUPPORTED_LANGUAGES.has(safeLanguage);
+
+  return (Array.isArray(results) ? results : []).filter((result) => {
+    if (!result || typeof result !== 'object') return false;
+    const name = String(result.name || '').trim();
+    if (!name) return false;
+    return !requireLatinName || LATIN_NAME_PATTERN.test(name);
+  });
+}
+
 export function createGeoapifyCityProvider() {
   async function search(
     query,
@@ -38,7 +54,11 @@ export function createGeoapifyCityProvider() {
     const safeLanguage = normalizeLanguage(language);
     const cacheKey = `${queryKey}|${safeLanguage}|${safeLimit}`;
     const cached = getCachedCities(cacheKey, config.citySearchCacheTtlMs);
-    if (cached) return cached;
+    if (cached) {
+      const sanitized = sanitizeCitySearchResults(cached, { language: safeLanguage });
+      if (sanitized.length !== cached.length) cacheCities(cacheKey, sanitized);
+      return sanitized;
+    }
 
     throwIfAborted(signal);
     const request = firebaseCallable('geoapifyCityAutocomplete');
@@ -49,9 +69,9 @@ export function createGeoapifyCityProvider() {
     });
     throwIfAborted(signal);
 
-    const results = Array.isArray(response.data?.results)
-      ? response.data.results
-      : [];
+    const results = sanitizeCitySearchResults(response.data?.results, {
+      language: safeLanguage,
+    });
     cacheCities(cacheKey, results);
     return results;
   }
