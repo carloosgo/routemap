@@ -25,7 +25,6 @@ test('the selected Atlas controls retain the exact #19a5d0 accent token', async 
     '.toast',
     '.trip-place button:hover',
     '.place-result-marker:hover',
-    '.trip-summary__primary-nav-icon',
   ]) {
     assert.ok(accentStyles.includes(selector), `Missing Atlas accent selector: ${selector}`);
   }
@@ -51,6 +50,7 @@ test('itinerary, routes and notes keep one tab structure in the global header', 
   assert.match(navigation, /aria-selected=\{isActive\}/);
   assert.doesNotMatch(navigation, /routeCount|badge--places/);
   assert.match(navigation, /const badge = id === 'notes' \? checklistProgress : '';/);
+  assert.match(navigation, /trip-summary__primary-nav-icon[\s\S]*style=\{\{ color: HEADER_ICON_COLOR \}\}/s);
   assert.doesNotMatch(editor, /editor-module__tabs|editor-module__nav-tab/);
   assert.match(menu, /openMenu === 'workspace'/);
   assert.doesNotMatch(menu, /setCurrency|t\('currency'\)|setLocale|t\('language'\)/);
@@ -64,7 +64,7 @@ test('itinerary, routes and notes keep one tab structure in the global header', 
   assert.match(navCss, /font-family:\s*var\(--font-body\);/);
   assert.match(navCss, /font-size:\s*14px;/);
   assert.match(navCss, /font-weight:\s*600;/);
-  assert.match(navCss, /\.trip-summary__primary-nav-icon\s*\{[\s\S]*width:\s*22px;[\s\S]*height:\s*24px;[\s\S]*color:\s*var\(--atlas-accent\);/);
+  assert.match(navCss, /\.trip-summary__primary-nav-icon\s*\{[\s\S]*width:\s*22px;[\s\S]*height:\s*24px;/);
   assert.match(navCss, /\.trip-summary__primary-nav-label\s*\{[\s\S]*color:\s*#000000;[\s\S]*font-size:\s*14px;/);
   assert.doesNotMatch(navCss, /\.trip-summary__primary-nav-badge--places/);
   assert.match(navCss, /\.trip-summary__primary-nav-badge--notes\s*\{[\s\S]*background:\s*#fff0eb;[\s\S]*color:\s*#e2725b;/);
@@ -81,7 +81,7 @@ test('routes keeps its own icon while the header replaces distance with the trip
   assert.match(header, /IconCalendar/);
   assert.match(header, /label=\{t\('tripDates'\)\}/);
   assert.match(header, /summary\.startDate[\s\S]*summary\.endDate/);
-  assert.match(header, /Icon=\{IconMapPin\} iconColor="#e05252"/);
+  assert.match(header, /Icon=\{IconMapPin\} iconColor=\{HEADER_ICON_COLOR\}/);
   assert.doesNotMatch(header, /DistanceSpanIcon|distanceKm|totalDistance|≈\s*\$\{distance\}\s*km/);
   assert.doesNotMatch(header, /<Metric Icon=\{IconRoute\}/);
   assert.doesNotMatch(navigation, /lugaresIcon|lugares-storefront-v2/);
