@@ -22,6 +22,7 @@ export function TripHeaderNavigation({
       {NAV_ITEMS.map(({ id, labelKey, Icon }) => {
         const isActive = activeTab === id;
         const badge = id === 'notes' ? checklistProgress : '';
+        const activeColor = 'var(--atlas-accent)';
         return (
           <button
             key={id}
@@ -34,12 +35,17 @@ export function TripHeaderNavigation({
           >
             <span
               className="trip-summary__primary-nav-icon"
-              style={{ color: HEADER_ICON_COLOR }}
+              style={{ color: isActive ? activeColor : HEADER_ICON_COLOR }}
               aria-hidden="true"
             >
               <Icon size={18} stroke={1.8} />
             </span>
-            <span className="trip-summary__primary-nav-label">{t(labelKey)}</span>
+            <span
+              className="trip-summary__primary-nav-label"
+              style={{ color: isActive ? activeColor : undefined }}
+            >
+              {t(labelKey)}
+            </span>
             {badge !== '' && badge !== 0 && (
               <span
                 className="trip-summary__primary-nav-badge trip-summary__primary-nav-badge--notes"
