@@ -6,14 +6,16 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('header keeps neutral total hover, purple calendar and divided selector rows', async () => {
-  const [header, selector, polish] = await Promise.all([
+test('header keeps neutral total hover, unified icon color and divided selector rows', async () => {
+  const [header, selector, polish, tokens] = await Promise.all([
     read('src/app/TripSummaryHeader.jsx'),
     read('src/app/SummarySelectorMetric.jsx'),
     read('src/app/TripSummaryHeaderMicroPolish.css'),
+    read('src/app/headerVisualTokens.js'),
   ]);
 
-  assert.match(header, /Icon=\{IconCalendar\}[\s\S]{0,80}iconColor="#7c5ce7"/);
+  assert.match(tokens, /HEADER_ICON_COLOR\s*=\s*'#667085'/);
+  assert.match(header, /Icon=\{IconCalendar\}[\s\S]{0,100}iconColor=\{HEADER_ICON_COLOR\}/);
   assert.match(header, /import '\.\/TripSummaryHeaderMicroPolish\.css';/);
   assert.match(selector, /trip-summary__selector-code[\s\S]{0,180}trip-summary__selector-separator[\s\S]{0,80}>\|</);
   assert.match(polish, /trip-summary__metric--total:hover[\s\S]{0,180}background:\s*transparent\s*!important;/);
