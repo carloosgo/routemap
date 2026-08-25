@@ -20,12 +20,13 @@ test('las curvas del itinerario mantienen una densidad acotada para pan y zoom f
   assert.deepEqual(curve[curve.length - 1], [13.405, 52.52]);
 });
 
-test('el overlay SVG evita máscaras gigantes y limita draw a un frame de navegador', async () => {
+test('las rutas del itinerario delegan pan y zoom a Polyline y evitan redraw por frame', async () => {
   const source = await read('src/modules/map/crispDashedRoutes.js');
 
-  assert.match(source, /normalizedLatLngPath/);
-  assert.match(source, /requestAnimationFrame\(render\)/);
-  assert.match(source, /if \(disposed \|\| drawFrame\) return/);
+  assert.match(source, /new maps\.Polyline/);
+  assert.match(source, /existing\.setPath\(path\)/);
+  assert.match(source, /routePolylines\.pop\(\)\?\.setMap\(null\)/);
+  assert.doesNotMatch(source, /new maps\.OverlayView|requestAnimationFrame|cancelAnimationFrame|MutationObserver/);
   assert.doesNotMatch(source, /createRouteMask|maskUnits|maskContentUnits|200000|100000/);
 });
 

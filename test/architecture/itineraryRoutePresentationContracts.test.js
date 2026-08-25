@@ -6,12 +6,16 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('itinerary route overlay renders only the dashed path without direction arrows', async () => {
+test('itinerary route renderer delegates dashed paths to native polylines without direction arrows', async () => {
   const routes = await read('src/modules/map/crispDashedRoutes.js');
 
-  assert.match(routes, /stroke-dasharray/);
+  assert.match(routes, /new maps\.Polyline/);
+  assert.match(routes, /strokeOpacity:\s*0/);
+  assert.match(routes, /icons:\s*\[\{/);
   assert.match(routes, /DEFAULT_DASH_PX/);
   assert.match(routes, /DEFAULT_GAP_PX/);
-  assert.doesNotMatch(routes, /ARROW_FRACTIONS|createDirectionArrow|arrowPlacement|lastArrowTransforms/);
+  assert.match(routes, /DEFAULT_REPEAT_PX/);
+  assert.doesNotMatch(routes, /OverlayView|requestAnimationFrame|stroke-dasharray/);
+  assert.doesNotMatch(routes, /ARROW_FRACTIONS|createDirectionArrow|arrowPlacement|lastArrowTransforms|FORWARD_(?:CLOSED_)?ARROW|BACKWARD_(?:CLOSED_)?ARROW/);
   assert.doesNotMatch(routes, /M -2\.2 -1\.65 L 0\.6 0 L -2\.2 1\.65/);
 });
