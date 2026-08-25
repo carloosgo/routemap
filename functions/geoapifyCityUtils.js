@@ -39,7 +39,11 @@ function localizedCityName(item, language) {
   const aliases = aliasesFor(item);
   const preferred = text(aliases[`name:${language}`]);
   const english = text(aliases['name:en']);
-  const international = text(aliases.int_name || aliases['name:int'] || aliases['name:latin']);
+  const international = [
+    text(aliases.int_name),
+    text(aliases['name:int']),
+    text(aliases['name:latin']),
+  ];
   const providerCity = text(item?.city);
   const providerName = text(item?.name);
   const anyLatinAlias = Object.entries(aliases)
@@ -47,13 +51,10 @@ function localizedCityName(item, language) {
     .map(([, value]) => text(value))
     .find(latinReadable) || '';
 
-  // Atlas solo expone nombres de ciudad legibles en alfabeto latino para los
-  // idiomas soportados. Si Geoapify no entrega un alias latino fiable, el
-  // candidato se descarta en vez de reintroducir el nombre nativo como fallback.
   return [
     preferred,
     english,
-    international,
+    ...international,
     providerCity,
     providerName,
     anyLatinAlias,
@@ -71,19 +72,9 @@ function localizedCountry(countryCode, providerCountry, language) {
   return text(providerCountry);
 }
 
-function toRadians(value) {
-  return Number(value) * Math.PI / 180;
-}
-
-function distanceKm(a, b) {
-  const earthRadiusKm = 6371;
-  const lat1 = toRadians(a.lat);
-  const lat2 = toRadians(b.lat);
-  const deltaLat = lat2 - lat1;
-  const deltaLon = toRadians(b.lon) - toRadians(a.lon);
-  const h = Math.sin(deltaLat / 2) ** 2
-    + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLon / 2) ** 2;
-  return 2 * earthRadiusKm * Math.asin(Math.min(1, Math.sqrt(h)));
+function readableRegion(item) {
+  return [text(item?.state), text(item?.state_code)]
+    .find((candidate) => candidate && latinReadable(candidate)) || '';
 }
 
 function candidateFrom(item, language) {
@@ -100,6 +91,7 @@ function candidateFrom(item, language) {
   if (!name || !/^[A-Z]{2}$/.test(countryCode)) return null;
 
   const country = localizedCountry(countryCode, item.country, language);
+  const region = readableRegion(item);
   const lat = Number(item.lat);
   const lon = Number(item.lon);
 
@@ -114,22 +106,34 @@ function candidateFrom(item, language) {
       lon,
     },
     sourceId: text(item.place_id),
-    stateKey: normalized(item.state || item.state_code),
-    countyKey: normalized(item.county || item.county_code),
+    region: region.slice(0, 100),
+    regionKey: normalized(region),
+    baseKey: `${normalized(name)}|${countryCode}`,
   };
 }
 
-function sameSettlement(a, b) {
+function sameCityRecord(a, b) {
   if (a.sourceId && b.sourceId && a.sourceId === b.sourceId) return true;
-  if (a.city.countryCode !== b.city.countryCode) return false;
-  if (normalized(a.city.name) !== normalized(b.city.name)) return false;
+  if (a.baseKey !== b.baseKey) return false;
 
-  const separation = distanceKm(a.city, b.city);
-  if (separation <= 30) return true;
+  // Si Geoapify distingue regiones, Atlas conserva ambos homónimos. Si la
+  // región coincide o falta en alguno, dos etiquetas iguales no aportan una
+  // elección útil y se conserva el candidato mejor rankeado por el proveedor.
+  if (a.regionKey && b.regionKey) return a.regionKey === b.regionKey;
+  return true;
+}
 
-  const sameState = a.stateKey && b.stateKey && a.stateKey === b.stateKey;
-  const sameCounty = a.countyKey && b.countyKey && a.countyKey === b.countyKey;
-  return Boolean(sameState && sameCounty && separation <= 80);
+function withDisambiguatedDisplayName(candidate, repeatedBaseKeys) {
+  const { city, region, baseKey } = candidate;
+  if (!repeatedBaseKeys.has(baseKey) || !region) return city;
+
+  return {
+    ...city,
+    displayName: [city.name, region, city.country]
+      .filter(Boolean)
+      .join(', ')
+      .slice(0, 200),
+  };
 }
 
 export function normalizeGeoapifyCityResults(
@@ -143,10 +147,21 @@ export function normalizeGeoapifyCityResults(
   for (const item of Array.isArray(items) ? items : []) {
     const candidate = candidateFrom(item, safeLanguage);
     if (!candidate) continue;
-    if (unique.some((existing) => sameSettlement(existing, candidate))) continue;
+    if (unique.some((existing) => sameCityRecord(existing, candidate))) continue;
     unique.push(candidate);
-    if (unique.length >= safeLimit) break;
   }
 
-  return unique.map(({ city }) => city);
+  const counts = new Map();
+  for (const candidate of unique) {
+    counts.set(candidate.baseKey, (counts.get(candidate.baseKey) || 0) + 1);
+  }
+  const repeatedBaseKeys = new Set(
+    [...counts.entries()]
+      .filter(([, count]) => count > 1)
+      .map(([key]) => key)
+  );
+
+  return unique
+    .slice(0, safeLimit)
+    .map((candidate) => withDisambiguatedDisplayName(candidate, repeatedBaseKeys));
 }

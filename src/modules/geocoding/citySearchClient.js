@@ -32,13 +32,25 @@ export function sanitizeCitySearchResults(
 ) {
   const safeLanguage = normalizeLanguage(language);
   const requireLatinName = SUPPORTED_LANGUAGES.has(safeLanguage);
+  const seenLabels = new Set();
+  const sanitized = [];
 
-  return (Array.isArray(results) ? results : []).filter((result) => {
-    if (!result || typeof result !== 'object') return false;
+  for (const result of Array.isArray(results) ? results : []) {
+    if (!result || typeof result !== 'object') continue;
     const name = String(result.name || '').trim();
-    if (!name) return false;
-    return !requireLatinName || LATIN_NAME_PATTERN.test(name);
-  });
+    if (!name || (requireLatinName && !LATIN_NAME_PATTERN.test(name))) continue;
+
+    const displayName = String(result.displayName || '').trim();
+    const fallbackLabel = [name, result.countryCode || result.country]
+      .filter(Boolean)
+      .join(', ');
+    const labelKey = normalizeQuery(displayName || fallbackLabel);
+    if (labelKey && seenLabels.has(labelKey)) continue;
+    if (labelKey) seenLabels.add(labelKey);
+    sanitized.push(result);
+  }
+
+  return sanitized;
 }
 
 export function createGeoapifyCityProvider() {

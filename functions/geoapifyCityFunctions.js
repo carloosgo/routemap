@@ -66,9 +66,9 @@ export const geoapifyCityAutocomplete = onCall(
 
       const limit = requestedLimit(request.data?.limit);
       const language = requestedLanguage(request.data?.language);
-      // v3 invalida respuestas que podían conservar etiquetas no latinas y
-      // mantiene el contrato de máximo cinco candidatos solicitados al proveedor.
-      const key = `city:v3:${queryKey}:lang=${language}:limit=${limit}`;
+      // v4 invalida resultados previos a la normalización simple por región,
+      // sin cambiar límites, TTL ni cantidad solicitada al proveedor.
+      const key = `city:v4:${queryKey}:lang=${language}:limit=${limit}`;
       const cachedResult = await cached(
         'citySearchCache',
         key,
