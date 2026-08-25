@@ -4,6 +4,26 @@ import { IconCheck, IconChevronDown } from '@tabler/icons-react';
 
 const HEADER_POPOVER_GAP = 8;
 
+function LeadingDividerMask({ hidden }) {
+  if (!hidden) return null;
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        top: '50%',
+        left: 0,
+        width: '1px',
+        height: '22px',
+        transform: 'translateY(-50%)',
+        background: '#ffffff',
+        pointerEvents: 'none',
+        zIndex: 1,
+      }}
+    />
+  );
+}
+
 export function SummarySelectorMetric({
   Icon,
   iconColor,
@@ -12,6 +32,7 @@ export function SummarySelectorMetric({
   options,
   onChange,
   menuClassName = '',
+  hideLeadingDivider = false,
 }) {
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState(null);
@@ -96,6 +117,7 @@ export function SummarySelectorMetric({
       className="trip-summary__metric trip-summary__metric--selector"
       ref={rootRef}
     >
+      <LeadingDividerMask hidden={hideLeadingDivider} />
       <span
         className="trip-summary__metric-icon"
         style={{ color: iconColor }}
