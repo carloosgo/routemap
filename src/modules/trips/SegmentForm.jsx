@@ -4,7 +4,7 @@ import { SegmentDeleteDialog } from './SegmentDeleteDialog.jsx';
 import { SegmentHeader } from './SegmentHeader.jsx';
 import { SegmentOriginSection } from './SegmentOriginSection.jsx';
 import { ORIGIN_NOTE_TARGET } from './tripNoteTargets.js';
-import { formatSegmentAmount } from './segmentFormModel.js';
+import { formatSegmentAmount, formatSegmentDates } from './segmentFormModel.js';
 import './ItineraryTimeline.css';
 import './ItineraryRequestedPolish.css';
 import './ItineraryCorrectionPolish.css';
@@ -47,6 +47,7 @@ export function SegmentForm({
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const formattedAmount = formatSegmentAmount(segmentTotal(segment), locale, currency);
+  const formattedDates = formatSegmentDates(segment, locale);
 
   const confirmRemove = () => {
     setConfirmOpen(false);
@@ -89,6 +90,7 @@ export function SegmentForm({
         <SegmentHeader
           segment={segment}
           formattedAmount={formattedAmount}
+          formattedDates={formattedDates}
           sequenceNumber={sequenceNumber}
           sequenceColor={sequenceColor}
           countryRunPosition={countryRunPosition}
