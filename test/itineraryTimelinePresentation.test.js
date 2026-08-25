@@ -47,6 +47,19 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   assert.match(compact, /padding-right:\s*4px;[\s\S]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;/s);
   assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*90px;[^}]*padding:\s*0 2px 0 0;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;/s);
+  assert.match(form, /countryRunPosition === 'middle' \? ' is-country-run-middle' : ''/);
+  assert.match(
+    dividers,
+    /\.itinerary-stop__country-run-dot\s*\{[^}]*width:\s*5px;[^}]*height:\s*5px;[^}]*aspect-ratio:\s*1 \/ 1;[^}]*border-radius:\s*50%;[^}]*background:\s*#667085;/s
+  );
+  assert.match(
+    dividers,
+    /\.itinerary-segment\.is-country-run-joined::after\s*\{[^}]*width:\s*1px;[^}]*transform:\s*translateX\(-50%\);[^}]*#667085 0 3px;/s
+  );
+  assert.match(
+    css,
+    /\.itinerary-segment\.is-country-run-middle \.itinerary-stop__picker \.autocomplete__selected-value\s*\{[^}]*color:\s*#575757;[^}]*font-weight:\s*400;/s
+  );
 
   assert.doesNotMatch(legacyLayout, /grid-template-columns:\s*48px 66px 66px 22px 22px 22px/);
   assert.doesNotMatch(legacyLayout, /itinerary-stop__after-place > \.btn--icon[\s\S]*width:\s*22px/s);
