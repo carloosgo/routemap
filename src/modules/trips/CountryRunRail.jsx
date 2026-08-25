@@ -61,8 +61,8 @@ export function CountryRunRail({ startSegmentRef, startsAtOrigin }) {
       : null;
     resizeObserver?.observe(container);
 
-    const mutationObserver = typeof MutationObserver === 'function'
-      ? new MutationObserver(resolveRail)
+    const mutationObserver = typeof window.MutationObserver === 'function'
+      ? new window.MutationObserver(resolveRail)
       : null;
     mutationObserver?.observe(container, {
       childList: true,
