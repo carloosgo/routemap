@@ -7,6 +7,7 @@ import {
 import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
 import { flagImageUrl } from '../flags/flags.js';
+import { formatSegmentDates } from './segmentFormModel.js';
 import './SegmentHeader.css';
 import './ItinerarySequenceLeft.css';
 
@@ -25,8 +26,8 @@ const NOTE_DOT_STYLE = Object.freeze({
 
 export function SegmentHeader({
   segment,
+  locale,
   formattedAmount,
-  formattedDates,
   sequenceNumber,
   sequenceColor,
   countryRunPosition,
@@ -41,6 +42,7 @@ export function SegmentHeader({
   const destination = segment.destination;
   const hasNote = Boolean(segment.note);
   const showCountryRunDot = countryRunPosition === 'middle';
+  const formattedDates = formatSegmentDates(segment, locale);
 
   return (
     <header className="segment__header itinerary-stop">
