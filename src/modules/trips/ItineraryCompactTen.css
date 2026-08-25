@@ -110,50 +110,73 @@
     font-weight: 600;
   }
 
-  /* El rango de fechas se apila sobre el costo en el mismo track de 90px.
-     Así cada trayecto muestra el dato sin ensanchar la fila ni quitar espacio
-     a nombres largos de ciudad. */
+  /* El área posterior ocupa el track flexible completo. En cada trayecto la
+     fecha vive en el espacio central disponible; costo y acciones conservan
+     sus medidas y alineación a la derecha. */
   .editor-module.editor-module--itinerary .itinerary-stop__after-place,
   .segments:not(.segments--compact) .itinerary-origin__after-place {
     box-sizing: border-box;
-    width: max-content;
     max-width: 100%;
     min-width: 0;
     padding-left: 0;
     padding-right: 4px;
     display: grid;
-    grid-template-columns: 90px repeat(3, 14px);
     align-items: center;
     justify-content: end;
     justify-self: end;
     column-gap: 8px;
   }
 
-  .editor-module.editor-module--itinerary .itinerary-stop__metrics,
+  .editor-module.editor-module--itinerary .itinerary-stop__after-place {
+    width: 100%;
+    justify-self: stretch;
+    grid-template-columns: minmax(56px, 1fr) 90px repeat(3, 14px);
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__after-place {
+    width: max-content;
+    grid-template-columns: 90px repeat(3, 14px);
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-stop__metrics {
+    display: contents;
+  }
+
   .segments:not(.segments--compact) .itinerary-origin__metrics {
     box-sizing: border-box;
     width: 90px;
     min-width: 90px;
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    justify-content: center;
-    gap: 1px;
+    align-items: center;
+    justify-content: flex-end;
   }
 
   .editor-module--itinerary .itinerary-stop__date-range {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: center;
     box-sizing: border-box;
-    width: 90px;
-    min-width: 90px;
-    max-width: 90px;
-    padding: 0 2px 0 0;
-    color: #7b8491;
+    width: 56px;
+    min-width: 56px;
+    max-width: 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    color: #667085;
     font-size: 10px;
     font-weight: 500;
-    line-height: 12px;
-    text-align: right;
+    line-height: 11px;
+    text-align: center;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .editor-module--itinerary .itinerary-stop__date-range > span {
+    display: block;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
   }
@@ -179,6 +202,12 @@
     white-space: nowrap;
     overflow: visible;
     text-overflow: clip;
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-segment .itinerary-stop__amount {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
   }
 
   .editor-module.editor-module--itinerary .itinerary-stop__after-place > .btn--icon,
