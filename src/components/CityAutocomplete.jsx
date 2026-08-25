@@ -1,15 +1,24 @@
 import { useState, useRef, useEffect } from 'react';
 import { IconSearch } from '@tabler/icons-react';
 import { useCitySearch } from '../modules/geocoding/useCitySearch.js';
+import { canonicalCityFromSearchResult } from '../modules/geocoding/citySearchClient.js';
 import { flagImageUrl } from '../modules/flags/flags.js';
 import { useTranslation } from '../i18n/index.jsx';
 import { config } from '../config.js';
 
 function cityDisplayMeta(city) {
+  const region = String(city?.region || '').trim();
+  const regionCode = String(city?.regionCode || '').trim();
+  const country = String(city?.country || '').trim();
+  const regionLabel = region || regionCode;
+  if (regionLabel) {
+    return `, ${[regionLabel, country].filter(Boolean).join(', ')}`;
+  }
+
   const name = String(city?.name || '').trim();
   const displayName = String(city?.displayName || '').trim();
   if (name && displayName.startsWith(name)) return displayName.slice(name.length);
-  return city?.country ? `, ${city.country}` : '';
+  return country ? `, ${country}` : '';
 }
 
 // Campo de búsqueda de ciudad con autocompletado.
@@ -46,7 +55,7 @@ export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay
 
   function handleSelect(city) {
     if (!city) return;
-    onSelect(city);
+    onSelect(canonicalCityFromSearchResult(city));
     setQuery('');
     setOpen(false);
     setHighlight(-1);
