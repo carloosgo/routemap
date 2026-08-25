@@ -65,9 +65,9 @@ export const geoapifyCityAutocomplete = onCall(
 
       const limit = requestedLimit(request.data?.limit);
       const language = requestedLanguage(request.data?.language);
-      // v6 invalida las respuestas generadas con Address Autocomplete y la
-      // identidad visible v5, conservando el mismo TTL y límite de resultados.
-      const key = `city:v6:${queryKey}:lang=${language}:limit=${limit}`;
+      // v7 invalida nombres visibles cacheados por v6 antes de priorizar la
+      // localización del idioma activo. Se conserva el mismo TTL y límite.
+      const key = `city:v7:${queryKey}:lang=${language}:limit=${limit}`;
       const cachedResult = await cached(
         'citySearchCache',
         key,
