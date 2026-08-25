@@ -30,22 +30,22 @@ test('header icons stay neutral while active primary navigation uses save-button
 });
 
 test('header keeps only Notes-to-Dates and Nights-to-Currency vertical separators', async () => {
-  const navigation = await read('src/app/TripHeaderNavigation.jsx');
+  const navigationCss = await read('src/app/TripHeaderNavigation.css');
   const header = await read('src/app/TripSummaryHeader.jsx');
+  const summaryCss = await read('src/app/TripSummaryHeader.css');
   const selector = await read('src/app/SummarySelectorMetric.jsx');
   const layout = await read('src/app/TripWorkspaceHeaderLayout.css');
 
   assert.match(layout, /\.trip-summary__metrics::before\s*\{[\s\S]*width:\s*1px;/s);
-  assert.match(navigation, /function NavDividerMask\(\{ index \}\)/);
-  assert.match(navigation, /left:\s*index === 1 \? '-5px' : '-8px'/);
-
-  const hiddenMetrics = header.match(/hideLeadingDivider/g) || [];
-  assert.equal(hiddenMetrics.length, 5, 'prop declaration plus Total, Destinos, Noches e Idioma deben suprimir su separador');
+  assert.doesNotMatch(navigationCss, /\.trip-summary__primary-nav-item \+ \.trip-summary__primary-nav-item::before/);
+  assert.doesNotMatch(summaryCss, /\.trip-summary__metrics > \* \+ \*::before/);
+  assert.match(summaryCss, /\.trip-summary__metric--currency::before\s*\{[\s\S]*width:\s*1px;[\s\S]*height:\s*22px;/s);
 
   const currency = header.match(/<SummarySelectorMetric\s+Icon=\{IconCurrencyDollar\}[\s\S]*?\/>/s)?.[0] || '';
   const language = header.match(/<SummarySelectorMetric\s+Icon=\{IconLanguage\}[\s\S]*?\/>/s)?.[0] || '';
   assert.ok(currency && language, 'Moneda e Idioma deben seguir presentes');
-  assert.doesNotMatch(currency, /hideLeadingDivider/);
-  assert.match(language, /hideLeadingDivider/);
-  assert.match(selector, /<LeadingDividerMask hidden=\{hideLeadingDivider\} \/>/);
+  assert.match(currency, /className="trip-summary__metric--currency"/);
+  assert.doesNotMatch(language, /trip-summary__metric--currency/);
+  assert.match(selector, /className = ''/);
+  assert.match(selector, /trip-summary__metric--selector\$\{className \? ` \$\{className\}` : ''\}/);
 });
