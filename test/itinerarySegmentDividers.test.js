@@ -28,15 +28,19 @@ test('itinerary keeps the default vertical axis removed and only joins qualifyin
   );
   assert.match(
     dividers,
-    /\.itinerary-segment\.is-country-run-joined::after\s*\{[^}]*width:\s*1px;[^}]*transform:\s*translateX\(-50%\);/s
+    /\.itinerary-stop__marker\.is-country-run-marker::before,[\s\S]*\.itinerary-stop__marker\.is-country-run-marker::after\s*\{[^}]*width:\s*1px;[^}]*transform:\s*translateX\(-50%\);[^}]*background:[\s\S]*repeating-linear-gradient\([\s\S]*to bottom,[\s\S]*#667085 0 3px,[\s\S]*transparent 3px 7px/s
   );
   assert.match(
     dividers,
-    /\.itinerary-segment\.is-country-run-joined::after\s*\{[^}]*background:[\s\S]*repeating-linear-gradient\([\s\S]*to bottom,[\s\S]*#667085 0 3px,[\s\S]*transparent 3px 7px/s
+    /\.itinerary-stop__marker\.is-country-run-middle::before\s*\{[^}]*top:\s*0;[^}]*bottom:\s*calc\(50% \+ 2\.5px\);/s
   );
   assert.match(
     dividers,
-    /@media \(min-width:\s*721px\)[\s\S]*\.editor-module--itinerary \.itinerary-segment\.is-country-run-joined::after\s*\{[^}]*top:\s*-17\.5px;[^}]*left:\s*68px;[^}]*height:\s*35px;/s
+    /\.itinerary-stop__marker\.is-country-run-middle::after\s*\{[^}]*top:\s*calc\(50% \+ 2\.5px\);/s
+  );
+  assert.doesNotMatch(
+    dividers,
+    /\.itinerary-segment\.is-country-run-joined::after\s*\{/
   );
   assert.doesNotMatch(dividers, /top:\s*-20px;[^}]*height:\s*40px;/s);
   assert.doesNotMatch(dividers, /M0 0 L4 4|fill='%2319a5d0'|clip-path/);
