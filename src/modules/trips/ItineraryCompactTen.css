@@ -22,7 +22,7 @@
 
   .editor-module--itinerary .segments:not(.segments--compact) {
     padding-top: 0;
-    gap: 0;
+    gap: 1px;
   }
 
   .segments:not(.segments--compact) .itinerary-origin-section {

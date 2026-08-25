@@ -12,6 +12,7 @@ export function SummarySelectorMetric({
   options,
   onChange,
   menuClassName = '',
+  className = '',
 }) {
   const [open, setOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState(null);
@@ -93,7 +94,7 @@ export function SummarySelectorMetric({
 
   return (
     <div
-      className="trip-summary__metric trip-summary__metric--selector"
+      className={`trip-summary__metric trip-summary__metric--selector${className ? ` ${className}` : ''}`}
       ref={rootRef}
     >
       <span

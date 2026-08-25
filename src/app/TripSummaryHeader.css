@@ -110,7 +110,10 @@
   width: 100%;
 }
 
-.trip-summary__metrics > * + *::before {
+/* Dentro de las métricas sólo se conserva el separador Noches | Moneda.
+   Notas | Fechas pertenece al límite entre navegación y métricas y se dibuja
+   desde TripWorkspaceHeaderLayout.css. */
+.trip-summary__metric--currency::before {
   content: '';
   position: absolute;
   top: 50%;

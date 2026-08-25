@@ -211,10 +211,37 @@ export function TripSummaryHeader({
           )}
         </div>
 
-        <Metric Icon={IconMapPin} iconColor={HEADER_ICON_COLOR} label={countryLabel} value={`${summary.destinations} ${t('cities')}`} />
-        <Metric Icon={IconMoon} iconColor={HEADER_ICON_COLOR} label={t('totalNights')} value={`${summary.nights} ${t('nights')}`} />
-        <SummarySelectorMetric Icon={IconCurrencyDollar} iconColor={HEADER_ICON_COLOR} label={t('currency')} value={trip.currency} options={currencyOptions} onChange={setCurrency} menuClassName="trip-summary__selector-menu--currency" />
-        <SummarySelectorMetric Icon={IconLanguage} iconColor={HEADER_ICON_COLOR} label={t('language')} value={locale} options={languageOptions} onChange={setLocale} menuClassName="trip-summary__selector-menu--language" />
+        <Metric
+          Icon={IconMapPin}
+          iconColor={HEADER_ICON_COLOR}
+          label={countryLabel}
+          value={`${summary.destinations} ${t('cities')}`}
+        />
+        <Metric
+          Icon={IconMoon}
+          iconColor={HEADER_ICON_COLOR}
+          label={t('totalNights')}
+          value={`${summary.nights} ${t('nights')}`}
+        />
+        <SummarySelectorMetric
+          Icon={IconCurrencyDollar}
+          iconColor={HEADER_ICON_COLOR}
+          label={t('currency')}
+          value={trip.currency}
+          options={currencyOptions}
+          onChange={setCurrency}
+          menuClassName="trip-summary__selector-menu--currency"
+          className="trip-summary__metric--currency"
+        />
+        <SummarySelectorMetric
+          Icon={IconLanguage}
+          iconColor={HEADER_ICON_COLOR}
+          label={t('language')}
+          value={locale}
+          options={languageOptions}
+          onChange={setLocale}
+          menuClassName="trip-summary__selector-menu--language"
+        />
       </div>
     </header>
   );
