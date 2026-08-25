@@ -110,9 +110,9 @@
     font-weight: 600;
   }
 
-  /* Costo / Nota / Desplegar / Cerrar se miden por su ancho visual real.
-     El costo usa 90px, suficiente para importes habituales sin reservar un
-     bloque desproporcionado; las acciones mantienen 8px entre iconos. */
+  /* Fecha / Costo / Nota / Desplegar / Cerrar se miden por su ancho visual real.
+     La fecha se presenta como metadato discreto y alineado; el origen conserva
+     la retícula anterior porque no representa un trayecto. */
   .editor-module.editor-module--itinerary .itinerary-stop__after-place,
   .segments:not(.segments--compact) .itinerary-origin__after-place {
     box-sizing: border-box;
@@ -122,16 +122,40 @@
     padding-left: 0;
     padding-right: 4px;
     display: grid;
-    grid-template-columns: 90px repeat(3, 14px);
     align-items: center;
     justify-content: end;
     justify-self: end;
     column-gap: 8px;
   }
 
+  .editor-module.editor-module--itinerary .itinerary-stop__after-place {
+    grid-template-columns: 112px 90px repeat(3, 14px);
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__after-place {
+    grid-template-columns: 90px repeat(3, 14px);
+  }
+
   .editor-module.editor-module--itinerary .itinerary-stop__metrics,
   .segments:not(.segments--compact) .itinerary-origin__metrics {
     display: contents;
+  }
+
+  .editor-module--itinerary .itinerary-stop__date-range {
+    box-sizing: border-box;
+    width: 112px;
+    min-width: 112px;
+    max-width: 112px;
+    padding-right: 6px;
+    color: #7b8491;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 16px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .editor-module--itinerary .itinerary-stop__amount {
