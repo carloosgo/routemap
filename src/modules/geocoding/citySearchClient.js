@@ -26,6 +26,24 @@ function throwIfAborted(signal) {
   if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 }
 
+function cleanString(value, maxLength) {
+  return String(value || '').trim().slice(0, maxLength);
+}
+
+// La búsqueda puede transportar metadatos de sugerencia (región, ranking, etc.),
+// pero el City persistido mantiene exactamente el contrato canónico de Storage v4.
+export function canonicalCityFromSearchResult(result) {
+  return {
+    id: cleanString(result?.id, 256),
+    name: cleanString(result?.name, 120),
+    displayName: cleanString(result?.displayName, 200),
+    country: cleanString(result?.country, 100),
+    countryCode: cleanString(result?.countryCode, 2).toUpperCase(),
+    lat: Number(result?.lat),
+    lon: Number(result?.lon),
+  };
+}
+
 export function sanitizeCitySearchResults(
   results,
   { language = config.defaultLocale } = {}
@@ -47,7 +65,12 @@ export function sanitizeCitySearchResults(
     const labelKey = normalizeQuery(displayName || fallbackLabel);
     if (labelKey && seenLabels.has(labelKey)) continue;
     if (labelKey) seenLabels.add(labelKey);
-    sanitized.push(result);
+
+    sanitized.push({
+      ...result,
+      region: cleanString(result.region, 100),
+      regionCode: cleanString(result.regionCode, 24),
+    });
   }
 
   return sanitized;
