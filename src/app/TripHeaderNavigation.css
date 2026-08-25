@@ -54,6 +54,10 @@
   color: var(--atlas-accent);
 }
 
+.trip-summary__primary-nav-item.is-active .trip-summary__primary-nav-icon {
+  color: var(--marina, #0e4f63) !important;
+}
+
 .trip-summary__primary-nav-label {
   min-width: 0;
   overflow: hidden;
