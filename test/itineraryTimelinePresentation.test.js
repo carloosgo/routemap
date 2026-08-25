@@ -27,6 +27,7 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
   const sequence = await read('src/modules/trips/ItinerarySequenceLeft.css');
   const dividers = await read('src/modules/trips/ItinerarySegmentDividers.css');
+  const rail = await read('src/modules/trips/CountryRunRail.jsx');
   const legacyLayout = await read('src/app/ItineraryTripHeader.css');
   const main = await read('src/main.jsx');
   const form = await read('src/modules/trips/SegmentForm.jsx');
@@ -44,8 +45,8 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   assert.match(header, /itinerary-stop__amount/);
   assert.match(origin, /itinerary-stop__amount/);
   assert.match(compact, /--itinerary-compact-gap:\s*10px;/);
-  assert.match(compact, /grid-template-columns:\s*14px 19px 30px 126px minmax\(0, 1fr\);/);
-  assert.match(compact, /padding-left:\s*53px;[\s\S]*grid-template-columns:\s*30px 126px minmax\(0, 1fr\);/s);
+  assert.match(compact, /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*126px[\s\S]*minmax\(0, 1fr\);/s);
+  assert.match(compact, /padding-left:\s*calc\([\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*grid-template-columns:\s*var\(--country-run-track-w, 30px\) 126px minmax\(0, 1fr\);/s);
   assert.match(sequence, /\.itinerary-stop__sequence[\s\S]*width:\s*19px;[\s\S]*\.itinerary-stop__marker[\s\S]*width:\s*30px;/s);
   assert.match(dividers, /left:\s*53px;/);
   assert.match(compact, /grid-template-columns:\s*minmax\(56px, 1fr\) 90px repeat\(3, 14px\);/);
@@ -61,7 +62,7 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   );
   assert.match(
     dividers,
-    /\.itinerary-country-run-rail\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*0;[^}]*inset-inline-start:\s*var\(--country-run-axis-inline\);[^}]*background:\s*repeating-linear-gradient\([\s\S]*to bottom,[\s\S]*var\(--country-run-track-color\) 0 var\(--country-run-dash-length\),[\s\S]*transparent var\(--country-run-dash-length\) var\(--country-run-dash-period\)/s
+    /\.itinerary-country-run-rail\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*0;[^}]*inset-inline-start:\s*var\(--country-run-axis-inline\);[^}]*background-image:\s*linear-gradient\([\s\S]*to bottom,[\s\S]*var\(--country-run-track-color\) 0 var\(--country-run-dash-length\),[\s\S]*transparent var\(--country-run-dash-length\) var\(--country-run-dash-period\)[^}]*background-size:\s*100% var\(--country-run-dash-period\);/s
   );
   assert.match(
     dividers,
@@ -69,9 +70,10 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   );
   assert.doesNotMatch(dividers, /\.itinerary-stop__marker\.is-country-run-marker::(?:before|after)/);
   assert.doesNotMatch(dividers, /\.itinerary-segment\.is-country-run-joined::after\s*\{/);
-  assert.match(form, /createPortal\([\s\S]*itinerary-country-run-rail[\s\S]*railState\.container/s);
-  assert.match(form, /startBounds\.top \+ \(startBounds\.height \/ 2\)/);
-  assert.match(form, /endBounds\.top \+ \(endBounds\.height \/ 2\)/);
+  assert.match(form, /import \{ CountryRunRail \} from '\.\/CountryRunRail\.jsx';/);
+  assert.match(rail, /createPortal\([\s\S]*itinerary-country-run-rail[\s\S]*railState\.container/s);
+  assert.match(rail, /startBounds\.top \+ \(startBounds\.height \/ 2\)/);
+  assert.match(rail, /endBounds\.top \+ \(endBounds\.height \/ 2\)/);
   assert.match(
     css,
     /\.itinerary-segment\.is-country-run-middle \.itinerary-stop__picker \.autocomplete__selected-value\s*\{[^}]*color:\s*#575757;[^}]*font-weight:\s*400;/s
