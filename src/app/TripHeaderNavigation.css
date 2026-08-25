@@ -33,17 +33,6 @@
   cursor: pointer;
 }
 
-.trip-summary__primary-nav-item + .trip-summary__primary-nav-item::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 1px;
-  height: 22px;
-  transform: translateY(-50%);
-  background: rgba(148, 153, 171, 0.18);
-}
-
 .trip-summary__primary-nav-item:hover,
 .trip-summary__primary-nav-item:focus-visible {
   background: #f6f7f8;
