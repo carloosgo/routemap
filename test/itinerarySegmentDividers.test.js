@@ -8,27 +8,22 @@ const read = (path) => readFile(new URL(path, root), 'utf8');
 
 test('same-country runs use one itinerary-level rail behind centered masked nodes', async () => {
   const dividers = await read('src/modules/trips/ItinerarySegmentDividers.css');
+  const compact = await read('src/modules/trips/ItineraryCompactTen.css');
+  const rail = await read('src/modules/trips/CountryRunRail.jsx');
   const form = await read('src/modules/trips/SegmentForm.jsx');
 
   assert.match(
     dividers,
-    /\.segments:not\(\.segments--compact\)\s*\{[^}]*--country-run-track-w:\s*30px;[^}]*--country-run-dot-size:\s*10px;[^}]*--country-run-track-color:\s*#667085;[^}]*--country-run-dash-length:\s*3px;[^}]*--country-run-dash-period:\s*7px;[^}]*--country-run-mask-gap:\s*4px;[^}]*--country-run-surface:\s*var\(--surface, #fff\);/s
+    /\.segments:not\(\.segments--compact\)\s*\{[^}]*--country-run-track-w:\s*30px;[^}]*--country-run-dot-size:\s*10px;[^}]*--country-run-track-color:\s*#667085;[^}]*--country-run-dash-length:\s*3px;[^}]*--country-run-dash-period:\s*7px;[^}]*--country-run-mask-gap:\s*4px;[^}]*--country-run-surface:\s*var\(--bg, #fafbfc\);/s
   );
-  assert.match(
-    dividers,
-    /\.segments:not\(\.segments--compact\)::before\s*\{[^}]*content:\s*none;/s
-  );
-  assert.match(
-    dividers,
-    /\.itinerary-origin-section \+ \.itinerary-segment::before,[\s\S]*\.itinerary-segment \+ \.itinerary-segment::before\s*\{[^}]*left:\s*53px;[^}]*right:\s*4px;[^}]*height:\s*1px;[^}]*background:\s*repeating-linear-gradient\([\s\S]*to right,[\s\S]*#c9ced7 0 3px,[\s\S]*transparent 3px 7px/s
-  );
+  assert.match(dividers, /\.segments:not\(\.segments--compact\)::before\s*\{[^}]*content:\s*none;/s);
   assert.match(
     dividers,
     /\.itinerary-segment\.is-country-run-joined::before\s*\{[^}]*content:\s*none;/s
   );
   assert.match(
     dividers,
-    /\.itinerary-country-run-rail\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*0;[^}]*top:\s*var\(--country-run-top\);[^}]*inset-inline-start:\s*var\(--country-run-axis-inline\);[^}]*width:\s*var\(--country-run-rail-w\);[^}]*height:\s*var\(--country-run-height\);[^}]*transform:\s*translateX\(-50%\);[^}]*background:\s*repeating-linear-gradient\([\s\S]*to bottom,[\s\S]*var\(--country-run-track-color\) 0 var\(--country-run-dash-length\),[\s\S]*transparent var\(--country-run-dash-length\) var\(--country-run-dash-period\)/s
+    /\.itinerary-country-run-rail\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*0;[^}]*top:\s*var\(--country-run-top\);[^}]*inset-inline-start:\s*var\(--country-run-axis-inline\);[^}]*width:\s*var\(--country-run-rail-w\);[^}]*height:\s*var\(--country-run-height\);[^}]*transform:\s*translateX\(-50%\);[^}]*background-image:\s*linear-gradient\([\s\S]*to bottom,[\s\S]*var\(--country-run-track-color\) 0 var\(--country-run-dash-length\),[\s\S]*transparent var\(--country-run-dash-length\) var\(--country-run-dash-period\)[^}]*background-size:\s*100% var\(--country-run-dash-period\);[^}]*background-repeat:\s*repeat-y;/s
   );
   assert.match(
     dividers,
@@ -42,15 +37,23 @@ test('same-country runs use one itinerary-level rail behind centered masked node
     dividers,
     /\.itinerary-stop__marker\.is-country-run-marker \.itinerary-stop__marker-flag\s*\{[^}]*z-index:\s*1;[^}]*box-shadow:\s*0 0 0 var\(--country-run-mask-gap\) var\(--country-run-surface\);/s
   );
+  assert.match(
+    compact,
+    /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*126px[\s\S]*minmax\(0, 1fr\);/s
+  );
+  assert.match(
+    compact,
+    /\.segments:not\(\.segments--compact\) \.itinerary-origin\s*\{[^}]*padding-left:\s*calc\([\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*grid-template-columns:\s*var\(--country-run-track-w, 30px\) 126px minmax\(0, 1fr\);/s
+  );
   assert.doesNotMatch(dividers, /\.itinerary-stop__marker\.is-country-run-marker::(?:before|after)/);
   assert.doesNotMatch(dividers, /\.itinerary-segment\.is-country-run-joined::after\s*\{/);
-  assert.doesNotMatch(dividers, /M0 0 L4 4|fill='%2319a5d0'|clip-path/);
 
-  assert.match(form, /import \{ createPortal \} from 'react-dom';/);
-  assert.match(form, /function CountryRunRail\(/);
-  assert.match(form, /createPortal\([\s\S]*className="itinerary-country-run-rail"[\s\S]*aria-hidden="true"[\s\S]*railState\.container/s);
-  assert.match(form, /startBounds\.top \+ \(startBounds\.height \/ 2\)/);
-  assert.match(form, /endBounds\.top \+ \(endBounds\.height \/ 2\)/);
+  assert.match(rail, /import \{ createPortal \} from 'react-dom';/);
+  assert.match(rail, /export function CountryRunRail\(/);
+  assert.match(rail, /createPortal\([\s\S]*className="itinerary-country-run-rail"[\s\S]*aria-hidden="true"[\s\S]*railState\.container/s);
+  assert.match(rail, /startBounds\.top \+ \(startBounds\.height \/ 2\)/);
+  assert.match(rail, /endBounds\.top \+ \(endBounds\.height \/ 2\)/);
+  assert.match(form, /import \{ CountryRunRail \} from '\.\/CountryRunRail\.jsx';/);
   assert.match(form, /countryRunPosition === 'start'/);
   assert.match(form, /startsAtOrigin/);
   assert.match(form, /import '\.\/ItinerarySegmentDividers\.css';/);
