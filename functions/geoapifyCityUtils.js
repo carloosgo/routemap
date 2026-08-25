@@ -32,15 +32,50 @@ function latinReadable(value) {
   return letters.length > 0 && letters.every((char) => LATIN_LETTER.test(char));
 }
 
+function scalarAlias(value) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => text(entry)).find(Boolean) || '';
+  }
+  if (value && typeof value === 'object') return '';
+  return text(value);
+}
+
 function aliasesFor(item) {
-  return {
-    ...(item?.datasource?.raw && typeof item.datasource.raw === 'object'
-      ? item.datasource.raw
-      : {}),
-    ...(item?.other_names && typeof item.other_names === 'object'
-      ? item.other_names
-      : {}),
-  };
+  const aliases = {};
+  const sources = [
+    item?.datasource?.raw,
+    item?.other_names,
+  ];
+
+  for (const source of sources) {
+    if (!source || typeof source !== 'object' || Array.isArray(source)) continue;
+    for (const [key, value] of Object.entries(source)) {
+      const alias = scalarAlias(value);
+      if (alias) aliases[key] = alias;
+    }
+  }
+
+  for (const source of [item?.name_international, item?.city_international]) {
+    if (!source || typeof source !== 'object' || Array.isArray(source)) continue;
+    for (const [language, value] of Object.entries(source)) {
+      const alias = scalarAlias(value);
+      if (alias) aliases[`name:${language}`] = alias;
+    }
+  }
+
+  return aliases;
+}
+
+function localizedResultNameCandidates(item) {
+  const addressLine1 = text(item?.address_line1);
+  const formattedCity = text(item?.formatted).split(',')[0]?.trim() || '';
+
+  return [...new Set([addressLine1, formattedCity]
+    .filter((candidate) => (
+      candidate
+      && candidate.length <= 120
+      && latinReadable(candidate)
+    )))];
 }
 
 function allNameValues(item) {
@@ -48,6 +83,7 @@ function allNameValues(item) {
   return [...new Set([
     text(item?.city),
     text(item?.name),
+    ...localizedResultNameCandidates(item),
     ...Object.entries(aliases)
       .filter(([key]) => key === 'int_name' || key.startsWith('name:'))
       .map(([, value]) => text(value)),
@@ -63,6 +99,7 @@ function cityNameCandidates(item, language) {
     text(aliases['name:int']),
     text(aliases['name:latin']),
   ];
+  const localizedResultNames = localizedResultNameCandidates(item);
   const providerCity = text(item?.city);
   const providerName = text(item?.name);
   const latinAliases = Object.entries(aliases)
@@ -70,13 +107,19 @@ function cityNameCandidates(item, language) {
     .map(([, value]) => text(value))
     .filter((candidate) => candidate && latinReadable(candidate));
 
+  // `lang` localiza los campos de presentación de Geocoding Search. Priorizamos
+  // el alias explícito del idioma y, si no viene, la presentación localizada del
+  // propio resultado antes de caer al nombre nativo/internacional o inglés.
+  // Todos los aliases siguen en la lista para que buscar "Rome" pueda mostrar
+  // "Roma" sin perder relevancia textual.
   return [...new Set([
     preferred,
-    english,
-    ...international,
+    ...localizedResultNames,
     providerCity,
-    ...latinAliases,
     providerName,
+    ...international,
+    english,
+    ...latinAliases,
   ].filter((candidate) => candidate && latinReadable(candidate)))];
 }
 
