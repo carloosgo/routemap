@@ -16,7 +16,6 @@ import { normalizeGeoapifyCityResults } from './geoapifyCityUtils.js';
 
 const MIN_QUERY_CHARS = 3;
 const MAX_RESULTS = 5;
-const MAX_PROVIDER_RESULTS = 10;
 const MAX_QUERY_CHARS = 120;
 const ALLOWED_LANGUAGES = new Set(['es', 'en']);
 
@@ -30,15 +29,14 @@ function requestedLanguage(value) {
 }
 
 async function loadCities(query, limit, language) {
-  // Pedimos candidatos extra porque OSM puede representar una misma ciudad
-  // como nodo de centro y como boundary administrativa. Se deduplican después.
-  const providerLimit = Math.min(Math.max(limit * 2, limit), MAX_PROVIDER_RESULTS);
+  // El contrato de costos limita también la respuesta pedida al proveedor:
+  // nunca solicitamos más candidatos que los cinco que Atlas puede mostrar.
   const params = new URLSearchParams({
     text: query,
     type: 'city',
     format: 'json',
     lang: language,
-    limit: String(providerLimit),
+    limit: String(limit),
     apiKey: requireGeoapifyKey(
       GEOAPIFY_CITY_API_KEY,
       'GEOAPIFY_CITY_API_KEY'
@@ -68,8 +66,9 @@ export const geoapifyCityAutocomplete = onCall(
 
       const limit = requestedLimit(request.data?.limit);
       const language = requestedLanguage(request.data?.language);
-      // v2 invalida respuestas previas que podían contener duplicados o nombres nativos.
-      const key = `city:v2:${queryKey}:lang=${language}:limit=${limit}`;
+      // v3 invalida respuestas que podían conservar etiquetas no latinas y
+      // mantiene el contrato de máximo cinco candidatos solicitados al proveedor.
+      const key = `city:v3:${queryKey}:lang=${language}:limit=${limit}`;
       const cachedResult = await cached(
         'citySearchCache',
         key,
