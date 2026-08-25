@@ -9,15 +9,13 @@ const read = (path) => readFile(new URL(path, root), 'utf8');
 test('header icons stay neutral while active primary navigation uses save-button blue', async () => {
   const tokens = await read('src/app/headerVisualTokens.js');
   const navigation = await read('src/app/TripHeaderNavigation.jsx');
+  const navCss = await read('src/app/TripHeaderNavigation.css');
   const header = await read('src/app/TripSummaryHeader.jsx');
   const selector = await read('src/app/SummarySelectorMetric.jsx');
 
   assert.match(tokens, /HEADER_ICON_COLOR\s*=\s*'#667085'/);
-  assert.match(tokens, /HEADER_ACTIVE_ICON_COLOR\s*=\s*'var\(--marina, #0e4f63\)'/);
-  assert.match(
-    navigation,
-    /style=\{\{ color: isActive \? HEADER_ACTIVE_ICON_COLOR : HEADER_ICON_COLOR \}\}/
-  );
+  assert.match(navigation, /trip-summary__primary-nav-icon[\s\S]*style=\{\{ color: HEADER_ICON_COLOR \}\}/s);
+  assert.match(navCss, /\.trip-summary__primary-nav-item\.is-active \.trip-summary__primary-nav-icon\s*\{[\s\S]*color:\s*var\(--marina, #0e4f63\)\s*!important;/s);
 
   const metricUses = header.match(/iconColor=\{HEADER_ICON_COLOR\}/g) || [];
   assert.equal(metricUses.length, 6, 'Fechas, Total, Destinos, Noches, Moneda e Idioma deben conservar #667085');
@@ -26,7 +24,7 @@ test('header icons stay neutral while active primary navigation uses save-button
 
   const brand = header.match(/<span className="trip-summary__brand-icon"[\s\S]*?<\/span>/s)?.[0] || '';
   assert.ok(brand, 'el icono de marca debe seguir presente');
-  assert.doesNotMatch(brand, /HEADER_ICON_COLOR|HEADER_ACTIVE_ICON_COLOR|#667085/);
+  assert.doesNotMatch(brand, /HEADER_ICON_COLOR|#667085/);
 });
 
 test('header keeps only Notes-to-Dates and Nights-to-Currency vertical separators', async () => {
