@@ -75,6 +75,7 @@ export function SegmentForm({
         className={
           'segment itinerary-segment' +
           (joinsPreviousCountryRun ? ' is-country-run-joined' : '') +
+          (countryRunPosition === 'middle' ? ' is-country-run-middle' : '') +
           (index === 0 && joinsPreviousCountryRun ? ' is-country-run-joined-from-origin' : '') +
           (dragging ? ' is-dragging' : '') +
           (dropPlacement ? ` is-drop-${dropPlacement}` : '')
