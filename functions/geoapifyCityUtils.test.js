@@ -224,7 +224,7 @@ test('tokio conserva ciudades con nombre relevante y elimina candidatos ajenos',
   assert.deepEqual(results.map((result) => result.countryCode), ['JP', 'PG']);
 });
 
-test('shangai tolera un error corto de escritura pero no acepta ciudades sin relación', () => {
+test('shangai conserva coincidencias textuales plausibles y elimina ciudades sin relación', () => {
   const results = normalizeGeoapifyCityResults([
     city({
       place_id: 'shanghai', city: '上海市', name: '上海', country: '中国', country_code: 'cn',
@@ -252,7 +252,8 @@ test('shangai tolera un error corto de escritura pero no acepta ciudades sin rel
     }),
   ], { language: 'es', limit: 5, query: 'shangai' });
 
-  assert.deepEqual(results.map((result) => result.name), ['Shanghai']);
+  assert.deepEqual(results.map((result) => result.name), ['Shanghai', 'Shangaime']);
+  assert.equal(results.some((result) => ['Mogi das Cruzes', 'Pendembu', 'Chiacalté'].includes(result.name)), false);
 });
 
 test('etiopia no convierte una coincidencia débil del proveedor en ciudad válida', () => {
@@ -300,7 +301,7 @@ test('jordania conserva la ciudad homónima y rechaza amenities y candidatos irr
   assert.equal(results.some((result) => result.name === 'Jordanian Police Station'), false);
 });
 
-test('paris colapsa representaciones cercanas de la misma ciudad y conserva homónimos reales', () => {
+test('paris colapsa representaciones administrativas de la misma ciudad y conserva homónimos reales', () => {
   const results = normalizeGeoapifyCityResults([
     city({
       place_id: 'paris-node', city: 'Paris', name: 'Paris', country: 'France', country_code: 'fr',

@@ -63,10 +63,6 @@ function cityNameCandidates(item, language) {
   ].filter((candidate) => candidate && latinReadable(candidate)))];
 }
 
-function localizedCityName(item, language) {
-  return cityNameCandidates(item, language)[0] || '';
-}
-
 function localizedCountry(countryCode, providerCountry, language) {
   try {
     const displayNames = new Intl.DisplayNames([language], { type: 'region' });
@@ -107,11 +103,11 @@ function levenshteinDistance(left, right, maxDistance) {
   return previous[right.length];
 }
 
-function textuallyRelevant(item, language, query) {
+function textuallyRelevant(nameCandidates, query) {
   const queryKey = normalized(query);
   if (!queryKey) return true;
 
-  for (const candidate of cityNameCandidates(item, language)) {
+  for (const candidate of nameCandidates) {
     const candidateKey = normalized(candidate);
     if (!candidateKey) continue;
     if (
@@ -144,10 +140,11 @@ function supportedResultType(item) {
 }
 
 function candidateFrom(item, language, query) {
+  if (!item || !supportedResultType(item)) return null;
+
+  const nameCandidates = cityNameCandidates(item, language);
   if (
-    !item
-    || !supportedResultType(item)
-    || !textuallyRelevant(item, language, query)
+    !textuallyRelevant(nameCandidates, query)
     || !validCoordinate(item.lat, -90, 90)
     || !validCoordinate(item.lon, -180, 180)
   ) {
@@ -155,11 +152,15 @@ function candidateFrom(item, language, query) {
   }
 
   const countryCode = text(item.country_code).toUpperCase();
-  const name = localizedCityName(item, language);
+  const name = nameCandidates[0] || '';
   if (!name || !/^[A-Z]{2}$/.test(countryCode)) return null;
 
   const country = localizedCountry(countryCode, item.country, language);
   const region = readableRegion(item);
+  const regionKey = normalized(region);
+  const regionIsCity = Boolean(
+    regionKey && nameCandidates.some((candidate) => normalized(candidate) === regionKey)
+  );
   const lat = Number(item.lat);
   const lon = Number(item.lon);
 
@@ -175,24 +176,23 @@ function candidateFrom(item, language, query) {
     },
     sourceId: text(item.place_id),
     region: region.slice(0, 100),
+    regionKey,
+    regionIsCity,
     baseKey: `${normalized(name)}|${countryCode}`,
-    lat,
-    lon,
   };
-}
-
-function nearbyDuplicate(a, b) {
-  return Math.abs(a.lat - b.lat) <= 0.12 && Math.abs(a.lon - b.lon) <= 0.12;
 }
 
 function sameCityRecord(a, b) {
   if (a.sourceId && b.sourceId && a.sourceId === b.sourceId) return true;
   if (a.baseKey !== b.baseKey) return false;
 
-  // Geoapify puede devolver node/boundary/centroides distintos para la misma
-  // ciudad. Para etiquetas iguales sólo colapsamos representaciones cercanas;
-  // homónimos realmente separados se conservan y luego se desambiguan.
-  return nearbyDuplicate(a, b);
+  // Geoapify puede representar la misma ciudad con node/boundary/centroides
+  // y distintos place_id. Atlas colapsa etiquetas iguales cuando la región
+  // coincide, falta o es sólo otra forma del nombre de la propia ciudad.
+  // Regiones realmente distintas conservan los homónimos sin usar GIS.
+  if (!a.regionKey || !b.regionKey) return true;
+  if (a.regionKey === b.regionKey) return true;
+  return a.regionIsCity || b.regionIsCity;
 }
 
 function withDisambiguatedDisplayName(candidate, repeatedBaseKeys) {
