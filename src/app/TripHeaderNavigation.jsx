@@ -1,4 +1,5 @@
 import { IconListDetails, IconNotebook, IconRoute } from '@tabler/icons-react';
+import { HEADER_ICON_COLOR } from './headerVisualTokens.js';
 
 const NAV_ITEMS = [
   { id: 'segments', labelKey: 'itinerary', Icon: IconListDetails },
@@ -31,7 +32,11 @@ export function TripHeaderNavigation({
             className={`trip-summary__primary-nav-item${isActive ? ' is-active' : ''}`}
             onClick={() => setActiveTab(id)}
           >
-            <span className="trip-summary__primary-nav-icon" aria-hidden="true">
+            <span
+              className="trip-summary__primary-nav-icon"
+              style={{ color: HEADER_ICON_COLOR }}
+              aria-hidden="true"
+            >
               <Icon size={18} stroke={1.8} />
             </span>
             <span className="trip-summary__primary-nav-label">{t(labelKey)}</span>
