@@ -26,6 +26,7 @@ const NOTE_DOT_STYLE = Object.freeze({
 export function SegmentHeader({
   segment,
   formattedAmount,
+  formattedDates,
   sequenceNumber,
   sequenceColor,
   countryRunPosition,
@@ -96,6 +97,9 @@ export function SegmentHeader({
 
       <div className="itinerary-stop__after-place">
         <div className="itinerary-stop__metrics">
+          <span className="itinerary-stop__date-range" title={formattedDates || undefined}>
+            {formattedDates || ''}
+          </span>
           <span className="itinerary-stop__amount">{formattedAmount}</span>
         </div>
 
