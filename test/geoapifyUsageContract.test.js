@@ -35,7 +35,7 @@ test('ciudades Geoapify y búsqueda Google conservan políticas independientes',
   assert.ok(config.googleMaps.locationCacheTtlMs < 30 * DAY_MS);
 });
 
-test('el backend de ciudades fuerza Geocoding Search type city, neutralidad mundial, mínimo tres y límite cinco', async () => {
+test('el backend de ciudades fuerza Geocoding Search type city, neutralidad mundial, localización, mínimo tres y límite cinco', async () => {
   const cityFunctions = await read('functions/geoapifyCityFunctions.js');
   const cityUtils = await read('functions/geoapifyCityUtils.js');
   const runtime = await read('functions/geoapifyRuntime.js');
@@ -44,12 +44,16 @@ test('el backend de ciudades fuerza Geocoding Search type city, neutralidad mund
   assert.match(cityFunctions, /MAX_RESULTS = 5/);
   assert.match(cityFunctions, /buildGeoapifyCitySearchUrl/);
   assert.match(cityFunctions, /'citySearchCache'/);
-  assert.match(cityFunctions, /city:v6:/);
+  assert.match(cityFunctions, /city:v7:/);
   assert.match(cityFunctions, /QUOTAS\.cityAutocomplete/);
   assert.match(cityUtils, /\/v1\/geocode\/search/);
   assert.match(cityUtils, /type: 'city'/);
   assert.match(cityUtils, /limit: String\(safeLimit\)/);
+  assert.match(cityUtils, /lang: safeLanguage/);
   assert.match(cityUtils, /bias: 'countrycode:none'/);
+  assert.match(cityUtils, /address_line1/);
+  assert.match(cityUtils, /formatted/);
+  assert.match(cityUtils, /name_international/);
   assert.doesNotMatch(cityUtils, /\/v1\/geocode\/autocomplete/);
   assert.match(runtime, /cityAutocomplete: \{ scope: 'geoapify-city-autocomplete'/);
   assert.doesNotMatch(cityFunctions, /googlePlaceSearch|googlePlaceAutocomplete/);
