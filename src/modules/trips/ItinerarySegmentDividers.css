@@ -30,13 +30,20 @@
   content: none;
 }
 
-/* Las ciudades interiores sustituyen la bandera por un punto negro. */
+/* Las ciudades interiores sustituyen la bandera por un punto compacto y
+   perfectamente circular, alineado con el eje del grupo. */
 .itinerary-stop__country-run-dot {
   display: block;
-  width: 6px;
-  height: 6px;
+  box-sizing: border-box;
+  width: 5px;
+  min-width: 5px;
+  max-width: 5px;
+  height: 5px;
+  min-height: 5px;
+  max-height: 5px;
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
-  background: #000000;
+  background: #667085;
 }
 
 /* Cada fila unida dibuja únicamente el tramo entre el centro de su marcador y
@@ -49,9 +56,10 @@
   left: 38.5px;
   width: 1px;
   height: 62.5px;
+  transform: translateX(-50%);
   background: repeating-linear-gradient(
     to bottom,
-    #6f7682 0 3px,
+    #667085 0 3px,
     transparent 3px 7px
   );
   pointer-events: none;
