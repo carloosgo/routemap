@@ -42,6 +42,7 @@ test('desktop itinerary keeps compact equal rows, visible scrollbar and date-and
   assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*90px;[^}]*min-width:\s*90px;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;[^}]*text-align:\s*right;[^}]*overflow:\s*visible;/s);
   assert.doesNotMatch(compact, /\.itinerary-stop__dates|\.itinerary-stop__nights|segment__pill|background:\s*var\(--atlas-accent\)/);
   assert.match(header, /itinerary-stop__date-range/);
+  assert.match(header, /formatSegmentDates\(segment, locale\)/);
   assert.doesNotMatch(header, /itinerary-stop__country(?:["'\s])|itinerary-stop__nights|itinerary-stop__dates/);
   assert.doesNotMatch(originRow, /itinerary-origin__country|itinerary-stop__date-range|itinerary-stop__nights|itinerary-stop__dates/);
   assert.match(header, /itinerary-stop__amount/);
@@ -52,9 +53,7 @@ test('desktop itinerary keeps compact equal rows, visible scrollbar and date-and
   assert.doesNotMatch(correction, /itinerary-origin__picker \.autocomplete__selected-value/);
 
   assert.match(form, /formatSegmentAmount/);
-  assert.match(form, /formatSegmentDates\(segment, locale\)/);
-  assert.match(form, /formattedDates=\{formattedDates\}/);
-  assert.doesNotMatch(form, /formatSegmentDate\(|formatSegmentNights|formattedStartDate|formattedEndDate|formattedNights|CollapsibleRegion|<SegmentBody|onToggle=|expanded=/);
+  assert.doesNotMatch(form, /formatSegmentDate|formatSegmentNights|formattedStartDate|formattedEndDate|formattedNights|CollapsibleRegion|<SegmentBody|onToggle=|expanded=/);
   assert.doesNotMatch(form, /useExpandedSegmentReveal|scrollIntoView/);
 });
 
