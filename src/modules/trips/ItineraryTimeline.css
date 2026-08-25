@@ -168,6 +168,11 @@
   pointer-events: none;
 }
 
+.itinerary-segment.is-country-run-middle .itinerary-stop__picker .autocomplete__selected-value {
+  color: #575757;
+  font-weight: 400;
+}
+
 .itinerary-origin__picker .input {
   color: #6f7682;
   font-size: 11px;
