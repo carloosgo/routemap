@@ -110,9 +110,9 @@
     font-weight: 600;
   }
 
-  /* Fecha / Costo / Nota / Desplegar / Cerrar se miden por su ancho visual real.
-     La fecha se presenta como metadato discreto y alineado; el origen conserva
-     la retícula anterior porque no representa un trayecto. */
+  /* El rango de fechas se apila sobre el costo en el mismo track de 90px.
+     Así cada trayecto muestra el dato sin ensanchar la fila ni quitar espacio
+     a nombres largos de ciudad. */
   .editor-module.editor-module--itinerary .itinerary-stop__after-place,
   .segments:not(.segments--compact) .itinerary-origin__after-place {
     box-sizing: border-box;
@@ -122,35 +122,35 @@
     padding-left: 0;
     padding-right: 4px;
     display: grid;
+    grid-template-columns: 90px repeat(3, 14px);
     align-items: center;
     justify-content: end;
     justify-self: end;
     column-gap: 8px;
   }
 
-  .editor-module.editor-module--itinerary .itinerary-stop__after-place {
-    grid-template-columns: 112px 90px repeat(3, 14px);
-  }
-
-  .segments:not(.segments--compact) .itinerary-origin__after-place {
-    grid-template-columns: 90px repeat(3, 14px);
-  }
-
   .editor-module.editor-module--itinerary .itinerary-stop__metrics,
   .segments:not(.segments--compact) .itinerary-origin__metrics {
-    display: contents;
+    box-sizing: border-box;
+    width: 90px;
+    min-width: 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 1px;
   }
 
   .editor-module--itinerary .itinerary-stop__date-range {
     box-sizing: border-box;
-    width: 112px;
-    min-width: 112px;
-    max-width: 112px;
-    padding-right: 6px;
+    width: 90px;
+    min-width: 90px;
+    max-width: 90px;
+    padding: 0 2px 0 0;
     color: #7b8491;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 500;
-    line-height: 16px;
+    line-height: 12px;
     text-align: right;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
@@ -173,7 +173,7 @@
     color: #5f5f5f;
     font-size: 12px;
     font-weight: 700;
-    line-height: 16px;
+    line-height: 14px;
     text-align: right;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
