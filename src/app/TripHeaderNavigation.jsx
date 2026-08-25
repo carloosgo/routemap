@@ -1,8 +1,5 @@
 import { IconListDetails, IconNotebook, IconRoute } from '@tabler/icons-react';
-import {
-  HEADER_ACTIVE_NAV_ICON_COLOR,
-  HEADER_ICON_COLOR,
-} from './headerVisualTokens.js';
+import { HEADER_ICON_COLOR } from './headerVisualTokens.js';
 
 const NAV_ITEMS = [
   { id: 'segments', labelKey: 'itinerary', Icon: IconListDetails },
@@ -37,9 +34,7 @@ export function TripHeaderNavigation({
           >
             <span
               className="trip-summary__primary-nav-icon"
-              style={{
-                color: isActive ? HEADER_ACTIVE_NAV_ICON_COLOR : HEADER_ICON_COLOR,
-              }}
+              style={{ color: HEADER_ICON_COLOR }}
               aria-hidden="true"
             >
               <Icon size={18} stroke={1.8} />

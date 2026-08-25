@@ -62,7 +62,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--atlas-accent);
+  color: #667085;
+}
+
+.trip-summary__primary-nav-item.is-active .trip-summary__primary-nav-icon {
+  color: var(--atlas-accent) !important;
 }
 
 .trip-summary__primary-nav-label {

@@ -9,14 +9,16 @@ const read = (path) => readFile(new URL(path, root), 'utf8');
 test('header icons stay gray except the selected primary navigation icon, which uses the save-button blue', async () => {
   const tokens = await read('src/app/headerVisualTokens.js');
   const navigation = await read('src/app/TripHeaderNavigation.jsx');
+  const navigationCss = await read('src/app/TripHeaderNavigation.css');
   const header = await read('src/app/TripSummaryHeader.jsx');
   const selector = await read('src/app/SummarySelectorMetric.jsx');
 
   assert.match(tokens, /HEADER_ICON_COLOR\s*=\s*'#667085'/);
-  assert.match(tokens, /HEADER_ACTIVE_NAV_ICON_COLOR\s*=\s*'var\(--marina, #0e4f63\)'/);
+  assert.doesNotMatch(tokens, /HEADER_ACTIVE_NAV_ICON_COLOR/);
+  assert.match(navigation, /trip-summary__primary-nav-icon[\s\S]*style=\{\{ color: HEADER_ICON_COLOR \}\}/s);
   assert.match(
-    navigation,
-    /trip-summary__primary-nav-icon[\s\S]*?color:\s*isActive\s*\?\s*HEADER_ACTIVE_NAV_ICON_COLOR\s*:\s*HEADER_ICON_COLOR/s
+    navigationCss,
+    /\.trip-summary__primary-nav-item\.is-active \.trip-summary__primary-nav-icon\s*\{[\s\S]*?color:\s*var\(--atlas-accent\)\s*!important;/s
   );
   assert.match(navigation, /<span className="trip-summary__primary-nav-label">\{t\(labelKey\)\}<\/span>/);
 
@@ -27,5 +29,5 @@ test('header icons stay gray except the selected primary navigation icon, which 
 
   const brand = header.match(/<span className="trip-summary__brand-icon"[\s\S]*?<\/span>/s)?.[0] || '';
   assert.ok(brand, 'el icono de marca debe seguir presente');
-  assert.doesNotMatch(brand, /HEADER_ICON_COLOR|HEADER_ACTIVE_NAV_ICON_COLOR|#667085|#0e4f63/);
+  assert.doesNotMatch(brand, /HEADER_ICON_COLOR|#667085|--atlas-accent|#19a5d0/);
 });
