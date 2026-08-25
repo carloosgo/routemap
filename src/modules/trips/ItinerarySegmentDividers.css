@@ -1,6 +1,6 @@
-/* Separadores horizontales discretos entre trayectos. El eje vertical y los
-   picos laterales permanecen eliminados. Cada divisor empieza donde comienza
-   la bandera y termina donde acaba visualmente el icono de cerrar. */
+/* Separadores horizontales discretos entre trayectos. El eje vertical general y
+   los picos laterales permanecen eliminados. Solo los bloques de tres o más
+   ciudades consecutivas del mismo país recuperan un conector vertical punteado. */
 
 .segments:not(.segments--compact)::before {
   content: none;
@@ -24,6 +24,57 @@
   pointer-events: none;
 }
 
-.itinerary-segment.is-dragging::before {
+/* Dentro de un bloque continuo del mismo país, las ciudades se leen como una
+   sola secuencia: no hay separador horizontal entre una parada y la siguiente. */
+.itinerary-segment.is-country-run-joined::before {
+  content: none;
+}
+
+/* Las ciudades interiores sustituyen la bandera por un punto negro. */
+.itinerary-stop__country-run-dot {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #000000;
+}
+
+/* Cada fila unida dibuja únicamente el tramo entre el centro de su marcador y
+   el centro del marcador anterior. Así la línea nunca aparece fuera del grupo. */
+.itinerary-segment.is-country-run-joined::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: -36.5px;
+  left: 38.5px;
+  width: 1px;
+  height: 62.5px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #6f7682 0 3px,
+    transparent 3px 7px
+  );
+  pointer-events: none;
+}
+
+/* En móvil, el primer destino queda más cerca del origen que dos destinos
+   consecutivos; este tramo conserva la unión exacta entre ambos centros. */
+.itinerary-segment.is-country-run-joined-from-origin::after {
+  top: -25px;
+  height: 51px;
+}
+
+.itinerary-segment.is-dragging::before,
+.itinerary-segment.is-dragging::after {
   opacity: 0;
+}
+
+@media (min-width: 721px) {
+  /* En escritorio origen y destinos ocupan bandas exactas de 40px y el centro
+     de sus banderas comparte el eje x=68px. */
+  .editor-module--itinerary .itinerary-segment.is-country-run-joined::after {
+    top: -20px;
+    left: 68px;
+    height: 40px;
+  }
 }

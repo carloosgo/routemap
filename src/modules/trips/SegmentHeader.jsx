@@ -28,6 +28,7 @@ export function SegmentHeader({
   formattedAmount,
   sequenceNumber,
   sequenceColor,
+  countryRunPosition,
   dragging,
   onDestinationSelect,
   onOpenNote,
@@ -38,6 +39,7 @@ export function SegmentHeader({
   const { t } = useTranslation();
   const destination = segment.destination;
   const hasNote = Boolean(segment.note);
+  const showCountryRunDot = countryRunPosition === 'middle';
 
   return (
     <header className="segment__header itinerary-stop">
@@ -66,7 +68,9 @@ export function SegmentHeader({
       </span>
 
       <span className={'itinerary-stop__marker' + (!destination?.countryCode ? ' is-empty' : '')}>
-        {destination?.countryCode ? (
+        {showCountryRunDot ? (
+          <span className="itinerary-stop__country-run-dot" aria-hidden="true" />
+        ) : destination?.countryCode ? (
           <img
             className="itinerary-stop__marker-flag"
             src={flagImageUrl(destination.countryCode, 80)}

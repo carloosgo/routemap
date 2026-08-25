@@ -2,6 +2,10 @@ function normalizedText(value) {
   return String(value ?? '').trim().toLowerCase();
 }
 
+function normalizedCountryCode(city) {
+  return String(city?.countryCode ?? '').trim().toUpperCase();
+}
+
 function coordinateToken(city) {
   const lat = Number(city?.lat);
   const lon = Number(city?.lon);
@@ -36,9 +40,51 @@ function hasChosenCity(city) {
   return cityIdentityTokens(city).length > 0;
 }
 
+function buildCountryRunPresentation(safeSegments) {
+  const stops = [
+    safeSegments[0]?.origin || null,
+    ...safeSegments.map((segment) => segment?.destination || null),
+  ];
+  const presentation = safeSegments.map(() => ({
+    countryRunPosition: null,
+    joinsPreviousCountryRun: false,
+  }));
+
+  let start = 0;
+  while (start < stops.length) {
+    const countryCode = normalizedCountryCode(stops[start]);
+    if (!countryCode) {
+      start += 1;
+      continue;
+    }
+
+    let end = start + 1;
+    while (end < stops.length && normalizedCountryCode(stops[end]) === countryCode) {
+      end += 1;
+    }
+
+    if (end - start >= 3) {
+      for (let stopIndex = start; stopIndex < end; stopIndex += 1) {
+        const segmentIndex = stopIndex - 1;
+        if (segmentIndex < 0 || segmentIndex >= safeSegments.length) continue;
+        presentation[segmentIndex] = {
+          countryRunPosition:
+            stopIndex === start ? 'start' : stopIndex === end - 1 ? 'end' : 'middle',
+          joinsPreviousCountryRun: stopIndex > start,
+        };
+      }
+    }
+
+    start = end;
+  }
+
+  return presentation;
+}
+
 export function buildItineraryStopSequence(segments, colorForIndex) {
   const safeSegments = Array.isArray(segments) ? segments : [];
   const origin = safeSegments[0]?.origin || null;
+  const countryRunPresentation = buildCountryRunPresentation(safeSegments);
   let lastChosenDestinationIndex = -1;
 
   safeSegments.forEach((segment, index) => {
@@ -54,12 +100,14 @@ export function buildItineraryStopSequence(segments, colorForIndex) {
 
   let nextNumber = 0;
   return safeSegments.map((segment, index) => {
+    const countryRun = countryRunPresentation[index];
     if (!hasChosenCity(segment?.destination)) {
       return {
         number: null,
         colorIndex: null,
         color: null,
         isTerminalReturn: false,
+        ...countryRun,
       };
     }
 
@@ -69,6 +117,7 @@ export function buildItineraryStopSequence(segments, colorForIndex) {
         colorIndex: null,
         color: null,
         isTerminalReturn: true,
+        ...countryRun,
       };
     }
 
@@ -79,6 +128,7 @@ export function buildItineraryStopSequence(segments, colorForIndex) {
       colorIndex,
       color: typeof colorForIndex === 'function' ? colorForIndex(colorIndex) : null,
       isTerminalReturn: false,
+      ...countryRun,
     };
   });
 }

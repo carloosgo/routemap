@@ -208,6 +208,8 @@ export function AppEditorPane({
                       index={index}
                       sequenceNumber={stopSequence[index]?.number ?? null}
                       sequenceColor={stopSequence[index]?.color || null}
+                      countryRunPosition={stopSequence[index]?.countryRunPosition || null}
+                      joinsPreviousCountryRun={Boolean(stopSequence[index]?.joinsPreviousCountryRun)}
                       locale={intlLocale}
                       currency={trip.currency}
                       originDetails={trip.originDetails}

@@ -45,6 +45,57 @@ test('origin is unnumbered, first destination is 1 and a terminal return to orig
   );
 });
 
+test('three or more consecutive cities in one country keep endpoint flags and mark only interior cities as dots', () => {
+  const venice = { id: 'venice', name: 'Venice', country: 'Italy', countryCode: 'IT' };
+  const milan = { id: 'milan', name: 'Milan', country: 'Italy', countryCode: 'IT' };
+  const florence = { id: 'florence', name: 'Florence', country: 'Italy', countryCode: 'IT' };
+  const rome = { id: 'rome', name: 'Rome', country: 'Italy', countryCode: 'IT' };
+  const sequence = buildItineraryStopSequence([
+    { id: 'it-one', origin: venice, destination: milan },
+    { id: 'it-two', origin: milan, destination: florence },
+    { id: 'it-three', origin: florence, destination: rome },
+  ], colorForIndex);
+
+  assert.deepEqual(
+    sequence.map(({ countryRunPosition, joinsPreviousCountryRun }) => ({
+      countryRunPosition,
+      joinsPreviousCountryRun,
+    })),
+    [
+      { countryRunPosition: 'middle', joinsPreviousCountryRun: true },
+      { countryRunPosition: 'middle', joinsPreviousCountryRun: true },
+      { countryRunPosition: 'end', joinsPreviousCountryRun: true },
+    ]
+  );
+});
+
+test('same-country grouping starts and ends at country boundaries and does not activate for only two cities', () => {
+  const venice = { id: 'venice', name: 'Venice', country: 'Italy', countryCode: 'IT' };
+  const milan = { id: 'milan', name: 'Milan', country: 'Italy', countryCode: 'IT' };
+  const parisFr = { id: 'paris-fr', name: 'Paris', country: 'France', countryCode: 'FR' };
+  const lyon = { id: 'lyon', name: 'Lyon', country: 'France', countryCode: 'FR' };
+  const nice = { id: 'nice', name: 'Nice', country: 'France', countryCode: 'FR' };
+  const sequence = buildItineraryStopSequence([
+    { id: 'one', origin: venice, destination: milan },
+    { id: 'two', origin: milan, destination: parisFr },
+    { id: 'three', origin: parisFr, destination: lyon },
+    { id: 'four', origin: lyon, destination: nice },
+  ], colorForIndex);
+
+  assert.deepEqual(
+    sequence.map(({ countryRunPosition, joinsPreviousCountryRun }) => ({
+      countryRunPosition,
+      joinsPreviousCountryRun,
+    })),
+    [
+      { countryRunPosition: null, joinsPreviousCountryRun: false },
+      { countryRunPosition: 'start', joinsPreviousCountryRun: false },
+      { countryRunPosition: 'middle', joinsPreviousCountryRun: true },
+      { countryRunPosition: 'end', joinsPreviousCountryRun: true },
+    ]
+  );
+});
+
 test('map feature projection reuses the same destination numbers and colors and omits terminal return marker', () => {
   const data = buildMapFeatureData({
     segments: roundTripSegments(),
@@ -92,9 +143,13 @@ test('UI consumes canonical numbering while preserving gray labels and colored m
 
   assert.match(editor, /buildItineraryStopSequence\(trip\.segments, colorForIndex\)/);
   assert.match(editor, /sequenceNumber=\{stopSequence\[index\]\?\.number \?\? null\}/);
+  assert.match(editor, /countryRunPosition=\{stopSequence\[index\]\?\.countryRunPosition \|\| null\}/);
+  assert.match(editor, /joinsPreviousCountryRun=\{Boolean\(stopSequence\[index\]\?\.joinsPreviousCountryRun\)\}/);
   assert.match(mapPane, /buildItineraryStopSequence\(trip\.segments, colorForIndex\)/);
   assert.match(mapPane, /\{stop\.number\}/);
   assert.match(segmentHeader, /className="itinerary-stop__sequence-badge"/);
+  assert.match(segmentHeader, /countryRunPosition === 'middle'/);
+  assert.match(segmentHeader, /className="itinerary-stop__country-run-dot"/);
   assert.match(compact, /--itinerary-compact-gap:\s*10px;/);
   assert.match(compact, /grid-template-columns:\s*14px 19px 30px 126px minmax\(0, 1fr\);/);
   assert.match(headerType, /\.trip-summary__metric-label\s*\{[^}]*color:\s*var\(--text-mute\);/s);

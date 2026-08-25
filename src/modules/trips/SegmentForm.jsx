@@ -31,6 +31,8 @@ export function SegmentForm({
   index,
   sequenceNumber,
   sequenceColor,
+  countryRunPosition,
+  joinsPreviousCountryRun = false,
   locale,
   currency,
   originDetails,
@@ -72,6 +74,8 @@ export function SegmentForm({
       <article
         className={
           'segment itinerary-segment' +
+          (joinsPreviousCountryRun ? ' is-country-run-joined' : '') +
+          (index === 0 && joinsPreviousCountryRun ? ' is-country-run-joined-from-origin' : '') +
           (dragging ? ' is-dragging' : '') +
           (dropPlacement ? ` is-drop-${dropPlacement}` : '')
         }
@@ -86,6 +90,7 @@ export function SegmentForm({
           formattedAmount={formattedAmount}
           sequenceNumber={sequenceNumber}
           sequenceColor={sequenceColor}
+          countryRunPosition={countryRunPosition}
           dragging={dragging}
           onDestinationSelect={(destination) => onUpdate({ destination })}
           onOpenNote={openSegmentNote}
