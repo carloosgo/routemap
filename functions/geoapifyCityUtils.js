@@ -38,29 +38,26 @@ function aliasesFor(item) {
 function localizedCityName(item, language) {
   const aliases = aliasesFor(item);
   const preferred = text(aliases[`name:${language}`]);
-  const providerCity = text(item?.city);
-  const providerName = text(item?.name);
   const english = text(aliases['name:en']);
   const international = text(aliases.int_name || aliases['name:int'] || aliases['name:latin']);
+  const providerCity = text(item?.city);
+  const providerName = text(item?.name);
   const anyLatinAlias = Object.entries(aliases)
     .filter(([key]) => key.startsWith('name:'))
     .map(([, value]) => text(value))
     .find(latinReadable) || '';
 
+  // Atlas solo expone nombres de ciudad legibles en alfabeto latino para los
+  // idiomas soportados. Si Geoapify no entrega un alias latino fiable, el
+  // candidato se descarta en vez de reintroducir el nombre nativo como fallback.
   return [
     preferred,
-    providerCity,
-    providerName,
     english,
     international,
+    providerCity,
+    providerName,
     anyLatinAlias,
-  ].find((candidate) => candidate && latinReadable(candidate))
-    || preferred
-    || providerCity
-    || providerName
-    || english
-    || international
-    || anyLatinAlias;
+  ].find((candidate) => candidate && latinReadable(candidate)) || '';
 }
 
 function localizedCountry(countryCode, providerCountry, language) {
