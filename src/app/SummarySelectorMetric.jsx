@@ -116,6 +116,7 @@ export function SummarySelectorMetric({
           <span>{value.toUpperCase()}</span>
           <IconChevronDown
             size={12}
+            style={{ color: iconColor }}
             className={open ? 'is-open' : ''}
             aria-hidden="true"
           />
