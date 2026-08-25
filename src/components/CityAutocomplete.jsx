@@ -7,17 +7,7 @@ import { useTranslation } from '../i18n/index.jsx';
 import { config } from '../config.js';
 
 function cityDisplayMeta(city) {
-  const region = String(city?.region || '').trim();
-  const regionCode = String(city?.regionCode || '').trim();
   const country = String(city?.country || '').trim();
-  const regionLabel = region || regionCode;
-  if (regionLabel) {
-    return `, ${[regionLabel, country].filter(Boolean).join(', ')}`;
-  }
-
-  const name = String(city?.name || '').trim();
-  const displayName = String(city?.displayName || '').trim();
-  if (name && displayName.startsWith(name)) return displayName.slice(name.length);
   return country ? `, ${country}` : '';
 }
 
