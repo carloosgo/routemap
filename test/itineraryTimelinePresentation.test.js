@@ -33,9 +33,10 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
 
   assert.match(header, /className="itinerary-stop__sequence"[\s\S]*className="itinerary-stop__sequence-badge"[\s\S]*className=\{'itinerary-stop__marker'/s);
   assert.match(header, /className="itinerary-stop__metrics"/);
+  assert.match(header, /className="itinerary-stop__date-range"/);
   assert.match(css, /\.itinerary-origin__marker img,[\s\S]*\.itinerary-stop__marker img[\s\S]*width:\s*30px;[\s\S]*height:\s*20px;/);
-  assert.doesNotMatch(header, /itinerary-stop__dates|itinerary-stop__date-line|itinerary-stop__nights|segment__pill/);
-  assert.doesNotMatch(origin, /itinerary-stop__dates|itinerary-stop__date-line|itinerary-stop__nights|segment__pill/);
+  assert.doesNotMatch(header, /itinerary-stop__nights|segment__pill/);
+  assert.doesNotMatch(origin, /itinerary-stop__date-range|itinerary-stop__nights|segment__pill/);
   assert.match(header, /itinerary-stop__amount/);
   assert.match(origin, /itinerary-stop__amount/);
   assert.match(compact, /--itinerary-compact-gap:\s*10px;/);
@@ -43,10 +44,14 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   assert.match(compact, /padding-left:\s*53px;[\s\S]*grid-template-columns:\s*30px 126px minmax\(0, 1fr\);/s);
   assert.match(sequence, /\.itinerary-stop__sequence[\s\S]*width:\s*19px;[\s\S]*\.itinerary-stop__marker[\s\S]*width:\s*30px;/s);
   assert.match(dividers, /left:\s*53px;/);
-  assert.match(compact, /grid-template-columns:\s*90px repeat\(3, 14px\);/);
+  assert.match(compact, /\.itinerary-stop__after-place\s*\{[^}]*grid-template-columns:\s*112px 90px repeat\(3, 14px\);/s);
+  assert.match(compact, /\.itinerary-origin__after-place\s*\{[^}]*grid-template-columns:\s*90px repeat\(3, 14px\);/s);
+  assert.match(compact, /\.itinerary-stop__date-range\s*\{[^}]*width:\s*112px;[^}]*color:\s*#7b8491;[^}]*font-size:\s*11px;[^}]*font-weight:\s*500;/s);
   assert.match(compact, /padding-right:\s*4px;[\s\S]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;/s);
   assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*90px;[^}]*padding:\s*0 2px 0 0;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;/s);
+  assert.match(form, /formatSegmentAmount, formatSegmentDates/);
+  assert.match(form, /formattedDates=\{formattedDates\}/);
   assert.match(form, /countryRunPosition === 'middle' \? ' is-country-run-middle' : ''/);
   assert.match(
     dividers,
@@ -58,7 +63,11 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   );
   assert.match(
     dividers,
-    /\.itinerary-segment\.is-country-run-joined::after\s*\{[^}]*background:\s*repeating-linear-gradient\([\s\S]*#667085 0 3px,[\s\S]*transparent 3px 7px/s
+    /\.itinerary-segment\.is-country-run-joined::after\s*\{[^}]*background:[\s\S]*repeating-linear-gradient\([\s\S]*#667085 0 3px,[\s\S]*transparent 3px 7px/s
+  );
+  assert.match(
+    dividers,
+    /@media \(min-width:\s*721px\)[\s\S]*\.editor-module--itinerary \.itinerary-segment\.is-country-run-joined::after\s*\{[^}]*top:\s*-17\.5px;[^}]*left:\s*68px;[^}]*height:\s*35px;/s
   );
   assert.match(
     css,
@@ -84,7 +93,7 @@ test('origin mirrors note expand close controls while expand still opens the sep
 
   assert.match(origin, /itinerary-stop__metrics itinerary-origin__metrics/);
   assert.match(origin, /itinerary-stop__amount/);
-  assert.doesNotMatch(origin, /itinerary-stop__dates|itinerary-stop__nights/);
+  assert.doesNotMatch(origin, /itinerary-stop__date-range|itinerary-stop__nights/);
   assert.match(origin, /segment__note-btn itinerary-origin__note-btn/);
   assert.match(origin, /segment__toggle segment__details-btn itinerary-origin__details-btn/);
   assert.match(origin, /itinerary-origin__clear/);
