@@ -76,9 +76,12 @@ export function SegmentForm({
           (dropPlacement ? ` is-drop-${dropPlacement}` : '')
         }
         data-segment-id={segment.id}
-        style={dragging ? {
-          transform: `translateY(${dragOffsetY}px)`, pointerEvents: 'none', zIndex: 20,
-        } : undefined}
+        style={{
+          marginTop: index > 0 ? '1px' : 0,
+          ...(dragging ? {
+            transform: `translateY(${dragOffsetY}px)`, pointerEvents: 'none', zIndex: 20,
+          } : {}),
+        }}
       >
         <SegmentDropIndicator placement={dropPlacement} />
         <SegmentHeader
