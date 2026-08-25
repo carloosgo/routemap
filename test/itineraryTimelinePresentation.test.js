@@ -46,9 +46,9 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   assert.match(compact, /padding-left:\s*53px;[\s\S]*grid-template-columns:\s*30px 126px minmax\(0, 1fr\);/s);
   assert.match(sequence, /\.itinerary-stop__sequence[\s\S]*width:\s*19px;[\s\S]*\.itinerary-stop__marker[\s\S]*width:\s*30px;/s);
   assert.match(dividers, /left:\s*53px;/);
-  assert.match(compact, /\.itinerary-stop__after-place\s*\{[^}]*grid-template-columns:\s*112px 90px repeat\(3, 14px\);/s);
-  assert.match(compact, /\.itinerary-origin__after-place\s*\{[^}]*grid-template-columns:\s*90px repeat\(3, 14px\);/s);
-  assert.match(compact, /\.itinerary-stop__date-range\s*\{[^}]*width:\s*112px;[^}]*color:\s*#7b8491;[^}]*font-size:\s*11px;[^}]*font-weight:\s*500;/s);
+  assert.match(compact, /grid-template-columns:\s*90px repeat\(3, 14px\);/);
+  assert.match(compact, /\.itinerary-stop__metrics,[\s\S]*\.itinerary-origin__metrics\s*\{[^}]*width:\s*90px;[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*align-items:\s*flex-end;/s);
+  assert.match(compact, /\.itinerary-stop__date-range\s*\{[^}]*width:\s*90px;[^}]*color:\s*#7b8491;[^}]*font-size:\s*10px;[^}]*font-weight:\s*500;/s);
   assert.match(compact, /padding-right:\s*4px;[\s\S]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;/s);
   assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*90px;[^}]*padding:\s*0 2px 0 0;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;/s);
