@@ -24,15 +24,69 @@
   pointer-events: none;
 }
 
-/* Dentro de un bloque continuo del mismo país, las ciudades se leen como una
-   sola secuencia: no hay separador horizontal entre una parada y la siguiente. */
 .itinerary-segment.is-country-run-joined::before {
   content: none;
 }
 
-/* Las ciudades interiores sustituyen la bandera por un punto compacto y
-   perfectamente circular, alineado con el eje del grupo. */
+.itinerary-stop__marker.is-country-run-marker {
+  position: relative;
+  align-self: stretch;
+  height: auto;
+  min-height: 100%;
+}
+
+.itinerary-stop__marker.is-country-run-marker::before,
+.itinerary-stop__marker.is-country-run-marker::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: repeating-linear-gradient(
+    to bottom,
+    #667085 0 3px,
+    transparent 3px 7px
+  );
+  pointer-events: none;
+}
+
+.itinerary-stop__marker.is-country-run-start::before {
+  content: none;
+}
+
+.itinerary-stop__marker.is-country-run-start::after {
+  top: calc(50% + 10px);
+  bottom: -10.5px;
+}
+
+.itinerary-stop__marker.is-country-run-middle::before {
+  top: 0;
+  bottom: calc(50% + 2.5px);
+}
+
+.itinerary-stop__marker.is-country-run-middle::after {
+  top: calc(50% + 2.5px);
+  bottom: -10.5px;
+}
+
+.itinerary-stop__marker.is-country-run-end::before {
+  top: 0;
+  bottom: calc(50% + 10px);
+}
+
+.itinerary-stop__marker.is-country-run-end::after {
+  content: none;
+}
+
+.itinerary-segment.is-country-run-joined-from-origin
+  .itinerary-stop__marker.is-country-run-middle::before {
+  top: -22.5px;
+}
+
 .itinerary-stop__country-run-dot {
+  position: relative;
+  z-index: 1;
   display: block;
   box-sizing: border-box;
   width: 5px;
@@ -46,48 +100,29 @@
   background: #667085;
 }
 
-/* El conector termina exactamente en el borde de cada marcador. De esta forma
-   el punto forma parte del trazo y nunca queda una porción punteada por debajo
-   del círculo. Los pequeños remates sólidos aseguran continuidad visual. */
-.itinerary-segment.is-country-run-joined::after {
-  content: '';
-  position: absolute;
-  z-index: 0;
-  top: -34px;
-  left: 38.5px;
-  width: 1px;
-  height: 57.5px;
-  transform: translateX(-50%);
-  background:
-    linear-gradient(#667085, #667085) center top / 1px 3px no-repeat,
-    linear-gradient(#667085, #667085) center bottom / 1px 3px no-repeat,
-    repeating-linear-gradient(
-      to bottom,
-      #667085 0 3px,
-      transparent 3px 7px
-    );
-  pointer-events: none;
+.itinerary-stop__marker-flag {
+  position: relative;
+  z-index: 1;
 }
 
-/* En móvil, el primer destino queda más cerca del origen que dos destinos
-   consecutivos; el tramo también se detiene en los bordes de los marcadores. */
-.itinerary-segment.is-country-run-joined-from-origin::after {
-  top: -22.5px;
-  height: 46px;
-}
-
-.itinerary-segment.is-dragging::before,
-.itinerary-segment.is-dragging::after {
+.itinerary-segment.is-dragging
+  .itinerary-stop__marker.is-country-run-marker::before,
+.itinerary-segment.is-dragging
+  .itinerary-stop__marker.is-country-run-marker::after {
   opacity: 0;
 }
 
 @media (min-width: 721px) {
-  /* En escritorio origen y destinos ocupan bandas exactas de 40px y el centro
-     de sus banderas comparte el eje x=68px. El trazo deja libres 2.5px en cada
-     centro, exactamente el radio del punto interior. */
-  .editor-module--itinerary .itinerary-segment.is-country-run-joined::after {
-    top: -17.5px;
-    left: 68px;
-    height: 35px;
+  .editor-module--itinerary
+    .itinerary-stop__marker.is-country-run-start::after,
+  .editor-module--itinerary
+    .itinerary-stop__marker.is-country-run-middle::after {
+    bottom: 0;
+  }
+
+  .editor-module--itinerary
+    .itinerary-segment.is-country-run-joined-from-origin
+    .itinerary-stop__marker.is-country-run-middle::before {
+    top: -10px;
   }
 }
