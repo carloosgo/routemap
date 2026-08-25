@@ -54,7 +54,11 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   );
   assert.match(
     dividers,
-    /\.itinerary-segment\.is-country-run-joined::after\s*\{[^}]*width:\s*1px;[^}]*transform:\s*translateX\(-50%\);[^}]*#667085 0 3px;/s
+    /\.itinerary-segment\.is-country-run-joined::after\s*\{[^}]*width:\s*1px;[^}]*transform:\s*translateX\(-50%\);/s
+  );
+  assert.match(
+    dividers,
+    /\.itinerary-segment\.is-country-run-joined::after\s*\{[^}]*background:\s*repeating-linear-gradient\([\s\S]*#667085 0 3px,[\s\S]*transparent 3px 7px/s
   );
   assert.match(
     css,
