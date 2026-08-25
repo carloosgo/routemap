@@ -34,6 +34,8 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   assert.match(header, /className="itinerary-stop__sequence"[\s\S]*className="itinerary-stop__sequence-badge"[\s\S]*className=\{'itinerary-stop__marker'/s);
   assert.match(header, /className="itinerary-stop__metrics"/);
   assert.match(header, /className="itinerary-stop__date-range"/);
+  assert.match(header, /formatSegmentDates\(segment, locale\)/);
+  assert.match(form, /locale=\{locale\}/);
   assert.match(css, /\.itinerary-origin__marker img,[\s\S]*\.itinerary-stop__marker img[\s\S]*width:\s*30px;[\s\S]*height:\s*20px;/);
   assert.doesNotMatch(header, /itinerary-stop__nights|segment__pill/);
   assert.doesNotMatch(origin, /itinerary-stop__date-range|itinerary-stop__nights|segment__pill/);
@@ -50,8 +52,6 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   assert.match(compact, /padding-right:\s*4px;[\s\S]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;/s);
   assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*90px;[^}]*padding:\s*0 2px 0 0;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;/s);
-  assert.match(form, /formatSegmentAmount, formatSegmentDates/);
-  assert.match(form, /formattedDates=\{formattedDates\}/);
   assert.match(form, /countryRunPosition === 'middle' \? ' is-country-run-middle' : ''/);
   assert.match(
     dividers,
