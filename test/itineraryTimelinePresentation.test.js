@@ -31,10 +31,12 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   const main = await read('src/main.jsx');
   const form = await read('src/modules/trips/SegmentForm.jsx');
 
-  assert.match(header, /className="itinerary-stop__sequence"[\s\S]*className="itinerary-stop__sequence-badge"[\s\S]*className=\{'itinerary-stop__marker'/s);
+  assert.match(header, /className="itinerary-stop__sequence"[\s\S]*className="itinerary-stop__sequence-badge"[\s\S]*className=\{markerClassName\}/s);
+  assert.match(header, /is-country-run-marker is-country-run-\$\{countryRunPosition\}/);
   assert.match(header, /className="itinerary-stop__metrics"/);
   assert.match(header, /className="itinerary-stop__date-range"/);
-  assert.match(header, /formatSegmentDates\(segment, locale\)/);
+  assert.match(header, /formatSegmentDate\(segment\.startDate, locale\)/);
+  assert.match(header, /formatSegmentDate\(segment\.endDate, locale\)/);
   assert.match(form, /locale=\{locale\}/);
   assert.match(css, /\.itinerary-origin__marker img,[\s\S]*\.itinerary-stop__marker img[\s\S]*width:\s*30px;[\s\S]*height:\s*20px;/);
   assert.doesNotMatch(header, /itinerary-stop__nights|segment__pill/);
@@ -46,9 +48,9 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   assert.match(compact, /padding-left:\s*53px;[\s\S]*grid-template-columns:\s*30px 126px minmax\(0, 1fr\);/s);
   assert.match(sequence, /\.itinerary-stop__sequence[\s\S]*width:\s*19px;[\s\S]*\.itinerary-stop__marker[\s\S]*width:\s*30px;/s);
   assert.match(dividers, /left:\s*53px;/);
-  assert.match(compact, /grid-template-columns:\s*90px repeat\(3, 14px\);/);
-  assert.match(compact, /\.itinerary-stop__metrics,[\s\S]*\.itinerary-origin__metrics\s*\{[^}]*width:\s*90px;[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*align-items:\s*flex-end;/s);
-  assert.match(compact, /\.itinerary-stop__date-range\s*\{[^}]*width:\s*90px;[^}]*color:\s*#7b8491;[^}]*font-size:\s*10px;[^}]*font-weight:\s*500;/s);
+  assert.match(compact, /grid-template-columns:\s*minmax\(56px, 1fr\) 90px repeat\(3, 14px\);/);
+  assert.match(compact, /\.itinerary-stop__metrics\s*\{[^}]*display:\s*contents;/s);
+  assert.match(compact, /\.itinerary-stop__date-range\s*\{[^}]*grid-column:\s*1;[^}]*width:\s*56px;[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*color:\s*#667085;[^}]*font-size:\s*10px;[^}]*font-weight:\s*500;/s);
   assert.match(compact, /padding-right:\s*4px;[\s\S]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;/s);
   assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*90px;[^}]*padding:\s*0 2px 0 0;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;/s);
@@ -59,16 +61,17 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   );
   assert.match(
     dividers,
-    /\.itinerary-segment\.is-country-run-joined::after\s*\{[^}]*width:\s*1px;[^}]*transform:\s*translateX\(-50%\);/s
+    /\.itinerary-stop__marker\.is-country-run-middle::before\s*\{[^}]*top:\s*0;[^}]*bottom:\s*calc\(50% \+ 2\.5px\);/s
   );
   assert.match(
     dividers,
-    /\.itinerary-segment\.is-country-run-joined::after\s*\{[^}]*background:[\s\S]*repeating-linear-gradient\([\s\S]*#667085 0 3px,[\s\S]*transparent 3px 7px/s
+    /\.itinerary-stop__marker\.is-country-run-middle::after\s*\{[^}]*top:\s*calc\(50% \+ 2\.5px\);/s
   );
   assert.match(
     dividers,
-    /@media \(min-width:\s*721px\)[\s\S]*\.editor-module--itinerary \.itinerary-segment\.is-country-run-joined::after\s*\{[^}]*top:\s*-17\.5px;[^}]*left:\s*68px;[^}]*height:\s*35px;/s
+    /\.itinerary-stop__marker\.is-country-run-marker::before,[\s\S]*\.itinerary-stop__marker\.is-country-run-marker::after\s*\{[^}]*width:\s*1px;[^}]*background:[\s\S]*repeating-linear-gradient\([\s\S]*#667085 0 3px,[\s\S]*transparent 3px 7px/s
   );
+  assert.doesNotMatch(dividers, /\.itinerary-segment\.is-country-run-joined::after\s*\{/);
   assert.match(
     css,
     /\.itinerary-segment\.is-country-run-middle \.itinerary-stop__picker \.autocomplete__selected-value\s*\{[^}]*color:\s*#575757;[^}]*font-weight:\s*400;/s
