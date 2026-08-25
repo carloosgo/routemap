@@ -7,7 +7,7 @@ import {
 import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
 import { flagImageUrl } from '../flags/flags.js';
-import { formatSegmentDates } from './segmentFormModel.js';
+import { formatSegmentDate } from './segmentFormModel.js';
 import './SegmentHeader.css';
 import './ItinerarySequenceLeft.css';
 
@@ -42,7 +42,16 @@ export function SegmentHeader({
   const destination = segment.destination;
   const hasNote = Boolean(segment.note);
   const showCountryRunDot = countryRunPosition === 'middle';
-  const formattedDates = formatSegmentDates(segment, locale);
+  const formattedStartDate = formatSegmentDate(segment.startDate, locale);
+  const formattedEndDate = formatSegmentDate(segment.endDate, locale);
+  const formattedDatesTitle = formattedStartDate || formattedEndDate
+    ? `${formattedStartDate || '—'} – ${formattedEndDate || '—'}`
+    : undefined;
+  const markerClassName = [
+    'itinerary-stop__marker',
+    !destination?.countryCode ? 'is-empty' : '',
+    countryRunPosition ? `is-country-run-marker is-country-run-${countryRunPosition}` : '',
+  ].filter(Boolean).join(' ');
 
   return (
     <header className="segment__header itinerary-stop">
@@ -70,7 +79,7 @@ export function SegmentHeader({
         )}
       </span>
 
-      <span className={'itinerary-stop__marker' + (!destination?.countryCode ? ' is-empty' : '')}>
+      <span className={markerClassName}>
         {showCountryRunDot ? (
           <span className="itinerary-stop__country-run-dot" aria-hidden="true" />
         ) : destination?.countryCode ? (
@@ -99,8 +108,9 @@ export function SegmentHeader({
 
       <div className="itinerary-stop__after-place">
         <div className="itinerary-stop__metrics">
-          <span className="itinerary-stop__date-range" title={formattedDates || undefined}>
-            {formattedDates || ''}
+          <span className="itinerary-stop__date-range" title={formattedDatesTitle}>
+            <span>{formattedStartDate || ''}</span>
+            <span>{formattedEndDate || ''}</span>
           </span>
           <span className="itinerary-stop__amount">{formattedAmount}</span>
         </div>
