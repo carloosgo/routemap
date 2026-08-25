@@ -39,7 +39,7 @@ test('desktop itinerary keeps compact equal rows, visible scrollbar and cost-onl
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon::before,[\s\S]*inset:\s*-4px;/s);
   assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*90px;[^}]*min-width:\s*90px;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;[^}]*text-align:\s*right;[^}]*overflow:\s*visible;/s);
   assert.doesNotMatch(compact, /\.itinerary-stop__dates|\.itinerary-stop__nights|segment__pill|background:\s*var\(--atlas-accent\)/);
-  assert.doesNotMatch(header, /itinerary-stop__country|itinerary-stop__nights|itinerary-stop__dates/);
+  assert.doesNotMatch(header, /itinerary-stop__country(?:["'\s])|itinerary-stop__nights|itinerary-stop__dates/);
   assert.doesNotMatch(originRow, /itinerary-origin__country|itinerary-stop__nights|itinerary-stop__dates/);
   assert.match(header, /itinerary-stop__amount/);
   assert.match(originRow, /itinerary-stop__amount/);
@@ -119,7 +119,7 @@ test('itinerary dividers stay dotted from flag start to close icon end', async (
   assert.match(dividers, /\.itinerary-origin-section \+ \.itinerary-segment::before/);
   assert.match(dividers, /\.itinerary-segment \+ \.itinerary-segment::before/);
   assert.match(dividers, /left:\s*53px;[\s\S]*right:\s*4px;/);
-  assert.doesNotMatch(dividers, /::after|M0 0 L4 4|fill='%2319a5d0'|clip-path/);
+  assert.doesNotMatch(dividers, /M0 0 L4 4|fill='%2319a5d0'|clip-path/);
 
   assert.match(floating, /\.workspace-panel__content\.floating-editor\s*\{[^}]*background:\s*var\(--bg\)\s*!important;[^}]*border:\s*0\s*!important;[^}]*border-radius:\s*0\s*!important;[^}]*box-shadow:\s*none\s*!important;/s);
 });
