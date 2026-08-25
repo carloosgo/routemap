@@ -24,11 +24,15 @@ test('itinerary keeps the default vertical axis removed and only joins qualifyin
   );
   assert.match(
     dividers,
-    /\.itinerary-stop__country-run-dot\s*\{[^}]*width:\s*6px;[^}]*height:\s*6px;[^}]*border-radius:\s*50%;[^}]*background:\s*#000000;/s
+    /\.itinerary-stop__country-run-dot\s*\{[^}]*width:\s*5px;[^}]*height:\s*5px;[^}]*aspect-ratio:\s*1 \/ 1;[^}]*border-radius:\s*50%;[^}]*background:\s*#667085;/s
   );
   assert.match(
     dividers,
-    /\.itinerary-segment\.is-country-run-joined::after\s*\{[^}]*background:\s*repeating-linear-gradient\([\s\S]*to bottom,[\s\S]*#6f7682 0 3px,[\s\S]*transparent 3px 7px/s
+    /\.itinerary-segment\.is-country-run-joined::after\s*\{[^}]*width:\s*1px;[^}]*transform:\s*translateX\(-50%\);/s
+  );
+  assert.match(
+    dividers,
+    /\.itinerary-segment\.is-country-run-joined::after\s*\{[^}]*background:\s*repeating-linear-gradient\([\s\S]*to bottom,[\s\S]*#667085 0 3px,[\s\S]*transparent 3px 7px/s
   );
   assert.match(
     dividers,
