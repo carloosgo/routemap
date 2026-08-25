@@ -97,7 +97,12 @@ function installRendererEnvironment() {
 
   return {
     maps: { LatLng, OverlayView },
-    map: { id: 'map' },
+    map: {
+      id: 'map',
+      getDiv() {
+        return { clientWidth: 800, clientHeight: 600 };
+      },
+    },
     pane,
     overlays,
     flushFrames() {
@@ -163,6 +168,50 @@ test('renderer crea una sola OverlayView y actualiza la línea punteada sin flec
 
     renderer.dispose();
     assert.equal(env.pane.children.length, 0);
+  } finally {
+    env.restore();
+  }
+});
+
+test('renderer recorta geometría extrema al viewport y descarta rutas totalmente fuera de pantalla', () => {
+  const env = installRendererEnvironment();
+  try {
+    const renderer = createCrispDashedRoutes({
+      maps: env.maps,
+      map: env.map,
+      routes: [{
+        path: [
+          { lat: 300, lng: -1_000_000 },
+          { lat: 300, lng: 1_000_000 },
+        ],
+      }],
+    });
+
+    env.flushFrames();
+    const path = env.pane.children[0]?.children[0];
+    assert.equal(path?.getAttribute('d'), 'M -192.00 300.00 L 992.00 300.00');
+    assert.equal(path?.style.display, undefined);
+
+    renderer.setRoutes([{
+      path: [
+        { lat: 1_000_000, lng: -1_000_000 },
+        { lat: 1_000_000, lng: 1_000_000 },
+      ],
+    }]);
+    env.flushFrames();
+
+    assert.equal(path?.getAttribute('d'), null);
+    assert.equal(path?.style.display, 'none');
+
+    renderer.setRoutes([{
+      path: [{ lat: 120, lng: 120 }, { lat: 180, lng: 180 }],
+    }]);
+    env.flushFrames();
+
+    assert.equal(path?.getAttribute('d'), 'M 120.00 120.00 L 180.00 180.00');
+    assert.equal(path?.style.display, '');
+
+    renderer.dispose();
   } finally {
     env.restore();
   }

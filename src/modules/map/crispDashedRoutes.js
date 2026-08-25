@@ -1,6 +1,7 @@
 const DEFAULT_DASH_PX = 4;
 const DEFAULT_GAP_PX = 6;
 const DEFAULT_STROKE_WEIGHT = 2;
+const VIEWPORT_PADDING_PX = 192;
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 function finitePoint(point) {
@@ -14,20 +15,110 @@ function normalizedLatLngPath(path, maps) {
 }
 
 function projectedPoints(path, projection) {
-  const points = [];
-  for (const point of path) {
+  return path.map((point) => {
     const projected = projection.fromLatLngToDivPixel(point);
-    if (finitePoint(projected)) points.push(projected);
-  }
-  return points;
+    return finitePoint(projected) ? projected : null;
+  });
 }
 
-function toSvgPath(points) {
-  if (points.length < 2) return '';
+function viewportRect(map) {
+  const mapElement = map.getDiv?.();
+  if (!mapElement) return null;
 
-  let value = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+  const elementBounds = mapElement.getBoundingClientRect?.();
+  const width = Number(mapElement.clientWidth) || Number(elementBounds?.width);
+  const height = Number(mapElement.clientHeight) || Number(elementBounds?.height);
+  if (!(width > 0) || !(height > 0)) return null;
+
+  return {
+    left: -VIEWPORT_PADDING_PX,
+    top: -VIEWPORT_PADDING_PX,
+    right: width + VIEWPORT_PADDING_PX,
+    bottom: height + VIEWPORT_PADDING_PX,
+  };
+}
+
+function clipSegmentToRect(start, end, rect) {
+  if (!finitePoint(start) || !finitePoint(end) || !rect) return null;
+
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  let minTime = 0;
+  let maxTime = 1;
+  const edges = [
+    [-dx, start.x - rect.left],
+    [dx, rect.right - start.x],
+    [-dy, start.y - rect.top],
+    [dy, rect.bottom - start.y],
+  ];
+
+  for (const [direction, distance] of edges) {
+    if (direction === 0) {
+      if (distance < 0) return null;
+      continue;
+    }
+
+    const time = distance / direction;
+    if (direction < 0) {
+      if (time > maxTime) return null;
+      if (time > minTime) minTime = time;
+    } else {
+      if (time < minTime) return null;
+      if (time < maxTime) maxTime = time;
+    }
+  }
+
+  return [
+    { x: start.x + (minTime * dx), y: start.y + (minTime * dy) },
+    { x: start.x + (maxTime * dx), y: start.y + (maxTime * dy) },
+  ];
+}
+
+function samePoint(first, second) {
+  return Boolean(
+    first
+    && second
+    && Math.abs(first.x - second.x) < 0.01
+    && Math.abs(first.y - second.y) < 0.01
+  );
+}
+
+function pointCommand(point) {
+  return `${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
+}
+
+function toClippedSvgPath(points, rect) {
+  if (points.length < 2) return '';
+  if (!rect) {
+    const finitePoints = points.filter(finitePoint);
+    if (finitePoints.length < 2) return '';
+    return finitePoints.reduce((value, point, index) => (
+      `${value}${index === 0 ? 'M' : ' L'} ${pointCommand(point)}`
+    ), '');
+  }
+
+  let value = '';
+  let previousEnd = null;
   for (let index = 1; index < points.length; index += 1) {
-    value += ` L ${points[index].x.toFixed(2)} ${points[index].y.toFixed(2)}`;
+    const start = points[index - 1];
+    const end = points[index];
+    if (!finitePoint(start) || !finitePoint(end)) {
+      previousEnd = null;
+      continue;
+    }
+
+    const clipped = clipSegmentToRect(start, end, rect);
+    if (!clipped) {
+      previousEnd = null;
+      continue;
+    }
+
+    const [clippedStart, clippedEnd] = clipped;
+    if (!samePoint(previousEnd, clippedStart)) {
+      value += `${value ? ' ' : ''}M ${pointCommand(clippedStart)}`;
+    }
+    value += ` L ${pointCommand(clippedEnd)}`;
+    previousEnd = clippedEnd;
   }
   return value;
 }
@@ -85,23 +176,30 @@ export function createCrispDashedRoutes({
     if (disposed || !svg) return;
     const projection = overlay.getProjection?.();
     if (!projection) return;
+    const clipRect = viewportRect(map);
 
     routePaths.forEach((routePath) => {
       const { element, path } = routePath;
       const points = projectedPoints(path, projection);
-      const d = toSvgPath(points);
+      const d = toClippedSvgPath(points, clipRect);
       if (d) {
         if (routePath.lastPathValue !== d) {
           element.setAttribute('d', d);
           routePath.lastPathValue = d;
         }
-        element.style.display = '';
+        if (!routePath.visible) {
+          element.style.display = '';
+          routePath.visible = true;
+        }
       } else {
         if (routePath.lastPathValue) {
           element.removeAttribute('d');
           routePath.lastPathValue = '';
         }
-        element.style.display = 'none';
+        if (routePath.visible) {
+          element.style.display = 'none';
+          routePath.visible = false;
+        }
       }
     });
   };
@@ -118,6 +216,7 @@ export function createCrispDashedRoutes({
       element,
       path: route.path,
       lastPathValue: '',
+      visible: true,
     };
   };
 
