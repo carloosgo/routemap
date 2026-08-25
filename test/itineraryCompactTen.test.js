@@ -6,7 +6,7 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('desktop itinerary keeps compact equal rows, visible scrollbar and cost-only summary', async () => {
+test('desktop itinerary keeps compact equal rows, visible scrollbar and date-and-cost summary', async () => {
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
   const floating = await read('src/app/FloatingItineraryPanel.css');
   const floatingEditor = await read('src/app/FloatingEditor.css');
@@ -33,14 +33,17 @@ test('desktop itinerary keeps compact equal rows, visible scrollbar and cost-onl
   assert.match(compact, /max-width:\s*126px;/);
   assert.match(compact, /autocomplete__selected-value[\s\S]*transform:\s*none;[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*600;[\s\S]*white-space:\s*nowrap;/s);
 
-  assert.match(compact, /grid-template-columns:\s*90px repeat\(3, 14px\);/);
+  assert.match(compact, /\.itinerary-stop__after-place\s*\{[^}]*grid-template-columns:\s*112px 90px repeat\(3, 14px\);/s);
+  assert.match(compact, /\.itinerary-origin__after-place\s*\{[^}]*grid-template-columns:\s*90px repeat\(3, 14px\);/s);
   assert.match(compact, /padding-right:\s*4px;[\s\S]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;[\s\S]*height:\s*22px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon::before,[\s\S]*inset:\s*-4px;/s);
+  assert.match(compact, /\.itinerary-stop__date-range\s*\{[^}]*width:\s*112px;[^}]*color:\s*#7b8491;[^}]*font-size:\s*11px;[^}]*font-weight:\s*500;[^}]*text-align:\s*right;/s);
   assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*90px;[^}]*min-width:\s*90px;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;[^}]*text-align:\s*right;[^}]*overflow:\s*visible;/s);
   assert.doesNotMatch(compact, /\.itinerary-stop__dates|\.itinerary-stop__nights|segment__pill|background:\s*var\(--atlas-accent\)/);
+  assert.match(header, /itinerary-stop__date-range/);
   assert.doesNotMatch(header, /itinerary-stop__country(?:["'\s])|itinerary-stop__nights|itinerary-stop__dates/);
-  assert.doesNotMatch(originRow, /itinerary-origin__country|itinerary-stop__nights|itinerary-stop__dates/);
+  assert.doesNotMatch(originRow, /itinerary-origin__country|itinerary-stop__date-range|itinerary-stop__nights|itinerary-stop__dates/);
   assert.match(header, /itinerary-stop__amount/);
   assert.match(originRow, /itinerary-stop__amount/);
 
@@ -49,7 +52,9 @@ test('desktop itinerary keeps compact equal rows, visible scrollbar and cost-onl
   assert.doesNotMatch(correction, /itinerary-origin__picker \.autocomplete__selected-value/);
 
   assert.match(form, /formatSegmentAmount/);
-  assert.doesNotMatch(form, /formatSegmentDate|formatSegmentNights|formattedStartDate|formattedEndDate|formattedNights|CollapsibleRegion|<SegmentBody|onToggle=|expanded=/);
+  assert.match(form, /formatSegmentDates\(segment, locale\)/);
+  assert.match(form, /formattedDates=\{formattedDates\}/);
+  assert.doesNotMatch(form, /formatSegmentDate\(|formatSegmentNights|formattedStartDate|formattedEndDate|formattedNights|CollapsibleRegion|<SegmentBody|onToggle=|expanded=/);
   assert.doesNotMatch(form, /useExpandedSegmentReveal|scrollIntoView/);
 });
 
@@ -75,6 +80,7 @@ test('note expand and close keep their order while expand opens a symmetric note
 
   assert.doesNotMatch(header, /itinerary-stop__dates|itinerary-stop__nights|segment__pill/);
   assert.doesNotMatch(origin, /itinerary-stop__dates|itinerary-stop__nights|segment__pill/);
+  assert.match(header, /itinerary-stop__date-range/);
   assert.match(header, /itinerary-stop__amount/);
   assert.match(origin, /itinerary-stop__amount/);
 
