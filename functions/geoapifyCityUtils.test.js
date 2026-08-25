@@ -61,6 +61,87 @@ test('cae a nombre ingles o latino si el proveedor devuelve la ciudad en otro al
   assert.doesNotMatch(results[0].name, /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u);
 });
 
+test('normaliza Shanghai desde un resultado chino usando un alias latino', () => {
+  const results = normalizeGeoapifyCityResults([
+    city({
+      place_id: 'shanghai',
+      city: '上海市',
+      name: '上海',
+      country: '中国',
+      country_code: 'cn',
+      state: '上海市',
+      county: '',
+      lat: 31.2304,
+      lon: 121.4737,
+      other_names: { 'name:en': 'Shanghai' },
+    }),
+  ], { language: 'es' });
+
+  assert.equal(results.length, 1);
+  assert.equal(results[0].name, 'Shanghai');
+  assert.equal(results[0].countryCode, 'CN');
+  assert.doesNotMatch(results[0].name, /\p{Script=Han}/u);
+});
+
+test('normaliza nombres arabes desde un alias latino disponible', () => {
+  const results = normalizeGeoapifyCityResults([
+    city({
+      place_id: 'cairo',
+      city: 'القاهرة',
+      name: 'القاهرة',
+      country: 'مصر',
+      country_code: 'eg',
+      state: 'القاهرة',
+      county: '',
+      lat: 30.0444,
+      lon: 31.2357,
+      other_names: { 'name:en': 'Cairo' },
+    }),
+  ], { language: 'es' });
+
+  assert.equal(results.length, 1);
+  assert.equal(results[0].name, 'Cairo');
+  assert.doesNotMatch(results[0].name, /\p{Script=Arabic}/u);
+});
+
+test('descarta candidatos que solo tienen nombre en alfabeto no latino', () => {
+  const results = normalizeGeoapifyCityResults([
+    city({
+      place_id: 'native-only',
+      city: '卓资县',
+      name: '卓资县',
+      country: '中国',
+      country_code: 'cn',
+      state: '内蒙古自治区',
+      county: '',
+      lat: 40.8958,
+      lon: 112.5777,
+      other_names: {},
+    }),
+  ], { language: 'es' });
+
+  assert.deepEqual(results, []);
+});
+
+test('respeta el limite maximo de cinco resultados normalizados', () => {
+  const items = Array.from({ length: 7 }, (_, index) => city({
+    place_id: `city-${index}`,
+    city: `City ${index}`,
+    name: `City ${index}`,
+    country: 'United States',
+    country_code: 'us',
+    state: `State ${index}`,
+    county: `County ${index}`,
+    lat: 30 + index,
+    lon: -100 + index,
+    other_names: { 'name:en': `City ${index}` },
+  }));
+
+  const results = normalizeGeoapifyCityResults(items, { language: 'en', limit: 99 });
+
+  assert.equal(results.length, 5);
+});
+
 test('conserva ciudades homonimas lejanas y no expone metadatos internos', () => {
   const results = normalizeGeoapifyCityResults([
     city({
