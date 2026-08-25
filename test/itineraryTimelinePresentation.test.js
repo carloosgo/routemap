@@ -57,21 +57,21 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   assert.match(form, /countryRunPosition === 'middle' \? ' is-country-run-middle' : ''/);
   assert.match(
     dividers,
-    /\.itinerary-stop__country-run-dot\s*\{[^}]*width:\s*5px;[^}]*height:\s*5px;[^}]*aspect-ratio:\s*1 \/ 1;[^}]*border-radius:\s*50%;[^}]*background:\s*#667085;/s
+    /\.itinerary-stop__country-run-dot\s*\{[^}]*width:\s*var\(--country-run-dot-size\);[^}]*height:\s*var\(--country-run-dot-size\);[^}]*aspect-ratio:\s*1 \/ 1;[^}]*border-radius:\s*50%;[^}]*background:\s*var\(--country-run-track-color\);[^}]*box-shadow:\s*0 0 0 var\(--country-run-mask-gap\) var\(--country-run-surface\);/s
   );
   assert.match(
     dividers,
-    /\.itinerary-stop__marker\.is-country-run-middle::before\s*\{[^}]*top:\s*0;[^}]*bottom:\s*calc\(50% \+ 2\.5px\);/s
+    /\.itinerary-country-run-rail\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*0;[^}]*inset-inline-start:\s*var\(--country-run-axis-inline\);[^}]*background:\s*repeating-linear-gradient\([\s\S]*to bottom,[\s\S]*var\(--country-run-track-color\) 0 var\(--country-run-dash-length\),[\s\S]*transparent var\(--country-run-dash-length\) var\(--country-run-dash-period\)/s
   );
   assert.match(
     dividers,
-    /\.itinerary-stop__marker\.is-country-run-middle::after\s*\{[^}]*top:\s*calc\(50% \+ 2\.5px\);/s
+    /\.itinerary-stop__marker\.is-country-run-marker\s*\{[^}]*z-index:\s*1;[^}]*width:\s*var\(--country-run-track-w\);[^}]*justify-self:\s*center;/s
   );
-  assert.match(
-    dividers,
-    /\.itinerary-stop__marker\.is-country-run-marker::before,[\s\S]*\.itinerary-stop__marker\.is-country-run-marker::after\s*\{[^}]*width:\s*1px;[^}]*background:[\s\S]*repeating-linear-gradient\([\s\S]*#667085 0 3px,[\s\S]*transparent 3px 7px/s
-  );
+  assert.doesNotMatch(dividers, /\.itinerary-stop__marker\.is-country-run-marker::(?:before|after)/);
   assert.doesNotMatch(dividers, /\.itinerary-segment\.is-country-run-joined::after\s*\{/);
+  assert.match(form, /createPortal\([\s\S]*itinerary-country-run-rail[\s\S]*railState\.container/s);
+  assert.match(form, /startBounds\.top \+ \(startBounds\.height \/ 2\)/);
+  assert.match(form, /endBounds\.top \+ \(endBounds\.height \/ 2\)/);
   assert.match(
     css,
     /\.itinerary-segment\.is-country-run-middle \.itinerary-stop__picker \.autocomplete__selected-value\s*\{[^}]*color:\s*#575757;[^}]*font-weight:\s*400;/s
