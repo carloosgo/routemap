@@ -3,223 +3,129 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createCrispDashedRoutes } from '../../src/modules/map/crispDashedRoutes.js';
 
-class FakeElement {
-  constructor(tagName) {
-    this.tagName = tagName;
-    this.attributes = new Map();
-    this.children = [];
-    this.style = {};
-    this.parent = null;
-  }
+function createRendererEnvironment() {
+  const polylines = [];
+  let overlayViewConstructions = 0;
 
-  setAttribute(name, value) {
-    this.attributes.set(name, String(value));
-  }
-
-  getAttribute(name) {
-    return this.attributes.get(name) ?? null;
-  }
-
-  removeAttribute(name) {
-    this.attributes.delete(name);
-  }
-
-  append(...children) {
-    for (const child of children) {
-      child.parent = this;
-      this.children.push(child);
+  class Polyline {
+    constructor(options) {
+      this.options = options;
+      this.map = options.map;
+      this.path = options.path;
+      this.setPathCalls = 0;
+      this.setMapCalls = [];
+      polylines.push(this);
     }
-  }
 
-  remove() {
-    if (!this.parent) return;
-    this.parent.children = this.parent.children.filter((child) => child !== this);
-    this.parent = null;
-  }
-}
+    setPath(path) {
+      this.path = path;
+      this.setPathCalls += 1;
+    }
 
-function installRendererEnvironment() {
-  const previousDocument = globalThis.document;
-  const previousRequestAnimationFrame = globalThis.requestAnimationFrame;
-  const previousCancelAnimationFrame = globalThis.cancelAnimationFrame;
-  const pane = new FakeElement('pane');
-  const overlays = [];
-  const frames = new Map();
-  let nextFrameId = 1;
-
-  class LatLng {
-    constructor(value) {
-      this.lat = Number(value?.lat);
-      this.lng = Number(value?.lng);
+    setMap(map) {
+      this.map = map;
+      this.setMapCalls.push(map);
     }
   }
 
   class OverlayView {
     constructor() {
-      this.map = null;
-      overlays.push(this);
-    }
-
-    setMap(nextMap) {
-      const hadMap = Boolean(this.map);
-      this.map = nextMap;
-      if (nextMap) this.onAdd?.();
-      if (!nextMap && hadMap) this.onRemove?.();
-    }
-
-    getPanes() {
-      return { overlayLayer: pane };
-    }
-
-    getProjection() {
-      return {
-        fromLatLngToDivPixel(point) {
-          return { x: point.lng, y: point.lat };
-        },
-      };
+      overlayViewConstructions += 1;
+      throw new Error('custom OverlayView rendering must not be used for itinerary routes');
     }
   }
 
-  globalThis.document = {
-    createElementNS(_namespace, tagName) {
-      return new FakeElement(tagName);
-    },
-  };
-  globalThis.requestAnimationFrame = (callback) => {
-    const id = nextFrameId;
-    nextFrameId += 1;
-    frames.set(id, callback);
-    return id;
-  };
-  globalThis.cancelAnimationFrame = (id) => {
-    frames.delete(id);
-  };
-
   return {
-    maps: { LatLng, OverlayView },
-    map: {
-      id: 'map',
-      getDiv() {
-        return { clientWidth: 800, clientHeight: 600 };
-      },
-    },
-    pane,
-    overlays,
-    flushFrames() {
-      while (frames.size) {
-        const pending = [...frames.values()];
-        frames.clear();
-        pending.forEach((callback) => callback());
-      }
-    },
-    restore() {
-      globalThis.document = previousDocument;
-      globalThis.requestAnimationFrame = previousRequestAnimationFrame;
-      globalThis.cancelAnimationFrame = previousCancelAnimationFrame;
+    maps: { Polyline, OverlayView },
+    map: { id: 'map' },
+    polylines,
+    get overlayViewConstructions() {
+      return overlayViewConstructions;
     },
   };
 }
 
-test('renderer crea una sola OverlayView y actualiza la línea punteada sin flechas ni desmontarla', () => {
-  const env = installRendererEnvironment();
-  try {
-    const renderer = createCrispDashedRoutes({
-      maps: env.maps,
-      map: env.map,
-      routes: [{
-        path: [{ lat: 10, lng: 20 }, { lat: 11, lng: 22 }],
-        color: '#123456',
-      }],
-    });
+test('renderer delegates dashed itinerary routes to native Google Maps polylines', () => {
+  const env = createRendererEnvironment();
+  const renderer = createCrispDashedRoutes({
+    maps: env.maps,
+    map: env.map,
+    routes: [{
+      path: [{ lat: 10, lng: 20 }, { lat: 11, lng: 22 }],
+      color: '#123456',
+    }],
+  });
 
-    assert.equal(env.overlays.length, 1);
-    env.flushFrames();
+  assert.equal(env.overlayViewConstructions, 0);
+  assert.equal(env.polylines.length, 1);
 
-    const svg = env.pane.children[0];
-    assert.equal(svg?.tagName, 'svg');
-    assert.equal(svg.children.length, 1);
-    assert.equal(svg.children[0].tagName, 'path');
-    assert.equal(svg.children[0].getAttribute('stroke-dasharray'), '4 6');
-    assert.equal(svg.children[0].getAttribute('stroke-width'), '2');
-    assert.equal(svg.children[0].getAttribute('d'), 'M 20.00 10.00 L 22.00 11.00');
-    const routeElement = svg.children[0];
+  const polyline = env.polylines[0];
+  assert.equal(polyline.map, env.map);
+  assert.deepEqual(polyline.path, [{ lat: 10, lng: 20 }, { lat: 11, lng: 22 }]);
+  assert.equal(polyline.options.strokeOpacity, 0);
+  assert.equal(polyline.options.clickable, false);
+  assert.equal(polyline.options.geodesic, false);
+  assert.equal(polyline.options.icons.length, 1);
+  assert.equal(polyline.options.icons[0].offset, '0');
+  assert.equal(polyline.options.icons[0].repeat, '10px');
+  assert.equal(polyline.options.icons[0].icon.path, 'M 0,-2 0,2');
+  assert.equal(polyline.options.icons[0].icon.strokeColor, '#111111');
+  assert.equal(polyline.options.icons[0].icon.strokeOpacity, 1);
+  assert.equal(polyline.options.icons[0].icon.strokeWeight, 2);
 
-    renderer.setRoutes([{
-      path: [{ lat: 30, lng: 40 }, { lat: 31, lng: 44 }],
-      color: '#654321',
-    }]);
+  renderer.refresh();
+  assert.equal(polyline.map, env.map);
+  assert.equal(polyline.setPathCalls, 0);
+  assert.deepEqual(polyline.setMapCalls, []);
 
-    // El trazado anterior sigue presente hasta que el mismo nodo recibe la
-    // geometría nueva; no existe un frame intermedio sin ruta.
-    assert.equal(svg.children.length, 1);
-    assert.equal(svg.children[0], routeElement);
-    assert.equal(svg.children[0].getAttribute('d'), 'M 20.00 10.00 L 22.00 11.00');
-
-    env.flushFrames();
-
-    assert.equal(env.overlays.length, 1);
-    assert.equal(svg.children.length, 1);
-    assert.equal(svg.children[0], routeElement);
-    assert.equal(svg.children[0].getAttribute('d'), 'M 40.00 30.00 L 44.00 31.00');
-
-    renderer.refresh();
-    env.flushFrames();
-    assert.equal(env.overlays.length, 1);
-
-    renderer.dispose();
-    assert.equal(env.pane.children.length, 0);
-  } finally {
-    env.restore();
-  }
+  renderer.dispose();
+  assert.equal(polyline.map, null);
 });
 
-test('renderer recorta geometría extrema al viewport y descarta rutas totalmente fuera de pantalla', () => {
-  const env = installRendererEnvironment();
-  try {
-    const renderer = createCrispDashedRoutes({
-      maps: env.maps,
-      map: env.map,
-      routes: [{
-        path: [
-          { lat: 300, lng: -1_000_000 },
-          { lat: 300, lng: 1_000_000 },
-        ],
-      }],
-    });
+test('renderer reuses native polylines when routes change and removes only surplus routes', () => {
+  const env = createRendererEnvironment();
+  const renderer = createCrispDashedRoutes({
+    maps: env.maps,
+    map: env.map,
+    routes: [
+      { path: [{ lat: 10, lng: 20 }, { lat: 11, lng: 22 }] },
+      { path: [{ lat: 30, lng: 40 }, { lat: 31, lng: 44 }] },
+    ],
+  });
 
-    env.flushFrames();
-    const path = env.pane.children[0]?.children[0];
-    assert.equal(path?.getAttribute('d'), 'M -192.00 300.00 L 992.00 300.00');
-    assert.equal(path?.style.display, undefined);
+  const [firstPolyline, secondPolyline] = env.polylines;
+  renderer.setRoutes([{
+    path: [
+      { lat: () => 50, lng: () => 60 },
+      { lat: () => 51, lng: () => 64 },
+      { lat: 'invalid', lng: 70 },
+    ],
+  }]);
 
-    renderer.setRoutes([{
-      path: [
-        { lat: 1_000_000, lng: -1_000_000 },
-        { lat: 1_000_000, lng: 1_000_000 },
-      ],
-    }]);
-    env.flushFrames();
+  assert.equal(env.polylines.length, 2);
+  assert.equal(firstPolyline.setPathCalls, 1);
+  assert.deepEqual(firstPolyline.path, [{ lat: 50, lng: 60 }, { lat: 51, lng: 64 }]);
+  assert.equal(firstPolyline.map, env.map);
+  assert.equal(secondPolyline.map, null);
+  assert.deepEqual(secondPolyline.setMapCalls, [null]);
 
-    assert.equal(path?.getAttribute('d'), null);
-    assert.equal(path?.style.display, 'none');
+  renderer.setRoutes([{ path: [{ lat: 1, lng: 2 }, { lat: 3, lng: 4 }] }]);
+  assert.equal(env.polylines.length, 2);
+  assert.equal(firstPolyline.setPathCalls, 2);
+  assert.equal(firstPolyline.map, env.map);
 
-    renderer.setRoutes([{
-      path: [{ lat: 120, lng: 120 }, { lat: 180, lng: 180 }],
-    }]);
-    env.flushFrames();
-
-    assert.equal(path?.getAttribute('d'), 'M 120.00 120.00 L 180.00 180.00');
-    assert.equal(path?.style.display, '');
-
-    renderer.dispose();
-  } finally {
-    env.restore();
-  }
+  renderer.dispose();
+  assert.equal(firstPolyline.map, null);
 });
 
-test('renderer degradado conserva una API segura sin Google Maps', () => {
+test('renderer keeps a safe degraded API when native Google Maps polylines are unavailable', () => {
   const renderer = createCrispDashedRoutes({ maps: null, map: null, routes: [] });
   assert.doesNotThrow(() => renderer.setRoutes([]));
   assert.doesNotThrow(() => renderer.refresh());
   assert.doesNotThrow(() => renderer.dispose());
+
+  const noPolylineRenderer = createCrispDashedRoutes({ maps: {}, map: {}, routes: [] });
+  assert.doesNotThrow(() => noPolylineRenderer.setRoutes([]));
+  assert.doesNotThrow(() => noPolylineRenderer.refresh());
+  assert.doesNotThrow(() => noPolylineRenderer.dispose());
 });
