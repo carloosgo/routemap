@@ -1,6 +1,20 @@
-/* Separadores horizontales discretos entre trayectos. El eje vertical general y
-   los picos laterales permanecen eliminados. Solo los bloques de tres o más
-   ciudades consecutivas del mismo país recuperan un conector vertical punteado. */
+/* Separadores horizontales discretos entre trayectos. El eje vertical general
+   permanece eliminado. Los bloques de tres o más ciudades consecutivas del
+   mismo país usan un único riel punteado detrás de sus nodos. */
+
+.segments:not(.segments--compact) {
+  --country-run-track-w: 30px;
+  --country-run-flag-w: 30px;
+  --country-run-flag-h: 20px;
+  --country-run-dot-size: 10px;
+  --country-run-rail-w: 1px;
+  --country-run-track-color: #667085;
+  --country-run-dash-length: 3px;
+  --country-run-dash-period: 7px;
+  --country-run-mask-gap: 4px;
+  --country-run-surface: var(--surface, #fff);
+  --country-run-axis-inline: 38px;
+}
 
 .segments:not(.segments--compact)::before {
   content: none;
@@ -28,60 +42,29 @@
   content: none;
 }
 
-.itinerary-stop__marker.is-country-run-marker {
-  position: relative;
-  align-self: stretch;
-  height: auto;
-  min-height: 100%;
-}
-
-.itinerary-stop__marker.is-country-run-marker::before,
-.itinerary-stop__marker.is-country-run-marker::after {
-  content: '';
+.itinerary-country-run-rail {
   position: absolute;
   z-index: 0;
-  left: 50%;
-  width: 1px;
+  top: var(--country-run-top);
+  inset-inline-start: var(--country-run-axis-inline);
+  width: var(--country-run-rail-w);
+  height: var(--country-run-height);
   transform: translateX(-50%);
   background: repeating-linear-gradient(
     to bottom,
-    #667085 0 3px,
-    transparent 3px 7px
+    var(--country-run-track-color) 0 var(--country-run-dash-length),
+    transparent var(--country-run-dash-length) var(--country-run-dash-period)
   );
   pointer-events: none;
 }
 
-.itinerary-stop__marker.is-country-run-start::before {
-  content: none;
-}
-
-.itinerary-stop__marker.is-country-run-start::after {
-  top: calc(50% + 10px);
-  bottom: -10.5px;
-}
-
-.itinerary-stop__marker.is-country-run-middle::before {
-  top: 0;
-  bottom: calc(50% + 2.5px);
-}
-
-.itinerary-stop__marker.is-country-run-middle::after {
-  top: calc(50% + 2.5px);
-  bottom: -10.5px;
-}
-
-.itinerary-stop__marker.is-country-run-end::before {
-  top: 0;
-  bottom: calc(50% + 10px);
-}
-
-.itinerary-stop__marker.is-country-run-end::after {
-  content: none;
-}
-
-.itinerary-segment.is-country-run-joined-from-origin
-  .itinerary-stop__marker.is-country-run-middle::before {
-  top: -22.5px;
+.itinerary-stop__marker.is-country-run-marker {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  width: var(--country-run-track-w);
+  min-width: var(--country-run-track-w);
+  justify-self: center;
 }
 
 .itinerary-stop__country-run-dot {
@@ -89,40 +72,56 @@
   z-index: 1;
   display: block;
   box-sizing: border-box;
-  width: 5px;
-  min-width: 5px;
-  max-width: 5px;
-  height: 5px;
-  min-height: 5px;
-  max-height: 5px;
+  width: var(--country-run-dot-size);
+  min-width: var(--country-run-dot-size);
+  max-width: var(--country-run-dot-size);
+  height: var(--country-run-dot-size);
+  min-height: var(--country-run-dot-size);
+  max-height: var(--country-run-dot-size);
   aspect-ratio: 1 / 1;
   border-radius: 50%;
-  background: #667085;
+  background: var(--country-run-track-color);
+  box-shadow: 0 0 0 var(--country-run-mask-gap) var(--country-run-surface);
 }
 
-.itinerary-stop__marker-flag {
+.itinerary-stop__marker.is-country-run-marker .itinerary-stop__marker-flag {
   position: relative;
   z-index: 1;
+  width: var(--country-run-flag-w);
+  height: var(--country-run-flag-h);
+  box-shadow: 0 0 0 var(--country-run-mask-gap) var(--country-run-surface);
 }
 
-.itinerary-segment.is-dragging
-  .itinerary-stop__marker.is-country-run-marker::before,
-.itinerary-segment.is-dragging
-  .itinerary-stop__marker.is-country-run-marker::after {
+.segments:not(.segments--compact):has(> .itinerary-segment.is-country-run-joined-from-origin)
+  > .itinerary-origin-section .itinerary-origin__marker {
+  z-index: 1;
+  width: var(--country-run-track-w);
+  justify-self: center;
+}
+
+.segments:not(.segments--compact):has(> .itinerary-segment.is-country-run-joined-from-origin)
+  > .itinerary-origin-section .itinerary-origin__marker img {
+  width: var(--country-run-flag-w);
+  height: var(--country-run-flag-h);
+  box-shadow: 0 0 0 var(--country-run-mask-gap) var(--country-run-surface);
+}
+
+.segments:not(.segments--compact):has(> .itinerary-segment.is-dragging)
+  > .itinerary-country-run-rail {
   opacity: 0;
 }
 
 @media (min-width: 721px) {
-  .editor-module--itinerary
-    .itinerary-stop__marker.is-country-run-start::after,
-  .editor-module--itinerary
-    .itinerary-stop__marker.is-country-run-middle::after {
-    bottom: 0;
-  }
-
-  .editor-module--itinerary
-    .itinerary-segment.is-country-run-joined-from-origin
-    .itinerary-stop__marker.is-country-run-middle::before {
-    top: -10px;
+  .editor-module--itinerary .segments:not(.segments--compact) {
+    --country-run-drag-w: 14px;
+    --country-run-sequence-w: 19px;
+    --country-run-column-gap: 10px;
+    --country-run-axis-inline: calc(
+      var(--country-run-drag-w) +
+      var(--country-run-column-gap) +
+      var(--country-run-sequence-w) +
+      var(--country-run-column-gap) +
+      (var(--country-run-track-w) / 2)
+    );
   }
 }
