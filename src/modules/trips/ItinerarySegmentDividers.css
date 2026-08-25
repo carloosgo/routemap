@@ -12,8 +12,8 @@
   --country-run-dash-length: 3px;
   --country-run-dash-period: 7px;
   --country-run-mask-gap: 4px;
-  --country-run-surface: var(--surface, #fff);
-  --country-run-axis-inline: 38px;
+  --country-run-surface: var(--bg, #fafbfc);
+  --country-run-axis-inline: var(--itinerary-axis-x, 38px);
 }
 
 .segments:not(.segments--compact)::before {
@@ -50,11 +50,13 @@
   width: var(--country-run-rail-w);
   height: var(--country-run-height);
   transform: translateX(-50%);
-  background: repeating-linear-gradient(
+  background-image: linear-gradient(
     to bottom,
     var(--country-run-track-color) 0 var(--country-run-dash-length),
     transparent var(--country-run-dash-length) var(--country-run-dash-period)
   );
+  background-size: 100% var(--country-run-dash-period);
+  background-repeat: repeat-y;
   pointer-events: none;
 }
 
@@ -115,7 +117,7 @@
   .editor-module--itinerary .segments:not(.segments--compact) {
     --country-run-drag-w: 14px;
     --country-run-sequence-w: 19px;
-    --country-run-column-gap: 10px;
+    --country-run-column-gap: var(--itinerary-compact-gap, 10px);
     --country-run-axis-inline: calc(
       var(--country-run-drag-w) +
       var(--country-run-column-gap) +
