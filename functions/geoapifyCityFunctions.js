@@ -12,7 +12,10 @@ import {
   normalized,
   requireGeoapifyKey,
 } from './geoapifySupport.js';
-import { normalizeGeoapifyCityResults } from './geoapifyCityUtils.js';
+import {
+  buildGeoapifyCitySearchUrl,
+  normalizeGeoapifyCityResults,
+} from './geoapifyCityUtils.js';
 
 const MIN_QUERY_CHARS = 3;
 const MAX_RESULTS = 5;
@@ -29,27 +32,19 @@ function requestedLanguage(value) {
 }
 
 async function loadCities(query, limit, language) {
-  // El contrato de costos limita también la respuesta pedida al proveedor:
-  // nunca solicitamos más candidatos que los cinco que Atlas puede mostrar.
-  const params = new URLSearchParams({
-    text: query,
-    type: 'city',
-    format: 'json',
-    lang: language,
-    limit: String(limit),
-    apiKey: requireGeoapifyKey(
-      GEOAPIFY_CITY_API_KEY,
-      'GEOAPIFY_CITY_API_KEY'
-    ),
-  });
+  const apiKey = requireGeoapifyKey(
+    GEOAPIFY_CITY_API_KEY,
+    'GEOAPIFY_CITY_API_KEY'
+  );
   const payload = await limitedFetch(
-    `https://api.geoapify.com/v1/geocode/autocomplete?${params}`
+    buildGeoapifyCitySearchUrl({ query, limit, language, apiKey })
   );
 
   return normalizeGeoapifyCityResults(payload.results, {
     language,
     limit,
     query,
+    includeRegionMetadata: true,
   });
 }
 
@@ -70,9 +65,9 @@ export const geoapifyCityAutocomplete = onCall(
 
       const limit = requestedLimit(request.data?.limit);
       const language = requestedLanguage(request.data?.language);
-      // v5 invalida candidatos previos sin validación de tipo/relevancia,
-      // sin cambiar límites, TTL ni cantidad solicitada al proveedor.
-      const key = `city:v5:${queryKey}:lang=${language}:limit=${limit}`;
+      // v6 invalida las respuestas generadas con Address Autocomplete y la
+      // identidad visible v5, conservando el mismo TTL y límite de resultados.
+      const key = `city:v6:${queryKey}:lang=${language}:limit=${limit}`;
       const cachedResult = await cached(
         'citySearchCache',
         key,
@@ -81,7 +76,7 @@ export const geoapifyCityAutocomplete = onCall(
 
       return { results: cachedResult.result, cacheHit: cachedResult.cacheHit };
     } catch (error) {
-      logError('City autocomplete request failed.', {
+      logError('City search request failed.', {
         errorName: error?.name || 'Error',
         errorCode: error?.code || '',
         errorMessage: String(error?.message || error || 'Unknown error').slice(0, 240),
