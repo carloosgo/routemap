@@ -46,30 +46,34 @@
   background: #667085;
 }
 
-/* Cada fila unida dibuja únicamente el tramo entre el centro de su marcador y
-   el centro del marcador anterior. Así la línea nunca aparece fuera del grupo. */
+/* El conector termina exactamente en el borde de cada marcador. De esta forma
+   el punto forma parte del trazo y nunca queda una porción punteada por debajo
+   del círculo. Los pequeños remates sólidos aseguran continuidad visual. */
 .itinerary-segment.is-country-run-joined::after {
   content: '';
   position: absolute;
   z-index: 0;
-  top: -36.5px;
+  top: -34px;
   left: 38.5px;
   width: 1px;
-  height: 62.5px;
+  height: 57.5px;
   transform: translateX(-50%);
-  background: repeating-linear-gradient(
-    to bottom,
-    #667085 0 3px,
-    transparent 3px 7px
-  );
+  background:
+    linear-gradient(#667085, #667085) center top / 1px 3px no-repeat,
+    linear-gradient(#667085, #667085) center bottom / 1px 3px no-repeat,
+    repeating-linear-gradient(
+      to bottom,
+      #667085 0 3px,
+      transparent 3px 7px
+    );
   pointer-events: none;
 }
 
 /* En móvil, el primer destino queda más cerca del origen que dos destinos
-   consecutivos; este tramo conserva la unión exacta entre ambos centros. */
+   consecutivos; el tramo también se detiene en los bordes de los marcadores. */
 .itinerary-segment.is-country-run-joined-from-origin::after {
-  top: -25px;
-  height: 51px;
+  top: -22.5px;
+  height: 46px;
 }
 
 .itinerary-segment.is-dragging::before,
@@ -79,10 +83,11 @@
 
 @media (min-width: 721px) {
   /* En escritorio origen y destinos ocupan bandas exactas de 40px y el centro
-     de sus banderas comparte el eje x=68px. */
+     de sus banderas comparte el eje x=68px. El trazo deja libres 2.5px en cada
+     centro, exactamente el radio del punto interior. */
   .editor-module--itinerary .itinerary-segment.is-country-run-joined::after {
-    top: -20px;
+    top: -17.5px;
     left: 68px;
-    height: 40px;
+    height: 35px;
   }
 }
