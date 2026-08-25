@@ -46,11 +46,15 @@
     padding-bottom: 0 !important;
   }
 
-  /* Borde -> arrastre -> número -> bandera -> ciudad comparten exactamente
-     el mismo gap de 10px. El drag usa su ancho visual real de 14px y conserva
-     una zona de captura ampliada de forma transparente. */
+  /* Borde -> arrastre -> número -> eje -> ciudad comparten exactamente el
+     mismo gap. El ancho del eje es el mismo token que posiciona el riel. */
   .editor-module.editor-module--itinerary .itinerary-segment .segment__header.itinerary-stop {
-    grid-template-columns: 14px 19px 30px 126px minmax(0, 1fr);
+    grid-template-columns:
+      var(--country-run-drag-w, 14px)
+      var(--country-run-sequence-w, 19px)
+      var(--country-run-track-w, 30px)
+      126px
+      minmax(0, 1fr);
     column-gap: var(--itinerary-compact-gap);
   }
 
@@ -73,11 +77,16 @@
     max-width: 126px;
   }
 
-  /* El origen no necesita drag ni número, pero reserva su huella para que
-     bandera, ciudad, costo y acciones queden sobre las mismas guías. */
+  /* El origen no necesita drag ni número, pero reserva exactamente la huella
+     de esas dos columnas para compartir el mismo eje X que los destinos. */
   .segments:not(.segments--compact) .itinerary-origin {
-    padding-left: 53px;
-    grid-template-columns: 30px 126px minmax(0, 1fr);
+    padding-left: calc(
+      var(--country-run-drag-w, 14px) +
+      var(--itinerary-compact-gap) +
+      var(--country-run-sequence-w, 19px) +
+      var(--itinerary-compact-gap)
+    );
+    grid-template-columns: var(--country-run-track-w, 30px) 126px minmax(0, 1fr);
     column-gap: var(--itinerary-compact-gap);
   }
 
