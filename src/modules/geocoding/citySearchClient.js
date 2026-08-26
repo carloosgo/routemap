@@ -4,6 +4,11 @@ import { cacheCities, getCachedCities } from './citySearchCache.js';
 
 const SUPPORTED_LANGUAGES = new Set(['es', 'en']);
 const LATIN_NAME_PATTERN = /\p{Script=Latin}/u;
+const CANONICAL_CACHE_SOURCES = new Set([
+  'catalog',
+  'catalog-refresh',
+  'catalog-stale',
+]);
 
 function normalizeQuery(value) {
   return String(value || '')
@@ -107,7 +112,10 @@ export function createGeoapifyCityProvider() {
     const results = sanitizeCitySearchResults(response.data?.results, {
       language: safeLanguage,
     });
-    cacheCities(cacheKey, results);
+    const responseSource = String(response.data?.source || '').trim();
+    if (CANONICAL_CACHE_SOURCES.has(responseSource)) {
+      cacheCities(cacheKey, results);
+    }
     return results;
   }
 
