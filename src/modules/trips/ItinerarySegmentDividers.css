@@ -84,6 +84,7 @@
   border-radius: 50%;
   background: var(--country-run-track-color);
   box-shadow: 0 0 0 var(--country-run-mask-gap) var(--country-run-surface);
+  transform: translateX(-0.5px);
 }
 
 .itinerary-stop__marker.is-country-run-marker .itinerary-stop__marker-flag {
