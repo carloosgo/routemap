@@ -29,6 +29,7 @@ const MIN_QUERY_CHARS = 3;
 const MAX_RESULTS = 5;
 const MAX_QUERY_CHARS = 120;
 const ALLOWED_LANGUAGES = new Set(['es', 'en']);
+const CITY_SEARCH_UNAVAILABLE_MESSAGE = 'No fue posible buscar ciudades en este momento.';
 
 function requestedLimit(value) {
   return Math.min(Math.max(Number(value) || MAX_RESULTS, 1), MAX_RESULTS);
@@ -194,7 +195,12 @@ export const geoapifyCityAutocomplete = onCall(
             source: 'catalog-stale',
           };
         }
-        throw providerError;
+        logError('City provider request failed.', {
+          errorName: providerError?.name || 'Error',
+          errorCode: providerError?.code || '',
+          errorMessage: String(providerError?.message || providerError || '').slice(0, 240),
+        });
+        throw new HttpsError('unavailable', CITY_SEARCH_UNAVAILABLE_MESSAGE);
       }
     } catch (error) {
       logError('City search request failed.', {
@@ -202,7 +208,10 @@ export const geoapifyCityAutocomplete = onCall(
         errorCode: error?.code || '',
         errorMessage: String(error?.message || error || 'Unknown error').slice(0, 240),
       });
-      throw error;
+      if (error instanceof HttpsError) {
+        throw new HttpsError(error.code, error.message, error.details);
+      }
+      throw new HttpsError('internal', 'No fue posible completar la búsqueda de ciudades.');
     }
   }
 );
