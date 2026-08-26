@@ -21,7 +21,7 @@ const paris = {
   id: 'paris', name: 'Paris', country: 'France', countryCode: 'FR', lat: 48.8566, lon: 2.3522,
 };
 
-const colors = ['#111111', '#222222', '#333333'];
+const colors = ['#111111', '#222222', '#333333', '#444444'];
 const colorForIndex = (index) => colors[index] || '#999999';
 
 function roundTripSegments() {
@@ -96,7 +96,7 @@ test('same-country grouping starts and ends at country boundaries and does not a
   );
 });
 
-test('map feature projection reuses the same destination numbers and colors and omits terminal return marker', () => {
+test('map feature projection reuses canonical numbers and marks a terminal return on the existing origin feature', () => {
   const data = buildMapFeatureData({
     segments: roundTripSegments(),
     places: [],
@@ -111,13 +111,42 @@ test('map feature projection reuses the same destination numbers and colors and 
       sequence: feature.properties.sequence,
       color: feature.properties.color,
       name: feature.properties.name,
+      visits: feature.properties.visits,
+      isFinish: feature.properties.isFinish,
     })),
     [
-      { role: 'origin', sequence: null, color: null, name: 'Mexico City' },
-      { role: 'destination', sequence: 1, color: '#111111', name: 'Madrid' },
-      { role: 'destination', sequence: 2, color: '#222222', name: 'Paris' },
+      { role: 'origin', sequence: null, color: null, name: 'Mexico City', visits: [], isFinish: true },
+      { role: 'destination', sequence: 1, color: '#111111', name: 'Madrid', visits: [{ sequence: 1, color: '#111111' }], isFinish: false },
+      { role: 'destination', sequence: 2, color: '#222222', name: 'Paris', visits: [{ sequence: 2, color: '#222222' }], isFinish: false },
     ]
   );
+});
+
+test('repeated destinations share one geographic feature with every visit number side by side', () => {
+  const rome = {
+    id: 'rome', name: 'Rome', country: 'Italy', countryCode: 'IT', lat: 41.9028, lon: 12.4964,
+  };
+  const segments = [
+    { id: 'one', origin, destination: paris, expenses: { transport: {} } },
+    { id: 'two', origin: paris, destination: rome, expenses: { transport: {} } },
+    { id: 'three', origin: rome, destination: paris, expenses: { transport: {} } },
+  ];
+  const data = buildMapFeatureData({
+    segments,
+    places: [],
+    viewMode: 'segments',
+    colorForIndex,
+  });
+  const parisFeatures = data.cityFeatures.filter(
+    (feature) => feature.properties.name === 'Paris'
+  );
+
+  assert.equal(parisFeatures.length, 1);
+  assert.deepEqual(parisFeatures[0].properties.visits, [
+    { sequence: 1, color: '#111111' },
+    { sequence: 3, color: '#333333' },
+  ]);
+  assert.equal(parisFeatures[0].properties.isFinish, true);
 });
 
 test('reordering the same geographic stops does not change the itinerary viewport identity', () => {
@@ -131,7 +160,7 @@ test('reordering the same geographic stops does not change the itinerary viewpor
   assert.equal(itineraryViewportKey(original), itineraryViewportKey(reordered));
 });
 
-test('UI consumes canonical numbering while preserving teal header labels and colored map circles', async () => {
+test('UI consumes canonical numbering, repeated visit dots and finish flag assets', async () => {
   const editor = await read('src/app/AppEditorPane.jsx');
   const mapPane = await read('src/app/AppMapPane.jsx');
   const segmentHeader = await read('src/modules/trips/SegmentHeader.jsx');
@@ -155,8 +184,13 @@ test('UI consumes canonical numbering while preserving teal header labels and co
   assert.match(headerType, /\.trip-summary__metric-label\s*\{[^}]*color:\s*#0d6078;/s);
   assert.match(headerType, /\.trip-summary__metric-value,[\s\S]*color:\s*#000000;/);
   assert.match(googleMap, /const isOrigin = feature\.properties\?\.role === 'origin';/);
+  assert.match(googleMap, /feature\.properties\?\.isFinish/);
+  assert.match(googleMap, /google-itinerary-city-marker__dot/);
+  assert.match(googleMap, /itineraryFlag\('finish'\)/);
   assert.match(googleMap, /routeCities\.map\(cityKey\)\.sort\(\)\.join\('\|'\)/);
-  assert.match(markerCss, /background:\s*var\(--itinerary-city-color, #111111\);/);
-  assert.match(markerCss, /\.google-itinerary-city-marker\.is-origin/);
+  assert.match(markerCss, /background:\s*var\(--itinerary-visit-color, var\(--itinerary-city-color, #111111\)\);/);
+  assert.match(markerCss, /display:\s*inline-flex;/);
+  assert.match(markerCss, /gap:\s*2px;/);
+  assert.match(markerCss, /itinerary-finish-flag\.svg/);
   assert.match(routeMap, /GooglePlacesMap\.css';\s*\nimport '\.\/ItineraryNumberMarkers\.css';/);
 });
