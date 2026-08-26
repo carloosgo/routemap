@@ -175,7 +175,7 @@ test('desktop itinerary geometry stays contained while detail forms remain in th
   assert.match(layout, /--trip-header-height:\s*63px;/);
   assert.match(layout, /grid-template-columns:[\s\S]*var\(--atlas-nav-width\)[\s\S]*calc\(var\(--workspace-panel-width\) - var\(--atlas-nav-width\)\)[\s\S]*minmax\(0, 1fr\);/s);
   assert.match(itinerary, /grid-template-columns:\s*18px 30px 126px minmax\(0, 1fr\);/);
-  assert.match(compact, /grid-template-columns:\s*90px repeat\(3, 14px\);/);
+  assert.match(compact, /grid-template-columns:\s*minmax\(56px, 1fr\) 90px repeat\(3, 14px\);/);
   assert.match(compact, /padding-right:\s*4px;[\s\S]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*90px;[^}]*min-width:\s*90px;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;/s);
   assert.doesNotMatch(compact, /itinerary-stop__dates|itinerary-stop__nights|background:\s*var\(--atlas-accent\)/);
@@ -184,9 +184,12 @@ test('desktop itinerary geometry stays contained while detail forms remain in th
   assert.match(floating, /\.workspace-panel\s*\{[^}]*position:\s*relative;[^}]*width:\s*100%;[^}]*height:\s*100%;/s);
   assert.doesNotMatch(floating, /scale\(|zoom:/);
   assert.doesNotMatch(segmentForm, /formatSegmentDate|formatSegmentNights|CollapsibleRegion|<SegmentBody|expanded=|onToggle=/);
-  assert.doesNotMatch(originSection, /formatSegmentDate|formatSegmentNights|CollapsibleRegion|<OriginBody|useState/);
+  assert.match(originSection, /formatSegmentDate\(\s*originDetails\?\.departureDate,\s*locale\s*\)/);
+  assert.doesNotMatch(originSection, /formatSegmentNights|CollapsibleRegion|<OriginBody|useState/);
   assert.doesNotMatch(header, /itinerary-stop__dates|itinerary-stop__nights/);
   assert.doesNotMatch(origin, /itinerary-stop__dates|itinerary-stop__nights/);
+  assert.match(header, /itinerary-stop__date-range/);
+  assert.match(origin, /itinerary-stop__date-range/);
   assert.match(header, /itinerary-stop__amount[\s\S]*segment__note-btn[\s\S]*segment__toggle segment__details-btn[\s\S]*removeSegment/s);
   assert.match(origin, /itinerary-stop__amount[\s\S]*segment__note-btn[\s\S]*segment__toggle segment__details-btn[\s\S]*itinerary-origin__clear/s);
   assert.match(modal, /className="segnote segment-details-modal"/);

@@ -41,7 +41,8 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   assert.match(form, /locale=\{locale\}/);
   assert.match(css, /\.itinerary-origin__marker img,[\s\S]*\.itinerary-stop__marker img[\s\S]*width:\s*30px;[\s\S]*height:\s*20px;/);
   assert.doesNotMatch(header, /itinerary-stop__nights|segment__pill/);
-  assert.doesNotMatch(origin, /itinerary-stop__date-range|itinerary-stop__nights|segment__pill/);
+  assert.doesNotMatch(origin, /itinerary-stop__nights|segment__pill/);
+  assert.match(origin, /itinerary-stop__date-range/);
   assert.match(header, /itinerary-stop__amount/);
   assert.match(origin, /itinerary-stop__amount/);
   assert.match(compact, /--itinerary-compact-gap:\s*10px;/);
@@ -50,7 +51,7 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   assert.match(sequence, /\.itinerary-stop__sequence[\s\S]*width:\s*19px;[\s\S]*\.itinerary-stop__marker[\s\S]*width:\s*30px;/s);
   assert.match(dividers, /left:\s*53px;/);
   assert.match(compact, /grid-template-columns:\s*minmax\(56px, 1fr\) 90px repeat\(3, 14px\);/);
-  assert.match(compact, /\.itinerary-stop__metrics\s*\{[^}]*display:\s*contents;/s);
+  assert.match(compact, /\.itinerary-stop__metrics,[\s\S]*\.itinerary-origin__metrics\s*\{[^}]*display:\s*contents;/s);
   assert.match(compact, /\.itinerary-stop__date-range\s*\{[^}]*grid-column:\s*1;[^}]*width:\s*56px;[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*color:\s*#667085;[^}]*font-size:\s*10px;[^}]*font-weight:\s*500;/s);
   assert.match(compact, /padding-right:\s*4px;[\s\S]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;/s);
@@ -97,8 +98,9 @@ test('origin mirrors note expand close controls while expand still opens the sep
   const modal = await read('src/modules/trips/ItineraryDetailsModal.jsx');
 
   assert.match(origin, /itinerary-stop__metrics itinerary-origin__metrics/);
+  assert.match(origin, /itinerary-stop__date-range/);
   assert.match(origin, /itinerary-stop__amount/);
-  assert.doesNotMatch(origin, /itinerary-stop__date-range|itinerary-stop__nights/);
+  assert.doesNotMatch(origin, /itinerary-stop__nights/);
   assert.match(origin, /segment__note-btn itinerary-origin__note-btn/);
   assert.match(origin, /segment__toggle segment__details-btn itinerary-origin__details-btn/);
   assert.match(origin, /itinerary-origin__clear/);

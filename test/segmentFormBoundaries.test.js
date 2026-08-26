@@ -6,7 +6,7 @@ const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 const lineCount = (content) => content.split('\n').length;
 
-test('SegmentForm coordina filas compactas sin fecha visible y el modal posee la edición detallada', async () => {
+test('SegmentForm coordina filas compactas con resumen de fechas y el modal posee la edición detallada', async () => {
   const form = await read('src/modules/trips/SegmentForm.jsx');
   const originSection = await read('src/modules/trips/SegmentOriginSection.jsx');
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
@@ -34,13 +34,18 @@ test('SegmentForm coordina filas compactas sin fecha visible y el modal posee la
   assert.match(originSection, /onOpenDetails=\{onOpenDetails\}/);
   assert.match(originSection, /originDetails/);
   assert.match(originSection, /formatSegmentAmount\([\s\S]*locale,[\s\S]*currency/);
-  assert.doesNotMatch(originSection, /formatSegmentDate|formatSegmentNights|formattedStartDate|formattedEndDate|<OriginBody|CollapsibleRegion|useState/);
+  assert.match(originSection, /formatSegmentDate\(\s*originDetails\?\.departureDate,\s*locale\s*\)/);
+  assert.match(originSection, /formattedDepartureDate=\{formattedDepartureDate\}/);
+  assert.doesNotMatch(originSection, /formatSegmentNights|formattedStartDate|formattedEndDate|<OriginBody|CollapsibleRegion|useState/);
 
   assert.doesNotMatch(origin, /itinerary-start-flag\.svg/);
   assert.match(origin, /CityAutocomplete/);
   assert.match(origin, /value=\{city\}/);
   assert.match(origin, /segment__toggle segment__details-btn itinerary-origin__details-btn/);
   assert.doesNotMatch(origin, /itinerary-stop__dates|itinerary-stop__nights|segment__pill/);
+  assert.match(origin, /itinerary-stop__date-range/);
+  assert.match(origin, /\{formattedDepartureDate \|\| ''\}/);
+  assert.doesNotMatch(origin, /formattedEndDate|endDate/);
   assert.match(origin, /itinerary-stop__amount/);
   assert.match(header, /segment__header itinerary-stop/);
   assert.match(header, /CityAutocomplete/);
@@ -48,6 +53,7 @@ test('SegmentForm coordina filas compactas sin fecha visible y el modal posee la
   assert.match(header, /onSelect=\{onDestinationSelect\}/);
   assert.match(header, /segment__toggle segment__details-btn itinerary-stop__details-btn/);
   assert.doesNotMatch(header, /itinerary-stop__dates|itinerary-stop__nights|segment__pill|aria-controls|aria-expanded/);
+  assert.match(header, /itinerary-stop__date-range/);
   assert.match(header, /itinerary-stop__amount/);
 
   assert.match(modal, /<SegmentBody/);
