@@ -100,6 +100,21 @@ function placeCountryStyleMap(places) {
   );
 }
 
+function cityPointFeature(city, role = 'destination') {
+  return {
+    type: 'Feature',
+    properties: {
+      name: city.name || city.displayName || 'Ciudad',
+      role,
+      sequence: null,
+      color: null,
+      visits: [],
+      isFinish: false,
+    },
+    geometry: { type: 'Point', coordinates: [city.lon, city.lat] },
+  };
+}
+
 export function savedPlaceRouteFeatures(routeConnections) {
   return (routeConnections || []).flatMap((route) => {
     if (route?.visible === false) return [];
@@ -157,40 +172,47 @@ export function buildMapFeatureData({
       });
     });
 
+    const featuresByCityKey = new Map();
     const origin = routeSegments[0]?.origin;
     if (isPlaced(origin)) {
-      cityFeatures.push({
-        type: 'Feature',
-        properties: {
-          name: origin.name || origin.displayName || 'Ciudad',
-          role: 'origin',
-          sequence: null,
-          color: null,
-        },
-        geometry: { type: 'Point', coordinates: [origin.lon, origin.lat] },
-      });
+      const originFeature = cityPointFeature(origin, 'origin');
+      cityFeatures.push(originFeature);
+      featuresByCityKey.set(cityKey(origin), originFeature);
     }
 
-    let previousCityKey = isPlaced(origin) ? cityKey(origin) : '';
+    let lastPlacedDestinationIndex = -1;
+    routeSegments.forEach((segment, index) => {
+      if (isPlaced(segment?.destination)) lastPlacedDestinationIndex = index;
+    });
+
     routeSegments.forEach((segment, index) => {
       const destination = segment?.destination;
       if (!isPlaced(destination)) return;
       const destinationKey = cityKey(destination);
       const stop = stopSequence[index];
-      if (stop?.isTerminalReturn) return;
-      if (previousCityKey && destinationKey === previousCityKey) return;
+      let feature = featuresByCityKey.get(destinationKey);
 
-      cityFeatures.push({
-        type: 'Feature',
-        properties: {
-          name: destination.name || destination.displayName || 'Ciudad',
-          role: 'destination',
-          sequence: stop?.number ?? null,
-          color: stop?.color || colorForIndex(index),
-        },
-        geometry: { type: 'Point', coordinates: [destination.lon, destination.lat] },
-      });
-      previousCityKey = destinationKey;
+      if (!feature) {
+        feature = cityPointFeature(destination);
+        featuresByCityKey.set(destinationKey, feature);
+        cityFeatures.push(feature);
+      }
+
+      if (stop?.number != null) {
+        const visit = {
+          sequence: stop.number,
+          color: stop.color || colorForIndex(index),
+        };
+        feature.properties.visits.push(visit);
+        if (feature.properties.sequence == null) {
+          feature.properties.sequence = visit.sequence;
+          feature.properties.color = visit.color;
+        }
+      }
+
+      if (index === lastPlacedDestinationIndex) {
+        feature.properties.isFinish = true;
+      }
     });
   }
 
