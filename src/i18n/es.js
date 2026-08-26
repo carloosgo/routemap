@@ -83,7 +83,7 @@ export default {
   segment: 'Trayecto',
   segmentPlural: 'trayectos',
   origin: 'Origen',
-  originPlaceholder: 'Ingresa tu ciudad de origen',
+  originPlaceholder: 'Ciudad origen',
   destination: 'Destino',
   city: 'Ciudad',
   searchCity: 'Buscar ciudad…',
