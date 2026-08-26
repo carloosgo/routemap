@@ -86,11 +86,6 @@ export default function App() {
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!hasSavableRoute(trip)) {
-      showToast(t('saveRouteValidationError'), 2500);
-      return;
-    }
-
     const currentName = sanitizeText(trip.name || '', TRIP_LIMITS.tripName).trim();
     const requestedName = currentName
       || sanitizeText(tripNameDraft, TRIP_LIMITS.tripName).trim();
@@ -98,6 +93,11 @@ export default function App() {
     if (!requestedName) {
       if (tripNamePromptOpen) showToast(t('tripNameRequired'), 2500);
       setTripNamePromptOpen(true);
+      return;
+    }
+
+    if (!hasSavableRoute(trip)) {
+      showToast(t('saveRouteValidationError'), 2500);
       return;
     }
 
