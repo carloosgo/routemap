@@ -22,7 +22,7 @@ test('desktop itinerary keeps compact equal rows, visible scrollbar and aligned 
   assert.match(floating, /\.workspace-panel__content\.floating-editor\s*\{[^}]*width:\s*100%\s*!important;[^}]*height:\s*100%\s*!important;[^}]*transform:\s*none\s*!important;/s);
   assert.doesNotMatch(floating, /scale\(|zoom:/);
 
-  assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*--itinerary-compact-gap:\s*10px;[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;[^}]*scrollbar-width:\s*thin;[^}]*padding:\s*0 8px 6px 10px;/s);
+  assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*--itinerary-compact-gap:\s*10px;[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;[^}]*scrollbar-width:\s*thin;[^}]*padding:\s*0 2px 6px 10px;/s);
   assert.match(compact, /\.editor-module--itinerary \.editor__body::-webkit-scrollbar\s*\{[^}]*width:\s*7px;[^}]*display:\s*block;/s);
 
   assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
@@ -35,7 +35,7 @@ test('desktop itinerary keeps compact equal rows, visible scrollbar and aligned 
 
   assert.match(compact, /\.itinerary-stop__after-place,[\s\S]*\.itinerary-origin__after-place\s*\{[^}]*grid-template-columns:\s*minmax\(68px, 1fr\) 78px repeat\(3, 14px\);[^}]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__metrics,[\s\S]*\.itinerary-origin__metrics\s*\{[^}]*display:\s*contents;/s);
-  assert.match(compact, /padding-right:\s*4px;[\s\S]*column-gap:\s*8px;/s);
+  assert.match(compact, /padding-left:\s*6px;[\s\S]*padding-right:\s*0;[\s\S]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;[\s\S]*height:\s*22px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon::before,[\s\S]*inset:\s*-4px;/s);
   assert.match(compact, /\.itinerary-stop__date-range\s*\{[^}]*grid-column:\s*1;[^}]*width:\s*68px;[^}]*min-width:\s*68px;[^}]*max-width:\s*68px;[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*color:\s*#667085;[^}]*font-size:\s*10px;[^}]*font-weight:\s*500;[^}]*text-align:\s*center;/s);
