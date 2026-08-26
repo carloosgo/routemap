@@ -23,10 +23,13 @@ after(async () => {
   await testEnv?.cleanup();
 });
 
-test('las colecciones internas de caché no son accesibles desde el cliente', async () => {
+test('las colecciones internas de caché y catálogo no son accesibles desde el cliente', async () => {
   const alice = testEnv.authenticatedContext('alice').firestore();
   const paths = [
     'citySearchCache/cache-1',
+    'cityCatalog/city-1',
+    'cityCatalogProviderRefs/provider-1',
+    'cityCatalogQueries/query-1',
     'googlePlaceLocationCache/cache-1',
     'googleCountryPlaceIdCache/cache-1',
     'googleCountryPlaceIdCacheV3/cache-1',
