@@ -136,12 +136,14 @@ export function routeStops(segments, { dedupeCountry = false } = {}) {
   return stops;
 }
 
-export function isTripSavable(trip) {
+export function hasSavableRoute(trip) {
   return Boolean(
-    trip?.name?.trim() &&
-      (trip.segments || []).some(
-        (segment) =>
-          isPlaced(segment.origin) && isPlaced(segment.destination)
-      )
+    (trip?.segments || []).some(
+      (segment) => isPlaced(segment.origin) && isPlaced(segment.destination)
+    )
   );
+}
+
+export function isTripSavable(trip) {
+  return Boolean(trip?.name?.trim() && hasSavableRoute(trip));
 }
