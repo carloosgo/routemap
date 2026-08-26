@@ -5,7 +5,8 @@ import { useSavedTrips } from './modules/trips/useSavedTrips.js';
 import { useTripAutoPersistence } from './modules/trips/useTripAutoPersistence.js';
 import { savedTripErrorTranslationKey } from './modules/trips/savedTripOperations.js';
 import { useFirebaseAuth } from './infrastructure/firebase/useFirebaseAuth.js';
-import { isTripSavable } from './modules/trips/tripModel.js';
+import { hasSavableRoute, isTripSavable, TRIP_LIMITS } from './modules/trips/tripModel.js';
+import { sanitizeText } from './shared/utils.js';
 import { AppTopbar } from './app/AppTopbar.jsx';
 import { AppEditorModule } from './app/AppEditorModule.jsx';
 import { AppMapPane } from './app/AppMapPane.jsx';
@@ -26,7 +27,7 @@ export default function App() {
   const savedTrips = useSavedTrips(auth.user);
   const editorState = useAppEditorState(tripStore);
   const itineraryPanels = useItineraryFloatingPanels();
-  const { trip, loadTrip, setCurrency, updateSegment, updateExpenses, updateOriginDetails, updateOriginExpenses, addPlace } = tripStore;
+  const { trip, loadTrip, renameTrip, setCurrency, updateSegment, updateExpenses, updateOriginDetails, updateOriginExpenses, addPlace } = tripStore;
   const { getTrip, getActiveTripDraft, stageTrip, getTripPersistenceState, saveTrip, deleteTrip, importLocalTrips, getLocalTripCount } = savedTrips;
   const [toast, setToast] = useState('');
   const [mobileView, setMobileView] = useState('form');
@@ -35,6 +36,8 @@ export default function App() {
   const [deletePending, setDeletePending] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
   const [desktopPanelCollapsed, setDesktopPanelCollapsed] = useState(false);
+  const [tripNamePromptOpen, setTripNamePromptOpen] = useState(false);
+  const [tripNameDraft, setTripNameDraft] = useState('');
   const menuWrapRef = useRef(null);
   const editorMenuRef = useRef(null);
   const deleteInFlightRef = useRef(false);
@@ -45,6 +48,11 @@ export default function App() {
 
   const canSave = isTripSavable(trip);
   const persistence = useTripAutoPersistence({ trip, stageTrip, getTripPersistenceState, canRemoteSync: canSave });
+
+  useEffect(() => {
+    setTripNamePromptOpen(false);
+    setTripNameDraft('');
+  }, [trip.id]);
 
   useEffect(() => {
     if (auth.loading) return undefined;
@@ -72,22 +80,50 @@ export default function App() {
     setTimeout(() => setToast(''), duration);
   }, []);
 
+  const closeTripNamePrompt = useCallback(() => {
+    setTripNamePromptOpen(false);
+    setTripNameDraft('');
+  }, []);
+
   const handleSave = useCallback(async () => {
-    if (!isTripSavable(trip)) {
-      showToast(t('saveValidationError'), 2500);
+    if (!hasSavableRoute(trip)) {
+      showToast(t('saveRouteValidationError'), 2500);
       return;
     }
-    await persistence.persistLocalNow().catch(() => {});
+
+    const currentName = sanitizeText(trip.name || '', TRIP_LIMITS.tripName).trim();
+    const requestedName = currentName
+      || sanitizeText(tripNameDraft, TRIP_LIMITS.tripName).trim();
+
+    if (!requestedName) {
+      if (tripNamePromptOpen) showToast(t('tripNameRequired'), 2500);
+      setTripNamePromptOpen(true);
+      return;
+    }
+
+    const tripToSave = currentName
+      ? trip
+      : {
+          ...trip,
+          name: requestedName,
+          updatedAt: new Date().toISOString(),
+        };
+
     persistence.markSaving();
+    if (!currentName) renameTrip(requestedName);
+    await stageTrip(tripToSave, { remote: false }).catch(() => {});
+
     try {
-      await saveTrip(trip);
+      await saveTrip(tripToSave);
       persistence.markSaved();
+      setTripNamePromptOpen(false);
+      setTripNameDraft('');
       showToast(t('saved'));
     } catch (error) {
       persistence.markSaveError(error);
       showToast(t(savedTripErrorTranslationKey(error, 'savePersistenceError')), 3500);
     }
-  }, [persistence, saveTrip, showToast, trip, t]);
+  }, [persistence, renameTrip, saveTrip, showToast, stageTrip, trip, tripNameDraft, tripNamePromptOpen, t]);
 
   const handleGoogleSignIn = useCallback(async () => {
     try {
@@ -159,6 +195,11 @@ export default function App() {
       openMenu={openMenu}
       setOpenMenu={setOpenMenu}
       handleSave={handleSave}
+      tripNamePromptOpen={tripNamePromptOpen}
+      tripNameDraft={tripNameDraft}
+      setTripNameDraft={setTripNameDraft}
+      closeTripNamePrompt={closeTripNamePrompt}
+      tripNameMaxLength={TRIP_LIMITS.tripName}
       authUser={auth.user}
       authLoading={auth.loading}
       onGoogleSignIn={handleGoogleSignIn}
