@@ -20,12 +20,14 @@ test('la ciudad origen comparte la retícula de fecha, costo y acciones de los t
 
   assert.match(
     compactCss,
-    /\.editor-module\.editor-module--itinerary \.itinerary-stop__after-place,\s*\.segments:not\(\.segments--compact\) \.itinerary-origin__after-place[\s\S]*?grid-template-columns: minmax\(56px, 1fr\) 90px repeat\(3, 14px\)/
+    /\.editor-module\.editor-module--itinerary \.itinerary-stop__after-place,\s*\.segments:not\(\.segments--compact\) \.itinerary-origin__after-place[\s\S]*?grid-template-columns: minmax\(68px, 1fr\) 78px repeat\(3, 14px\)/
   );
   assert.match(
     compactCss,
     /\.editor-module\.editor-module--itinerary \.itinerary-stop__metrics,\s*\.segments:not\(\.segments--compact\) \.itinerary-origin__metrics\s*\{\s*display: contents;/
   );
+  assert.match(compactCss, /\.itinerary-stop__date-range\s*\{[^}]*width:\s*68px;[^}]*min-width:\s*68px;[^}]*max-width:\s*68px;/s);
+  assert.match(compactCss, /\.itinerary-stop__amount\s*\{[^}]*width:\s*78px;[^}]*min-width:\s*78px;[^}]*max-width:\s*78px;/s);
   assert.doesNotMatch(compactCss, /\.itinerary-origin__after-place\s*\{\s*width: max-content;/);
 });
 
