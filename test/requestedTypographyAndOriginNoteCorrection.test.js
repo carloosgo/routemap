@@ -123,12 +123,12 @@ test('desktop itinerary uses tighter insets while the primary workspace is integ
   assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*--itinerary-compact-gap:\s*10px;[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;[^}]*scrollbar-width:\s*thin;[^}]*padding:\s*0 2px 6px 10px;/s);
   assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
   assert.match(compact, /min-height:\s*40px;[^}]*height:\s*40px;/s);
-  assert.match(compact, /grid-template-columns:\s*minmax\(68px, 1fr\) 78px repeat\(3, 14px\);/);
-  assert.match(compact, /padding-left:\s*6px;[\s\S]*padding-right:\s*0;/s);
+  assert.match(compact, /grid-template-columns:\s*minmax\(60px, 1fr\) 78px repeat\(3, 14px\);/);
+  assert.match(compact, /padding-left:\s*14px;[\s\S]*padding-right:\s*0;/s);
   assert.match(compact, /column-gap:\s*8px;/);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;/s);
   assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*78px;[^}]*min-width:\s*78px;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;/s);
-  assert.match(compact, /\.itinerary-stop__date-range\s*\{[^}]*width:\s*68px;[^}]*min-width:\s*68px;[^}]*max-width:\s*68px;/s);
+  assert.match(compact, /\.itinerary-stop__date-range\s*\{[^}]*width:\s*60px;[^}]*min-width:\s*60px;[^}]*max-width:\s*60px;/s);
   assert.doesNotMatch(compact, /justify-content:\s*space-between|itinerary-stop__dates|itinerary-stop__nights|56px\s*!important|background:\s*var\(--atlas-accent\)/);
   assert.doesNotMatch(floatingEditor, /Densidad compacta nativa|reproduce la sensación del navegador al 90%/);
 });
