@@ -51,30 +51,62 @@ function savedMarkerContent(place, t, color) {
   return button;
 }
 
+function itineraryFlag(kind) {
+  const flag = document.createElement('span');
+  flag.className = `google-itinerary-city-marker__flag google-itinerary-city-marker__flag--${kind}`;
+  flag.setAttribute('aria-hidden', 'true');
+  return flag;
+}
+
 function updateItineraryCityContent(marker, city, color, t, {
   origin = false,
-  number = null,
+  visits = [],
+  finish = false,
 } = {}) {
-  marker.className = 'google-itinerary-city-marker' + (origin ? ' is-origin' : '');
+  marker.className = 'google-itinerary-city-marker'
+    + (origin ? ' is-origin' : '')
+    + (finish ? ' is-finish' : '')
+    + (visits.length > 1 ? ' has-repeated-visits' : '');
   if (color) marker.style.setProperty('--itinerary-city-color', color);
   else marker.style.removeProperty('--itinerary-city-color');
   marker.setAttribute('role', 'img');
   const cityName = city.name || city.displayName || t('city');
-  let dot = marker.querySelector?.('.google-itinerary-city-marker__dot') || null;
+  const normalizedVisits = visits
+    .map((visit) => ({
+      sequence: Number(visit?.sequence) || null,
+      color: visit?.color || color || null,
+    }))
+    .filter((visit) => visit.sequence != null);
+  const numbers = normalizedVisits.map((visit) => visit.sequence);
 
-  if (origin) {
+  if (origin && numbers.length) {
+    marker.setAttribute(
+      'aria-label',
+      `${t('origin')}: ${cityName} · ${numbers.join(', ')}. ${cityName}`
+    );
+  } else if (origin) {
     marker.setAttribute('aria-label', `${t('origin')}: ${cityName}`);
-    dot?.remove();
-    return;
+  } else if (numbers.length) {
+    marker.setAttribute('aria-label', `${numbers.join(', ')}. ${cityName}`);
+  } else {
+    marker.setAttribute('aria-label', cityName);
   }
 
-  marker.setAttribute('aria-label', `${number}. ${cityName}`);
-  if (!dot) {
-    dot = document.createElement('span');
+  marker.replaceChildren();
+  if (origin) marker.append(itineraryFlag('origin'));
+
+  normalizedVisits.forEach((visit) => {
+    const dot = document.createElement('span');
     dot.className = 'google-itinerary-city-marker__dot';
+    dot.style.setProperty(
+      '--itinerary-visit-color',
+      visit.color || color || '#111111'
+    );
+    dot.textContent = String(visit.sequence);
     marker.append(dot);
-  }
-  dot.textContent = String(number);
+  });
+
+  if (finish) marker.append(itineraryFlag('finish'));
 }
 
 function itineraryCityContent(city, color, t, options = {}) {
@@ -526,13 +558,36 @@ export function GooglePlacesMap({
       const markerKey = itineraryFeatureKey(feature);
       if (!markerKey) return;
       const isOrigin = feature.properties?.role === 'origin';
-      const markerNumber = isOrigin ? null : Number(feature.properties?.sequence) || null;
-      if (!isOrigin && markerNumber == null) return;
+      const isFinish = Boolean(feature.properties?.isFinish);
+      const markerVisits = (Array.isArray(feature.properties?.visits)
+        ? feature.properties.visits
+        : [])
+        .map((visit) => ({
+          sequence: Number(visit?.sequence) || null,
+          color: visit?.color || null,
+        }))
+        .filter((visit) => visit.sequence != null);
+      if (!isOrigin && !isFinish && markerVisits.length === 0) return;
       const cityName = feature.properties?.name || t('city');
-      const markerColor = feature.properties?.color || colorForIndex(0);
+      const markerColor = markerVisits[0]?.color
+        || feature.properties?.color
+        || colorForIndex(0);
       const markerPosition = { lat: Number(lat), lng: Number(lng) };
-      const markerTitle = isOrigin ? cityName : `${markerNumber}. ${cityName}`;
-      const markerZIndex = isOrigin ? 350 : 300 + markerNumber;
+      const markerNumbers = markerVisits.map((visit) => visit.sequence);
+      const markerTitle = markerNumbers.length
+        ? `${markerNumbers.join(', ')} · ${cityName}`
+        : cityName;
+      const maxMarkerNumber = markerNumbers.length ? Math.max(...markerNumbers) : 0;
+      const markerZIndex = isFinish
+        ? 380
+        : isOrigin
+          ? 350
+          : 300 + maxMarkerNumber;
+      const markerOptions = {
+        origin: isOrigin,
+        visits: markerVisits,
+        finish: isFinish,
+      };
       const existing = itineraryMarkersByKeyRef.current.get(markerKey);
 
       if (existing) {
@@ -541,7 +596,7 @@ export function GooglePlacesMap({
           { name: cityName },
           markerColor,
           t,
-          { origin: isOrigin, number: markerNumber }
+          markerOptions
         );
         existing.marker.position = markerPosition;
         existing.marker.title = markerTitle;
@@ -552,7 +607,7 @@ export function GooglePlacesMap({
           { name: cityName },
           markerColor,
           t,
-          { origin: isOrigin, number: markerNumber }
+          markerOptions
         );
         const marker = new AdvancedMarkerElement({
           map,
