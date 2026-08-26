@@ -7,10 +7,11 @@ const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
 test('itinerary dates and final header labels use #0d6078 while date placeholders stay muted', async () => {
-  const [itinerary, header, headerTypography, calendar] = await Promise.all([
+  const [itinerary, header, headerTypography, headerFinal, calendar] = await Promise.all([
     read('src/modules/trips/ItineraryCompactTen.css'),
     read('src/app/TripSummaryHeader.css'),
     read('src/app/TripSummaryHeaderTypography.css'),
+    read('src/app/HeaderRequestedPolish.css'),
     read('src/components/CalendarDateInput.css'),
   ]);
 
@@ -29,6 +30,10 @@ test('itinerary dates and final header labels use #0d6078 while date placeholder
   assert.match(
     headerTypography,
     /\.trip-summary__metric-label\s*\{[^}]*color:\s*#0d6078;/s
+  );
+  assert.match(
+    headerFinal,
+    /\.trip-summary \.trip-summary__metric-label\s*\{[^}]*color:\s*#0d6078;/s
   );
   assert.match(
     calendar,
