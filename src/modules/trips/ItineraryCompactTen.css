@@ -119,45 +119,28 @@
     font-weight: 600;
   }
 
-  /* El área posterior ocupa el track flexible completo. En cada trayecto la
-     fecha vive en el espacio central disponible; costo y acciones conservan
-     sus medidas y alineación a la derecha. */
+  /* Después de la ciudad, origen y trayectos usan exactamente la misma retícula:
+     fecha, costo, nota, detalle y eliminar. En el origen la segunda línea de
+     fecha queda vacía porque no existe fecha fin. */
   .editor-module.editor-module--itinerary .itinerary-stop__after-place,
   .segments:not(.segments--compact) .itinerary-origin__after-place {
     box-sizing: border-box;
+    width: 100%;
     max-width: 100%;
     min-width: 0;
     padding-left: 0;
     padding-right: 4px;
     display: grid;
+    grid-template-columns: minmax(56px, 1fr) 90px repeat(3, 14px);
     align-items: center;
     justify-content: end;
-    justify-self: end;
+    justify-self: stretch;
     column-gap: 8px;
   }
 
-  .editor-module.editor-module--itinerary .itinerary-stop__after-place {
-    width: 100%;
-    justify-self: stretch;
-    grid-template-columns: minmax(56px, 1fr) 90px repeat(3, 14px);
-  }
-
-  .segments:not(.segments--compact) .itinerary-origin__after-place {
-    width: max-content;
-    grid-template-columns: 90px repeat(3, 14px);
-  }
-
-  .editor-module.editor-module--itinerary .itinerary-stop__metrics {
-    display: contents;
-  }
-
+  .editor-module.editor-module--itinerary .itinerary-stop__metrics,
   .segments:not(.segments--compact) .itinerary-origin__metrics {
-    box-sizing: border-box;
-    width: 90px;
-    min-width: 90px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
+    display: contents;
   }
 
   .editor-module--itinerary .itinerary-stop__date-range {
@@ -213,7 +196,8 @@
     text-overflow: clip;
   }
 
-  .editor-module.editor-module--itinerary .itinerary-segment .itinerary-stop__amount {
+  .editor-module.editor-module--itinerary .itinerary-segment .itinerary-stop__amount,
+  .segments:not(.segments--compact) .itinerary-origin .itinerary-stop__amount {
     grid-column: 2;
     grid-row: 1;
     justify-self: end;
