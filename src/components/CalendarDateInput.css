@@ -43,7 +43,7 @@
 }
 
 .calendar-date__placeholder {
-  color: var(--text-mute);
+  color: #0d6078;
 }
 
 .calendar-date__clear {
