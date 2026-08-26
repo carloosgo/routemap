@@ -131,7 +131,7 @@ test('reordering the same geographic stops does not change the itinerary viewpor
   assert.equal(itineraryViewportKey(original), itineraryViewportKey(reordered));
 });
 
-test('UI consumes canonical numbering while preserving gray labels and colored map circles', async () => {
+test('UI consumes canonical numbering while preserving teal header labels and colored map circles', async () => {
   const editor = await read('src/app/AppEditorPane.jsx');
   const mapPane = await read('src/app/AppMapPane.jsx');
   const segmentHeader = await read('src/modules/trips/SegmentHeader.jsx');
@@ -152,7 +152,7 @@ test('UI consumes canonical numbering while preserving gray labels and colored m
   assert.match(segmentHeader, /className="itinerary-stop__country-run-dot"/);
   assert.match(compact, /--itinerary-compact-gap:\s*10px;/);
   assert.match(compact, /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*126px[\s\S]*minmax\(0, 1fr\);/s);
-  assert.match(headerType, /\.trip-summary__metric-label\s*\{[^}]*color:\s*var\(--text-mute\);/s);
+  assert.match(headerType, /\.trip-summary__metric-label\s*\{[^}]*color:\s*#0d6078;/s);
   assert.match(headerType, /\.trip-summary__metric-value,[\s\S]*color:\s*#000000;/);
   assert.match(googleMap, /const isOrigin = feature\.properties\?\.role === 'origin';/);
   assert.match(googleMap, /routeCities\.map\(cityKey\)\.sort\(\)\.join\('\|'\)/);
