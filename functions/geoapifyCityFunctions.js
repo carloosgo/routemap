@@ -1,5 +1,9 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { error as logError } from 'firebase-functions/logger';
+import {
+  error as logError,
+  info as logInfo,
+  warn as logWarn,
+} from 'firebase-functions/logger';
 import { callableOptions, enforceQuota } from './callablePolicy.js';
 import {
   GEOAPIFY_CITY_API_KEY,
@@ -16,6 +20,10 @@ import {
   buildGeoapifyCitySearchUrl,
   normalizeGeoapifyCityResults,
 } from './geoapifyCityUtils.js';
+import {
+  persistCityCatalogQuery,
+  readCityCatalogQuery,
+} from './cityCatalog.js';
 
 const MIN_QUERY_CHARS = 3;
 const MAX_RESULTS = 5;
@@ -31,21 +39,58 @@ function requestedLanguage(value) {
   return ALLOWED_LANGUAGES.has(language) ? language : 'es';
 }
 
-async function loadCities(query, limit, language) {
+function attributionByPlaceId(items) {
+  const result = {};
+  for (const item of Array.isArray(items) ? items : []) {
+    const placeId = String(item?.place_id || '').trim();
+    const datasource = item?.datasource;
+    if (!placeId || !datasource || typeof datasource !== 'object') continue;
+    result[placeId] = {
+      dataSource: String(datasource.name || '').trim(),
+      attribution: String(datasource.attribution || '').trim(),
+      license: String(datasource.license || '').trim(),
+      url: String(datasource.url || '').trim(),
+    };
+  }
+  return result;
+}
+
+async function loadProviderCities(query, language) {
   const apiKey = requireGeoapifyKey(
     GEOAPIFY_CITY_API_KEY,
     'GEOAPIFY_CITY_API_KEY'
   );
   const payload = await limitedFetch(
-    buildGeoapifyCitySearchUrl({ query, limit, language, apiKey })
+    buildGeoapifyCitySearchUrl({
+      query,
+      limit: MAX_RESULTS,
+      language,
+      apiKey,
+    })
   );
 
-  return normalizeGeoapifyCityResults(payload.results, {
-    language,
-    limit,
-    query,
-    includeRegionMetadata: true,
-  });
+  return {
+    results: normalizeGeoapifyCityResults(payload.results, {
+      language,
+      limit: MAX_RESULTS,
+      query,
+      includeRegionMetadata: true,
+    }),
+    attributionByProviderId: attributionByPlaceId(payload.results),
+  };
+}
+
+function providerData(value) {
+  if (value && typeof value === 'object' && Array.isArray(value.results)) {
+    return {
+      results: value.results,
+      attributionByProviderId:
+        value.attributionByProviderId && typeof value.attributionByProviderId === 'object'
+          ? value.attributionByProviderId
+          : {},
+    };
+  }
+  return { results: [], attributionByProviderId: {} };
 }
 
 export const geoapifyCityAutocomplete = onCall(
@@ -65,16 +110,92 @@ export const geoapifyCityAutocomplete = onCall(
 
       const limit = requestedLimit(request.data?.limit);
       const language = requestedLanguage(request.data?.language);
-      // v7 invalida nombres visibles cacheados por v6 antes de priorizar la
-      // localización del idioma activo. Se conserva el mismo TTL y límite.
-      const key = `city:v7:${queryKey}:lang=${language}:limit=${limit}`;
-      const cachedResult = await cached(
-        'citySearchCache',
-        key,
-        () => loadCities(query, limit, language)
-      );
+      let catalogLookup = { status: 'miss', results: [] };
 
-      return { results: cachedResult.result, cacheHit: cachedResult.cacheHit };
+      try {
+        catalogLookup = await readCityCatalogQuery(db, {
+          queryKey,
+          language,
+          limit,
+        });
+        if (catalogLookup.status === 'fresh') {
+          logInfo('city_catalog_metric', {
+            source: 'catalog',
+            state: 'fresh',
+            language,
+            resultCount: catalogLookup.results.length,
+          });
+          return {
+            results: catalogLookup.results,
+            cacheHit: true,
+            source: 'catalog',
+          };
+        }
+      } catch (catalogError) {
+        logWarn('City catalog read failed; provider fallback remains available.', {
+          errorName: catalogError?.name || 'Error',
+          errorMessage: String(catalogError?.message || catalogError || '').slice(0, 200),
+        });
+      }
+
+      try {
+        // v8 invalida el payload v7 porque el cache de proveedor ahora conserva
+        // también la atribución necesaria para materializar el catálogo Atlas.
+        const key = `city:v8:${queryKey}:lang=${language}:limit=${MAX_RESULTS}`;
+        const cachedProvider = await cached(
+          'citySearchCache',
+          key,
+          () => loadProviderCities(query, language)
+        );
+        const loaded = providerData(cachedProvider.result);
+
+        let atlasResults = [];
+        try {
+          atlasResults = await persistCityCatalogQuery(db, {
+            queryKey,
+            language,
+            provider: 'geoapify',
+            providerResults: loaded.results,
+            attributionByProviderId: loaded.attributionByProviderId,
+          });
+        } catch (catalogWriteError) {
+          logWarn('City catalog persistence failed; provider results remain usable.', {
+            errorName: catalogWriteError?.name || 'Error',
+            errorMessage: String(
+              catalogWriteError?.message || catalogWriteError || ''
+            ).slice(0, 200),
+          });
+        }
+
+        const results = (atlasResults.length > 0 ? atlasResults : loaded.results)
+          .slice(0, limit);
+        logInfo('city_catalog_metric', {
+          source: atlasResults.length > 0 ? 'catalog-refresh' : 'provider',
+          state: catalogLookup.status,
+          language,
+          resultCount: results.length,
+          providerCacheHit: cachedProvider.cacheHit,
+        });
+
+        return {
+          results,
+          cacheHit: cachedProvider.cacheHit,
+          source: atlasResults.length > 0 ? 'catalog-refresh' : 'provider',
+        };
+      } catch (providerError) {
+        if (catalogLookup.status === 'stale' && catalogLookup.results.length > 0) {
+          logWarn('City provider failed; serving stale canonical catalog projection.', {
+            language,
+            resultCount: catalogLookup.results.length,
+          });
+          return {
+            results: catalogLookup.results,
+            cacheHit: true,
+            source: 'catalog-stale',
+          };
+        }
+        throw providerError;
+      }
     } catch (error) {
       logError('City search request failed.', {
         errorName: error?.name || 'Error',
