@@ -11,6 +11,7 @@ import {
 const probePath = new URL('../src/infrastructure/firebase/runV4PhaseKMultiDeviceConflictProbe.js', import.meta.url);
 const selectorPath = new URL('../src/modules/trips/tripRepositorySelector.js', import.meta.url);
 const appPath = new URL('../src/App.jsx', import.meta.url);
+const readSource = async (path) => (await readFile(path, 'utf8')).replace(/\r\n?/g, '\n');
 
 test('multi-device probe genera tripId unicamente en namespace sintetico', () => {
   const id = createPhaseKMultiDeviceTripId(
@@ -91,9 +92,9 @@ test('probe falla cerrado en inputs de intent invalidos', () => {
 
 test('probe queda manual, aislado por role y limitado a una mutacion por flush', async () => {
   const [source, selectorSource, appSource] = await Promise.all([
-    readFile(probePath, 'utf8'),
-    readFile(selectorPath, 'utf8'),
-    readFile(appPath, 'utf8'),
+    readSource(probePath),
+    readSource(selectorPath),
+    readSource(appPath),
   ]);
 
   assert.ok(source.includes("const PROJECT = 'atlasmap-dev'"));
@@ -110,7 +111,7 @@ test('probe queda manual, aislado por role y limitado a una mutacion por flush',
 });
 
 test('flujo preparado exige winner A version 2 y loser B conflicto explicito sin mutacion pendiente', async () => {
-  const source = await readFile(probePath, 'utf8');
+  const source = await readSource(probePath);
 
   assert.ok(source.includes("version: 2,\n      name: ROLE_CONFIG.A.desiredName"));
   assert.ok(source.includes('summary.conflicts !== 1'));
