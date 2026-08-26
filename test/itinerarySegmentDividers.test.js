@@ -31,7 +31,7 @@ test('same-country runs use one itinerary-level rail behind centered masked node
   );
   assert.match(
     dividers,
-    /\.itinerary-stop__country-run-dot\s*\{[^}]*z-index:\s*1;[^}]*width:\s*var\(--country-run-dot-size\);[^}]*height:\s*var\(--country-run-dot-size\);[^}]*aspect-ratio:\s*1 \/ 1;[^}]*border-radius:\s*50%;[^}]*background:\s*var\(--country-run-track-color\);[^}]*box-shadow:\s*0 0 0 var\(--country-run-mask-gap\) var\(--country-run-surface\);/s
+    /\.itinerary-stop__country-run-dot\s*\{[^}]*z-index:\s*1;[^}]*width:\s*var\(--country-run-dot-size\);[^}]*height:\s*var\(--country-run-dot-size\);[^}]*aspect-ratio:\s*1 \/ 1;[^}]*border-radius:\s*50%;[^}]*background:\s*var\(--country-run-track-color\);[^}]*box-shadow:\s*0 0 0 var\(--country-run-mask-gap\) var\(--country-run-surface\);[^}]*transform:\s*translateX\(-0\.5px\);/s
   );
   assert.match(
     dividers,
