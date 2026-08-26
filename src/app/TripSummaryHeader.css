@@ -172,7 +172,7 @@ button.trip-summary__metric[aria-expanded='true'] {
 .trip-summary__metric-label {
   order: 2;
   overflow: hidden;
-  color: var(--text-mute);
+  color: #0d6078;
   font-size: 9px;
   font-weight: 500;
   line-height: 1.05;
