@@ -65,6 +65,7 @@ export function CalendarDateInput({
   value,
   min,
   max,
+  referenceDate,
   locale = 'es-MX',
   onChange,
   ariaLabel,
@@ -76,10 +77,10 @@ export function CalendarDateInput({
   const selectedDate = useMemo(() => parseIsoDate(value), [value]);
   const minDate = useMemo(() => parseIsoDate(min), [min]);
   const maxDate = useMemo(() => parseIsoDate(max), [max]);
+  const referenceMonthDate = useMemo(() => parseIsoDate(referenceDate), [referenceDate]);
+  const calendarAnchor = selectedDate || minDate || referenceMonthDate || maxDate || new Date();
   const [open, setOpen] = useState(false);
-  const [viewMonth, setViewMonth] = useState(() =>
-    startOfMonth(selectedDate || minDate || maxDate || new Date())
-  );
+  const [viewMonth, setViewMonth] = useState(() => startOfMonth(calendarAnchor));
   const isEnglish = locale.toLowerCase().startsWith('en');
   const weekStartsOnMonday = !isEnglish;
 
@@ -104,8 +105,8 @@ export function CalendarDateInput({
 
   useEffect(() => {
     if (!open) return;
-    setViewMonth(startOfMonth(selectedDate || minDate || maxDate || new Date()));
-  }, [open, selectedDate, minDate, maxDate]);
+    setViewMonth(startOfMonth(calendarAnchor));
+  }, [open, selectedDate, minDate, maxDate, referenceMonthDate]);
 
   const monthLabel = capitalize(
     new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(viewMonth)
