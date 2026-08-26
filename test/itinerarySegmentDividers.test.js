@@ -14,7 +14,7 @@ test('same-country runs use one itinerary-level rail behind centered masked node
 
   assert.match(
     dividers,
-    /\.segments:not\(\.segments--compact\)\s*\{[^}]*--country-run-track-w:\s*30px;[^}]*--country-run-dot-size:\s*10px;[^}]*--country-run-track-color:\s*#667085;[^}]*--country-run-dash-length:\s*3px;[^}]*--country-run-dash-period:\s*7px;[^}]*--country-run-mask-gap:\s*4px;[^}]*--country-run-surface:\s*var\(--bg, #fafbfc\);/s
+    /\.segments:not\(\.segments--compact\)\s*\{[^}]*--country-run-track-w:\s*30px;[^}]*--country-run-dot-size:\s*8px;[^}]*--country-run-track-color:\s*#667085;[^}]*--country-run-dash-length:\s*3px;[^}]*--country-run-dash-period:\s*7px;[^}]*--country-run-mask-gap:\s*4px;[^}]*--country-run-surface:\s*var\(--bg, #fafbfc\);/s
   );
   assert.match(dividers, /\.segments:not\(\.segments--compact\)::before\s*\{[^}]*content:\s*none;/s);
   assert.match(
