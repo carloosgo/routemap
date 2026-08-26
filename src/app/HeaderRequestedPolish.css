@@ -41,6 +41,13 @@ button.trip-summary__metric:focus-visible,
   background: transparent;
 }
 
+/* Las leyendas secundarias visibles bajo cada valor del header usan el teal
+   solicitado. Esta regla vive en la capa final del header para que no pueda
+   quedar anulada por estilos base o tipográficos anteriores. */
+.trip-summary .trip-summary__metric-label {
+  color: #0d6078;
+}
+
 /* El rango de fechas ocupa la primera métrica, inmediatamente después de
    Notas. Conserva espacio suficiente para dos fechas completas sin comprimir
    Total, Destinos, Noches, Moneda o Idioma. */
