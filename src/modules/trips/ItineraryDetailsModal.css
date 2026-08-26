@@ -104,6 +104,47 @@
   right: 5px;
 }
 
+/* El calendario del modal conserva las 6 semanas canónicas pero reduce sólo
+   su densidad vertical para que el mes completo quede visible sin desplazar
+   el contenido del modal. El CalendarDateInput global mantiene su tamaño. */
+.segment-details-modal .calendar-date__popover {
+  top: calc(100% + 4px);
+  width: 252px;
+  padding: 9px;
+}
+
+.segment-details-modal .calendar-date__header {
+  grid-template-columns: 26px 1fr 26px;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.segment-details-modal .calendar-date__month-button {
+  width: 26px;
+  height: 26px;
+}
+
+.segment-details-modal .calendar-date__weekdays {
+  margin-bottom: 2px;
+}
+
+.segment-details-modal .calendar-date__weekdays span {
+  height: 18px;
+}
+
+.segment-details-modal .calendar-date__weekdays,
+.segment-details-modal .calendar-date__days {
+  gap: 2px;
+}
+
+.segment-details-modal .calendar-date__day {
+  justify-self: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  font-size: 10px;
+}
+
 /* Cada concepto fijo se centra como bloque completo respecto a su mitad y,
    por tanto, respecto al campo de fecha correspondiente. */
 .segment-details-modal .expenses--journey .moneycard {
