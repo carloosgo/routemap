@@ -84,6 +84,11 @@ export function ItineraryDetailsModal({
   const segment = trip.segments.find((item) => item.id === target);
   if (!segment) return null;
   const index = trip.segments.findIndex((item) => item.id === target);
+  const previousSegment = index > 0 ? trip.segments[index - 1] : null;
+  const calendarReferenceDate = previousSegment?.endDate
+    || previousSegment?.startDate
+    || trip.originDetails?.departureDate
+    || '';
   const originName = segment.origin?.name || t('origin');
   const destinationName = segment.destination?.name || t('destination');
 
@@ -128,6 +133,7 @@ export function ItineraryDetailsModal({
           locale={locale}
           bodyId={`segment-details-modal-${segment.id}`}
           dateError={dateError}
+          calendarReferenceDate={calendarReferenceDate}
           onUpdate={handleSegmentUpdate}
           onUpdateExpenses={(expenses) => updateExpenses(segment.id, expenses)}
         />
