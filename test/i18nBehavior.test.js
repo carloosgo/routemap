@@ -56,7 +56,7 @@ test('fechas y monedas respetan es-MX y en-US', () => {
   assert.notEqual(esMoney, enMoney);
 });
 
-test('la búsqueda de ciudades usa el idioma activo y separa ambos niveles de caché', async () => {
+test('la búsqueda de ciudades usa el idioma activo y separa catálogo, provider cache y browser cache', async () => {
   const hook = await read('src/modules/geocoding/useCitySearch.js');
   const client = await read('src/modules/geocoding/citySearchClient.js');
   const cache = await read('src/modules/geocoding/citySearchCache.js');
@@ -72,12 +72,15 @@ test('la búsqueda de ciudades usa el idioma activo y separa ambos niveles de ca
   assert.match(client, /const safeLanguage = normalizeLanguage\(language\)/);
   assert.match(client, /const cacheKey = `\$\{queryKey\}\|\$\{safeLanguage\}\|\$\{safeLimit\}`/);
   assert.match(client, /language: safeLanguage/);
-  assert.match(cache, /atlas:geoapify-city-cache:v7/);
+  assert.match(client, /CANONICAL_CACHE_SOURCES/);
+  assert.match(client, /CANONICAL_CACHE_SOURCES\.has\(responseSource\)/);
+  assert.match(cache, /atlas:geoapify-city-cache:v8/);
 
   assert.match(backend, /const MAX_RESULTS = 5/);
   assert.doesNotMatch(backend, /MAX_PROVIDER_RESULTS|providerLimit/);
   assert.match(backend, /const language = requestedLanguage\(request\.data\?\.language\)/);
-  assert.match(backend, /const key = `city:v7:\$\{queryKey\}:lang=\$\{language\}:limit=\$\{limit\}`/);
+  assert.match(backend, /readCityCatalogQuery/);
+  assert.match(backend, /const key = `city:v8:\$\{queryKey\}:lang=\$\{language\}:limit=\$\{MAX_RESULTS\}`/);
   assert.match(cityUtils, /limit: String\(safeLimit\)/);
   assert.match(cityUtils, /lang: safeLanguage/);
   assert.match(cityUtils, /bias: 'countrycode:none'/);
