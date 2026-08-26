@@ -8,6 +8,7 @@ export function SegmentBody({
   locale,
   bodyId,
   dateError = '',
+  calendarReferenceDate = '',
   onUpdate,
   onUpdateExpenses,
 }) {
@@ -20,6 +21,7 @@ export function SegmentBody({
           <CalendarDateInput
             value={segment.startDate}
             max={segment.endDate || undefined}
+            referenceDate={calendarReferenceDate || undefined}
             locale={locale}
             ariaLabel={t('startDate')}
             onChange={(startDate) => onUpdate({ startDate })}
@@ -27,6 +29,7 @@ export function SegmentBody({
           <CalendarDateInput
             value={segment.endDate}
             min={segment.startDate || undefined}
+            referenceDate={calendarReferenceDate || undefined}
             locale={locale}
             ariaLabel={t('endDate')}
             align="end"
