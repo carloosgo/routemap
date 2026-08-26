@@ -24,6 +24,7 @@ export {
 
 export {
   appendSegment,
+  hasSavableRoute,
   isTripSavable,
   nextSegmentDefaults,
   reorderPlaces,
