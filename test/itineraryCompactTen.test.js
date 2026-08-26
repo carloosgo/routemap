@@ -33,12 +33,12 @@ test('desktop itinerary keeps compact equal rows, visible scrollbar and aligned 
   assert.match(compact, /max-width:\s*126px;/);
   assert.match(compact, /autocomplete__selected-value[\s\S]*transform:\s*none;[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*600;[\s\S]*white-space:\s*nowrap;/s);
 
-  assert.match(compact, /\.itinerary-stop__after-place,[\s\S]*\.itinerary-origin__after-place\s*\{[^}]*grid-template-columns:\s*minmax\(68px, 1fr\) 78px repeat\(3, 14px\);[^}]*column-gap:\s*8px;/s);
+  assert.match(compact, /\.itinerary-stop__after-place,[\s\S]*\.itinerary-origin__after-place\s*\{[^}]*grid-template-columns:\s*minmax\(60px, 1fr\) 78px repeat\(3, 14px\);[^}]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__metrics,[\s\S]*\.itinerary-origin__metrics\s*\{[^}]*display:\s*contents;/s);
-  assert.match(compact, /padding-left:\s*6px;[\s\S]*padding-right:\s*0;[\s\S]*column-gap:\s*8px;/s);
+  assert.match(compact, /padding-left:\s*14px;[\s\S]*padding-right:\s*0;[\s\S]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;[\s\S]*height:\s*22px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon::before,[\s\S]*inset:\s*-4px;/s);
-  assert.match(compact, /\.itinerary-stop__date-range\s*\{[^}]*grid-column:\s*1;[^}]*width:\s*68px;[^}]*min-width:\s*68px;[^}]*max-width:\s*68px;[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*color:\s*#667085;[^}]*font-size:\s*10px;[^}]*font-weight:\s*500;[^}]*text-align:\s*center;/s);
+  assert.match(compact, /\.itinerary-stop__date-range\s*\{[^}]*grid-column:\s*1;[^}]*width:\s*60px;[^}]*min-width:\s*60px;[^}]*max-width:\s*60px;[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*color:\s*#667085;[^}]*font-size:\s*10px;[^}]*font-weight:\s*500;[^}]*text-align:\s*center;/s);
   assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*78px;[^}]*min-width:\s*78px;[^}]*max-width:\s*78px;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;[^}]*text-align:\s*right;[^}]*overflow:\s*visible;/s);
   assert.match(compact, /\.itinerary-segment \.itinerary-stop__amount,[\s\S]*\.itinerary-origin \.itinerary-stop__amount\s*\{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;/s);
   assert.doesNotMatch(compact, /\.itinerary-stop__dates|\.itinerary-stop__nights|segment__pill|background:\s*var\(--atlas-accent\)/);
