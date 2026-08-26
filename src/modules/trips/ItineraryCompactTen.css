@@ -120,21 +120,20 @@
   }
 
   /* Después de la ciudad, origen y trayectos usan exactamente la misma retícula:
-     fecha, costo, nota, detalle y eliminar. El margen derecho del body se reduce
-     sin tocar el gutter estable del scrollbar; esos píxeles recuperados desplazan
-     el bloque de métricas/acciones a la derecha. Un inset interno de 6px después
-     de la ciudad hace que la fecha avance más que el simple crecimiento del track,
-     mientras se conserva el ancho seguro de 78px para importes largos. */
+     fecha, costo, nota, detalle y eliminar. La fecha usa un span visual de 60px
+     y un inset izquierdo de 14px. Esa combinación conserva la misma huella mínima
+     anterior (14 + 60 = 6 + 68), pero desplaza el centro visual de la fecha 4px
+     a la derecha sin mover cantidad, acciones ni el gutter estable del scrollbar. */
   .editor-module.editor-module--itinerary .itinerary-stop__after-place,
   .segments:not(.segments--compact) .itinerary-origin__after-place {
     box-sizing: border-box;
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    padding-left: 6px;
+    padding-left: 14px;
     padding-right: 0;
     display: grid;
-    grid-template-columns: minmax(68px, 1fr) 78px repeat(3, 14px);
+    grid-template-columns: minmax(60px, 1fr) 78px repeat(3, 14px);
     align-items: center;
     justify-content: end;
     justify-self: stretch;
@@ -151,9 +150,9 @@
     grid-row: 1;
     justify-self: center;
     box-sizing: border-box;
-    width: 68px;
-    min-width: 68px;
-    max-width: 68px;
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
     display: flex;
     flex-direction: column;
     align-items: center;
