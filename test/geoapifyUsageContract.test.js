@@ -35,17 +35,23 @@ test('ciudades Geoapify y búsqueda Google conservan políticas independientes',
   assert.ok(config.googleMaps.locationCacheTtlMs < 30 * DAY_MS);
 });
 
-test('el backend de ciudades fuerza Geocoding Search type city, neutralidad mundial, localización, mínimo tres y límite cinco', async () => {
+test('el backend de ciudades consulta catálogo Atlas antes de Geocoding Search y mantiene límites mundiales', async () => {
   const cityFunctions = await read('functions/geoapifyCityFunctions.js');
   const cityUtils = await read('functions/geoapifyCityUtils.js');
+  const catalog = await read('functions/cityCatalog.js');
   const runtime = await read('functions/geoapifyRuntime.js');
 
   assert.match(cityFunctions, /MIN_QUERY_CHARS = 3/);
   assert.match(cityFunctions, /MAX_RESULTS = 5/);
+  assert.match(cityFunctions, /readCityCatalogQuery/);
+  assert.match(cityFunctions, /persistCityCatalogQuery/);
   assert.match(cityFunctions, /buildGeoapifyCitySearchUrl/);
   assert.match(cityFunctions, /'citySearchCache'/);
-  assert.match(cityFunctions, /city:v7:/);
+  assert.match(cityFunctions, /city:v8:/);
   assert.match(cityFunctions, /QUOTAS\.cityAutocomplete/);
+  assert.match(catalog, /cityCatalog/);
+  assert.match(catalog, /cityCatalogProviderRefs/);
+  assert.match(catalog, /cityCatalogQueries/);
   assert.match(cityUtils, /\/v1\/geocode\/search/);
   assert.match(cityUtils, /type: 'city'/);
   assert.match(cityUtils, /limit: String\(safeLimit\)/);
