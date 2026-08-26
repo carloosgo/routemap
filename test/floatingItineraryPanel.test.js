@@ -35,7 +35,7 @@ test('desktop primary panels keep one integrated left column with depth only tow
   assert.match(compact, /min-height:\s*40px;[\s\S]*height:\s*40px;/s);
   assert.match(compact, /--itinerary-compact-gap:\s*10px;/);
   assert.match(compact, /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*126px[\s\S]*minmax\(0, 1fr\);/s);
-  assert.match(compact, /grid-template-columns:\s*90px repeat\(3, 14px\);/);
+  assert.match(compact, /grid-template-columns:\s*minmax\(56px, 1fr\) 90px repeat\(3, 14px\);/);
 
   assert.match(main, /import '\.\/app\/FloatingItineraryPanel\.css';/);
   assert.ok(
