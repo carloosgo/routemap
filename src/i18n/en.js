@@ -83,7 +83,7 @@ export default {
   segment: 'Leg',
   segmentPlural: 'legs',
   origin: 'Origin',
-  originPlaceholder: 'Enter your origin city',
+  originPlaceholder: 'Origin city',
   destination: 'Destination',
   city: 'City',
   searchCity: 'Search city…',
