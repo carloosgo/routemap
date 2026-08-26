@@ -175,9 +175,10 @@ test('desktop itinerary geometry stays contained while detail forms remain in th
   assert.match(layout, /--trip-header-height:\s*63px;/);
   assert.match(layout, /grid-template-columns:[\s\S]*var\(--atlas-nav-width\)[\s\S]*calc\(var\(--workspace-panel-width\) - var\(--atlas-nav-width\)\)[\s\S]*minmax\(0, 1fr\);/s);
   assert.match(itinerary, /grid-template-columns:\s*18px 30px 126px minmax\(0, 1fr\);/);
-  assert.match(compact, /grid-template-columns:\s*minmax\(56px, 1fr\) 90px repeat\(3, 14px\);/);
+  assert.match(compact, /grid-template-columns:\s*minmax\(68px, 1fr\) 78px repeat\(3, 14px\);/);
   assert.match(compact, /padding-right:\s*4px;[\s\S]*column-gap:\s*8px;/s);
-  assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*90px;[^}]*min-width:\s*90px;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;/s);
+  assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*78px;[^}]*min-width:\s*78px;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;/s);
+  assert.match(compact, /\.itinerary-stop__date-range\s*\{[^}]*width:\s*68px;[^}]*min-width:\s*68px;[^}]*max-width:\s*68px;/s);
   assert.doesNotMatch(compact, /itinerary-stop__dates|itinerary-stop__nights|background:\s*var\(--atlas-accent\)/);
   assert.doesNotMatch(floating, /:has\(\.editor-module--itinerary\)/);
   assert.match(floating, /\.workspace__desktop--column\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*var\(--workspace-panel-width\) minmax\(0, 1fr\);/s);
