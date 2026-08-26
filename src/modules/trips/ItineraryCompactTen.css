@@ -155,14 +155,14 @@
     max-width: 60px;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
     gap: 1px;
     color: #0d6078;
     font-size: 10px;
     font-weight: 500;
     line-height: 11px;
-    text-align: center;
+    text-align: right;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
     overflow: hidden;
@@ -170,8 +170,10 @@
 
   .editor-module--itinerary .itinerary-stop__date-range > span {
     display: block;
+    width: 100%;
     max-width: 100%;
     overflow: hidden;
+    text-align: right;
     text-overflow: ellipsis;
   }
 
