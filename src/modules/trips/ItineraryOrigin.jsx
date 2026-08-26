@@ -23,6 +23,7 @@ const NOTE_DOT_STYLE = Object.freeze({
 
 export function ItineraryOrigin({
   city,
+  formattedDepartureDate,
   formattedAmount,
   hasNote,
   onSelect,
@@ -65,6 +66,13 @@ export function ItineraryOrigin({
 
       <div className="itinerary-stop__after-place itinerary-origin__after-place">
         <div className="itinerary-stop__metrics itinerary-origin__metrics">
+          <span
+            className="itinerary-stop__date-range"
+            title={formattedDepartureDate || undefined}
+          >
+            <span>{formattedDepartureDate || ''}</span>
+            <span aria-hidden="true" />
+          </span>
           <span className="itinerary-stop__amount">{formattedAmount}</span>
         </div>
 
