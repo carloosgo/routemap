@@ -177,7 +177,7 @@ test('desktop itinerary geometry stays contained while detail forms remain in th
   assert.match(itinerary, /grid-template-columns:\s*18px 30px 126px minmax\(0, 1fr\);/);
   assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*padding:\s*0 2px 6px 10px;/s);
   assert.match(compact, /grid-template-columns:\s*minmax\(60px, 1fr\) 78px repeat\(3, 14px\);/);
-  assert.match(compact, /padding-left:\s*14px;[\s\S]*padding-right:\s*0;[\s\S]*column-gap:\s*8px;/s);
+  assert.match(compact, /padding-left:\s*0;[\s\S]*padding-right:\s*0;[\s\S]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*78px;[^}]*min-width:\s*78px;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;/s);
   assert.match(compact, /\.itinerary-stop__date-range\s*\{[^}]*width:\s*60px;[^}]*min-width:\s*60px;[^}]*max-width:\s*60px;/s);
   assert.doesNotMatch(compact, /itinerary-stop__dates|itinerary-stop__nights|background:\s*var\(--atlas-accent\)/);
