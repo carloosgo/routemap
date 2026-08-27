@@ -124,7 +124,7 @@ test('desktop itinerary uses tighter insets while the primary workspace is integ
   assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
   assert.match(compact, /min-height:\s*40px;[^}]*height:\s*40px;/s);
   assert.match(compact, /grid-template-columns:\s*minmax\(60px, 1fr\) 78px repeat\(3, 14px\);/);
-  assert.match(compact, /padding-left:\s*14px;[\s\S]*padding-right:\s*0;/s);
+  assert.match(compact, /padding-left:\s*0;[\s\S]*padding-right:\s*0;/s);
   assert.match(compact, /column-gap:\s*8px;/);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;/s);
   assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*78px;[^}]*min-width:\s*78px;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;/s);
