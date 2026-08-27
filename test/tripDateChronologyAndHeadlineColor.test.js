@@ -109,6 +109,82 @@ test('reducer rejects invalid date mutations so UI callers cannot bypass chronol
   assert.equal(valid.segments[1].endDate, '2026-09-25');
 });
 
+test('reordering a dated segment keeps the valid boundary and clears only the conflicting date', () => {
+  const trip = sampleTrip();
+  trip.originDetails.departureDate = '2026-09-01';
+  trip.segments = [
+    { ...trip.segments[0], id: 'a', startDate: '2026-09-02', endDate: '2026-09-05' },
+    { ...trip.segments[0], id: 'moved', startDate: '2026-09-05', endDate: '2026-09-07' },
+    { ...trip.segments[1], id: 'b', startDate: '2026-09-07', endDate: '2026-09-07' },
+  ];
+
+  const reordered = tripReducer(trip, {
+    type: TRIP_ACTIONS.reorderSegment,
+    sourceId: 'moved',
+    targetId: 'b',
+    placement: 'after',
+  });
+
+  assert.deepEqual(reordered.segments.map(({ id }) => id), ['a', 'b', 'moved']);
+  assert.equal(reordered.segments[0].startDate, '2026-09-02');
+  assert.equal(reordered.segments[0].endDate, '2026-09-05');
+  assert.equal(reordered.segments[1].startDate, '2026-09-07');
+  assert.equal(reordered.segments[1].endDate, '2026-09-07');
+  assert.equal(reordered.segments[2].startDate, '');
+  assert.equal(reordered.segments[2].endDate, '2026-09-07');
+});
+
+test('reordering cannot leave a stale date that deadlocks the moved segment calendar', () => {
+  const trip = sampleTrip();
+  trip.originDetails.departureDate = '2026-09-01';
+  trip.segments = [
+    { ...trip.segments[0], id: 'a', startDate: '2026-09-02', endDate: '2026-09-03' },
+    { ...trip.segments[0], id: 'moved', startDate: '', endDate: '2026-09-04' },
+    { ...trip.segments[1], id: 'b', startDate: '2026-09-05', endDate: '2026-09-06' },
+  ];
+
+  const reordered = tripReducer(trip, {
+    type: TRIP_ACTIONS.reorderSegment,
+    sourceId: 'moved',
+    targetId: 'b',
+    placement: 'after',
+  });
+  const moved = reordered.segments[2];
+
+  assert.deepEqual(reordered.segments.map(({ id }) => id), ['a', 'b', 'moved']);
+  assert.equal(moved.startDate, '');
+  assert.equal(moved.endDate, '');
+  assert.deepEqual(
+    validateSegmentDatePatch(reordered, 'moved', {
+      startDate: '2026-09-06',
+      endDate: '2026-09-07',
+    }),
+    { valid: true, errorKey: '' }
+  );
+});
+
+test('reordering across undated legs preserves dates that still fit the itinerary chronology', () => {
+  const trip = sampleTrip();
+  trip.originDetails.departureDate = '2026-09-01';
+  trip.segments = [
+    { ...trip.segments[0], id: 'a', startDate: '2026-09-02', endDate: '2026-09-03' },
+    { ...trip.segments[0], id: 'moved', startDate: '2026-09-05', endDate: '2026-09-06' },
+    { ...trip.segments[1], id: 'undated', startDate: '', endDate: '' },
+  ];
+
+  const reordered = tripReducer(trip, {
+    type: TRIP_ACTIONS.reorderSegment,
+    sourceId: 'moved',
+    targetId: 'undated',
+    placement: 'after',
+  });
+  const moved = reordered.segments[2];
+
+  assert.deepEqual(reordered.segments.map(({ id }) => id), ['a', 'undated', 'moved']);
+  assert.equal(moved.startDate, '2026-09-05');
+  assert.equal(moved.endDate, '2026-09-06');
+});
+
 test('headline text and selected cities are true black without changing active option accents', async () => {
   const navigation = await read('src/app/TripHeaderNavigation.css');
   const typography = await read('src/app/TripSummaryHeaderTypography.css');
