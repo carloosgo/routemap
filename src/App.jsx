@@ -5,8 +5,7 @@ import { useSavedTrips } from './modules/trips/useSavedTrips.js';
 import { useTripAutoPersistence } from './modules/trips/useTripAutoPersistence.js';
 import { savedTripErrorTranslationKey } from './modules/trips/savedTripOperations.js';
 import { useFirebaseAuth } from './infrastructure/firebase/useFirebaseAuth.js';
-import { hasSavableRoute, isTripSavable, TRIP_LIMITS } from './modules/trips/tripModel.js';
-import { sanitizeText } from './shared/utils.js';
+import { isTripSavable, TRIP_LIMITS } from './modules/trips/tripModel.js';
 import { AppTopbar } from './app/AppTopbar.jsx';
 import { AppEditorModule } from './app/AppEditorModule.jsx';
 import { AppMapPane } from './app/AppMapPane.jsx';
@@ -17,6 +16,7 @@ import { normalizeRecoveredDraft } from './app/recoveredTripDraft.js';
 import { useAppEditorState } from './app/useAppEditorState.js';
 import { useItineraryFloatingPanels } from './app/useItineraryFloatingPanels.js';
 import { useOutsideClick, useSaveShortcut } from './app/useAppInteractions.js';
+import { useTripSaveFlow } from './app/useTripSaveFlow.js';
 import './App.css';
 import './app/FloatingEditor.css';
 
@@ -36,8 +36,6 @@ export default function App() {
   const [deletePending, setDeletePending] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
   const [desktopPanelCollapsed, setDesktopPanelCollapsed] = useState(false);
-  const [tripNamePromptOpen, setTripNamePromptOpen] = useState(false);
-  const [tripNameDraft, setTripNameDraft] = useState('');
   const menuWrapRef = useRef(null);
   const editorMenuRef = useRef(null);
   const deleteInFlightRef = useRef(false);
@@ -48,11 +46,6 @@ export default function App() {
 
   const canSave = isTripSavable(trip);
   const persistence = useTripAutoPersistence({ trip, stageTrip, getTripPersistenceState, canRemoteSync: canSave });
-
-  useEffect(() => {
-    setTripNamePromptOpen(false);
-    setTripNameDraft('');
-  }, [trip.id]);
 
   useEffect(() => {
     if (auth.loading) return undefined;
@@ -80,50 +73,21 @@ export default function App() {
     setTimeout(() => setToast(''), duration);
   }, []);
 
-  const closeTripNamePrompt = useCallback(() => {
-    setTripNamePromptOpen(false);
-    setTripNameDraft('');
-  }, []);
-
-  const handleSave = useCallback(async () => {
-    const currentName = sanitizeText(trip.name || '', TRIP_LIMITS.tripName).trim();
-    const requestedName = currentName
-      || sanitizeText(tripNameDraft, TRIP_LIMITS.tripName).trim();
-
-    if (!requestedName) {
-      if (tripNamePromptOpen) showToast(t('tripNameRequired'), 2500);
-      setTripNamePromptOpen(true);
-      return;
-    }
-
-    if (!hasSavableRoute(trip)) {
-      showToast(t('saveRouteValidationError'), 2500);
-      return;
-    }
-
-    const tripToSave = currentName
-      ? trip
-      : {
-          ...trip,
-          name: requestedName,
-          updatedAt: new Date().toISOString(),
-        };
-
-    persistence.markSaving();
-    if (!currentName) renameTrip(requestedName);
-    await stageTrip(tripToSave, { remote: false }).catch(() => {});
-
-    try {
-      await saveTrip(tripToSave);
-      persistence.markSaved();
-      setTripNamePromptOpen(false);
-      setTripNameDraft('');
-      showToast(t('saved'));
-    } catch (error) {
-      persistence.markSaveError(error);
-      showToast(t(savedTripErrorTranslationKey(error, 'savePersistenceError')), 3500);
-    }
-  }, [persistence, renameTrip, saveTrip, showToast, stageTrip, trip, tripNameDraft, tripNamePromptOpen, t]);
+  const {
+    tripNamePromptOpen,
+    tripNameDraft,
+    setTripNameDraft,
+    closeTripNamePrompt,
+    handleSave,
+  } = useTripSaveFlow({
+    trip,
+    renameTrip,
+    stageTrip,
+    saveTrip,
+    persistence,
+    showToast,
+    t,
+  });
 
   const handleGoogleSignIn = useCallback(async () => {
     try {
