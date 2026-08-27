@@ -6,6 +6,7 @@ import {
   isPlaced,
 } from './tripEntities.js';
 import { reorderPlaceList } from './placeOrdering.js';
+import { validateSegmentDatePatch } from './tripDateRules.js';
 
 function nowISO() {
   return new Date().toISOString();
@@ -44,6 +45,44 @@ export function appendSegment(trip) {
   };
 }
 
+function withSegmentDatePatch(trip, segmentId, patch) {
+  return {
+    ...trip,
+    segments: (trip?.segments || []).map((segment) =>
+      segment.id === segmentId
+        ? { ...segment, ...patch }
+        : segment
+    ),
+  };
+}
+
+function reconcileReorderedSegmentDates(trip, segmentId) {
+  const segment = (trip?.segments || []).find((item) => item.id === segmentId);
+  if (!segment) return trip;
+
+  const currentDates = {
+    startDate: segment.startDate || '',
+    endDate: segment.endDate || '',
+  };
+  if (validateSegmentDatePatch(trip, segmentId, currentDates).valid) return trip;
+
+  // Reordering is structural: never shift dates or mutate unaffected legs silently.
+  // Keep the largest valid subset of the moved leg's existing dates. When an old
+  // date cannot fit between its new neighbours, clearing that constraint lets the
+  // user choose a new date without leaving the calendar in an impossible min/max state.
+  const candidates = [
+    { startDate: '', endDate: currentDates.endDate },
+    { startDate: currentDates.startDate, endDate: '' },
+    { startDate: '', endDate: '' },
+  ];
+
+  const reconciledDates = candidates.find(
+    (candidate) => validateSegmentDatePatch(trip, segmentId, candidate).valid
+  ) || { startDate: '', endDate: '' };
+
+  return withSegmentDatePatch(trip, segmentId, reconciledDates);
+}
+
 export function reorderSegments(
   trip,
   sourceId,
@@ -68,9 +107,14 @@ export function reorderSegments(
   );
   reordered.splice(targetIndex + (placement === 'after' ? 1 : 0), 0, moved);
 
-  return {
+  const reorderedTrip = {
     ...trip,
     segments: syncSegmentOrigins(reordered, firstOrigin),
+  };
+  const reconciledTrip = reconcileReorderedSegmentDates(reorderedTrip, moved.id);
+
+  return {
+    ...reconciledTrip,
     updatedAt: nowISO(),
   };
 }
