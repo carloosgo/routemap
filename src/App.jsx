@@ -27,7 +27,7 @@ export default function App() {
   const savedTrips = useSavedTrips(auth.user);
   const editorState = useAppEditorState(tripStore);
   const itineraryPanels = useItineraryFloatingPanels();
-  const { trip, loadTrip, renameTrip, setCurrency, updateSegment, updateExpenses, updateOriginDetails, updateOriginExpenses, addPlace } = tripStore;
+  const { trip, loadTrip, setCurrency, updateSegment, updateExpenses, updateOriginDetails, updateOriginExpenses, addPlace } = tripStore;
   const { getTrip, getActiveTripDraft, stageTrip, getTripPersistenceState, saveTrip, deleteTrip, importLocalTrips, getLocalTripCount } = savedTrips;
   const [toast, setToast] = useState('');
   const [mobileView, setMobileView] = useState('form');
@@ -81,7 +81,7 @@ export default function App() {
     handleSave,
   } = useTripSaveFlow({
     trip,
-    renameTrip,
+    loadTrip,
     stageTrip,
     saveTrip,
     persistence,
