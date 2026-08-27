@@ -5,7 +5,7 @@ import { sanitizeText } from '../shared/utils.js';
 
 export function useTripSaveFlow({
   trip,
-  renameTrip,
+  loadTrip,
   stageTrip,
   saveTrip,
   persistence,
@@ -41,8 +41,6 @@ export function useTripSaveFlow({
       return;
     }
 
-    if (!globalThis.confirm(t('confirmSaveTrip'))) return;
-
     const tripToSave = currentName
       ? trip
       : {
@@ -52,12 +50,12 @@ export function useTripSaveFlow({
         };
 
     persistence.markSaving();
-    if (!currentName) renameTrip(requestedName);
     await stageTrip(tripToSave, { remote: false }).catch(() => {});
 
     try {
-      await saveTrip(tripToSave);
-      persistence.markSaved();
+      const savedTrip = await saveTrip(tripToSave);
+      persistence.markSaved({ adoptNextTrip: true });
+      loadTrip(savedTrip);
       setTripNamePromptOpen(false);
       setTripNameDraft('');
       showToast(t('saved'));
@@ -65,7 +63,7 @@ export function useTripSaveFlow({
       persistence.markSaveError(error);
       showToast(t(savedTripErrorTranslationKey(error, 'savePersistenceError')), 3500);
     }
-  }, [persistence, renameTrip, saveTrip, showToast, stageTrip, trip, tripNameDraft, tripNamePromptOpen, t]);
+  }, [loadTrip, persistence, saveTrip, showToast, stageTrip, trip, tripNameDraft, tripNamePromptOpen, t]);
 
   return {
     tripNamePromptOpen,
