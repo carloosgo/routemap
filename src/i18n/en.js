@@ -18,6 +18,7 @@ export default {
   nights: 'nights',
   totalDistance: 'Total distance',
   saveTrip: 'Save trip',
+  confirmSaveTrip: 'Save this trip?',
   saveValidationError: 'Add a name and at least one leg with cities before saving.',
   saveRouteValidationError: 'Add at least one leg with cities before saving.',
   tripNameRequired: 'Enter a trip name before saving.',
