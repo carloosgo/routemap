@@ -81,13 +81,17 @@ test('varios drags consecutivos no acumulan origenes ni trazos obsoletos', () =>
   assertConsecutiveMapChain(thirdMove, ['s1', 's2', 's3'], ['a', 'b', 'c', 'd']);
 });
 
-test('una ciudad revisitada conserva su posicion consecutiva en vez de desaparecer', () => {
+test('una ciudad revisitada conserva todas sus visitas agrupadas en un solo punto geografico', () => {
   const { cities } = itinerary();
   const data = mapDataFor([
     { id: 's1', origin: cities.a, destination: cities.b, expenses: {} },
     { id: 's2', origin: cities.b, destination: cities.a, expenses: {} },
     { id: 's3', origin: cities.a, destination: cities.c, expenses: {} },
   ]);
-  assert.deepEqual(data.cityFeatures.map((feature) => feature.properties.name), ['A', 'B', 'A', 'C']);
-  assert.deepEqual(data.cityFeatures.map((feature) => feature.properties.sequence), [null, 1, 2, 3]);
+  assert.deepEqual(data.cityFeatures.map((feature) => feature.properties.name), ['A', 'B', 'C']);
+  assert.deepEqual(
+    data.cityFeatures.map((feature) => feature.properties.visits.map((visit) => visit.sequence)),
+    [[2], [1], [3]],
+  );
+  assert.equal(data.cityFeatures.find((feature) => feature.properties.name === 'C')?.properties.isFinish, true);
 });
