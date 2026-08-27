@@ -111,7 +111,11 @@ export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay
           spellCheck="false"
         />
         {timelineSelected && (
-          <span className="autocomplete__selected-value" aria-hidden="true">
+          <span
+            className="autocomplete__selected-value"
+            title={value?.name}
+            aria-hidden="true"
+          >
             {value?.name}
           </span>
         )}
