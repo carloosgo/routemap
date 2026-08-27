@@ -18,6 +18,7 @@ export default {
   nights: 'noches',
   totalDistance: 'Distancia total',
   saveTrip: 'Guardar',
+  confirmSaveTrip: '¿Guardar este viaje?',
   saveValidationError: 'Agrega un nombre y al menos un trayecto con ciudades antes de guardar.',
   saveRouteValidationError: 'Agrega al menos un trayecto con ciudades antes de guardar.',
   tripNameRequired: 'Escribe un nombre para guardar el viaje.',
