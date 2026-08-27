@@ -13,8 +13,9 @@ test('los numeros de marcadores pertenecen al dato y no al orden DOM de Google M
   ]);
   assert.match(google, /const normalizedVisits = visits/);
   assert.match(google, /dot\.textContent = String\(visit\.sequence\)/);
-  assert.match(google, /feature\.properties\?\.sequence/);
-  assert.match(google, /const markerZIndex = isOrigin \? 350 : 300 \+ markerNumber;/);
+  assert.match(google, /Array\.isArray\(feature\.properties\?\.visits\)/);
+  assert.match(google, /const maxMarkerNumber = markerNumbers\.length \? Math\.max\(\.\.\.markerNumbers\) : 0;/);
+  assert.match(google, /const markerZIndex = isFinish\s*\? 380\s*:\s*isOrigin\s*\? 350\s*:\s*300 \+ maxMarkerNumber;/);
   assert.match(google, /zIndex:\s*markerZIndex/);
   assert.doesNotMatch(css, /counter-reset:\s*itinerary-city/);
   assert.doesNotMatch(css, /counter-increment:\s*itinerary-city/);
