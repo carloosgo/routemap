@@ -120,17 +120,16 @@
   }
 
   /* Después de la ciudad, origen y trayectos usan exactamente la misma retícula:
-     fecha, costo, nota, detalle y eliminar. La fecha usa un span visual de 60px
-     y un inset izquierdo de 14px. Esa combinación conserva la misma huella mínima
-     anterior (14 + 60 = 6 + 68), pero desplaza el centro visual de la fecha 4px
-     a la derecha sin mover cantidad, acciones ni el gutter estable del scrollbar. */
+     fecha, costo, nota, detalle y eliminar. Sin inset adicional, el centro de la
+     columna de fecha coincide con el espacio real entre ciudad y cantidad sin
+     desplazar cantidad, acciones ni el gutter estable del scrollbar. */
   .editor-module.editor-module--itinerary .itinerary-stop__after-place,
   .segments:not(.segments--compact) .itinerary-origin__after-place {
     box-sizing: border-box;
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    padding-left: 14px;
+    padding-left: 0;
     padding-right: 0;
     display: grid;
     grid-template-columns: minmax(60px, 1fr) 78px repeat(3, 14px);
