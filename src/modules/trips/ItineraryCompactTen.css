@@ -90,25 +90,28 @@
     column-gap: var(--itinerary-compact-gap);
   }
 
+  /* Los nombres cortos permanecen centrados como antes. Los largos aprovechan
+     hasta dos líneas dentro de los mismos 126px, sin mover fecha ni cantidad. */
   .editor-module--itinerary .itinerary-stop__picker .autocomplete__selected-value,
   .segments:not(.segments--compact) .itinerary-origin__picker .autocomplete__selected-value {
-    top: 0;
-    bottom: 0;
+    top: 50%;
+    bottom: auto;
     left: 0;
     right: 4px;
-    max-height: none;
-    transform: none;
-    display: flex;
-    align-items: center;
-    -webkit-line-clamp: 1;
+    max-height: calc(2 * 1.2em);
+    transform: translateY(-50%);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
     color: #000000;
     font-size: 13px;
     font-weight: 600;
     line-height: 1.2;
-    white-space: nowrap;
+    white-space: normal;
     overflow: hidden;
     text-overflow: ellipsis;
     overflow-wrap: normal;
+    word-break: normal;
   }
 
   .editor-module--itinerary .itinerary-stop__picker .input,
