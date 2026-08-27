@@ -69,6 +69,7 @@ export function useTripAutoPersistence({
   const markerRef = useRef(null);
   const stageTimerRef = useRef(null);
   const explicitSaveRef = useRef(false);
+  const adoptNextTripRef = useRef(false);
 
   latestTripRef.current = trip;
   stageTripRef.current = stageTrip;
@@ -123,6 +124,7 @@ export function useTripAutoPersistence({
     if (!previous || previous.id !== id) {
       clearStageTimer();
       explicitSaveRef.current = false;
+      adoptNextTripRef.current = false;
       setAutosyncActive(false);
       let cancelled = false;
       const readState = getPersistenceStateRef.current;
@@ -148,7 +150,13 @@ export function useTripAutoPersistence({
       };
     }
 
-    if (!isTripEditTransition(previous, trip) || explicitSaveRef.current) {
+    const editTransition = isTripEditTransition(previous, trip);
+    if (adoptNextTripRef.current && editTransition) {
+      adoptNextTripRef.current = false;
+      return undefined;
+    }
+
+    if (!editTransition || explicitSaveRef.current) {
       return undefined;
     }
     setState(TRIP_PERSISTENCE_STATE.PENDING);
@@ -203,11 +211,13 @@ export function useTripAutoPersistence({
   const markSaving = useCallback(() => {
     clearStageTimer();
     explicitSaveRef.current = true;
+    adoptNextTripRef.current = false;
     setAutosyncActive(false);
     setState(TRIP_PERSISTENCE_STATE.SYNCING);
   }, [clearStageTimer]);
 
-  const markSaved = useCallback(() => {
+  const markSaved = useCallback(({ adoptNextTrip = false } = {}) => {
+    adoptNextTripRef.current = Boolean(adoptNextTrip);
     explicitSaveRef.current = false;
     setAutosyncActive(false);
     setState(TRIP_PERSISTENCE_STATE.SAVED);
@@ -215,6 +225,7 @@ export function useTripAutoPersistence({
 
   const markSaveError = useCallback((error) => {
     explicitSaveRef.current = false;
+    adoptNextTripRef.current = false;
     setAutosyncActive(false);
     setState(errorState(error));
   }, []);
