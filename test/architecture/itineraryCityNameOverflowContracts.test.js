@@ -13,7 +13,7 @@ test('los nombres largos usan hasta dos lineas sin ensanchar ni desalinear el it
   ]);
 
   const cityNameBlock = css.match(
-    /\.editor-module--itinerary \.itinerary-stop__picker \.autocomplete__selected-value,[\s\S]*?\{([\s\S]*?)\n  \}/
+    /\.editor-module--itinerary \.itinerary-stop__picker \.autocomplete__selected-value,[\s\S]*?\{([\s\S]*?)\n {2}\}/
   )?.[1] || '';
 
   assert.match(css, /grid-template-columns:[\s\S]{0,220}126px[\s\S]{0,120}minmax\(0, 1fr\);/);
