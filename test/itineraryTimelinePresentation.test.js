@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('origin y destination usan ciudad seleccionada de una sola linea a 13px/600', async () => {
+test('origin y destination admit hasta dos lineas a 13px/600 sin cambiar la reticula', async () => {
   const header = await read('src/modules/trips/SegmentHeader.jsx');
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const autocomplete = await read('src/components/CityAutocomplete.jsx');
@@ -15,7 +15,8 @@ test('origin y destination usan ciudad seleccionada de una sola linea a 13px/600
   assert.match(origin, /selectedDisplay="timeline"/);
   assert.match(autocomplete, /autocomplete--timeline-selected/);
   assert.match(autocomplete, /autocomplete__selected-value/);
-  assert.match(compact, /autocomplete__selected-value[\s\S]*transform:\s*none;[\s\S]*-webkit-line-clamp:\s*1;[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*600;/s);
+  assert.match(autocomplete, /title=\{value\?\.name\}/);
+  assert.match(compact, /autocomplete__selected-value[\s\S]*transform:\s*translateY\(-50%\);[\s\S]*-webkit-line-clamp:\s*2;[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*600;[\s\S]*white-space:\s*normal;/s);
   assert.doesNotMatch(header, /itinerary-stop__country(?:["'\s])/);
   assert.doesNotMatch(origin, /itinerary-origin__country/);
 });
