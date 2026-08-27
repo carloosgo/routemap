@@ -11,7 +11,8 @@ test('los numeros de marcadores pertenecen al dato y no al orden DOM de Google M
     read('src/modules/map/GooglePlacesMap.jsx'),
     read('src/modules/map/GooglePlacesMap.css'),
   ]);
-  assert.match(google, /dot\.textContent = String\(number\)/);
+  assert.match(google, /const normalizedVisits = visits/);
+  assert.match(google, /dot\.textContent = String\(visit\.sequence\)/);
   assert.match(google, /feature\.properties\?\.sequence/);
   assert.match(google, /const markerZIndex = isOrigin \? 350 : 300 \+ markerNumber;/);
   assert.match(google, /zIndex:\s*markerZIndex/);
