@@ -32,10 +32,10 @@ test('desktop itinerary keeps compact equal rows, expanded panel geometry and si
 
   assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
   assert.match(compact, /\.itinerary-origin,[\s\S]*segment__header\.itinerary-stop\s*\{[^}]*min-height:\s*40px;[^}]*height:\s*40px;[^}]*align-items:\s*center;/s);
-  assert.match(compact, /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*var\(--itinerary-city-width\)[\s\S]*minmax\(0, 1fr\);/s);
-  assert.match(compact, /\.itinerary-origin\s*\{[^}]*padding-left:\s*calc\([\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*grid-template-columns:[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*var\(--itinerary-city-width\)[\s\S]*minmax\(0, 1fr\);[^}]*column-gap:\s*var\(--itinerary-compact-gap\);/s);
+  assert.match(compact, /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*var\(--itinerary-city-width, 126px\)[\s\S]*minmax\(0, 1fr\);/s);
+  assert.match(compact, /\.itinerary-origin\s*\{[^}]*padding-left:\s*calc\([\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*grid-template-columns:[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*var\(--itinerary-city-width, 126px\)[\s\S]*minmax\(0, 1fr\);[^}]*column-gap:\s*var\(--itinerary-compact-gap\);/s);
   assert.match(compact, /column-gap:\s*var\(--itinerary-compact-gap\);/);
-  assert.match(compact, /max-width:\s*var\(--itinerary-city-width\);/);
+  assert.match(compact, /max-width:\s*var\(--itinerary-city-width, 126px\);/);
   assert.match(compact, /autocomplete__selected-value[\s\S]*transform:\s*translateY\(-50%\);[\s\S]*-webkit-line-clamp:\s*2;[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*600;[\s\S]*white-space:\s*normal;/s);
 
   assert.match(compact, /\.itinerary-stop__after-place,[\s\S]*\.itinerary-origin__after-place\s*\{[^}]*grid-template-columns:\s*minmax\(var\(--itinerary-date-width\), 1fr\) 78px repeat\(3, 14px\);[^}]*column-gap:\s*8px;/s);
