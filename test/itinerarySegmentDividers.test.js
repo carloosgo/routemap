@@ -39,11 +39,11 @@ test('same-country runs use one itinerary-level rail behind centered masked node
   );
   assert.match(
     compact,
-    /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*126px[\s\S]*minmax\(0, 1fr\);/s
+    /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*var\(--itinerary-city-width, 126px\)[\s\S]*minmax\(0, 1fr\);/s
   );
   assert.match(
     compact,
-    /\.segments:not\(\.segments--compact\) \.itinerary-origin\s*\{[^}]*padding-left:\s*calc\([\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*grid-template-columns:\s*var\(--country-run-track-w, 30px\) 126px minmax\(0, 1fr\);/s
+    /\.segments:not\(\.segments--compact\) \.itinerary-origin\s*\{[^}]*padding-left:\s*calc\([\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*grid-template-columns:[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*var\(--itinerary-city-width, 126px\)[\s\S]*minmax\(0, 1fr\);/s
   );
   assert.doesNotMatch(dividers, /\.itinerary-stop__marker\.is-country-run-marker::(?:before|after)/);
   assert.doesNotMatch(dividers, /\.itinerary-segment\.is-country-run-joined::after\s*\{/);
