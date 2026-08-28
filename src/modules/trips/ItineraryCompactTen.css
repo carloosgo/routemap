@@ -1,10 +1,13 @@
 /* Vista compacta del itinerario en escritorio.
    Origen y destinos comparten la misma banda vertical. Número, bandera y ciudad
-   son tracks independientes; la bandera conserva 30x20 y la ciudad 126px. */
+   son tracks independientes; la bandera conserva 30x20. La prueba de panel
+   ampliado reparte el espacio extra entre ciudad y fecha sin tocar costo o acciones. */
 
 @media (min-width: 721px) {
   .editor-module--itinerary .editor__body {
     --itinerary-compact-gap: 10px;
+    --itinerary-city-width: 176px;
+    --itinerary-date-width: 85px;
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-gutter: stable;
@@ -53,7 +56,7 @@
       var(--country-run-drag-w, 14px)
       var(--country-run-sequence-w, 19px)
       var(--country-run-track-w, 30px)
-      126px
+      var(--itinerary-city-width)
       minmax(0, 1fr);
     column-gap: var(--itinerary-compact-gap);
   }
@@ -74,7 +77,7 @@
 
   .editor-module.editor-module--itinerary .itinerary-stop__place,
   .segments:not(.segments--compact) .itinerary-origin__place {
-    max-width: 126px;
+    max-width: var(--itinerary-city-width);
   }
 
   /* El origen no necesita drag ni número, pero reserva exactamente la huella
@@ -86,12 +89,15 @@
       var(--country-run-sequence-w, 19px) +
       var(--itinerary-compact-gap)
     );
-    grid-template-columns: var(--country-run-track-w, 30px) 126px minmax(0, 1fr);
+    grid-template-columns:
+      var(--country-run-track-w, 30px)
+      var(--itinerary-city-width)
+      minmax(0, 1fr);
     column-gap: var(--itinerary-compact-gap);
   }
 
-  /* Los nombres cortos permanecen centrados como antes. Los largos aprovechan
-     hasta dos líneas dentro de los mismos 126px, sin mover fecha ni cantidad. */
+  /* Los nombres cortos permanecen centrados. Los largos aprovechan hasta dos
+     líneas dentro de la ciudad ampliada, sin empujar fecha, costo ni acciones. */
   .editor-module--itinerary .itinerary-stop__picker .autocomplete__selected-value,
   .segments:not(.segments--compact) .itinerary-origin__picker .autocomplete__selected-value {
     top: 50%;
@@ -123,9 +129,8 @@
   }
 
   /* Después de la ciudad, origen y trayectos usan exactamente la misma retícula:
-     fecha, costo, nota, detalle y eliminar. Sin inset adicional, el centro de la
-     columna de fecha coincide con el espacio real entre ciudad y cantidad sin
-     desplazar cantidad, acciones ni el gutter estable del scrollbar. */
+     fecha, costo, nota, detalle y eliminar. La fecha conserva su centro geométrico
+     entre el límite de ciudad y el inicio de cantidad. */
   .editor-module.editor-module--itinerary .itinerary-stop__after-place,
   .segments:not(.segments--compact) .itinerary-origin__after-place {
     box-sizing: border-box;
@@ -135,7 +140,7 @@
     padding-left: 0;
     padding-right: 0;
     display: grid;
-    grid-template-columns: minmax(60px, 1fr) 78px repeat(3, 14px);
+    grid-template-columns: minmax(var(--itinerary-date-width), 1fr) 78px repeat(3, 14px);
     align-items: center;
     justify-content: end;
     justify-self: stretch;
@@ -147,36 +152,46 @@
     display: contents;
   }
 
+  /* Los dos valores siguen separados en el DOM para no alterar el modelo, pero
+     visualmente forman una sola línea: "22 ago - 29 ago". */
   .editor-module--itinerary .itinerary-stop__date-range {
     grid-column: 1;
     grid-row: 1;
     justify-self: center;
     box-sizing: border-box;
-    width: 60px;
-    min-width: 60px;
-    max-width: 60px;
+    width: var(--itinerary-date-width);
+    min-width: var(--itinerary-date-width);
+    max-width: var(--itinerary-date-width);
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
+    flex-direction: row;
+    align-items: center;
     justify-content: center;
-    gap: 1px;
+    gap: 0;
     color: #0d6078;
     font-size: 10px;
     font-weight: 500;
-    line-height: 11px;
-    text-align: right;
+    line-height: 12px;
+    text-align: center;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
     overflow: hidden;
   }
 
   .editor-module--itinerary .itinerary-stop__date-range > span {
-    display: block;
-    width: 100%;
-    max-width: 100%;
-    overflow: hidden;
-    text-align: right;
-    text-overflow: ellipsis;
+    display: inline;
+    width: auto;
+    max-width: none;
+    overflow: visible;
+    text-align: inherit;
+    text-overflow: clip;
+  }
+
+  .editor-module--itinerary .itinerary-stop__date-range > span:empty {
+    display: none;
+  }
+
+  .editor-module--itinerary .itinerary-stop__date-range > span:first-child:not(:empty) + span:not(:empty)::before {
+    content: ' - ';
   }
 
   .editor-module--itinerary .itinerary-stop__amount {
