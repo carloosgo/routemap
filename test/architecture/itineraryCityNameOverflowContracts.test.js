@@ -18,7 +18,7 @@ test('los nombres largos usan hasta dos lineas dentro de la ciudad ampliada sin 
 
   assert.match(css, /--itinerary-city-width:\s*176px;/);
   assert.match(css, /--itinerary-date-width:\s*85px;/);
-  assert.match(css, /grid-template-columns:[\s\S]{0,260}var\(--itinerary-city-width\)[\s\S]{0,140}minmax\(0, 1fr\);/);
+  assert.match(css, /grid-template-columns:[\s\S]{0,260}var\(--itinerary-city-width, 126px\)[\s\S]{0,140}minmax\(0, 1fr\);/);
   assert.match(css, /grid-template-columns:\s*minmax\(var\(--itinerary-date-width\), 1fr\) 78px repeat\(3, 14px\);/);
   assert.match(css, /min-height:\s*40px;[\s\S]{0,80}height:\s*40px;/);
 
