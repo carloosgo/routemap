@@ -89,6 +89,7 @@
       var(--country-run-sequence-w, 19px) +
       var(--itinerary-compact-gap)
     );
+    grid-template-columns: var(--country-run-track-w, 30px) 126px minmax(0, 1fr);
     grid-template-columns:
       var(--country-run-track-w, 30px)
       var(--itinerary-city-width, 126px)
@@ -160,6 +161,9 @@
     grid-row: 1;
     justify-self: center;
     box-sizing: border-box;
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
     width: var(--itinerary-date-width);
     min-width: var(--itinerary-date-width);
     max-width: var(--itinerary-date-width);
