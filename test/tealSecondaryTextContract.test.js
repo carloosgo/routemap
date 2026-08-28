@@ -17,11 +17,15 @@ test('itinerary dates and final header labels use #0d6078 while date placeholder
 
   assert.match(
     itinerary,
-    /\.itinerary-stop__date-range\s*\{[^}]*align-items:\s*flex-end;[^}]*color:\s*#0d6078;[^}]*text-align:\s*right;/s
+    /\.itinerary-stop__date-range\s*\{[^}]*align-items:\s*center;[^}]*justify-content:\s*center;[^}]*color:\s*#0d6078;[^}]*text-align:\s*center;/s
   );
   assert.match(
     itinerary,
-    /\.itinerary-stop__date-range\s*>\s*span\s*\{[^}]*width:\s*100%;[^}]*text-align:\s*right;/s
+    /\.itinerary-stop__date-range\s*>\s*span\s*\{[^}]*display:\s*inline;[^}]*width:\s*auto;[^}]*text-align:\s*inherit;/s
+  );
+  assert.match(
+    itinerary,
+    /span:first-child:not\(:empty\) \+ span:not\(:empty\)::before\s*\{[^}]*content:\s*' - ';/s
   );
   assert.match(
     header,
