@@ -14,8 +14,10 @@ test('desktop primary panels keep one integrated left column with depth only tow
   const main = await read('src/main.jsx');
 
   assert.match(css, /@media \(min-width:\s*721px\)/);
-  assert.match(css, /\.workspace__desktop--column\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*var\(--workspace-panel-width\) minmax\(0, 1fr\);/s);
+  assert.match(css, /--workspace-panel-expanded-width:\s*calc\(var\(--workspace-panel-width\) \+ 75px\);/);
+  assert.match(css, /\.workspace__desktop--column\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*var\(--workspace-panel-expanded-width\) minmax\(0, 1fr\);/s);
   assert.match(headerLayout, /grid-template-columns:[\s\S]*var\(--atlas-nav-width\)[\s\S]*calc\(var\(--workspace-panel-width\) - var\(--atlas-nav-width\)\)[\s\S]*minmax\(0, 1fr\);/s);
+  assert.doesNotMatch(headerLayout, /workspace-panel-expanded-width/);
   assert.match(headerLayout, /\.trip-summary__metrics::before\s*\{/);
 
   assert.match(css, /\.workspace__desktop--column > \.mappane\s*\{[^}]*position:\s*relative;[^}]*inset:\s*auto;/s);
@@ -27,15 +29,17 @@ test('desktop primary panels keep one integrated left column with depth only tow
   assert.match(headerCss, /\.trip-summary\s*\{[^}]*border:\s*0;[^}]*box-shadow:\s*none;/s);
   assert.match(headerCss, /\.trip-summary::after\s*\{[^}]*right:\s*0;[^}]*bottom:\s*0;[^}]*left:\s*0;[^}]*height:\s*1px;[^}]*background:\s*#eef0f2;/s);
   assert.doesNotMatch(headerCss, /\.trip-summary\s*\{[^}]*border-bottom:/s);
-  assert.match(css, /\.workspace-panel__toggle\s*\{[^}]*left:\s*var\(--workspace-panel-width\);[^}]*z-index:\s*701;/s);
+  assert.match(css, /\.workspace-panel__toggle\s*\{[^}]*left:\s*var\(--workspace-panel-expanded-width\);[^}]*z-index:\s*701;/s);
   assert.match(css, /\.workspace__desktop--column\.is-panel-collapsed\s*\{[^}]*grid-template-columns:\s*0 minmax\(0, 1fr\);/s);
   assert.match(css, /\.workspace__desktop--column > \.mappane \.segnote,[\s\S]*left:\s*14px;/s);
   assert.match(css, /\.workspace__desktop--column > \.mappane \.segnote\s*\{[^}]*top:\s*calc\(var\(--trip-header-height\) \+ 12px\)\s*!important;/s);
 
   assert.match(compact, /min-height:\s*40px;[\s\S]*height:\s*40px;/s);
   assert.match(compact, /--itinerary-compact-gap:\s*10px;/);
-  assert.match(compact, /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*126px[\s\S]*minmax\(0, 1fr\);/s);
-  assert.match(compact, /grid-template-columns:\s*minmax\(60px, 1fr\) 78px repeat\(3, 14px\);/);
+  assert.match(compact, /--itinerary-city-width:\s*176px;/);
+  assert.match(compact, /--itinerary-date-width:\s*85px;/);
+  assert.match(compact, /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*var\(--itinerary-city-width, 126px\)[\s\S]*minmax\(0, 1fr\);/s);
+  assert.match(compact, /grid-template-columns:\s*minmax\(var\(--itinerary-date-width\), 1fr\) 78px repeat\(3, 14px\);/);
 
   assert.match(main, /import '\.\/app\/FloatingItineraryPanel\.css';/);
   assert.ok(
