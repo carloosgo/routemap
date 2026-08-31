@@ -180,7 +180,8 @@ test('UI consumes canonical numbering, repeated visit dots and finish flag asset
   assert.match(segmentHeader, /countryRunPosition === 'middle'/);
   assert.match(segmentHeader, /className="itinerary-stop__country-run-dot"/);
   assert.match(compact, /--itinerary-compact-gap:\s*10px;/);
-  assert.match(compact, /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*126px[\s\S]*minmax\(0, 1fr\);/s);
+  assert.match(compact, /--itinerary-city-width:\s*calc\(\(var\(--workspace-panel-width\) - 147px\) \/ 3\);/);
+  assert.match(compact, /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*var\(--itinerary-city-width\)[\s\S]*minmax\(0, 1fr\);/s);
   assert.match(headerType, /\.trip-summary__metric-label\s*\{[^}]*color:\s*#0d6078;/s);
   assert.match(headerType, /\.trip-summary__metric-value,[\s\S]*color:\s*#000000;/);
   assert.match(googleMap, /const isOrigin = feature\.properties\?\.role === 'origin';/);
