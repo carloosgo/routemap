@@ -6,7 +6,7 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('desktop itinerary keeps compact equal rows, expanded panel geometry and single-line date summaries', async () => {
+test('desktop itinerary keeps compact equal rows, header-aligned panel and stacked date summaries', async () => {
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
   const floating = await read('src/app/FloatingItineraryPanel.css');
   const headerLayout = await read('src/app/TripWorkspaceHeaderLayout.css');
@@ -18,33 +18,35 @@ test('desktop itinerary keeps compact equal rows, expanded panel geometry and si
 
   assert.match(compact, /@media \(min-width:\s*721px\)/);
   assert.doesNotMatch(floating, /:has\(\.editor-module--itinerary\)/);
-  assert.match(floating, /--workspace-panel-expanded-width:\s*calc\(var\(--workspace-panel-width\) \+ 75px\);/);
-  assert.match(floating, /\.workspace__desktop--column\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*var\(--workspace-panel-expanded-width\) minmax\(0, 1fr\);/s);
-  assert.match(floating, /\.workspace-panel__toggle\s*\{[^}]*left:\s*var\(--workspace-panel-expanded-width\);/s);
+  assert.doesNotMatch(floating, /workspace-panel-expanded-width/);
+  assert.match(floating, /\.workspace__desktop--column\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*var\(--workspace-panel-width\) minmax\(0, 1fr\);/s);
+  assert.match(floating, /\.workspace-panel__toggle\s*\{[^}]*left:\s*var\(--workspace-panel-width\);/s);
   assert.match(headerLayout, /grid-template-columns:[\s\S]*var\(--workspace-panel-width\)[\s\S]*minmax\(0, 1fr\);/s);
   assert.doesNotMatch(headerLayout, /workspace-panel-expanded-width/);
   assert.match(floating, /\.workspace-panel\s*\{[^}]*position:\s*relative;[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*display:\s*block;/s);
   assert.match(floating, /\.workspace-panel__content\.floating-editor\s*\{[^}]*width:\s*100%\s*!important;[^}]*height:\s*100%\s*!important;[^}]*transform:\s*none\s*!important;/s);
   assert.doesNotMatch(floating, /scale\(|zoom:/);
 
-  assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*--itinerary-compact-gap:\s*10px;[^}]*--itinerary-city-width:\s*176px;[^}]*--itinerary-date-width:\s*85px;[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;[^}]*scrollbar-width:\s*thin;[^}]*padding:\s*0 2px 6px 10px;/s);
+  assert.match(compact, /\.editor-module--itinerary \.editor__body\s*\{[^}]*--itinerary-compact-gap:\s*10px;[^}]*--itinerary-city-width:\s*calc\(\(var\(--workspace-panel-width\) - 147px\) \/ 3\);[^}]*overflow-y:\s*auto;[^}]*scrollbar-gutter:\s*stable;[^}]*scrollbar-width:\s*thin;[^}]*padding:\s*0 2px 6px 10px;/s);
+  assert.doesNotMatch(compact, /--itinerary-date-width:/);
   assert.match(compact, /\.editor-module--itinerary \.editor__body::-webkit-scrollbar\s*\{[^}]*width:\s*7px;[^}]*display:\s*block;/s);
 
   assert.match(compact, /\.itinerary-origin-section\s*\{[^}]*margin:\s*0;/s);
   assert.match(compact, /\.itinerary-origin,[\s\S]*segment__header\.itinerary-stop\s*\{[^}]*min-height:\s*40px;[^}]*height:\s*40px;[^}]*align-items:\s*center;/s);
-  assert.match(compact, /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*var\(--itinerary-city-width, 126px\)[\s\S]*minmax\(0, 1fr\);/s);
-  assert.match(compact, /\.itinerary-origin\s*\{[^}]*padding-left:\s*calc\([\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*grid-template-columns:[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*var\(--itinerary-city-width, 126px\)[\s\S]*minmax\(0, 1fr\);[^}]*column-gap:\s*var\(--itinerary-compact-gap\);/s);
+  assert.match(compact, /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*var\(--itinerary-city-width\)[\s\S]*minmax\(0, 1fr\);/s);
+  assert.match(compact, /\.itinerary-origin\s*\{[^}]*padding-left:\s*calc\([\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*grid-template-columns:[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*var\(--itinerary-city-width\)[\s\S]*minmax\(0, 1fr\);[^}]*column-gap:\s*var\(--itinerary-compact-gap\);/s);
   assert.match(compact, /column-gap:\s*var\(--itinerary-compact-gap\);/);
-  assert.match(compact, /max-width:\s*var\(--itinerary-city-width, 126px\);/);
-  assert.match(compact, /autocomplete__selected-value[\s\S]*transform:\s*translateY\(-50%\);[\s\S]*-webkit-line-clamp:\s*2;[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*600;[\s\S]*white-space:\s*normal;/s);
+  assert.match(compact, /max-width:\s*var\(--itinerary-city-width\);/);
+  assert.match(compact, /autocomplete__selected-value[\s\S]*max-height:\s*calc\(2 \* 1\.2em\);[\s\S]*transform:\s*translateY\(-50%\);[\s\S]*-webkit-line-clamp:\s*2;[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*600;[\s\S]*white-space:\s*normal;/s);
 
-  assert.match(compact, /\.itinerary-stop__after-place,[\s\S]*\.itinerary-origin__after-place\s*\{[^}]*grid-template-columns:\s*minmax\(var\(--itinerary-date-width\), 1fr\) 78px repeat\(3, 14px\);[^}]*column-gap:\s*8px;/s);
+  assert.match(compact, /\.itinerary-stop__after-place,[\s\S]*\.itinerary-origin__after-place\s*\{[^}]*grid-template-columns:\s*minmax\(60px, 1fr\) 78px repeat\(3, 14px\);[^}]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__metrics,[\s\S]*\.itinerary-origin__metrics\s*\{[^}]*display:\s*contents;/s);
   assert.match(compact, /padding-left:\s*0;[\s\S]*padding-right:\s*0;[\s\S]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon,[\s\S]*width:\s*14px;[\s\S]*min-width:\s*14px;[\s\S]*height:\s*22px;/s);
   assert.match(compact, /\.itinerary-stop__after-place > \.btn--icon::before,[\s\S]*inset:\s*-4px;/s);
-  assert.match(compact, /\.itinerary-stop__date-range\s*\{[^}]*grid-column:\s*1;[^}]*width:\s*var\(--itinerary-date-width\);[^}]*min-width:\s*var\(--itinerary-date-width\);[^}]*max-width:\s*var\(--itinerary-date-width\);[^}]*display:\s*flex;[^}]*flex-direction:\s*row;[^}]*align-items:\s*center;[^}]*justify-content:\s*center;[^}]*color:\s*#0d6078;[^}]*font-size:\s*10px;[^}]*font-weight:\s*500;[^}]*text-align:\s*center;/s);
-  assert.match(compact, /span:first-child:not\(:empty\) \+ span:not\(:empty\)::before\s*\{[^}]*content:\s*' - ';/s);
+  assert.match(compact, /\.itinerary-stop__date-range\s*\{[^}]*grid-column:\s*1;[^}]*width:\s*60px;[^}]*min-width:\s*60px;[^}]*max-width:\s*60px;[^}]*display:\s*flex;[^}]*flex-direction:\s*column;[^}]*align-items:\s*flex-end;[^}]*justify-content:\s*center;[^}]*color:\s*#0d6078;[^}]*font-size:\s*10px;[^}]*font-weight:\s*500;[^}]*text-align:\s*right;/s);
+  assert.match(compact, /\.itinerary-stop__date-range\s*>\s*span\s*\{[^}]*display:\s*block;[^}]*width:\s*100%;[^}]*text-align:\s*right;/s);
+  assert.doesNotMatch(compact, /span:first-child:not\(:empty\) \+ span:not\(:empty\)::before/);
   assert.match(compact, /\.itinerary-stop__amount\s*\{[^}]*width:\s*78px;[^}]*min-width:\s*78px;[^}]*max-width:\s*78px;[^}]*color:\s*#5f5f5f;[^}]*font-size:\s*12px;[^}]*font-weight:\s*700;[^}]*text-align:\s*right;[^}]*overflow:\s*visible;/s);
   assert.match(compact, /\.itinerary-segment \.itinerary-stop__amount,[\s\S]*\.itinerary-origin \.itinerary-stop__amount\s*\{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;/s);
   assert.doesNotMatch(compact, /\.itinerary-stop__dates|\.itinerary-stop__nights|segment__pill|background:\s*var\(--atlas-accent\)/);
