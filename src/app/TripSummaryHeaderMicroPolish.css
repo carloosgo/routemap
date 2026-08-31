@@ -24,16 +24,3 @@ button.trip-summary__metric--total[aria-expanded='true'] {
   line-height: 1;
   text-align: center;
 }
-
-/* El header mantiene el mismo reparto de columnas, pero sin divisores entre
-   las tres opciones principales de navegación. */
-.trip-summary .trip-summary__primary-nav-item + .trip-summary__primary-nav-item::before {
-  content: none;
-}
-
-/* Conservamos los demás divisores de métricas y retiramos únicamente los
-   solicitados: Fechas | Total y Ciudades | Noches. */
-.trip-summary__metrics > :nth-child(2)::before,
-.trip-summary__metrics > :nth-child(4)::before {
-  content: none;
-}
