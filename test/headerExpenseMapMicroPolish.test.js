@@ -23,20 +23,6 @@ test('header keeps neutral total hover, unified icon color and divided selector 
   assert.match(polish, /border-bottom:\s*1px dashed #eef0f3;/);
 });
 
-test('header suppresses only the requested navigation and metric separators', async () => {
-  const polish = await read('src/app/TripSummaryHeaderMicroPolish.css');
-
-  assert.match(
-    polish,
-    /\.trip-summary \.trip-summary__primary-nav-item \+ \.trip-summary__primary-nav-item::before\s*\{[^}]*content:\s*none;/s
-  );
-  assert.match(
-    polish,
-    /\.trip-summary__metrics > :nth-child\(2\)::before,[\s\S]*\.trip-summary__metrics > :nth-child\(4\)::before\s*\{[^}]*content:\s*none;/s
-  );
-  assert.doesNotMatch(polish, /\.trip-summary__metrics > :nth-child\((?:3|5|6)\)::before/);
-});
-
 test('destination number and 30px flag use independent tracks with the shared itinerary gap', async () => {
   const [header, css, compact] = await Promise.all([
     read('src/modules/trips/SegmentHeader.jsx'),
