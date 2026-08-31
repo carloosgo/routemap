@@ -35,7 +35,8 @@ test('destination number and 30px flag use independent tracks with the shared it
   assert.match(css, /itinerary-stop__sequence-badge[\s\S]*position:\s*static;[\s\S]*width:\s*19px;[\s\S]*height:\s*19px;[\s\S]*transform:\s*none;/s);
   assert.match(css, /itinerary-stop__marker\s*\{[\s\S]*width:\s*30px;[\s\S]*min-width:\s*30px;/s);
   assert.match(compact, /--itinerary-compact-gap:\s*10px;/);
-  assert.match(compact, /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*126px[\s\S]*minmax\(0, 1fr\);[\s\S]*column-gap:\s*var\(--itinerary-compact-gap\);/s);
+  assert.match(compact, /--itinerary-city-width:\s*calc\(\(var\(--workspace-panel-width\) - 147px\) \/ 3\);/);
+  assert.match(compact, /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*var\(--itinerary-city-width\)[\s\S]*minmax\(0, 1fr\);[\s\S]*column-gap:\s*var\(--itinerary-compact-gap\);/s);
 });
 
 test('dynamic expense concepts reuse fixed expense columns and vertical rhythm', async () => {
