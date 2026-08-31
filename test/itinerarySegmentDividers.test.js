@@ -37,13 +37,14 @@ test('same-country runs use one itinerary-level rail behind centered masked node
     dividers,
     /\.itinerary-stop__marker\.is-country-run-marker \.itinerary-stop__marker-flag\s*\{[^}]*z-index:\s*1;[^}]*box-shadow:\s*0 0 0 var\(--country-run-mask-gap\) var\(--country-run-surface\);/s
   );
+  assert.match(compact, /--itinerary-city-width:\s*calc\(\(var\(--workspace-panel-width\) - 147px\) \/ 3\);/);
   assert.match(
     compact,
-    /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*var\(--itinerary-city-width, 126px\)[\s\S]*minmax\(0, 1fr\);/s
+    /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*var\(--itinerary-city-width\)[\s\S]*minmax\(0, 1fr\);/s
   );
   assert.match(
     compact,
-    /\.segments:not\(\.segments--compact\) \.itinerary-origin\s*\{[^}]*padding-left:\s*calc\([\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*grid-template-columns:[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*var\(--itinerary-city-width, 126px\)[\s\S]*minmax\(0, 1fr\);/s
+    /\.segments:not\(\.segments--compact\) \.itinerary-origin\s*\{[^}]*padding-left:\s*calc\([\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*grid-template-columns:[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*var\(--itinerary-city-width\)[\s\S]*minmax\(0, 1fr\);/s
   );
   assert.doesNotMatch(dividers, /\.itinerary-stop__marker\.is-country-run-marker::(?:before|after)/);
   assert.doesNotMatch(dividers, /\.itinerary-segment\.is-country-run-joined::after\s*\{/);
