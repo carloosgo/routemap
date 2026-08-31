@@ -1,17 +1,16 @@
 /* Restauración del workspace integrado en escritorio.
    Itinerario, Mis Rutas y Notas vuelven a ocupar una columna fija a la izquierda
-   del mapa. El header conserva su retícula original; para esta prueba visual el
-   panel gana 75px sin desplazar el inicio de las métricas globales.
+   del mapa. El ancho se toma del mismo --workspace-panel-width que gobierna las
+   dos primeras columnas del header, por lo que el borde derecho coincide
+   exactamente con el separador entre Notas y Fechas del viaje.
 
    Esta hoja sólo cambia la geometría exterior: no escala, comprime ni altera
    filas, banderas, ciudad, costo, iconos, tipografías o controles internos. */
 @media (min-width: 721px) {
   .workspace__desktop--column {
-    --workspace-panel-expanded-width: calc(var(--workspace-panel-width) + 75px);
     position: relative;
     display: grid;
     grid-template-columns: var(--workspace-panel-width) minmax(0, 1fr);
-    grid-template-columns: var(--workspace-panel-expanded-width) minmax(0, 1fr);
     width: 100%;
     height: 100%;
     min-width: 0;
@@ -81,7 +80,7 @@
      visualmente por encima de la sombra del panel. */
   .workspace-panel__toggle {
     top: 50%;
-    left: var(--workspace-panel-expanded-width);
+    left: var(--workspace-panel-width);
     z-index: 701;
     transform: translate(-1px, -50%);
     box-shadow: none;
