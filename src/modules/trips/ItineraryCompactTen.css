@@ -291,6 +291,7 @@
   }
 
   .editor-module--itinerary .segment__header.itinerary-stop:hover .itinerary-stop__remove-btn,
+  .editor-module--itinerary .itinerary-origin:hover .itinerary-origin__clear,
   .editor-module--itinerary .itinerary-stop__remove-btn:focus-visible {
     opacity: 1;
     pointer-events: auto;
