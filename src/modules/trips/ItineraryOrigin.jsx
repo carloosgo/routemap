@@ -1,7 +1,6 @@
 import {
   IconChevronDown,
   IconNote,
-  IconX,
 } from '@tabler/icons-react';
 import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
@@ -29,11 +28,9 @@ export function ItineraryOrigin({
   onSelect,
   onOpenNote,
   onOpenDetails,
-  onClear,
 }) {
   const { t } = useTranslation();
   const originNoteLabel = `${t('segmentNote')}: ${t('origin')}`;
-  const clearOriginLabel = `${t('delete')} ${t('origin')}`;
 
   return (
     <div className="itinerary-origin" aria-label={t('origin')}>
@@ -96,16 +93,6 @@ export function ItineraryOrigin({
           onClick={onOpenDetails}
         >
           <IconChevronDown size={14} aria-hidden="true" />
-        </button>
-
-        <button
-          type="button"
-          className="btn btn--icon itinerary-origin__clear"
-          aria-label={clearOriginLabel}
-          title={clearOriginLabel}
-          onClick={onClear}
-        >
-          <IconX size={14} aria-hidden="true" />
         </button>
       </div>
     </div>
