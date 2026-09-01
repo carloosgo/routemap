@@ -20,8 +20,7 @@
   content: none;
 }
 
-.itinerary-origin-section + .itinerary-segment::before,
-.itinerary-segment + .itinerary-segment::before {
+.itinerary-segment::before {
   content: '';
   position: absolute;
   z-index: 1;
