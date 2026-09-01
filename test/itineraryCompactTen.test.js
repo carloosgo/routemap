@@ -38,6 +38,7 @@ test('desktop itinerary keeps compact equal rows, header-aligned panel and stack
   assert.match(compact, /column-gap:\s*var\(--itinerary-compact-gap\);/);
   assert.match(compact, /max-width:\s*var\(--itinerary-city-width\);/);
   assert.match(compact, /autocomplete__selected-value[\s\S]*max-height:\s*calc\(2 \* 1\.2em\);[\s\S]*transform:\s*translateY\(-50%\);[\s\S]*-webkit-line-clamp:\s*2;[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*600;[\s\S]*white-space:\s*normal;/s);
+  assert.match(compact, /\.itinerary-origin__picker \.autocomplete__selected-value,[\s\S]*\.itinerary-origin__picker \.input\s*\{[^}]*font-weight:\s*400;/s);
 
   assert.match(compact, /\.itinerary-stop__after-place,[\s\S]*\.itinerary-origin__after-place\s*\{[^}]*grid-template-columns:\s*minmax\(60px, 1fr\) 78px repeat\(3, 14px\);[^}]*column-gap:\s*8px;/s);
   assert.match(compact, /\.itinerary-stop__metrics,[\s\S]*\.itinerary-origin__metrics\s*\{[^}]*display:\s*contents;/s);
@@ -56,6 +57,7 @@ test('desktop itinerary keeps compact equal rows, header-aligned panel and stack
   assert.match(header, /<span>\{formattedStartDate \|\| ''\}<\/span>[\s\S]*<span>\{formattedEndDate \|\| ''\}<\/span>/s);
   assert.doesNotMatch(header, /itinerary-stop__country(?:["'\s])|itinerary-stop__nights|itinerary-stop__dates/);
   assert.doesNotMatch(originRow, /itinerary-origin__country|itinerary-stop__nights|itinerary-stop__dates/);
+  assert.doesNotMatch(originRow, /itinerary-origin__clear|IconX|onClear/);
   assert.match(originRow, /itinerary-stop__date-range/);
   assert.match(originRow, /\{formattedDepartureDate \|\| ''\}/);
   assert.match(originRow, /<span aria-hidden="true" \/>/);
@@ -85,7 +87,8 @@ test('note expand and close keep their order while expand opens a symmetric note
   const interactions = await read('src/app/useAppInteractions.js');
 
   assert.match(header, /segment__note-btn[\s\S]*segment__toggle segment__details-btn itinerary-stop__details-btn[\s\S]*aria-label=\{t\('removeSegment'\)\}/s);
-  assert.match(origin, /segment__note-btn itinerary-origin__note-btn[\s\S]*segment__toggle segment__details-btn itinerary-origin__details-btn[\s\S]*itinerary-origin__clear/s);
+  assert.match(origin, /segment__note-btn itinerary-origin__note-btn[\s\S]*segment__toggle segment__details-btn itinerary-origin__details-btn/s);
+  assert.doesNotMatch(origin, /itinerary-origin__clear|IconX|onClear/);
   assert.match(header, /IconChevronDown/);
   assert.match(origin, /IconChevronDown/);
   assert.doesNotMatch(header, /IconChevronRight|IconChevronUp|aria-expanded|aria-controls/);
