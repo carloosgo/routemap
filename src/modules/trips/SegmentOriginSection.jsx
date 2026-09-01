@@ -31,6 +31,7 @@ export function SegmentOriginSection({
         onSelect={(origin) => onUpdate({ origin })}
         onOpenNote={onOpenNote}
         onOpenDetails={onOpenDetails}
+        onClear={() => onUpdate({ origin: null })}
       />
     </section>
   );
