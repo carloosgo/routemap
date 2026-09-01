@@ -96,7 +96,7 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   );
 });
 
-test('origin keeps note and expand actions without exposing a delete control', async () => {
+test('origin keeps note, expand and explicit clear actions in the same compact row', async () => {
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const header = await read('src/modules/trips/SegmentHeader.jsx');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
@@ -108,7 +108,9 @@ test('origin keeps note and expand actions without exposing a delete control', a
   assert.doesNotMatch(origin, /itinerary-stop__nights/);
   assert.match(origin, /segment__note-btn itinerary-origin__note-btn/);
   assert.match(origin, /segment__toggle segment__details-btn itinerary-origin__details-btn/);
-  assert.doesNotMatch(origin, /itinerary-origin__clear|IconX|onClear/);
+  assert.match(origin, /itinerary-stop__remove-btn itinerary-origin__clear/);
+  assert.match(origin, /IconX/);
+  assert.match(origin, /onClick=\{onClear\}/);
   assert.match(origin, /IconChevronDown/);
   assert.match(header, /segment__toggle segment__details-btn itinerary-stop__details-btn/);
   assert.match(header, /IconChevronDown/);
