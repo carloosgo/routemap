@@ -169,17 +169,7 @@ export function tripReducer(state, action) {
       );
 
     case TRIP_ACTIONS.updateSegment: {
-      const requestedPatch = action.patch || {};
-      const currentOrigin = state.segments[0]?.origin || null;
-      const protectsSelectedOrigin = Boolean(
-        currentOrigin
-        && state.segments[0]?.id === action.segmentId
-        && Object.hasOwn(requestedPatch, 'origin')
-        && requestedPatch.origin == null
-      );
-      const patch = protectsSelectedOrigin
-        ? { ...requestedPatch, origin: currentOrigin }
-        : requestedPatch;
+      const patch = action.patch || {};
       if (Object.hasOwn(patch, 'startDate') || Object.hasOwn(patch, 'endDate')) {
         const validation = validateSegmentDatePatch(state, action.segmentId, patch);
         if (!validation.valid) return state;
