@@ -155,8 +155,8 @@
     grid-row: 1;
     justify-self: center;
     box-sizing: border-box;
-    width: 60px;
-    min-width: 60px;
+    width: max-content;
+    min-width: 0;
     max-width: 60px;
     display: flex;
     flex-direction: column;
