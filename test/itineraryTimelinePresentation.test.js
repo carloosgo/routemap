@@ -118,7 +118,7 @@ test('origin keeps note and expand actions without exposing a delete control', a
   assert.match(modal, /<SegmentBody/);
 });
 
-test('timeline flags use a high-density source with one fixed rounded thumbnail', async () => {
+test('selected timeline flags render smaller without shrinking their high-density source or marker track', async () => {
   const flags = await read('src/modules/flags/flags.js');
   const header = await read('src/modules/trips/SegmentHeader.jsx');
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
@@ -128,7 +128,11 @@ test('timeline flags use a high-density source with one fixed rounded thumbnail'
   assert.match(flags, /flagcdn\.com\/w\$\{safeWidth\}\/\$\{code\}\.png/);
   assert.match(header, /flagImageUrl\(destination\.countryCode, 80\)/);
   assert.match(origin, /flagImageUrl\(city\.countryCode, 80\)/);
-  assert.match(header, /width=\{30\}[\s\S]*height=\{20\}/);
-  assert.match(origin, /width=\{30\}[\s\S]*height=\{20\}/);
-  assert.match(css, /\.itinerary-origin__marker img,[\s\S]*\.itinerary-stop__marker img[\s\S]*width:\s*30px;[\s\S]*height:\s*20px;[\s\S]*object-fit:\s*cover;[\s\S]*border-radius:\s*3px;/);
+  assert.match(header, /SELECTED_FLAG_STYLE[\s\S]*width:\s*'27px',[\s\S]*height:\s*'18px'/);
+  assert.match(origin, /SELECTED_FLAG_STYLE[\s\S]*width:\s*'27px',[\s\S]*height:\s*'18px'/);
+  assert.match(header, /width=\{27\}[\s\S]*height=\{18\}[\s\S]*style=\{SELECTED_FLAG_STYLE\}/);
+  assert.match(origin, /width=\{27\}[\s\S]*height=\{18\}[\s\S]*style=\{SELECTED_FLAG_STYLE\}/);
+  assert.match(css, /\.itinerary-origin__marker\s*\{[\s\S]*width:\s*30px;[\s\S]*height:\s*24px;/);
+  assert.match(css, /\.itinerary-stop__marker\s*\{[\s\S]*width:\s*30px;[\s\S]*height:\s*24px;/);
+  assert.match(css, /\.itinerary-origin__marker img,[\s\S]*\.itinerary-stop__marker img[\s\S]*object-fit:\s*cover;[\s\S]*border-radius:\s*3px;[\s\S]*image-rendering:\s*auto;/);
 });
