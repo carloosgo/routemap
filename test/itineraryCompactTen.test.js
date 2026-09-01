@@ -143,8 +143,9 @@ test('itinerary dividers stay dotted from flag start to close icon end', async (
   const floating = await read('src/app/FloatingItineraryPanel.css');
 
   assert.match(dividers, /#c9ced7 0 3px,[\s\S]*transparent 3px 7px/);
-  assert.match(dividers, /\.itinerary-origin-section \+ \.itinerary-segment::before/);
-  assert.match(dividers, /\.itinerary-segment \+ \.itinerary-segment::before/);
+  assert.match(dividers, /\.itinerary-segment::before\s*\{/);
+  assert.match(dividers, /\.itinerary-segment\.is-country-run-joined::before\s*\{[^}]*content:\s*none;/s);
+  assert.doesNotMatch(dividers, /\.itinerary-origin-section \+ \.itinerary-segment::before|\.itinerary-segment \+ \.itinerary-segment::before/);
   assert.match(dividers, /left:\s*53px;[\s\S]*right:\s*4px;/);
   assert.doesNotMatch(dividers, /M0 0 L4 4|fill='%2319a5d0'|clip-path/);
 
