@@ -57,7 +57,8 @@ test('desktop itinerary keeps compact equal rows, header-aligned panel and stack
   assert.match(header, /<span>\{formattedStartDate \|\| ''\}<\/span>[\s\S]*<span>\{formattedEndDate \|\| ''\}<\/span>/s);
   assert.doesNotMatch(header, /itinerary-stop__country(?:["'\s])|itinerary-stop__nights|itinerary-stop__dates/);
   assert.doesNotMatch(originRow, /itinerary-origin__country|itinerary-stop__nights|itinerary-stop__dates/);
-  assert.doesNotMatch(originRow, /itinerary-origin__clear|IconX|onClear/);
+  assert.match(originRow, /itinerary-stop__remove-btn itinerary-origin__clear/);
+  assert.match(originRow, /IconX/);
   assert.match(originRow, /itinerary-stop__date-range/);
   assert.match(originRow, /\{formattedDepartureDate \|\| ''\}/);
   assert.match(originRow, /<span aria-hidden="true" \/>/);
@@ -87,8 +88,8 @@ test('note expand and close keep their order while expand opens a symmetric note
   const interactions = await read('src/app/useAppInteractions.js');
 
   assert.match(header, /segment__note-btn[\s\S]*segment__toggle segment__details-btn itinerary-stop__details-btn[\s\S]*aria-label=\{t\('removeSegment'\)\}/s);
-  assert.match(origin, /segment__note-btn itinerary-origin__note-btn[\s\S]*segment__toggle segment__details-btn itinerary-origin__details-btn/s);
-  assert.doesNotMatch(origin, /itinerary-origin__clear|IconX|onClear/);
+  assert.match(origin, /segment__note-btn itinerary-origin__note-btn[\s\S]*segment__toggle segment__details-btn itinerary-origin__details-btn[\s\S]*itinerary-stop__remove-btn itinerary-origin__clear/s);
+  assert.match(origin, /IconX/);
   assert.match(header, /IconChevronDown/);
   assert.match(origin, /IconChevronDown/);
   assert.doesNotMatch(header, /IconChevronRight|IconChevronUp|aria-expanded|aria-controls/);
