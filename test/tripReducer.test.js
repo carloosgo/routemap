@@ -120,6 +120,65 @@ test('segmentos se agregan, editan, reordenan y eliminan completos', () => {
   assert.equal(removed.segments.some(({ id }) => id === 'segment-1'), false);
 });
 
+test('el origen persiste al eliminar el unico trayecto y no puede limpiarse una vez elegido', () => {
+  const origin = {
+    id: 'frankfurt',
+    name: 'Frankfurt',
+    displayName: 'Frankfurt, Germany',
+    country: 'Germany',
+    countryCode: 'DE',
+    lat: 50.1109,
+    lon: 8.6821,
+  };
+  const destination = {
+    id: 'nuremberg',
+    name: 'Nuremberg',
+    displayName: 'Nuremberg, Germany',
+    country: 'Germany',
+    countryCode: 'DE',
+    lat: 49.4521,
+    lon: 11.0767,
+  };
+  const onlySegment = createSegment({
+    id: 'only-segment',
+    origin,
+    destination,
+    startDate: '2026-09-07',
+    endDate: '2026-09-09',
+    note: 'Eliminar junto con el trayecto',
+  });
+  const state = {
+    ...createTrip('Alemania'),
+    segments: [onlySegment],
+  };
+
+  const removed = reduce(state, TRIP_ACTIONS.removeSegment, {
+    segmentId: onlySegment.id,
+  });
+  const retainedSegment = removed.segments[0];
+
+  assert.equal(removed.segments.length, 1);
+  assert.notEqual(retainedSegment.id, onlySegment.id);
+  assert.deepEqual(retainedSegment.origin, onlySegment.origin);
+  assert.equal(retainedSegment.destination, null);
+  assert.equal(retainedSegment.startDate, '');
+  assert.equal(retainedSegment.endDate, '');
+  assert.equal(retainedSegment.note, '');
+
+  const clearAttempt = reduce(removed, TRIP_ACTIONS.updateSegment, {
+    segmentId: retainedSegment.id,
+    patch: { origin: null },
+  });
+  assert.deepEqual(clearAttempt.segments[0].origin, retainedSegment.origin);
+
+  const replacementOrigin = { ...origin, id: 'munich', name: 'Munich' };
+  const replaced = reduce(clearAttempt, TRIP_ACTIONS.updateSegment, {
+    segmentId: retainedSegment.id,
+    patch: { origin: replacementOrigin },
+  });
+  assert.equal(replaced.segments[0].origin.name, 'Munich');
+});
+
 test('lugares se normalizan, no se duplican y respetan el límite del viaje', () => {
   const state = baseTrip();
   const place = { id: 'place-1', name: 'Museo', lat: '48.8606', lon: '2.3376' };
