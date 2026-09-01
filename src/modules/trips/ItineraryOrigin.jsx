@@ -20,6 +20,11 @@ const NOTE_DOT_STYLE = Object.freeze({
   pointerEvents: 'none',
 });
 
+const SELECTED_FLAG_STYLE = Object.freeze({
+  width: '27px',
+  height: '18px',
+});
+
 export function ItineraryOrigin({
   city,
   formattedDepartureDate,
@@ -42,8 +47,9 @@ export function ItineraryOrigin({
           <img
             src={flagImageUrl(city.countryCode, 80)}
             alt=""
-            width={30}
-            height={20}
+            width={27}
+            height={18}
+            style={SELECTED_FLAG_STYLE}
             loading="lazy"
             decoding="async"
           />
