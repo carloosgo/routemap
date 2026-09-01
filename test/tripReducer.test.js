@@ -11,6 +11,7 @@ import {
   TRIP_LIMITS,
   createSegment,
   createTrip,
+  routeStops,
 } from '../src/modules/trips/tripModel.js';
 
 const root = new URL('../', import.meta.url);
@@ -120,7 +121,7 @@ test('segmentos se agregan, editan, reordenan y eliminan completos', () => {
   assert.equal(removed.segments.some(({ id }) => id === 'segment-1'), false);
 });
 
-test('el origen persiste al eliminar el unico trayecto y no puede limpiarse una vez elegido', () => {
+test('borrar el ultimo trayecto conserva el origen, pero limpiar origen es una accion explicita independiente', () => {
   const origin = {
     id: 'frankfurt',
     name: 'Frankfurt',
@@ -138,6 +139,15 @@ test('el origen persiste al eliminar el unico trayecto y no puede limpiarse una 
     countryCode: 'DE',
     lat: 49.4521,
     lon: 11.0767,
+  };
+  const munich = {
+    id: 'munich',
+    name: 'Munich',
+    displayName: 'Munich, Germany',
+    country: 'Germany',
+    countryCode: 'DE',
+    lat: 48.1351,
+    lon: 11.582,
   };
   const onlySegment = createSegment({
     id: 'only-segment',
@@ -165,18 +175,37 @@ test('el origen persiste al eliminar el unico trayecto y no puede limpiarse una 
   assert.equal(retainedSegment.endDate, '');
   assert.equal(retainedSegment.note, '');
 
-  const clearAttempt = reduce(removed, TRIP_ACTIONS.updateSegment, {
+  const cleared = reduce(removed, TRIP_ACTIONS.updateSegment, {
     segmentId: retainedSegment.id,
     patch: { origin: null },
   });
-  assert.deepEqual(clearAttempt.segments[0].origin, retainedSegment.origin);
+  assert.equal(cleared.segments[0].origin, null);
 
-  const replacementOrigin = { ...origin, id: 'munich', name: 'Munich' };
-  const replaced = reduce(clearAttempt, TRIP_ACTIONS.updateSegment, {
+  const replacementOrigin = { ...origin, id: 'munich-origin', name: 'Munich' };
+  const replaced = reduce(cleared, TRIP_ACTIONS.updateSegment, {
     segmentId: retainedSegment.id,
     patch: { origin: replacementOrigin },
   });
   assert.equal(replaced.segments[0].origin.name, 'Munich');
+
+  const routedState = {
+    ...createTrip('Ruta alemana'),
+    segments: [
+      createSegment({ id: 'leg-1', origin, destination }),
+      createSegment({ id: 'leg-2', origin: destination, destination: munich }),
+    ],
+  };
+  const withoutExplicitOrigin = reduce(routedState, TRIP_ACTIONS.updateSegment, {
+    segmentId: 'leg-1',
+    patch: { origin: null },
+  });
+
+  assert.equal(withoutExplicitOrigin.segments[0].origin, null);
+  assert.equal(withoutExplicitOrigin.segments[1].origin.name, 'Nuremberg');
+  assert.deepEqual(
+    routeStops(withoutExplicitOrigin.segments).map((city) => city.name),
+    ['Nuremberg', 'Munich']
+  );
 });
 
 test('lugares se normalizan, no se duplican y respetan el límite del viaje', () => {
