@@ -127,6 +127,12 @@
     font-weight: 600;
   }
 
+  /* La ciudad origen se mantiene visualmente secundaria frente a los destinos. */
+  .segments:not(.segments--compact) .itinerary-origin__picker .autocomplete__selected-value,
+  .segments:not(.segments--compact) .itinerary-origin__picker .input {
+    font-weight: 400;
+  }
+
   /* Después de la ciudad, origen y trayectos usan exactamente la misma retícula:
      fecha, costo, nota, detalle y eliminar. El resto conserva su espacio previo. */
   .editor-module.editor-module--itinerary .itinerary-stop__after-place,
