@@ -6,17 +6,23 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('origin remains non-deletable in the itinerary UI and uses regular typography', async () => {
+test('origin keeps an explicit clear control without losing its regular typography', async () => {
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const originSection = await read('src/modules/trips/SegmentOriginSection.jsx');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
 
-  assert.doesNotMatch(origin, /itinerary-origin__clear|IconX|onClear/);
-  assert.doesNotMatch(originSection, /onClear|origin:\s*null/);
+  assert.match(origin, /IconX/);
+  assert.match(origin, /itinerary-stop__remove-btn itinerary-origin__clear/);
+  assert.match(origin, /onClick=\{onClear\}/);
+  assert.match(originSection, /onClear=\{\(\) => onUpdate\(\{ origin: null \}\)\}/);
   assert.match(originSection, /onSelect=\{\(origin\) => onUpdate\(\{ origin \}\)\}/);
   assert.match(
     compact,
     /\.itinerary-origin__picker \.autocomplete__selected-value,[\s\S]*\.itinerary-origin__picker \.input\s*\{[^}]*font-weight:\s*400;/s
+  );
+  assert.match(
+    compact,
+    /\.itinerary-origin:hover \.itinerary-origin__clear,[\s\S]*\.itinerary-stop__remove-btn:focus-visible\s*\{[^}]*opacity:\s*1;[^}]*pointer-events:\s*auto;/s
   );
 });
 
