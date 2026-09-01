@@ -102,6 +102,7 @@ export function SegmentHeader({
             onSelect={onDestinationSelect}
             placeholder={t('destination')}
             selectedDisplay="timeline"
+            focusNextOnSelect
           />
         </div>
       </div>
@@ -134,12 +135,12 @@ export function SegmentHeader({
           title={t('openSegmentDetails')}
           onClick={onOpenDetails}
         >
-          <IconChevronDown size={14} aria-hidden="true" />
+          <IconChevronDown className="itinerary-details-chevron" size={14} aria-hidden="true" />
         </button>
 
         <button
           type="button"
-          className="btn btn--icon"
+          className="btn btn--icon itinerary-stop__remove-btn"
           aria-label={t('removeSegment')}
           onClick={onRemoveRequest}
         >
