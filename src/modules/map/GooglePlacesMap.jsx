@@ -176,7 +176,6 @@ function sameSavedPlace(saved, result) {
   }
   return String(saved?.id || '') === String(result?.id || '');
 }
-
 function placeForSaving(selected) {
   return {
     id: selected.id,
@@ -216,6 +215,12 @@ export function GooglePlacesMap({
   const infoWindowRef = useRef(null);
   const saveNoticeTimerRef = useRef(null);
   const lastItineraryViewportKeyRef = useRef(null);
+  const firstDestination = isPlaced(segments?.[0]?.destination)
+    ? segments[0].destination
+    : null;
+  const firstDestinationKey = firstDestination ? cityKey(firstDestination) : '';
+  const firstDestinationKeyRef = useRef(firstDestinationKey);
+  const pendingFirstDestinationFocusRef = useRef(null);
   const countryLayerWarningRef = useRef(false);
   const [cachedLocations, setCachedLocations] = useState({});
   const [ready, setReady] = useState(false);
@@ -635,8 +640,13 @@ export function GooglePlacesMap({
 
     /* El viewport pertenece al usuario después de la primera proyección. Cargar
        un itinerario ya existente puede encuadrarlo una vez; agregar, eliminar o
-       reordenar ciudades nunca vuelve a ejecutar movimientos automáticos de cámara. */
-    if (firstItineraryProjection && routeCities.length > 0) {
+       reordenar ciudades nunca vuelve a ejecutar movimientos automáticos de cámara.
+       La selección inicial de un destino es una excepción explícita y conserva zoom. */
+    if (
+      firstItineraryProjection
+      && routeCities.length > 0
+      && !pendingFirstDestinationFocusRef.current
+    ) {
       viewportIdleListener = map.addListener?.('idle', () => {
         viewportIdleListener?.remove?.();
         viewportIdleListener = null;
@@ -663,6 +673,29 @@ export function GooglePlacesMap({
          los reconcilia sobre los mismos nodos y evita un frame intermedio vacío. */
     };
   }, [placesActive, ready, segments, t]);
+
+  useEffect(() => {
+    const previousKey = firstDestinationKeyRef.current;
+    firstDestinationKeyRef.current = firstDestinationKey;
+
+    if (!previousKey && firstDestinationKey && firstDestination) {
+      pendingFirstDestinationFocusRef.current = {
+        lat: Number(firstDestination.lat),
+        lng: Number(firstDestination.lon),
+      };
+    }
+
+    const pendingFocus = pendingFirstDestinationFocusRef.current;
+    const map = mapRef.current;
+    if (!map || !ready || placesActive || !pendingFocus) return;
+    if (!Number.isFinite(pendingFocus.lat) || !Number.isFinite(pendingFocus.lng)) {
+      pendingFirstDestinationFocusRef.current = null;
+      return;
+    }
+
+    map.panTo({ lat: pendingFocus.lat, lng: pendingFocus.lng });
+    pendingFirstDestinationFocusRef.current = null;
+  }, [firstDestination, firstDestinationKey, placesActive, ready]);
 
   useEffect(() => {
     if (!ready || !placesActive) return undefined;
@@ -716,7 +749,6 @@ export function GooglePlacesMap({
 
     return () => clearAdvancedMarkers(savedPlaceMarkersRef);
   }, [locatedPlaces, placesActive, ready, savedMarkerColors, t]);
-
   useEffect(() => {
     const map = mapRef.current;
     const AdvancedMarkerElement = map?.__AdvancedMarkerElement;
