@@ -57,6 +57,7 @@ export function ItineraryOrigin({
             onSelect={onSelect}
             placeholder={t('originPlaceholder')}
             selectedDisplay="timeline"
+            focusNextOnSelect
           />
         </div>
       </div>
@@ -92,7 +93,7 @@ export function ItineraryOrigin({
           title={t('openSegmentDetails')}
           onClick={onOpenDetails}
         >
-          <IconChevronDown size={14} aria-hidden="true" />
+          <IconChevronDown className="itinerary-details-chevron" size={14} aria-hidden="true" />
         </button>
       </div>
     </div>
