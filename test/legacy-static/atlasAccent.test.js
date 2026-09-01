@@ -193,8 +193,8 @@ test('desktop itinerary geometry stays contained while detail forms remain in th
   assert.match(header, /itinerary-stop__date-range/);
   assert.match(origin, /itinerary-stop__date-range/);
   assert.match(header, /itinerary-stop__amount[\s\S]*segment__note-btn[\s\S]*segment__toggle segment__details-btn[\s\S]*removeSegment/s);
-  assert.match(origin, /itinerary-stop__amount[\s\S]*segment__note-btn[\s\S]*segment__toggle segment__details-btn/s);
-  assert.doesNotMatch(origin, /itinerary-origin__clear|IconX|onClear/);
+  assert.match(origin, /itinerary-stop__amount[\s\S]*segment__note-btn[\s\S]*segment__toggle segment__details-btn[\s\S]*itinerary-origin__clear/s);
+  assert.match(origin, /IconX/);
   assert.match(modal, /className="segnote segment-details-modal"/);
   assert.match(modal, /<SegmentBody/);
   assert.match(modal, /<OriginBody/);
