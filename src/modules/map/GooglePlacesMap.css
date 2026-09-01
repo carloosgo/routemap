@@ -37,6 +37,7 @@
 .google-map .gm-bundled-control{
   width:24px!important;
   height:49px!important;
+  transform:translateY(8px)!important;
 }
 .google-map .gm-bundled-control .gmnoprint{
   width:24px!important;
