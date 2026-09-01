@@ -4,6 +4,7 @@ import {
   appendSegment,
   createChecklistItem,
   createPlace,
+  createSegment,
   createTrip,
   insertPlaceByCountry,
   normalizeTrip,
@@ -148,13 +149,15 @@ export function tripReducer(state, action) {
       return appendSegment(state);
 
     case TRIP_ACTIONS.removeSegment: {
-      const firstOrigin = state.segments[0]?.origin || null;
-      const remaining = state.segments.filter(
+      const segments = Array.isArray(state.segments) ? state.segments : [];
+      const firstOrigin = segments[0]?.origin || null;
+      const remaining = segments.filter(
         (segment) => segment.id !== action.segmentId
       );
-      return touch(state, {
-        segments: syncSegmentOrigins(remaining, firstOrigin),
-      });
+      const nextSegments = remaining.length > 0
+        ? syncSegmentOrigins(remaining, firstOrigin)
+        : [createSegment({ origin: firstOrigin })];
+      return touch(state, { segments: nextSegments });
     }
 
     case TRIP_ACTIONS.reorderSegment:
@@ -166,7 +169,17 @@ export function tripReducer(state, action) {
       );
 
     case TRIP_ACTIONS.updateSegment: {
-      const patch = action.patch || {};
+      const requestedPatch = action.patch || {};
+      const currentOrigin = state.segments[0]?.origin || null;
+      const protectsSelectedOrigin = Boolean(
+        currentOrigin
+        && state.segments[0]?.id === action.segmentId
+        && Object.hasOwn(requestedPatch, 'origin')
+        && requestedPatch.origin == null
+      );
+      const patch = protectsSelectedOrigin
+        ? { ...requestedPatch, origin: currentOrigin }
+        : requestedPatch;
       if (Object.hasOwn(patch, 'startDate') || Object.hasOwn(patch, 'endDate')) {
         const validation = validateSegmentDatePatch(state, action.segmentId, patch);
         if (!validation.valid) return state;
