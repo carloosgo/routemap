@@ -13,7 +13,13 @@ function cityDisplayMeta(city) {
 
 // Campo de búsqueda de ciudad con autocompletado.
 // Muestra sugerencias a partir del 3er carácter y devuelve un City completo.
-export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay = 'full' }) {
+export function CityAutocomplete({
+  value,
+  onSelect,
+  placeholder,
+  selectedDisplay = 'full',
+  focusNextOnSelect = false,
+}) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -43,12 +49,35 @@ export function CityAutocomplete({ value, onSelect, placeholder, selectedDisplay
     setHighlight(-1);
   }
 
+  function focusNextCityField() {
+    if (!focusNextOnSelect) return;
+    const currentInput = inputRef.current;
+    const itinerary = currentInput?.closest('.segments');
+    if (!currentInput || !itinerary) return;
+
+    const cityInputs = Array.from(itinerary.querySelectorAll('.autocomplete .input'));
+    const currentIndex = cityInputs.indexOf(currentInput);
+    if (currentIndex < 0) return;
+    const nextInput = cityInputs.slice(currentIndex + 1).find((input) => !input.disabled);
+    if (!nextInput) return;
+
+    const focusNext = () => {
+      if (nextInput.isConnected) nextInput.focus();
+    };
+    if (typeof globalThis.requestAnimationFrame === 'function') {
+      globalThis.requestAnimationFrame(focusNext);
+    } else {
+      globalThis.setTimeout(focusNext, 0);
+    }
+  }
+
   function handleSelect(city) {
     if (!city) return;
     onSelect(canonicalCityFromSearchResult(city));
     setQuery('');
     setOpen(false);
     setHighlight(-1);
+    focusNextCityField();
   }
 
   function handleKeyDown(event) {
