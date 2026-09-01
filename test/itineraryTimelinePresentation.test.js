@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('origin y destination admit hasta dos lineas a 13px/600 sin cambiar la reticula', async () => {
+test('origin and destination keep two-line 13px labels while origin uses regular weight', async () => {
   const header = await read('src/modules/trips/SegmentHeader.jsx');
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const autocomplete = await read('src/components/CityAutocomplete.jsx');
@@ -17,6 +17,7 @@ test('origin y destination admit hasta dos lineas a 13px/600 sin cambiar la reti
   assert.match(autocomplete, /autocomplete__selected-value/);
   assert.match(autocomplete, /title=\{value\?\.name\}/);
   assert.match(compact, /autocomplete__selected-value[\s\S]*transform:\s*translateY\(-50%\);[\s\S]*-webkit-line-clamp:\s*2;[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*600;[\s\S]*white-space:\s*normal;/s);
+  assert.match(compact, /\.itinerary-origin__picker \.autocomplete__selected-value,[\s\S]*\.itinerary-origin__picker \.input\s*\{[^}]*font-weight:\s*400;/s);
   assert.doesNotMatch(header, /itinerary-stop__country(?:["'\s])/);
   assert.doesNotMatch(origin, /itinerary-origin__country/);
 });
@@ -95,7 +96,7 @@ test('timeline uses independent drag, sequence, flag and city tracks with one sp
   );
 });
 
-test('origin mirrors note expand close controls while expand still opens the separate details module', async () => {
+test('origin keeps note and expand actions without exposing a delete control', async () => {
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const header = await read('src/modules/trips/SegmentHeader.jsx');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
@@ -107,7 +108,7 @@ test('origin mirrors note expand close controls while expand still opens the sep
   assert.doesNotMatch(origin, /itinerary-stop__nights/);
   assert.match(origin, /segment__note-btn itinerary-origin__note-btn/);
   assert.match(origin, /segment__toggle segment__details-btn itinerary-origin__details-btn/);
-  assert.match(origin, /itinerary-origin__clear/);
+  assert.doesNotMatch(origin, /itinerary-origin__clear|IconX|onClear/);
   assert.match(origin, /IconChevronDown/);
   assert.match(header, /segment__toggle segment__details-btn itinerary-stop__details-btn/);
   assert.match(header, /IconChevronDown/);
