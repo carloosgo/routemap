@@ -127,9 +127,16 @@
     font-weight: 600;
   }
 
-  /* La ciudad origen se mantiene visualmente secundaria frente a los destinos. */
+  /* Origen y ciudades intermedias de un bloque nacional comparten exactamente
+     la misma jerarquía tipográfica secundaria. */
   .segments:not(.segments--compact) .itinerary-origin__picker .autocomplete__selected-value,
+  .editor-module--itinerary .itinerary-segment.is-country-run-middle .itinerary-stop__picker .autocomplete__selected-value {
+    font-size: 13px;
+    font-weight: 400;
+  }
+
   .segments:not(.segments--compact) .itinerary-origin__picker .input {
+    font-size: 13px;
     font-weight: 400;
   }
 
@@ -266,6 +273,27 @@
     margin-top: 0;
     padding-top: 8px;
     padding-bottom: 8px;
+  }
+}
+
+/* El detalle abre hacia el mapa, por eso el chevron visual apunta a la derecha. */
+.itinerary-details-chevron {
+  transform: rotate(-90deg);
+}
+
+/* En escritorio con puntero preciso, eliminar no añade ruido permanente: aparece
+   al recorrer la fila. Con teclado sigue haciéndose visible al recibir foco. */
+@media (min-width: 721px) and (hover: hover) and (pointer: fine) {
+  .editor-module--itinerary .itinerary-stop__remove-btn {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+  }
+
+  .editor-module--itinerary .segment__header.itinerary-stop:hover .itinerary-stop__remove-btn,
+  .editor-module--itinerary .itinerary-stop__remove-btn:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 
