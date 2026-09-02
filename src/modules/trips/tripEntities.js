@@ -251,7 +251,6 @@ export function normalizeTrip(raw) {
   const rawSegments = Array.isArray(raw.segments)
     ? raw.segments.slice(0, TRIP_LIMITS.segments)
     : [];
-  const legacyOrigin = rawSegments[0]?.origin || null;
   const legacyPlaces = rawSegments.flatMap((segment) =>
     Array.isArray(segment?.places)
       ? segment.places.slice(0, TRIP_LIMITS.placesPerSegment)
@@ -281,11 +280,7 @@ export function normalizeTrip(raw) {
     id: normalizeId(raw.id),
     name: sanitizeText(raw.name || '', TRIP_LIMITS.tripName),
     currency: normalizeCurrency(raw.currency),
-    origin: raw.origin
-      ? createCity(raw.origin)
-      : legacyOrigin
-        ? createCity(legacyOrigin)
-        : null,
+    origin: raw.origin ? createCity(raw.origin) : null,
     originDetails: createOriginDetails(raw.originDetails),
     segments: rawSegments.map(createSegment),
     places,
