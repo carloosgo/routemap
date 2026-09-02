@@ -30,8 +30,8 @@ function SegmentDropIndicator({ placement }) {
 export function SegmentForm({
   segment, index, sequenceNumber, sequenceColor,
   countryRunPosition, joinsPreviousCountryRun = false,
-  locale, currency, originDetails, dragging, dragOffsetY, dropPlacement,
-  onUpdate, onRemove, onOpenNote, onOpenDetails, onReorderPointerStart,
+  origin, locale, currency, originDetails, dragging, dragOffsetY, dropPlacement,
+  onUpdate, onUpdateOrigin, onRemove, onOpenNote, onOpenDetails, onReorderPointerStart,
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const segmentRef = useRef(null);
@@ -55,11 +55,11 @@ export function SegmentForm({
     <>
       {index === 0 && (
         <SegmentOriginSection
-          segment={segment}
+          origin={origin}
           locale={locale}
           currency={currency}
           originDetails={originDetails}
-          onUpdate={onUpdate}
+          onUpdateOrigin={onUpdateOrigin}
           onOpenNote={openOriginNote}
           onOpenDetails={openOriginDetails}
         />
