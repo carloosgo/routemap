@@ -40,9 +40,9 @@ function hasChosenCity(city) {
   return cityIdentityTokens(city).length > 0;
 }
 
-function buildCountryRunPresentation(safeSegments) {
+function buildCountryRunPresentation(origin, safeSegments) {
   const stops = [
-    safeSegments[0]?.origin || null,
+    origin || null,
     ...safeSegments.map((segment) => segment?.destination || null),
   ];
   const presentation = safeSegments.map(() => ({
@@ -81,10 +81,9 @@ function buildCountryRunPresentation(safeSegments) {
   return presentation;
 }
 
-export function buildItineraryStopSequence(segments, colorForIndex) {
+export function buildItineraryStopSequence(origin, segments, colorForIndex) {
   const safeSegments = Array.isArray(segments) ? segments : [];
-  const origin = safeSegments[0]?.origin || null;
-  const countryRunPresentation = buildCountryRunPresentation(safeSegments);
+  const countryRunPresentation = buildCountryRunPresentation(origin, safeSegments);
   let lastChosenDestinationIndex = -1;
 
   safeSegments.forEach((segment, index) => {
