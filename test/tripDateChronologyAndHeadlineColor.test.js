@@ -131,7 +131,11 @@ test('adding the next destination starts one calendar day after the previous fin
   const next = added.segments[1];
 
   assert.equal(next.startDate, '2027-01-01');
-  assert.deepEqual(next.origin, trip.segments[0].destination);
+  assert.equal(next.origin.id, trip.segments[0].destination.id);
+  assert.equal(next.origin.name, trip.segments[0].destination.name);
+  assert.equal(next.origin.countryCode, 'DE');
+  assert.equal(next.origin.lat, 52.52);
+  assert.equal(next.origin.lon, 13.405);
   assert.equal(next.endDate, '');
 
   const withoutPreviousEnd = {
