@@ -25,6 +25,10 @@ export function useTrip(initialTrip) {
     (currency) => dispatch({ type: TRIP_ACTIONS.setCurrency, currency }),
     []
   );
+  const updateOrigin = useCallback(
+    (origin) => dispatch({ type: TRIP_ACTIONS.updateOrigin, origin }),
+    []
+  );
   const updateOriginDetails = useCallback(
     (patch) => dispatch({ type: TRIP_ACTIONS.updateOriginDetails, patch }),
     []
@@ -120,6 +124,7 @@ export function useTrip(initialTrip) {
     loadTrip,
     renameTrip,
     setCurrency,
+    updateOrigin,
     updateOriginDetails,
     updateOriginExpenses,
     addNote,
