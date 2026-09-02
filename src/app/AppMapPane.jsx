@@ -35,7 +35,7 @@ export function AppMapPane({
   const { noteTarget, detailsTarget, close } = itineraryPanels;
   const persistenceLabel = t(persistenceLabelKey(persistenceState));
   const persistenceHasCheck = persistenceState === 'saved' || persistenceState === 'local';
-  const stopSequence = buildItineraryStopSequence(trip.segments, colorForIndex);
+  const stopSequence = buildItineraryStopSequence(trip.origin, trip.segments, colorForIndex);
 
   const noteFooter = (length) => (
     <div className="segnote__foot">
@@ -48,7 +48,7 @@ export function AppMapPane({
 
   const openNotePanel = () => {
     if (noteTarget === ORIGIN_NOTE_TARGET) {
-      const originName = trip.segments?.[0]?.origin?.name || t('origin');
+      const originName = trip.origin?.name || t('origin');
       const note = trip.originDetails?.note || '';
       const originNoteLabel = `${t('segmentNote')}: ${t('origin')}`;
 
@@ -85,7 +85,10 @@ export function AppMapPane({
     if (!segment) return null;
     const index = trip.segments.findIndex((item) => item.id === noteTarget);
     const stop = stopSequence[index];
-    const originName = segment.origin?.name || t('origin');
+    const legOrigin = index === 0
+      ? trip.origin
+      : trip.segments[index - 1]?.destination || null;
+    const originName = legOrigin?.name || t('origin');
     const destinationName = segment.destination?.name || t('destination');
     const note = segment.note || '';
 
@@ -141,6 +144,7 @@ export function AppMapPane({
   return (
     <section className="mappane" aria-label={t('mapRegion')}>
       <RouteMap
+        origin={trip.origin}
         segments={trip.segments}
         places={trip.places || []}
         routeConnections={trip.routeConnections || []}
