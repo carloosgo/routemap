@@ -6,10 +6,20 @@ import {
   isPlaced,
 } from './tripEntities.js';
 import { reorderPlaceList } from './placeOrdering.js';
-import { validateSegmentDatePatch } from './tripDateRules.js';
+import {
+  isTripISODate,
+  validateSegmentDatePatch,
+} from './tripDateRules.js';
 
 function nowISO() {
   return new Date().toISOString();
+}
+
+function nextCalendarDate(value) {
+  if (!isTripISODate(value)) return '';
+  const date = new Date(`${value}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
 }
 
 export function syncSegmentOrigins(segments, firstOrigin = segments?.[0]?.origin || null) {
@@ -31,7 +41,7 @@ export function nextSegmentDefaults(trip) {
   const last = segments.at(-1);
   return {
     origin: last.destination ? { ...last.destination } : null,
-    startDate: last.endDate || last.startDate || '',
+    startDate: nextCalendarDate(last.endDate) || last.startDate || '',
   };
 }
 
