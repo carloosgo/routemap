@@ -22,25 +22,11 @@ function nextCalendarDate(value) {
   return date.toISOString().slice(0, 10);
 }
 
-export function syncSegmentOrigins(segments, firstOrigin = segments?.[0]?.origin || null) {
-  const safeSegments = Array.isArray(segments) ? segments : [];
-  return safeSegments.map((segment, index) => {
-    const origin = index === 0
-      ? firstOrigin
-      : safeSegments[index - 1]?.destination || null;
-    return {
-      ...segment,
-      origin: origin ? { ...origin } : null,
-    };
-  });
-}
-
 export function nextSegmentDefaults(trip) {
   const segments = trip?.segments || [];
   if (!segments.length) return {};
   const last = segments.at(-1);
   return {
-    origin: last.destination ? { ...last.destination } : null,
     startDate: nextCalendarDate(last.endDate) || last.startDate || '',
   };
 }
@@ -109,7 +95,6 @@ export function reorderSegments(
     return trip;
   }
 
-  const firstOrigin = segments[0]?.origin || null;
   const reordered = [...segments];
   const [moved] = reordered.splice(sourceIndex, 1);
   const targetIndex = reordered.findIndex(
@@ -119,7 +104,7 @@ export function reorderSegments(
 
   const reorderedTrip = {
     ...trip,
-    segments: syncSegmentOrigins(reordered, firstOrigin),
+    segments: reordered,
   };
   const reconciledTrip = reconcileReorderedSegmentDates(reorderedTrip, moved.id);
 
@@ -159,10 +144,10 @@ export function tripTotal(trip) {
   );
 }
 
-export function segmentCoords(segment) {
+export function segmentCoords(segment, origin = null) {
   const points = [];
-  if (isPlaced(segment?.origin)) {
-    points.push([segment.origin.lat, segment.origin.lon]);
+  if (isPlaced(origin)) {
+    points.push([origin.lat, origin.lon]);
   }
   if (isPlaced(segment?.destination)) {
     points.push([segment.destination.lat, segment.destination.lon]);
@@ -170,32 +155,39 @@ export function segmentCoords(segment) {
   return points;
 }
 
-export function routeStops(segments, { dedupeCountry = false } = {}) {
+export function routeStops(trip, { dedupeCountry = false } = {}) {
   const stops = [];
-  (segments || []).forEach((segment) =>
-    [segment?.origin, segment?.destination].forEach((city) => {
-      if (!isPlaced(city)) return;
-      const last = stops.at(-1);
-      if (last && last.lat === city.lat && last.lon === city.lon) return;
-      if (
-        dedupeCountry &&
-        last?.countryCode &&
-        last.countryCode === city.countryCode
-      ) {
-        return;
-      }
-      stops.push(city);
-    })
-  );
+  const cities = [
+    trip?.origin || null,
+    ...(Array.isArray(trip?.segments)
+      ? trip.segments.map((segment) => segment?.destination || null)
+      : []),
+  ];
+
+  cities.forEach((city) => {
+    if (!isPlaced(city)) return;
+    const last = stops.at(-1);
+    if (last && last.lat === city.lat && last.lon === city.lon) return;
+    if (
+      dedupeCountry &&
+      last?.countryCode &&
+      last.countryCode === city.countryCode
+    ) {
+      return;
+    }
+    stops.push(city);
+  });
   return stops;
 }
 
 export function hasSavableRoute(trip) {
-  return Boolean(
-    (trip?.segments || []).some(
-      (segment) => isPlaced(segment.origin) && isPlaced(segment.destination)
-    )
-  );
+  const segments = Array.isArray(trip?.segments) ? trip.segments : [];
+  return segments.some((segment, index) => {
+    const origin = index === 0
+      ? trip?.origin
+      : segments[index - 1]?.destination;
+    return isPlaced(origin) && isPlaced(segment?.destination);
+  });
 }
 
 export function isTripSavable(trip) {
