@@ -6,6 +6,7 @@ import './GooglePlacesMap.css';
 import './ItineraryNumberMarkers.css';
 
 export function RouteMap({
+  origin,
   segments,
   places = [],
   routeConnections = [],
@@ -13,8 +14,8 @@ export function RouteMap({
   viewMode = 'segments',
 }) {
   const mapSegmentsSignature = useMemo(
-    () => itineraryMapProjectionSignature(segments),
-    [segments]
+    () => itineraryMapProjectionSignature(origin, segments),
+    [origin, segments]
   );
   const mapSegments = useMemo(
     () => JSON.parse(mapSegmentsSignature),
