@@ -34,6 +34,7 @@ export function AppEditorPane({
   trip,
   intlLocale,
   updateSegment,
+  updateOrigin,
   removeSegment,
   reorderSegment,
   toggleNoteTarget,
@@ -59,7 +60,7 @@ export function AppEditorPane({
   const dragStateRef = useRef(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const activeDragId = dragState?.segmentId || null;
-  const stopSequence = buildItineraryStopSequence(trip.segments, colorForIndex);
+  const stopSequence = buildItineraryStopSequence(trip.origin, trip.segments, colorForIndex);
 
   useEffect(() => {
     if (!activeDragId) return undefined;
@@ -178,6 +179,9 @@ export function AppEditorPane({
           <div className="segments segments--compact" aria-label={t('segments')}>
             {trip.segments.map((segment, index) => {
               const stop = stopSequence[index];
+              const legOrigin = index === 0
+                ? trip.origin
+                : trip.segments[index - 1]?.destination || null;
               return (
                 <div className="compact-route" key={segment.id}>
                   {stop?.number != null && (
@@ -189,7 +193,7 @@ export function AppEditorPane({
                       {stop.number}
                     </span>
                   )}
-                  <CompactFlag city={segment.origin} />
+                  <CompactFlag city={legOrigin} />
                   <IconArrowRight size={11} className="compact-route__arrow" aria-hidden="true" />
                   <CompactFlag city={segment.destination} />
                 </div>
@@ -210,6 +214,7 @@ export function AppEditorPane({
                       sequenceColor={stopSequence[index]?.color || null}
                       countryRunPosition={stopSequence[index]?.countryRunPosition || null}
                       joinsPreviousCountryRun={Boolean(stopSequence[index]?.joinsPreviousCountryRun)}
+                      origin={trip.origin}
                       locale={intlLocale}
                       currency={trip.currency}
                       originDetails={trip.originDetails}
@@ -217,6 +222,7 @@ export function AppEditorPane({
                       dragOffsetY={dragState?.segmentId === segment.id ? dragState.offsetY : 0}
                       dropPlacement={dragState?.targetId === segment.id ? dragState.placement : null}
                       onUpdate={(patch) => updateSegment(segment.id, patch)}
+                      onUpdateOrigin={updateOrigin}
                       onRemove={() => removeSegment(segment.id)}
                       onOpenNote={toggleNoteTarget}
                       onOpenDetails={toggleDetailsTarget}
