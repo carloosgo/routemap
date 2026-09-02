@@ -35,6 +35,7 @@ export function hydrateV4Trip(summary = {}, collections = {}) {
     id: summary.id,
     name: summary.name,
     currency: summary.currency,
+    origin: summary.origin,
     originDetails: summary.originDetails,
     placeOrderVersion: PLACE_ORDER_VERSION,
     createdAt: timestampIso(summary.createdAt),
