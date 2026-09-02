@@ -3,6 +3,7 @@ import {
   TRIP_LIMITS,
   appendSegment,
   createChecklistItem,
+  createCity,
   createPlace,
   createSegment,
   createTrip,
@@ -10,7 +11,6 @@ import {
   normalizeTrip,
   reorderPlaces,
   reorderSegments,
-  syncSegmentOrigins,
 } from './tripModel.js';
 import {
   createSavedPlaceRoute,
@@ -27,6 +27,7 @@ export const TRIP_ACTIONS = Object.freeze({
   load: 'LOAD',
   rename: 'RENAME',
   setCurrency: 'SET_CURRENCY',
+  updateOrigin: 'UPDATE_ORIGIN',
   updateOriginDetails: 'UPDATE_ORIGIN_DETAILS',
   updateOriginExpenses: 'UPDATE_ORIGIN_EXPENSES',
   addNote: 'ADD_NOTE',
@@ -78,6 +79,11 @@ export function tripReducer(state, action) {
 
     case TRIP_ACTIONS.setCurrency:
       return touch(state, { currency: action.currency });
+
+    case TRIP_ACTIONS.updateOrigin:
+      return touch(state, {
+        origin: action.origin ? createCity(action.origin) : null,
+      });
 
     case TRIP_ACTIONS.updateOriginDetails: {
       const patch = action.patch || {};
@@ -150,13 +156,12 @@ export function tripReducer(state, action) {
 
     case TRIP_ACTIONS.removeSegment: {
       const segments = Array.isArray(state.segments) ? state.segments : [];
-      const firstOrigin = segments[0]?.origin || null;
       const remaining = segments.filter(
         (segment) => segment.id !== action.segmentId
       );
       const nextSegments = remaining.length > 0
-        ? syncSegmentOrigins(remaining, firstOrigin)
-        : [createSegment({ origin: firstOrigin })];
+        ? remaining
+        : [createSegment()];
       return touch(state, { segments: nextSegments });
     }
 
@@ -169,7 +174,8 @@ export function tripReducer(state, action) {
       );
 
     case TRIP_ACTIONS.updateSegment: {
-      const patch = action.patch || {};
+      const patch = { ...(action.patch || {}) };
+      delete patch.origin;
       if (Object.hasOwn(patch, 'startDate') || Object.hasOwn(patch, 'endDate')) {
         const validation = validateSegmentDatePatch(state, action.segmentId, patch);
         if (!validation.valid) return state;
@@ -177,12 +183,10 @@ export function tripReducer(state, action) {
 
       const updated = state.segments.map((segment) =>
         segment.id === action.segmentId
-          ? { ...segment, ...patch }
+          ? createSegment({ ...segment, ...patch })
           : segment
       );
-      return touch(state, {
-        segments: syncSegmentOrigins(updated, updated[0]?.origin || null),
-      });
+      return touch(state, { segments: updated });
     }
 
     case TRIP_ACTIONS.updateExpenses:
