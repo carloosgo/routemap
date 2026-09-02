@@ -109,6 +109,39 @@ test('reducer rejects invalid date mutations so UI callers cannot bypass chronol
   assert.equal(valid.segments[1].endDate, '2026-09-25');
 });
 
+test('adding the next destination starts one calendar day after the previous final date', () => {
+  const trip = sampleTrip();
+  trip.originDetails.departureDate = '2026-12-20';
+  trip.segments = [
+    {
+      ...trip.segments[0],
+      startDate: '2026-12-29',
+      endDate: '2026-12-31',
+      destination: {
+        id: 'berlin',
+        name: 'Berlin',
+        countryCode: 'DE',
+        lat: 52.52,
+        lon: 13.405,
+      },
+    },
+  ];
+
+  const added = tripReducer(trip, { type: TRIP_ACTIONS.addSegment });
+  const next = added.segments[1];
+
+  assert.equal(next.startDate, '2027-01-01');
+  assert.deepEqual(next.origin, trip.segments[0].destination);
+  assert.equal(next.endDate, '');
+
+  const withoutPreviousEnd = {
+    ...trip,
+    segments: [{ ...trip.segments[0], startDate: '2026-12-29', endDate: '' }],
+  };
+  const fallback = tripReducer(withoutPreviousEnd, { type: TRIP_ACTIONS.addSegment });
+  assert.equal(fallback.segments[1].startDate, '2026-12-29');
+});
+
 test('reordering a dated segment keeps the valid boundary and clears only the conflicting date', () => {
   const trip = sampleTrip();
   trip.originDetails.departureDate = '2026-09-01';
