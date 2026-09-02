@@ -3,11 +3,11 @@ import { formatSegmentAmount, formatSegmentDate } from './segmentFormModel.js';
 import { ItineraryOrigin } from './ItineraryOrigin.jsx';
 
 export function SegmentOriginSection({
-  segment,
+  origin,
   locale,
   currency,
   originDetails,
-  onUpdate,
+  onUpdateOrigin,
   onOpenNote,
   onOpenDetails,
 }) {
@@ -24,14 +24,14 @@ export function SegmentOriginSection({
   return (
     <section className="itinerary-origin-section">
       <ItineraryOrigin
-        city={segment.origin}
+        city={origin}
         formattedDepartureDate={formattedDepartureDate}
         formattedAmount={formattedAmount}
         hasNote={Boolean(originDetails?.note)}
-        onSelect={(origin) => onUpdate({ origin })}
+        onSelect={onUpdateOrigin}
         onOpenNote={onOpenNote}
         onOpenDetails={onOpenDetails}
-        onClear={() => onUpdate({ origin: null })}
+        onClear={() => onUpdateOrigin(null)}
       />
     </section>
   );
