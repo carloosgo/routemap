@@ -62,6 +62,7 @@ function rootPayload(trip) {
     id: trip.id,
     name: trip.name,
     currency: trip.currency,
+    origin: trip.origin || null,
     // Canonicalize both desired and remote roots. Older v4 roots may not carry
     // newly optional originDetails fields (for example note), and their absence
     // must not manufacture a metadata mutation when the desired value is empty.
@@ -97,6 +98,7 @@ function rootIntent({ userId, trip, remoteRoot }) {
     id: remoteRoot.id || trip.id,
     name: remoteRoot.name,
     currency: remoteRoot.currency,
+    origin: remoteRoot.origin,
     originDetails: remoteRoot.originDetails,
   });
   if (samePayload(current, desired)) return null;
