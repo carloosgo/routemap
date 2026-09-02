@@ -27,6 +27,7 @@ export function AppEditorModule({
     removeSegment,
     reorderSegment,
     updateSegment,
+    updateOrigin,
     removePlace,
     reorderPlace,
     upsertRouteConnection,
@@ -66,6 +67,7 @@ export function AppEditorModule({
       trip={trip}
       intlLocale={intlLocale}
       updateSegment={updateSegment}
+      updateOrigin={updateOrigin}
       removeSegment={removeSegment}
       reorderSegment={reorderSegment}
       toggleNoteTarget={itineraryPanels.toggleNote}
