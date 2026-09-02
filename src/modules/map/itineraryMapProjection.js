@@ -19,13 +19,16 @@ function projectedPlace(place) {
   };
 }
 
-export function itineraryMapProjection(segments) {
+export function itineraryMapProjection(origin, segments) {
   const safeSegments = Array.isArray(segments) ? segments : [];
-  return safeSegments.map((segment) => {
+  return safeSegments.map((segment, index) => {
     const planeDominant = dominantTransport(segment) === 'plane';
+    const legOrigin = index === 0
+      ? origin
+      : safeSegments[index - 1]?.destination || null;
     return {
       id: String(segment?.id || ''),
-      origin: projectedPlace(segment?.origin),
+      origin: projectedPlace(legOrigin),
       destination: projectedPlace(segment?.destination),
       expenses: {
         transport: {
@@ -39,6 +42,6 @@ export function itineraryMapProjection(segments) {
   });
 }
 
-export function itineraryMapProjectionSignature(segments) {
-  return JSON.stringify(itineraryMapProjection(segments));
+export function itineraryMapProjectionSignature(origin, segments) {
+  return JSON.stringify(itineraryMapProjection(origin, segments));
 }
