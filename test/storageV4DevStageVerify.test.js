@@ -8,6 +8,7 @@ import {
   DEV_STAGE_VERIFY_PRODUCTION_PROJECT,
   DEV_STAGE_VERIFY_RELEASE,
   buildV4DevStageVerification,
+  requestJson,
 } from '../scripts/runStorageV4DevStageVerify.mjs';
 import {
   V4_BACKEND_FUNCTION_NAMES,
@@ -74,6 +75,21 @@ function canonicalInput(overrides = {}) {
     release: release(),
     ruleset: ruleset(),
     ...overrides,
+  };
+}
+
+function response({ ok, status, payload, retryAfter = null }) {
+  return {
+    ok,
+    status,
+    headers: {
+      get(name) {
+        return name.toLowerCase() === 'retry-after' ? retryAfter : null;
+      },
+    },
+    async text() {
+      return JSON.stringify(payload);
+    },
   };
 }
 
@@ -149,4 +165,48 @@ test('active Firestore rules must match canonical firestore.rules exactly', () =
   assert.notEqual(result.rules.activeSha256, result.rules.expectedSha256);
   assert.equal(result.readinessCandidates.writeRulesReady, false);
   assert.equal(result.staged, false);
+});
+
+test('idempotent cloud reads retry a transient HTTP 503 and then succeed', async () => {
+  let calls = 0;
+  const sleeps = [];
+  const fetchFn = async () => {
+    calls += 1;
+    if (calls === 1) {
+      return response({ ok: false, status: 503, payload: { error: { status: 'UNAVAILABLE' } } });
+    }
+    return response({ ok: true, status: 200, payload: { ready: true } });
+  };
+
+  const result = await requestJson('https://example.test/read', {
+    token: 'test-token',
+    fetchFn,
+    label: 'Firebase Rules ruleset',
+    sleepFn: async (milliseconds) => { sleeps.push(milliseconds); },
+    randomFn: () => 0,
+  });
+
+  assert.deepEqual(result, { ready: true });
+  assert.equal(calls, 2);
+  assert.deepEqual(sleeps, [1000]);
+});
+
+test('non-transient HTTP errors still fail immediately without retry', async () => {
+  let calls = 0;
+  const fetchFn = async () => {
+    calls += 1;
+    return response({ ok: false, status: 403, payload: { error: { status: 'PERMISSION_DENIED' } } });
+  };
+
+  await assert.rejects(
+    requestJson('https://example.test/read', {
+      token: 'test-token',
+      fetchFn,
+      label: 'Firebase Rules ruleset',
+      sleepFn: async () => {},
+      randomFn: () => 0,
+    }),
+    /Firebase Rules ruleset HTTP 403/
+  );
+  assert.equal(calls, 1);
 });
