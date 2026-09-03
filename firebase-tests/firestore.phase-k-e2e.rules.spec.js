@@ -1,4 +1,4 @@
-import { after, before, test } from 'node:test';
+import { after, before, beforeEach, test } from 'node:test';
 import {
   assertFails,
   assertSucceeds,
@@ -10,52 +10,29 @@ import {
   getDoc,
   serverTimestamp,
   setDoc,
+  updateDoc,
 } from 'firebase/firestore';
 import { readFile } from 'node:fs/promises';
 import { initialRankForPosition } from '../src/modules/storage-v4/rankModel.js';
 
 let testEnv;
 
-const CREATED_AT = '2026-07-30T00:00:00.000Z';
-const UPDATED_AT = '2026-08-12T00:00:00.000Z';
-
-function v3Revision(id, overrides = {}) {
+function city(name, lat, lon) {
   return {
-    id,
-    createdAt: UPDATED_AT,
-    complete: false,
-    segmentCount: 0,
-    placeCount: 0,
-    routeConnectionCount: 0,
-    noteCount: 0,
-    checklistCount: 0,
-    ...overrides,
+    id: '',
+    name,
+    displayName: name,
+    country: 'México',
+    countryCode: 'MX',
+    lat,
+    lon,
   };
 }
 
-function v3Trip(id, revisionId) {
+function v4Trip(id, overrides = {}) {
   return {
     id,
-    name: 'Legacy coexistence',
-    currency: 'MXN',
-    placeOrderVersion: 1,
-    createdAt: CREATED_AT,
-    updatedAt: UPDATED_AT,
-    storageVersion: 3,
-    activeRevision: revisionId,
-    segmentCount: 0,
-    placeCount: 0,
-    routeConnectionCount: 0,
-    noteCount: 0,
-    checklistCount: 0,
-    total: 0,
-  };
-}
-
-function v4Trip(id) {
-  return {
-    id,
-    name: 'Phase K synthetic trip',
+    name: 'Phase K v4 trip',
     currency: 'MXN',
     origin: city('Ciudad de México', 19.4326, -99.1332),
     schemaVersion: 4,
@@ -68,6 +45,7 @@ function v4Trip(id) {
     segmentCount: 0,
     placeCount: 0,
     total: 0,
+    ...overrides,
   };
 }
 
@@ -82,19 +60,7 @@ function expenses() {
   };
 }
 
-function city(name, lat, lon) {
-  return {
-    id: '',
-    name,
-    displayName: name,
-    country: 'México',
-    countryCode: 'MX',
-    lat,
-    lon,
-  };
-}
-
-function v4Segment(id = 'segment-1') {
+function v4Segment(id = 'segment-1', overrides = {}) {
   return {
     id,
     rank: initialRankForPosition(0),
@@ -108,6 +74,7 @@ function v4Segment(id = 'segment-1') {
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     deletedAt: null,
+    ...overrides,
   };
 }
 
@@ -116,57 +83,23 @@ before(async () => {
     projectId: 'atlasmap-phase-k-e2e-rules-test',
     firestore: {
       host: '127.0.0.1',
-      port: 8085,
-      rules: await readFile('firestore-phase-k-e2e.rules', 'utf8'),
+      port: 8080,
+      rules: await readFile('firestore.rules', 'utf8'),
     },
   });
+});
+
+beforeEach(async () => {
+  await testEnv.clearFirestore();
 });
 
 after(async () => {
   await testEnv?.cleanup();
 });
 
-test('rules temporales preservan CRUD v3 existente', async () => {
+test('Phase K usa el contrato v4 normal para root y entidades', async () => {
   const alice = testEnv.authenticatedContext('alice').firestore();
-  const tripId = 'legacy-still-works';
-  const revisionId = 'revision001';
-  const revisionRef = doc(alice, `users/alice/trips/${tripId}/revisions/${revisionId}`);
-  const revision = v3Revision(revisionId);
-
-  await assertSucceeds(setDoc(revisionRef, revision));
-  await assertSucceeds(setDoc(revisionRef, { ...revision, complete: true }));
-  await assertSucceeds(setDoc(
-    doc(alice, `users/alice/trips/${tripId}`),
-    v3Trip(tripId, revisionId)
-  ));
-  await assertSucceeds(getDoc(doc(alice, `users/alice/trips/${tripId}`)));
-});
-
-test('delete v3 normal sigue permitido fuera del prefijo Phase K', async () => {
-  const alice = testEnv.authenticatedContext('alice').firestore();
-  const tripId = 'legacy-delete-works';
-  const revisionId = 'revision002';
-  const revisionRef = doc(alice, `users/alice/trips/${tripId}/revisions/${revisionId}`);
-  const tripRef = doc(alice, `users/alice/trips/${tripId}`);
-  const revision = v3Revision(revisionId);
-
-  await assertSucceeds(setDoc(revisionRef, revision));
-  await assertSucceeds(setDoc(revisionRef, { ...revision, complete: true }));
-  await assertSucceeds(setDoc(tripRef, v3Trip(tripId, revisionId)));
-  await assertSucceeds(deleteDoc(tripRef));
-});
-
-test('write v4 normal sigue bloqueado fuera del prefijo Phase K', async () => {
-  const alice = testEnv.authenticatedContext('alice').firestore();
-  await assertFails(setDoc(
-    doc(alice, 'users/alice/trips/normal-v4-trip'),
-    v4Trip('normal-v4-trip')
-  ));
-});
-
-test('solo el trip sintetico Phase K puede crear root y entidad v4', async () => {
-  const alice = testEnv.authenticatedContext('alice').firestore();
-  const tripId = 'phase-k-e2e-12345678';
+  const tripId = 'phase-k-e2e-trip';
   const tripRef = doc(alice, `users/alice/trips/${tripId}`);
   const segmentRef = doc(alice, `users/alice/trips/${tripId}/segments/segment-1`);
 
@@ -175,7 +108,7 @@ test('solo el trip sintetico Phase K puede crear root y entidad v4', async () =>
   await assertSucceeds(getDoc(segmentRef));
 });
 
-test('prefijo no concede acceso cruzado entre usuarios', async () => {
+test('Phase K mantiene aislamiento estricto por usuario', async () => {
   const alice = testEnv.authenticatedContext('alice').firestore();
   const bob = testEnv.authenticatedContext('bob').firestore();
   const tripId = 'phase-k-e2e-cross-user';
@@ -191,11 +124,45 @@ test('prefijo no concede acceso cruzado entre usuarios', async () => {
   ));
 });
 
-test('delete v4 temporal sigue bloqueado por lifecycle server-authoritative', async () => {
+test('Phase K rechaza versiones stale del root v4', async () => {
+  const alice = testEnv.authenticatedContext('alice').firestore();
+  const tripId = 'phase-k-e2e-version';
+  const tripRef = doc(alice, `users/alice/trips/${tripId}`);
+
+  await assertSucceeds(setDoc(tripRef, v4Trip(tripId)));
+  await assertSucceeds(updateDoc(tripRef, {
+    name: 'Versión 2',
+    version: 2,
+    updatedAt: serverTimestamp(),
+  }));
+  await assertFails(updateDoc(tripRef, {
+    name: 'Escritura stale',
+    version: 2,
+    updatedAt: serverTimestamp(),
+  }));
+});
+
+test('Phase K mantiene lifecycle server-authoritative', async () => {
   const alice = testEnv.authenticatedContext('alice').firestore();
   const tripId = 'phase-k-e2e-delete-denied';
   const tripRef = doc(alice, `users/alice/trips/${tripId}`);
 
   await assertSucceeds(setDoc(tripRef, v4Trip(tripId)));
   await assertFails(deleteDoc(tripRef));
+});
+
+test('Phase K no permite reintroducir origin físico en segments', async () => {
+  const alice = testEnv.authenticatedContext('alice').firestore();
+  const tripId = 'phase-k-e2e-origin';
+  await assertSucceeds(setDoc(
+    doc(alice, `users/alice/trips/${tripId}`),
+    v4Trip(tripId)
+  ));
+
+  await assertFails(setDoc(
+    doc(alice, `users/alice/trips/${tripId}/segments/segment-with-origin`),
+    v4Segment('segment-with-origin', {
+      origin: city('Ciudad de México', 19.4326, -99.1332),
+    })
+  ));
 });
