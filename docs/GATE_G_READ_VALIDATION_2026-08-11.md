@@ -1,18 +1,20 @@
 # Gate G READ — validación técnica en desarrollo
 
+> **ARCHIVO HISTÓRICO — NO USAR COMO RUNBOOK.** Este documento registra una validación realizada el 2026-08-11 durante la transición v3 → v4. Gate G, el repositorio híbrido, las cohortes de Remote Config y `storageV4RolloutTelemetry` ya no forman parte de la arquitectura operativa. No ejecutar los comandos ni reproducir la configuración descrita aquí. La persistencia autenticada actual es v4-only; consultar `FIREBASE_FOUNDATION.md` y `FIRESTORE_TRIP_STORAGE.md` para el contrato vigente.
+
 Fecha: 2026-08-11
 
 Proyecto validado: `atlasmap-dev`
 
-Alcance: únicamente rollout Gate G en modo `read`. Este registro no autoriza `pilot`, escrituras v4, migración productiva ni cambios en producción.
+Alcance histórico: únicamente rollout Gate G en modo `read`. Este registro no autoriza `pilot`, escrituras v4, migración productiva ni cambios en producción.
 
-## Resultado
+## Resultado histórico
 
-**PASS técnico en desarrollo.**
+**PASS técnico en desarrollo en la fecha indicada.**
 
 Se comprobó una lectura real a través del repositorio híbrido y se devolvió Remote Config a fail-closed al terminar la prueba.
 
-## Evidencia operacional
+## Evidencia operacional histórica
 
 ### Remote Config
 
@@ -56,11 +58,11 @@ found: true
 durationMs: 217
 ```
 
-Esto confirma que Gate G READ puede entrar en el repositorio híbrido sin modificar el dato legado leído.
+Esto confirmó en ese momento que Gate G READ podía entrar en el repositorio híbrido sin modificar el dato legado leído.
 
 ### Rules candidatas READ
 
-En `atlasmap-dev` se verificó con un viaje de prueba que las Rules candidatas permiten el flujo v3 existente durante la coexistencia:
+En `atlasmap-dev` se verificó con un viaje de prueba que las Rules candidatas permitían el flujo v3 existente durante la coexistencia:
 
 - guardar viaje v3: PASS;
 - recargar y listar el viaje: PASS;
@@ -82,11 +84,11 @@ storage_v4_cohort_percent     0
 storage_v4_read_rules_ready   false
 ```
 
-Por tanto, el estado operativo esperado después de la validación es v3 fail-closed.
+Por tanto, el estado operativo esperado después de aquella validación era v3 fail-closed.
 
-## Límites de este PASS
+## Límites de este PASS histórico
 
-Este PASS demuestra el camino READ controlado en desarrollo. No demuestra todavía:
+Este PASS demostró el camino READ controlado en desarrollo en esa etapa. No constituye evidencia del estado operativo actual y no demuestra por sí solo:
 
 - rollout READ productivo;
 - escritura v4 desde cliente;
@@ -97,4 +99,4 @@ Este PASS demuestra el camino READ controlado en desarrollo. No demuestra todav�
 - separación física de provider cache en `atlas-cache`;
 - observabilidad y SLO productivos.
 
-Cualquier avance posterior debe tratar esos puntos como checkpoints independientes.
+Los mecanismos Gate G descritos arriba fueron posteriormente retirados al consolidarse la ruta autenticada v4-only.
