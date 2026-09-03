@@ -22,7 +22,7 @@ function successfulHarness({ readRemoteTrip } = {}) {
     commitIntent: [],
     saveNow: 0,
     telemetryFlush: 0,
-    deleteRemoteTrip: [],
+    retireRemoteTrip: [],
     stop: 0,
     compositionArgs: null,
   };
@@ -74,9 +74,15 @@ function successfulHarness({ readRemoteTrip } = {}) {
     status: 'active',
     version: 1,
   });
-  const deleteRemoteTrip = async (input) => {
-    calls.deleteRemoteTrip.push(input);
-    return true;
+  const retireRemoteTrip = async (input) => {
+    calls.retireRemoteTrip.push(input);
+    return {
+      action: 'delete',
+      tripId: input.tripId,
+      version: input.baseVersion + 1,
+      status: 'deleted',
+      idempotentReplay: calls.retireRemoteTrip.length > 1,
+    };
   };
 
   return {
@@ -87,7 +93,7 @@ function successfulHarness({ readRemoteTrip } = {}) {
       crossContextNotifier,
       compositionFactory,
       readRemoteTrip: readRemoteTrip || defaultRead,
-      deleteRemoteTrip,
+      retireRemoteTrip,
     },
   };
 }
@@ -122,7 +128,7 @@ test('intent del probe crea exactamente un root trip v4 desde missing', () => {
   );
 });
 
-test('probe exitoso ejecuta una mutacion, valida remoto, vacia telemetria y limpia', async () => {
+test('probe exitoso ejecuta una mutacion, valida remoto, vacia telemetria y retira por lifecycle', async () => {
   const tripId = 'phase-k-e2e-success01';
   const harness = successfulHarness();
   const result = await runV4PhaseKSyncFlushProbe({
@@ -151,6 +157,12 @@ test('probe exitoso ejecuta una mutacion, valida remoto, vacia telemetria y limp
     status: 'active',
     version: 1,
   });
+  assert.deepEqual(result.lifecycle, {
+    action: 'delete',
+    status: 'deleted',
+    version: 2,
+    idempotentReplay: false,
+  });
   assert.equal(result.telemetryFlushed, true);
   assert.equal(result.cleanupPassed, true);
   assert.equal(result.localProbeDataCleared, true);
@@ -160,15 +172,17 @@ test('probe exitoso ejecuta una mutacion, valida remoto, vacia telemetria y limp
   assert.equal(harness.calls.commitIntent.length, 1);
   assert.equal(harness.calls.saveNow, 1);
   assert.equal(harness.calls.telemetryFlush, 1);
-  assert.equal(harness.calls.deleteRemoteTrip.length, 1);
-  assert.equal(harness.calls.deleteRemoteTrip[0].tripId, tripId);
+  assert.equal(harness.calls.retireRemoteTrip.length, 1);
+  assert.equal(harness.calls.retireRemoteTrip[0].tripId, tripId);
+  assert.equal(harness.calls.retireRemoteTrip[0].baseVersion, 1);
+  assert.equal(harness.calls.retireRemoteTrip[0].operationId, `${tripId}-delete`);
   assert.equal(harness.calls.stop, 1);
   assert.ok(harness.calls.clearUserData.length >= 2);
   assert.equal(harness.calls.compositionArgs.coordinatorOptions.maxMutationsPerFlush, 1);
   assert.equal(harness.calls.compositionArgs.uid, 'alice');
 });
 
-test('si falla verificacion despues del write, finally intenta borrar el remoto', async () => {
+test('si falla verificacion despues del write, finally intenta lifecycle idempotente', async () => {
   const tripId = 'phase-k-e2e-cleanup02';
   const harness = successfulHarness({
     async readRemoteTrip() {
@@ -189,8 +203,10 @@ test('si falla verificacion despues del write, finally intenta borrar el remoto'
   );
 
   assert.equal(harness.calls.saveNow, 1);
-  assert.equal(harness.calls.deleteRemoteTrip.length, 1);
-  assert.equal(harness.calls.deleteRemoteTrip[0].tripId, tripId);
+  assert.equal(harness.calls.retireRemoteTrip.length, 1);
+  assert.equal(harness.calls.retireRemoteTrip[0].tripId, tripId);
+  assert.equal(harness.calls.retireRemoteTrip[0].baseVersion, 1);
+  assert.equal(harness.calls.retireRemoteTrip[0].operationId, `${tripId}-delete`);
   assert.equal(harness.calls.stop, 1);
   assert.ok(harness.calls.clearUserData.length >= 2);
 });
@@ -233,7 +249,7 @@ test('probe falla cerrado por confirmacion, host, proyecto y tripId', async () =
   );
 });
 
-test('probe no esta cableado al repositorio activo ni al App root', async () => {
+test('probe usa lifecycle canonico y no contiene hard-delete cliente', async () => {
   const [probeSource, selectorSource, appSource] = await Promise.all([
     readFile(probePath, 'utf8'),
     readFile(selectorPath, 'utf8'),
@@ -244,8 +260,11 @@ test('probe no esta cableado al repositorio activo ni al App root', async () => 
   assert.ok(probeSource.includes("'ATLAS_PHASE_K_SYNTHETIC_V4_WRITE_DEV'"));
   assert.ok(probeSource.includes("const PROBE_DB_NAME = 'atlas-storage-v4-phase-k-e2e'"));
   assert.ok(probeSource.includes('maxMutationsPerFlush: 1'));
-  assert.ok(probeSource.includes('remoteMayExist = true'));
-  assert.ok(probeSource.includes('await deleteRemoteTrip({ db, uid: userId, tripId })'));
+  assert.ok(probeSource.includes('remoteMayBeActive = true'));
+  assert.ok(probeSource.includes("firebaseCallable('v4TripLifecycle')"));
+  assert.ok(probeSource.includes('operationId: lifecycleOperationId(tripId)'));
+  assert.doesNotMatch(probeSource, /deleteDoc\s*\(/);
+  assert.doesNotMatch(probeSource, /from ['"]firebase\/firestore['"][^;]*deleteDoc/);
   assert.doesNotMatch(selectorSource, /runV4PhaseKSyncFlushProbe|runCurrentUserV4PhaseKSyncFlushProbe/);
   assert.doesNotMatch(appSource, /runV4PhaseKSyncFlushProbe|runCurrentUserV4PhaseKSyncFlushProbe/);
 });
