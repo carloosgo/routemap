@@ -1,9 +1,8 @@
 /* global process, console, fetch */
-import { existsSync } from 'node:fs';
-import { basename, dirname, join, resolve } from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEV_TTL_COLLECTION_GROUPS } from './storageV4DevTtlManifest.mjs';
+import { resolveCliCommand, runCliProcess } from './crossPlatformCli.mjs';
 
 export const DEV_PLATFORM_PROJECT = 'atlasmap-dev';
 export const DEV_PLATFORM_PRODUCTION_PROJECT = 'atlasmap-prod';
@@ -28,38 +27,12 @@ export function parseDevPlatformParityArgs(args = []) {
   return Object.freeze({});
 }
 
-function commandCandidates(name) {
-  if (process.platform !== 'win32') return [name];
-  const candidates = [`${name}.cmd`, `${name}.exe`, name];
-  if (name === 'gcloud' && process.env.LOCALAPPDATA) {
-    candidates.push(join(process.env.LOCALAPPDATA, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', 'gcloud.cmd'));
-  }
-  return candidates;
-}
-
-function runProcess(executable, args) {
-  const options = { encoding: 'utf8', windowsHide: true, stdio: 'pipe' };
-  if (process.platform === 'win32' && executable.toLowerCase().endsWith('.cmd')) {
-    const hasPath = executable.includes('\\') || executable.includes('/');
-    return spawnSync(process.env.ComSpec || 'cmd.exe', ['/d', '/c', hasPath ? basename(executable) : executable, ...args], {
-      ...options,
-      ...(hasPath ? { cwd: dirname(executable) } : {}),
-    });
-  }
-  return spawnSync(executable, args, options);
-}
-
 function resolveGcloud() {
-  for (const candidate of commandCandidates('gcloud')) {
-    if ((candidate.includes('\\') || candidate.includes('/')) && !existsSync(candidate)) continue;
-    const probe = runProcess(candidate, ['version']);
-    if (!probe.error && probe.status === 0) return candidate;
-  }
-  return null;
+  return resolveCliCommand('gcloud');
 }
 
 function runChecked(gcloud, args, label) {
-  const result = runProcess(gcloud, args);
+  const result = runCliProcess(gcloud, args);
   if (result.error) fail(`${label}: ${result.error.message}`);
   const stdout = String(result.stdout || '').trim();
   const stderr = String(result.stderr || '').trim();
@@ -68,7 +41,7 @@ function runChecked(gcloud, args, label) {
 }
 
 function runJsonProbe(gcloud, args) {
-  const result = runProcess(gcloud, [...args, '--format=json']);
+  const result = runCliProcess(gcloud, [...args, '--format=json']);
   const stdout = String(result.stdout || '').trim();
   if (result.error || result.status !== 0) {
     return Object.freeze({ status: 'unavailable', data: null });
