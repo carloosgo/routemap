@@ -97,7 +97,7 @@ test('rules y writers conservan originDetails en los caminos v3/v4 canónicos', 
     assert.match(rules, /data\.note\.size\(\) <= 500/);
     assert.match(rules, /validExpenses\(data\.expenses\)/);
   }
-  assert.match(v4Rules, /'name', 'currency', 'originDetails', 'version', 'updatedAt'/);
+  assert.match(v4Rules, /'name', 'currency', 'origin', 'originDetails', 'version', 'updatedAt'/);
   assert.match(editorWriter, /originDetails: remoteRoot\.originDetails/);
   assert.match(pilotWriter, /originDetails: remoteRoot\.originDetails/);
 });
