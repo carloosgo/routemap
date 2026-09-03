@@ -14,8 +14,8 @@ test('origin keeps an explicit clear control without losing its regular typograp
   assert.match(origin, /IconX/);
   assert.match(origin, /itinerary-stop__remove-btn itinerary-origin__clear/);
   assert.match(origin, /onClick=\{onClear\}/);
-  assert.match(originSection, /onClear=\{\(\) => onUpdate\(\{ origin: null \}\)\}/);
-  assert.match(originSection, /onSelect=\{\(origin\) => onUpdate\(\{ origin \}\)\}/);
+  assert.match(originSection, /onClear=\{\(\) => onUpdateOrigin\(null\)\}/);
+  assert.match(originSection, /onSelect=\{onUpdateOrigin\}/);
   assert.match(
     compact,
     /\.itinerary-origin__picker \.autocomplete__selected-value,[\s\S]*\.itinerary-origin__picker \.input\s*\{[^}]*font-weight:\s*400;/s
