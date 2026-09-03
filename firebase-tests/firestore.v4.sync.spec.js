@@ -15,11 +15,24 @@ import { createExpenses } from '../src/modules/expenses/expenseModel.js';
 
 let testEnv;
 
+function city(name, country, countryCode, lat, lon) {
+  return {
+    id: '',
+    name,
+    displayName: name,
+    country,
+    countryCode,
+    lat,
+    lon,
+  };
+}
+
 function trip(id) {
   return {
     id,
     name: 'Sync v4',
     currency: 'EUR',
+    origin: city('Madrid', 'España', 'ES', 40.4168, -3.7038),
     segments: [],
     places: [],
     routeConnections: [],
@@ -31,24 +44,7 @@ function trip(id) {
 function segment(id, note = '') {
   return {
     id,
-    origin: {
-      id: '',
-      name: 'Madrid',
-      displayName: 'Madrid',
-      country: 'España',
-      countryCode: 'ES',
-      lat: 40.4168,
-      lon: -3.7038,
-    },
-    destination: {
-      id: '',
-      name: 'Barcelona',
-      displayName: 'Barcelona',
-      country: 'España',
-      countryCode: 'ES',
-      lat: 41.3874,
-      lon: 2.1686,
-    },
+    destination: city('Barcelona', 'España', 'ES', 41.3874, 2.1686),
     startDate: '2026-12-01',
     endDate: '2026-12-03',
     expenses: createExpenses(),
@@ -95,7 +91,7 @@ before(async () => {
     firestore: {
       host: '127.0.0.1',
       port: 8080,
-      rules: await readFile('firestore-v4.rules', 'utf8'),
+      rules: await readFile('firestore.rules', 'utf8'),
     },
   });
 });
@@ -126,6 +122,7 @@ test('coordinator + gateway + repository sincronizan una entidad real bajo rules
   const remote = await repository.getEntity(tripId, 'segment', 'segment-1');
   assert.equal(remote.version, 2);
   assert.equal(remote.note, 'local v2');
+  assert.equal('origin' in remote, false);
   const localEntity = await local.getEntity(`alice/${tripId}/segment/segment-1`);
   assert.equal(localEntity.serverVersion, 2);
   assert.equal(localEntity.state, V4_LOCAL_STATES.CLEAN);
@@ -165,9 +162,12 @@ test('versión stale real termina en conflict durable y preserva local + servido
   assert.equal(localEntity.payload.note, 'local pendiente');
   assert.equal(localEntity.conflict.serverVersion, 2);
   assert.equal(localEntity.conflict.payload.note, 'servidor v2');
+  assert.equal('origin' in localEntity.payload, false);
+  assert.equal('origin' in localEntity.conflict.payload, false);
   assert.equal(await local.getMutation(`alice/${tripId}/segment/segment-1`), null);
 
   const remote = await repository.getEntity(tripId, 'segment', 'segment-1');
   assert.equal(remote.version, 2);
   assert.equal(remote.note, 'servidor v2');
+  assert.equal('origin' in remote, false);
 });
