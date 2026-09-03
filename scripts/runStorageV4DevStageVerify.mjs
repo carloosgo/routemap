@@ -1,4 +1,4 @@
-/* global fetch, process, console, URLSearchParams, setTimeout, Math */
+/* global fetch, process, console, URLSearchParams, setTimeout */
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -258,129 +258,99 @@ function validateExpectedEventarcTrigger(trigger, expected, cloudRunService) {
     && destination?.service === cloudRunService
     && destination?.region === V4_SERVICE_REGION
     && typeof trigger?.serviceAccount === 'string'
-    && Boolean(trigger.serviceAccount.trim())
+    && trigger.serviceAccount.endsWith(`@${DEV_STAGE_VERIFY_PROJECT}.iam.gserviceaccount.com`)
+    && trigger?.transport?.pubsub?.topic
     && !hasFailedEventarcCondition(trigger);
-  return Object.freeze({
-    valid,
-    reason: valid ? null : 'configuration-mismatch',
-    name: resourceId(trigger),
-    serviceAccount: trigger?.serviceAccount || null,
-    destinationService: destination?.service || null,
-    destinationRegion: destination?.region || null,
-    eventDataContentType: trigger?.eventDataContentType || null,
-    type: typeFilter?.value || null,
-    database: databaseFilter?.value || null,
-    document: documentFilter?.value || null,
-    documentOperator: documentFilter?.operator || null,
-  });
+  return Object.freeze({ valid, reason: valid ? null : 'contract-mismatch' });
 }
 
-export function buildV4DevStageVerification({
-  candidateRules,
-  cloudFunctions,
-  eventarcTriggers = [],
-  release,
-  ruleset,
-} = {}) {
-  if (typeof candidateRules !== 'string' || !candidateRules.trim()) {
-    throw new TypeError('candidateRules es obligatorio.');
-  }
-  if (!Array.isArray(cloudFunctions)) throw new TypeError('cloudFunctions debe ser un arreglo.');
-  if (!Array.isArray(eventarcTriggers)) throw new TypeError('eventarcTriggers debe ser un arreglo.');
-  if (!release || !ruleset) throw new TypeError('release y ruleset son obligatorios.');
-
-  const expectedByName = new Map(V4_BACKEND_FUNCTION_NAMES.map((name) => [
+export function summarizeV4Stage({ functions, triggers, ruleset, candidateRulesContent } = {}) {
+  const summarizedFunctions = Array.isArray(functions) ? functions.map(summarizeFunction) : [];
+  const functionsByName = new Map(summarizedFunctions.map((item) => [item.name, item]));
+  const expectedFunctions = V4_BACKEND_FUNCTION_NAMES.map((name) => ({
     name,
-    V4_BACKEND_FUNCTION_REGIONS[name],
-  ]));
-  const byLocationAndName = new Map(cloudFunctions.map((resource) => [
-    `${functionRegion(resource)}:${resourceId(resource)}`,
-    resource,
-  ]));
-  const expectedFunctions = V4_BACKEND_FUNCTION_NAMES.map((name) => (
-    byLocationAndName.get(`${expectedByName.get(name)}:${name}`) || null
+    expectedRegion: V4_BACKEND_FUNCTION_REGIONS[name],
+    actual: functionsByName.get(name) || null,
+  }));
+  const invalidFunctions = expectedFunctions.filter(({ actual, expectedRegion }) => (
+    !actual
+    || actual.region !== expectedRegion
+    || actual.state !== 'ACTIVE'
+    || actual.runtime !== 'nodejs22'
   ));
-  const missingFunctions = V4_BACKEND_FUNCTION_NAMES.filter((name, index) => !expectedFunctions[index]);
-  const nonActiveFunctions = expectedFunctions
-    .filter(Boolean)
-    .filter((resource) => resource.state !== 'ACTIVE')
-    .map(resourceId);
-  const wrongRuntimeFunctions = expectedFunctions
-    .filter(Boolean)
-    .filter((resource) => resource?.buildConfig?.runtime !== 'nodejs22')
-    .map(resourceId);
-  const unexpectedRegionFunctions = cloudFunctions
-    .filter((resource) => expectedByName.has(resourceId(resource)))
-    .filter((resource) => functionRegion(resource) !== expectedByName.get(resourceId(resource)))
-    .map((resource) => `${resourceId(resource)}@${functionRegion(resource)}`)
-    .sort();
-  const functionsReady = missingFunctions.length === 0
-    && nonActiveFunctions.length === 0
-    && wrongRuntimeFunctions.length === 0
-    && unexpectedRegionFunctions.length === 0;
+  const functionsReady = invalidFunctions.length === 0;
 
-  const ingressIndex = V4_BACKEND_FUNCTION_NAMES.indexOf(V4_EVENTARC_DESTINATION_FUNCTION);
-  const ingressFunction = ingressIndex >= 0 ? expectedFunctions[ingressIndex] : null;
-  const cloudRunService = expectedCloudRunService(ingressFunction);
-  const triggersByName = new Map(eventarcTriggers.map((trigger) => [resourceId(trigger), trigger]));
-  const triggerResults = V4_EVENTARC_TRIGGERS.map((expected) => (
-    validateExpectedEventarcTrigger(triggersByName.get(expected.name), expected, cloudRunService)
-  ));
-  const missingEventarcTriggers = V4_EVENTARC_TRIGGERS
-    .filter((_, index) => triggerResults[index].reason === 'missing')
-    .map((trigger) => trigger.name);
-  const invalidEventarcTriggers = V4_EVENTARC_TRIGGERS
-    .filter((_, index) => triggerResults[index].reason === 'configuration-mismatch')
-    .map((trigger) => trigger.name);
+  const ingressFunction = functionsByName.get(V4_EVENTARC_DESTINATION_FUNCTION) || null;
+  const cloudRunService = expectedCloudRunService(
+    functions.find((item) => resourceId(item) === V4_EVENTARC_DESTINATION_FUNCTION)
+  );
+  const triggersByName = new Map((Array.isArray(triggers) ? triggers : []).map((trigger) => (
+    [resourceId(trigger), trigger]
+  )));
+  const expectedTriggers = V4_EVENTARC_TRIGGERS.map((expected) => {
+    const actual = triggersByName.get(expected.name) || null;
+    const validation = validateExpectedEventarcTrigger(actual, expected, cloudRunService);
+    return Object.freeze({
+      name: expected.name,
+      document: expected.document,
+      actual: actual ? Object.freeze({
+        name: resourceId(actual),
+        serviceAccount: actual.serviceAccount || null,
+        destinationService: actual?.destination?.cloudRun?.service || null,
+        destinationRegion: actual?.destination?.cloudRun?.region || null,
+      }) : null,
+      valid: validation.valid,
+      reason: validation.reason,
+    });
+  });
+  const missingTriggers = expectedTriggers.filter((item) => !item.actual).map((item) => item.name);
+  const invalidTriggers = expectedTriggers.filter((item) => item.actual && !item.valid).map((item) => item.name);
   const eventarcReady = Boolean(cloudRunService)
-    && missingEventarcTriggers.length === 0
-    && invalidEventarcTriggers.length === 0;
+    && missingTriggers.length === 0
+    && invalidTriggers.length === 0;
 
-  const expectedRulesSha256 = sha256(candidateRules);
-  const activeRulesSha256 = sha256(deployedRulesContent(ruleset));
-  const rulesReleaseMatches = release.name === DEV_STAGE_VERIFY_RELEASE
-    && release.rulesetName === ruleset.name
-    && activeRulesSha256 === expectedRulesSha256;
+  const deployedRules = deployedRulesContent(ruleset);
+  const candidateRules = typeof candidateRulesContent === 'string'
+    ? candidateRulesContent
+    : readFileSync(join(repoRoot, 'firestore.rules'), 'utf8');
+  const deployedRulesSha256 = sha256(deployedRules);
+  const candidateRulesSha256 = sha256(candidateRules);
+  const rulesMatch = deployedRulesSha256 === candidateRulesSha256;
+
   const backendReady = functionsReady && eventarcReady;
-  const staged = backendReady && rulesReleaseMatches;
+  const staged = backendReady && rulesMatch;
 
   return Object.freeze({
     project: DEV_STAGE_VERIFY_PROJECT,
-    regions: Object.freeze({
-      functions: { ...V4_BACKEND_FUNCTION_REGIONS },
-      eventarc: V4_EVENTARC_REGION,
-    }),
-    mode: 'v4-dev-stage-verify',
-    expectedFunctionCount: V4_BACKEND_FUNCTION_NAMES.length,
-    functions: Object.freeze(expectedFunctions.filter(Boolean).map(summarizeFunction)),
-    missingFunctions: Object.freeze(missingFunctions),
-    nonActiveFunctions: Object.freeze(nonActiveFunctions),
-    wrongRuntimeFunctions: Object.freeze(wrongRuntimeFunctions),
-    unexpectedRegionFunctions: Object.freeze(unexpectedRegionFunctions),
+    productionProject: DEV_STAGE_VERIFY_PRODUCTION_PROJECT,
+    expectedFunctionNames: V4_BACKEND_FUNCTION_NAMES,
+    expectedFunctionRegions: V4_BACKEND_FUNCTION_REGIONS,
+    functionRegionsQueried: DEV_STAGE_VERIFY_REGIONS,
+    functions: summarizedFunctions,
+    invalidFunctions,
     functionsReady,
     eventarc: Object.freeze({
+      region: V4_EVENTARC_REGION,
       destinationFunction: V4_EVENTARC_DESTINATION_FUNCTION,
-      destinationCloudRunService: cloudRunService || null,
+      destinationService: cloudRunService || null,
+      expectedEventType: DEV_STAGE_VERIFY_EVENT_TYPE,
+      expectedDatabase: DEV_STAGE_VERIFY_DATABASE,
+      expectedContentType: DEV_STAGE_VERIFY_EVENT_CONTENT_TYPE,
       expectedTriggerCount: V4_EVENTARC_TRIGGERS.length,
-      triggers: Object.freeze(triggerResults),
-      missingTriggers: Object.freeze(missingEventarcTriggers),
-      invalidTriggers: Object.freeze(invalidEventarcTriggers),
+      foundTriggerCount: expectedTriggers.filter((item) => item.actual).length,
+      expectedTriggers,
+      missingTriggers,
+      invalidTriggers,
       ready: eventarcReady,
     }),
-    backendReady,
     rules: Object.freeze({
-      releaseName: release.name || null,
-      rulesetName: ruleset.name || null,
-      expectedSha256: expectedRulesSha256,
-      activeSha256: activeRulesSha256,
-      matchesCandidate: rulesReleaseMatches,
+      releaseName: ruleset?.release?.name || null,
+      rulesetName: ruleset?.release?.rulesetName || null,
+      deployedSha256: deployedRulesSha256,
+      candidateSha256: candidateRulesSha256,
+      matchesCandidate: rulesMatch,
     }),
-    readinessCandidates: Object.freeze({
-      writeRulesReady: rulesReleaseMatches,
-      eventIngressReady: eventarcReady,
-      lifecycleReady: functionsReady,
-      purgeReady: functionsReady,
-    }),
+    backendReady,
     staged,
     mutatesCloud: false,
     mutatesApplicationData: false,
@@ -388,36 +358,30 @@ export function buildV4DevStageVerification({
   });
 }
 
-export async function runStorageV4DevStageVerify({
-  token,
-  fetchFn = fetch,
-  candidateRules = readFileSync(join(repoRoot, 'firestore.rules'), 'utf8'),
-  log = (value) => console.log(value),
-} = {}) {
-  const accessToken = token || accessTokenFromGcloud();
-  const [cloudFunctions, eventarcTriggers, activeRules] = await Promise.all([
-    listV4Functions({ token: accessToken, fetchFn }),
-    listV4EventarcTriggers({ token: accessToken, fetchFn }),
-    getActiveFirestoreRuleset({ token: accessToken, fetchFn }),
+export async function verifyV4DevStage({ token = accessTokenFromGcloud(), fetchFn = fetch } = {}) {
+  const [functions, triggers, activeRules] = await Promise.all([
+    listV4Functions({ token, fetchFn }),
+    listV4EventarcTriggers({ token, fetchFn }),
+    getActiveFirestoreRuleset({ token, fetchFn }),
   ]);
-  const result = buildV4DevStageVerification({
-    candidateRules,
-    cloudFunctions,
-    eventarcTriggers,
-    release: activeRules.release,
-    ruleset: activeRules.ruleset,
+  return summarizeV4Stage({
+    functions,
+    triggers,
+    ruleset: activeRules,
   });
-  log(JSON.stringify(result, null, 2));
-  if (!result.staged) {
-    throw new Error('Storage v4 dev stage no coincide con Functions, Eventarc y Firestore Rules canónicos.');
-  }
-  return result;
 }
 
-const invokedPath = process.argv[1] ? resolve(process.argv[1]) : '';
-const modulePath = resolve(fileURLToPath(import.meta.url));
-if (invokedPath === modulePath) {
-  runStorageV4DevStageVerify().catch((error) => {
+async function main() {
+  const result = await verifyV4DevStage();
+  console.log(JSON.stringify(result, null, 2));
+  if (!result.staged) {
+    throw new Error('Atlas Storage v4 dev no está staged: Functions/Eventarc/Rules no coinciden con el contrato canónico.');
+  }
+}
+
+const isMain = resolve(process.argv[1] || '') === fileURLToPath(import.meta.url);
+if (isMain) {
+  main().catch((error) => {
     console.error(error?.message || error);
     process.exitCode = 1;
   });
