@@ -14,12 +14,12 @@ test('country run stops suppress only internal dividers and restore the divider 
   const kyiv = city('Kyiv', 'UA');
   const bratislava = city('Bratislava', 'SK');
 
-  const sequence = buildItineraryStopSequence([
-    { origin: madrid, destination: paris },
-    { origin: paris, destination: lyon },
-    { origin: lyon, destination: nice },
-    { origin: nice, destination: kyiv },
-    { origin: kyiv, destination: bratislava },
+  const sequence = buildItineraryStopSequence(madrid, [
+    { destination: paris },
+    { destination: lyon },
+    { destination: nice },
+    { destination: kyiv },
+    { destination: bratislava },
   ]);
 
   assert.deepEqual(
