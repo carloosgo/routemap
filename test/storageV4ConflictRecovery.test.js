@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { v4EntityKey } from '../src/modules/storage-v4/entityKeyModel.js';
 import { createMemoryV4LocalPersistence } from '../src/modules/storage-v4/memoryLocalPersistence.js';
 import { V4_LOCAL_STATES } from '../src/modules/storage-v4/storageV4Contract.js';
-import { createFirestoreV4PilotTripWriter } from '../src/infrastructure/firebase/firestoreV4PilotTripWriter.js';
+import { createFirestoreV4TripWriter } from '../src/infrastructure/firebase/firestoreV4TripWriter.js';
 
 function inertComposition(localPersistence) {
   return {
@@ -65,7 +65,7 @@ test('reabrir v4 acepta estado remoto fresco y limpia conflicto local sin invent
   };
   await local.putEntity(entity);
 
-  const writer = createFirestoreV4PilotTripWriter({
+  const writer = createFirestoreV4TripWriter({
     db: {},
     uid: 'alice',
     telemetryEnabled: false,
