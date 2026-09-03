@@ -10,7 +10,7 @@ const PURE_MODULES = [
   'src/modules/expenses/expenseModel.js',
   'src/modules/storage/localStorageRepository.js',
   'src/modules/geocoding/citySearchCache.js',
-  'src/modules/storage-v4/gateGRuntimeConfigModel.js',
+  'src/modules/storage-v4/storageV4Contract.js',
 ];
 
 const FORBIDDEN_IMPORTS = [
