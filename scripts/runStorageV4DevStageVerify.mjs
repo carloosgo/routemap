@@ -1,7 +1,6 @@
 /* global fetch, process, console, URLSearchParams */
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -12,6 +11,7 @@ import {
   V4_EVENTARC_TRIGGERS,
   V4_SERVICE_REGION,
 } from '../functions/v4BackendManifest.js';
+import { resolveCliCommand, runCliProcess } from './crossPlatformCli.mjs';
 
 export const DEV_STAGE_VERIFY_PROJECT = 'atlasmap-dev';
 export const DEV_STAGE_VERIFY_PRODUCTION_PROJECT = 'atlasmap-prod';
@@ -40,14 +40,12 @@ function sha256(value) {
 }
 
 function resolveGcloud() {
-  return process.platform === 'win32' ? 'gcloud.cmd' : 'gcloud';
+  return resolveCliCommand('gcloud');
 }
 
 function accessTokenFromGcloud(gcloud = resolveGcloud()) {
-  const result = spawnSync(gcloud, ['auth', 'print-access-token'], {
-    encoding: 'utf8',
-    windowsHide: true,
-  });
+  if (!gcloud) throw new Error('No se encontró gcloud disponible en PATH o Google Cloud SDK.');
+  const result = runCliProcess(gcloud, ['auth', 'print-access-token']);
   if (result.error) throw result.error;
   if ((result.status ?? 1) !== 0) {
     throw new Error(`gcloud auth print-access-token falló con código ${result.status ?? 1}.`);
