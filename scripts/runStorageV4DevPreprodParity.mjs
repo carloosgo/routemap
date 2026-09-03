@@ -2,20 +2,13 @@
 import { spawnSync } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runPilotStageVerifyDev } from './runStorageV4PilotStageVerifyDev.mjs';
-import {
-  accessTokenFromGcloud,
-  getRemoteConfigTemplate,
-  resolveGcloud,
-} from './storageV4RemoteConfigRestDev.mjs';
-import { summarizeStorageV4RemoteConfig } from './storageV4PilotRemoteConfigModel.mjs';
+import { runStorageV4DevStageVerify } from './runStorageV4DevStageVerify.mjs';
 
 export const DEV_PREPROD_PROJECT = 'atlasmap-dev';
 export const DEV_PREPROD_PRODUCTION_PROJECT = 'atlasmap-prod';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const phaseKCheckpoint = join(here, 'runStorageV4PhaseKCloudCheckpoint.mjs');
-const EXPECTED_READINESS_COUNT = 7;
 
 export function parseDevPreprodParityArgs(args = []) {
   if (!Array.isArray(args)) throw new TypeError('args debe ser un arreglo.');
@@ -25,61 +18,24 @@ export function parseDevPreprodParityArgs(args = []) {
   return Object.freeze({});
 }
 
-function controlledPilot(remoteConfig = {}) {
-  const cohortPercent = Number(remoteConfig.cohortPercent);
-  return remoteConfig.enabled === 'true'
-    && remoteConfig.killSwitch === 'false'
-    && remoteConfig.mode === 'pilot'
-    && Number.isFinite(cohortPercent)
-    && cohortPercent > 0
-    && cohortPercent <= 100;
-}
-
 function readinessCandidatesReady(readinessCandidates = {}) {
   const values = Object.values(readinessCandidates);
   return values.length > 0 && values.every((value) => value === true);
 }
 
-function publishedReadinessReady(remoteConfigSummary = {}) {
-  const values = Object.values(remoteConfigSummary?.readiness || {});
-  return values.length === EXPECTED_READINESS_COUNT
-    && values.every((value) => value === 'true');
-}
-
-export function classifyDevRemoteConfig(stage = {}, remoteConfigSummary = {}) {
-  const remoteConfig = stage.remoteConfig || {};
-  const safeOff = remoteConfig.safeForStage === true
-    && remoteConfig.pilotTrafficActivated === false;
-  const pilot = controlledPilot(remoteConfig);
-  const publishedReadinessComplete = publishedReadinessReady(remoteConfigSummary);
-  return Object.freeze({
-    mode: safeOff ? 'fail-closed' : (pilot ? 'controlled-pilot' : 'invalid'),
-    safeOff,
-    controlledPilot: pilot,
-    cohortPercent: pilot ? Number(remoteConfig.cohortPercent) : 0,
-    publishedReadinessComplete,
-    publishedReadiness: Object.freeze({ ...(remoteConfigSummary?.readiness || {}) }),
-    acceptableForPreprod: (safeOff || pilot) && publishedReadinessComplete,
-  });
-}
-
-export function assessDevPreprodStage(stage, { remoteConfigSummary = {} } = {}) {
+export function assessDevPreprodStage(stage) {
   if (!stage || typeof stage !== 'object' || Array.isArray(stage)) {
     throw new TypeError('stage es obligatorio.');
   }
 
-  const remoteConfig = classifyDevRemoteConfig(stage, remoteConfigSummary);
   const projectIsDev = stage.project === DEV_PREPROD_PROJECT;
   const productionUntouched = stage.touchesProduction === false;
-  const readOnly = stage.mutatesCloud === false
-    && stage.mutatesApplicationData === false
-    && stage.changesRemoteConfig === false
-    && stage.activatesClientPilotTraffic === false;
+  const readOnly = stage.mutatesCloud === false && stage.mutatesApplicationData === false;
   const backendReady = stage.backendReady === true;
   const rulesReady = stage?.rules?.matchesCandidate === true;
   const eventarcReady = stage?.eventarc?.ready === true;
   const readinessReady = readinessCandidatesReady(stage.readinessCandidates);
-  const stageStateAcceptable = remoteConfig.safeOff ? stage.staged === true : remoteConfig.controlledPilot;
+  const staged = stage.staged === true;
 
   return Object.freeze({
     projectIsDev,
@@ -89,8 +45,7 @@ export function assessDevPreprodStage(stage, { remoteConfigSummary = {} } = {}) 
     rulesReady,
     eventarcReady,
     readinessReady,
-    remoteConfig,
-    stageStateAcceptable,
+    staged,
     pass: projectIsDev
       && productionUntouched
       && readOnly
@@ -98,16 +53,8 @@ export function assessDevPreprodStage(stage, { remoteConfigSummary = {} } = {}) 
       && rulesReady
       && eventarcReady
       && readinessReady
-      && remoteConfig.acceptableForPreprod
-      && stageStateAcceptable,
+      && staged,
   });
-}
-
-async function readDevRemoteConfig() {
-  const gcloud = resolveGcloud();
-  const token = accessTokenFromGcloud(gcloud);
-  const current = await getRemoteConfigTemplate({ token });
-  return summarizeStorageV4RemoteConfig(current.template);
 }
 
 function runPhaseKCheckpoint() {
@@ -125,8 +72,7 @@ function runPhaseKCheckpoint() {
 
 export async function runStorageV4DevPreprodParity({
   args = process.argv.slice(2),
-  verifyStage = runPilotStageVerifyDev,
-  readRemoteConfig = readDevRemoteConfig,
+  verifyStage = runStorageV4DevStageVerify,
   runCloudCheckpoint = runPhaseKCheckpoint,
   log = (value) => console.log(value),
 } = {}) {
@@ -135,27 +81,20 @@ export async function runStorageV4DevPreprodParity({
   log(JSON.stringify({
     project: DEV_PREPROD_PROJECT,
     mode: 'development-preproduction-parity-preflight',
-    purpose: 'verify production-like real cloud infrastructure in atlasmap-dev while production rollout remains frozen',
+    purpose: 'verify production-like canonical v4 cloud infrastructure in atlasmap-dev without touching atlasmap-prod',
     productionProject: DEV_PREPROD_PRODUCTION_PROJECT,
-    acceptsRemoteConfigStates: ['fail-closed', 'controlled-pilot'],
-    requiresPublishedReadinessFlags: true,
-    expectedPublishedReadinessFlagCount: EXPECTED_READINESS_COUNT,
     requiresCoreRuntimeParity: true,
     runsPhaseKOperationalCheckpoint: true,
     mutatesCloud: false,
     mutatesApplicationData: false,
-    changesRemoteConfig: false,
     touchesProduction: false,
   }, null, 2));
 
-  const [stage, remoteConfigSummary] = await Promise.all([
-    verifyStage(),
-    readRemoteConfig(),
-  ]);
-  const assessment = assessDevPreprodStage(stage, { remoteConfigSummary });
+  const stage = await verifyStage();
+  const assessment = assessDevPreprodStage(stage);
   log(JSON.stringify({ stageAssessment: assessment }, null, 2));
   if (!assessment.pass) {
-    throw new Error('Dev preprod parity bloqueado: atlasmap-dev presenta drift, readiness incompleto o un estado Remote Config no controlado.');
+    throw new Error('Dev preprod parity bloqueado: atlasmap-dev presenta drift respecto al stage v4 canónico.');
   }
 
   await runCloudCheckpoint();
@@ -164,11 +103,8 @@ export async function runStorageV4DevPreprodParity({
     project: DEV_PREPROD_PROJECT,
     pass: true,
     coreRuntimeParityReady: true,
-    remoteConfigMode: assessment.remoteConfig.mode,
-    remoteConfigCohortPercent: assessment.remoteConfig.cohortPercent,
-    remoteConfigPublishedReadinessComplete: assessment.remoteConfig.publishedReadinessComplete,
+    canonicalV4StageReady: true,
     phaseKOperationalCheckpointPass: true,
-    productionRolloutFrozen: true,
     productionMutated: false,
     next: 'review remaining dev-to-production infrastructure parity gaps without using atlasmap-prod for feature development',
   });
