@@ -22,6 +22,7 @@ function tripData(id, overrides = {}) {
     id,
     name: 'Viaje v4',
     currency: 'MXN',
+    origin: null,
     schemaVersion: 4,
     status: 'active',
     version: 1,
@@ -74,7 +75,6 @@ function segmentData(id = 'segment-1', overrides = {}) {
   return {
     id,
     rank: initialRankForPosition(0),
-    origin: city('Ciudad de México', 19.4326, -99.1332),
     destination: city('Puebla', 19.0414, -98.2063),
     startDate: '2026-12-01',
     endDate: '2026-12-02',
@@ -138,6 +138,39 @@ test('v4 crea un resumen vacío propio y rechaza agregados falsificados', async 
   await assertFails(setDoc(
     doc(alice, 'users/alice/trips/trip-forged-count'),
     tripData('trip-forged-count', { segmentCount: 2 })
+  ));
+});
+
+test('origen canónico pertenece al root v4 y nunca a segments', async () => {
+  const alice = testEnv.authenticatedContext('alice').firestore();
+  const rootOrigin = city('Ciudad de México', 19.4326, -99.1332);
+
+  await assertSucceeds(setDoc(
+    doc(alice, 'users/alice/trips/trip-origin-create'),
+    tripData('trip-origin-create', { origin: rootOrigin })
+  ));
+  await assertFails(setDoc(
+    doc(alice, 'users/alice/trips/trip-origin-invalid'),
+    tripData('trip-origin-invalid', {
+      origin: { ...rootOrigin, providerPayload: 'no-canonical' },
+    })
+  ));
+
+  const rootRef = await createTrip(alice, 'trip-origin-update');
+  await assertSucceeds(updateDoc(rootRef, {
+    origin: rootOrigin,
+    version: 2,
+    updatedAt: serverTimestamp(),
+  }));
+  await assertSucceeds(updateDoc(rootRef, {
+    origin: null,
+    version: 3,
+    updatedAt: serverTimestamp(),
+  }));
+
+  await assertFails(setDoc(
+    doc(alice, 'users/alice/trips/trip-origin-update/segments/segment-with-origin'),
+    segmentData('segment-with-origin', { origin: rootOrigin })
   ));
 });
 

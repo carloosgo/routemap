@@ -124,12 +124,12 @@ service cloud.firestore {
 
     function validTrip(data, tripId) {
       return data.keys().hasOnly([
-          'id', 'name', 'currency', 'originDetails', 'schemaVersion', 'status', 'version',
+          'id', 'name', 'currency', 'origin', 'originDetails', 'schemaVersion', 'status', 'version',
           'createdAt', 'updatedAt', 'deletedAt', 'purgeAfter',
           'segmentCount', 'placeCount', 'total'
         ])
         && data.keys().hasAll([
-          'id', 'name', 'currency', 'schemaVersion', 'status', 'version',
+          'id', 'name', 'currency', 'origin', 'schemaVersion', 'status', 'version',
           'createdAt', 'updatedAt', 'deletedAt', 'purgeAfter',
           'segmentCount', 'placeCount', 'total'
         ])
@@ -141,6 +141,7 @@ service cloud.firestore {
         && data.name.size() <= 120
         && data.currency is string
         && data.currency.matches('^[A-Z]{3}$')
+        && (data.origin == null || validCity(data.origin))
         && (
           !data.keys().hasAny(['originDetails'])
           || validOriginDetails(data.originDetails)
@@ -179,7 +180,7 @@ service cloud.firestore {
         && request.resource.data.placeCount == resource.data.placeCount
         && request.resource.data.total == resource.data.total
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'name', 'currency', 'originDetails', 'version', 'updatedAt'
+          'name', 'currency', 'origin', 'originDetails', 'version', 'updatedAt'
         ]);
     }
 
@@ -221,11 +222,11 @@ service cloud.firestore {
 
     function validSegment(data, segmentId) {
       return data.keys().hasOnly([
-          'id', 'rank', 'origin', 'destination', 'startDate', 'endDate',
+          'id', 'rank', 'destination', 'startDate', 'endDate',
           'expenses', 'note', 'status', 'version', 'createdAt', 'updatedAt', 'deletedAt'
         ])
         && data.keys().hasAll([
-          'id', 'rank', 'origin', 'destination', 'startDate', 'endDate',
+          'id', 'rank', 'destination', 'startDate', 'endDate',
           'expenses', 'note', 'status', 'version', 'createdAt', 'updatedAt', 'deletedAt'
         ])
         && data.id == segmentId
@@ -233,7 +234,6 @@ service cloud.firestore {
         && data.id.size() > 0
         && data.id.size() <= 128
         && validRank(data.rank)
-        && (data.origin == null || validCity(data.origin))
         && (data.destination == null || validCity(data.destination))
         && data.startDate is string
         && data.startDate.size() <= 10
