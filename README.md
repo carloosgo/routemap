@@ -1,22 +1,26 @@
 # Atlas — planificación de viajes
 
-Atlas es una aplicación web para planear viajes internacionales: itinerarios por ciudad, lugares guardados, conexiones, gastos, notas, checklist y visualización cartográfica. El frontend usa React + Vite y la persistencia autenticada se apoya en Firebase mediante la arquitectura **Atlas Storage v4** y su rollout controlado.
+Atlas es una aplicación web para planear viajes internacionales: itinerarios por ciudad, lugares guardados, conexiones, gastos, notas, checklist y visualización cartográfica. El frontend usa React + Vite y la persistencia autenticada usa **Atlas Storage v4-only**.
 
 ## Stack actual
 
 - React 18 + Vite.
-- Firebase Authentication, Firestore, Cloud Functions y Remote Config.
-- Atlas Storage v4 con Gate G para transición controlada entre v3, lectura híbrida y v4.
-- `localStorage` únicamente para viajes locales de usuarios no autenticados y su importación posterior.
-- El entry path cartográfico principal (`AppMapPane -> RouteMap`) usa Google Maps; Google Places/Routes atienden los flujos que les corresponden.
-- Geoapify para autocompletado de ciudades y funciones auxiliares de proveedor.
-- Cachés de proveedor separadas de los datos canónicos: caché ligera en navegador y caché compartida server-side con TTL.
+- Firebase Authentication, Firestore y Cloud Functions.
+- Storage v4 con persistencia física por entidad, versionado, lifecycle y sincronización local-first.
+- repositorio local para viajes de usuarios no autenticados;
+- IndexedDB/mutation queue para trabajo durable y sync autenticado;
+- Google Maps como renderer cartográfico principal;
+- Google Places/Routes y Geoapify según el contrato de cada dominio;
+- cachés de proveedor separadas del dato canónico del usuario.
+
+Remote Config puede existir como capacidad de plataforma para otros usos, pero **no selecciona la generación de storage**. Gate G, pilot, hybrid read, dual-write y fallback v3 son historia de implementación y no forman parte del runtime soportado.
 
 ## Requisitos
 
 - Node.js 22.x.
 - npm.
-- Firebase CLI para pruebas de Rules y tareas operativas que lo requieren.
+- Firebase CLI para tests de Rules y tareas operativas que lo requieran.
+- gcloud autenticado únicamente para los inventarios cloud read-only que lo requieran.
 
 ## Desarrollo local
 
@@ -28,55 +32,84 @@ npm run dev
 
 El servidor de Vite abre normalmente en `http://localhost:5173`.
 
-Las variables `VITE_*` son configuración pública del cliente. Las claves privadas de proveedores usadas por Functions viven en Firebase Secret Manager y no deben copiarse a `.env.local`.
+Las variables `VITE_*` son configuración pública del cliente. Las claves privadas de proveedores usadas por Functions viven en Firebase Secret Manager y nunca deben copiarse a `.env.local` ni versionarse.
 
-## Validación
-
-Antes de integrar cambios:
+## Validación local
 
 ```bash
-npm test
-npm run lint
-npm run build
+npm run verify:local
 ```
 
-Cuando el cambio afecta Firestore/Storage v4 también se ejecutan los contratos correspondientes, incluido `npm run test:rules`. El workflow `Quality checks` ejecuta unit tests, Rules, Phase-K E2E Rules, ESLint y build en pull requests.
+Los cambios que afectan Firestore también requieren los tests de Rules correspondientes. En CI, el corte final debe obtener Quality, CodeQL y Dependency Audit verdes sobre el mismo SHA antes de considerarse certificado.
 
 ## Persistencia de viajes
 
-El selector activo vive en `src/modules/trips/tripRepositorySelector.js`:
+La selección actual es deliberadamente simple:
 
 ```text
-sin usuario autenticado -> localStorageRepository
-usuario autenticado     -> Gate G -> v3 | hybrid-read | v4-pilot
+sin usuario autenticado -> repositorio local
+usuario autenticado     -> Firestore Storage v4
 ```
 
-No existe un backend REST seleccionable mediante `VITE_STORAGE_DRIVER`. La transición v3/v4 es deliberada y permanece hasta que los gates productivos de convergencia permitan retirar v3.
+No existe selector v3/v4 ni backend REST alternativo para viajes.
 
-Storage v4 separa el documento raíz del viaje de sus entidades (`segments`, `places`, `connections`, `notes` y `checklist`) y mantiene los datos temporales/derivados de proveedores fuera del modelo canónico del usuario.
+Storage v4 presenta un `Trip` lógico completo a la aplicación, pero Firestore persiste entidades independientes:
+
+```text
+users/{uid}/trips/{tripId}
+  segments/{segmentId}
+  places/{placeId}
+  connections/{connectionId}
+  notes/{noteId}
+  checklist/{itemId}
+```
+
+El root conserva identidad, resumen, moneda, `origin`, lifecycle/versionado y agregados derivados. Los datos temporales/calculados de proveedores no se convierten en dato canónico del usuario.
 
 ## Entornos
 
-La estrategia operativa se documenta en los closeouts y snapshots de Storage v4. Como principio:
-
 ```text
-local/emulators -> iteración rápida
-atlasmap-dev    -> integración cloud / preproducción
-atlasmap-prod   -> rollout productivo controlado por gates
+local/emulators -> iteración y pruebas deterministas
+atlasmap-dev    -> integración cloud / preproducción real
+atlasmap-prod   -> producción protegida
 ```
 
-No se debe usar `atlasmap-prod` como backend de desarrollo ni inferir estado cloud sólo porque exista un runner en el repositorio.
+- `.firebaserc` mantiene `default` y `dev` en `atlasmap-dev`.
+- `prod` apunta exclusivamente a `atlasmap-prod`.
+- un `git push` no despliega automáticamente Firebase.
+- `atlasmap-prod` nunca se usa como backend de desarrollo.
+
+### Verificación de preprod
+
+```bash
+npm run storage-v4:dev:verify
+npm run storage-v4:dev:preprod-parity
+npm run storage-v4:dev:platform-parity
+```
+
+Estos inventarios son read-only. El stage canónico espera tres Functions v4, seis triggers Eventarc y Rules activas idénticas a `firestore.rules`.
+
+## Producción
+
+La futura salida productiva es un **release directo v4**. No existe una fase futura donde debamos volver a crear v3, cohortes, hybrid read o dual-write.
+
+Si aparece estado legacy inesperado en `atlasmap-prod`, el release se detiene y se inventaría; no se reintroduce una segunda arquitectura como parche.
 
 ## Documentación principal
 
-- `ARCHITECTURE.md` — arquitectura de aplicación y fronteras principales.
-- `SECURITY.md` — controles de seguridad vigentes.
-- `docs/STORAGE_ARCHITECTURE_V4.md` — contrato y diseño de Atlas Storage v4.
-- `docs/STORAGE_V4_IMPLEMENTATION_STATUS.md` — estado de implementación por fases.
-- `docs/STORAGE_V4_OPERATING_STATE_2026-08-15.md` — snapshot operativo histórico; los closeouts/evidencia cloud posteriores tienen prioridad.
-- `docs/STORAGE_V4_PHASE_J_DECISION_2026-08-14.md` — decisión canónica sobre separación de provider cache para v4.0.
-- `docs/PROVIDER_CACHE_TOPOLOGY.md` — topología de caché y checkpoint futuro para separación física.
+- `ARCHITECTURE.md` — arquitectura de aplicación y fronteras vigentes.
+- `SECURITY.md` — controles de seguridad.
+- `docs/FIREBASE_FOUNDATION.md` — estado canónico de Firebase y Storage v4.
+- `docs/FIRESTORE_TRIP_STORAGE.md` — contrato físico de persistencia.
+- `docs/STORAGE_ARCHITECTURE_V4.md` — diseño completo; sus secciones de transición son históricas.
+- `docs/STORAGE_V4_IMPLEMENTATION_STATUS.md` — estado vigente de implementación/entornos.
+- `docs/STORAGE_V4_OPERATIONS_RUNBOOK.md` — operación v4 actual.
+- `docs/STORAGE_V4_PRODUCTION_ROLLOUT.md` — release productivo directo v4.
+- `docs/CITY_CATALOG_ARCHITECTURE.md` — catálogo global de ciudades.
+- `docs/PROVIDER_CACHE_TOPOLOGY.md` — topología de cachés.
+
+Los documentos fechados de Gate G, pilot y antiguas fases A–L se conservan como evidencia histórica cuando corresponde, no como procedimientos operativos actuales.
 
 ## Principio de evolución
 
-Atlas evita reemplazos masivos sin evidencia. Las piezas de rollout, rollback y compatibilidad se retiran únicamente cuando el gate correspondiente lo autoriza; las optimizaciones de rendimiento se hacen con medición y no por especulación.
+Una nueva funcionalidad debe integrarse al modelo v4 existente sin crear caminos paralelos por conveniencia. La UI no conoce generaciones de storage; el mapa renderiza; los datos de usuario siguen siendo canónicos y los proveedores/cachés permanecen derivados y reemplazables.
