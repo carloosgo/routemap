@@ -1,4 +1,4 @@
-/* global fetch, process, console */
+/* global fetch, process, console, setTimeout */
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -210,7 +210,7 @@ function executeCli(executable, args, label) {
   }
 }
 
-async function verifyAfterApply({ attempts = 13, intervalMs = 5000 } = {}) {
+async function verifyAfterApply({ attempts = 25, intervalMs = 5000 } = {}) {
   let lastError = null;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
