@@ -13,7 +13,7 @@ import { createExpenses } from '../src/modules/expenses/expenseModel.js';
 let testEnv;
 
 before(async () => {
-  const rules = await readFile('firestore-v4.rules', 'utf8');
+  const rules = await readFile('firestore.rules', 'utf8');
   testEnv = await initializeTestEnvironment({
     projectId: 'atlasmap-v4-repository-test',
     firestore: {
@@ -37,6 +37,7 @@ function trip() {
     id: 'trip-v4-repository',
     name: 'Europa',
     currency: 'EUR',
+    origin: null,
     segments: [],
     places: [],
     routeConnections: [],
@@ -48,7 +49,6 @@ function trip() {
 function segment(id = 'segment-1') {
   return {
     id,
-    origin: null,
     destination: null,
     startDate: '',
     endDate: '',
@@ -96,6 +96,7 @@ test('repositorio v4 persiste entidad versionada, update, tombstone y restore', 
   let current = await repository.getEntity(currentTrip.id, 'segment', 'segment-1');
   assert.equal(current.version, 1);
   assert.equal(current.status, 'active');
+  assert.equal('origin' in current, false);
 
   await repository.updateEntity(
     currentTrip.id,
@@ -126,16 +127,10 @@ test('repositorio v4 persiste entidad versionada, update, tombstone y restore', 
   assert.equal(restored.version, 4);
 });
 
-test('Gate G conecta selección READ sin montar el runtime de escritura v4', async () => {
+test('selector autenticado entra directo al repositorio de aplicación v4', async () => {
   const selector = await readFile('src/modules/trips/tripRepositorySelector.js', 'utf8');
   const config = await readFile('src/config.js', 'utf8');
-  assert.match(selector, /createGateGTripRepository/);
-  assert.match(selector, /config\.storageV4Rollout/);
-  assert.doesNotMatch(
-    selector,
-    /createFirestoreV4TripRepository|createFirestoreV4SyncGateway|createV4WebSyncComposition/
-  );
-  assert.match(config, /VITE_STORAGE_V4_ENABLED, false/);
-  assert.match(config, /VITE_STORAGE_V4_KILL_SWITCH, true/);
-  assert.match(config, /VITE_STORAGE_V4_READ_RULES_READY, false/);
+  assert.match(selector, /createFirestoreV4AppTripRepository/);
+  assert.doesNotMatch(selector, /GateG|Hybrid|Rollout|storageV4Rollout/);
+  assert.doesNotMatch(config, /storageV4Rollout|VITE_STORAGE_V4_ENABLED|VITE_STORAGE_V4_KILL_SWITCH/);
 });
