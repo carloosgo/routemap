@@ -94,7 +94,8 @@ export function isVersionedTripSummary(data) {
 }
 
 export function createTripRevisionPayload(rawTrip, revisionId, updatedAt = new Date().toISOString()) {
-  const trip = normalizeTrip(rawTrip);
+  const legacyOrigin = rawTrip?.origin || rawTrip?.segments?.[0]?.origin || null;
+  const trip = normalizeTrip({ ...rawTrip, origin: legacyOrigin });
   const activeRevision = normalizedRevisionId(revisionId);
   const timestamp = typeof updatedAt === 'string' && updatedAt ? updatedAt : new Date().toISOString();
   const counts = {
