@@ -57,6 +57,7 @@ function v4Trip(id) {
     id,
     name: 'Phase K synthetic trip',
     currency: 'MXN',
+    origin: city('Ciudad de México', 19.4326, -99.1332),
     schemaVersion: 4,
     status: 'active',
     version: 1,
@@ -97,7 +98,6 @@ function v4Segment(id = 'segment-1') {
   return {
     id,
     rank: initialRankForPosition(0),
-    origin: city('Ciudad de México', 19.4326, -99.1332),
     destination: city('Puebla', 19.0414, -98.2063),
     startDate: '2026-12-01',
     endDate: '2026-12-02',
