@@ -46,19 +46,20 @@ test('no agrega segmentos por encima del límite', () => {
   assert.equal(appendSegment(trip), trip);
 });
 
-test('reordena el tramo completo y reencadena los orígenes usados por la ruta', () => {
+test('reordena el tramo completo y deriva los orígenes usados por la ruta', () => {
   const trip = normalizeTrip({
     id: 'trip',
+    origin: { name: 'A', lat: 1, lon: 1 },
     segments: [
-      { id: 'a', origin: { name: 'A', lat: 1, lon: 1 }, destination: { name: 'B', lat: 2, lon: 2 }, note: 'nota a', expenses: { lodging: 10 } },
-      { id: 'b', origin: { name: 'C', lat: 3, lon: 3 }, destination: { name: 'D', lat: 4, lon: 4 }, note: 'nota b', expenses: { lodging: 20 } },
-      { id: 'c', origin: { name: 'E', lat: 5, lon: 5 }, destination: { name: 'F', lat: 6, lon: 6 }, note: 'nota c', expenses: { lodging: 30 } },
+      { id: 'a', destination: { name: 'B', lat: 2, lon: 2 }, note: 'nota a', expenses: { lodging: 10 } },
+      { id: 'b', destination: { name: 'D', lat: 4, lon: 4 }, note: 'nota b', expenses: { lodging: 20 } },
+      { id: 'c', destination: { name: 'F', lat: 6, lon: 6 }, note: 'nota c', expenses: { lodging: 30 } },
     ],
   });
   const reordered = reorderSegments(trip, 'c', 'a', 'before');
   assert.deepEqual(reordered.segments.map((segment) => segment.id), ['c', 'a', 'b']);
   assert.equal(reordered.segments[0].note, 'nota c');
   assert.equal(reordered.segments[0].expenses.lodging, 30);
-  assert.deepEqual(reordered.segments.map((segment) => segment.origin?.name), ['A', 'F', 'B']);
-  assert.deepEqual(routeStops(reordered.segments).map((city) => city.name), ['A', 'F', 'B', 'D']);
+  assert.ok(reordered.segments.every((segment) => !Object.hasOwn(segment, 'origin')));
+  assert.deepEqual(routeStops(reordered).map((city) => city.name), ['A', 'F', 'B', 'D']);
 });
