@@ -1,6 +1,7 @@
 // test-contract: behavior
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { itineraryMapProjection } from '../../src/modules/map/itineraryMapProjection.js';
 import { buildMapFeatureData } from '../../src/modules/map/routeMapModel.js';
 import { reorderSegments } from '../../src/modules/trips/tripOperations.js';
 
@@ -12,29 +13,46 @@ function itinerary() {
   const c = city('c', 'C', 0.2, 0.2);
   const d = city('d', 'D', 0.3, 0.3);
   return {
-    trip: { segments: [
-      { id: 's1', origin: a, destination: b, expenses: {} },
-      { id: 's2', origin: b, destination: c, expenses: {} },
-      { id: 's3', origin: c, destination: d, expenses: {} },
-    ] },
+    trip: {
+      origin: a,
+      segments: [
+        { id: 's1', destination: b, expenses: {} },
+        { id: 's2', destination: c, expenses: {} },
+        { id: 's3', destination: d, expenses: {} },
+      ],
+    },
     cities: { a, b, c, d },
   };
 }
 
 const colorForIndex = (index) => `color-${index}`;
-function mapDataFor(segments) {
+function mapDataFor(trip) {
+  const segments = itineraryMapProjection(trip.origin, trip.segments);
   return buildMapFeatureData({ segments, places: [], routeConnections: [], viewMode: 'segments', colorForIndex });
 }
 
 function assertConsecutiveMapChain(reordered, expectedSegmentIds, expectedCityIds) {
   assert.deepEqual(reordered.segments.map((segment) => segment.id), expectedSegmentIds);
-  const actualCityIds = [reordered.segments[0]?.origin?.id, ...reordered.segments.map((segment) => segment.destination?.id)];
-  assert.deepEqual(actualCityIds, expectedCityIds);
-  reordered.segments.forEach((segment, index) => {
-    if (index === 0) return;
-    assert.equal(segment.origin?.id, reordered.segments[index - 1]?.destination?.id, `segmento ${index + 1} debe iniciar donde termina el segmento ${index}`);
+  assert.deepEqual(
+    [reordered.origin?.id, ...reordered.segments.map((segment) => segment.destination?.id)],
+    expectedCityIds
+  );
+  assert.ok(reordered.segments.every((segment) => !Object.hasOwn(segment, 'origin')));
+
+  const projected = itineraryMapProjection(reordered.origin, reordered.segments);
+  projected.forEach((segment, index) => {
+    if (index === 0) {
+      assert.equal(segment.origin?.id, reordered.origin?.id);
+      return;
+    }
+    assert.equal(
+      segment.origin?.id,
+      reordered.segments[index - 1]?.destination?.id,
+      `segmento ${index + 1} debe iniciar donde termina el segmento ${index}`
+    );
   });
-  const data = mapDataFor(reordered.segments);
+
+  const data = mapDataFor(reordered);
   assert.deepEqual(data.routeFeatures.map((feature) => feature.properties.segmentId), expectedSegmentIds);
   assert.deepEqual(data.routeFeatures.map((feature) => feature.properties.sequence), expectedSegmentIds.map((_, index) => index + 1));
   assert.deepEqual(
@@ -48,7 +66,7 @@ test('reordenar un trayecto reencadena tambien geometria, paradas y numeros del 
   const { trip, cities } = itinerary();
   const reordered = reorderSegments(trip, 's3', 's1', 'before');
   assertConsecutiveMapChain(reordered, ['s3', 's1', 's2'], ['a', 'd', 'b', 'c']);
-  const data = mapDataFor(reordered.segments);
+  const data = mapDataFor(reordered);
   assert.deepEqual(data.routeFeatures.map((feature) => feature.geometry.coordinates), [
     [[cities.a.lon, cities.a.lat], [cities.d.lon, cities.d.lat]],
     [[cities.d.lon, cities.d.lat], [cities.b.lon, cities.b.lat]],
@@ -83,11 +101,15 @@ test('varios drags consecutivos no acumulan origenes ni trazos obsoletos', () =>
 
 test('una ciudad revisitada conserva todas sus visitas agrupadas en un solo punto geografico', () => {
   const { cities } = itinerary();
-  const data = mapDataFor([
-    { id: 's1', origin: cities.a, destination: cities.b, expenses: {} },
-    { id: 's2', origin: cities.b, destination: cities.a, expenses: {} },
-    { id: 's3', origin: cities.a, destination: cities.c, expenses: {} },
-  ]);
+  const trip = {
+    origin: cities.a,
+    segments: [
+      { id: 's1', destination: cities.b, expenses: {} },
+      { id: 's2', destination: cities.a, expenses: {} },
+      { id: 's3', destination: cities.c, expenses: {} },
+    ],
+  };
+  const data = mapDataFor(trip);
   assert.deepEqual(data.cityFeatures.map((feature) => feature.properties.name), ['A', 'B', 'C']);
   assert.deepEqual(
     data.cityFeatures.map((feature) => feature.properties.visits.map((visit) => visit.sequence)),
