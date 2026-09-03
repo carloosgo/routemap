@@ -11,8 +11,9 @@ function source(relativePath) {
   return readFileSync(pathFor(relativePath), 'utf8');
 }
 
-const applyRunners = [
-  'scripts/runStorageV4PhaseL0CreateProductionProject.mjs',
+const l0BootstrapRunner = 'scripts/runStorageV4PhaseL0CreateProductionProject.mjs';
+
+const fixedTargetApplyRunners = [
   'scripts/runStorageV4PhaseL1LockRulesProd.mjs',
   'scripts/runStorageV4PhaseL1CreateWebAppProd.mjs',
   'scripts/runStorageV4PhaseL1ConfigureGoogleAuthProd.mjs',
@@ -50,8 +51,18 @@ const forbiddenOperationalIdentifiers = [
   'runStorageV4PilotKillDev',
 ];
 
-test('runners productivos mutables conservan target y confirmación explícitos', () => {
-  for (const file of applyRunners) {
+test('bootstrap L0 exige target explícito, rechaza dev y conserva confirmación', () => {
+  const value = source(l0BootstrapRunner);
+  assert.match(value, /requiredText\(option\(args, '--project'\), '--project'\)/);
+  assert.match(value, /DEV_PROJECT\s*=\s*['"]atlasmap-dev['"]/);
+  assert.match(value, /project === DEV_PROJECT/);
+  assert.match(value, /CREATE-ATLAS-V4-PROD-\$\{project\}/);
+  assert.match(value, /--apply/);
+  assert.match(value, /--confirm=/);
+});
+
+test('runners productivos posteriores conservan atlasmap-prod y confirmación explícita', () => {
+  for (const file of fixedTargetApplyRunners) {
     const value = source(file);
     assert.match(value, /atlasmap-prod/, `${file} debe fijar target productivo`);
     assert.doesNotMatch(value, /PROJECT\s*=\s*['"]atlasmap-dev['"]/, `${file} no puede apuntar a dev`);
