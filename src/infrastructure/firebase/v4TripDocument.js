@@ -8,6 +8,7 @@ export function v4TripCreateDocument(rawTrip, timestampValue) {
     id: trip.id,
     name: trip.name,
     currency: trip.currency,
+    origin: trip.origin || null,
     originDetails: trip.originDetails,
     schemaVersion: STORAGE_V4_VERSION,
     status: V4_ENTITY_STATUS.ACTIVE,
@@ -27,6 +28,7 @@ export function v4TripMetadataPatch(rawTrip, baseVersion, timestampValue) {
   return {
     name: trip.name,
     currency: trip.currency,
+    origin: trip.origin || null,
     originDetails: trip.originDetails,
     version: nextEntityVersion(baseVersion),
     updatedAt: timestampValue,
