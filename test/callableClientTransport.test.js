@@ -5,7 +5,6 @@ import { relative, resolve } from 'node:path';
 
 const SRC_ROOT = resolve('src');
 const WRAPPER_PATH = 'src/infrastructure/firebase/callableFunctions.js';
-const ROLLOUT_TELEMETRY_PATH = 'src/infrastructure/firebase/gateGRolloutTelemetryClient.js';
 const SYNC_TELEMETRY_PATH = 'src/infrastructure/firebase/v4SyncTelemetryClient.js';
 const SOURCE_EXTENSIONS = /\.(?:js|jsx|mjs|ts|tsx)$/i;
 
@@ -73,7 +72,7 @@ test('el wrapper central conserva la semántica factory de getFunctions + httpsC
   assert.ok(consumers.length > 0, 'No se observó ningún consumidor real de firebaseCallable fuera del wrapper.');
 });
 
-test('firebaseCallable se invoca como factory de un argumento y los emisores ejecutan el callable resultante', () => {
+test('firebaseCallable se invoca como factory de un argumento y sync telemetry ejecuta el callable resultante', () => {
   const records = sourceRecords();
   const multiArgumentCalls = records
     .filter(({ path, source }) => (
@@ -83,10 +82,8 @@ test('firebaseCallable se invoca como factory de un argumento y los emisores eje
     .map(({ path }) => path);
   assert.deepEqual(multiArgumentCalls, []);
 
-  for (const path of [ROLLOUT_TELEMETRY_PATH, SYNC_TELEMETRY_PATH]) {
-    const client = records.find((record) => record.path === path);
-    assert.ok(client, `Falta ${path}`);
-    assert.match(client.source, /const callable = firebaseCallable\(FUNCTION_NAME\);/);
-    assert.match(client.source, /await callable\(\{ events \}\);/);
-  }
+  const client = records.find((record) => record.path === SYNC_TELEMETRY_PATH);
+  assert.ok(client, `Falta ${SYNC_TELEMETRY_PATH}`);
+  assert.match(client.source, /const callable = firebaseCallable\(FUNCTION_NAME\);/);
+  assert.match(client.source, /await callable\(\{ events \}\);/);
 });
