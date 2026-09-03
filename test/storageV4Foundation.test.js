@@ -119,17 +119,14 @@ test('el lease multi-tab usa fencing generation y permite takeover solo al expir
   }), true);
 });
 
-test('Gate G conecta selección READ sin activar accidentalmente el runtime de escritura v4', async () => {
+test('usuarios autenticados seleccionan directamente el repositorio v4 canónico', async () => {
   const selector = await readFile(
     new URL('src/modules/trips/tripRepositorySelector.js', root),
     'utf8'
   );
-  const config = await readFile(new URL('src/config.js', root), 'utf8');
 
-  assert.match(selector, /createGateGTripRepository/);
-  assert.match(selector, /config\.storageV4Rollout/);
-  assert.doesNotMatch(selector, /createV4WebSyncComposition|createFirestoreV4SyncGateway|createFirestoreV4TripRepository/);
-  assert.match(config, /VITE_STORAGE_V4_ENABLED, false/);
-  assert.match(config, /VITE_STORAGE_V4_KILL_SWITCH, true/);
-  assert.match(config, /VITE_STORAGE_V4_READ_RULES_READY, false/);
+  assert.match(selector, /createFirestoreV4AppTripRepository/);
+  assert.match(selector, /if \(!uid\) return localRepository/);
+  assert.match(selector, /createFirestoreV4AppTripRepository\(\{ db, uid \}\)/);
+  assert.doesNotMatch(selector, /createGateGTripRepository|storageV4Rollout|firestoreHybridTripRepository/);
 });
