@@ -18,6 +18,7 @@ function trip(overrides = {}) {
     id: 'trip-1',
     name: 'Europa',
     currency: 'EUR',
+    origin: null,
     originDetails: originDetails(),
     segments: [],
     places: [],
@@ -36,6 +37,7 @@ function remoteRoot(overrides = {}) {
     id: 'trip-1',
     name: 'Europa',
     currency: 'EUR',
+    origin: null,
     originDetails: originDetails(),
     schemaVersion: 4,
     status: 'active',
@@ -47,7 +49,6 @@ function remoteRoot(overrides = {}) {
 function segment(id, note = '') {
   return {
     id,
-    origin: null,
     destination: null,
     startDate: '',
     endDate: '',
@@ -100,6 +101,7 @@ test('viaje nuevo se descompone en root + entidades v4 sin whole-document write'
     id: 'trip-1',
     name: 'Europa',
     currency: 'EUR',
+    origin: null,
     originDetails: originDetails(),
   });
   assert.equal(plan.intents.length, 4);
