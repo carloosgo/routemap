@@ -63,8 +63,8 @@ test('Tramos y Mis Rutas comparten lienzo Google sin compartir lógica de domini
   const projection = await read('src/modules/map/itineraryMapProjection.js');
   const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
 
-  assert.match(pane, /<RouteMap[\s\S]*segments=\{trip\.segments\}[\s\S]*places=\{trip\.places \|\| \[\]\}/);
-  assert.match(routeMap, /itineraryMapProjectionSignature\(segments\)/);
+  assert.match(pane, /<RouteMap[\s\S]*origin=\{trip\.origin\}[\s\S]*segments=\{trip\.segments\}[\s\S]*places=\{trip\.places \|\| \[\]\}/);
+  assert.match(routeMap, /itineraryMapProjectionSignature\(origin, segments\)/);
   assert.match(routeMap, /segments=\{mapSegments\}/);
   assert.match(routeMap, /places=\{places\}/);
   assert.match(routeMap, /viewMode=\{viewMode\}/);
