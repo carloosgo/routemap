@@ -6,7 +6,15 @@ import { createFirestoreV4EditorTripWriter } from '../src/infrastructure/firebas
 import { createFirestoreV4PilotTripWriter } from '../src/infrastructure/firebase/firestoreV4PilotTripWriter.js';
 
 const TRIP_ID = 'trip-origin-baseline';
-const ORIGIN = 'Ciudad de México, México';
+const ORIGIN = Object.freeze({
+  id: 'city-mexico-city',
+  name: 'Ciudad de México',
+  displayName: 'Ciudad de México, México',
+  country: 'México',
+  countryCode: 'MX',
+  lat: 19.4326,
+  lon: -99.1332,
+});
 
 function remoteRoot() {
   return {
@@ -40,7 +48,7 @@ function rootKey() {
   });
 }
 
-test('editor v4 conserva trip.origin al primar el baseline remoto', async () => {
+test('editor v4 conserva trip.origin estructurado al primar el baseline remoto', async () => {
   const localPersistence = createMemoryV4LocalPersistence();
   const composition = {
     localPersistence,
@@ -70,13 +78,13 @@ test('editor v4 conserva trip.origin al primar el baseline remoto', async () => 
   });
 
   const baseline = await localPersistence.getEntity(rootKey());
-  assert.equal(baseline.payload.origin, ORIGIN);
+  assert.deepEqual(baseline.payload.origin, ORIGIN);
   assert.equal(baseline.serverVersion, 3);
   assert.equal(baseline.serverStatus, 'active');
   await writer.close();
 });
 
-test('writer v4 conserva trip.origin al rebasar el baseline antes de guardar', async () => {
+test('writer v4 conserva trip.origin estructurado al rebasar el baseline antes de guardar', async () => {
   const localPersistence = createMemoryV4LocalPersistence();
   const committed = [];
   const composition = {
@@ -121,7 +129,7 @@ test('writer v4 conserva trip.origin al rebasar el baseline antes de guardar', a
   });
 
   const baseline = await localPersistence.getEntity(rootKey());
-  assert.equal(baseline.payload.origin, ORIGIN);
+  assert.deepEqual(baseline.payload.origin, ORIGIN);
   assert.equal(baseline.serverVersion, 3);
   assert.equal(baseline.serverStatus, 'active');
   assert.ok(committed.every((intent) => intent.entityType !== 'trip'));
