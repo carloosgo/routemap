@@ -1,4 +1,4 @@
-/* global fetch, process, console, URLSearchParams */
+/* global fetch, process, console, URLSearchParams, setTimeout, Math */
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -22,10 +22,13 @@ export const DEV_STAGE_VERIFY_RELEASE = `projects/${DEV_STAGE_VERIFY_PROJECT}/re
 export const DEV_STAGE_VERIFY_EVENT_TYPE = 'google.cloud.firestore.document.v1.written';
 export const DEV_STAGE_VERIFY_DATABASE = '(default)';
 export const DEV_STAGE_VERIFY_EVENT_CONTENT_TYPE = 'application/protobuf';
+export const DEV_STAGE_VERIFY_TRANSIENT_HTTP_STATUSES = Object.freeze([500, 502, 503, 504]);
+export const DEV_STAGE_VERIFY_HTTP_MAX_ATTEMPTS = 5;
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(here);
 const rulesEndpoint = 'https://firebaserules.googleapis.com/v1';
+const transientHttpStatuses = new Set(DEV_STAGE_VERIFY_TRANSIENT_HTTP_STATUSES);
 
 function functionsEndpoint(region) {
   return `https://cloudfunctions.googleapis.com/v2/projects/${DEV_STAGE_VERIFY_PROJECT}/locations/${region}/functions`;
@@ -63,22 +66,66 @@ function authHeaders(token) {
   };
 }
 
-async function requestJson(url, { token, fetchFn = fetch, label } = {}) {
-  const response = await fetchFn(url, { method: 'GET', headers: authHeaders(token) });
-  const text = await response.text();
-  let payload = null;
-  if (text) {
-    try {
-      payload = JSON.parse(text);
-    } catch {
-      payload = null;
+function defaultSleep(milliseconds) {
+  return new Promise((resolvePromise) => setTimeout(resolvePromise, milliseconds));
+}
+
+function retryAfterMilliseconds(response) {
+  const raw = response?.headers?.get?.('retry-after');
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  const seconds = Number(raw);
+  if (!Number.isFinite(seconds) || seconds < 0) return null;
+  return Math.ceil(seconds * 1000);
+}
+
+function transientRetryDelayMs(response, attempt, randomFn) {
+  const retryAfter = retryAfterMilliseconds(response);
+  if (retryAfter !== null) return retryAfter;
+  const exponential = Math.min(1000 * (2 ** (attempt - 1)), 10000);
+  const jitter = Math.floor(randomFn() * 250);
+  return exponential + jitter;
+}
+
+export async function requestJson(url, {
+  token,
+  fetchFn = fetch,
+  label,
+  maxAttempts = DEV_STAGE_VERIFY_HTTP_MAX_ATTEMPTS,
+  sleepFn = defaultSleep,
+  randomFn = Math.random,
+} = {}) {
+  if (!Number.isInteger(maxAttempts) || maxAttempts < 1) {
+    throw new TypeError('maxAttempts debe ser un entero positivo.');
+  }
+  if (typeof sleepFn !== 'function') throw new TypeError('sleepFn debe ser una función.');
+  if (typeof randomFn !== 'function') throw new TypeError('randomFn debe ser una función.');
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const response = await fetchFn(url, { method: 'GET', headers: authHeaders(token) });
+    const text = await response.text();
+    let payload = null;
+    if (text) {
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        payload = null;
+      }
     }
+    if (!response.ok) {
+      const retryable = transientHttpStatuses.has(response.status) && attempt < maxAttempts;
+      if (retryable) {
+        await sleepFn(transientRetryDelayMs(response, attempt, randomFn));
+        continue;
+      }
+      throw new Error(`${label || 'GET'} HTTP ${response.status}`);
+    }
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      throw new Error(`${label || 'GET'} devolvió JSON inválido.`);
+    }
+    return payload;
   }
-  if (!response.ok) throw new Error(`${label || 'GET'} HTTP ${response.status}`);
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-    throw new Error(`${label || 'GET'} devolvió JSON inválido.`);
-  }
-  return payload;
+
+  throw new Error(`${label || 'GET'} agotó los reintentos HTTP.`);
 }
 
 async function listFunctionsInRegion({ region, token, fetchFn = fetch } = {}) {
