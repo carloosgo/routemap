@@ -17,7 +17,7 @@
     "preprod:hosting:deploy": "node scripts/runPreprodHostingDeploy.mjs",
     "test:rules": "firebase emulators:exec --only firestore \"node --test --test-concurrency=1 firebase-tests/internalCollections.rules.spec.js firebase-tests/firestore.v4.rules.spec.js firebase-tests/firestore.v4.internal.rules.spec.js firebase-tests/firestore.v4.repository.spec.js firebase-tests/firestore.v4.sync.spec.js functions/v4AggregateStore.emulator.spec.js functions/v4TripLifecycleStore.emulator.spec.js functions/v4TripPurgeStore.emulator.spec.js\"",
     "test:rules:phase-k-e2e": "firebase emulators:exec --only firestore \"node --test --test-concurrency=1 firebase-tests/firestore.phase-k-e2e.rules.spec.js\"",
-    "storage-v4:dev-block-closeout": "node scripts/runStorageV4DevBlockCloseout.mjs",
+    "storage-v4:dev:verify": "node scripts/runStorageV4DevStageVerify.mjs",
     "storage-v4:dev:steady-state": "node scripts/runStorageV4DevSteadyState.mjs",
     "storage-v4:dev:preprod-parity": "node scripts/runStorageV4DevPreprodParity.mjs",
     "storage-v4:dev:platform-parity": "node scripts/runStorageV4DevPlatformParityPreflight.mjs",
@@ -59,11 +59,7 @@
     "phase-l:l2:preflight-prod": "node scripts/runStorageV4PhaseL2PreflightProd.mjs",
     "phase-l:l2:recovery-prod": "node scripts/runStorageV4PhaseL2RecoveryProd.mjs",
     "phase-l:l2:budget-prod": "node scripts/runStorageV4PhaseL2BudgetProd.mjs",
-    "phase-l:l3:preflight-prod": "node scripts/runStorageV4PhaseL3PreflightProd.mjs",
-    "phase-l:l4:read-plan-prod": "node scripts/runStorageV4PhaseL4ReadPlanProd.mjs",
-    "phase-l:l5:materialization-plan-prod": "node scripts/runStorageV4PhaseL5MaterializationPlanProd.mjs",
-    "phase-l:l6:write-plan-prod": "node scripts/runStorageV4PhaseL6WritePlanProd.mjs",
-    "phase-l:l7:convergence-plan-prod": "node scripts/runStorageV4PhaseL7ConvergencePlanProd.mjs"
+    "phase-l:l3:preflight-prod": "node scripts/runStorageV4PhaseL3PreflightProd.mjs"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.44.0",
