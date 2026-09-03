@@ -40,16 +40,17 @@ test('editor real queda conectado a draft durable y estado de persistencia', asy
   assert.ok(mapPane.includes('persistenceSyncing'));
 });
 
-test('autosave v4 usa scheduler incremental y no el whole-save como debounce remoto', async () => {
+test('autosave v4 usa scheduler incremental y el repositorio canónico expone stage + persistence state', async () => {
   const writer = await read('src/infrastructure/firebase/firestoreV4EditorTripWriter.js');
-  const gate = await read('src/infrastructure/firebase/createGateGTripRepository.js');
-  const hybrid = await read('src/infrastructure/firebase/firestoreHybridTripRepository.js');
+  const repository = await read('src/infrastructure/firebase/firestoreV4AppTripRepository.js');
   assert.ok(writer.includes('runtime.commitIntent(intent, { schedule: true })'));
   assert.ok(writer.includes('syncComposition.attachLifecycle?.()'));
   assert.ok(writer.includes('planV4TripSave'));
   assert.ok(!writer.includes('setInterval'));
   assert.ok(!writer.includes('setTimeout'));
-  assert.ok(gate.includes('createFirestoreV4EditorTripWriter'));
-  assert.ok(hybrid.includes('writer.stage(rawTrip)'));
-  assert.ok(hybrid.includes('writer.getPersistenceState(tripId)'));
+  assert.ok(repository.includes('createFirestoreV4EditorTripWriter'));
+  assert.ok(repository.includes('editor.stage(rawTrip)'));
+  assert.ok(repository.includes("editor.getPersistenceState(requiredText(id, 'tripId'))"));
+  assert.ok(!repository.includes('createGateGTripRepository'));
+  assert.ok(!repository.includes('firestoreHybridTripRepository'));
 });
