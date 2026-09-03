@@ -33,7 +33,7 @@ test('local storage repository tolera JSON corrupto sin inventar datos', async (
   }
 });
 
-test('local storage repository normaliza antes de persistir', async () => {
+test('local storage repository normaliza y promueve el origen legacy antes de persistir', async () => {
   const previousStorage = globalThis.localStorage;
   globalThis.localStorage = memoryStorage();
 
@@ -54,8 +54,9 @@ test('local storage repository normaliza antes de persistir', async () => {
     });
 
     assert.equal(saved.name, 'Viaje seguro');
-    assert.equal(saved.segments[0].origin.countryCode, 'MX');
-    assert.equal(saved.segments[0].origin.lat, 19.43);
+    assert.equal(saved.origin.countryCode, 'MX');
+    assert.equal(saved.origin.lat, 19.43);
+    assert.equal(Object.hasOwn(saved.segments[0], 'origin'), false);
     assert.equal(saved.segments[0].expenses.lodging, 0);
 
     const loaded = await repository.get('trip-1');
