@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { buildItineraryStopSequence } from '../src/modules/trips/itineraryStopSequence.js';
+import { itineraryMapProjection } from '../src/modules/map/itineraryMapProjection.js';
 import {
   buildMapFeatureData,
   itineraryViewportKey,
@@ -24,16 +25,20 @@ const paris = {
 const colors = ['#111111', '#222222', '#333333', '#444444'];
 const colorForIndex = (index) => colors[index] || '#999999';
 
-function roundTripSegments() {
+function canonicalRoundTripSegments() {
   return [
-    { id: 'one', origin, destination: madrid, expenses: { transport: {} } },
-    { id: 'two', origin: madrid, destination: paris, expenses: { transport: {} } },
-    { id: 'three', origin: paris, destination: origin, expenses: { transport: {} } },
+    { id: 'one', destination: madrid, expenses: { transport: {} } },
+    { id: 'two', destination: paris, expenses: { transport: {} } },
+    { id: 'three', destination: origin, expenses: { transport: {} } },
   ];
 }
 
+function roundTripSegments() {
+  return itineraryMapProjection(origin, canonicalRoundTripSegments());
+}
+
 test('origin is unnumbered, first destination is 1 and a terminal return to origin is unnumbered', () => {
-  const sequence = buildItineraryStopSequence(roundTripSegments(), colorForIndex);
+  const sequence = buildItineraryStopSequence(origin, canonicalRoundTripSegments(), colorForIndex);
 
   assert.deepEqual(
     sequence.map(({ number, color, isTerminalReturn }) => ({ number, color, isTerminalReturn })),
@@ -50,10 +55,10 @@ test('three or more consecutive cities in one country keep endpoint flags and ma
   const milan = { id: 'milan', name: 'Milan', country: 'Italy', countryCode: 'IT' };
   const florence = { id: 'florence', name: 'Florence', country: 'Italy', countryCode: 'IT' };
   const rome = { id: 'rome', name: 'Rome', country: 'Italy', countryCode: 'IT' };
-  const sequence = buildItineraryStopSequence([
-    { id: 'it-one', origin: venice, destination: milan },
-    { id: 'it-two', origin: milan, destination: florence },
-    { id: 'it-three', origin: florence, destination: rome },
+  const sequence = buildItineraryStopSequence(venice, [
+    { id: 'it-one', destination: milan },
+    { id: 'it-two', destination: florence },
+    { id: 'it-three', destination: rome },
   ], colorForIndex);
 
   assert.deepEqual(
@@ -75,11 +80,11 @@ test('same-country grouping starts and ends at country boundaries and does not a
   const parisFr = { id: 'paris-fr', name: 'Paris', country: 'France', countryCode: 'FR' };
   const lyon = { id: 'lyon', name: 'Lyon', country: 'France', countryCode: 'FR' };
   const nice = { id: 'nice', name: 'Nice', country: 'France', countryCode: 'FR' };
-  const sequence = buildItineraryStopSequence([
-    { id: 'one', origin: venice, destination: milan },
-    { id: 'two', origin: milan, destination: parisFr },
-    { id: 'three', origin: parisFr, destination: lyon },
-    { id: 'four', origin: lyon, destination: nice },
+  const sequence = buildItineraryStopSequence(venice, [
+    { id: 'one', destination: milan },
+    { id: 'two', destination: parisFr },
+    { id: 'three', destination: lyon },
+    { id: 'four', destination: nice },
   ], colorForIndex);
 
   assert.deepEqual(
@@ -126,13 +131,13 @@ test('repeated destinations share one geographic feature with every visit number
   const rome = {
     id: 'rome', name: 'Rome', country: 'Italy', countryCode: 'IT', lat: 41.9028, lon: 12.4964,
   };
-  const segments = [
-    { id: 'one', origin, destination: paris, expenses: { transport: {} } },
-    { id: 'two', origin: paris, destination: rome, expenses: { transport: {} } },
-    { id: 'three', origin: rome, destination: paris, expenses: { transport: {} } },
+  const canonicalSegments = [
+    { id: 'one', destination: paris, expenses: { transport: {} } },
+    { id: 'two', destination: rome, expenses: { transport: {} } },
+    { id: 'three', destination: paris, expenses: { transport: {} } },
   ];
   const data = buildMapFeatureData({
-    segments,
+    segments: itineraryMapProjection(origin, canonicalSegments),
     places: [],
     viewMode: 'segments',
     colorForIndex,
@@ -151,11 +156,8 @@ test('repeated destinations share one geographic feature with every visit number
 
 test('reordering the same geographic stops does not change the itinerary viewport identity', () => {
   const original = roundTripSegments();
-  const reordered = [
-    { ...original[1], origin },
-    { ...original[0], origin: paris },
-    { ...original[2], origin: madrid },
-  ];
+  const canonical = canonicalRoundTripSegments();
+  const reordered = itineraryMapProjection(origin, [canonical[1], canonical[0], canonical[2]]);
 
   assert.equal(itineraryViewportKey(original), itineraryViewportKey(reordered));
 });
@@ -170,11 +172,11 @@ test('UI consumes canonical numbering, repeated visit dots and finish flag asset
   const markerCss = await read('src/modules/map/ItineraryNumberMarkers.css');
   const routeMap = await read('src/modules/map/RouteMap.jsx');
 
-  assert.match(editor, /buildItineraryStopSequence\(trip\.segments, colorForIndex\)/);
+  assert.match(editor, /buildItineraryStopSequence\(trip\.origin, trip\.segments, colorForIndex\)/);
   assert.match(editor, /sequenceNumber=\{stopSequence\[index\]\?\.number \?\? null\}/);
   assert.match(editor, /countryRunPosition=\{stopSequence\[index\]\?\.countryRunPosition \|\| null\}/);
   assert.match(editor, /joinsPreviousCountryRun=\{Boolean\(stopSequence\[index\]\?\.joinsPreviousCountryRun\)\}/);
-  assert.match(mapPane, /buildItineraryStopSequence\(trip\.segments, colorForIndex\)/);
+  assert.match(mapPane, /buildItineraryStopSequence\(trip\.origin, trip\.segments, colorForIndex\)/);
   assert.match(mapPane, /\{stop\.number\}/);
   assert.match(segmentHeader, /className="itinerary-stop__sequence-badge"/);
   assert.match(segmentHeader, /countryRunPosition === 'middle'/);
