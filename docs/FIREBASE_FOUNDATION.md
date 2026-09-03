@@ -127,11 +127,18 @@ Los runners de enforcement/rollback deben:
 - no crear ni borrar Functions por accidente;
 - no tocar producción.
 
+## Secretos de Geoapify
+
+Los secretos de Geoapify permanecen deliberadamente separados:
+
+- `GEOAPIFY_CITY_API_KEY`: uso exclusivo del servicio de búsqueda/autocomplete de ciudades.
+- `GEOAPIFY_API_KEY`: búsqueda general, detalles, reverse geocoding, routing, batch y demás operaciones Geoapify que no pertenecen al catálogo de ciudades.
+
+No deben unificarse, copiarse al frontend, almacenarse como secretos privados en `.env.local`, registrarse en logs ni versionarse. El proyecto no utiliza Nominatim como geocoder alternativo.
+
 ## Secretos y proveedores
 
-Las claves privadas de Geoapify y otros proveedores permanecen únicamente del lado servidor. No deben copiarse al frontend, almacenarse en `.env.local` como secreto privado, registrarse en logs ni versionarse.
-
-El dato canónico del viaje conserva únicamente campos explícitamente persistibles. Resultados dinámicos, routing, geometría, ETA, tráfico y payloads arbitrarios del proveedor pertenecen a cache/capas derivadas conforme a la política del proveedor.
+Las claves privadas de Geoapify y otros proveedores permanecen únicamente del lado servidor. El dato canónico del viaje conserva únicamente campos explícitamente persistibles. Resultados dinámicos, routing, geometría, ETA, tráfico y payloads arbitrarios del proveedor pertenecen a cache/capas derivadas conforme a la política del proveedor.
 
 ## Cachés, cuotas y TTL
 
