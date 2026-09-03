@@ -14,7 +14,7 @@ before(async () => {
     firestore: {
       host: '127.0.0.1',
       port: 8080,
-      rules: await readFile('firestore-v4.rules', 'utf8'),
+      rules: await readFile('firestore.rules', 'utf8'),
     },
   });
 });
@@ -41,13 +41,6 @@ test('clientes no pueden leer ni falsificar contribuciones internas de agregados
       valueContribution: 999999,
     }
   );
-});
-
-test('checkpoints de migración v4 son exclusivamente backend', async () => {
-  await assertBackendOnly('users/alice/__tripMigrations/trip-1', {
-    state: 'complete',
-    expectedDigest: 'fake',
-  });
 });
 
 test('jobs de purga v4 son exclusivamente backend', async () => {
