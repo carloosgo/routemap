@@ -1,10 +1,12 @@
 # Arquitectura de Atlas
 
+Fecha de revisión: **2026-09-03**
+
 ## Principio rector
 
-Atlas separa presentación, lógica de dominio, persistencia y proveedores mediante contratos explícitos. Las transiciones de infraestructura se hacen detrás de selectors/gates para que la UI no tenga que conocer qué generación de almacenamiento está atendiendo una operación.
+Atlas separa presentación, dominio, persistencia y proveedores mediante contratos explícitos. La UI no conoce generaciones de almacenamiento: la persistencia autenticada soportada es exclusivamente **Storage v4** y el uso sin sesión permanece local.
 
-La documentación detallada de Storage v4 vive en `docs/STORAGE_ARCHITECTURE_V4.md`; este archivo describe cómo encaja dentro de la aplicación.
+Gate G, pilot, hybrid read, dual-write, fallback v3 y selección de generación mediante Remote Config fueron mecanismos transitorios ya retirados. No deben reaparecer para resolver funcionalidades nuevas.
 
 ## Capas principales
 
@@ -12,10 +14,10 @@ La documentación detallada de Storage v4 vive en `docs/STORAGE_ARCHITECTURE_V4.
 src/
 ├── app/                       composición de la aplicación
 ├── components/                UI reutilizable
-├── infrastructure/firebase/   Firebase Web SDK, Gate G y adapters cloud
+├── infrastructure/firebase/   Firebase Web SDK y adapters cloud v4
 ├── modules/
-│   ├── trips/                 modelo, estado y selector de persistencia
-│   ├── storage/               persistencia local activa para viajes anónimos
+│   ├── trips/                 modelo y estado de viajes
+│   ├── storage/               persistencia local para uso sin sesión
 │   ├── storage-v4/            IndexedDB, mutations, sync y contratos v4
 │   ├── geocoding/             búsqueda/autocompletado de ciudades
 │   ├── places/                búsqueda, detalle y enriquecimiento de lugares
@@ -25,35 +27,25 @@ src/
 └── shared/                    utilidades comunes
 
 functions/                     callables, eventos v4 y acceso a proveedores
-scripts/                       runners operativos protegidos por gates
+scripts/                       runners operativos explícitos por entorno
 firebase-tests/                contratos de Firestore Rules
 ```
 
 ## Persistencia de viajes
 
-El único punto de selección para la UI de viajes es `src/modules/trips/tripRepositorySelector.js`.
+La frontera para la aplicación es:
 
 ```text
-usuario no autenticado
-    -> localStorageRepository
-
-usuario autenticado
-    -> Gate G
-       -> v3
-       -> hybrid-read
-       -> v4-pilot
+usuario no autenticado -> repositorio local
+usuario autenticado     -> repositorio Firestore v4
 ```
 
-La coexistencia v3/hybrid/v4 **no es duplicación accidental**. Forma parte del rollout y rollback de Atlas Storage v4 y se conserva hasta el gate de convergencia/retiro correspondiente.
+No existe un backend REST seleccionable ni un selector v3/v4.
 
-El antiguo selector `local|api` y el blueprint REST fueron retirados: no forman parte de la arquitectura actual.
-
-## Atlas Storage v4
-
-El modelo canónico distribuye un viaje en:
+La aplicación continúa manipulando un `Trip` lógico completo, mientras Firestore persiste entidades físicas independientes:
 
 ```text
-users/{userId}/trips/{tripId}
+users/{uid}/trips/{tripId}
   segments/{segmentId}
   places/{placeId}
   connections/{connectionId}
@@ -61,30 +53,68 @@ users/{userId}/trips/{tripId}
   checklist/{itemId}
 ```
 
-El root del viaje contiene estado agregado/administrativo; las entidades mantienen versionado y contratos propios. Geometrías, respuestas de proveedores y otros datos temporales/calculados no se convierten en datos canónicos del usuario.
+El root del viaje conserva identidad, resumen, moneda, `origin`, lifecycle/versionado y agregados derivados. Las entidades hijas tienen identidad, orden, versionado y estado propios.
 
-El cliente v4 incluye persistencia IndexedDB, dirty tracking, mutation queue, coordinación de sync, control de concurrencia y mecanismos de recovery. Su activación productiva está gobernada por Gate G/Remote Config y por los gates de Phase L; que una pieza no esté activada globalmente no significa que no esté implementada.
+No existen `activeRevision` ni `revisions/{revisionId}` en el contrato operativo actual.
+
+## Pipeline local-first
+
+```text
+UI
+ -> estado local
+ -> IndexedDB / persistencia durable
+ -> mutation queue
+ -> scheduler/coalescing
+ -> intent v4
+ -> Firestore
+ -> confirmación/versionado
+```
+
+Principios:
+
+- una pulsación de tecla no equivale a una escritura Firestore;
+- se sincroniza por entidad afectada;
+- los conflictos de versión son explícitos;
+- no hay last-write-wins silencioso para dato canónico;
+- fallos de telemetría/cache no pueden perder trabajo del usuario;
+- cambios de sesión descartan respuestas asíncronas pertenecientes al usuario anterior.
+
+## Backend v4
+
+El manifest canónico es `functions/v4BackendManifest.js`.
+
+Functions v4 soportadas:
+
+- `v4FirestoreEventIngress`;
+- `v4TripLifecycle`;
+- `v4TripPurge`.
+
+El stage actual espera seis triggers Eventarc: el root del viaje y las cinco colecciones hijas. Los handlers deben ser idempotentes porque los eventos pueden repetirse o llegar fuera de orden.
+
+## Lifecycle y borrado
+
+El delete visible para el usuario es definitivo. Internamente puede existir una transición lógica/tombstone antes del purge físico para hacer segura la sincronización y los reintentos.
+
+No existe una API pública para restaurar un viaje completo eliminado.
 
 ## Proveedores y cachés
 
-Atlas usa proveedores distintos según el caso de uso:
+Atlas separa estrictamente datos del usuario de datos recalculables del proveedor.
 
-- Geoapify: descubrimiento/revalidación de ciudades y funciones auxiliares/enriquecimiento.
-- Google Places: búsqueda/detalle/localización de lugares en los flujos activos correspondientes.
-- Google Routes y Geoapify routing: rutas/estimaciones según el flujo y modo.
+- Geoapify: catálogo/descubrimiento y operaciones auxiliares conforme a su contrato.
+- Google Places: lugares cuando el flujo activo lo requiera.
+- Google Routes/Geoapify routing: rutas y estimaciones según el dominio.
 
-Existen dos niveles de caché de proveedor con responsabilidades diferentes:
+Existen dos niveles de caché con semántica derivada:
 
-1. **Browser cache**: best-effort, acotada y descartable. Evita llamadas repetidas incluso a nuestras Functions cuando un usuario reutiliza el mismo dato.
-2. **Shared server cache**: Firestore vía `cacheDb`, con `expiresAt`, deduplicación de cargas en vuelo y comportamiento fail-soft. Evita repetir llamadas de proveedor entre usuarios/instancias.
+1. **Browser cache**: acotada, best-effort y descartable.
+2. **Shared server cache**: server-side, con freshness/TTL y comportamiento fail-soft.
 
-Los datos de usuario y la caché de proveedor nunca comparten semántica aunque durante v4.0 la separación física de Firestore permanezca diferida. La decisión canónica está en `docs/STORAGE_V4_PHASE_J_DECISION_2026-08-14.md`.
+Una caché nunca se convierte en fuente canónica del viaje. Routing, ETA, tráfico, geometría regenerable y payloads arbitrarios del proveedor pertenecen a capas derivadas.
 
 ## Catálogo canónico de ciudades
 
-Las ciudades globales de referencia tienen una semántica distinta tanto de los datos de usuario como de la caché temporal de proveedor.
-
-Atlas mantiene un catálogo server-only progresivo:
+El catálogo de ciudades tiene identidad propia y es distinto de los viajes y de las caches temporales:
 
 ```text
 cityCatalog/{atlasCityId}
@@ -92,53 +122,94 @@ cityCatalogProviderRefs/{providerRefHash}
 cityCatalogQueries/{queryFingerprint}
 ```
 
-`geoapifyCityAutocomplete` consulta primero una proyección de búsqueda Atlas. Un hit fresco devuelve snapshots de ciudades Atlas sin consumir Geoapify. Un miss o proyección vencida usa Geoapify como proveedor de descubrimiento/revalidación, normaliza la respuesta, materializa/actualiza el catálogo y refresca la proyección.
+Los segmentos persisten snapshots City autosuficientes conforme al contrato v4. Los IDs Atlas son opacos; la identidad del proveedor permanece separada del dato de viaje.
 
-Los IDs del catálogo son opacos y propios de Atlas; la identidad de proveedor se conserva fuera de los viajes en `cityCatalogProviderRefs`. Los segmentos siguen persistiendo un snapshot City autosuficiente con el contrato v4 existente (`id`, nombres, país, ISO y coordenadas). Esto permite que viajes históricos con IDs de proveedor sigan siendo válidos sin una reescritura destructiva.
-
-El catálogo no usa `expiresAt`: es referencia durable. Sus proyecciones tienen `verifiedAt/revalidateAfter` y pueden servir un snapshot stale únicamente como fallback si falla el proveedor durante una revalidación. La implementación, compatibilidad, seguridad y referencias internacionales están documentadas en `docs/CITY_CATALOG_ARCHITECTURE.md`.
+La arquitectura completa del catálogo está en `docs/CITY_CATALOG_ARCHITECTURE.md`.
 
 ## Mapas
 
-El entry path principal es:
+Entry path principal:
 
 ```text
 App -> AppMapPane -> RouteMap -> GooglePlacesMap
 ```
 
-El lienzo de mapas de Atlas usa Google Maps. La implementación histórica `ItineraryRouteMap` basada en MapLibre, junto con la integración Overture/PMTiles usada para polígonos de países, fue retirada después de verificar que no tenía consumidores, fallback ni entry point alternativo. La lógica de dominio reutilizable para rutas y países permanece separada del motor cartográfico y sigue siendo consumida por el renderer Google cuando corresponde.
+El mapa renderiza estado de dominio; no es dueño de la persistencia. La lógica de rutas/países reutilizable permanece separada del motor cartográfico.
 
-## Seguridad y backend
+## Seguridad
 
-Firebase Authentication identifica al usuario. Firestore Rules implementan aislamiento/ownership y contratos de shapes/versionado. Cloud Functions encapsulan secretos de proveedor, cuotas, validación y acceso server-side. App Check se despliega de forma gradual: capacidad del cliente y observación preceden al enforcement.
+Firebase Authentication identifica al usuario. Firestore Rules modelan ownership, shapes, límites, versionado, timestamps y colecciones protegidas.
 
-Los secretos backend viven en Firebase Secret Manager. Las variables `VITE_*` son públicas por definición y deben restringirse mediante las capacidades del proveedor (por ejemplo HTTP referrers/API restrictions para claves web).
+- el cliente no puede leer/escribir fuera de su UID;
+- campos backend-owned no son autoridad del navegador;
+- catálogo/caches internas no se exponen como Firestore público;
+- claves privadas viven en Secret Manager/backend;
+- variables `VITE_*` son públicas y deben restringirse en el proveedor;
+- App Check se observa antes de enforcement.
 
-El catálogo geográfico es interno y no se expone a lecturas/escrituras Firestore directas del navegador. La UI accede a ciudades exclusivamente por el contrato callable de búsqueda.
+## Entornos
+
+```text
+local/emulators -> desarrollo y pruebas deterministas
+atlasmap-dev    -> integración/preproducción real
+atlasmap-prod   -> producción protegida
+```
+
+`.firebaserc` fija `default` y `dev` en `atlasmap-dev`; `prod` apunta a `atlasmap-prod`.
+
+El código fuente, el estado desplegado de preprod y el estado desplegado de producción son cosas distintas. Un commit o CI verde no demuestra qué versión está desplegada en Firebase.
+
+## Verificación de dev
+
+El verificador canónico read-only es:
+
+```powershell
+npm run storage-v4:dev:verify
+```
+
+Comprueba 3 Functions v4, 6 Eventarc y Rules activas idénticas a `firestore.rules`, siempre contra `atlasmap-dev` y sin tocar producción.
+
+Los inventarios adicionales de paridad son:
+
+```powershell
+npm run storage-v4:dev:preprod-parity
+npm run storage-v4:dev:platform-parity
+```
+
+## Producción
+
+La liberación productiva será directa sobre v4. No existe un gate futuro para volver a activar coexistencia v3/v4.
+
+Rollback significa volver a artefactos/configuración **compatibles con v4**, no volver a una generación anterior de persistencia.
+
+Si `atlasmap-prod` contiene estado legacy inesperado, se detiene la liberación y se inventaría antes de decidir cualquier tratamiento.
 
 ## Rendimiento
 
 Principios vigentes:
 
-- debounce y cancelación en búsquedas;
-- caché browser acotada para evitar requests redundantes;
-- shared provider cache con TTL/freshness explícita;
-- catálogo de referencia con proyecciones pequeñas para evitar llamadas repetidas de proveedor;
-- sync incremental y mutation queue en Storage v4;
-- code splitting/bundling administrado por Vite;
-- tuning basado en métricas reales, especialmente en gates productivos L4/L6.
+- debounce/cancelación en búsquedas;
+- cache browser acotada;
+- shared provider cache con freshness explícita;
+- catálogo durable con proyecciones pequeñas;
+- sync incremental y mutation queue;
+- code splitting/bundling con Vite;
+- tuning basado en mediciones reales.
 
-No se agregan índices, nuevas capas de caché ni abstracciones únicamente por una mejora teórica sin evidencia de carga/latencia. El catálogo de ciudades no es una tercera caché: es una entidad de referencia durable con identidad propia y política explícita de revalidación.
+No se añaden índices, caches o abstracciones solo por mejora teórica sin evidencia.
 
 ## Fuentes de verdad
 
-Para decisiones de Storage v4, los documentos de decisión/closeout posteriores tienen prioridad sobre snapshots históricos. En particular:
+Para operación actual:
 
-- `docs/STORAGE_ARCHITECTURE_V4.md`
-- `docs/STORAGE_V4_IMPLEMENTATION_STATUS.md`
-- `docs/STORAGE_V4_PHASE_J_DECISION_2026-08-14.md`
-- `docs/STORAGE_V4_PHASE_K_CLOSEOUT_2026-08-14.md`
-- `docs/STORAGE_V4_PRODUCTION_ROLLOUT.md`
-- `docs/CITY_CATALOG_ARCHITECTURE.md` para identidad/búsqueda global de ciudades
+- `docs/FIREBASE_FOUNDATION.md`;
+- `docs/FIRESTORE_TRIP_STORAGE.md`;
+- `docs/STORAGE_V4_IMPLEMENTATION_STATUS.md`;
+- `docs/STORAGE_V4_OPERATIONS_RUNBOOK.md`;
+- `docs/STORAGE_V4_PRODUCTION_ROLLOUT.md`;
+- `docs/CITY_CATALOG_ARCHITECTURE.md`;
+- `docs/PROVIDER_CACHE_TOPOLOGY.md`.
 
-Un runner presente en el repo demuestra capacidad/preparación, no que la mutación cloud haya sido ejecutada.
+`docs/STORAGE_ARCHITECTURE_V4.md` conserva el diseño completo y razonamiento histórico. Sus secciones de migración/coexistencia no son instrucciones actuales.
+
+Los closeouts fechados prueban pasos pasados; un runner presente prueba capacidad, no que una mutación cloud haya sido ejecutada.
