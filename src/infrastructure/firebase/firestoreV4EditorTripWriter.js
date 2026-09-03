@@ -1,6 +1,6 @@
 import { V4_LOCAL_STATES } from '../../modules/storage-v4/storageV4Contract.js';
 import { createV4WebSyncComposition } from './createV4WebSyncComposition.js';
-import { createFirestoreV4PilotTripWriter } from './firestoreV4PilotTripWriter.js';
+import { createFirestoreV4TripWriter } from './firestoreV4TripWriter.js';
 import { createFirestoreV4SyncGateway } from './firestoreV4SyncGateway.js';
 import { createFirestoreV4TripRepository } from './firestoreV4TripRepository.js';
 import { createV4SyncTelemetryEmitter } from './v4SyncTelemetryClient.js';
@@ -132,12 +132,12 @@ function browserLifecycleAvailable() {
 }
 
 /**
- * Product/editor bridge for the existing v4 pilot writer.
+ * Product/editor bridge for the canonical Storage v4 writer.
  *
- * Explicit save/delete continue to use the hardened pilot writer. Normal editor
- * changes use the same IndexedDB queue/runtime, but only commit incremental
- * entity intents and let the existing 3s scheduler coalesce/flush them. This
- * deliberately avoids calling the whole-trip save path on every editing pause.
+ * Explicit save/delete use the hardened v4 writer. Normal editor changes use
+ * the same IndexedDB queue/runtime, but only commit incremental entity intents
+ * and let the existing 3s scheduler coalesce/flush them. This deliberately
+ * avoids calling the whole-trip save path on every editing pause.
  */
 export function createFirestoreV4EditorTripWriter({
   db,
@@ -148,7 +148,7 @@ export function createFirestoreV4EditorTripWriter({
   repository = null,
   composition = null,
   compositionFactory = createV4WebSyncComposition,
-  baseWriterFactory = createFirestoreV4PilotTripWriter,
+  baseWriterFactory = createFirestoreV4TripWriter,
   telemetryEmitter = null,
 } = {}) {
   if (!db) throw new TypeError('Se requiere Firestore para Storage v4 editor sync.');
