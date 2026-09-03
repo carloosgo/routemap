@@ -21,6 +21,7 @@ async function sourceFiles(root) {
   const entries = await readdir(root, { withFileTypes: true });
   const files = [];
   for (const entry of entries) {
+    if (entry.isDirectory() && entry.name === 'node_modules') continue;
     const url = new URL(entry.name + (entry.isDirectory() ? '/' : ''), root);
     if (entry.isDirectory()) {
       files.push(...await sourceFiles(url));
