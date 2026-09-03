@@ -13,10 +13,11 @@ const policySource = readFileSync(resolve('functions/callablePolicy.js'), 'utf8'
 const citySource = readFileSync(resolve('functions/geoapifyCityFunctions.js'), 'utf8');
 const countryPlaceIdsSource = readFileSync(resolve('functions/googleCountryPlaceIdsFunction.js'), 'utf8');
 
-test('manifest fija los 18 callables públicos en us-central1', () => {
+test('manifest fija los 17 callables públicos v4-only en us-central1', () => {
   assert.equal(CALLABLE_FUNCTIONS_REGION, 'us-central1');
-  assert.equal(CALLABLE_FUNCTIONS.length, 18);
-  assert.equal(new Set(CALLABLE_FUNCTION_NAMES).size, 18);
+  assert.equal(CALLABLE_FUNCTIONS.length, 17);
+  assert.equal(new Set(CALLABLE_FUNCTION_NAMES).size, 17);
+  assert.ok(!CALLABLE_FUNCTION_NAMES.includes('storageV4RolloutTelemetry'));
   assert.ok(!CALLABLE_FUNCTION_NAMES.includes('storageV4ProviderOutageProbe'));
 });
 
