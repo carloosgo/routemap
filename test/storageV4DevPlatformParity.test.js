@@ -47,7 +47,6 @@ test('derivePlatformParity reports no gap for a complete production-like dev pla
       firebaseAppCheck: true,
       recaptchaEnterprise: true,
       secretManager: true,
-      remoteConfig: true,
       identityToolkit: true,
     },
     appCheckConfigs: [{ siteKeyConfigured: true }],
@@ -56,6 +55,7 @@ test('derivePlatformParity reports no gap for a complete production-like dev pla
   assert.equal(parity.fullPlatformParityReady, true);
   assert.deepEqual(parity.gaps, []);
   assert.equal(parity.activeExpectedTtlCount, DEV_PLATFORM_EXPECTED_TTL_COLLECTIONS.length);
+  assert.equal('remoteConfig' in parity.services, false);
 });
 
 test('derivePlatformParity exposes Hosting, App Check and TTL gaps without pretending they are configured', () => {
@@ -72,7 +72,6 @@ test('derivePlatformParity exposes Hosting, App Check and TTL gaps without prete
       firebaseAppCheck: false,
       recaptchaEnterprise: false,
       secretManager: true,
-      remoteConfig: true,
       identityToolkit: true,
     },
     appCheckConfigs: [],
@@ -84,4 +83,5 @@ test('derivePlatformParity exposes Hosting, App Check and TTL gaps without prete
   assert.ok(parity.gaps.includes('recaptcha-enterprise-api'));
   assert.ok(parity.gaps.includes('app-check-registration'));
   assert.ok(parity.gaps.includes('firestore-ttl-policies'));
+  assert.equal('remoteConfig' in parity.services, false);
 });
