@@ -33,7 +33,7 @@ test('local storage repository tolera JSON corrupto sin inventar datos', async (
   }
 });
 
-test('local storage repository normaliza y promueve el origen legacy antes de persistir', async () => {
+test('local storage repository conserva únicamente el origen canónico del root', async () => {
   const previousStorage = globalThis.localStorage;
   globalThis.localStorage = memoryStorage();
 
@@ -43,10 +43,10 @@ test('local storage repository normaliza y promueve el origen legacy antes de pe
       id: 'trip-1',
       name: 'Viaje\u0000 seguro',
       currency: 'EUR',
+      origin: { name: 'México', countryCode: 'mx', lat: '19.43', lon: '-99.13' },
       segments: [
         {
           id: 'segment-1',
-          origin: { name: 'México', countryCode: 'mx', lat: '19.43', lon: '-99.13' },
           destination: { name: 'Madrid', countryCode: 'es', lat: '40.41', lon: '-3.70' },
           expenses: { lodging: '-20' },
         },
@@ -61,6 +61,34 @@ test('local storage repository normaliza y promueve el origen legacy antes de pe
 
     const loaded = await repository.get('trip-1');
     assert.deepEqual(loaded, saved);
+  } finally {
+    globalThis.localStorage = previousStorage;
+  }
+});
+
+test('local storage no promueve segment.origin de datos antiguos', async () => {
+  const previousStorage = globalThis.localStorage;
+  globalThis.localStorage = memoryStorage({
+    'test:trips': JSON.stringify([
+      {
+        id: 'legacy-trip',
+        currency: 'USD',
+        segments: [
+          {
+            id: 'segment-1',
+            origin: { name: 'Legacy origin', countryCode: 'MX' },
+            destination: { name: 'Madrid', countryCode: 'ES' },
+          },
+        ],
+      },
+    ]),
+  });
+
+  try {
+    const repository = createLocalStorageRepository('test:trips');
+    const loaded = await repository.get('legacy-trip');
+    assert.equal(loaded.origin, null);
+    assert.equal(Object.hasOwn(loaded.segments[0], 'origin'), false);
   } finally {
     globalThis.localStorage = previousStorage;
   }

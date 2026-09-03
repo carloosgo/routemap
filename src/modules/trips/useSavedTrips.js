@@ -10,8 +10,6 @@ import {
 } from './tripRepositorySelector.js';
 import { createTripDraftStore, tripDraftScopeId } from './tripDraftStore.js';
 import { useSavedTripPersistenceActions } from './useSavedTripPersistenceActions.js';
-import { useGateGRolloutConfig } from '../../infrastructure/firebase/useGateGRolloutConfig.js';
-import { useGateGRolloutTelemetry } from '../../infrastructure/firebase/useGateGRolloutTelemetry.js';
 
 function localOnlyState(durable = true) {
   return {
@@ -29,16 +27,12 @@ export function useSavedTrips(user) {
     () => createTripDraftStore({ scopeId: tripDraftScopeId(user?.uid || 'anonymous') }),
     [user?.uid]
   );
-  const rolloutConfig = useGateGRolloutConfig();
-  const emitTelemetry = useGateGRolloutTelemetry();
   const repository = useMemo(
     () => selectTripRepository({
       uid: user?.uid,
       localRepository,
-      rolloutConfig,
-      emitTelemetry,
     }),
-    [emitTelemetry, localRepository, rolloutConfig, user?.uid]
+    [localRepository, user?.uid]
   );
   const currentRepositoryRef = useRef(repository);
   const refreshVersionRef = useRef(0);

@@ -9,21 +9,7 @@ test('config usa valores seguros fuera de Vite', () => {
   assert.equal(config.defaultLocale, 'es');
   assert.equal(config.geoapify.functionRegion, 'us-central1');
   assert.equal(config.firebase.projectId, '');
-  assert.deepEqual(config.storageV4Rollout, {
-    enabled: false,
-    killSwitch: true,
-    mode: 'off',
-    cohortPercent: 0,
-    salt: 'atlas-storage-v4',
-    readRulesReady: false,
-    writeRulesReady: false,
-    syncReady: false,
-    aggregateReady: false,
-    lifecycleReady: false,
-    purgeReady: false,
-    remoteConfigEnabled: false,
-    telemetryEnabled: false,
-  });
+  assert.equal(Object.hasOwn(config, 'storageV4Rollout'), false);
 });
 
 test('colorForIndex cicla la paleta y tolera índices inválidos', () => {

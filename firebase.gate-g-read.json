@@ -1,6 +1,0 @@
-{
-  "firestore": {
-    "rules": "firestore-gate-g-read.rules",
-    "indexes": "firestore.indexes.json"
-  }
-}

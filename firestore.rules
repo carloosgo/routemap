@@ -18,13 +18,38 @@ service cloud.firestore {
       return value is number && value >= 0;
     }
 
+    function validRank(value) {
+      return value is string && value.matches('^[0-9a-z]{10}$');
+    }
+
+    function validStatus(value) {
+      return value == 'active' || value == 'deleted';
+    }
+
+    function validLifecycle(data) {
+      return validStatus(data.status)
+        && data.version is int
+        && data.version >= 1
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && (data.deletedAt == null || data.deletedAt is timestamp);
+    }
+
     function validCity(data) {
       return data is map
         && data.keys().hasOnly([
           'id', 'name', 'displayName', 'country', 'countryCode', 'lat', 'lon'
         ])
+        && data.id is string
+        && data.id.size() <= 256
         && data.name is string
         && data.name.size() <= 120
+        && data.displayName is string
+        && data.displayName.size() <= 200
+        && data.country is string
+        && data.country.size() <= 100
+        && data.countryCode is string
+        && data.countryCode.matches('^([A-Z]{2})?$')
         && data.lat is number
         && data.lat >= -90
         && data.lat <= 90
@@ -35,12 +60,8 @@ service cloud.firestore {
 
     function validFood(data) {
       return data is map
-        && data.keys().hasOnly([
-          'mode', 'single', 'breakfast', 'lunch', 'dinner'
-        ])
-        && data.keys().hasAll([
-          'mode', 'single', 'breakfast', 'lunch', 'dinner'
-        ])
+        && data.keys().hasOnly(['mode', 'single', 'breakfast', 'lunch', 'dinner'])
+        && data.keys().hasAll(['mode', 'single', 'breakfast', 'lunch', 'dinner'])
         && (data.mode == 'single' || data.mode == 'detailed')
         && validAmount(data.single)
         && validAmount(data.breakfast)
@@ -58,6 +79,10 @@ service cloud.firestore {
         && validAmount(data.taxiUber);
     }
 
+    function validExpenseItems(items) {
+      return items is list && items.size() <= 200;
+    }
+
     function validExpenses(data) {
       return data is map
         && data.keys().hasOnly([
@@ -69,12 +94,9 @@ service cloud.firestore {
         && validAmount(data.lodging)
         && validFood(data.food)
         && validTransport(data.transport)
-        && data.transportOthers is list
-        && data.transportOthers.size() <= 200
-        && data.attractions is list
-        && data.attractions.size() <= 200
-        && data.others is list
-        && data.others.size() <= 200;
+        && validExpenseItems(data.transportOthers)
+        && validExpenseItems(data.attractions)
+        && validExpenseItems(data.others);
     }
 
     function validOriginDetails(data) {
@@ -90,30 +112,26 @@ service cloud.firestore {
         && validExpenses(data.expenses);
     }
 
-    function revisionPath(userId, tripId, revisionId) {
-      return /databases/$(database)/documents/users/$(userId)/trips/$(tripId)/revisions/$(revisionId);
+    function tripPath(userId, tripId) {
+      return /databases/$(database)/documents/users/$(userId)/trips/$(tripId);
     }
 
-    function completeRevisionExists(userId, tripId, revisionId) {
-      return exists(revisionPath(userId, tripId, revisionId))
-        && get(revisionPath(userId, tripId, revisionId)).data.complete == true;
+    function activeTripExists(userId, tripId) {
+      return exists(tripPath(userId, tripId))
+        && get(tripPath(userId, tripId)).data.schemaVersion == 4
+        && get(tripPath(userId, tripId)).data.status == 'active';
     }
 
-    function openRevisionExists(userId, tripId, revisionId) {
-      return exists(revisionPath(userId, tripId, revisionId))
-        && get(revisionPath(userId, tripId, revisionId)).data.complete == false;
-    }
-
-    function validTripSummary(data, tripId) {
+    function validTrip(data, tripId) {
       return data.keys().hasOnly([
-          'id', 'name', 'currency', 'originDetails', 'placeOrderVersion', 'createdAt', 'updatedAt',
-          'storageVersion', 'activeRevision', 'segmentCount', 'placeCount',
-          'routeConnectionCount', 'noteCount', 'checklistCount', 'total'
+          'id', 'name', 'currency', 'origin', 'originDetails', 'schemaVersion', 'status', 'version',
+          'createdAt', 'updatedAt', 'deletedAt', 'purgeAfter',
+          'segmentCount', 'placeCount', 'total'
         ])
         && data.keys().hasAll([
-          'id', 'name', 'currency', 'placeOrderVersion', 'createdAt', 'updatedAt',
-          'storageVersion', 'activeRevision', 'segmentCount', 'placeCount',
-          'routeConnectionCount', 'noteCount', 'checklistCount', 'total'
+          'id', 'name', 'currency', 'origin', 'schemaVersion', 'status', 'version',
+          'createdAt', 'updatedAt', 'deletedAt', 'purgeAfter',
+          'segmentCount', 'placeCount', 'total'
         ])
         && data.id == tripId
         && data.id is string
@@ -123,60 +141,99 @@ service cloud.firestore {
         && data.name.size() <= 120
         && data.currency is string
         && data.currency.matches('^[A-Z]{3}$')
+        && (data.origin == null || validCity(data.origin))
         && (
           !data.keys().hasAny(['originDetails'])
           || validOriginDetails(data.originDetails)
         )
-        && data.placeOrderVersion == 1
-        && data.createdAt is string
-        && data.createdAt.size() <= 40
-        && data.updatedAt is string
-        && data.updatedAt.size() <= 40
-        && data.storageVersion == 3
-        && data.activeRevision is string
-        && data.activeRevision.matches('^[a-zA-Z0-9_-]{8,128}$')
+        && data.schemaVersion == 4
+        && validLifecycle(data)
+        && (data.purgeAfter == null || data.purgeAfter is timestamp)
         && validCount(data.segmentCount, 500)
         && validCount(data.placeCount, 500)
-        && validCount(data.routeConnectionCount, 200)
-        && validCount(data.noteCount, 50)
-        && validCount(data.checklistCount, 500)
         && validAmount(data.total);
     }
 
-    function validRevision(data, revisionId) {
-      return data.keys().hasOnly([
-          'id', 'createdAt', 'complete', 'segmentCount', 'placeCount',
-          'routeConnectionCount', 'noteCount', 'checklistCount'
-        ])
-        && data.keys().hasAll([
-          'id', 'createdAt', 'complete', 'segmentCount', 'placeCount',
-          'routeConnectionCount', 'noteCount', 'checklistCount'
-        ])
-        && data.id == revisionId
-        && data.createdAt is string
-        && data.createdAt.size() <= 40
-        && data.complete is bool
-        && validCount(data.segmentCount, 500)
-        && validCount(data.placeCount, 500)
-        && validCount(data.routeConnectionCount, 200)
-        && validCount(data.noteCount, 50)
-        && validCount(data.checklistCount, 500);
+    function validClientTripCreate(data, tripId) {
+      return validTrip(data, tripId)
+        && data.status == 'active'
+        && data.version == 1
+        && data.createdAt == request.time
+        && data.updatedAt == request.time
+        && data.deletedAt == null
+        && data.purgeAfter == null
+        && data.segmentCount == 0
+        && data.placeCount == 0
+        && data.total == 0;
     }
 
-    function validSegment(data) {
+    function validClientTripUpdate() {
+      return validTrip(request.resource.data, resource.id)
+        && resource.data.status == 'active'
+        && request.resource.data.status == 'active'
+        && request.resource.data.version == resource.data.version + 1
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.deletedAt == resource.data.deletedAt
+        && request.resource.data.purgeAfter == resource.data.purgeAfter
+        && request.resource.data.segmentCount == resource.data.segmentCount
+        && request.resource.data.placeCount == resource.data.placeCount
+        && request.resource.data.total == resource.data.total
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'currency', 'origin', 'originDetails', 'version', 'updatedAt'
+        ]);
+    }
+
+    function validEntityCreate(data) {
+      return validLifecycle(data)
+        && data.status == 'active'
+        && data.version == 1
+        && data.createdAt == request.time
+        && data.updatedAt == request.time
+        && data.deletedAt == null;
+    }
+
+    function validEntityUpdate() {
+      return validLifecycle(request.resource.data)
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.version == resource.data.version + 1
+        && request.resource.data.updatedAt == request.time
+        && (
+          (
+            resource.data.status == 'active'
+            && request.resource.data.status == 'active'
+            && request.resource.data.deletedAt == null
+          )
+          ||
+          (
+            resource.data.status == 'active'
+            && request.resource.data.status == 'deleted'
+            && request.resource.data.deletedAt == request.time
+          )
+          ||
+          (
+            resource.data.status == 'deleted'
+            && request.resource.data.status == 'active'
+            && request.resource.data.deletedAt == null
+          )
+        );
+    }
+
+    function validSegment(data, segmentId) {
       return data.keys().hasOnly([
-          'id', 'position', 'origin', 'destination', 'startDate', 'endDate',
-          'expenses', 'note'
+          'id', 'rank', 'destination', 'startDate', 'endDate',
+          'expenses', 'note', 'status', 'version', 'createdAt', 'updatedAt', 'deletedAt'
         ])
         && data.keys().hasAll([
-          'id', 'position', 'origin', 'destination', 'startDate', 'endDate',
-          'expenses', 'note'
+          'id', 'rank', 'destination', 'startDate', 'endDate',
+          'expenses', 'note', 'status', 'version', 'createdAt', 'updatedAt', 'deletedAt'
         ])
+        && data.id == segmentId
         && data.id is string
         && data.id.size() > 0
         && data.id.size() <= 128
-        && validCount(data.position, 499)
-        && (data.origin == null || validCity(data.origin))
+        && validRank(data.rank)
         && (data.destination == null || validCity(data.destination))
         && data.startDate is string
         && data.startDate.size() <= 10
@@ -184,22 +241,26 @@ service cloud.firestore {
         && data.endDate.size() <= 10
         && validExpenses(data.expenses)
         && data.note is string
-        && data.note.size() <= 500;
+        && data.note.size() <= 500
+        && validLifecycle(data);
     }
 
-    function validPlace(data) {
+    function validPlace(data, placeId) {
       return data.keys().hasOnly([
-          'id', 'position', 'provider', 'googlePlaceId', 'userLabel', 'name', 'address', 'city',
-          'country', 'category', 'countryCode', 'lat', 'lon', 'savedAt'
+          'id', 'rank', 'provider', 'googlePlaceId', 'userLabel', 'name', 'address',
+          'city', 'country', 'category', 'countryCode', 'lat', 'lon', 'savedAt',
+          'status', 'version', 'createdAt', 'updatedAt', 'deletedAt'
         ])
         && data.keys().hasAll([
-          'id', 'position', 'provider', 'googlePlaceId', 'userLabel', 'name', 'address', 'city',
-          'country', 'category', 'countryCode', 'lat', 'lon', 'savedAt'
+          'id', 'rank', 'provider', 'googlePlaceId', 'userLabel', 'name', 'address',
+          'city', 'country', 'category', 'countryCode', 'lat', 'lon', 'savedAt',
+          'status', 'version', 'createdAt', 'updatedAt', 'deletedAt'
         ])
+        && data.id == placeId
         && data.id is string
         && data.id.size() > 0
         && data.id.size() <= 128
-        && validCount(data.position, 499)
+        && validRank(data.rank)
         && data.provider is string
         && (data.provider == 'geoapify' || data.provider == 'google')
         && data.googlePlaceId is string
@@ -220,6 +281,7 @@ service cloud.firestore {
         && data.countryCode.matches('^([A-Z]{2})?$')
         && data.savedAt is string
         && data.savedAt.size() <= 40
+        && validLifecycle(data)
         && (
           (
             data.provider == 'google'
@@ -247,19 +309,20 @@ service cloud.firestore {
         );
     }
 
-    function validRouteConnection(data) {
+    function validConnection(data, connectionId) {
       return data.keys().hasOnly([
-          'id', 'position', 'fromPlaceId', 'toPlaceId', 'mode', 'visible',
-          'distance', 'duration', 'geometryJson', 'calculatedAt'
+          'id', 'rank', 'fromPlaceId', 'toPlaceId', 'mode', 'visible',
+          'status', 'version', 'createdAt', 'updatedAt', 'deletedAt'
         ])
         && data.keys().hasAll([
-          'id', 'position', 'fromPlaceId', 'toPlaceId', 'mode', 'visible',
-          'distance', 'duration', 'geometryJson', 'calculatedAt'
+          'id', 'rank', 'fromPlaceId', 'toPlaceId', 'mode', 'visible',
+          'status', 'version', 'createdAt', 'updatedAt', 'deletedAt'
         ])
+        && data.id == connectionId
         && data.id is string
         && data.id.size() > 0
         && data.id.size() <= 128
-        && validCount(data.position, 199)
+        && validRank(data.rank)
         && data.fromPlaceId is string
         && data.fromPlaceId.size() > 0
         && data.fromPlaceId.size() <= 128
@@ -270,46 +333,55 @@ service cloud.firestore {
         && data.mode is string
         && (
           data.mode == 'drive'
+          || data.mode == 'transit'
           || data.mode == 'train'
           || data.mode == 'bus'
           || data.mode == 'bicycle'
           || data.mode == 'walk'
-          || data.mode == 'transit'
-          || data.mode == 'approximated_transit'
         )
         && data.visible is bool
-        && validAmount(data.distance)
-        && validAmount(data.duration)
-        && data.geometryJson is string
-        && data.geometryJson.size() > 0
-        && data.geometryJson.size() <= 800000
-        && data.calculatedAt is string
-        && data.calculatedAt.size() <= 40;
+        && validLifecycle(data);
     }
 
-    function validNote(data) {
-      return data.keys().hasOnly(['id', 'position', 'title', 'text'])
-        && data.keys().hasAll(['id', 'position', 'title', 'text'])
+    function validNote(data, noteId) {
+      return data.keys().hasOnly([
+          'id', 'rank', 'title', 'text', 'status', 'version',
+          'createdAt', 'updatedAt', 'deletedAt'
+        ])
+        && data.keys().hasAll([
+          'id', 'rank', 'title', 'text', 'status', 'version',
+          'createdAt', 'updatedAt', 'deletedAt'
+        ])
+        && data.id == noteId
         && data.id is string
         && data.id.size() > 0
         && data.id.size() <= 128
-        && validCount(data.position, 49)
+        && validRank(data.rank)
         && data.title is string
         && data.title.size() <= 60
         && data.text is string
-        && data.text.size() <= 2000;
+        && data.text.size() <= 2000
+        && validLifecycle(data);
     }
 
-    function validChecklistItem(data) {
-      return data.keys().hasOnly(['id', 'position', 'text', 'done'])
-        && data.keys().hasAll(['id', 'position', 'text', 'done'])
+    function validChecklist(data, itemId) {
+      return data.keys().hasOnly([
+          'id', 'rank', 'text', 'done', 'status', 'version',
+          'createdAt', 'updatedAt', 'deletedAt'
+        ])
+        && data.keys().hasAll([
+          'id', 'rank', 'text', 'done', 'status', 'version',
+          'createdAt', 'updatedAt', 'deletedAt'
+        ])
+        && data.id == itemId
         && data.id is string
         && data.id.size() > 0
         && data.id.size() <= 128
-        && validCount(data.position, 499)
+        && validRank(data.rank)
         && data.text is string
         && data.text.size() <= 120
-        && data.done is bool;
+        && data.done is bool
+        && validLifecycle(data);
     }
 
     match /users/{userId} {
@@ -318,76 +390,73 @@ service cloud.firestore {
       match /trips/{tripId} {
         allow get, list: if ownsUserPath(userId);
         allow create: if ownsUserPath(userId)
-          && validTripSummary(request.resource.data, tripId)
-          && completeRevisionExists(userId, tripId, request.resource.data.activeRevision);
-        allow update: if ownsUserPath(userId)
-          && validTripSummary(request.resource.data, tripId)
-          && request.resource.data.createdAt == resource.data.createdAt
-          && completeRevisionExists(userId, tripId, request.resource.data.activeRevision);
-        allow delete: if ownsUserPath(userId);
+          && validClientTripCreate(request.resource.data, tripId);
+        allow update: if ownsUserPath(userId) && validClientTripUpdate();
+        allow delete: if false;
 
-        match /revisions/{revisionId} {
+        match /segments/{segmentId} {
           allow get, list: if ownsUserPath(userId);
           allow create: if ownsUserPath(userId)
-            && validRevision(request.resource.data, revisionId)
-            && request.resource.data.complete == false;
+            && activeTripExists(userId, tripId)
+            && validSegment(request.resource.data, segmentId)
+            && validEntityCreate(request.resource.data);
           allow update: if ownsUserPath(userId)
-            && validRevision(request.resource.data, revisionId)
-            && resource.data.complete == false
-            && request.resource.data.complete == true
-            && request.resource.data.id == resource.data.id
-            && request.resource.data.createdAt == resource.data.createdAt
-            && request.resource.data.segmentCount == resource.data.segmentCount
-            && request.resource.data.placeCount == resource.data.placeCount
-            && request.resource.data.routeConnectionCount == resource.data.routeConnectionCount
-            && request.resource.data.noteCount == resource.data.noteCount
-            && request.resource.data.checklistCount == resource.data.checklistCount;
-          allow delete: if ownsUserPath(userId);
+            && activeTripExists(userId, tripId)
+            && validSegment(request.resource.data, segmentId)
+            && validEntityUpdate();
+          allow delete: if false;
+        }
 
-          match /segments/{documentId} {
-            allow get, list: if ownsUserPath(userId);
-            allow create: if ownsUserPath(userId)
-              && openRevisionExists(userId, tripId, revisionId)
-              && validSegment(request.resource.data);
-            allow update: if false;
-            allow delete: if ownsUserPath(userId);
-          }
+        match /places/{placeId} {
+          allow get, list: if ownsUserPath(userId);
+          allow create: if ownsUserPath(userId)
+            && activeTripExists(userId, tripId)
+            && validPlace(request.resource.data, placeId)
+            && validEntityCreate(request.resource.data);
+          allow update: if ownsUserPath(userId)
+            && activeTripExists(userId, tripId)
+            && validPlace(request.resource.data, placeId)
+            && validEntityUpdate();
+          allow delete: if false;
+        }
 
-          match /places/{documentId} {
-            allow get, list: if ownsUserPath(userId);
-            allow create: if ownsUserPath(userId)
-              && openRevisionExists(userId, tripId, revisionId)
-              && validPlace(request.resource.data);
-            allow update: if false;
-            allow delete: if ownsUserPath(userId);
-          }
+        match /connections/{connectionId} {
+          allow get, list: if ownsUserPath(userId);
+          allow create: if ownsUserPath(userId)
+            && activeTripExists(userId, tripId)
+            && validConnection(request.resource.data, connectionId)
+            && validEntityCreate(request.resource.data);
+          allow update: if ownsUserPath(userId)
+            && activeTripExists(userId, tripId)
+            && validConnection(request.resource.data, connectionId)
+            && validEntityUpdate();
+          allow delete: if false;
+        }
 
-          match /routeConnections/{documentId} {
-            allow get, list: if ownsUserPath(userId);
-            allow create: if ownsUserPath(userId)
-              && openRevisionExists(userId, tripId, revisionId)
-              && validRouteConnection(request.resource.data);
-            allow update: if false;
-            allow delete: if ownsUserPath(userId);
-          }
+        match /notes/{noteId} {
+          allow get, list: if ownsUserPath(userId);
+          allow create: if ownsUserPath(userId)
+            && activeTripExists(userId, tripId)
+            && validNote(request.resource.data, noteId)
+            && validEntityCreate(request.resource.data);
+          allow update: if ownsUserPath(userId)
+            && activeTripExists(userId, tripId)
+            && validNote(request.resource.data, noteId)
+            && validEntityUpdate();
+          allow delete: if false;
+        }
 
-          match /notes/{documentId} {
-            allow get, list: if ownsUserPath(userId);
-            allow create: if ownsUserPath(userId)
-              && openRevisionExists(userId, tripId, revisionId)
-              && validNote(request.resource.data);
-            allow update: if false;
-            allow delete: if ownsUserPath(userId);
-          }
-
-          match /checklist/{documentId} {
-            allow get, list: if ownsUserPath(userId);
-            allow create: if ownsUserPath(userId)
-              && openRevisionExists(userId, tripId, revisionId)
-              && validChecklistItem(request.resource.data);
-            allow update: if false;
-            allow delete: if ownsUserPath(userId);
-          }
+        match /checklist/{itemId} {
+          allow get, list: if ownsUserPath(userId);
+          allow create: if ownsUserPath(userId)
+            && activeTripExists(userId, tripId)
+            && validChecklist(request.resource.data, itemId)
+            && validEntityCreate(request.resource.data);
+          allow update: if ownsUserPath(userId)
+            && activeTripExists(userId, tripId)
+            && validChecklist(request.resource.data, itemId)
+            && validEntityUpdate();
+          allow delete: if false;
         }
       }
     }

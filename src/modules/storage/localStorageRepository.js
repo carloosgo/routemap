@@ -5,11 +5,10 @@ import {
 
 // Implementación de almacenamiento en el navegador (localStorage).
 // Apta para uso individual / modo offline. Para multiusuario global se usa
-// la implementación 'api' contra el backend.
+// el repositorio remoto canónico Storage v4.
 
 function normalizeStoredTrip(rawTrip) {
-  const legacyOrigin = rawTrip?.origin || rawTrip?.segments?.[0]?.origin || null;
-  return normalizeTrip({ ...rawTrip, origin: legacyOrigin });
+  return normalizeTrip(rawTrip);
 }
 
 function tripForPersistence(rawTrip) {
