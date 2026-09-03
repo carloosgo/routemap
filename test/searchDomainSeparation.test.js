@@ -41,9 +41,9 @@ test('la búsqueda general Google no lee origen, destino ni módulos de ciudades
   assert.doesNotMatch(placeClient, /contextualQuery|callableSearchContext|contextKey|searchContext|citySearchClient|geoapifyCityAutocomplete/);
 });
 
-test('el modelo actual nunca guarda lugares ni routing dentro de un tramo', async () => {
+test('el modelo v4 nunca guarda lugares ni routing dentro de un tramo', async () => {
   const entities = await read('src/modules/trips/tripEntities.js');
-  const storage = await read('src/infrastructure/firebase/tripStorageSchema.js');
+  const savePlan = await read('src/infrastructure/firebase/v4TripSavePlan.js');
   const rules = await read('firestore.rules');
 
   const createSegmentBlock = entities.slice(
@@ -53,7 +53,9 @@ test('el modelo actual nunca guarda lugares ni routing dentro de un tramo', asyn
 
   assert.doesNotMatch(createSegmentBlock, /places\s*:|route\s*:/);
   assert.match(entities, /const legacyPlaces = rawSegments\.flatMap/);
-  assert.match(storage, /delete stored\.places/);
+  assert.match(savePlan, /tripField: 'segments', entityType: 'segment'/);
+  assert.match(savePlan, /tripField: 'places', entityType: 'place'/);
+  assert.match(savePlan, /tripField: 'routeConnections', entityType: 'connection'/);
   assert.doesNotMatch(rules, /'route'/);
 });
 
