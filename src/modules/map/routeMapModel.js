@@ -1,6 +1,5 @@
 import { isPlaced } from '../trips/tripModel.js';
 import { buildItineraryStopSequence } from '../trips/itineraryStopSequence.js';
-import { syncSegmentOrigins } from '../trips/tripOperations.js';
 import { normalizeRouteGeometry } from '../routes/routeModel.js';
 import { savedPlaceMarkerStyle } from './savedPlaceMarkerPalette.js';
 
@@ -52,8 +51,7 @@ export function cityKey(city) {
 }
 
 export function canonicalSegmentChain(segments) {
-  const safeSegments = Array.isArray(segments) ? segments : [];
-  return syncSegmentOrigins(safeSegments, safeSegments[0]?.origin || null);
+  return Array.isArray(segments) ? segments : [];
 }
 
 export function orderedCities(segments) {
@@ -148,8 +146,9 @@ export function buildMapFeatureData({
     : [];
   const routeSegments = showSegments ? canonicalSegmentChain(segments) : [];
   const routeCities = showSegments ? orderedCities(routeSegments) : [];
+  const routeOrigin = routeSegments[0]?.origin || null;
   const stopSequence = showSegments
-    ? buildItineraryStopSequence(routeSegments, colorForIndex)
+    ? buildItineraryStopSequence(routeOrigin, routeSegments, colorForIndex)
     : [];
   const countryStyles = showPlaces ? placeCountryStyleMap(places) : new Map();
 
