@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { v4EntityKey } from '../src/modules/storage-v4/entityKeyModel.js';
 import { createMemoryV4LocalPersistence } from '../src/modules/storage-v4/memoryLocalPersistence.js';
 import { createFirestoreV4EditorTripWriter } from '../src/infrastructure/firebase/firestoreV4EditorTripWriter.js';
-import { createFirestoreV4PilotTripWriter } from '../src/infrastructure/firebase/firestoreV4PilotTripWriter.js';
+import { createFirestoreV4TripWriter } from '../src/infrastructure/firebase/firestoreV4TripWriter.js';
 
 const TRIP_ID = 'trip-origin-baseline';
 const ORIGIN = Object.freeze({
@@ -104,7 +104,7 @@ test('writer v4 conserva trip.origin estructurado al rebasar el baseline antes d
     async getTripSummary() { return remoteRoot(); },
     async listEntities() { return []; },
   };
-  const writer = createFirestoreV4PilotTripWriter({
+  const writer = createFirestoreV4TripWriter({
     db: {},
     uid: 'alice',
     telemetryEnabled: false,
