@@ -71,7 +71,8 @@ export function materializeV3TripToV4(rawTrip, { timestampFromIso } = {}) {
     throw new TypeError('timestampFromIso debe ser función.');
   }
   validateRawSourceIdentity(rawTrip);
-  const trip = normalizeTrip(rawTrip);
+  const legacyOrigin = rawTrip?.origin || rawTrip?.segments?.[0]?.origin || null;
+  const trip = normalizeTrip({ ...rawTrip, origin: legacyOrigin });
 
   const createdAt = requiredTimestampSource(trip.createdAt, 'createdAt', timestampFromIso);
   const updatedAt = requiredTimestampSource(trip.updatedAt, 'updatedAt', timestampFromIso);
