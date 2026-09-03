@@ -118,7 +118,7 @@ before(async () => {
     firestore: {
       host: '127.0.0.1',
       port: 8080,
-      rules: await readFile('firestore-v4.rules', 'utf8'),
+      rules: await readFile('firestore.rules', 'utf8'),
     },
   });
 });
