@@ -87,7 +87,7 @@ test('rules y writers conservan originDetails en el camino v4 canónico', async 
   const [rules, editorWriter, writer] = await Promise.all([
     readFile(new URL('../firestore.rules', import.meta.url), 'utf8'),
     readFile(new URL('../src/infrastructure/firebase/firestoreV4EditorTripWriter.js', import.meta.url), 'utf8'),
-    readFile(new URL('../src/infrastructure/firebase/firestoreV4PilotTripWriter.js', import.meta.url), 'utf8'),
+    readFile(new URL('../src/infrastructure/firebase/firestoreV4TripWriter.js', import.meta.url), 'utf8'),
   ]);
 
   assert.match(rules, /function validOriginDetails\(data\)/);
