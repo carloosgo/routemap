@@ -1,5 +1,5 @@
 /* global process, console */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -11,7 +11,6 @@ export const CONFIRMATION = 'DEPLOY-ATLAS-V4-TRIP-LIFECYCLE-DEV';
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = dirname(here);
 const functionsIndexPath = join(repoRoot, 'functions', 'index.js');
-const ephemeralExport = `export { ${FUNCTION_NAME} } from './v4PilotExports.js';`;
 
 function argumentValue(args, name) {
   const prefix = `${name}=`;
@@ -66,15 +65,15 @@ function runFirebase(firebaseCliScript, args) {
   }
 }
 
-export function buildEphemeralIndex(indexSource) {
+export function assertCanonicalLifecycleExport(indexSource) {
   if (typeof indexSource !== 'string') throw new TypeError('indexSource debe ser texto.');
-  if (new RegExp(`\\b${FUNCTION_NAME}\\b`).test(indexSource)) {
-    return Object.freeze({ source: indexSource, changed: false });
+  const exportBlock = /export\s*\{[\s\S]*?\bv4TripLifecycle\b[\s\S]*?\}\s*from\s*['"]\.\/v4BackendExports\.js['"]/m;
+  if (!exportBlock.test(indexSource)) {
+    throw new Error(
+      'functions/index.js debe exportar v4TripLifecycle desde ./v4BackendExports.js antes del deploy.'
+    );
   }
-  return Object.freeze({
-    source: `${indexSource.trimEnd()}\n\n// Ephemeral export used only by the scoped Storage v4 lifecycle deploy.\n${ephemeralExport}\n`,
-    changed: true,
-  });
+  return true;
 }
 
 export function deployStorageV4TripLifecycleDev({
@@ -82,11 +81,11 @@ export function deployStorageV4TripLifecycleDev({
   indexSource = readFileSync(functionsIndexPath, 'utf8'),
   firebaseCliScript = resolveFirebaseCliScript(),
   executeFirebase = runFirebase,
-  writeFunctionsIndex = (content) => writeFileSync(functionsIndexPath, content, 'utf8'),
-  readFunctionsIndex = () => readFileSync(functionsIndexPath, 'utf8'),
   log = (value) => console.log(value),
 } = {}) {
   const options = parseArgs(args);
+  assertCanonicalLifecycleExport(indexSource);
+
   const visiblePlan = Object.freeze({
     project: PROJECT,
     function: FUNCTION_NAME,
@@ -96,7 +95,7 @@ export function deployStorageV4TripLifecycleDev({
     mutatesRemoteConfig: false,
     mutatesApplicationData: false,
     touchesProduction: false,
-    committedIndexRemainsUnchanged: true,
+    usesCanonicalFunctionsIndex: true,
   });
   log(JSON.stringify(visiblePlan, null, 2));
 
@@ -108,55 +107,24 @@ export function deployStorageV4TripLifecycleDev({
     throw new Error('No se encontró Firebase CLI local. Ejecuta npm install en la raíz del proyecto.');
   }
 
-  const deployIndex = buildEphemeralIndex(indexSource);
-  let deployError = null;
-  let restoreError = null;
-
-  if (deployIndex.changed) writeFunctionsIndex(deployIndex.source);
-  try {
-    executeFirebase(firebaseCliScript, [
-      'deploy',
-      '--only',
-      `functions:${FUNCTION_NAME}`,
-      '--project',
-      PROJECT,
-      '--non-interactive',
-    ]);
-  } catch (error) {
-    deployError = error;
-  } finally {
-    if (deployIndex.changed) {
-      try {
-        writeFunctionsIndex(indexSource);
-        if (readFunctionsIndex() !== indexSource) {
-          restoreError = new Error('Deploy abortado: functions/index.js no pudo restaurarse exactamente.');
-        }
-      } catch (error) {
-        restoreError = error instanceof Error
-          ? error
-          : new Error('Deploy abortado: falló la restauración de functions/index.js.');
-      }
-    }
-  }
-
-  if (restoreError && deployError) {
-    throw new AggregateError(
-      [deployError, restoreError],
-      'Fallaron el deploy y la restauración de functions/index.js.'
-    );
-  }
-  if (restoreError) throw restoreError;
-  if (deployError) throw deployError;
+  executeFirebase(firebaseCliScript, [
+    'deploy',
+    '--only',
+    `functions:${FUNCTION_NAME}`,
+    '--project',
+    PROJECT,
+    '--non-interactive',
+  ]);
 
   const result = Object.freeze({
     project: PROJECT,
     function: FUNCTION_NAME,
     deployed: true,
-    functionsIndexRestored: true,
     deploysRules: false,
     mutatesRemoteConfig: false,
     mutatesApplicationData: false,
     touchesProduction: false,
+    usesCanonicalFunctionsIndex: true,
   });
   log(JSON.stringify(result, null, 2));
   return result;
