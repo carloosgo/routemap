@@ -1,7 +1,11 @@
 /* global process */
 import { existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { basename, dirname, join } from 'node:path';
+import { posix, win32 } from 'node:path';
+
+function pathApi(platform) {
+  return platform === 'win32' ? win32 : posix;
+}
 
 export function cliCommandCandidates(name, {
   platform = process.platform,
@@ -14,7 +18,14 @@ export function cliCommandCandidates(name, {
 
   const candidates = [`${name}.cmd`, `${name}.exe`, name];
   if (name === 'gcloud' && env?.LOCALAPPDATA) {
-    candidates.push(join(env.LOCALAPPDATA, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', 'gcloud.cmd'));
+    candidates.push(pathApi(platform).join(
+      env.LOCALAPPDATA,
+      'Google',
+      'Cloud SDK',
+      'google-cloud-sdk',
+      'bin',
+      'gcloud.cmd'
+    ));
   }
   return Object.freeze(candidates);
 }
@@ -31,11 +42,12 @@ export function runCliProcess(executable, args = [], {
 
   const options = { encoding: 'utf8', windowsHide: true, stdio: 'pipe' };
   if (platform === 'win32' && executable.toLowerCase().endsWith('.cmd')) {
+    const paths = pathApi(platform);
     const hasPath = executable.includes('\\') || executable.includes('/');
-    const command = hasPath ? basename(executable) : executable;
+    const command = hasPath ? paths.basename(executable) : executable;
     return spawn(env?.ComSpec || 'cmd.exe', ['/d', '/c', command, ...args], {
       ...options,
-      ...(hasPath ? { cwd: dirname(executable) } : {}),
+      ...(hasPath ? { cwd: paths.dirname(executable) } : {}),
     });
   }
   return spawn(executable, args, options);
