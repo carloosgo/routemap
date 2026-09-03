@@ -216,7 +216,7 @@ export async function runStorageV4DevPlatformParityPreflight({
       'Firebase Web App and Google Auth',
       'Firebase Hosting site inventory',
       'App Check/reCAPTCHA Enterprise APIs and registration',
-      'Secret Manager/Remote Config service readiness',
+      'Secret Manager and Identity Toolkit service readiness',
       'Firestore TTL policies for internal expiring collections',
     ],
     mutatesCloud: false,
@@ -244,7 +244,6 @@ export async function runStorageV4DevPlatformParityPreflight({
     firebaseAppCheck: serviceEnabled(gcloud, 'firebaseappcheck.googleapis.com'),
     recaptchaEnterprise: serviceEnabled(gcloud, 'recaptchaenterprise.googleapis.com'),
     secretManager: serviceEnabled(gcloud, 'secretmanager.googleapis.com'),
-    remoteConfig: serviceEnabled(gcloud, 'firebaseremoteconfig.googleapis.com'),
     identityToolkit: serviceEnabled(gcloud, 'identitytoolkit.googleapis.com'),
   });
 
