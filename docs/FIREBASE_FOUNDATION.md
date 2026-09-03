@@ -1,150 +1,185 @@
 # Firebase Foundation — Atlas
 
-## Entorno actual
+## Estado operativo actual
 
 - Proyecto Firebase de desarrollo: `atlasmap-dev`
 - Plan: Blaze
 - Authentication: Google
 - Firestore: Standard, base `(default)`, región `northamerica-south1`
-- Cloud Functions Gen 2: región `us-central1`, runtime Node.js 22
-- Rama activa: `agent/phase-3-firebase-foundation`
+- Cloud Functions Gen 2: runtime Node.js 22; servicios v4 en `us-central1`
+- Eventarc v4: región `northamerica-south1`
+- Rama de trabajo: `agent/phase-3-firebase-foundation`
+- Persistencia autenticada de viajes: **Storage v4-only**
+- Persistencia sin sesión: repositorio local
+
+Gate G, el repositorio híbrido, el selector v3/v4, las cohortes de Remote Config y la telemetría de rollout fueron mecanismos transitorios y ya no forman parte del runtime operativo.
 
 ## Principios de arquitectura
 
 1. Desarrollo y producción usan proyectos Firebase distintos.
-2. La configuración pública del Web SDK se carga desde `.env.local`; cuentas de servicio y secretos nunca se incrustan en frontend.
-3. Los viajes pertenecen al UID indicado por `users/{uid}/trips/{tripId}`.
+2. La configuración pública del Web SDK se carga desde variables públicas del entorno; cuentas de servicio, secretos y claves privadas nunca se incrustan en frontend.
+3. Los viajes canónicos pertenecen al UID indicado por `users/{uid}/trips/{tripId}`.
 4. El cliente no puede leer ni escribir fuera de su UID.
-5. Las reglas validan campos permitidos, forma y límites máximos.
-6. El repositorio local permanece disponible para desarrollo, uso sin sesión y recuperación.
-7. App Check se configura y observa antes de activar enforcement.
-8. Las Functions públicas usan cuota compartida, límites de instancias y caché con expiración.
-9. Las claves privadas de proveedores viven únicamente en Firebase Secret Manager.
-10. Trayectos y Lugares son dominios independientes y solo comparten el lienzo de mapa.
+5. `firestore.rules` es la única fuente canónica de Rules de la aplicación y valida el contrato v4.
+6. La UI trabaja local-first; una pulsación de tecla no equivale a una escritura Firestore.
+7. El repositorio local permanece disponible para uso sin sesión y trabajo local; no es un fallback Firestore v3.
+8. App Check se administra mediante la política común de callable Functions y su proceso explícito de enforcement/rollback.
+9. Las Functions públicas usan cuotas, límites de instancias/concurrencia y cachés con expiración según su dominio.
+10. Las claves privadas de proveedores viven únicamente del lado servidor/Secret Manager.
+11. Trayectos y Lugares son dominios independientes aunque compartan el lienzo del mapa.
+12. No se reintroducen caminos v2/v3, Gate G, hybrid-read ni dual-write para resolver cambios funcionales.
 
-## Persistencia: estado actual y arquitectura objetivo
+## Persistencia de viajes v4
 
-El almacenamiento activo sigue siendo **v3**. No se ha conectado v4 al selector de repositorio productivo.
+El modelo lógico continúa presentando un `Trip` completo a la aplicación, pero Firestore persiste entidades físicas independientes:
 
-El contrato objetivo de persistencia incremental, local-first, multi-dispositivo y preparado para web/iOS/Android está definido en:
+```text
+users/{uid}/trips/{tripId}
+  segments/{segmentId}
+  places/{placeId}
+  connections/{connectionId}
+  notes/{noteId}
+  checklist/{itemId}
+```
 
-- `docs/STORAGE_ARCHITECTURE_V4.md`
+El root conserva resumen, identidad, moneda, `origin` estructurado, lifecycle/versionado y agregados derivados. Las entidades hijas tienen su propia identidad, `rank`, `version` y `status`.
 
-La activación v4 es por gates. No se permite sustituir v3 hasta que las pruebas de la fase correspondiente, reglas de Emulator, rollback y telemetría requeridos por ese documento hayan pasado.
+No existen `activeRevision` ni `revisions/{revisionId}` en el contrato operativo v4.
 
-## Secretos de Geoapify
+El detalle físico y los invariantes de guardado están documentados en:
 
-Se mantienen dos secretos deliberadamente separados:
+- `docs/FIRESTORE_TRIP_STORAGE.md`
 
-- `GEOAPIFY_CITY_API_KEY`: uso exclusivo de `geoapifyCityAutocomplete`.
-- `GEOAPIFY_API_KEY`: búsqueda general, detalles, reverse geocoding, routing y batch.
-
-No deben unificarse, copiarse al frontend, almacenarse en `.env.local`, registrarse en logs ni versionarse.
-
-## Callable Functions actuales
-
-- `geoapifyCityAutocomplete`
-- `geoapifyPlaceSearch`
-- `geoapifyAutocomplete`
-- `geoapifyPlaceDetails`
-- `geoapifyRoute`
-- `geoapifyReverse`
-- `geoapifyBatchGeocode`
-- `geoapifyBatchGeocodeResult`
-- `geoapifyCountryBoundary`
-
-`geoapifyCityAutocomplete` declara `enforceAppCheck: false` de forma explícita mientras termina la activación gradual de App Check. Las demás Functions heredan el parámetro global `ENFORCE_APP_CHECK`, cuyo valor predeterminado es `false`.
-
-## Persistencia de viajes v3 (activa)
-
-El documento principal contiene un resumen ligero y apunta a una revisión completa. Trayectos, lugares, notas y checklist se guardan en subcolecciones de la revisión.
-
-El orden de escritura es:
-
-1. Crear una revisión abierta.
-2. Escribir las subcolecciones por lotes.
-3. Marcar la revisión como completa e inmutable.
-4. Publicar el resumen mediante una transacción.
-5. Limpiar revisiones anteriores.
-
-La transacción detecta cambios realizados desde otra pestaña o dispositivo y evita sobrescrituras silenciosas. Los viajes legados siguen siendo legibles y se migran al esquema versionado en su siguiente guardado.
+`docs/STORAGE_ARCHITECTURE_V4.md` conserva el diseño y razonamiento de la transición. Sus secciones de migración, gates, Gate G/pilot y coexistencia v3/v4 deben leerse como **historia de implementación**, no como instrucciones para reactivar esos mecanismos.
 
 ## Cambio entre almacenamiento local y nube
 
-- Sin sesión se usa `localStorage`.
-- Con sesión se usa Firestore bajo el UID autenticado.
-- La importación de viajes locales es manual y no elimina el origen local.
-- Las respuestas asíncronas de un repositorio anterior se descartan al cambiar de sesión.
+- Sin sesión se usa el repositorio local.
+- Con sesión se usa directamente el repositorio Firestore v4 bajo el UID autenticado.
+- La importación de datos locales, cuando aplique, no convierte el runtime en dual-write.
+- Las respuestas asíncronas pertenecientes a un contexto de sesión anterior deben descartarse al cambiar de usuario.
+
+## Pipeline local-first y sincronización
+
+El editor v4 conserva trabajo durable localmente y genera intents incrementales por entidad.
+
+```text
+UI
+ -> estado local
+ -> IndexedDB / persistencia durable
+ -> mutation queue
+ -> scheduler/coalescing
+ -> intent v4
+ -> Firestore
+ -> confirmación/versionado
+```
+
+Los conflictos de versión se representan explícitamente. No se utiliza last-write-wins silencioso para el dato canónico del viaje.
+
+Una falla de telemetría o cache nunca debe convertir en fallido un guardado de usuario que de otro modo puede conservarse.
+
+## Backend v4
+
+`functions/v4BackendManifest.js` es el manifest canónico de infraestructura v4.
+
+Functions soportadas:
+
+- `v4FirestoreEventIngress`
+- `v4TripLifecycle`
+- `v4TripPurge`
+
+Regiones canónicas actuales:
+
+```text
+Functions: us-central1
+Eventarc:  northamerica-south1
+```
+
+Eventarc mantiene seis triggers para cambios del root y de las cinco colecciones hijas. El ingress y los handlers deben ser idempotentes porque la entrega de eventos puede repetirse o llegar fuera de orden.
+
+El lifecycle maneja la transición lógica del viaje; el purge físico ocurre posteriormente y debe ser reintentable/resumible.
+
+## Verificación de infraestructura dev
+
+`scripts/runStorageV4DevStageVerify.mjs` es el verificador read-only del stage v4 de desarrollo.
+
+Comprueba, sin mutar nube:
+
+- las tres Functions v4 esperadas y sus regiones;
+- los seis triggers Eventarc y su wiring esperado;
+- que el Ruleset Firestore activo corresponde exactamente al `firestore.rules` canónico local;
+- que el proyecto objetivo es `atlasmap-dev` y producción queda fuera del alcance.
+
+No depende de Remote Config, cohortes ni estado pilot.
 
 ## App Check
 
-El frontend está preparado para reCAPTCHA Enterprise mediante:
+El frontend está preparado para reCAPTCHA Enterprise mediante su clave pública de sitio. Las callable Functions obtienen la política común de App Check desde `callablePolicy.js`; el conjunto canónico de endpoints está definido por `callableManifest.js`.
 
-```text
-VITE_FIREBASE_APPCHECK_SITE_KEY=<site-key-publica>
-```
+El enforcement se cambia mediante el procedimiento explícito y auditable del proyecto. No se debe alterar individualmente una Function como parche salvo que exista una excepción de arquitectura deliberada y probada.
 
-Secuencia segura de activación:
+Los runners de enforcement/rollback deben:
 
-1. Registrar la aplicación web y sus dominios legítimos.
-2. Añadir la clave pública al entorno del frontend.
-3. Desplegar con enforcement desactivado.
-4. Observar solicitudes verificadas y no verificadas.
-5. Activar `ENFORCE_APP_CHECK=true` gradualmente y documentar rollback.
+- permanecer limitados al proyecto autorizado;
+- comprobar inventario antes de aplicar;
+- desplegar todos los callables canónicos por lotes dentro de los límites de CLI;
+- restaurar los archivos de entorno temporales;
+- no crear ni borrar Functions por accidente;
+- no tocar producción.
 
-No se debe activar enforcement antes de completar esa secuencia.
+## Secretos y proveedores
+
+Las claves privadas de Geoapify y otros proveedores permanecen únicamente del lado servidor. No deben copiarse al frontend, almacenarse en `.env.local` como secreto privado, registrarse en logs ni versionarse.
+
+El dato canónico del viaje conserva únicamente campos explícitamente persistibles. Resultados dinámicos, routing, geometría, ETA, tráfico y payloads arbitrarios del proveedor pertenecen a cache/capas derivadas conforme a la política del proveedor.
 
 ## Cachés, cuotas y TTL
 
-Las colecciones internas incluyen `expiresAt` y el código valida la expiración antes de reutilizar datos:
+Las colecciones internas/caches usan expiración cuando corresponde y el código debe validar frescura antes de reutilizar datos. El borrado TTL de Firestore es limpieza operativa, no la fuente de verdad de validez.
 
-- `citySearchCache`
-- `placeSearchCache`
-- `geocodeCache`
-- `placeDetailsCache`
-- `routeCache`
-- `countryBoundaryCache`
-- `functionRateLimits`
-- `geoapifyBatchJobs`
+Cuotas, caché y observabilidad no deben degradar el contrato de persistencia canónica ni introducir dependencia entre la posibilidad de guardar y el éxito de telemetría.
 
-La eliminación mediante TTL de Firestore es asíncrona y debe configurarse operativamente para cada colección.
+## Reglas de seguridad
 
-## Validación
+- `firestore.rules` modela el contrato v4 y el aislamiento por UID.
+- Los cambios de schema requieren cambios coordinados de Rules y tests de Emulator cuando corresponda.
+- Los campos backend-owned/agregados no son autoridad del cliente.
+- El versionado/lifecycle impide sobrescrituras o reactivaciones no autorizadas.
+- Las colecciones internas y datos de proveedor permanecen aislados según su política.
 
-Desde la raíz:
+## Validación del repositorio
 
-```bash
-npm ci
-npm test
-npm run test:rules
-npm run lint
-npm run build
+La certificación de un HEAD no se limita a que compile. Quality debe avanzar por:
+
+```text
+design-preservation contract
+unit tests
+contract audits
+Firestore Rules emulator tests
+Phase K scoped E2E Rules
+ESLint
+production build
 ```
 
-Las Functions usan Node.js 22 y las pruebas del emulador requieren Java 21.
+Además, CodeQL y Dependency Audit deben quedar verdes sobre el mismo SHA que Quality antes de considerar certificado el corte.
 
-## Estado de la fase
+Los cambios de documentación que afecten operación también requieren recertificar el HEAD final para evitar entregar una rama distinta de la que fue validada.
 
-### Implementado
+## Documentación histórica
 
-- Proyecto Blaze, Firestore y Secret Manager.
-- Google Auth y persistencia local/remota.
-- Resúmenes ligeros y revisiones inmutables v3.
-- Reglas Firestore y pruebas con emulador.
-- Cuotas, cachés y límites comunes de callable Functions.
-- Autocomplete privado de ciudades con clave exclusiva y `type=city` forzado.
-- Separación estricta entre Trayectos y Lugares.
-- Resolución del error 401 del autocomplete mediante override explícito de App Check.
-- Contrato de arquitectura Storage v4 y modelos puros iniciales sin activación productiva.
+Los registros fechados de Gate G pueden conservarse como evidencia de la migración, pero deben estar marcados como históricos y nunca utilizarse como runbooks actuales.
 
-### Pendiente de cierre de auditoría
+No deben existir guías operativas vigentes que indiquen:
 
-- Ejecutar nuevamente pruebas, reglas, lint y build sobre el HEAD final.
-- Confirmar el resultado de Quality checks, CodeQL y Dependency audit.
-- Revisar manualmente los flujos principales en navegador.
-- Configurar TTL de colecciones internas si aún no está activo.
-- Actualizar documentación operativa cuando cambien despliegues o secretos.
+- volver a v3;
+- desplegar Rules Gate G;
+- activar cohortes de Remote Config para escoger v3/v4;
+- exportar `storageV4RolloutTelemetry`;
+- usar un repositorio híbrido;
+- reintroducir revisiones completas como almacenamiento canónico.
 
-### Fase funcional posterior
+## Estado de esta fase
 
-Las conexiones y rutas reales se implementan únicamente entre lugares guardados dentro de Lugares. Tienen modelo, persistencia y capas propios; no forman parte de `segment` ni sustituyen las curvas visuales de Trayectos.
+El runtime autenticado y sus contratos de persistencia están consolidados en v4-only. El cierre de una pasada de cambios se considera completo únicamente cuando el HEAD final —incluyendo documentación operativa— vuelve a obtener Quality, CodeQL y Dependency Audit verdes sobre el mismo SHA.
+
+Ningún paso descrito aquí autoriza por sí mismo despliegues, cambios de Rules remotas, IAM, Remote Config, Secret Manager o producción.
