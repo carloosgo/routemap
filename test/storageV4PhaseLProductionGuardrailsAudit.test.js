@@ -29,6 +29,10 @@ const retiredTransitionRunners = [
 ];
 
 const currentOperationalDocs = [
+  'README.md',
+  'ARCHITECTURE.md',
+  'SECURITY.md',
+  'PRODUCTION_CHECKLIST.md',
   'docs/FIREBASE_FOUNDATION.md',
   'docs/STORAGE_V4_DEV_STEADY_STATE.md',
   'docs/STORAGE_V4_DEV_PREPROD_PARITY.md',
@@ -81,11 +85,20 @@ test('documentación operacional actual no vuelve a seleccionar generación de s
 });
 
 test('runbooks vigentes declaran v4-only y producción directa v4', () => {
+  assert.match(source('README.md'), /Storage v4-only/i);
+  assert.match(source('ARCHITECTURE.md'), /Storage v4/i);
   assert.match(source('docs/FIREBASE_FOUNDATION.md'), /Storage v4-only/i);
   assert.match(source('docs/STORAGE_V4_DEV_STEADY_STATE.md'), /Storage v4-only/i);
   assert.match(source('docs/STORAGE_V4_DEV_PREPROD_PARITY.md'), /v4-only/i);
   assert.match(source('docs/STORAGE_V4_PRODUCTION_ROLLOUT.md'), /release directo.*v4/i);
   assert.match(source('docs/STORAGE_V4_IMPLEMENTATION_STATUS.md'), /Storage v4-only/i);
+});
+
+test('platform parity ya no depende de Remote Config para readiness de storage', () => {
+  const value = source('scripts/runStorageV4DevPlatformParityPreflight.mjs');
+  assert.doesNotMatch(value, /firebaseremoteconfig\.googleapis\.com/);
+  assert.doesNotMatch(value, /remoteConfig\s*:/);
+  assert.doesNotMatch(value, /Remote Config service readiness/);
 });
 
 test('producción sigue separada de dev en aliases Firebase', () => {
