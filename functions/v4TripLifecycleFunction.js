@@ -1,7 +1,7 @@
 import { onCall } from 'firebase-functions/v2/https';
 import { callableOptions, enforceQuota } from './callablePolicy.js';
 import { db } from './geoapifyRuntime.js';
-import { V4_PILOT_SERVICE_REGION } from './v4PilotBackendManifest.js';
+import { V4_SERVICE_REGION } from './v4BackendManifest.js';
 import {
   V4_TRIP_LIFECYCLE_QUOTA,
   createV4TripLifecycleCallableHandler,
@@ -15,7 +15,7 @@ function requiredText(value, field) {
 
 export function createV4TripLifecycleFunction({
   adminDb,
-  region = V4_PILOT_SERVICE_REGION,
+  region = V4_SERVICE_REGION,
   callableFactory = onCall,
   optionsFactory = callableOptions,
   handlerFactory = createV4TripLifecycleCallableHandler,
