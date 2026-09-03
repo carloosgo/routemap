@@ -5,9 +5,8 @@ import {
   itineraryMapProjectionSignature,
 } from '../src/modules/map/itineraryMapProjection.js';
 
-function sampleSegment() {
+function sampleTripParts() {
   return {
-    id: 'segment-1',
     origin: {
       id: 'mx-cdmx',
       name: 'Ciudad de México',
@@ -16,32 +15,35 @@ function sampleSegment() {
       lat: 19.4326,
       lon: -99.1332,
     },
-    destination: {
-      id: 'pt-opo',
-      name: 'Oporto',
-      country: 'Portugal',
-      countryCode: 'PT',
-      lat: 41.1579,
-      lon: -8.6291,
-    },
-    startDate: '2026-08-14',
-    endDate: '2026-08-23',
-    expenses: {
-      lodging: 4322.22,
-      transport: {
-        plane: 200,
-        train: 34059,
-        bus: 0,
-        taxiUber: 3,
+    segment: {
+      id: 'segment-1',
+      destination: {
+        id: 'pt-opo',
+        name: 'Oporto',
+        country: 'Portugal',
+        countryCode: 'PT',
+        lat: 41.1579,
+        lon: -8.6291,
       },
-      attractions: [],
-      others: [],
+      startDate: '2026-08-14',
+      endDate: '2026-08-23',
+      expenses: {
+        lodging: 4322.22,
+        transport: {
+          plane: 200,
+          train: 34059,
+          bus: 0,
+          taxiUber: 3,
+        },
+        attractions: [],
+        others: [],
+      },
     },
   };
 }
 
 test('date and non-route expense edits keep the itinerary map projection stable', () => {
-  const original = sampleSegment();
+  const { origin, segment: original } = sampleTripParts();
   const edited = globalThis.structuredClone(original);
   edited.startDate = '2026-08-15';
   edited.endDate = '2026-08-24';
@@ -50,40 +52,50 @@ test('date and non-route expense edits keep the itinerary map projection stable'
   edited.expenses.attractions = [{ id: 'museum', label: 'Museo', amount: 25 }];
 
   assert.equal(
-    itineraryMapProjectionSignature([original]),
-    itineraryMapProjectionSignature([edited])
+    itineraryMapProjectionSignature(origin, [original]),
+    itineraryMapProjectionSignature(origin, [edited])
   );
 });
 
 test('city geometry changes invalidate the itinerary map projection', () => {
-  const original = sampleSegment();
+  const { origin, segment: original } = sampleTripParts();
   const edited = globalThis.structuredClone(original);
   edited.destination.lat = 41.2;
 
   assert.notEqual(
-    itineraryMapProjectionSignature([original]),
-    itineraryMapProjectionSignature([edited])
+    itineraryMapProjectionSignature(origin, [original]),
+    itineraryMapProjectionSignature(origin, [edited])
+  );
+});
+
+test('origin geometry changes invalidate the itinerary map projection', () => {
+  const { origin, segment } = sampleTripParts();
+  const editedOrigin = { ...origin, lat: 19.5 };
+
+  assert.notEqual(
+    itineraryMapProjectionSignature(origin, [segment]),
+    itineraryMapProjectionSignature(editedOrigin, [segment])
   );
 });
 
 test('plane becoming the dominant transport invalidates route styling only when needed', () => {
-  const original = sampleSegment();
+  const { origin, segment: original } = sampleTripParts();
   const edited = globalThis.structuredClone(original);
   edited.expenses.transport.plane = 50000;
 
   assert.notEqual(
-    itineraryMapProjectionSignature([original]),
-    itineraryMapProjectionSignature([edited])
+    itineraryMapProjectionSignature(origin, [original]),
+    itineraryMapProjectionSignature(origin, [edited])
   );
-  assert.equal(itineraryMapProjection([edited])[0].expenses.transport.plane, 1);
+  assert.equal(itineraryMapProjection(origin, [edited])[0].expenses.transport.plane, 1);
 });
 
 test('empty city coordinates never become a synthetic 0,0 location', () => {
-  const segment = sampleSegment();
+  const { origin, segment } = sampleTripParts();
   segment.destination.lat = null;
   segment.destination.lon = '';
 
-  const [projected] = itineraryMapProjection([segment]);
+  const [projected] = itineraryMapProjection(origin, [segment]);
   assert.equal(projected.destination.lat, null);
   assert.equal(projected.destination.lon, null);
 });
