@@ -1,159 +1,71 @@
-# Atlas Storage v4 — Operating state — 2026-08-15
+# Atlas Storage v4 — historical operating snapshot — 2026-08-15
 
-Este documento es el snapshot operativo actual. Si un documento histórico de 2026-08-14 contradice este archivo, usar la evidencia cloud más reciente y los closeouts finales de cada fase.
+> **HISTÓRICO / NO OPERATIVO.** Este archivo conserva el estado observado el **2026-08-15** durante la transición hacia Storage v4. Desde septiembre de 2026, la arquitectura soportada es **v4-only** y este documento no debe utilizarse para decidir qué comandos, gates o mecanismos siguen vigentes.
+>
+> Fuentes actuales:
+> - `docs/FIREBASE_FOUNDATION.md`
+> - `docs/STORAGE_V4_IMPLEMENTATION_STATUS.md`
+> - `docs/STORAGE_V4_DEV_STEADY_STATE.md`
+> - `docs/STORAGE_V4_DEV_PREPROD_PARITY.md`
+> - `docs/STORAGE_V4_OPERATIONS_RUNBOOK.md`
+> - `docs/STORAGE_V4_PRODUCTION_ROLLOUT.md`
 
-## Estrategia vigente
+## Qué documentaba este snapshot
 
-```text
-local/emulators -> iteración rápida
-atlasmap-dev    -> preproducción real / integración cloud
-atlasmap-prod   -> infraestructura protegida; rollout funcional congelado
-```
+En agosto de 2026 Atlas todavía estaba validando la transición de storage. Por eso la evidencia de ese día incluía conceptos que posteriormente fueron retirados del runtime, como pilot, Remote Config de generación, migración/rollback y fases productivas de coexistencia.
 
-El objetivo inmediato es continuar cambios de producto e implementación sobre una infraestructura dev real y sólida. Phase L productiva no se sigue empujando hasta una decisión explícita posterior.
+Esos mecanismos se conservan aquí únicamente como contexto histórico: **no deben reactivarse**.
 
-## atlasmap-dev
+## Evidencia dev acumulada hasta 2026-08-15
 
-### Phase K final
+`atlasmap-dev` había demostrado, entre otras cosas:
 
-`STORAGE_V4_PHASE_K_CLOSEOUT_2026-08-14.md` es la fuente final de Phase K.
+- Firestore real `(default)` en `northamerica-south1`;
+- PITR de 7 días;
+- backup diario con retención de 7 días;
+- restore drill aislado y cleanup exitosos;
+- 3 Cloud Functions v4 Node.js 22;
+- Eventarc real con service account dedicada;
+- Rules v4 verificadas;
+- pruebas reales de lifecycle/purge;
+- provider outage y sync flush E2E;
+- carga cloud de 120 entidades hijas;
+- reconnect 60/60 updates;
+- simulaciones multidevice/contención;
+- dashboard, logs-based metrics y alertas;
+- budget dev de 500 MXN/mes con thresholds 50/80/100%.
 
-Dev ya dispone de:
+Algunas cantidades de infraestructura de este snapshot, como el número de triggers Eventarc, representan el diseño de ese día y pueden diferir del manifest canónico actual. El contrato actual espera **6 triggers Eventarc**.
 
-- Firestore real en `northamerica-south1`;
-- PITR 7 días;
-- backup diario, retención 7 días;
-- backups READY y restore drill aislado + cleanup PASS;
-- budget project-scoped `Atlas Storage v4 dev`: 500 MXN/mes, 50/80/100%;
-- 3/3 alert policies permanentes habilitadas;
-- dashboard, 7 logs-based metrics, notification channel y delivery drill;
-- 3 Functions v4 Node.js 22;
-- 5 Eventarc triggers con service account dedicada;
-- Rules pilot coincidentes con candidato aprobado;
-- migración/rollback/remigración, lifecycle, purge, provider outage, sync flush y cloud load probados.
+## Evidencia productiva acumulada hasta 2026-08-15
 
-### Runtime actual observado 2026-08-15
+`atlasmap-prod` ya existía como proyecto separado y protegido. La evidencia de aquellas fases registró:
 
-El último stage verify mostró:
-
-```text
-Functions: 3/3 ACTIVE
-Eventarc: 5/5 valid
-Rules: active SHA == candidate SHA
-backendReady: true
-readinessCandidates: all true
-Remote Config:
-  enabled=true
-  killSwitch=false
-  mode=pilot
-  cohortPercent=0.01
-```
-
-El pilot `0.01%` es intencionalmente válido para preprod. No se debe ejecutar kill únicamente para satisfacer el guardrail de steady-state fail-closed.
-
-### Dos preflights distintos
-
-`npm run storage-v4:dev:steady-state`
-
-- exige Remote Config OFF/fail-closed;
-- se usa entre experimentos cuando queremos baseline apagado.
-
-`npm run storage-v4:dev:preprod-parity`
-
-- acepta OFF/fail-closed o pilot controlado;
-- exige Functions/Rules/Eventarc/readiness íntegros;
-- ejecuta el checkpoint Phase K;
-- es el preflight adecuado mientras dev actúa como preproducción.
-
-`npm run storage-v4:dev:platform-parity`
-
-- inventaría Web App/Auth, Hosting, App Check/reCAPTCHA, servicios cloud y TTL policies;
-- no crea recursos;
-- devuelve gaps explícitos para cerrar después con operaciones dev autorizadas.
-
-## atlasmap-prod
-
-### L0
-
-PASS y cerrado:
-
-- proyecto `atlasmap-prod` ACTIVE;
-- billing ligado;
-- Firebase enabled;
+- proyecto/Firebase/billing activos;
 - Firestore `(default)` Standard/Native en `us-central1`;
-- Delete Protection enabled.
-
-### L1
-
-PASS y cerrado fail-closed:
-
-- exactamente 1 Web App: `AtlasMap Web Production`;
-- Google Sign-In enabled;
-- email/password, anonymous y phone disabled;
+- Delete Protection;
+- Web App productiva;
+- Google Sign-In;
+- otros providers de Auth deshabilitados;
 - localhost no autorizado;
-- Rules productivas permanecen cerradas para tráfico de app.
+- Rules productivas cerradas durante el bootstrap;
+- PITR/backup/budget preparados en fases posteriores documentadas.
 
-### L2
+Producción no se usaba como backend de desarrollo.
 
-Configuración aplicada y post-check PASS:
+## Lo que cambió después
 
-- PITR enabled;
-- version retention `604800s` = 7 días;
-- exactamente 1 backup schedule diario;
-- backup retention 7 días;
-- exactamente 1 budget project-scoped;
-- budget 500 MXN/mes;
-- thresholds 50/80/100%;
-- Storage v4 READ/WRITE continúan OFF.
+La transición terminó en el código soportado:
 
-En el último preflight productivo:
+- v3 fue retirado del runtime;
+- hybrid read y dual-write fueron retirados;
+- Gate G/pilot dejaron de ser caminos operativos;
+- Remote Config dejó de seleccionar la generación de storage;
+- los planners productivos L4–L7 basados en coexistencia/migración fueron eliminados;
+- la futura liberación productiva se redefinió como **release directo v4**.
 
-```text
-readyBackupCountObserved: 0
-```
+Por ello, cualquier instrucción histórica que contradiga las fuentes actuales queda explícitamente superseded.
 
-Por tanto el restore drill productivo continúa pendiente de que exista un backup READY. El drill requiere autorización separada y debe restaurar exclusivamente a una database temporal aislada, nunca `(default)`.
+## Regla de uso
 
-### L3
-
-Preflight productivo PASS como inventario, con baseline vacío:
-
-- Web App esperada presente;
-- App Check API disabled;
-- reCAPTCHA Enterprise API disabled;
-- no App Check registration;
-- no site key;
-- no enforcement.
-
-No existe todavía dominio/hosting productivo definitivo. L3 se pausa deliberadamente; no se registra App Check contra un dominio provisional.
-
-### L4-L7
-
-Rollout funcional productivo congelado:
-
-- no READ cohort;
-- no materialización productiva;
-- no WRITE v4 productivo;
-- no convergencia/retiro v3.
-
-Los planners/contratos permanecen en el repo para retomar Phase L más adelante.
-
-## Próximo trabajo de infraestructura
-
-Sin tocar producción:
-
-1. ejecutar `storage-v4:dev:preprod-parity` sobre el HEAD actual;
-2. ejecutar `storage-v4:dev:platform-parity`;
-3. usar esos outputs para cerrar únicamente gaps reales de dev, especialmente Hosting/App Check/TTL/Delete Protection si faltan;
-4. cada mutación cloud dev conserva confirmación explícita y post-check;
-5. continuar nuevas funcionalidades de Atlas contra `atlasmap-dev`.
-
-## Invariantes
-
-- no usar `atlasmap-prod` como backend de desarrollo;
-- no asumir que código/runners equivalen a infraestructura desplegada;
-- no duplicar budgets, policies o recursos que ya existen;
-- no guardar secretos/debug tokens en repo;
-- no autorizar localhost como dominio reCAPTCHA;
-- no activar App Check enforcement antes de observation;
-- no cambiar READ/WRITE productivo mientras el rollout esté congelado.
+Este archivo puede citarse para responder “¿qué se había probado en agosto de 2026?”. No puede citarse para responder “¿qué debo ejecutar hoy?” ni para afirmar el estado físico cloud actual sin una nueva verificación read-only.
