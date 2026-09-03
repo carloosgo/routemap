@@ -46,7 +46,8 @@ test('RouteMap coordina un solo mapa sin absorber implementación de Google o b�
     `RouteMap.jsx volvió a crecer a ${lineCount(routeMap)} líneas`
   );
   assert.match(routeMap, /<GooglePlacesMap/);
-  assert.match(routeMap, /itineraryMapProjectionSignature\(segments\)/);
+  assert.match(routeMap, /itineraryMapProjectionSignature\(origin, segments\)/);
+  assert.match(routeMap, /\[origin, segments\]/);
   assert.match(routeMap, /segments=\{mapSegments\}/);
   assert.match(routeMap, /viewMode=\{viewMode\}/);
   assert.doesNotMatch(
