@@ -1,153 +1,148 @@
-# Storage v4 — Phase L production rollout
+# Storage v4 — Production release
 
-Este runbook prepara Phase L del roadmap original. No autoriza por sí mismo ningún cambio remoto en producción.
+Fecha de revisión: **2026-09-03**
 
-## Principios
+Este runbook define cómo llevar Atlas a `atlasmap-prod` desde la arquitectura actual **Storage v4-only**. No autoriza por sí mismo ninguna mutación remota.
 
-- proyecto Firebase de producción separado de desarrollo;
-- región/ubicación decididas antes de crear datos productivos;
-- v4 se prepara directamente en producción, sin crear una deuda permanente de esquema v3 nuevo;
-- cada cambio remoto tiene rollback explícito;
-- READ precede a cualquier escritura v4;
-- no existe salto directo a 100%;
-- el cliente nunca obtiene acceso directo a colecciones internas ni provider cache;
-- App Check se observa antes de enforcement;
-- backups/restore drill y budgets existen antes de ampliar tráfico.
+## Principio central
 
-## Gate L0 — proyecto y ubicación
+Producción no realizará una migración funcional v3→v4. El software soportado ya es v4-only, por lo que la futura salida productiva será un **release directo de v4**.
 
-Requerido antes de desplegar:
+Quedan prohibidos como estrategia de release:
 
-- proyecto Firebase producción creado y facturación validada;
-- Auth/Google provider configurado;
-- dominios autorizados definidos;
-- Firestore `(default)` creado en ubicación aprobada;
-- Functions desplegables en región alineada con la arquitectura;
-- Secret Manager preparado;
-- Remote Config preparado fail-closed;
-- decisión documentada sobre `atlas-cache` y su acceso server-side;
-- CSP/hosting/dominios productivos definidos.
+- reactivar Gate G;
+- seleccionar storage por Remote Config;
+- cohortes v3/v4;
+- hybrid read;
+- dual-write v3/v4;
+- materializar v3 como paso normal de producción;
+- rollback de arquitectura hacia v3.
 
-No copiar secretos de dev de forma informal. Crear versiones productivas administradas.
+Si un inventario productivo encuentra datos o dependencias legacy inesperadas, se detiene el release y se investiga. No se resuelve reintroduciendo caminos retirados.
 
-## Gate L1 — seguridad y datos
+## Entorno productivo
 
-Antes de tráfico usuario:
+Target explícito:
 
-- Rules v4/rollout pasan Emulator;
-- ownership probado con dos usuarios;
-- escrituras directas v4 cliente bloqueadas cuando el modo no las autoriza;
-- colecciones internas bloqueadas;
-- provider cache bloqueado a cliente;
-- índices revisados;
-- campos grandes/no consultables excluidos de indexación cuando corresponda;
-- server timestamps protegidos;
-- límites de tamaño/shape activos;
-- soft delete/tombstones/purge revisados.
+```text
+Firebase/GCP project: atlasmap-prod
+Firebase alias: prod
+```
 
-## Gate L2 — recovery y costo
+Nunca usar el alias `default` para un runner productivo. `default` pertenece a `atlasmap-dev`.
 
-Antes del primer rollout:
+## Gate P0 — inventario y protección
+
+Antes de cualquier release:
+
+- proyecto `atlasmap-prod` ACTIVE y billing válido;
+- Firestore `(default)` en la ubicación productiva aprobada;
+- Delete Protection habilitado;
+- Web App/Auth inventariados;
+- Rules actuales leídas server-side;
+- Functions/Eventarc/Hosting/App Check inventariados;
+- datos/colecciones top-level inventariados;
+- secretos productivos administrados por separado de dev;
+- ninguna dependencia de storage legacy detectada.
+
+Todo preflight debe ser read-only.
+
+## Gate P1 — recovery, costos y observabilidad
+
+Antes de abrir tráfico:
 
 - PITR configurado;
 - backup schedule y retención configurados;
-- restore drill ejecutado a base aislada;
-- budget productivo configurado;
-- alertas de gasto/errores/latencia verificadas;
-- dashboard Storage v4 disponible;
-- baseline de costos registrado.
+- al menos un backup utilizable observado;
+- restore drill a una base nueva y aislada completado cuando corresponda;
+- budget productivo y thresholds confirmados;
+- alertas y dashboard revisados;
+- baseline/forecast de costo documentado con supuestos explícitos.
 
-## Gate L3 — App Check observación
+Nunca restaurar sobre `(default)` durante un drill.
 
-1. registrar app y dominios productivos;
-2. desplegar cliente con App Check habilitado para obtener tokens;
-3. mantener enforcement backend desactivado;
-4. observar proporción de requests válidos/missing/invalid;
-5. corregir clientes legítimos antes de enforcement;
-6. activar enforcement por superficie en una ventana controlada;
-7. conservar rollback inmediato.
+## Gate P2 — plataforma web y App Check
 
-No reutilizar el patrón `BooleanParam` en `enforceAppCheck` mientras el runtime de Functions desplegado no soporte explícitamente ese tipo de opción. El comportamiento debe validarse con la versión real instalada antes de cambiar enforcement.
+Antes de enforcement:
 
-## Gate L4 — READ productivo
+1. dominio/Hosting productivo definitivo;
+2. Web App productiva correcta;
+3. reCAPTCHA Enterprise registrado para el dominio productivo;
+4. cliente emitiendo tokens App Check;
+5. observación de tráfico válido/missing/invalid;
+6. enforcement únicamente después de evidencia suficiente;
+7. rollback de enforcement preparado.
 
-Usar el mismo contrato fail-closed validado en Gate G:
+Los debug tokens de dev/localhost nunca se reutilizan en producción.
+
+## Gate P3 — candidato v4 coherente
+
+El candidato productivo debe ser un conjunto coherente y certificado:
+
+- frontend v4-only;
+- `firestore.rules` canónicas v4;
+- índices requeridos;
+- Functions v4 canónicas;
+- Eventarc canónico;
+- secretos/provider configuration productivos;
+- Hosting/build apuntando únicamente a `atlasmap-prod`;
+- App Check policy acorde al gate aprobado.
+
+El código debe haber pasado Quality, CodeQL y Dependency Audit sobre el mismo SHA antes de promoverlo.
+
+## Gate P4 — despliegue controlado
+
+El deploy se divide por superficies para conservar rollback operacional y evidencia:
+
+1. confirmar inventario inmediatamente antes del cambio;
+2. desplegar únicamente las superficies explícitamente autorizadas;
+3. comprobar server-side que cada recurso quedó en la versión esperada;
+4. ejecutar smokes de Auth, lectura, creación/edición y lifecycle con datos controlados;
+5. comprobar errores, latencia, sync, Eventarc y observabilidad;
+6. abrir tráfico únicamente cuando el estado remoto sea coherente.
+
+Un `git push` nunca equivale a deploy.
+
+## Rollback permitido
+
+El rollback productivo puede restaurar:
+
+- un artefacto/frontend anterior compatible con v4;
+- una versión anterior de Functions compatible con el contrato v4;
+- Rules v4 anteriores conocidas y verificadas;
+- enforcement/configuración de plataforma cuando exista un procedimiento aprobado.
+
+El rollback **no** puede cambiar la generación de persistencia a v3 ni activar hybrid/dual-write. Si no existe un artefacto v4 compatible para volver atrás, se cierra tráfico o se mitiga la superficie afectada antes de improvisar una segunda arquitectura.
+
+## Datos productivos
+
+La fuente canónica de viajes productivos será exclusivamente el contrato v4:
 
 ```text
-storage_v4_enabled            false
-storage_v4_kill_switch        true
-storage_v4_mode               off
-storage_v4_cohort_percent     0
-storage_v4_read_rules_ready   false
+users/{uid}/trips/{tripId}
+  segments/{segmentId}
+  places/{placeId}
+  connections/{connectionId}
+  notes/{noteId}
+  checklist/{itemId}
 ```
 
-Secuencia:
+El root contiene identidad/resumen/origin/lifecycle/versionado/agregados conforme al contrato vigente. No existen `activeRevision` ni `revisions/{revisionId}` como almacenamiento operativo.
 
-1. verificar Remote Config realtime en producción sin activar READ;
-2. verificar telemetría sin PII;
-3. desplegar Rules READ candidatas;
-4. comprobar CRUD v3 controlado;
-5. activar una cohorte READ pequeña;
-6. observar latencia/error/schema mix;
-7. ampliar gradualmente solo con ventana estable;
-8. rollback remoto ante anomalía.
+## Criterio de salida a tráfico
 
-El PASS técnico de `atlasmap-dev` no sustituye esta validación productiva.
+Producción puede considerarse abierta solo cuando:
 
-## Gate L5 — materialización/migración
+- infraestructura y datos observados coinciden con el contrato v4-only;
+- recovery está operativo;
+- Rules y aislamiento por UID están verificados;
+- Functions/Eventarc están sanos;
+- App Check está en el estado aprobado;
+- observabilidad y budgets están activos;
+- no existe pérdida silenciosa en pruebas offline/multidevice;
+- el frontend productivo apunta exclusivamente a `atlasmap-prod`;
+- no existe ningún mecanismo operativo que seleccione v3/v4.
 
-La migración mantiene v3 canónico mientras materializa v4 y verifica paridad.
+## Evidencia histórica
 
-Para cada batch:
-
-- registrar checkpoint/estado;
-- materializar de forma idempotente;
-- verificar roots/entidades/agregados;
-- registrar diferencias sin contenido sensible;
-- no cortar v3 por el solo hecho de haber escrito v4;
-- permitir rollback/reintento antes de marcar el batch verificado.
-
-No mantener dual-write permanente.
-
-## Gate L6 — escritura v4 controlada
-
-Es un checkpoint separado de READ.
-
-Antes de habilitar:
-
-- Rules de write verificadas;
-- runtime de Sync Coordinator conectado deliberadamente;
-- first-save/autosave revisados;
-- IndexedDB + mutation queue probados;
-- version mismatch probado multidevice;
-- child tombstones/delete reconciler probado;
-- agregados server-side idempotentes probados;
-- purge probado sin doble decremento;
-- rollback a modo sin write documentado.
-
-Comenzar con cohorte mínima y observar.
-
-## Gate L7 — convergencia
-
-Solo cuando la evidencia muestre que los datos v4 son canónicos y completos:
-
-- dejar de depender de materialización v3;
-- retirar dual-read de forma gradual;
-- conservar compatibilidad/rollback durante la ventana aprobada;
-- eliminar código legado únicamente cuando no exista tráfico/dato que lo necesite;
-- actualizar Rules e índices después de demostrar que no rompen clientes soportados.
-
-## Criterio de cierre de Phase L
-
-Phase L se considera cerrada cuando:
-
-- producción opera con el storage v4 canónico;
-- no hay dual-write permanente;
-- migración verificada y rollback cerrado;
-- READ/write v4 cumplen SLO;
-- backup/restore está probado;
-- App Check enforcement está estable;
-- budgets/alertas/dashboard están activos;
-- provider cache está aislado según la topología aprobada;
-- no existe pérdida silenciosa de datos en pruebas multidevice/offline;
-- el camino v3 restante está retirado o tiene una fecha/condición explícita de retiro.
+Los documentos fechados de las antiguas fases L4–L7 conservan valor de auditoría sobre el proceso de construcción de Storage v4. No son runbooks actuales y no deben ejecutarse para liberar la aplicación actual.
