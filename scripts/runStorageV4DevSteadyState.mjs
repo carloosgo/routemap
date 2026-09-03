@@ -2,7 +2,7 @@
 import { spawnSync } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runPilotStageVerifyDev } from './runStorageV4PilotStageVerifyDev.mjs';
+import { runStorageV4DevStageVerify } from './runStorageV4DevStageVerify.mjs';
 
 export const DEV_STEADY_STATE_PROJECT = 'atlasmap-dev';
 export const DEV_STEADY_STATE_PRODUCTION_PROJECT = 'atlasmap-prod';
@@ -25,15 +25,10 @@ export function assessDevStage(stage) {
 
   const projectIsDev = stage.project === DEV_STEADY_STATE_PROJECT;
   const productionUntouched = stage.touchesProduction === false;
-  const readOnly = stage.mutatesCloud === false
-    && stage.mutatesApplicationData === false
-    && stage.changesRemoteConfig === false
-    && stage.activatesClientPilotTraffic === false;
+  const readOnly = stage.mutatesCloud === false && stage.mutatesApplicationData === false;
   const backendReady = stage.backendReady === true;
   const rulesReady = stage?.rules?.matchesCandidate === true;
   const eventarcReady = stage?.eventarc?.ready === true;
-  const remoteConfigSafeOff = stage?.remoteConfig?.safeForStage === true
-    && stage?.remoteConfig?.pilotTrafficActivated === false;
   const staged = stage.staged === true;
 
   return Object.freeze({
@@ -43,7 +38,6 @@ export function assessDevStage(stage) {
     backendReady,
     rulesReady,
     eventarcReady,
-    remoteConfigSafeOff,
     staged,
     pass: projectIsDev
       && productionUntouched
@@ -51,7 +45,6 @@ export function assessDevStage(stage) {
       && backendReady
       && rulesReady
       && eventarcReady
-      && remoteConfigSafeOff
       && staged,
   });
 }
@@ -71,7 +64,7 @@ function runPhaseKCheckpoint() {
 
 export async function runStorageV4DevSteadyState({
   args = process.argv.slice(2),
-  verifyStage = runPilotStageVerifyDev,
+  verifyStage = runStorageV4DevStageVerify,
   runCloudCheckpoint = runPhaseKCheckpoint,
   log = (value) => console.log(value),
 } = {}) {
@@ -80,20 +73,16 @@ export async function runStorageV4DevSteadyState({
   log(JSON.stringify({
     project: DEV_STEADY_STATE_PROJECT,
     mode: 'development-steady-state-preflight',
-    purpose: 'verify real dev infrastructure before continued feature development',
+    purpose: 'verify canonical v4 dev infrastructure before continued feature development',
     productionProject: DEV_STEADY_STATE_PRODUCTION_PROJECT,
-    productionRolloutFrozen: true,
-    productionStorageV4ReadWriteFrozen: true,
     checks: [
-      'dev Functions + Eventarc active and correctly staged',
-      'dev Firestore Rules match the approved v4 pilot candidate',
-      'dev Remote Config is fail-closed before a new development block',
+      'dev Functions active in canonical regions',
+      'dev Eventarc triggers target the canonical v4 ingress',
+      'dev Firestore Rules match firestore.rules exactly',
       'Phase K recovery/billing/telemetry/SLO/monitoring/restore-readiness checkpoint',
     ],
     mutatesCloud: false,
     mutatesApplicationData: false,
-    changesRemoteConfig: false,
-    activatesClientPilotTraffic: false,
     touchesProduction: false,
   }, null, 2));
 
@@ -101,7 +90,7 @@ export async function runStorageV4DevSteadyState({
   const assessment = assessDevStage(stage);
   log(JSON.stringify({ stageAssessment: assessment }, null, 2));
   if (!assessment.pass) {
-    throw new Error('Dev steady-state bloqueado: el stage real de atlasmap-dev no cumple el baseline seguro esperado.');
+    throw new Error('Dev steady-state bloqueado: el stage real de atlasmap-dev no cumple el baseline v4 canónico esperado.');
   }
 
   await runCloudCheckpoint();
@@ -110,8 +99,7 @@ export async function runStorageV4DevSteadyState({
     project: DEV_STEADY_STATE_PROJECT,
     pass: true,
     realCloudDevInfrastructureReady: true,
-    remoteConfigSafeOff: true,
-    productionRolloutFrozen: true,
+    canonicalV4StageReady: true,
     productionMutated: false,
     storageV4ProductionReadWriteChanged: false,
     next: 'continue feature development and integration against atlasmap-dev',
