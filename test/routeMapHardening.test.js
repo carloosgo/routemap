@@ -30,7 +30,8 @@ test('Itinerario y Mis Rutas comparten una sola instancia de Google Maps', async
   const { route, projection, google } = await mapSources();
 
   assert.match(route, /<GooglePlacesMap/);
-  assert.match(route, /itineraryMapProjectionSignature\(segments\)/);
+  assert.match(route, /itineraryMapProjectionSignature\(origin, segments\)/);
+  assert.match(route, /\[origin, segments\]/);
   assert.match(route, /segments=\{mapSegments\}/);
   assert.match(route, /places=\{places\}/);
   assert.match(route, /routeConnections=\{routeConnections\}/);
