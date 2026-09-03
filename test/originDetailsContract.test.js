@@ -83,21 +83,18 @@ test('documento root v4 crea y actualiza originDetails sin permitir total client
   assert.equal(Object.hasOwn(patch, 'total'), false);
 });
 
-test('rules y writers conservan originDetails en los caminos v3/v4 canónicos', async () => {
-  const [legacyRules, v4Rules, editorWriter, pilotWriter] = await Promise.all([
+test('rules y writers conservan originDetails en el camino v4 canónico', async () => {
+  const [rules, editorWriter, writer] = await Promise.all([
     readFile(new URL('../firestore.rules', import.meta.url), 'utf8'),
-    readFile(new URL('../firestore-v4.rules', import.meta.url), 'utf8'),
     readFile(new URL('../src/infrastructure/firebase/firestoreV4EditorTripWriter.js', import.meta.url), 'utf8'),
     readFile(new URL('../src/infrastructure/firebase/firestoreV4PilotTripWriter.js', import.meta.url), 'utf8'),
   ]);
 
-  for (const rules of [legacyRules, v4Rules]) {
-    assert.match(rules, /function validOriginDetails\(data\)/);
-    assert.match(rules, /hasOnly\(\['departureDate', 'expenses', 'note'\]\)/);
-    assert.match(rules, /data\.note\.size\(\) <= 500/);
-    assert.match(rules, /validExpenses\(data\.expenses\)/);
-  }
-  assert.match(v4Rules, /'name', 'currency', 'origin', 'originDetails', 'version', 'updatedAt'/);
+  assert.match(rules, /function validOriginDetails\(data\)/);
+  assert.match(rules, /hasOnly\(\['departureDate', 'expenses', 'note'\]\)/);
+  assert.match(rules, /data\.note\.size\(\) <= 500/);
+  assert.match(rules, /validExpenses\(data\.expenses\)/);
+  assert.match(rules, /'name', 'currency', 'origin', 'originDetails', 'version', 'updatedAt'/);
   assert.match(editorWriter, /originDetails: remoteRoot\.originDetails/);
-  assert.match(pilotWriter, /originDetails: remoteRoot\.originDetails/);
+  assert.match(writer, /originDetails: remoteRoot\.originDetails/);
 });
