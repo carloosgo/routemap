@@ -30,7 +30,8 @@ test('SegmentForm coordina filas compactas con resumen de fechas y el modal pose
   assert.doesNotMatch(form, /formatSegmentDate|formatSegmentNights|formatSegmentDates|formattedStartDate|formattedEndDate|formattedNights|formattedDates|<SegmentBody|CollapsibleRegion|expanded=|onToggle=|CityAutocomplete|CalendarDateInput|ExpenseEditor|ConfirmDialog|IconChevronDown|<ItineraryOrigin|<OriginBody|useExpandedSegmentReveal|scrollIntoView/);
 
   assert.match(originSection, /<ItineraryOrigin/);
-  assert.match(originSection, /onSelect=\{\(origin\) => onUpdate\(\{ origin \}\)\}/);
+  assert.match(originSection, /onSelect=\{onUpdateOrigin\}/);
+  assert.match(originSection, /onClear=\{\(\) => onUpdateOrigin\(null\)\}/);
   assert.match(originSection, /onOpenDetails=\{onOpenDetails\}/);
   assert.match(originSection, /originDetails/);
   assert.match(originSection, /formatSegmentAmount\([\s\S]*locale,[\s\S]*currency/);
