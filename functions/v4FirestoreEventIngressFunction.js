@@ -2,11 +2,11 @@ import { error as logError, info as logInfo } from 'firebase-functions/logger';
 import { onRequest } from 'firebase-functions/v2/https';
 import { db } from './geoapifyRuntime.js';
 import { handleV4FirestoreEventIngress } from './v4FirestoreEventIngressHandler.js';
-import { V4_PILOT_SERVICE_REGION } from './v4PilotBackendManifest.js';
+import { V4_SERVICE_REGION } from './v4BackendManifest.js';
 
 export function createV4FirestoreEventIngressFunction({
   adminDb,
-  region = V4_PILOT_SERVICE_REGION,
+  region = V4_SERVICE_REGION,
   requestFactory = onRequest,
   ingressHandler = handleV4FirestoreEventIngress,
   reportInfo = logInfo,
