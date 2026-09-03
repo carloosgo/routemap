@@ -23,11 +23,14 @@ function normalizedRevisionId(value) {
 }
 
 function positioned(items, transform = (item) => item) {
-  return items.map((item, position) => ({ ...transform(item), position }));
+  return items.map((item, position) => ({ ...transform(item, position), position }));
 }
 
-function segmentForStorage(segment) {
-  const stored = { ...segment };
+function segmentForStorage(segment, origin) {
+  const stored = {
+    ...segment,
+    origin: origin && typeof origin === 'object' ? origin : null,
+  };
   delete stored.places;
   return stored;
 }
@@ -124,7 +127,10 @@ export function createTripRevisionPayload(rawTrip, revisionId, updatedAt = new D
       ...counts,
     },
     collections: {
-      segments: positioned(trip.segments, segmentForStorage),
+      segments: positioned(trip.segments, (segment, position) => segmentForStorage(
+        segment,
+        position === 0 ? trip.origin : trip.segments[position - 1]?.destination
+      )),
       places: positioned(trip.places, placeForPersistence),
       routeConnections: positioned(trip.routeConnections, routeConnectionForStorage),
       notes: positioned(trip.notes),
@@ -159,15 +165,19 @@ export function hydrateVersionedTrip(summary, collections) {
     throw new TypeError('El resumen del viaje no usa el esquema versionado.');
   }
 
+  const segments = ordered(collections?.segments);
+  const legacyOrigin = segments[0]?.origin || null;
+
   return normalizeTrip({
     id: summary.id,
     name: summary.name,
     currency: summary.currency,
+    origin: legacyOrigin,
     originDetails: summary.originDetails,
     placeOrderVersion: summary.placeOrderVersion,
     createdAt: summary.createdAt,
     updatedAt: summary.updatedAt,
-    segments: ordered(collections?.segments),
+    segments,
     places: ordered(collections?.places),
     routeConnections: orderedRouteConnections(collections?.routeConnections),
     notes: ordered(collections?.notes),
