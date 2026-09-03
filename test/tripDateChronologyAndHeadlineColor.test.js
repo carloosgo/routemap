@@ -2,6 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { itineraryMapProjection } from '../src/modules/map/itineraryMapProjection.js';
 import { tripDateRange, tripSummary } from '../src/modules/trips/tripSummaryModel.js';
 import {
   TRIP_DATE_ERRORS,
@@ -21,8 +22,8 @@ function sampleTrip() {
     updatedAt: '2026-08-24T00:00:00.000Z',
     originDetails: { departureDate: '2026-09-05', expenses: {} },
     segments: [
-      { id: 'a', startDate: '2026-09-10', endDate: '2026-09-12', origin: null, destination: null, expenses: {} },
-      { id: 'b', startDate: '2026-09-13', endDate: '2026-09-20', origin: null, destination: null, expenses: {} },
+      { id: 'a', startDate: '2026-09-10', endDate: '2026-09-12', destination: null, expenses: {} },
+      { id: 'b', startDate: '2026-09-13', endDate: '2026-09-20', destination: null, expenses: {} },
     ],
     notes: [],
     checklist: [],
@@ -131,11 +132,13 @@ test('adding the next destination starts one calendar day after the previous fin
   const next = added.segments[1];
 
   assert.equal(next.startDate, '2027-01-01');
-  assert.equal(next.origin.id, trip.segments[0].destination.id);
-  assert.equal(next.origin.name, trip.segments[0].destination.name);
-  assert.equal(next.origin.countryCode, 'DE');
-  assert.equal(next.origin.lat, 52.52);
-  assert.equal(next.origin.lon, 13.405);
+  assert.equal(Object.hasOwn(next, 'origin'), false);
+  const projectedNext = itineraryMapProjection(added.origin, added.segments)[1];
+  assert.equal(projectedNext.origin.id, trip.segments[0].destination.id);
+  assert.equal(projectedNext.origin.name, trip.segments[0].destination.name);
+  assert.equal(projectedNext.origin.countryCode, 'DE');
+  assert.equal(projectedNext.origin.lat, 52.52);
+  assert.equal(projectedNext.origin.lon, 13.405);
   assert.equal(next.endDate, '');
 
   const withoutPreviousEnd = {
