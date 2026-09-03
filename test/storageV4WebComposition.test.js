@@ -145,12 +145,12 @@ test('composition root detiene emitter aunque flush de telemetria falle', async 
   assert.equal(telemetryStopped, true);
 });
 
-test('Gate G READ conecta solo el selector de repositorio, no el runtime de escritura v4', async () => {
+test('selector autenticado entra directo al repositorio v4 sin Gate G ni híbrido', async () => {
   const selectorSource = await readFile(
     new URL('../src/modules/trips/tripRepositorySelector.js', import.meta.url),
     'utf8'
   );
-  assert.match(selectorSource, /createGateGTripRepository/);
-  assert.doesNotMatch(selectorSource, /createV4WebSyncComposition/);
-  assert.doesNotMatch(selectorSource, /createFirestoreV4SyncGateway/);
+  assert.match(selectorSource, /createFirestoreV4AppTripRepository/);
+  assert.doesNotMatch(selectorSource, /createGateGTripRepository|firestoreHybridTripRepository|storageV4Rollout/);
+  assert.doesNotMatch(selectorSource, /createV4WebSyncComposition|createFirestoreV4SyncGateway/);
 });
