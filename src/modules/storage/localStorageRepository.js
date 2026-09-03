@@ -7,8 +7,13 @@ import {
 // Apta para uso individual / modo offline. Para multiusuario global se usa
 // la implementación 'api' contra el backend.
 
+function normalizeStoredTrip(rawTrip) {
+  const legacyOrigin = rawTrip?.origin || rawTrip?.segments?.[0]?.origin || null;
+  return normalizeTrip({ ...rawTrip, origin: legacyOrigin });
+}
+
 function tripForPersistence(rawTrip) {
-  const trip = normalizeTrip(rawTrip);
+  const trip = normalizeStoredTrip(rawTrip);
   return {
     ...trip,
     places: trip.places.map(placeForPersistence),
@@ -53,7 +58,7 @@ export function createLocalStorageRepository(storageKey) {
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) return [];
-      return parsed.map(normalizeTrip);
+      return parsed.map(normalizeStoredTrip);
     } catch (error) {
       if (error instanceof SyntaxError) return [];
       throw error;
@@ -75,7 +80,7 @@ export function createLocalStorageRepository(storageKey) {
     },
 
     async save(trip) {
-      const normalized = normalizeTrip(trip);
+      const normalized = normalizeStoredTrip(trip);
       const trips = readAll();
       const stamped = normalizeTrip({ ...normalized, updatedAt: new Date().toISOString() });
       const index = trips.findIndex((storedTrip) => storedTrip.id === stamped.id);
