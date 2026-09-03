@@ -151,7 +151,6 @@ test('borrar el ultimo trayecto conserva el origen, pero limpiar origen es una a
   };
   const onlySegment = createSegment({
     id: 'only-segment',
-    origin,
     destination,
     startDate: '2026-09-07',
     endDate: '2026-09-09',
@@ -159,6 +158,7 @@ test('borrar el ultimo trayecto conserva el origen, pero limpiar origen es una a
   });
   const state = {
     ...createTrip('Alemania'),
+    origin,
     segments: [onlySegment],
   };
 
@@ -169,41 +169,49 @@ test('borrar el ultimo trayecto conserva el origen, pero limpiar origen es una a
 
   assert.equal(removed.segments.length, 1);
   assert.notEqual(retainedSegment.id, onlySegment.id);
-  assert.deepEqual(retainedSegment.origin, onlySegment.origin);
+  assert.deepEqual(removed.origin, origin);
+  assert.equal(Object.hasOwn(retainedSegment, 'origin'), false);
   assert.equal(retainedSegment.destination, null);
   assert.equal(retainedSegment.startDate, '');
   assert.equal(retainedSegment.endDate, '');
   assert.equal(retainedSegment.note, '');
 
-  const cleared = reduce(removed, TRIP_ACTIONS.updateSegment, {
-    segmentId: retainedSegment.id,
-    patch: { origin: null },
+  const cleared = reduce(removed, TRIP_ACTIONS.updateOrigin, {
+    origin: null,
   });
-  assert.equal(cleared.segments[0].origin, null);
+  assert.equal(cleared.origin, null);
 
   const replacementOrigin = { ...origin, id: 'munich-origin', name: 'Munich' };
-  const replaced = reduce(cleared, TRIP_ACTIONS.updateSegment, {
-    segmentId: retainedSegment.id,
-    patch: { origin: replacementOrigin },
+  const replaced = reduce(cleared, TRIP_ACTIONS.updateOrigin, {
+    origin: replacementOrigin,
   });
-  assert.equal(replaced.segments[0].origin.name, 'Munich');
+  assert.equal(replaced.origin.name, 'Munich');
 
   const routedState = {
     ...createTrip('Ruta alemana'),
+    origin,
     segments: [
-      createSegment({ id: 'leg-1', origin, destination }),
-      createSegment({ id: 'leg-2', origin: destination, destination: munich }),
+      createSegment({ id: 'leg-1', destination }),
+      createSegment({ id: 'leg-2', destination: munich }),
     ],
   };
-  const withoutExplicitOrigin = reduce(routedState, TRIP_ACTIONS.updateSegment, {
+  const ignoredLegacyPatch = reduce(routedState, TRIP_ACTIONS.updateSegment, {
     segmentId: 'leg-1',
     patch: { origin: null },
   });
 
-  assert.equal(withoutExplicitOrigin.segments[0].origin, null);
-  assert.equal(withoutExplicitOrigin.segments[1].origin.name, 'Nuremberg');
+  assert.deepEqual(ignoredLegacyPatch.origin, origin);
+  assert.equal(Object.hasOwn(ignoredLegacyPatch.segments[0], 'origin'), false);
   assert.deepEqual(
-    routeStops(withoutExplicitOrigin.segments).map((city) => city.name),
+    routeStops(ignoredLegacyPatch).map((city) => city.name),
+    ['Frankfurt', 'Nuremberg', 'Munich']
+  );
+
+  const withoutExplicitOrigin = reduce(routedState, TRIP_ACTIONS.updateOrigin, {
+    origin: null,
+  });
+  assert.deepEqual(
+    routeStops(withoutExplicitOrigin).map((city) => city.name),
     ['Nuremberg', 'Munich']
   );
 });
