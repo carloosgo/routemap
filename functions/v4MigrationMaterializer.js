@@ -91,7 +91,6 @@ function segmentDocument(raw, rank, createdAt, updatedAt) {
   return {
     id: requiredText(raw.id, 'segment.id'),
     rank,
-    origin: clone(raw.origin ?? null),
     destination: clone(raw.destination ?? null),
     startDate: typeof raw.startDate === 'string' ? raw.startDate : '',
     endDate: typeof raw.endDate === 'string' ? raw.endDate : '',
@@ -215,10 +214,14 @@ export function materializePersistedV3ToV4({ summary, revision, collections } = 
   };
 
   const outputCollections = {};
+  let legacyOrigin = null;
   for (const [sourceName, targetName, entityType] of COLLECTION_SPECS) {
     const source = ordered(collections?.[sourceName], sourceName);
     if (source.length !== expectedCounts[sourceName]) {
       throw new TypeError(`${sourceName} legacy no coincide con su count declarado.`);
+    }
+    if (sourceName === 'segments') {
+      legacyOrigin = clone(source[0]?.origin ?? null);
     }
     outputCollections[targetName] = source.map((item, index) => materializeEntity(
       entityType,
@@ -249,6 +252,7 @@ export function materializePersistedV3ToV4({ summary, revision, collections } = 
     id: tripId,
     name: typeof summary.name === 'string' ? summary.name : '',
     currency: typeof summary.currency === 'string' ? summary.currency : 'USD',
+    origin: legacyOrigin,
     originDetails,
     schemaVersion: 4,
     status: 'active',
