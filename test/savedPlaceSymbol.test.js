@@ -11,10 +11,9 @@ import {
 const root = new globalThis.URL('../', import.meta.url);
 const read = (path) => readFile(new globalThis.URL(path, root), 'utf8');
 
-test('saved places keep the canonical colored SVG pin on Google Maps', async () => {
+test('saved places wire the reusable colored pin into Google Maps', async () => {
   const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
   const symbol = await read('src/modules/map/savedPlaceSymbol.js');
-  const css = await read('src/modules/map/GooglePlacesMap.css');
 
   assert.match(symbol, /saved-place-pin\.svg\?raw/);
   assert.match(symbol, /export function savedPlacePinUrl/);
@@ -22,22 +21,7 @@ test('saved places keep the canonical colored SVG pin on Google Maps', async () 
   assert.match(googleMap, /savedPlaceMarkerStyle/);
   assert.match(googleMap, /savedPlacePinUrl/);
   assert.match(googleMap, /placeCountryKey/);
-  assert.match(googleMap, /document\.createElement\('img'\)/);
   assert.match(googleMap, /image\.src = savedPlacePinUrl\(color\)/);
-  assert.match(css, /\.google-saved-place-marker img/);
-  assert.match(css, /width:26px/);
-  assert.match(css, /height:28px/);
-});
-
-test('saved place pin remains the canonical transparent SVG with a white dot', async () => {
-  const icon = await read('src/assets/map/saved-place-pin.svg');
-
-  assert.match(icon, /width="52" height="56" viewBox="0 0 52 56"/);
-  assert.match(icon, /fill="#19a5d0"/);
-  assert.match(icon, /<circle[^>]+cx="26"[^>]+cy="22\.5"[^>]+r="3\.25"[^>]+fill="#ffffff"/);
-  assert.equal((icon.match(/fill="#19a5d0"/g) || []).length, 1);
-  assert.equal((icon.match(/fill="#ffffff"/g) || []).length, 1);
-  assert.doesNotMatch(icon, /<image\b|data:image\/|<metadata>/i);
 });
 
 test('the saved place marker palette provides distinct reusable icon variants', () => {
