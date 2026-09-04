@@ -19,9 +19,103 @@
 }
 
 .trip-places--empty strong { color: #334155; }
-.trip-places--empty span { max-width: 260px; font-size: 12px; }
+.trip-places--empty span { max-width: 280px; font-size: 12px; }
+
+.trip-places__days {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trip-day {
+  --trip-day-color: #64748b;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0 12px;
+}
+
+.trip-day + .trip-day {
+  margin-top: 2px;
+}
+
+.trip-day--unassigned {
+  --trip-day-color: #94a3b8;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.trip-day__header {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  min-height: 42px;
+  grid-template-columns: 24px 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  padding: 4px 6px 6px 0;
+  background: #fff;
+}
+
+.trip-day__node {
+  display: block;
+  width: 11px;
+  height: 11px;
+  justify-self: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--trip-day-color);
+  box-shadow: 0 0 0 1px var(--trip-day-color);
+}
+
+.trip-day__heading {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.trip-day__heading strong {
+  overflow: hidden;
+  color: #111827;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-day__heading small {
+  color: #64748b;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.trip-day__rail {
+  position: absolute;
+  z-index: 0;
+  top: 31px;
+  bottom: 0;
+  left: 11.5px;
+  width: 0;
+  border-left: 2px dotted var(--trip-day-color);
+  opacity: .72;
+  pointer-events: none;
+}
+
+.trip-day__empty-row {
+  position: relative;
+  z-index: 1;
+  min-height: 32px;
+  padding: 7px 10px 7px 39px;
+  color: #94a3b8;
+  font-size: 10.5px;
+  font-style: italic;
+}
 
 .trip-places__sequence {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -36,19 +130,23 @@
   position: relative;
   z-index: 2;
   display: flex;
+  min-height: 48px;
   align-items: center;
-  min-height: 58px;
-  gap: 9px;
-  padding: 9px 10px 9px 6px;
-  border: 1px solid #e2e8f0;
-  border-radius: 11px;
-  background: #fff;
+  gap: 7px;
+  padding: 7px 6px 7px 33px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+}
+
+.trip-place:hover {
+  background: #f8fafc;
 }
 
 .trip-place.is-dragging {
   z-index: 20;
   transform: translateY(var(--trip-place-drag-y));
-  border-color: #cbd5e1;
+  background: #fff;
   box-shadow: 0 12px 28px rgba(15, 23, 42, .18);
   opacity: .97;
   pointer-events: none;
@@ -60,14 +158,28 @@
   position: absolute;
   z-index: 4;
   right: 8px;
-  left: 8px;
+  left: 33px;
   height: 2px;
   border-radius: 999px;
   background: var(--atlas-accent);
   box-shadow: 0 0 0 1px rgba(255,255,255,.9);
 }
-.trip-place.is-drop-before::before { top: -4px; }
-.trip-place.is-drop-after::after { bottom: -4px; }
+.trip-place.is-drop-before::before { top: -2px; }
+.trip-place.is-drop-after::after { bottom: -2px; }
+
+.trip-place__timeline-dot {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  left: 7px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--trip-day-color, #64748b);
+  box-shadow: 0 0 0 1px var(--trip-day-color, #64748b);
+  transform: translateY(-50%);
+}
 
 .trip-place button {
   display: inline-flex;
@@ -79,7 +191,13 @@
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: #b6bbc5;
+  color: #9ca3af;
+}
+
+.trip-place__move-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
 }
 
 .trip-place__drag {
@@ -88,18 +206,62 @@
   touch-action: none;
 }
 .trip-place__drag:hover,
-.trip-place__drag:focus-visible {
-  background: #f1f5f9;
-  color: #64748b;
+.trip-place__drag:focus-visible,
+.trip-place__note:hover,
+.trip-place__note:focus-visible {
+  background: #eef2f6;
+  color: #475569;
 }
 .trip-place__drag:active { cursor: grabbing; }
 
-.trip-place__flag-wrap {
-  display: grid;
-  width: 30px;
-  height: 28px;
-  flex: 0 0 auto;
-  place-items: center;
+.trip-place__move-menu {
+  position: absolute;
+  z-index: 80;
+  top: 32px;
+  left: 0;
+  display: flex;
+  width: min(290px, calc(100vw - 48px));
+  max-height: 260px;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px;
+  overflow-y: auto;
+  border: 1px solid #dbe2ea;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .16);
+}
+
+.trip-place__move-menu strong {
+  padding: 4px 7px 5px;
+  color: #334155;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.trip-place .trip-place__move-menu button {
+  width: 100%;
+  height: auto;
+  min-height: 32px;
+  justify-content: flex-start;
+  padding: 6px 8px;
+  color: #334155;
+  font-size: 10.5px;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.trip-place .trip-place__move-menu button:hover,
+.trip-place .trip-place__move-menu button:focus-visible {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.trip-place__move-menu > span {
+  padding: 6px 8px;
+  color: #94a3b8;
+  font-size: 10px;
 }
 
 .trip-places__flag {
@@ -135,13 +297,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.trip-place__info small {
-  overflow: hidden;
-  color: #64748b;
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .trip-place__details {
   display: flex;
@@ -170,9 +325,7 @@
   white-space: nowrap;
 }
 .trip-place__hours svg,
-.trip-place__website svg {
-  flex: 0 0 auto;
-}
+.trip-place__website svg { flex: 0 0 auto; }
 .trip-place__website {
   flex: 0 0 auto;
   color: #23647a;
@@ -186,14 +339,50 @@
   outline: none;
 }
 
+.trip-place__note,
 .trip-place__delete {
   flex: 0 0 auto;
   cursor: pointer;
 }
+
+.trip-place__note.has-note {
+  color: #23647a;
+}
+
 .trip-place__delete:hover,
 .trip-place__delete:focus-visible {
   background: #fff;
   color: var(--danger);
+}
+
+.trip-place-note-dialog {
+  width: min(420px, calc(100vw - 32px));
+}
+
+.trip-place-note-dialog > strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.trip-place-note-dialog textarea {
+  width: 100%;
+  min-height: 130px;
+  resize: vertical;
+  padding: 10px 11px;
+  border: 1px solid #d6dde6;
+  border-radius: 9px;
+  outline: none;
+  color: #0f172a;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.trip-place-note-dialog textarea:focus {
+  border-color: var(--atlas-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--atlas-accent) 14%, transparent);
 }
 
 .trip-connection {
@@ -205,19 +394,10 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
-  padding: 6px 8px;
+  padding: 6px 8px 6px 33px;
 }
 
-.trip-connection__rail {
-  position: absolute;
-  z-index: -1;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 1px;
-  background: #e2e8f0;
-  transform: translateX(-50%);
-}
+.trip-day .trip-connection__rail { display: none; }
 
 .trip-connection__modes {
   display: grid;
@@ -265,13 +445,8 @@
   background: color-mix(in srgb, var(--atlas-accent) 16%, white);
   color: #07536b;
 }
-.trip-connection__mode.is-active span {
-  color: #07536b;
-}
-.trip-connection__mode:disabled {
-  cursor: default;
-  opacity: .7;
-}
+.trip-connection__mode.is-active span { color: #07536b; }
+.trip-connection__mode:disabled { cursor: default; opacity: .7; }
 
 .trip-connection__status {
   max-width: 300px;
@@ -308,20 +483,14 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.trip-connection__transit-step strong {
-  color: #334155;
-  font-size: 10px;
-}
-.trip-connection__transit-step span {
-  color: #64748b;
-  font-size: 9px;
-}
+.trip-connection__transit-step strong { color: #334155; font-size: 10px; }
+.trip-connection__transit-step span { color: #64748b; font-size: 9px; }
 
 @media (max-width: 560px) {
   .trip-places { padding: 9px; }
-  .trip-place { min-height: 56px; }
+  .trip-place { min-height: 46px; }
   .trip-place__details { gap: 5px; }
-  .trip-connection { padding-inline: 4px; }
+  .trip-connection { padding-right: 4px; }
   .trip-connection__modes,
   .trip-connection__transit { width: 100%; }
 }
