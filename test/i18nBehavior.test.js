@@ -13,6 +13,11 @@ test('el proveedor y los módulos reconstruyen su salida cuando cambia el idioma
   const editorPane = await read('src/app/AppEditorPane.jsx');
   const segmentForm = await read('src/modules/trips/SegmentForm.jsx');
   const segmentBody = await read('src/modules/trips/SegmentBody.jsx');
+  const originBody = await read('src/modules/trips/OriginBody.jsx');
+  const expenseEditor = await read('src/modules/expenses/ExpenseEditor.jsx');
+  const fixedExpenseCards = await read('src/modules/expenses/FixedExpenseCards.jsx');
+  const lineItemsGrid = await read('src/modules/expenses/ExpenseLineItemsGrid.jsx');
+  const moneyInput = await read('src/components/MoneyInput.jsx');
 
   assert.match(provider, /const t = useCallback\([\s\S]*?\[locale\]\s*\);/);
   assert.match(provider, /const value = useMemo\([\s\S]*?\[locale, setLocale, t\]\s*\);/);
@@ -26,7 +31,18 @@ test('el proveedor y los módulos reconstruyen su salida cuando cambia el idioma
   assert.match(editorPane, /locale=\{intlLocale\}/);
   assert.match(segmentForm, /locale=\{locale\}/);
   assert.match(segmentBody, /<CalendarDateInput[\s\S]*?locale=\{locale\}/);
-  assert.match(segmentBody, /<ExpenseEditor[\s\S]*?locale=\{locale\}/);
+  assert.match(segmentBody, /<ExpenseEditor[\s\S]*?currency=\{currency\}[\s\S]*?locale=\{locale\}/);
+  assert.match(originBody, /<ExpenseEditor[\s\S]*?currency=\{currency\}[\s\S]*?locale=\{locale\}/);
+
+  assert.match(expenseEditor, /ExpenseEditor\(\{ expenses, currency, locale, onChange \}\)/);
+  assert.match(expenseEditor, /getCurrencySymbol\(currency, locale\)/);
+  assert.match(expenseEditor, /<FixedExpenseCards[\s\S]*?currencySymbol=\{currencySymbol\}/);
+  assert.match(expenseEditor, /<ExpenseLineItemsGrid[\s\S]*?currencySymbol=\{currencySymbol\}/);
+  assert.match(fixedExpenseCards, /<MoneyCard[\s\S]*?currencySymbol=\{currencySymbol\}/);
+  assert.match(lineItemsGrid, /moneycard__currency">\{currencySymbol\}<\/span>/);
+  assert.match(moneyInput, /moneycard__currency">\{currencySymbol\}<\/span>/);
+  assert.doesNotMatch(lineItemsGrid, /moneycard__currency">\$<\/span>/);
+  assert.doesNotMatch(moneyInput, /moneycard__currency">\$<\/span>/);
 });
 
 test('la búsqueda de ciudades usa el idioma activo y separa catálogo, provider cache y browser cache', async () => {

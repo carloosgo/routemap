@@ -2,7 +2,7 @@ import { useTranslation } from '../../i18n/index.jsx';
 import { MoneyCard } from '../../components/MoneyInput.jsx';
 import { EXPENSE_ICONS } from './expenseEditorCatalog.jsx';
 
-function ExpenseMoneyCard({ definition, label, value, onChange }) {
+function ExpenseMoneyCard({ definition, label, value, onChange, currencySymbol }) {
   return (
     <MoneyCard
       icon={definition.icon}
@@ -11,6 +11,7 @@ function ExpenseMoneyCard({ definition, label, value, onChange }) {
       label={label}
       value={value}
       onChange={onChange}
+      currencySymbol={currencySymbol}
       centered
     />
   );
@@ -19,6 +20,7 @@ function ExpenseMoneyCard({ definition, label, value, onChange }) {
 export function FixedExpenseCards({
   expenses,
   foodAmount,
+  currencySymbol,
   onSetLodging,
   onSetTransport,
   onSetFood,
@@ -32,36 +34,42 @@ export function FixedExpenseCards({
         label={t('lodging')}
         value={expenses.lodging}
         onChange={onSetLodging}
+        currencySymbol={currencySymbol}
       />
       <ExpenseMoneyCard
         definition={EXPENSE_ICONS.plane}
         label={t('flights')}
         value={expenses.transport.plane}
         onChange={(value) => onSetTransport('plane', value)}
+        currencySymbol={currencySymbol}
       />
       <ExpenseMoneyCard
         definition={EXPENSE_ICONS.train}
         label={t('train')}
         value={expenses.transport.train}
         onChange={(value) => onSetTransport('train', value)}
+        currencySymbol={currencySymbol}
       />
       <ExpenseMoneyCard
         definition={EXPENSE_ICONS.bus}
         label={t('bus')}
         value={expenses.transport.bus}
         onChange={(value) => onSetTransport('bus', value)}
+        currencySymbol={currencySymbol}
       />
       <ExpenseMoneyCard
         definition={EXPENSE_ICONS.taxiUber}
         label={t('taxi')}
         value={expenses.transport.taxiUber}
         onChange={(value) => onSetTransport('taxiUber', value)}
+        currencySymbol={currencySymbol}
       />
       <ExpenseMoneyCard
         definition={EXPENSE_ICONS.food}
         label={t('food')}
         value={foodAmount}
         onChange={onSetFood}
+        currencySymbol={currencySymbol}
       />
     </div>
   );

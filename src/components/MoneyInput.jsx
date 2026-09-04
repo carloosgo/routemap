@@ -58,6 +58,7 @@ export function MoneyCard({
   value,
   onChange,
   ariaLabel,
+  currencySymbol = '$',
   centered = false,
 }) {
   const centeredRowStyle = centered
@@ -106,7 +107,7 @@ export function MoneyCard({
             }
           : undefined}
       >
-        <span className="moneycard__currency">$</span>
+        <span className="moneycard__currency">{currencySymbol}</span>
         <MoneyAmountInput
           value={value}
           onChange={onChange}
