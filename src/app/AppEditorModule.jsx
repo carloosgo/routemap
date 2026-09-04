@@ -28,8 +28,10 @@ export function AppEditorModule({
     reorderSegment,
     updateSegment,
     updateOrigin,
+    updatePlace,
     removePlace,
     reorderPlace,
+    movePlaceToDay,
     upsertRouteConnection,
     removeRouteConnection,
     setRouteConnectionVisibility,
@@ -50,10 +52,13 @@ export function AppEditorModule({
 
   const editorPane = activeTab === 'places' ? (
     <TripPlacesPanel
+      segments={trip.segments}
       places={places}
       routes={trip.routeConnections || []}
+      updatePlace={updatePlace}
       removePlace={removePlace}
       reorderPlace={reorderPlace}
+      movePlaceToDay={movePlaceToDay}
       upsertRoute={upsertRouteConnection}
       removeRoute={removeRouteConnection}
       setRouteVisibility={setRouteConnectionVisibility}
