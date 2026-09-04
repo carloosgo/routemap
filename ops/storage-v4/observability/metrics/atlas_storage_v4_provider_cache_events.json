@@ -1,0 +1,19 @@
+{
+  "name": "atlas_storage_v4_provider_cache_events",
+  "description": "Atlas provider-cache outcomes. Labels are limited to cache outcome and backend cache collection; cache keys, queries and results are never extracted.",
+  "filter": "jsonPayload.message=\"storage_v4_provider_cache_metric\"",
+  "disabled": false,
+  "metricDescriptor": {
+    "metricKind": "DELTA",
+    "valueType": "INT64",
+    "unit": "1",
+    "labels": [
+      { "key": "outcome", "valueType": "STRING", "description": "Cache outcome." },
+      { "key": "collection", "valueType": "STRING", "description": "Bounded backend cache collection." }
+    ]
+  },
+  "labelExtractors": {
+    "outcome": "EXTRACT(jsonPayload.outcome)",
+    "collection": "EXTRACT(jsonPayload.collection)"
+  }
+}

@@ -1,0 +1,420 @@
+/* Timeline visual del itinerario.
+   La proyección es continua; los datos canónicos siguen viviendo en segment. */
+
+.segments:not(.segments--compact) {
+  --itinerary-axis-x: 38px;
+  position: relative;
+  padding-top: 2px;
+}
+
+.segments:not(.segments--compact)::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: 20px;
+  bottom: 20px;
+  left: var(--itinerary-axis-x);
+  width: 1px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #c9ced7 0 3px,
+    transparent 3px 7px
+  );
+  pointer-events: none;
+}
+
+.itinerary-origin {
+  position: relative;
+  z-index: 4;
+  min-height: 34px;
+  margin: 0 0 8px;
+  padding-left: 23px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 220px);
+  align-items: center;
+  gap: 5px;
+}
+
+.itinerary-origin__marker {
+  position: relative;
+  z-index: 5;
+  width: 30px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+}
+
+.itinerary-origin__marker.is-empty::after,
+.itinerary-stop__marker.is-empty::after {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid #a1a8b2;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+/* Todas las banderas ocupan exactamente el mismo thumbnail. La imagen se
+   solicita a mayor densidad y se recorta, no se deforma, para evitar tamaños
+   visuales distintos entre proporciones nacionales. */
+.itinerary-origin__marker img,
+.itinerary-stop__marker img {
+  display: block;
+  width: 30px;
+  height: 20px;
+  object-fit: cover;
+  border-radius: 3px;
+  image-rendering: auto;
+}
+
+.itinerary-origin__place,
+.itinerary-stop__place {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.itinerary-origin__place {
+  width: 100%;
+  max-width: 220px;
+}
+
+.itinerary-stop__place {
+  width: 100%;
+  max-width: 106px;
+}
+
+.itinerary-origin__picker,
+.itinerary-stop__picker {
+  width: 100%;
+  min-width: 0;
+}
+
+.itinerary-origin__picker .autocomplete,
+.itinerary-stop__picker .autocomplete {
+  width: 100%;
+  min-width: 0;
+}
+
+.itinerary-origin__picker .autocomplete__field,
+.itinerary-stop__picker .autocomplete__field {
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.itinerary-stop__picker .autocomplete__field {
+  position: relative;
+  min-height: 32px;
+}
+
+.itinerary-origin__picker .autocomplete__field > .flag,
+.itinerary-stop__picker .autocomplete__field > .flag,
+.itinerary-origin__picker .autocomplete__search-icon,
+.itinerary-stop__picker .autocomplete__search-icon {
+  display: none;
+}
+
+.itinerary-origin__picker .input,
+.itinerary-stop__picker .input {
+  width: 100%;
+  min-width: 0;
+  height: 24px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  box-shadow: none;
+  color: #303642;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.itinerary-stop__picker .input {
+  height: 32px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.itinerary-stop__picker .autocomplete--timeline-selected .input {
+  color: transparent;
+  caret-color: transparent;
+}
+
+.itinerary-stop__picker .autocomplete__selected-value {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 4px;
+  right: 4px;
+  max-height: 30px;
+  overflow: hidden;
+  transform: translateY(-50%);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: #303642;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: normal;
+  overflow-wrap: break-word;
+  pointer-events: none;
+}
+
+.itinerary-segment.is-country-run-middle .itinerary-stop__picker .autocomplete__selected-value {
+  color: #575757;
+  font-weight: 400;
+}
+
+.itinerary-origin__picker .input {
+  color: #6f7682;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.itinerary-origin__picker .input:hover,
+.itinerary-stop__picker .input:hover,
+.itinerary-origin__picker .input:focus,
+.itinerary-stop__picker .input:focus {
+  background: #f5f7f9;
+  outline: none;
+}
+
+.itinerary-origin__picker .autocomplete__list,
+.itinerary-stop__picker .autocomplete__list {
+  min-width: 220px;
+  z-index: 1000;
+}
+
+.itinerary-origin__picker .autocomplete__item-row,
+.itinerary-stop__picker .autocomplete__item-row {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.itinerary-origin__picker .autocomplete__item,
+.itinerary-stop__picker .autocomplete__item {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.itinerary-origin__picker .autocomplete__item:hover,
+.itinerary-stop__picker .autocomplete__item:hover,
+.itinerary-origin__picker .autocomplete__item.is-active,
+.itinerary-stop__picker .autocomplete__item.is-active {
+  background: var(--coral-soft);
+}
+
+.itinerary-origin__picker .autocomplete__list .flag,
+.itinerary-stop__picker .autocomplete__list .flag {
+  width: 27px;
+  height: 18px;
+  object-fit: cover;
+  border-radius: 3px;
+}
+
+.itinerary-origin__country,
+.itinerary-stop__country {
+  padding-left: 4px;
+  color: #9298a4;
+  font-size: 9.5px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+/* No crear un stacking context por fila: el dropdown debe poder pasar por
+   encima de las filas posteriores. Solo el estado de drag recibe z-index. */
+.itinerary-segment.segment {
+  position: relative;
+  margin: 0 !important;
+  padding: 0 0 10.5px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.itinerary-segment:last-child {
+  padding-bottom: 0;
+}
+
+.itinerary-segment .segment__header.itinerary-stop {
+  position: relative;
+  min-height: 52px;
+  display: grid;
+  grid-template-columns: 18px 30px minmax(90px, 106px) 186px 22px 22px 22px;
+  align-items: center;
+  column-gap: 6px;
+  row-gap: 0;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.itinerary-stop__drag {
+  align-self: center;
+  color: #c4c9d0;
+}
+
+.itinerary-stop__marker {
+  position: relative;
+  z-index: 3;
+  width: 30px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Fecha, noches y costo comparten una zona compacta con separaciones iguales.
+   Las dos etiquetas tienen exactamente la misma caja. */
+.itinerary-stop__metrics {
+  width: 186px;
+  min-width: 186px;
+  max-width: 186px;
+  display: grid;
+  grid-template-columns: 42px 66px 66px;
+  align-items: center;
+  column-gap: 6px;
+}
+
+.itinerary-stop__dates {
+  width: 42px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  color: #8b929e;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.itinerary-stop__date-line {
+  display: block;
+  white-space: nowrap;
+}
+
+.itinerary-stop__dates.is-placeholder {
+  color: #b3b8c1;
+}
+
+/* Noches y costo son gemelos geométricos; solo cambia su semántica visual. */
+.itinerary-stop__nights.segment__pill,
+.itinerary-stop__amount.segment__pill {
+  box-sizing: border-box;
+  width: 66px;
+  min-width: 66px;
+  max-width: 66px;
+  height: 22px;
+  min-height: 22px;
+  padding: 3px 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.itinerary-stop__nights.segment__pill {
+  background: #eef5ff;
+  color: #3977ca;
+}
+
+.floating-editor .itinerary-stop__nights.segment__pill {
+  background: #eef5ff;
+  color: #3977ca;
+}
+
+.itinerary-stop__nights.is-placeholder,
+.floating-editor .itinerary-stop__nights.segment__pill.is-placeholder {
+  color: #6f96c9;
+  background: #f3f7fd;
+}
+
+.itinerary-stop__amount.segment__pill {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: #f1f3f5;
+  color: #606874;
+}
+
+.itinerary-segment .segment__header .btn--icon {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: #a1a7b0;
+}
+
+.itinerary-segment .segment__header .btn--icon:hover {
+  background: #f4f5f7;
+  color: #586170;
+}
+
+.itinerary-segment .segment__body {
+  position: relative;
+  z-index: 2;
+  margin: 3px 0 5px 52px;
+  padding: 8px 0 3px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.itinerary-segment.is-dragging {
+  z-index: 20;
+  background: rgba(255, 255, 255, .96) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, .11) !important;
+}
+
+@media (max-width: 720px) {
+  .itinerary-origin {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .itinerary-origin__place {
+    max-width: none;
+  }
+
+  .itinerary-stop__place {
+    max-width: none;
+  }
+
+  .itinerary-segment .segment__header.itinerary-stop {
+    grid-template-columns: 18px 30px minmax(0, 1fr) 22px 22px;
+  }
+
+  .itinerary-stop__metrics,
+  .itinerary-segment .segment__note-btn {
+    display: none !important;
+  }
+
+  .itinerary-segment .segment__body {
+    margin-left: 49px;
+  }
+}

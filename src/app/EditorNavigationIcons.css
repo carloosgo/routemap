@@ -1,0 +1,26 @@
+/*
+ * Única responsabilidad: recursos visuales de los iconos de navegación.
+ * Geometría, separación y distribución viven en ItinerarySidebar.css.
+ */
+.editor-module__tabs .editor-module__tab-icon > svg {
+  display: none;
+}
+
+.editor-module__tabs .editor-module__tab-icon > img {
+  display: block;
+  max-width: none;
+  object-fit: contain;
+}
+
+.editor-module__tabs > .editor-module__nav-tab:nth-of-type(1) .editor-module__tab-icon {
+  background-image: url('/icons/tramos.svg');
+}
+
+.editor-module__tabs > .editor-module__nav-tab[data-tab-icon='notes'] .editor-module__tab-icon {
+  background-image: url('/icons/notas.svg');
+}
+
+/* Mis Rutas conserva como único icono el recurso entregado por el usuario. */
+.editor-module__tabs > .editor-module__nav-tab[data-tab-icon='places-map-pin'] .editor-module__tab-icon {
+  background-image: none;
+}

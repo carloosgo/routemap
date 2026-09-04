@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" role="img" aria-label="Tramos">
+  <path d="M4.5 13.5 14 9l12 4.5 9.5-4v21L26 34l-12-4.5L4.5 33z" fill="#fff3d6" stroke="#14394b" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M14 9v20.5M26 13.5V34" fill="none" stroke="#14394b" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M8 26c4-5 7-8 11-8 4.5 0 6.5 4.5 11 6" fill="none" stroke="#08bfe5" stroke-width="2" stroke-linecap="round" stroke-dasharray="2.2 2.8"/>
+  <path d="M27.8 5.8c-3.7 0-6.7 2.9-6.7 6.5 0 4.7 6.7 11.2 6.7 11.2s6.7-6.5 6.7-11.2c0-3.6-3-6.5-6.7-6.5Z" fill="#11c7dc" stroke="#14394b" stroke-width="1.8"/>
+  <circle cx="27.8" cy="12.2" r="2.5" fill="#fff" stroke="#14394b" stroke-width="1.3"/>
+</svg>

@@ -1,0 +1,112 @@
+/* Restauración del workspace integrado en escritorio.
+   Itinerario, Mis Rutas y Notas vuelven a ocupar una columna fija a la izquierda
+   del mapa. El ancho se toma del mismo --workspace-panel-width que gobierna las
+   dos primeras columnas del header, por lo que el borde derecho coincide
+   exactamente con el separador entre Notas y Fechas del viaje.
+
+   Esta hoja sólo cambia la geometría exterior: no escala, comprime ni altera
+   filas, banderas, ciudad, costo, iconos, tipografías o controles internos. */
+@media (min-width: 721px) {
+  .workspace__desktop--column {
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--workspace-panel-width) minmax(0, 1fr);
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .workspace__desktop--column > .mappane {
+    position: relative;
+    inset: auto;
+    z-index: 0;
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+  }
+
+  .workspace-panel {
+    position: relative;
+    inset: auto;
+    z-index: 700;
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    display: block;
+    overflow: hidden;
+    pointer-events: auto;
+    background: var(--bg);
+    border-radius: 0;
+    box-shadow: 8px 0 18px -14px rgba(15, 23, 42, 0.34);
+    transform: none;
+    opacity: 1;
+  }
+
+  main.workspace .workspace__desktop--column .workspace-panel__content.floating-editor {
+    position: relative !important;
+    inset: auto !important;
+    z-index: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 100% !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    pointer-events: auto;
+    background: var(--bg) !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  /* El colapso vuelve a reducir físicamente la columna izquierda y deja todo
+     el ancho restante al mapa. */
+  .workspace__desktop--column.is-panel-collapsed {
+    grid-template-columns: 0 minmax(0, 1fr);
+  }
+
+  .workspace__desktop--column.is-panel-collapsed .workspace-panel,
+  .workspace__desktop--column.is-panel-collapsed .workspace-panel__content {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* La pestaña se ancla al límite real de la columna integrada y permanece
+     visualmente por encima de la sombra del panel. */
+  .workspace-panel__toggle {
+    top: 50%;
+    left: var(--workspace-panel-width);
+    z-index: 701;
+    transform: translate(-1px, -50%);
+    box-shadow: none;
+  }
+
+  .workspace__desktop--column.is-panel-collapsed .workspace-panel__toggle {
+    left: 0;
+    transform: translate(0, -50%);
+  }
+
+  /* El mapa ya comienza después del panel; sus superficies contextuales sólo
+     necesitan el gutter local de 14px, no volver a restar el ancho del panel. */
+  .workspace__desktop--column > .mappane .segnote,
+  .workspace__desktop--column > .mappane .geo-search {
+    left: 14px;
+  }
+
+  /* Nota y detalles dejan una pequeña respiración visual bajo el header sin
+     mover el panel integrado ni la búsqueda. */
+  .workspace__desktop--column > .mappane .segnote {
+    top: calc(var(--trip-header-height) + 12px) !important;
+  }
+
+  /* Evita que la pestaña de colapso atraviese el modal de detalles. */
+  .workspace__desktop--column:has(.segment-details-modal) .workspace-panel__toggle {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
