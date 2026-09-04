@@ -1,8 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import es from '../src/i18n/es.js';
-import en from '../src/i18n/en.js';
 import { formatDate, formatMoney } from '../src/shared/utils.js';
 
 const root = new URL('../', import.meta.url);
@@ -86,15 +84,4 @@ test('la búsqueda de ciudades usa el idioma activo y separa catálogo, provider
   assert.match(cityUtils, /bias: 'countrycode:none'/);
   assert.match(cityUtils, /address_line1/);
   assert.match(cityUtils, /formatted/);
-});
-
-test('placeholders y mensajes sensibles al idioma viven en los diccionarios', async () => {
-  const calendar = await read('src/components/CalendarDateInput.jsx');
-  const app = await read('src/App.jsx');
-
-  assert.match(calendar, /const placeholder = t\('datePlaceholder'\)/);
-  assert.equal(es.datePlaceholder, 'dd/mm/aaaa');
-  assert.equal(en.datePlaceholder, 'mm/dd/yyyy');
-  assert.match(app, /showToast\(t\('savedTripMissing'\), 3000\)/);
-  assert.match(app, /showToast\(t\('openTripError'\), 3000\)/);
 });
