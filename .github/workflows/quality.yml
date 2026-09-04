@@ -81,6 +81,9 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
+      - name: Run change-focused regression preflight
+        run: npm run test:changed -- --preflight
+
       - name: Run unit tests
         shell: bash
         run: |
