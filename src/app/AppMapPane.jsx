@@ -6,6 +6,7 @@ import { buildItineraryStopSequence } from '../modules/trips/itineraryStopSequen
 import { tripPlanningDays } from '../modules/trips/tripDayPlanning.js';
 import { ORIGIN_NOTE_TARGET } from '../modules/trips/tripNoteTargets.js';
 import { colorForIndex } from '../config.js';
+import './PlaceDayPicker.css';
 
 const PERSISTENCE_LABEL_KEYS = Object.freeze({
   saved: 'persistenceSaved',
