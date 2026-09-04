@@ -13,6 +13,12 @@ import {
   reorderSegments,
 } from './tripModel.js';
 import {
+  assignedPlacesForSegment,
+  planningGroupKey,
+  placePlanningGroupKey,
+  tripPlanningDays,
+} from './tripDayPlanning.js';
+import {
   createSavedPlaceRoute,
   savedPlaceRoutePairKey,
 } from '../routes/routeModel.js';
@@ -42,8 +48,10 @@ export const TRIP_ACTIONS = Object.freeze({
   updateSegment: 'UPDATE_SEGMENT',
   updateExpenses: 'UPDATE_EXPENSES',
   addPlace: 'ADD_PLACE',
+  updatePlace: 'UPDATE_PLACE',
   removePlace: 'REMOVE_PLACE',
   reorderPlace: 'REORDER_PLACE',
+  movePlaceToDay: 'MOVE_PLACE_TO_DAY',
   upsertRouteConnection: 'UPSERT_ROUTE_CONNECTION',
   removeRouteConnection: 'REMOVE_ROUTE_CONNECTION',
   setRouteConnectionVisibility: 'SET_ROUTE_CONNECTION_VISIBILITY',
@@ -60,6 +68,36 @@ function touch(state, patch) {
     ...patch,
     updatedAt: nowISO(),
   };
+}
+
+function routesWithoutPlace(routes, placeId) {
+  return (routes || []).filter(
+    (route) => route.fromPlaceId !== placeId && route.toPlaceId !== placeId
+  );
+}
+
+function movePlaceToTargetGroup(places, placeId, segmentId, dayOffset) {
+  const current = Array.isArray(places) ? places : [];
+  const sourceIndex = current.findIndex((place) => place.id === placeId);
+  if (sourceIndex < 0) return current;
+
+  const targetKey = planningGroupKey(segmentId, dayOffset);
+  if (!targetKey) return current;
+
+  const moved = createPlace({
+    ...current[sourceIndex],
+    segmentId,
+    dayOffset,
+  });
+  const remaining = current.filter((place) => place.id !== placeId);
+  let insertIndex = -1;
+  remaining.forEach((place, index) => {
+    if (placePlanningGroupKey(place) === targetKey) insertIndex = index;
+  });
+
+  const next = [...remaining];
+  next.splice(insertIndex >= 0 ? insertIndex + 1 : next.length, 0, moved);
+  return next;
 }
 
 export function createInitialTrip(initialTrip) {
@@ -155,6 +193,9 @@ export function tripReducer(state, action) {
       return appendSegment(state);
 
     case TRIP_ACTIONS.removeSegment: {
+      if (assignedPlacesForSegment(state.places, action.segmentId).length > 0) {
+        return state;
+      }
       const segments = Array.isArray(state.segments) ? state.segments : [];
       const remaining = segments.filter(
         (segment) => segment.id !== action.segmentId
@@ -204,7 +245,16 @@ export function tripReducer(state, action) {
       const duplicate = places.some(
         (currentPlace) => currentPlace.id === place.id
       );
-      if (places.length >= TRIP_LIMITS.places || duplicate) return state;
+      const validPlanningTarget = tripPlanningDays(state.segments).some(
+        (day) => day.key === placePlanningGroupKey(place)
+      );
+      if (
+        places.length >= TRIP_LIMITS.places
+        || duplicate
+        || !validPlanningTarget
+      ) {
+        return state;
+      }
 
       return touch(state, {
         places: insertPlaceByCountry(places, place),
@@ -212,25 +262,59 @@ export function tripReducer(state, action) {
       });
     }
 
+    case TRIP_ACTIONS.updatePlace:
+      return touch(state, {
+        places: (state.places || []).map((place) =>
+          place.id === action.placeId
+            ? createPlace({ ...place, ...(action.patch || {}), id: place.id })
+            : place
+        ),
+      });
+
     case TRIP_ACTIONS.removePlace:
       return touch(state, {
         places: (state.places || []).filter(
           (place) => place.id !== action.placeId
         ),
-        routeConnections: (state.routeConnections || []).filter(
-          (route) =>
-            route.fromPlaceId !== action.placeId
-            && route.toPlaceId !== action.placeId
-        ),
+        routeConnections: routesWithoutPlace(state.routeConnections, action.placeId),
       });
 
-    case TRIP_ACTIONS.reorderPlace:
-      return reorderPlaces(
+    case TRIP_ACTIONS.reorderPlace: {
+      const reorderedTrip = reorderPlaces(
         state,
         action.sourceId,
         action.targetId,
         action.placement
       );
+      if (reorderedTrip === state) return state;
+      return {
+        ...reorderedTrip,
+        routeConnections: routesWithoutPlace(
+          reorderedTrip.routeConnections,
+          action.sourceId
+        ),
+      };
+    }
+
+    case TRIP_ACTIONS.movePlaceToDay: {
+      const targetKey = planningGroupKey(action.segmentId, action.dayOffset);
+      const validPlanningTarget = tripPlanningDays(state.segments).some(
+        (day) => day.key === targetKey
+      );
+      if (!validPlanningTarget) return state;
+      const places = movePlaceToTargetGroup(
+        state.places,
+        action.placeId,
+        action.segmentId,
+        action.dayOffset
+      );
+      if (places === state.places) return state;
+      return touch(state, {
+        places,
+        placeOrderVersion: PLACE_ORDER_VERSION,
+        routeConnections: routesWithoutPlace(state.routeConnections, action.placeId),
+      });
+    }
 
     case TRIP_ACTIONS.upsertRouteConnection: {
       const route = createSavedPlaceRoute(action.connection);
