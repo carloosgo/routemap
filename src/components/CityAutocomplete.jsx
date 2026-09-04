@@ -19,6 +19,7 @@ export function CityAutocomplete({
   placeholder,
   selectedDisplay = 'full',
   focusNextOnSelect = false,
+  disabled = false,
 }) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
@@ -27,10 +28,17 @@ export function CityAutocomplete({
   const containerRef = useRef(null);
   const inputRef = useRef(null);
 
-  const { results, loading, error } = useCitySearch(open ? query : '');
+  const { results, loading, error } = useCitySearch(!disabled && open ? query : '');
   const flagOnlySelected = selectedDisplay === 'flag-only' && Boolean(value) && !open;
   const timelineSelected = selectedDisplay === 'timeline' && Boolean(value) && !open;
   const displayValue = open ? query : flagOnlySelected ? '' : value?.name || '';
+
+  useEffect(() => {
+    if (disabled) {
+      setOpen(false);
+      setHighlight(-1);
+    }
+  }, [disabled]);
 
   useEffect(() => {
     function onClickOutside(event) {
@@ -44,6 +52,7 @@ export function CityAutocomplete({
   }, []);
 
   function handleChange(event) {
+    if (disabled) return;
     setQuery(event.target.value);
     setOpen(true);
     setHighlight(-1);
@@ -72,7 +81,7 @@ export function CityAutocomplete({
   }
 
   function handleSelect(city) {
-    if (!city) return;
+    if (!city || disabled) return;
     onSelect(canonicalCityFromSearchResult(city));
     setQuery('');
     setOpen(false);
@@ -81,7 +90,7 @@ export function CityAutocomplete({
   }
 
   function handleKeyDown(event) {
-    if (!open) return;
+    if (disabled || !open) return;
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       setHighlight((current) => Math.min(current + 1, results.length - 1));
@@ -98,19 +107,25 @@ export function CityAutocomplete({
   }
 
   const showHint =
-    open && query.trim().length > 0 && query.trim().length < config.citySearchMinChars;
+    !disabled && open && query.trim().length > 0 && query.trim().length < config.citySearchMinChars;
 
   return (
     <div
       className={
         'autocomplete' +
         (open ? ' is-open' : '') +
+        (disabled ? ' is-disabled' : '') +
         (flagOnlySelected ? ' autocomplete--flag-only-selected' : '') +
         (timelineSelected ? ' autocomplete--timeline-selected' : '')
       }
       ref={containerRef}
     >
-      <div className="autocomplete__field" onClick={() => inputRef.current?.focus()}>
+      <div
+        className="autocomplete__field"
+        onClick={() => {
+          if (!disabled) inputRef.current?.focus();
+        }}
+      >
         {value?.countryCode ? (
           <img
             className={'flag' + (open ? ' flag--dim' : '')}
@@ -131,10 +146,13 @@ export function CityAutocomplete({
           value={displayValue}
           placeholder={flagOnlySelected ? '' : placeholder || t('searchCity')}
           aria-label={placeholder || t('searchCity')}
-          aria-expanded={open}
+          aria-expanded={disabled ? false : open}
           aria-autocomplete="list"
+          disabled={disabled}
           onChange={handleChange}
-          onFocus={() => setOpen(true)}
+          onFocus={() => {
+            if (!disabled) setOpen(true);
+          }}
           onKeyDown={handleKeyDown}
           autoComplete="off"
           spellCheck="false"
@@ -150,7 +168,7 @@ export function CityAutocomplete({
         )}
       </div>
 
-      {open && (query.trim().length >= config.citySearchMinChars || loading) && (
+      {!disabled && open && (query.trim().length >= config.citySearchMinChars || loading) && (
         <ul className="autocomplete__list" role="listbox">
           {loading && <li className="autocomplete__status">{t('searching')}</li>}
           {error && (
