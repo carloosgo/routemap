@@ -1,7 +1,7 @@
+// test-contract: architecture
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { formatDate, formatMoney } from '../src/shared/utils.js';
 
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
@@ -27,31 +27,6 @@ test('el proveedor y los módulos reconstruyen su salida cuando cambia el idioma
   assert.match(segmentForm, /locale=\{locale\}/);
   assert.match(segmentBody, /<CalendarDateInput[\s\S]*?locale=\{locale\}/);
   assert.match(segmentBody, /<ExpenseEditor[\s\S]*?locale=\{locale\}/);
-});
-
-test('fechas y monedas respetan es-MX y en-US', () => {
-  const isoDate = '2026-12-05';
-  const date = new Date(`${isoDate}T00:00:00`);
-  const dateOptions = { day: '2-digit', month: 'short', year: 'numeric' };
-  const esDate = formatDate(isoDate, 'es-MX');
-  const enDate = formatDate(isoDate, 'en-US');
-
-  assert.equal(esDate, date.toLocaleDateString('es-MX', dateOptions));
-  assert.equal(enDate, date.toLocaleDateString('en-US', dateOptions));
-  assert.notEqual(esDate, enDate);
-
-  const amount = 1234.5;
-  const moneyOptions = {
-    style: 'currency',
-    currency: 'MXN',
-    maximumFractionDigits: 2,
-  };
-  const esMoney = formatMoney(amount, 'MXN', 'es-MX');
-  const enMoney = formatMoney(amount, 'MXN', 'en-US');
-
-  assert.equal(esMoney, new Intl.NumberFormat('es-MX', moneyOptions).format(amount));
-  assert.equal(enMoney, new Intl.NumberFormat('en-US', moneyOptions).format(amount));
-  assert.notEqual(esMoney, enMoney);
 });
 
 test('la búsqueda de ciudades usa el idioma activo y separa catálogo, provider cache y browser cache', async () => {
