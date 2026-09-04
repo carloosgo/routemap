@@ -14,6 +14,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   danger = true,
+  confirmOnly = false,
 }) {
   useEffect(() => {
     if (!open) return undefined;
@@ -38,9 +39,11 @@ export function ConfirmDialog({
         {title && <h3 className="confirm__title">{title}</h3>}
         <p className="confirm__message">{message}</p>
         <div className="confirm__actions">
-          <button type="button" className="btn" onClick={onCancel}>
-            {cancelLabel}
-          </button>
+          {!confirmOnly && (
+            <button type="button" className="btn" onClick={onCancel}>
+              {cancelLabel}
+            </button>
+          )}
           <button
             type="button"
             className={'btn ' + (danger ? 'btn--danger' : 'btn--primary')}
