@@ -12,9 +12,18 @@ test('toAmount acepta números válidos y neutraliza valores negativos o inváli
 });
 
 test('formatMoney aplica moneda y locale sin propagar importes inválidos', () => {
-  const formatted = formatMoney('1234.5', 'EUR', 'es-MX');
-  assert.match(formatted, /1[,.]234/);
-  assert.match(formatted, /€|EUR/);
+  const amount = 1234.5;
+  const options = {
+    style: 'currency',
+    currency: 'MXN',
+    maximumFractionDigits: 2,
+  };
+  const esMoney = formatMoney(amount, 'MXN', 'es-MX');
+  const enMoney = formatMoney(amount, 'MXN', 'en-US');
+
+  assert.equal(esMoney, new Intl.NumberFormat('es-MX', options).format(amount));
+  assert.equal(enMoney, new Intl.NumberFormat('en-US', options).format(amount));
+  assert.notEqual(esMoney, enMoney);
 
   const invalidAmount = formatMoney('invalido', 'USD', 'en-US');
   assert.match(invalidAmount, /0/);
@@ -24,13 +33,19 @@ test('formatMoney usa una salida segura cuando la moneda no es válida', () => {
   assert.equal(formatMoney(10, 'MONEDA_INVALIDA', 'es-MX'), '10.00 MONEDA_INVALIDA');
 });
 
-test('formatDate conserva fechas inválidas y formatea fechas ISO válidas', () => {
+test('formatDate conserva fechas inválidas y respeta es-MX y en-US', () => {
   assert.equal(formatDate('', 'es-MX'), '');
   assert.equal(formatDate('fecha-invalida', 'es-MX'), 'fecha-invalida');
 
-  const formatted = formatDate('2026-12-05', 'en-US');
-  assert.match(formatted, /Dec/);
-  assert.match(formatted, /2026/);
+  const isoDate = '2026-12-05';
+  const date = new Date(`${isoDate}T00:00:00`);
+  const options = { day: '2-digit', month: 'short', year: 'numeric' };
+  const esDate = formatDate(isoDate, 'es-MX');
+  const enDate = formatDate(isoDate, 'en-US');
+
+  assert.equal(esDate, date.toLocaleDateString('es-MX', options));
+  assert.equal(enDate, date.toLocaleDateString('en-US', options));
+  assert.notEqual(esDate, enDate);
 });
 
 test('sanitizeText elimina caracteres de control y respeta la longitud máxima', () => {
