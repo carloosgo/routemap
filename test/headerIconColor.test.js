@@ -7,12 +7,14 @@ const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
 test('header icons stay gray except the selected primary navigation icon, which uses the save-button blue', async () => {
+  const rootCss = await read('src/index.css');
   const tokens = await read('src/app/headerVisualTokens.js');
   const navigation = await read('src/app/TripHeaderNavigation.jsx');
   const navigationCss = await read('src/app/TripHeaderNavigation.css');
   const header = await read('src/app/TripSummaryHeader.jsx');
   const selector = await read('src/app/SummarySelectorMetric.jsx');
 
+  assert.match(rootCss, /--atlas-accent:\s*#19a5d0/);
   assert.match(tokens, /HEADER_ICON_COLOR\s*=\s*'#667085'/);
   assert.doesNotMatch(tokens, /HEADER_ACTIVE_NAV_ICON_COLOR/);
   assert.match(navigation, /trip-summary__primary-nav-icon[\s\S]*style=\{\{ color: HEADER_ICON_COLOR \}\}/s);
