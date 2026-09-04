@@ -4,6 +4,8 @@
 
 La suite debe proteger contratos de producto y arquitectura sin quedar acoplada a detalles accidentales de implementación. Un cambio funcional correcto no debe fallar solo porque una función cambió de archivo, una llamada se reescribió de forma equivalente o el JSX/CSS se reorganizó.
 
+La velocidad de feedback y la certificación final son dos cosas distintas: durante una modificación se priorizan las pruebas con mayor señal para encontrar una regresión pronto; antes de cerrar el cambio se mantienen los gates completos.
+
 ## Taxonomía
 
 ### A. Behavior — bloqueante
@@ -34,6 +36,29 @@ Antes de cerrar una feature o refactor se revisa el delta de contrato:
 
 No se adapta producción para satisfacer una representación interna obsoleta.
 
+## Feedback rápido por riesgo
+
+`npm run test:changed` clasifica el cambio y ejecuta la regresión adecuada para obtener feedback temprano:
+
+- cambios en módulos de negocio, persistencia, infraestructura, Functions, Rules, configuración, scripts o workflows: regresión completa;
+- código UI conocido con pruebas relacionadas: pruebas impactadas más un núcleo estable de comportamiento de viajes, continuidad de trayectos, mapa, autosave y resumen;
+- código UI sin ninguna prueba relacionada: regresión completa por seguridad;
+- CSS: pruebas impactadas más el mismo núcleo de negocio;
+- documentación y activos sin código ejecutable: no disparan regresión de negocio innecesaria;
+- cualquier archivo de código que no pueda clasificarse con seguridad: regresión completa.
+
+La política es fail-closed: ausencia de evidencia de cobertura para código ejecutable aumenta el nivel de verificación, nunca lo reduce. Una prueba de integración impactada también escala el cambio.
+
+Durante el desarrollo, el comando recomendado es:
+
+```text
+npm run verify:change
+```
+
+Este ejecuta contratos, la regresión seleccionada por riesgo, lint y build. Sirve para detectar rápido el fallo más probable; no reemplaza la certificación final.
+
+En Quality Checks se ejecuta el mismo selector como preflight antes de `npm test`. Si el cambio requiere suite completa, el preflight no la duplica: la deja al gate completo que corre inmediatamente después.
+
 ## Regla para nuevos tests
 
 - Preferir funciones/exportaciones públicas y resultados.
@@ -42,17 +67,19 @@ No se adapta producción para satisfacer una representación interna obsoleta.
 - No agregar nuevos contratos `legacy-static`.
 - Fixtures deben representar datos válidos y realistas.
 
-## Flujo local antes de push
+## Certificación local antes de push
 
 ```text
 npm run test:impact → npm run test:contracts → npm test → npm run lint → npm run build → push
 ```
 
-El atajo oficial es:
+El atajo oficial de certificación completa sigue siendo:
 
 ```text
 npm run verify:local
 ```
+
+`verify:change` acelera iteración; `verify:local` conserva la regresión completa. Ningún cambio se declara cerrado únicamente porque haya pasado la ruta rápida.
 
 Esto verifica compilación; no despliega ningún ambiente.
 
