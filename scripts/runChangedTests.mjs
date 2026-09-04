@@ -1,6 +1,6 @@
 /* global process, console */
 import { execFileSync } from 'node:child_process';
-import { relative, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { normalizePath, repoRoot, testInventory } from './testContracts.mjs';
 
