@@ -249,11 +249,13 @@ service cloud.firestore {
       return data.keys().hasOnly([
           'id', 'rank', 'provider', 'googlePlaceId', 'userLabel', 'name', 'address',
           'city', 'country', 'category', 'countryCode', 'lat', 'lon', 'savedAt',
+          'segmentId', 'dayOffset', 'note',
           'status', 'version', 'createdAt', 'updatedAt', 'deletedAt'
         ])
         && data.keys().hasAll([
           'id', 'rank', 'provider', 'googlePlaceId', 'userLabel', 'name', 'address',
           'city', 'country', 'category', 'countryCode', 'lat', 'lon', 'savedAt',
+          'segmentId', 'dayOffset', 'note',
           'status', 'version', 'createdAt', 'updatedAt', 'deletedAt'
         ])
         && data.id == placeId
@@ -281,6 +283,23 @@ service cloud.firestore {
         && data.countryCode.matches('^([A-Z]{2})?$')
         && data.savedAt is string
         && data.savedAt.size() <= 40
+        && data.segmentId is string
+        && data.segmentId.size() <= 128
+        && data.note is string
+        && data.note.size() <= 1000
+        && (
+          (
+            data.segmentId == ''
+            && data.dayOffset == null
+          )
+          ||
+          (
+            data.segmentId.size() > 0
+            && data.dayOffset is int
+            && data.dayOffset >= 0
+            && data.dayOffset <= 36600
+          )
+        )
         && validLifecycle(data)
         && (
           (
