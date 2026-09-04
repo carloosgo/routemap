@@ -84,6 +84,10 @@ export function useTrip(initialTrip) {
     (place) => dispatch({ type: TRIP_ACTIONS.addPlace, place }),
     []
   );
+  const updatePlace = useCallback(
+    (placeId, patch) => dispatch({ type: TRIP_ACTIONS.updatePlace, placeId, patch }),
+    []
+  );
   const removePlace = useCallback(
     (placeId) => dispatch({ type: TRIP_ACTIONS.removePlace, placeId }),
     []
@@ -94,6 +98,15 @@ export function useTrip(initialTrip) {
       sourceId,
       targetId,
       placement,
+    }),
+    []
+  );
+  const movePlaceToDay = useCallback(
+    (placeId, segmentId, dayOffset) => dispatch({
+      type: TRIP_ACTIONS.movePlaceToDay,
+      placeId,
+      segmentId,
+      dayOffset,
     }),
     []
   );
@@ -139,8 +152,10 @@ export function useTrip(initialTrip) {
     updateSegment,
     updateExpenses,
     addPlace,
+    updatePlace,
     removePlace,
     reorderPlace,
+    movePlaceToDay,
     upsertRouteConnection,
     removeRouteConnection,
     setRouteConnectionVisibility,
