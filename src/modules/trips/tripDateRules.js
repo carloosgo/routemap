@@ -1,3 +1,8 @@
+import {
+  maxAssignedDayOffset,
+  segmentPlanningDayCount,
+} from './tripDayPlanning.js';
+
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export const TRIP_DATE_ERRORS = Object.freeze({
@@ -8,6 +13,7 @@ export const TRIP_DATE_ERRORS = Object.freeze({
   endBeforeStart: 'tripSegmentEndBeforeStart',
   beforePrevious: 'tripDateBeforePreviousSegment',
   afterNext: 'tripDateAfterNextSegment',
+  assignedPlacesOutOfRange: 'tripAssignedPlacesOutOfRange',
 });
 
 function hasOwn(object, key) {
@@ -99,13 +105,13 @@ function validateChangedSlots(slots, changedIndexes) {
     const current = slots[index];
     const value = current?.value || '';
 
-    // Clearing a date is always valid; it removes a constraint instead of adding one.
+    // Clearing a date is normally valid because it removes a constraint. A later
+    // planning guard rejects it only when saved places already depend on that range.
     if (!value) continue;
     if (!isTripISODate(value)) {
       return { valid: false, errorKey: TRIP_DATE_ERRORS.invalidDate };
     }
 
-    // Origin is the authoritative lower boundary for every dated leg.
     if (current.type === 'segment' && originDate && value < originDate) {
       return { valid: false, errorKey: TRIP_DATE_ERRORS.beforeOrigin };
     }
@@ -152,7 +158,28 @@ export function validateSegmentDatePatch(trip, segmentId, patch) {
     changedIndexes.push(endIndex);
   }
 
-  return validateChangedSlots(slots, changedIndexes);
+  const chronology = validateChangedSlots(slots, changedIndexes);
+  if (!chronology.valid) return chronology;
+
+  const highestAssignedOffset = maxAssignedDayOffset(trip?.places, segmentId);
+  if (highestAssignedOffset >= 0) {
+    const currentSegment = (trip?.segments || []).find(
+      (segment) => segment.id === segmentId
+    );
+    const candidateSegment = {
+      ...currentSegment,
+      ...(changesStart ? { startDate: patch.startDate || '' } : {}),
+      ...(changesEnd ? { endDate: patch.endDate || '' } : {}),
+    };
+    if (segmentPlanningDayCount(candidateSegment) <= highestAssignedOffset) {
+      return {
+        valid: false,
+        errorKey: TRIP_DATE_ERRORS.assignedPlacesOutOfRange,
+      };
+    }
+  }
+
+  return chronology;
 }
 
 export function tripBoundaryDates(tripOrSegments) {
