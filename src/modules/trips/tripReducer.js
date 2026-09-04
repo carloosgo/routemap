@@ -16,6 +16,7 @@ import {
   assignedPlacesForSegment,
   planningGroupKey,
   placePlanningGroupKey,
+  samePlanningGroup,
   tripPlanningDays,
 } from './tripDayPlanning.js';
 import {
@@ -74,6 +75,21 @@ function routesWithoutPlace(routes, placeId) {
   return (routes || []).filter(
     (route) => route.fromPlaceId !== placeId && route.toPlaceId !== placeId
   );
+}
+
+function cityIdentity(city) {
+  if (!city) return '';
+  const id = String(city.id || '').trim();
+  if (id) return `id:${id}`;
+  const lat = Number(city.lat);
+  const lon = Number(city.lon);
+  if (Number.isFinite(lat) && Number.isFinite(lon)) {
+    return `geo:${lat.toFixed(6)},${lon.toFixed(6)}`;
+  }
+  return [
+    String(city.name || '').trim().toLowerCase(),
+    String(city.countryCode || '').trim().toUpperCase(),
+  ].join('|');
 }
 
 function movePlaceToTargetGroup(places, placeId, segmentId, dayOffset) {
@@ -217,6 +233,20 @@ export function tripReducer(state, action) {
     case TRIP_ACTIONS.updateSegment: {
       const patch = { ...(action.patch || {}) };
       delete patch.origin;
+
+      const currentSegment = state.segments.find(
+        (segment) => segment.id === action.segmentId
+      );
+      const assignedPlaces = assignedPlacesForSegment(state.places, action.segmentId);
+      if (
+        currentSegment
+        && assignedPlaces.length > 0
+        && Object.hasOwn(patch, 'destination')
+        && cityIdentity(patch.destination) !== cityIdentity(currentSegment.destination)
+      ) {
+        return state;
+      }
+
       if (Object.hasOwn(patch, 'startDate') || Object.hasOwn(patch, 'endDate')) {
         const validation = validateSegmentDatePatch(state, action.segmentId, patch);
         if (!validation.valid) return state;
@@ -262,14 +292,20 @@ export function tripReducer(state, action) {
       });
     }
 
-    case TRIP_ACTIONS.updatePlace:
+    case TRIP_ACTIONS.updatePlace: {
+      const patch = action.patch || {};
+      const safePatch = {};
+      if (Object.hasOwn(patch, 'note')) safePatch.note = patch.note;
+      if (Object.hasOwn(patch, 'userLabel')) safePatch.userLabel = patch.userLabel;
+      if (Object.keys(safePatch).length === 0) return state;
       return touch(state, {
         places: (state.places || []).map((place) =>
           place.id === action.placeId
-            ? createPlace({ ...place, ...(action.patch || {}), id: place.id })
+            ? createPlace({ ...place, ...safePatch, id: place.id })
             : place
         ),
       });
+    }
 
     case TRIP_ACTIONS.removePlace:
       return touch(state, {
@@ -318,13 +354,16 @@ export function tripReducer(state, action) {
 
     case TRIP_ACTIONS.upsertRouteConnection: {
       const route = createSavedPlaceRoute(action.connection);
-      const placeIds = new Set((state.places || []).map((place) => place.id));
+      const places = state.places || [];
+      const fromPlace = places.find((place) => place.id === route.fromPlaceId);
+      const toPlace = places.find((place) => place.id === route.toPlaceId);
       if (
         !route.fromPlaceId
         || !route.toPlaceId
         || route.fromPlaceId === route.toPlaceId
-        || !placeIds.has(route.fromPlaceId)
-        || !placeIds.has(route.toPlaceId)
+        || !fromPlace
+        || !toPlace
+        || !samePlanningGroup(fromPlace, toPlace)
       ) {
         return state;
       }
