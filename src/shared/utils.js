@@ -48,6 +48,21 @@ export function formatMoney(amount, currency = 'USD', locale = 'es-MX') {
   }
 }
 
+// Devuelve únicamente el símbolo compacto de la moneda configurada en el viaje.
+// currencyDisplay=narrowSymbol mantiene el input visualmente compacto (por ejemplo, EUR -> €).
+export function getCurrencySymbol(currency = 'USD', locale = 'es-MX') {
+  try {
+    const formatter = new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      currencyDisplay: 'narrowSymbol',
+    });
+    return formatter.formatToParts(0).find((part) => part.type === 'currency')?.value || currency;
+  } catch {
+    return currency || '$';
+  }
+}
+
 // Formatea una fecha ISO (YYYY-MM-DD) para mostrar.
 export function formatDate(iso, locale = 'es-MX') {
   if (!iso) return '';
