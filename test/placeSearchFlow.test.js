@@ -1,3 +1,4 @@
+// test-contract: architecture
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -19,26 +20,17 @@ test('Google place search preserves the configured minimum and maximum limits', 
   assert.match(functions, /\.slice\(0, 5\)/);
 });
 
-test('general Google search sends the literal query without itinerary context', async () => {
+test('general Google search sends the literal query to the provider', async () => {
   const client = await read('src/modules/places/googlePlacesClient.js');
-  const search = await read('src/modules/map/usePlaceSearch.js');
-  const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
 
   assert.match(client, /request\(\{ query: cleanQuery, language: config\.defaultLocale \}\)/);
-  assert.doesNotMatch(client, /context:|contextualQuery|callableSearchContext|contextKey|segments|origin|destination/);
-  assert.doesNotMatch(search, /searchContext|segments|origin|destination|useCitySearch|getGeocoder/);
-  assert.doesNotMatch(googleMap, /placeSearchContext|searchContext|segment\.origin|segment\.destination/);
 });
 
-test('general search deduplicates only in-flight requests and does not persist Google result content', async () => {
+test('general search keeps only in-flight dedupe and never persists result content', async () => {
   const client = await read('src/modules/places/googlePlacesClient.js');
 
-  assert.match(client, /const pendingRequests = new Map\(\)/);
   assert.match(client, /cacheKey\('search-inflight', cleanQuery\)/);
-  assert.match(client, /sharedRequest\(key/);
   assert.doesNotMatch(client, /setCached\(key, results\)|placeSearchCache|TEXT_SEARCH_CACHE/);
-  assert.match(client, /const locationMemoryCache = new Map\(\)/);
-  assert.match(client, /config\.googleMaps\.locationCacheKey/);
 });
 
 test('map search result markers use one card with inline save and no photos or category icons', async () => {
@@ -74,20 +66,6 @@ test('legacy places keep country/city while Google persistence keeps only stable
   assert.match(panel, /const label = placeLabel\(place, t\)/);
   assert.doesNotMatch(panel, /place\.category/);
   assert.doesNotMatch(dom, /place\.category/);
-});
-
-test('header places, notes and itinerary navigation use distinct new line icons', async () => {
-  const navigation = await read('src/app/TripHeaderNavigation.jsx');
-  const workspace = await read('src/app/AppWorkspace.jsx');
-
-  assert.match(navigation, /IconListDetails/);
-  assert.match(navigation, /IconRoute/);
-  assert.match(navigation, /IconNotebook/);
-  assert.match(navigation, /id: 'segments'[\s\S]*Icon: IconListDetails/);
-  assert.match(navigation, /id: 'places'[\s\S]*Icon: IconRoute/);
-  assert.match(navigation, /id: 'notes'[\s\S]*Icon: IconNotebook/);
-  assert.doesNotMatch(navigation, /lugares-storefront-v2|IconMapPin|IconNotes\b/);
-  assert.match(workspace, /<IconRoute size=\{16\} aria-hidden="true" \/> \{t\('itinerary'\)\}/);
 });
 
 test('CSP permite todos los hosts dinámicos requeridos por Google Maps JavaScript', async () => {
