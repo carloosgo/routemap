@@ -46,6 +46,19 @@ test('map search result markers use one card with inline save and no photos or c
   assert.doesNotMatch(googleMap, /representativePlaceIcon/);
 });
 
+test('place save popup dismisses only through an outside pointer and keeps one global listener', async () => {
+  const dismiss = await read('src/modules/map/placeSavePopupDismiss.js');
+  const main = await read('src/main.jsx');
+
+  assert.match(dismiss, /const DISMISS_STATE_KEY = '__atlasPlaceSavePopupDismissV1';/);
+  assert.match(dismiss, /if \(!window\[DISMISS_STATE_KEY\]\)/);
+  assert.match(dismiss, /document\.querySelector\('\.place-save-popup'\)/);
+  assert.match(dismiss, /if \(!popup \|\| popup\.contains\(event\.target\)\) return;/);
+  assert.match(dismiss, /popup\.querySelector\('\.maplibregl-popup-close-button'\)\?\.click\(\)/);
+  assert.match(dismiss, /document\.addEventListener\('pointerdown', handleOutsidePointerDown\)/);
+  assert.match(main, /import '\.\/modules\/map\/placeSavePopupDismiss\.js';/);
+});
+
 test('legacy places keep country/city while Google persistence keeps only stable reference and user label', async () => {
   const entities = await read('src/modules/trips/tripEntities.js');
   const panel = await read('src/modules/places/TripPlacesPanel.jsx');
