@@ -218,6 +218,7 @@ export function AppEditorPane({
                       locale={intlLocale}
                       currency={trip.currency}
                       originDetails={trip.originDetails}
+                      hasAssignedPlaces={(trip.places || []).some((place) => place.segmentId === segment.id)}
                       dragging={dragState?.segmentId === segment.id}
                       dragOffsetY={dragState?.segmentId === segment.id ? dragState.offsetY : 0}
                       dropPlacement={dragState?.targetId === segment.id ? dragState.placement : null}
