@@ -8,6 +8,7 @@ test('dependency audit usa un cliente npm actual y conserva el umbral de segurid
   const source = await readFile(workflowPath, 'utf8');
 
   assert.match(source, /node-version:\s*22/);
+  assert.match(source, /timeout-minutes:\s*30/);
   assert.match(source, /npm install --global npm@12\.0\.2/);
   assert.match(source, /test "\$\(npm --version\)" = "12\.0\.2"/);
   assert.match(source, /npm audit --omit=dev --audit-level=high/);
