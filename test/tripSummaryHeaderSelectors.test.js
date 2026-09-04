@@ -12,6 +12,7 @@ test('moneda e idioma comparten el selector visual Atlas y no dependen del selec
 
   assert.equal((header.match(/<SummarySelectorMetric/g) || []).length, 2);
   assert.doesNotMatch(header, /<select|<option/);
+  assert.match(header, /const CURRENCIES = \['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'\]/);
   assert.match(header, /menuClassName="trip-summary__selector-menu--currency"/);
   assert.match(header, /menuClassName="trip-summary__selector-menu--language"/);
   assert.match(header, /Intl\.DisplayNames/);

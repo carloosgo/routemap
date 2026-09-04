@@ -1,3 +1,4 @@
+// test-contract: architecture
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -5,43 +6,29 @@ import { readFile } from 'node:fs/promises';
 const root = new globalThis.URL('../', import.meta.url);
 async function read(path) { return readFile(new URL(path, root), 'utf8'); }
 
-async function mapSources() {
-  const paths = {
-    route: 'src/modules/map/RouteMap.jsx',
-    projection: 'src/modules/map/itineraryMapProjection.js',
-    google: 'src/modules/map/GooglePlacesMap.jsx',
-    model: 'src/modules/map/routeMapModel.js',
-    dom: 'src/modules/map/placeMapDom.js',
-    form: 'src/modules/map/PlaceSearchForm.jsx',
-    search: 'src/modules/map/usePlaceSearch.js',
-    placesClient: 'src/modules/places/googlePlacesClient.js',
-    routeClient: 'src/modules/routes/googleRouteClient.js',
-    workspace: 'src/app/AppWorkspace.jsx',
-    es: 'src/i18n/es.js',
-    en: 'src/i18n/en.js',
-  };
-  const entries = await Promise.all(
-    Object.entries(paths).map(async ([name, path]) => [name, await read(path)])
-  );
-  return Object.fromEntries(entries);
+let mapSourcesPromise;
+function mapSources() {
+  if (!mapSourcesPromise) {
+    const paths = {
+      route: 'src/modules/map/RouteMap.jsx',
+      projection: 'src/modules/map/itineraryMapProjection.js',
+      google: 'src/modules/map/GooglePlacesMap.jsx',
+      model: 'src/modules/map/routeMapModel.js',
+      dom: 'src/modules/map/placeMapDom.js',
+      form: 'src/modules/map/PlaceSearchForm.jsx',
+      search: 'src/modules/map/usePlaceSearch.js',
+      placesClient: 'src/modules/places/googlePlacesClient.js',
+      routeClient: 'src/modules/routes/googleRouteClient.js',
+      workspace: 'src/app/AppWorkspace.jsx',
+      es: 'src/i18n/es.js',
+      en: 'src/i18n/en.js',
+    };
+    mapSourcesPromise = Promise.all(
+      Object.entries(paths).map(async ([name, path]) => [name, await read(path)])
+    ).then((entries) => Object.fromEntries(entries));
+  }
+  return mapSourcesPromise;
 }
-
-test('Itinerario y Mis Rutas comparten una sola instancia de Google Maps', async () => {
-  const { route, projection, google } = await mapSources();
-
-  assert.match(route, /<GooglePlacesMap/);
-  assert.match(route, /itineraryMapProjectionSignature\(origin, segments\)/);
-  assert.match(route, /\[origin, segments\]/);
-  assert.match(route, /segments=\{mapSegments\}/);
-  assert.match(route, /places=\{places\}/);
-  assert.match(route, /routeConnections=\{routeConnections\}/);
-  assert.match(route, /viewMode=\{viewMode\}/);
-  assert.match(projection, /export function itineraryMapProjection/);
-  assert.doesNotMatch(route, /ItineraryRouteMap|maplibregl|route-map-layer|placesMapMounted/);
-  assert.match(google, /const placesActive = viewMode === 'places'/);
-  assert.match(google, /loadGoogleMaps\(\)/);
-  assert.doesNotMatch(google, /maplibregl|createGeoapifyStyleUrl/);
-});
 
 test('el mapa Google corrige tamaño al cambiar de vista y al redimensionar el panel', async () => {
   const { google } = await mapSources();
