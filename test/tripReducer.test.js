@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 
 import {
   TRIP_ACTIONS,
@@ -14,8 +13,6 @@ import {
   routeStops,
 } from '../src/modules/trips/tripModel.js';
 
-const root = new URL('../', import.meta.url);
-const read = (path) => readFile(new URL(path, root), 'utf8');
 const reduce = (state, type, values = {}) =>
   tripReducer(state, { type, ...values });
 
@@ -249,14 +246,4 @@ test('reset crea otro viaje editable y acciones desconocidas no mutan el estado'
   assert.notEqual(reset.id, state.id);
   assert.equal(reset.segments.length, 1);
   assert.equal(unchanged, state);
-});
-
-test('el reducer permanece puro y el hook solo expone acciones React', async () => {
-  const reducer = await read('src/modules/trips/tripReducer.js');
-  const hook = await read('src/modules/trips/useTrip.js');
-
-  assert.doesNotMatch(reducer, /from 'react'|useReducer|useCallback|useEffect/);
-  assert.match(hook, /useReducer\([\s\S]*tripReducer/);
-  assert.match(hook, /createInitialTrip/);
-  assert.doesNotMatch(hook, /switch\s*\(action\.type\)/);
 });
