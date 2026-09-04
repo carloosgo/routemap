@@ -8,6 +8,7 @@ export function ExpenseLineItemsGrid({
   typePlaceholder,
   addLabel,
   removeLabel,
+  currencySymbol = '$',
   onAdd,
   onUpdate,
   onRemove,
@@ -43,7 +44,7 @@ export function ExpenseLineItemsGrid({
                   onChange={(event) => onUpdate(item.id, 'label', event.target.value)}
                 />
                 <span className="moneycard__amount">
-                  <span className="moneycard__currency">$</span>
+                  <span className="moneycard__currency">{currencySymbol}</span>
                   <MoneyAmountInput
                     value={item.amount}
                     onChange={(amount) => onUpdate(item.id, 'amount', amount)}
