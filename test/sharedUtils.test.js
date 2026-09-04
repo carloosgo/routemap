@@ -1,7 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { formatDate, formatMoney, sanitizeText, toAmount, uid } from '../src/shared/utils.js';
+import {
+  formatDate,
+  formatMoney,
+  getCurrencySymbol,
+  sanitizeText,
+  toAmount,
+  uid,
+} from '../src/shared/utils.js';
 
 test('toAmount acepta números válidos y neutraliza valores negativos o inválidos', () => {
   assert.equal(toAmount(12.5), 12.5);
@@ -31,6 +38,13 @@ test('formatMoney aplica moneda y locale sin propagar importes inválidos', () =
 
 test('formatMoney usa una salida segura cuando la moneda no es válida', () => {
   assert.equal(formatMoney(10, 'MONEDA_INVALIDA', 'es-MX'), '10.00 MONEDA_INVALIDA');
+});
+
+test('getCurrencySymbol refleja la moneda configurada sin fijar el signo de pesos', () => {
+  assert.equal(getCurrencySymbol('EUR', 'es-MX'), '€');
+  assert.equal(getCurrencySymbol('EUR', 'en-US'), '€');
+  assert.equal(getCurrencySymbol('MXN', 'es-MX'), '$');
+  assert.equal(getCurrencySymbol('USD', 'es-MX'), '$');
 });
 
 test('formatDate conserva fechas inválidas y respeta es-MX y en-US', () => {
