@@ -3,14 +3,12 @@
   "legacyStatic": [
     "test/editorNavigationIcons.test.js",
     "test/geoapifyEstimateHardening.test.js",
-    "test/googleMapResponsiveLayout.test.js",
     "test/i18nBehavior.test.js",
     "test/itineraryTimelinePresentation.test.js",
     "test/legacy-static/atlasAccent.test.js",
     "test/placeSearchFlow.test.js",
     "test/routeMapHardening.test.js",
     "test/savedPlaceSymbol.test.js",
-    "test/tripDeletePending.test.js",
-    "test/tripReducer.test.js"
+    "test/tripDeletePending.test.js"
   ]
 }
