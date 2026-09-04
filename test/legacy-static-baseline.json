@@ -1,10 +1,4 @@
 {
   "version": 1,
-  "legacyStatic": [
-    "test/i18nBehavior.test.js",
-    "test/itineraryTimelinePresentation.test.js",
-    "test/legacy-static/atlasAccent.test.js",
-    "test/routeMapHardening.test.js",
-    "test/savedPlaceSymbol.test.js"
-  ]
+  "legacyStatic": []
 }
