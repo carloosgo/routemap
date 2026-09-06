@@ -31,6 +31,7 @@ export default {
   delete: 'Delete',
   deleteTrip: 'Delete trip',
   cancel: 'Cancel',
+  understood: 'Got it',
   confirmDelete: 'Delete this trip?',
   deletePermanentWarning: 'This action is permanent and cannot be undone.',
   deletingTrip: 'Deleting…',
