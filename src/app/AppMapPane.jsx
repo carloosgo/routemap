@@ -3,10 +3,10 @@ import { IconArrowRight, IconCheck, IconX } from '@tabler/icons-react';
 import { RouteMap } from '../modules/map/RouteMap.jsx';
 import { ItineraryDetailsModal } from '../modules/trips/ItineraryDetailsModal.jsx';
 import { buildItineraryStopSequence } from '../modules/trips/itineraryStopSequence.js';
+import { itineraryPlacePlanningTarget } from '../modules/trips/placePlanningAssignment.js';
 import { tripPlanningDays } from '../modules/trips/tripDayPlanning.js';
 import { ORIGIN_NOTE_TARGET } from '../modules/trips/tripNoteTargets.js';
 import { colorForIndex } from '../config.js';
-import './PlaceDayPicker.css';
 
 const PERSISTENCE_LABEL_KEYS = Object.freeze({
   saved: 'persistenceSaved',
@@ -19,16 +19,6 @@ const PERSISTENCE_LABEL_KEYS = Object.freeze({
 
 function persistenceLabelKey(state) {
   return PERSISTENCE_LABEL_KEYS[state] || PERSISTENCE_LABEL_KEYS.pending;
-}
-
-function formatPlanningDate(value, intlLocale) {
-  const date = new Date(`${value}T00:00:00Z`);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(intlLocale || 'es-MX', {
-    day: 'numeric',
-    month: 'short',
-    timeZone: 'UTC',
-  }).format(date);
 }
 
 export function AppMapPane({
@@ -46,7 +36,6 @@ export function AppMapPane({
   t,
 }) {
   const { noteTarget, detailsTarget, close } = itineraryPanels;
-  const [pendingPlace, setPendingPlace] = useState(null);
   const [planningMessage, setPlanningMessage] = useState('');
   const persistenceLabel = t(persistenceLabelKey(persistenceState));
   const persistenceHasCheck = persistenceState === 'saved' || persistenceState === 'local';
@@ -58,26 +47,33 @@ export function AppMapPane({
     globalThis.setTimeout(() => setPlanningMessage(''), duration);
   };
 
-  const savePlaceToDay = (place, day) => {
-    if (!place || !day) return false;
-    addPlace({
-      ...place,
-      segmentId: day.segmentId,
-      dayOffset: day.dayOffset,
-    });
-    return true;
-  };
-
   const requestPlaceSave = (place) => {
     if (!planningDays.length) {
       showPlanningMessage(t('placeNeedsPlannedDay'), 3400);
       return false;
     }
-    if (planningDays.length === 1) {
-      return savePlaceToDay(place, planningDays[0]);
+
+    const target = itineraryPlacePlanningTarget(place, trip.segments);
+    if (target?.day) {
+      addPlace({
+        ...place,
+        segmentId: target.day.segmentId,
+        dayOffset: target.day.dayOffset,
+      });
+      return {
+        message: t('placeSavedToDay', {
+          city: target.day.destination?.name || t('city'),
+          day: target.day.globalDayNumber,
+        }),
+      };
     }
-    setPendingPlace(place);
-    return false;
+
+    addPlace({
+      ...place,
+      segmentId: '',
+      dayOffset: null,
+    });
+    return { message: t('placeSavedUnassigned') };
   };
 
   const noteFooter = (length) => (
@@ -211,45 +207,6 @@ export function AppMapPane({
       )}
       {notePanel}
       {detailsPanel}
-
-      {pendingPlace && (
-        <div className="confirm__scrim place-day-picker__scrim" role="presentation" onMouseDown={() => setPendingPlace(null)}>
-          <div
-            className="confirm__card place-day-picker"
-            role="dialog"
-            aria-modal="true"
-            aria-label={t('choosePlaceDay')}
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <strong>{t('choosePlaceDay')}</strong>
-            <p>{t('choosePlaceDayHint')}</p>
-            <div className="place-day-picker__options">
-              {planningDays.map((day) => {
-                const destination = day.destination;
-                return (
-                  <button
-                    type="button"
-                    key={day.key}
-                    onClick={() => {
-                      savePlaceToDay(pendingPlace, day);
-                      setPendingPlace(null);
-                      showPlanningMessage(t('placeSaved'));
-                    }}
-                  >
-                    <strong>{[destination?.name, destination?.country].filter(Boolean).join(', ')}</strong>
-                    <span>{t('day')} {day.globalDayNumber} · {formatPlanningDate(day.date, intlLocale)}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="confirm__actions">
-              <button type="button" className="btn btn--ghost btn--sm" onClick={() => setPendingPlace(null)}>
-                {t('cancel')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {(planningMessage || toast) && (
         <div className="toast" role="status" aria-live="polite">{planningMessage || toast}</div>
