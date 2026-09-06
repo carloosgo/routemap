@@ -61,10 +61,8 @@ export function AppMapPane({
         dayOffset: target.day.dayOffset,
       });
       return {
-        message: t('placeSavedToDay', {
-          city: target.day.destination?.name || t('city'),
-          day: target.day.globalDayNumber,
-        }),
+        accepted: true,
+        message: `${t('placeSaved')} · ${target.day.destination?.name || t('city')} · ${t('day')} ${target.day.globalDayNumber}`,
       };
     }
 
@@ -73,7 +71,10 @@ export function AppMapPane({
       segmentId: '',
       dayOffset: null,
     });
-    return { message: t('placeSavedUnassigned') };
+    return {
+      accepted: true,
+      message: `${t('placeSaved')} · ${t('unassignedPlaces')}`,
+    };
   };
 
   const noteFooter = (length) => (
