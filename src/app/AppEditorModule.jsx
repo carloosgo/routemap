@@ -13,6 +13,7 @@ export function AppEditorModule({
   editorMenuRef,
   setTripToDelete,
   handleOpenSavedTrip,
+  persistenceState = 'saved',
   t,
   intlLocale,
 }) {
@@ -63,6 +64,7 @@ export function AppEditorModule({
       removeRoute={removeRouteConnection}
       setRouteVisibility={setRouteConnectionVisibility}
       setAllRouteVisibility={setAllRouteConnectionsVisibility}
+      persistenceState={persistenceState}
       t={t}
       intlLocale={intlLocale}
     />
