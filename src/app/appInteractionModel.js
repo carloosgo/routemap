@@ -17,3 +17,7 @@ export function createCollapsedSegments(segments) {
 export function isOutsideTarget(container, target) {
   return Boolean(container && target && !container.contains(target));
 }
+
+export function toggleTarget(currentTarget, nextTarget) {
+  return currentTarget === nextTarget ? null : nextTarget;
+}

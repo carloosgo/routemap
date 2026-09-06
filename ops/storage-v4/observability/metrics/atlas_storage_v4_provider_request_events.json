@@ -1,0 +1,21 @@
+{
+  "name": "atlas_storage_v4_provider_request_events",
+  "description": "Atlas outbound provider-request outcomes. Only bounded provider, operation and outcome labels are extracted; URLs, query strings, keys, bodies and responses are excluded.",
+  "filter": "jsonPayload.message=\"storage_v4_provider_request_metric\"",
+  "disabled": false,
+  "metricDescriptor": {
+    "metricKind": "DELTA",
+    "valueType": "INT64",
+    "unit": "1",
+    "labels": [
+      { "key": "provider", "valueType": "STRING", "description": "Provider family." },
+      { "key": "operation", "valueType": "STRING", "description": "Bounded provider operation." },
+      { "key": "outcome", "valueType": "STRING", "description": "Provider request outcome." }
+    ]
+  },
+  "labelExtractors": {
+    "provider": "EXTRACT(jsonPayload.provider)",
+    "operation": "EXTRACT(jsonPayload.operation)",
+    "outcome": "EXTRACT(jsonPayload.outcome)"
+  }
+}

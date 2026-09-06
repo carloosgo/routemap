@@ -1,0 +1,118 @@
+/* La ciudad origen comparte la misma columna visible que las ciudades de los
+   trayectos. Solo añade un control de expansión; los datos siguen en el viaje. */
+.segments:not(.segments--compact) .itinerary-origin-section {
+  position: relative;
+  z-index: 4;
+  margin: 0 0 8px;
+}
+
+.segments:not(.segments--compact) .itinerary-origin {
+  min-height: 52px;
+  margin: 0;
+  padding-left: 23px;
+  grid-template-columns: 30px minmax(90px, 106px) 22px;
+  column-gap: 6px;
+  row-gap: 0;
+}
+
+.segments:not(.segments--compact) .itinerary-origin__place {
+  width: 100%;
+  max-width: 106px;
+}
+
+.segments:not(.segments--compact) .itinerary-origin__picker .autocomplete__field {
+  position: relative;
+  min-height: 32px;
+}
+
+.segments:not(.segments--compact) .itinerary-origin__picker .input {
+  height: 32px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.segments:not(.segments--compact) .itinerary-origin__picker .autocomplete--timeline-selected .input {
+  color: transparent;
+  caret-color: transparent;
+}
+
+.segments:not(.segments--compact) .itinerary-origin__picker .autocomplete__selected-value {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 4px;
+  right: 4px;
+  max-height: 30px;
+  overflow: hidden;
+  transform: translateY(-50%);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: #303642;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: normal;
+  overflow-wrap: break-word;
+  pointer-events: none;
+}
+
+.itinerary-origin__toggle {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #a1a7b0;
+}
+
+.itinerary-origin__toggle:hover,
+.itinerary-origin__toggle:focus-visible {
+  background: #f4f5f7;
+  color: #586170;
+  outline: none;
+}
+
+.itinerary-origin__toggle svg {
+  transition: transform 140ms ease;
+}
+
+.itinerary-origin__toggle.is-expanded svg {
+  transform: rotate(180deg);
+}
+
+.segments:not(.segments--compact) .itinerary-origin__body {
+  position: relative;
+  z-index: 2;
+  margin: 3px 0 5px 52px;
+  padding: 8px 0 3px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* El origen solo tiene fecha de salida. Conserva el ancho de una columna de
+   fecha, mientras el editor de gastos mantiene las dos columnas habituales. */
+.itinerary-origin__body .dates--origin .dates__row {
+  width: calc((100% - var(--expense-column-gap)) / 2);
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 0;
+}
+
+@media (max-width: 720px) {
+  .segments:not(.segments--compact) .itinerary-origin {
+    grid-template-columns: 30px minmax(0, 1fr) 22px;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__place {
+    max-width: none;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__body {
+    margin-left: 49px;
+  }
+}

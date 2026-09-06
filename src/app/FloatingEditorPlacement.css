@@ -1,0 +1,362 @@
+/* Ajustes puntuales de ubicación solicitados para la cabecera flotante. */
+.editor-module__settings {
+  display: contents;
+  margin-left: 0;
+}
+
+.editor-module__settings > .editor-module__menu-anchor:first-child {
+  margin-left: 0;
+}
+
+.editor-module__settings > .editor-module__menu-anchor:last-child {
+  position: fixed;
+  top: 118px;
+  right: 14px;
+  z-index: 900;
+}
+
+.editor-module__settings .editor-module__more-button {
+  width: 38px;
+  height: 38px;
+  border: none;
+  background: var(--marina, #0e4f63);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+}
+
+.editor-module__settings .editor-module__more-button:hover,
+.editor-module__settings .editor-module__more-button.is-active {
+  background: var(--marina-hover, #0b3f4f);
+}
+
+.topbar--floating-only {
+  height: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  flex: 0 0 0;
+  background: transparent;
+  overflow: visible;
+  border: 0;
+  z-index: auto;
+}
+
+@media (min-width: 721px) {
+  .workspace__desktop--floating .mapboxgl-ctrl-top-left {
+    left: auto;
+    right: 14px;
+    top: auto;
+    bottom: 52px;
+  }
+
+  /* Alinea información y zoom con la guía derecha de Guardar y del menú. */
+  .workspace__desktop--floating .maplibregl-ctrl-bottom-right,
+  .workspace__desktop--floating .mapboxgl-ctrl-bottom-right {
+    right: 14px;
+  }
+
+  .workspace__desktop--floating .maplibregl-ctrl-bottom-right > .maplibregl-ctrl,
+  .workspace__desktop--floating .mapboxgl-ctrl-bottom-right > .mapboxgl-ctrl {
+    margin-right: 0;
+  }
+
+  .topbar__brand {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    z-index: 901;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    gap: 5px;
+  }
+
+  .topbar__brand-icon {
+    width: 21px;
+    height: 21px;
+    border-radius: 5px;
+  }
+
+  .topbar__brand-icon svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .topbar__brand-name {
+    font-size: 12px;
+  }
+
+  .topbar__save {
+    position: fixed;
+    top: 72px;
+    right: 14px;
+    z-index: 901;
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    padding: 0;
+    margin: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+    font-size: 0;
+    line-height: 0;
+  }
+
+  .topbar__save:disabled {
+    opacity: 1;
+    cursor: pointer;
+  }
+
+  .topbar__save svg {
+    display: block;
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    flex: 0 0 22px;
+  }
+
+  .trip-save-popover {
+    position: fixed;
+    top: 72px;
+    right: 62px;
+    z-index: 930;
+    width: 260px;
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid var(--line, #e5e7eb);
+    border-radius: 8px;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.2);
+  }
+
+  .trip-save-popover__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 11px;
+    border-bottom: 1px solid var(--line, #e5e7eb);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text, #1f2937);
+  }
+
+  .trip-save-popover__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    border: 0;
+    background: transparent;
+    color: var(--text-mute, #9499ab);
+    cursor: pointer;
+  }
+
+  .trip-save-popover__body {
+    display: flex;
+    gap: 7px;
+    padding: 10px;
+  }
+
+  .trip-save-popover__input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--line-strong, #d1d5db);
+    border-radius: 6px;
+    padding: 7px 9px;
+    font: inherit;
+    font-size: 12px;
+    outline: none;
+  }
+
+  .trip-save-popover__input:focus {
+    border-color: #357d94;
+  }
+
+  .trip-save-popover__submit {
+    border: 0;
+    border-radius: 6px;
+    padding: 7px 10px;
+    background: var(--marina, #0e4f63);
+    color: #ffffff;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* Módulo flotante completo al 40% con superficie blanca continua. */
+  .floating-editor {
+    width: 40vw;
+    min-width: 470px;
+    max-width: calc(100vw - 112px);
+    overflow: hidden;
+    background-color: #ffffff !important;
+    border: 1px solid rgba(226, 228, 233, 0.94);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+  }
+
+  .floating-editor .editor-module,
+  .floating-editor .editor,
+  .floating-editor .editor__body,
+  .floating-editor .segments {
+    background-color: #ffffff !important;
+  }
+
+  .floating-editor .editor-module {
+    height: 100%;
+    min-height: 0;
+    border-radius: inherit;
+    overflow: hidden;
+  }
+
+  .floating-editor .editor {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .floating-editor .editor-module__tabs {
+    margin-bottom: 0;
+    border: 0;
+    border-bottom: 1px solid var(--line, #e2e4e9);
+    border-radius: 0;
+    background-color: #ffffff !important;
+    box-shadow: none;
+  }
+
+  .floating-editor .editor__body {
+    flex: 1;
+    width: 100%;
+    min-height: 100%;
+    padding: 10px 8px 12px;
+  }
+
+  .floating-editor .segments {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    width: 100%;
+  }
+
+  .floating-editor .segment + .segment {
+    margin-top: 0;
+  }
+
+  .floating-editor .segment {
+    background: #ffffff;
+    border: 1px solid rgba(226, 228, 233, 0.94);
+    border-radius: 9px;
+    box-shadow: 0 2px 7px rgba(15, 23, 42, 0.09);
+    overflow: visible;
+  }
+
+  .floating-editor .segment__header,
+  .floating-editor .segment__route {
+    min-width: 0;
+  }
+
+  .floating-editor .segment__route {
+    flex: 1 1 auto;
+  }
+
+  .floating-editor .segment__route .autocomplete {
+    min-width: 0;
+    flex: 1 1 130px;
+  }
+
+  .floating-editor .segment__route .autocomplete__field .input {
+    width: 100%;
+    min-width: 0;
+    text-overflow: ellipsis;
+  }
+
+  .floating-editor .segment__dates,
+  .floating-editor .segment__pill {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .floating-editor .segment__pill {
+    min-width: 58px;
+    text-align: center;
+  }
+
+  .floating-editor .btn--add,
+  .floating-editor .total {
+    margin-top: 9px;
+    background: #ffffff;
+    border-radius: 9px;
+    box-shadow: none;
+  }
+
+  .editor-collapse-toggle,
+  .segments--compact {
+    display: none !important;
+  }
+
+  .workspace__desktop--floating .segnote,
+  .trip-name-pill,
+  .workspace__desktop--floating .mapboxgl-ctrl-bottom-left {
+    left: calc(max(470px, 40vw) + 28px);
+  }
+
+  .trip-name-pill {
+    position: fixed;
+    bottom: 34px;
+    z-index: 702;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: #b9d8e0;
+    color: #325b68;
+    font-size: 11px;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+  }
+
+  .workspace__desktop--floating .mapboxgl-ctrl-attrib {
+    padding: 1px 4px;
+    font-size: 9px;
+    line-height: 1.2;
+  }
+
+  .workspace__desktop--floating .mapboxgl-ctrl-attrib a {
+    font-size: inherit;
+  }
+}
+
+.editor-module__more-menu {
+  border-radius: 4px;
+}
+
+.editor-module__menu-separator {
+  margin-left: 48px;
+  margin-right: 10px;
+}
+
+.editor-module__menu-item svg,
+.editor-module__menu-heading svg {
+  color: #357d94;
+}
+
+@media (max-width: 720px) {
+  .topbar--floating-only {
+    display: none;
+  }
+
+  .editor-collapse-toggle {
+    display: none;
+  }
+
+  .editor-module__settings > .editor-module__menu-anchor:last-child {
+    top: 12px;
+    right: 12px;
+  }
+}

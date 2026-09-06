@@ -9,11 +9,17 @@ import {
 import { config } from '../config.js';
 import es from './es.js';
 import en from './en.js';
+import { storageV4Messages } from './storageV4.js';
 
-// Módulo de internacionalización (independiente).
-// Para agregar un idioma: crea xx.js y regístralo aquí. Nada más cambia.
-const dictionaries = { es, en };
+const dictionaries = {
+  es: { ...es, ...storageV4Messages.es },
+  en: { ...en, ...storageV4Messages.en },
+};
 const LOCALE_STORAGE_KEY = 'atlas:locale';
+const localeMetadata = Object.freeze({
+  es: { intlLocale: 'es-MX', label: 'ES' },
+  en: { intlLocale: 'en-US', label: 'EN' },
+});
 
 const I18nContext = createContext(null);
 
@@ -32,6 +38,24 @@ function getInitialLocale() {
   return isSupportedLocale(config.defaultLocale) ? config.defaultLocale : 'es';
 }
 
+function interpolate(template, variables) {
+  if (!variables || typeof variables !== 'object') return template;
+  return template.replace(/\{([a-zA-Z0-9_]+)\}/g, (match, key) =>
+    Object.hasOwn(variables, key) ? String(variables[key]) : match
+  );
+}
+
+function translatedValue(locale, key, variables) {
+  const dictionary = dictionaries[locale] || dictionaries.es;
+  const template = dictionary[key] ?? dictionaries.es[key] ?? key;
+  return interpolate(template, variables);
+}
+
+function updateMetaContent(selector, value) {
+  const element = globalThis.document?.querySelector(selector);
+  if (element) element.setAttribute('content', value);
+}
+
 export function I18nProvider({ children }) {
   const [locale, setLocaleState] = useState(getInitialLocale);
 
@@ -48,23 +72,29 @@ export function I18nProvider({ children }) {
 
     if (globalThis.document?.documentElement) {
       globalThis.document.documentElement.lang = locale;
+      globalThis.document.title = translatedValue(locale, 'documentTitle');
+      const description = translatedValue(locale, 'documentDescription');
+      updateMetaContent('meta[name="description"]', description);
+      updateMetaContent('meta[property="og:title"]', translatedValue(locale, 'documentTitle'));
+      updateMetaContent('meta[property="og:description"]', description);
+      updateMetaContent('meta[name="twitter:title"]', translatedValue(locale, 'documentTitle'));
+      updateMetaContent('meta[name="twitter:description"]', description);
     }
   }, [locale]);
 
   const t = useCallback(
-    (key) => {
-      const dict = dictionaries[locale] || dictionaries.es;
-      return dict[key] ?? key;
-    },
+    (key, variables) => translatedValue(locale, key, variables),
     [locale]
   );
 
   const value = useMemo(
     () => ({
       locale,
+      intlLocale: localeMetadata[locale]?.intlLocale || localeMetadata.es.intlLocale,
       setLocale,
       t,
       availableLocales: Object.keys(dictionaries),
+      localeMetadata,
     }),
     [locale, setLocale, t]
   );

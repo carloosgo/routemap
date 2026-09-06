@@ -1,0 +1,21 @@
+{
+  "name": "atlas_storage_v4_sync_events",
+  "description": "Atlas Storage v4 sync lifecycle events. Contains only bounded aggregate telemetry; no entity identifiers or mutation payloads.",
+  "filter": "jsonPayload.message=\"storage_v4_sync_metric\"",
+  "disabled": false,
+  "metricDescriptor": {
+    "metricKind": "DELTA",
+    "valueType": "INT64",
+    "unit": "1",
+    "labels": [
+      { "key": "event", "valueType": "STRING", "description": "Sync lifecycle event." },
+      { "key": "outcome", "valueType": "STRING", "description": "Flush outcome when present." },
+      { "key": "reason", "valueType": "STRING", "description": "Flush reason when present." }
+    ]
+  },
+  "labelExtractors": {
+    "event": "EXTRACT(jsonPayload.event)",
+    "outcome": "EXTRACT(jsonPayload.outcome)",
+    "reason": "EXTRACT(jsonPayload.reason)"
+  }
+}

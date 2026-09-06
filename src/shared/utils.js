@@ -1,12 +1,31 @@
 // Utilidades compartidas, sin dependencias de UI ni de framework.
 // Reutilizables tal cual en una futura app React Native.
 
-// ID único y estable. Usa crypto.randomUUID cuando está disponible.
-export function uid() {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
+function secureUuidFallback(cryptoApi) {
+  if (typeof cryptoApi?.getRandomValues !== 'function') {
+    throw new Error('No hay un generador criptográfico seguro disponible para crear IDs.');
   }
-  return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+  const bytes = new Uint8Array(16);
+  cryptoApi.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (value) => value.toString(16).padStart(2, '0'));
+  return [
+    hex.slice(0, 4).join(''),
+    hex.slice(4, 6).join(''),
+    hex.slice(6, 8).join(''),
+    hex.slice(8, 10).join(''),
+    hex.slice(10, 16).join(''),
+  ].join('-');
+}
+
+// ID único y estable. Nunca cae a Math.random: Storage v4 usa estos IDs como identidad persistida.
+export function uid() {
+  const cryptoApi = globalThis.crypto;
+  if (typeof cryptoApi?.randomUUID === 'function') {
+    return cryptoApi.randomUUID();
+  }
+  return secureUuidFallback(cryptoApi);
 }
 
 // Convierte un valor de input a número seguro (>= 0). Evita NaN en los totales.
@@ -26,6 +45,21 @@ export function formatMoney(amount, currency = 'USD', locale = 'es-MX') {
     }).format(toAmount(amount));
   } catch {
     return toAmount(amount).toFixed(2) + ' ' + currency;
+  }
+}
+
+// Devuelve únicamente el símbolo compacto de la moneda configurada en el viaje.
+// currencyDisplay=narrowSymbol mantiene el input visualmente compacto (por ejemplo, EUR -> €).
+export function getCurrencySymbol(currency = 'USD', locale = 'es-MX') {
+  try {
+    const formatter = new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      currencyDisplay: 'narrowSymbol',
+    });
+    return formatter.formatToParts(0).find((part) => part.type === 'currency')?.value || currency;
+  } catch {
+    return currency || '$';
   }
 }
 

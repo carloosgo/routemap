@@ -1,0 +1,8 @@
+/* Posicionamiento del editor de notas sobre el mapa.
+   Mantiene una franja ligera respecto al borde del módulo de trayectos sin
+   acoplar la tarjeta a medidas internas del panel izquierdo. */
+@media (min-width: 721px) {
+  .segnote {
+    left: 14px;
+  }
+}
