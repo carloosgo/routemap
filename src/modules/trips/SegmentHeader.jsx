@@ -37,6 +37,7 @@ export function SegmentHeader({
   sequenceColor,
   countryRunPosition,
   dragging,
+  destinationLocked = false,
   onDestinationSelect,
   onOpenNote,
   onOpenDetails,
@@ -101,7 +102,10 @@ export function SegmentHeader({
         ) : null}
       </span>
 
-      <div className="itinerary-stop__place">
+      <div
+        className="itinerary-stop__place"
+        title={destinationLocked ? t('segmentHasPlannedPlaces') : undefined}
+      >
         <div className="itinerary-stop__picker">
           <CityAutocomplete
             value={destination}
@@ -109,6 +113,7 @@ export function SegmentHeader({
             placeholder={t('destination')}
             selectedDisplay="timeline"
             focusNextOnSelect
+            disabled={destinationLocked}
           />
         </div>
       </div>
@@ -148,6 +153,7 @@ export function SegmentHeader({
           type="button"
           className="btn btn--icon itinerary-stop__remove-btn"
           aria-label={t('removeSegment')}
+          title={destinationLocked ? t('segmentHasPlannedPlaces') : t('removeSegment')}
           onClick={onRemoveRequest}
         >
           <IconX size={14} aria-hidden="true" />

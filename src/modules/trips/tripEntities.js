@@ -16,6 +16,7 @@ export const TRIP_LIMITS = Object.freeze({
   tripName: 120,
   segmentNote: 500,
   originNote: 500,
+  placeNote: 1000,
   noteTitle: 60,
   noteText: 2000,
   checklistText: 120,
@@ -48,6 +49,10 @@ function normalizeId(value) {
     : uid();
 }
 
+function normalizeOptionalId(value) {
+  return typeof value === 'string' ? value.trim().slice(0, 128) : '';
+}
+
 function normalizeExternalId(value) {
   return typeof value === 'string' ? value.trim().slice(0, 256) : '';
 }
@@ -72,6 +77,14 @@ function normalizeDate(value) {
     parsed.toISOString().slice(0, 10) !== date
     ? ''
     : date;
+}
+
+function normalizeDayOffset(value) {
+  if (value === '' || value == null) return null;
+  const offset = Number(value);
+  return Number.isInteger(offset) && offset >= 0 && offset <= 36600
+    ? offset
+    : null;
 }
 
 function normalizeNoteTitle(value) {
@@ -140,6 +153,9 @@ export function createPlace(partial = {}) {
     lon: parseCoordinate(partial.lon, -180, 180),
     savedAt:
       typeof partial.savedAt === 'string' ? partial.savedAt : nowISO(),
+    segmentId: normalizeOptionalId(partial.segmentId),
+    dayOffset: normalizeDayOffset(partial.dayOffset),
+    note: sanitizeText(partial.note || '', TRIP_LIMITS.placeNote),
   };
 }
 

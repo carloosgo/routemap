@@ -7,6 +7,13 @@ function normalizedCountryName(value) {
     .replace(/\s+/g, ' ');
 }
 
+function planningGroupKey(place) {
+  const segmentId = typeof place?.segmentId === 'string' ? place.segmentId.trim() : '';
+  const dayOffset = Number(place?.dayOffset);
+  if (!segmentId || !Number.isInteger(dayOffset) || dayOffset < 0) return 'unassigned';
+  return `${segmentId}\u0000${dayOffset}`;
+}
+
 export function placeCountryKey(place) {
   const countryCode = String(place?.countryCode || '').trim().toUpperCase();
   if (/^[A-Z]{2}$/.test(countryCode)) return `code:${countryCode}`;
@@ -72,9 +79,11 @@ export function reorderPlaceList(
   if (!sourceId || !targetId || sourceId === targetId) return currentPlaces;
 
   const sourceIndex = currentPlaces.findIndex((place) => place.id === sourceId);
-  if (sourceIndex < 0 || !currentPlaces.some((place) => place.id === targetId)) {
-    return currentPlaces;
-  }
+  const target = currentPlaces.find((place) => place.id === targetId);
+  if (sourceIndex < 0 || !target) return currentPlaces;
+
+  const source = currentPlaces[sourceIndex];
+  if (planningGroupKey(source) !== planningGroupKey(target)) return currentPlaces;
 
   const reordered = [...currentPlaces];
   const [moved] = reordered.splice(sourceIndex, 1);

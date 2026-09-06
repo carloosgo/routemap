@@ -767,7 +767,8 @@ export function GooglePlacesMap({
         onSave: (selected) => {
           const savedPlace = placeForSaving(selected);
           if (!isPlaced(savedPlace)) return;
-          addPlace?.(savedPlace);
+          const accepted = addPlace?.(savedPlace);
+          if (accepted === false) return;
           clearTimeout(saveNoticeTimerRef.current);
           setSaveNotice(t('placeSaved'));
           saveNoticeTimerRef.current = setTimeout(() => setSaveNotice(''), 2200);

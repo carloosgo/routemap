@@ -12,15 +12,80 @@ import {
   TRIP_ACTIONS,
   tripReducer,
 } from '../src/modules/trips/tripReducer.js';
-import { createPlace, createTrip } from '../src/modules/trips/tripModel.js';
+import {
+  createPlace,
+  createSegment,
+  createTrip,
+} from '../src/modules/trips/tripModel.js';
+
+const rome = {
+  id: 'rome-city',
+  name: 'Roma',
+  displayName: 'Roma, Italia',
+  country: 'Italia',
+  countryCode: 'IT',
+  lat: 41.9028,
+  lon: 12.4964,
+};
+
+const tokyo = {
+  id: 'tokyo-city',
+  name: 'Tokio',
+  displayName: 'Tokio, Japón',
+  country: 'Japón',
+  countryCode: 'JP',
+  lat: 35.6762,
+  lon: 139.6503,
+};
 
 function placesTrip() {
   return {
     ...createTrip('Rutas'),
+    segments: [
+      createSegment({
+        id: 'rome-segment',
+        destination: rome,
+        startDate: '2026-08-06',
+        endDate: '2026-08-06',
+      }),
+      createSegment({
+        id: 'tokyo-segment',
+        destination: tokyo,
+        startDate: '2026-08-07',
+        endDate: '2026-08-07',
+      }),
+    ],
     places: [
-      createPlace({ id: 'rome', name: 'Coliseo', country: 'Italia', countryCode: 'IT', lat: 41.8902, lon: 12.4922 }),
-      createPlace({ id: 'trevi', name: 'Fontana di Trevi', country: 'Italia', countryCode: 'IT', lat: 41.9009, lon: 12.4833 }),
-      createPlace({ id: 'tokyo', name: 'Tokyo Station', country: 'Japón', countryCode: 'JP', lat: 35.6812, lon: 139.7671 }),
+      createPlace({
+        id: 'rome',
+        name: 'Coliseo',
+        country: 'Italia',
+        countryCode: 'IT',
+        lat: 41.8902,
+        lon: 12.4922,
+        segmentId: 'rome-segment',
+        dayOffset: 0,
+      }),
+      createPlace({
+        id: 'trevi',
+        name: 'Fontana di Trevi',
+        country: 'Italia',
+        countryCode: 'IT',
+        lat: 41.9009,
+        lon: 12.4833,
+        segmentId: 'rome-segment',
+        dayOffset: 0,
+      }),
+      createPlace({
+        id: 'tokyo',
+        name: 'Tokyo Station',
+        country: 'Japón',
+        countryCode: 'JP',
+        lat: 35.6812,
+        lon: 139.7671,
+        segmentId: 'tokyo-segment',
+        dayOffset: 0,
+      }),
     ],
   };
 }

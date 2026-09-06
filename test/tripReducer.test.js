@@ -1,3 +1,4 @@
+// test-contract: behavior
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -8,6 +9,7 @@ import {
 } from '../src/modules/trips/tripReducer.js';
 import {
   TRIP_LIMITS,
+  createPlace,
   createSegment,
   createTrip,
   routeStops,
@@ -15,6 +17,13 @@ import {
 
 const reduce = (state, type, values = {}) =>
   tripReducer(state, { type, ...values });
+
+function city(id, name, country, countryCode, lat, lon) {
+  return { id, name, displayName: `${name}, ${country}`, country, countryCode, lat, lon };
+}
+
+const reykjavik = city('reykjavik', 'Reykjavik', 'Iceland', 'IS', 64.1466, -21.9426);
+const berlin = city('berlin', 'Berlin', 'Germany', 'DE', 52.52, 13.405);
 
 function baseTrip() {
   return {
@@ -28,6 +37,37 @@ function baseTrip() {
     notes: [{ id: 'note-1', title: 'Nota', text: 'Texto' }],
     checklist: [{ id: 'item-1', text: 'Pasaporte', done: false }],
   };
+}
+
+function planningTrip() {
+  return {
+    ...baseTrip(),
+    segments: [
+      createSegment({
+        id: 'segment-1',
+        destination: reykjavik,
+        startDate: '2026-09-02',
+        endDate: '2026-09-04',
+      }),
+      createSegment({
+        id: 'segment-2',
+        destination: berlin,
+        startDate: '2026-09-05',
+        endDate: '2026-09-06',
+      }),
+    ],
+  };
+}
+
+function plannedPlace(id, segmentId = 'segment-1', dayOffset = 0) {
+  return createPlace({
+    id,
+    name: id,
+    lat: 64.14,
+    lon: -21.9,
+    segmentId,
+    dayOffset,
+  });
 }
 
 test('el estado inicial crea un viaje editable y normaliza viajes existentes', () => {
@@ -213,16 +253,27 @@ test('borrar el ultimo trayecto conserva el origen, pero limpiar origen es una a
   );
 });
 
-test('lugares se normalizan, no se duplican y respetan el límite del viaje', () => {
-  const state = baseTrip();
-  const place = { id: 'place-1', name: 'Museo', lat: '48.8606', lon: '2.3376' };
+test('lugares nuevos requieren un día válido, se normalizan, no se duplican y respetan el límite', () => {
+  const state = planningTrip();
+  const place = {
+    id: 'place-1',
+    name: 'Museo',
+    lat: '64.1466',
+    lon: '-21.9426',
+    segmentId: 'segment-1',
+    dayOffset: 0,
+  };
   const added = reduce(state, TRIP_ACTIONS.addPlace, { place });
   const duplicate = reduce(added, TRIP_ACTIONS.addPlace, { place });
+  const unassigned = reduce(state, TRIP_ACTIONS.addPlace, {
+    place: { ...place, id: 'unassigned', segmentId: '', dayOffset: null },
+  });
+  const invalidDay = reduce(state, TRIP_ACTIONS.addPlace, {
+    place: { ...place, id: 'invalid-day', dayOffset: 99 },
+  });
   const full = {
     ...state,
-    places: Array.from({ length: TRIP_LIMITS.places }, (_, index) => ({
-      id: `place-${index}`,
-    })),
+    places: Array.from({ length: TRIP_LIMITS.places }, (_, index) => plannedPlace(`place-${index}`)),
   };
   const rejected = reduce(full, TRIP_ACTIONS.addPlace, {
     place: { ...place, id: 'overflow' },
@@ -231,11 +282,138 @@ test('lugares se normalizan, no se duplican y respetan el límite del viaje', ()
     placeId: 'place-1',
   });
 
-  assert.equal(added.places[0].lat, 48.8606);
-  assert.equal(added.places[0].lon, 2.3376);
+  assert.equal(added.places[0].lat, 64.1466);
+  assert.equal(added.places[0].lon, -21.9426);
+  assert.equal(added.places[0].segmentId, 'segment-1');
+  assert.equal(added.places[0].dayOffset, 0);
   assert.equal(duplicate, added);
+  assert.equal(unassigned, state);
+  assert.equal(invalidDay, state);
   assert.equal(rejected, full);
   assert.equal(removed.places.length, 0);
+});
+
+test('reordenar lugares sólo funciona dentro del mismo bloque ciudad+día', () => {
+  const state = {
+    ...planningTrip(),
+    places: [
+      plannedPlace('a', 'segment-1', 0),
+      plannedPlace('b', 'segment-1', 0),
+      plannedPlace('c', 'segment-1', 1),
+    ],
+  };
+  const sameDay = reduce(state, TRIP_ACTIONS.reorderPlace, {
+    sourceId: 'b', targetId: 'a', placement: 'before',
+  });
+  const crossDay = reduce(state, TRIP_ACTIONS.reorderPlace, {
+    sourceId: 'a', targetId: 'c', placement: 'after',
+  });
+
+  assert.deepEqual(sameDay.places.map(({ id }) => id), ['b', 'a', 'c']);
+  assert.equal(crossDay, state);
+});
+
+test('Mover a cambia segmentId/dayOffset, lo coloca al final del grupo y elimina conexiones obsoletas', () => {
+  const state = {
+    ...planningTrip(),
+    places: [
+      plannedPlace('a', 'segment-1', 0),
+      plannedPlace('b', 'segment-1', 0),
+      plannedPlace('c', 'segment-2', 0),
+    ],
+    routeConnections: [
+      { id: 'r1', fromPlaceId: 'a', toPlaceId: 'b', mode: 'walk', visible: true },
+      { id: 'r2', fromPlaceId: 'b', toPlaceId: 'c', mode: 'walk', visible: true },
+    ],
+  };
+  const moved = reduce(state, TRIP_ACTIONS.movePlaceToDay, {
+    placeId: 'b', segmentId: 'segment-2', dayOffset: 0,
+  });
+
+  assert.deepEqual(moved.places.map(({ id }) => id), ['a', 'c', 'b']);
+  assert.equal(moved.places.at(-1).segmentId, 'segment-2');
+  assert.equal(moved.places.at(-1).dayOffset, 0);
+  assert.deepEqual(moved.routeConnections, []);
+});
+
+test('un trayecto con lugares asignados no se puede borrar ni reinterpretar como otra ciudad', () => {
+  const state = {
+    ...planningTrip(),
+    places: [plannedPlace('a', 'segment-1', 0)],
+  };
+  const removed = reduce(state, TRIP_ACTIONS.removeSegment, { segmentId: 'segment-1' });
+  const changedDestination = reduce(state, TRIP_ACTIONS.updateSegment, {
+    segmentId: 'segment-1',
+    patch: { destination: berlin },
+  });
+  const noteChange = reduce(state, TRIP_ACTIONS.updateSegment, {
+    segmentId: 'segment-1',
+    patch: { note: 'Sí permitido' },
+  });
+
+  assert.equal(removed, state);
+  assert.equal(changedDestination, state);
+  assert.equal(noteChange.segments[0].note, 'Sí permitido');
+});
+
+test('las fechas no pueden eliminar un día que ya contiene lugares', () => {
+  const state = {
+    ...planningTrip(),
+    places: [plannedPlace('dia-3', 'segment-1', 2)],
+  };
+  const shrink = reduce(state, TRIP_ACTIONS.updateSegment, {
+    segmentId: 'segment-1',
+    patch: { endDate: '2026-09-03' },
+  });
+  const shiftPreservingThreeDays = reduce(state, TRIP_ACTIONS.updateSegment, {
+    segmentId: 'segment-1',
+    patch: { startDate: '2026-09-03', endDate: '2026-09-05' },
+  });
+
+  assert.equal(shrink, state);
+  assert.equal(shiftPreservingThreeDays.segments[0].startDate, '2026-09-03');
+  assert.equal(shiftPreservingThreeDays.segments[0].endDate, '2026-09-05');
+  assert.equal(shiftPreservingThreeDays.places[0].dayOffset, 2);
+});
+
+test('la nota del lugar se sanitiza y no permite modificar la asignación por updatePlace', () => {
+  const state = {
+    ...planningTrip(),
+    places: [plannedPlace('a', 'segment-1', 0)],
+  };
+  const updated = reduce(state, TRIP_ACTIONS.updatePlace, {
+    placeId: 'a',
+    patch: {
+      note: `Hola\u0000${'x'.repeat(TRIP_LIMITS.placeNote + 50)}`,
+      segmentId: 'segment-2',
+      dayOffset: 1,
+    },
+  });
+
+  assert.equal(updated.places[0].segmentId, 'segment-1');
+  assert.equal(updated.places[0].dayOffset, 0);
+  assert.equal(updated.places[0].note.includes('\u0000'), false);
+  assert.equal(updated.places[0].note.length, TRIP_LIMITS.placeNote);
+});
+
+test('las conexiones de ruta sólo se aceptan entre lugares del mismo día', () => {
+  const state = {
+    ...planningTrip(),
+    places: [
+      plannedPlace('a', 'segment-1', 0),
+      plannedPlace('b', 'segment-1', 0),
+      plannedPlace('c', 'segment-1', 1),
+    ],
+  };
+  const sameDay = reduce(state, TRIP_ACTIONS.upsertRouteConnection, {
+    connection: { id: 'same', fromPlaceId: 'a', toPlaceId: 'b', mode: 'walk', visible: true },
+  });
+  const crossDay = reduce(state, TRIP_ACTIONS.upsertRouteConnection, {
+    connection: { id: 'cross', fromPlaceId: 'a', toPlaceId: 'c', mode: 'walk', visible: true },
+  });
+
+  assert.equal(sameDay.routeConnections.length, 1);
+  assert.equal(crossDay, state);
 });
 
 test('reset crea otro viaje editable y acciones desconocidas no mutan el estado', () => {

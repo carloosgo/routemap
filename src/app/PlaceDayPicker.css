@@ -1,0 +1,67 @@
+.place-day-picker__scrim {
+  z-index: 760;
+}
+
+.place-day-picker {
+  width: min(430px, calc(100vw - 32px));
+  max-height: min(620px, calc(100vh - 48px));
+  overflow: hidden;
+}
+
+.place-day-picker > strong {
+  display: block;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.place-day-picker > p {
+  margin: 5px 0 12px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.place-day-picker__options {
+  display: flex;
+  max-height: 390px;
+  flex-direction: column;
+  gap: 5px;
+  overflow-y: auto;
+  padding: 1px 2px 1px 1px;
+}
+
+.place-day-picker__options > button {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 9px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+  color: #0f172a;
+  cursor: pointer;
+  text-align: left;
+}
+
+.place-day-picker__options > button:hover,
+.place-day-picker__options > button:focus-visible {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  outline: none;
+}
+
+.place-day-picker__options strong {
+  overflow: hidden;
+  max-width: 100%;
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.place-day-picker__options span {
+  color: #64748b;
+  font-size: 10.5px;
+  font-weight: 600;
+}

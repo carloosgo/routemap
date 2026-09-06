@@ -46,15 +46,33 @@ test('los viajes anteriores agrupan lugares del mismo país conservando su orden
   );
 });
 
-test('un lugar nuevo se agrega al final de la secuencia sin reagrupar por país', () => {
+test('un lugar nuevo con día válido se agrega al final de la secuencia sin reagrupar por país', () => {
   const trip = normalizeTrip({
     id: 'new-country-order',
     placeOrderVersion: PLACE_ORDER_VERSION,
+    segments: [{
+      id: 'segment-florence',
+      destination: {
+        id: 'it-florence',
+        name: 'Florencia',
+        displayName: 'Florencia, Italia',
+        country: 'Italia',
+        countryCode: 'IT',
+        lat: 43.7696,
+        lon: 11.2558,
+      },
+      startDate: '2026-08-06',
+      endDate: '2026-08-06',
+    }],
     places: [italyOne, japanOne],
   });
   const next = tripReducer(trip, {
     type: TRIP_ACTIONS.addPlace,
-    place: italyTwo,
+    place: {
+      ...italyTwo,
+      segmentId: 'segment-florence',
+      dayOffset: 0,
+    },
   });
 
   assert.deepEqual(

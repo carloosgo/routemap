@@ -30,6 +30,7 @@ export default [
         crypto: 'readonly',
         navigator: 'readonly',
         ResizeObserver: 'readonly',
+        CSS: 'readonly',
       },
     },
     plugins: { react, 'react-hooks': reactHooks },

@@ -31,6 +31,7 @@ export function SegmentForm({
   segment, index, sequenceNumber, sequenceColor,
   countryRunPosition, joinsPreviousCountryRun = false,
   origin, locale, currency, originDetails, dragging, dragOffsetY, dropPlacement,
+  hasAssignedPlaces = false,
   onUpdate, onUpdateOrigin, onRemove, onOpenNote, onOpenDetails, onReorderPointerStart,
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -88,6 +89,7 @@ export function SegmentForm({
           sequenceColor={sequenceColor}
           countryRunPosition={countryRunPosition}
           dragging={dragging}
+          destinationLocked={hasAssignedPlaces}
           onDestinationSelect={(destination) => onUpdate({ destination })}
           onOpenNote={openSegmentNote}
           onOpenDetails={openSegmentDetails}
@@ -96,6 +98,7 @@ export function SegmentForm({
         />
         <SegmentDeleteDialog
           open={confirmOpen}
+          blocked={hasAssignedPlaces}
           onConfirm={confirmRemove}
           onCancel={() => setConfirmOpen(false)}
         />

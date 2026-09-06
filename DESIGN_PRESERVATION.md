@@ -145,3 +145,18 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - `npm test`
 - `npm run lint`
 - `npm run build`
+
+## Mis Rutas organizadas por día
+
+- `Mis Rutas` se agrupa por ciudad destino y cada día inclusivo derivado de `startDate` / `endDate` del itinerario.
+- Cada bloque diario muestra ciudad, país, día global del viaje y fecha, y reutiliza un único color por país de la paleta ya existente de Atlas.
+- Cada bloque usa un nodo y rail vertical punteado; cada lugar guardado se representa mediante un punto dentro de esa secuencia.
+- Cada lugar conserva acciones compactas para mover/reordenar, editar su nota y eliminarlo.
+- El drag y las flechas de teclado reordenan únicamente dentro del mismo bloque ciudad+día; `Mover a…` es la operación explícita para reasignar entre días o ciudades.
+- Al guardar con varios días disponibles se muestra un selector de ciudad+día; con un único día la asignación es directa. Sin al menos una ciudad destino con fechas válidas, el guardado de lugares se bloquea con feedback traducido.
+- Los lugares históricos sin asignación válida permanecen visibles en `Por organizar`; no se eliminan ni se reinterpretan silenciosamente.
+- Reducir/eliminar fechas o cambiar/eliminar una ciudad no puede dejar lugares asignados fuera del rango; primero deben moverse o eliminarse.
+- Las conexiones entre lugares sólo se aceptan dentro del mismo bloque ciudad+día y se eliminan cuando una reasignación/reordenación las vuelve obsoletas.
+- Storage v4 persiste `segmentId`, `dayOffset` y `note`; Firestore Rules mantiene compatibilidad con documentos v4 anteriores que todavía no contienen esos campos.
+- Los lugares Google continúan excluyendo de persistencia sus datos transitorios de proveedor; la asignación diaria y la nota sí sobreviven al guardado/rehidratación.
+- Este delta no rediseña header, gastos, notas, cámara del mapa, proveedores ni navegación fuera del alcance de `Mis Rutas` y el selector de día asociado.
