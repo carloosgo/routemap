@@ -6,9 +6,8 @@
 
 .google-map,.google-map>div{width:100%;height:100%}.google-saved-place-marker{display:grid;width:22px;height:22px;place-items:center;padding:0;border:2px solid #fff;border-radius:50%;background:#0d6078;box-shadow:0 2px 8px rgba(15,23,42,.28);cursor:pointer}.google-saved-place-marker__dot{display:block;width:6px;height:6px;border-radius:50%;background:#fff}.google-saved-place-marker:hover,.google-saved-place-marker:focus-visible{outline:2px solid rgba(13,96,120,.3);outline-offset:2px}.google-map-wrap .place-result-marker{margin-bottom:14px}.google-map-wrap .place-popup{padding:2px 0;font-family:inherit}.google-map-wrap .place-save-prompt{min-width:245px;padding:2px 0;font-family:inherit}.google-route-attribution{position:absolute;z-index:650;right:8px;bottom:28px;padding:3px 6px;border-radius:4px;background:rgba(255,255,255,.9);color:#5f6368;font-size:9px;line-height:1.2;pointer-events:none}
 
-/* Desktop: the search input is centered in the visible map area, not in the
-   full workspace underneath the editor panel. The same workspace variable
-   drives both the grid column and this midpoint, so the two cannot drift. */
+/* Desktop: geo-search already lives inside the map grid column, so 50% is
+   the midpoint of the visible map area whether the editor is open or collapsed. */
 @media(min-width:801px){
   .geo-search{width:min(650px,calc(100% - 32px))}
   .geo-search__row{display:grid;grid-template-columns:minmax(0,82px) minmax(0,470px) minmax(0,82px);gap:6px;justify-content:center}
@@ -16,14 +15,6 @@
   .geo-search__input-wrap{grid-column:2}
   .geo-search__button{grid-column:3;justify-self:start}
   .geo-search__suggestions{left:50%;right:auto;width:min(470px,calc(100% - 176px));transform:translateX(-50%)}
-  .workspace__desktop--column:not(.is-panel-collapsed) .geo-search{
-    left:calc(var(--workspace-panel-width,clamp(420px,40vw,620px)) + (100% - var(--workspace-panel-width,clamp(420px,40vw,620px)))/2);
-    width:min(650px,calc(100% - var(--workspace-panel-width,clamp(420px,40vw,620px)) - 32px));
-  }
-  .workspace__desktop--column.is-panel-collapsed .geo-search{
-    left:50%;
-    width:min(650px,calc(100% - 32px));
-  }
 }
 @media(max-width:800px){
   .geo-search__row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}
