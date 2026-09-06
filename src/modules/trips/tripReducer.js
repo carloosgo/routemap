@@ -77,6 +77,29 @@ function routesWithoutPlace(routes, placeId) {
   );
 }
 
+function consecutiveRoutePairKeys(places) {
+  const byGroup = new Map();
+  (Array.isArray(places) ? places : []).forEach((place) => {
+    const key = placePlanningGroupKey(place);
+    if (!key) return;
+    if (!byGroup.has(key)) byGroup.set(key, []);
+    byGroup.get(key).push(place);
+  });
+
+  const pairs = new Set();
+  byGroup.forEach((groupPlaces) => {
+    for (let index = 0; index < groupPlaces.length - 1; index += 1) {
+      pairs.add(`${groupPlaces[index].id}\u0000${groupPlaces[index + 1].id}`);
+    }
+  });
+  return pairs;
+}
+
+function pruneRouteConnections(routes, places) {
+  const validPairs = consecutiveRoutePairKeys(places);
+  return (routes || []).filter((route) => validPairs.has(savedPlaceRoutePairKey(route)));
+}
+
 function cityIdentity(city) {
   if (!city) return '';
   const id = String(city.id || '').trim();
@@ -275,9 +298,11 @@ export function tripReducer(state, action) {
       const duplicate = places.some(
         (currentPlace) => currentPlace.id === place.id
       );
-      const validPlanningTarget = tripPlanningDays(state.segments).some(
-        (day) => day.key === placePlanningGroupKey(place)
-      );
+      const planningDays = tripPlanningDays(state.segments);
+      const placeGroupKey = placePlanningGroupKey(place);
+      const validPlanningTarget = placeGroupKey
+        ? planningDays.some((day) => day.key === placeGroupKey)
+        : planningDays.length > 0;
       if (
         places.length >= TRIP_LIMITS.places
         || duplicate
@@ -325,9 +350,9 @@ export function tripReducer(state, action) {
       if (reorderedTrip === state) return state;
       return {
         ...reorderedTrip,
-        routeConnections: routesWithoutPlace(
+        routeConnections: pruneRouteConnections(
           reorderedTrip.routeConnections,
-          action.sourceId
+          reorderedTrip.places
         ),
       };
     }
@@ -348,7 +373,7 @@ export function tripReducer(state, action) {
       return touch(state, {
         places,
         placeOrderVersion: PLACE_ORDER_VERSION,
-        routeConnections: routesWithoutPlace(state.routeConnections, action.placeId),
+        routeConnections: pruneRouteConnections(state.routeConnections, places),
       });
     }
 
