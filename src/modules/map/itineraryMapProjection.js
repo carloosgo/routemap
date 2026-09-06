@@ -30,8 +30,6 @@ export function itineraryMapProjection(origin, segments) {
       id: String(segment?.id || ''),
       origin: projectedPlace(legOrigin),
       destination: projectedPlace(segment?.destination),
-      startDate: String(segment?.startDate || ''),
-      endDate: String(segment?.endDate || ''),
       expenses: {
         transport: {
           plane: planeDominant ? 1 : 0,
