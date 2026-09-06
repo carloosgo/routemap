@@ -253,7 +253,7 @@ test('borrar el ultimo trayecto conserva el origen, pero limpiar origen es una a
   );
 });
 
-test('lugares nuevos requieren un día válido, se normalizan, no se duplican y respetan el límite', () => {
+test('lugares nuevos admiten asignación válida o Por organizar cuando el itinerario ya tiene días', () => {
   const state = planningTrip();
   const place = {
     id: 'place-1',
@@ -271,6 +271,9 @@ test('lugares nuevos requieren un día válido, se normalizan, no se duplican y 
   const invalidDay = reduce(state, TRIP_ACTIONS.addPlace, {
     place: { ...place, id: 'invalid-day', dayOffset: 99 },
   });
+  const withoutPlanning = reduce(baseTrip(), TRIP_ACTIONS.addPlace, {
+    place: { ...place, id: 'no-planning', segmentId: '', dayOffset: null },
+  });
   const full = {
     ...state,
     places: Array.from({ length: TRIP_LIMITS.places }, (_, index) => plannedPlace(`place-${index}`)),
@@ -287,30 +290,59 @@ test('lugares nuevos requieren un día válido, se normalizan, no se duplican y 
   assert.equal(added.places[0].segmentId, 'segment-1');
   assert.equal(added.places[0].dayOffset, 0);
   assert.equal(duplicate, added);
-  assert.equal(unassigned, state);
+  assert.equal(unassigned.places.length, 1);
+  assert.equal(unassigned.places[0].segmentId, '');
+  assert.equal(unassigned.places[0].dayOffset, null);
   assert.equal(invalidDay, state);
+  assert.equal(withoutPlanning.id, 'trip-1');
+  assert.equal(withoutPlanning.places.length, 0);
   assert.equal(rejected, full);
   assert.equal(removed.places.length, 0);
 });
 
-test('reordenar lugares sólo funciona dentro del mismo bloque ciudad+día', () => {
+test('reordenar lugares permite cambiar de día y país sin mantener un candado geográfico', () => {
   const state = {
     ...planningTrip(),
     places: [
       plannedPlace('a', 'segment-1', 0),
       plannedPlace('b', 'segment-1', 0),
-      plannedPlace('c', 'segment-1', 1),
+      plannedPlace('c', 'segment-2', 0),
     ],
   };
   const sameDay = reduce(state, TRIP_ACTIONS.reorderPlace, {
     sourceId: 'b', targetId: 'a', placement: 'before',
   });
-  const crossDay = reduce(state, TRIP_ACTIONS.reorderPlace, {
+  const crossCountry = reduce(state, TRIP_ACTIONS.reorderPlace, {
     sourceId: 'a', targetId: 'c', placement: 'after',
   });
 
   assert.deepEqual(sameDay.places.map(({ id }) => id), ['b', 'a', 'c']);
-  assert.equal(crossDay, state);
+  assert.deepEqual(crossCountry.places.map(({ id }) => id), ['b', 'c', 'a']);
+  assert.equal(crossCountry.places.at(-1).segmentId, 'segment-2');
+  assert.equal(crossCountry.places.at(-1).dayOffset, 0);
+});
+
+test('reordenar entre días poda conexiones que dejan de unir lugares consecutivos', () => {
+  const state = {
+    ...planningTrip(),
+    places: [
+      plannedPlace('a', 'segment-1', 0),
+      plannedPlace('b', 'segment-1', 0),
+      plannedPlace('c', 'segment-2', 0),
+      plannedPlace('d', 'segment-2', 0),
+    ],
+    routeConnections: [
+      { id: 'ab', fromPlaceId: 'a', toPlaceId: 'b', mode: 'walk', visible: true },
+      { id: 'cd', fromPlaceId: 'c', toPlaceId: 'd', mode: 'walk', visible: true },
+    ],
+  };
+  const moved = reduce(state, TRIP_ACTIONS.reorderPlace, {
+    sourceId: 'b', targetId: 'c', placement: 'after',
+  });
+
+  assert.deepEqual(moved.places.map(({ id }) => id), ['a', 'c', 'b', 'd']);
+  assert.equal(moved.places[2].segmentId, 'segment-2');
+  assert.deepEqual(moved.routeConnections, []);
 });
 
 test('Mover a cambia segmentId/dayOffset, lo coloca al final del grupo y elimina conexiones obsoletas', () => {

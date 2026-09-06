@@ -202,6 +202,7 @@ export default function App() {
       editorMenuRef={editorMenuRef}
       setTripToDelete={setTripToDelete}
       handleOpenSavedTrip={handleOpenSavedTrip}
+      persistenceState={persistence.state}
       t={t}
       intlLocale={intlLocale}
     />
