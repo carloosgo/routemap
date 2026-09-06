@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  IconCheck,
+  IconChevronDown,
+  IconChevronRight,
   IconClock,
   IconExternalLink,
   IconGripVertical,
   IconMapPin,
   IconNote,
   IconTrash,
+  IconX,
 } from '@tabler/icons-react';
 import { countryColorForIndex } from '../../config.js';
 import {
@@ -22,6 +26,19 @@ const DAY_LABELS = Object.freeze({
   es: { Mo: 'Lun', Tu: 'Mar', We: 'Mié', Th: 'Jue', Fr: 'Vie', Sa: 'Sáb', Su: 'Dom', PH: 'Festivos' },
   en: { Mo: 'Mon', Tu: 'Tue', We: 'Wed', Th: 'Thu', Fr: 'Fri', Sa: 'Sat', Su: 'Sun', PH: 'Holidays' },
 });
+
+const PERSISTENCE_LABEL_KEYS = Object.freeze({
+  saved: 'persistenceSaved',
+  pending: 'persistencePending',
+  local: 'persistenceLocal',
+  syncing: 'persistenceSyncing',
+  conflict: 'persistenceConflict',
+  error: 'persistenceError',
+});
+
+function persistenceLabelKey(state) {
+  return PERSISTENCE_LABEL_KEYS[state] || PERSISTENCE_LABEL_KEYS.pending;
+}
 
 function CountryFlag({ city }) {
   if (!city?.countryCode) {
@@ -77,22 +94,42 @@ function destinationLabel(day, intlLocale, t) {
   return `${place} · ${t('day')} ${day.globalDayNumber} · ${formatPlanningDate(day.date, intlLocale)}`;
 }
 
+function countryKey(destination) {
+  const code = String(destination?.countryCode || '').trim().toUpperCase();
+  const name = String(destination?.country || '').trim().toLowerCase();
+  return code || name || 'unknown';
+}
+
 function countryColorMap(segments) {
   const colors = new Map();
   (Array.isArray(segments) ? segments : []).forEach((segment) => {
-    const code = String(segment?.destination?.countryCode || '').trim().toUpperCase();
-    const name = String(segment?.destination?.country || '').trim().toLowerCase();
-    const key = code || name;
-    if (!key || colors.has(key)) return;
+    const key = countryKey(segment?.destination);
+    if (key === 'unknown' || colors.has(key)) return;
     colors.set(key, countryColorForIndex(colors.size));
   });
   return colors;
 }
 
 function colorForDestination(destination, colors) {
-  const code = String(destination?.countryCode || '').trim().toUpperCase();
-  const name = String(destination?.country || '').trim().toLowerCase();
-  return colors.get(code || name) || countryColorForIndex(0);
+  return colors.get(countryKey(destination)) || countryColorForIndex(0);
+}
+
+function groupPlanningDaysByVisit(groups) {
+  const visits = [];
+  (Array.isArray(groups) ? groups : []).forEach((group) => {
+    let visit = visits.at(-1);
+    if (!visit || visit.segmentId !== group.segmentId) {
+      visit = {
+        segmentId: group.segmentId,
+        destination: group.destination,
+        countryKey: countryKey(group.destination),
+        days: [],
+      };
+      visits.push(visit);
+    }
+    visit.days.push(group);
+  });
+  return visits;
 }
 
 export function TripPlacesPanel({
@@ -106,6 +143,7 @@ export function TripPlacesPanel({
   upsertRoute,
   setRouteVisibility,
   setAllRouteVisibility,
+  persistenceState = 'saved',
   t,
   intlLocale,
 }) {
@@ -113,8 +151,8 @@ export function TripPlacesPanel({
   const [dragState, setDragState] = useState(null);
   const [placeDetails, setPlaceDetails] = useState({});
   const [moveMenuPlaceId, setMoveMenuPlaceId] = useState('');
-  const [notePlace, setNotePlace] = useState(null);
-  const [noteDraft, setNoteDraft] = useState('');
+  const [notePlaceId, setNotePlaceId] = useState('');
+  const [collapsedVisits, setCollapsedVisits] = useState(() => new Set());
   const panelRef = useRef(null);
   const dragStateRef = useRef(null);
   const enrichmentInFlightRef = useRef(new Set());
@@ -126,11 +164,21 @@ export function TripPlacesPanel({
     () => groupPlacesByPlanningDay(places, segments),
     [places, segments]
   );
+  const visits = useMemo(() => groupPlanningDaysByVisit(planned.groups), [planned.groups]);
   const colors = useMemo(() => countryColorMap(segments), [segments]);
   const routeByPair = useMemo(
     () => new Map(routes.map((route) => [savedPlaceRoutePairKey(route), route])),
     [routes]
   );
+  const notePlace = notePlaceId
+    ? places.find((place) => place.id === notePlaceId) || null
+    : null;
+  const persistenceLabel = t(persistenceLabelKey(persistenceState));
+  const persistenceHasCheck = persistenceState === 'saved' || persistenceState === 'local';
+
+  useEffect(() => {
+    if (notePlaceId && !notePlace) setNotePlaceId('');
+  }, [notePlace, notePlaceId]);
 
   useEffect(() => {
     if (!moveMenuPlaceId) return undefined;
@@ -146,21 +194,17 @@ export function TripPlacesPanel({
     if (!draggedPlaceId) return undefined;
     const panel = panelRef.current;
     if (!panel) return undefined;
-    const sourceElement = panel.querySelector(`[data-place-id="${CSS.escape(draggedPlaceId)}"]`);
-    const sourceGroup = sourceElement?.dataset?.planningGroup || '';
 
     function visibleDropCandidates() {
       return Array.from(panel.querySelectorAll('[data-place-id]'))
         .map((element) => ({
           element,
           id: element.dataset.placeId,
-          group: element.dataset.planningGroup || '',
           bounds: element.getBoundingClientRect(),
         }))
-        .filter(({ id, group, bounds }) =>
+        .filter(({ id, bounds }) =>
           id
           && id !== draggedPlaceId
-          && group === sourceGroup
           && bounds.width > 0
           && bounds.height > 0
         )
@@ -170,8 +214,12 @@ export function TripPlacesPanel({
     function resolveDropTarget(event) {
       const candidates = visibleDropCandidates();
       if (candidates.length === 0) return { targetId: null, placement: null };
-      const first = candidates[0];
-      const last = candidates[candidates.length - 1];
+      const samePaneCandidates = candidates.filter(
+        ({ bounds }) => event.clientX >= bounds.left && event.clientX <= bounds.right
+      );
+      const available = samePaneCandidates.length > 0 ? samePaneCandidates : candidates;
+      const first = available[0];
+      const last = available[available.length - 1];
 
       if (event.clientY <= first.bounds.top + first.bounds.height / 2) {
         return { targetId: first.id, placement: 'before' };
@@ -180,7 +228,7 @@ export function TripPlacesPanel({
         return { targetId: last.id, placement: 'after' };
       }
 
-      const nearest = candidates.reduce((best, candidate) => {
+      const nearest = available.reduce((best, candidate) => {
         const midpoint = candidate.bounds.top + candidate.bounds.height / 2;
         const distance = Math.abs(event.clientY - midpoint);
         return !best || distance < best.distance ? { candidate, distance } : best;
@@ -283,6 +331,15 @@ export function TripPlacesPanel({
     setPlaceToDelete(null);
   }
 
+  function toggleVisit(segmentId) {
+    setCollapsedVisits((current) => {
+      const next = new Set(current);
+      if (next.has(segmentId)) next.delete(segmentId);
+      else next.add(segmentId);
+      return next;
+    });
+  }
+
   function startPlaceDrag(event, placeId) {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     event.preventDefault();
@@ -307,18 +364,6 @@ export function TripPlacesPanel({
       event.preventDefault();
       reorderPlace?.(placeId, groupPlaces[placeIndex + 1].id, 'after');
     }
-  }
-
-  function openNote(place) {
-    setNotePlace(place);
-    setNoteDraft(place.note || '');
-  }
-
-  function saveNote() {
-    if (!notePlace) return;
-    updatePlace?.(notePlace.id, { note: noteDraft });
-    setNotePlace(null);
-    setNoteDraft('');
   }
 
   function renderPlace(place, groupKey, groupPlaces, nextPlace = null) {
@@ -349,80 +394,82 @@ export function TripPlacesPanel({
             : undefined}
         >
           <span className="trip-place__timeline-dot" aria-hidden="true" />
-          <span className="trip-place__move-wrap" data-place-move-menu>
+          <div className="trip-place__surface">
+            <span className="trip-place__move-wrap" data-place-move-menu>
+              <button
+                type="button"
+                className="trip-place__drag"
+                onPointerDown={(event) => startPlaceDrag(event, place.id)}
+                onKeyDown={(event) => handleMoveKeyDown(event, place.id, groupPlaces)}
+                onClick={() => setMoveMenuPlaceId((current) => current === place.id ? '' : place.id)}
+                aria-label={t('movePlace')}
+                title={t('movePlace')}
+              >
+                <IconGripVertical size={15} aria-hidden="true" />
+              </button>
+              {moveMenuPlaceId === place.id && (
+                <div className="trip-place__move-menu" role="menu">
+                  <strong>{t('movePlaceTo')}</strong>
+                  {planningDays.map((day) => (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      key={day.key}
+                      onClick={() => {
+                        movePlaceToDay?.(place.id, day.segmentId, day.dayOffset);
+                        setMoveMenuPlaceId('');
+                      }}
+                    >
+                      {destinationLabel(day, intlLocale, t)}
+                    </button>
+                  ))}
+                  {!planningDays.length && <span>{t('noPlanningDays')}</span>}
+                </div>
+              )}
+            </span>
+            <span className="trip-place__info">
+              <strong>{label}</strong>
+              {(hours || details.website) && (
+                <span className="trip-place__details">
+                  {hours && (
+                    <span className="trip-place__hours" title={t('openingHours')}>
+                      <IconClock size={11} stroke={1.8} aria-hidden="true" />
+                      <span>{hours}</span>
+                    </span>
+                  )}
+                  {details.website && (
+                    <a
+                      className="trip-place__website"
+                      href={details.website}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={t('officialWebsite')}
+                    >
+                      <IconExternalLink size={11} stroke={1.8} aria-hidden="true" />
+                      <span>{t('officialWebsite')}</span>
+                    </a>
+                  )}
+                </span>
+              )}
+            </span>
             <button
               type="button"
-              className="trip-place__drag"
-              onPointerDown={(event) => startPlaceDrag(event, place.id)}
-              onKeyDown={(event) => handleMoveKeyDown(event, place.id, groupPlaces)}
-              onClick={() => setMoveMenuPlaceId((current) => current === place.id ? '' : place.id)}
-              aria-label={t('movePlace')}
-              title={t('movePlace')}
+              className={'trip-place__note' + (place.note ? ' has-note' : '')}
+              onClick={() => setNotePlaceId(place.id)}
+              aria-label={t('placeNote')}
+              title={t('placeNote')}
             >
-              <IconGripVertical size={15} aria-hidden="true" />
+              <IconNote size={14} aria-hidden="true" />
             </button>
-            {moveMenuPlaceId === place.id && (
-              <div className="trip-place__move-menu" role="menu">
-                <strong>{t('movePlaceTo')}</strong>
-                {planningDays.map((day) => (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    key={day.key}
-                    onClick={() => {
-                      movePlaceToDay?.(place.id, day.segmentId, day.dayOffset);
-                      setMoveMenuPlaceId('');
-                    }}
-                  >
-                    {destinationLabel(day, intlLocale, t)}
-                  </button>
-                ))}
-                {!planningDays.length && <span>{t('noPlanningDays')}</span>}
-              </div>
-            )}
-          </span>
-          <span className="trip-place__info">
-            <strong>{label}</strong>
-            {(hours || details.website) && (
-              <span className="trip-place__details">
-                {hours && (
-                  <span className="trip-place__hours" title={t('openingHours')}>
-                    <IconClock size={11} stroke={1.8} aria-hidden="true" />
-                    <span>{hours}</span>
-                  </span>
-                )}
-                {details.website && (
-                  <a
-                    className="trip-place__website"
-                    href={details.website}
-                    target="_blank"
-                    rel="noreferrer"
-                    title={t('officialWebsite')}
-                  >
-                    <IconExternalLink size={11} stroke={1.8} aria-hidden="true" />
-                    <span>{t('officialWebsite')}</span>
-                  </a>
-                )}
-              </span>
-            )}
-          </span>
-          <button
-            type="button"
-            className={'trip-place__note' + (place.note ? ' has-note' : '')}
-            onClick={() => openNote(place)}
-            aria-label={t('placeNote')}
-            title={t('placeNote')}
-          >
-            <IconNote size={14} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className="trip-place__delete"
-            onClick={() => setPlaceToDelete(place)}
-            aria-label={t('delete')}
-          >
-            <IconTrash size={14} aria-hidden="true" />
-          </button>
+            <button
+              type="button"
+              className="trip-place__delete"
+              onClick={() => setPlaceToDelete(place)}
+              aria-label={t('delete')}
+            >
+              <IconTrash size={14} aria-hidden="true" />
+            </button>
+          </div>
         </article>
 
         {nextPlace && (
@@ -459,35 +506,59 @@ export function TripPlacesPanel({
         )}
 
         {hasPlanningDays && (
-          <div className="trip-places__days">
-            {planned.groups.map((group) => {
-              const city = group.destination;
+          <div className="trip-places__cities">
+            {visits.map((visit, visitIndex) => {
+              const city = visit.destination;
               const color = colorForDestination(city, colors);
+              const collapsed = collapsedVisits.has(visit.segmentId);
+              const beginsCountry = visitIndex > 0
+                && visits[visitIndex - 1].countryKey !== visit.countryKey;
               return (
                 <section
-                  className="trip-day"
+                  className={'trip-city' + (beginsCountry ? ' is-country-start' : '')}
                   style={{ '--trip-day-color': color }}
-                  key={group.key}
+                  key={visit.segmentId}
                 >
-                  <header className="trip-day__header">
-                    <span className="trip-day__node" aria-hidden="true" />
+                  <button
+                    type="button"
+                    className="trip-city__toggle"
+                    aria-expanded={!collapsed}
+                    onClick={() => toggleVisit(visit.segmentId)}
+                  >
                     <CountryFlag city={city} />
-                    <span className="trip-day__heading">
+                    <span className="trip-city__heading">
                       <strong>{[city?.name || t('city'), city?.country].filter(Boolean).join(', ')}</strong>
-                      <small>{t('day')} {group.globalDayNumber} · {formatPlanningDate(group.date, intlLocale)}</small>
                     </span>
-                  </header>
-                  <div className="trip-day__rail" aria-hidden="true" />
-                  <div className="trip-places__sequence">
-                    {group.places.length > 0
-                      ? group.places.map((place, index) => renderPlace(
-                          place,
-                          group.key,
-                          group.places,
-                          group.places[index + 1] || null
-                        ))
-                      : <div className="trip-day__empty-row">{t('dayNoPlaces')}</div>}
-                  </div>
+                    {collapsed
+                      ? <IconChevronRight size={15} aria-hidden="true" />
+                      : <IconChevronDown size={15} aria-hidden="true" />}
+                  </button>
+
+                  {!collapsed && (
+                    <div className="trip-city__days">
+                      {visit.days.map((group) => (
+                        <section className="trip-day" key={group.key}>
+                          <header className="trip-day__header">
+                            <span className="trip-day__node" aria-hidden="true" />
+                            <span className="trip-day__heading">
+                              <strong>{t('day')} {group.globalDayNumber} · {formatPlanningDate(group.date, intlLocale)}</strong>
+                            </span>
+                          </header>
+                          <div className="trip-day__rail" aria-hidden="true" />
+                          <div className="trip-places__sequence">
+                            {group.places.length > 0
+                              ? group.places.map((place, index) => renderPlace(
+                                  place,
+                                  group.key,
+                                  group.places,
+                                  group.places[index + 1] || null
+                                ))
+                              : <div className="trip-day__empty-row">{t('dayNoPlaces')}</div>}
+                          </div>
+                        </section>
+                      ))}
+                    </div>
+                  )}
                 </section>
               );
             })}
@@ -495,17 +566,15 @@ export function TripPlacesPanel({
         )}
 
         {planned.unassigned.length > 0 && (
-          <section className="trip-day trip-day--unassigned">
-            <header className="trip-day__header">
-              <span className="trip-day__node" aria-hidden="true" />
+          <section className="trip-city trip-city--unassigned">
+            <div className="trip-city__unassigned-header">
               <span className="trip-place__flag-fallback" aria-hidden="true"><IconMapPin size={15} /></span>
-              <span className="trip-day__heading">
+              <span className="trip-city__heading">
                 <strong>{t('unassignedPlaces')}</strong>
                 <small>{t('unassignedPlacesHint')}</small>
               </span>
-            </header>
-            <div className="trip-day__rail" aria-hidden="true" />
-            <div className="trip-places__sequence">
+            </div>
+            <div className="trip-places__sequence trip-places__sequence--unassigned">
               {planned.unassigned.map((place) => renderPlace(
                 place,
                 'unassigned',
@@ -518,7 +587,7 @@ export function TripPlacesPanel({
       </div>
 
       {notePlace && (
-        <div className="confirm__scrim" role="presentation" onMouseDown={() => setNotePlace(null)}>
+        <div className="confirm__scrim" role="presentation" onMouseDown={() => setNotePlaceId('')}>
           <div
             className="confirm__card trip-place-note-dialog"
             role="dialog"
@@ -526,21 +595,25 @@ export function TripPlacesPanel({
             aria-label={t('placeNote')}
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <strong>{placeLabel(notePlace, t)}</strong>
+            <div className="segnote__head">
+              <span className="segnote__title">{placeLabel(notePlace, t)}</span>
+              <button type="button" className="segnote__x" aria-label={t('closeNote')} onClick={() => setNotePlaceId('')}>
+                <IconX size={16} aria-hidden="true" />
+              </button>
+            </div>
             <textarea
-              value={noteDraft}
-              maxLength={1000}
+              className="segnote__textarea"
+              value={notePlace.note || ''}
+              maxLength={500}
               placeholder={t('placeNotePlaceholder')}
-              onChange={(event) => setNoteDraft(event.target.value)}
+              onChange={(event) => updatePlace?.(notePlace.id, { note: event.target.value })}
               autoFocus
             />
-            <div className="confirm__actions">
-              <button type="button" className="btn btn--ghost btn--sm" onClick={() => setNotePlace(null)}>
-                {t('cancel')}
-              </button>
-              <button type="button" className="btn btn--primary btn--sm" onClick={saveNote}>
-                {t('savePlaceNote')}
-              </button>
+            <div className="segnote__foot">
+              <span className="segnote__saved" data-persistence-state={persistenceState}>
+                {persistenceHasCheck && <IconCheck size={12} aria-hidden="true" />} {persistenceLabel}
+              </span>
+              <span className="segnote__count">{(notePlace.note || '').length} / 500</span>
             </div>
           </div>
         </div>
