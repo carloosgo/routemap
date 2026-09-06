@@ -27,8 +27,16 @@ function countriesCompatible(place, destination) {
 }
 
 function coordinates(value) {
-  const lat = Number(value?.lat);
-  const lon = Number(value?.lon);
+  if (
+    value?.lat == null
+    || value?.lon == null
+    || value.lat === ''
+    || value.lon === ''
+  ) {
+    return null;
+  }
+  const lat = Number(value.lat);
+  const lon = Number(value.lon);
   return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null;
 }
 
