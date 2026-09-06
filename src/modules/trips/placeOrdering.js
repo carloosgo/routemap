@@ -83,10 +83,16 @@ export function reorderPlaceList(
   if (sourceIndex < 0 || !target) return currentPlaces;
 
   const source = currentPlaces[sourceIndex];
-  if (planningGroupKey(source) !== planningGroupKey(target)) return currentPlaces;
+  const sourceGroup = planningGroupKey(source);
+  const targetGroup = planningGroupKey(target);
+  const moved = sourceGroup === targetGroup
+    ? source
+    : targetGroup === 'unassigned'
+      ? { ...source, segmentId: '', dayOffset: null }
+      : { ...source, segmentId: target.segmentId, dayOffset: target.dayOffset };
 
   const reordered = [...currentPlaces];
-  const [moved] = reordered.splice(sourceIndex, 1);
+  reordered.splice(sourceIndex, 1);
   const targetIndex = reordered.findIndex((place) => place.id === targetId);
   reordered.splice(targetIndex + (placement === 'after' ? 1 : 0), 0, moved);
 
