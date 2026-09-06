@@ -31,6 +31,7 @@ export default {
   delete: 'Eliminar',
   deleteTrip: 'Eliminar viaje',
   cancel: 'Cancelar',
+  understood: 'Entendido',
   confirmDelete: '¿Eliminar este viaje?',
   deletePermanentWarning: 'Esta acción es definitiva y no se puede deshacer.',
   deletingTrip: 'Eliminando…',
