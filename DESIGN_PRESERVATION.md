@@ -174,3 +174,10 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Las notas de lugar adoptan la misma semántica de las notas de trayecto: textarea controlado, actualización en cada `onChange`, contador de 500 caracteres, estado de persistencia/autosave y cierre sin un botón independiente de Guardar.
 - El buscador de lugares de escritorio se centra en el área visible comprendida entre el borde derecho real de `--workspace-panel-width` y el borde derecho del workspace. Al colapsar el panel vuelve al centro del ancho completo; no se usan offsets fijos duplicados.
 - No cambian el proveedor de búsqueda, el autocompletado, las reglas de cámara, los marcadores de ciudades, Storage v4, Firestore Rules, Functions ni la política de datos Google por este ajuste.
+
+## Ajuste solicitado: shell compacto del buscador de lugares
+
+- En escritorio el contenedor exterior del buscador conserva su centro geométrico en `.mappane`, pero deja de reservar columnas laterales artificiales y usa un ancho máximo de 550 px, limitado además por `calc(100% - 32px)`.
+- La fila del buscador contiene únicamente dos tracks reales: `minmax(0, 1fr)` para el input y `auto` para la acción Buscar. No existe pseudo-elemento ni track fantasma para compensar el botón.
+- El listado de sugerencias vive dentro de `.geo-search__input-wrap`, por lo que su borde izquierdo, borde derecho y ancho siguen exactamente al campo de búsqueda incluso cuando el ancho disponible cambia.
+- Este ajuste no modifica el centrado respecto al mapa, el comportamiento móvil existente, proveedores, búsqueda/autocompletado, selección de resultados, cámara, persistencia ni Storage v4.
