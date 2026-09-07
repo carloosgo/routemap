@@ -31,7 +31,7 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Cada opción de Moneda/Idioma se presenta como `CÓDIGO | Nombre` (por ejemplo `EUR | Euro`, `EN | Inglés`) y las filas se separan mediante una línea tenue de 1 px, sin alterar el color propio del estado seleccionado.
 - `Total del viaje` vive en el header y abre el desglose canónico de `useAppEditorState`; no existe footer `Total del trayecto` dentro de cada trayecto. El desglose también deja una separación visual equivalente bajo la cabecera antes de iniciar su superficie flotante.
 - `Total del viaje` no pinta fondo ni cambia de color al pasar el mouse o permanecer abierto; su interacción se comunica por el chevron y la superficie de desglose.
-- El header global no forma parte de la antigua prueba de densidad equivalente a navegador al 90% y no se miniaturiza por cambios del itinerario.
+- El header global no forma parte de la antigua prueba de densidad equivalente al navegador al 90% y no se miniaturiza por cambios del itinerario.
 
 ## Panel integrado compartido
 
@@ -181,3 +181,11 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - La fila del buscador contiene únicamente dos tracks reales: `minmax(0, 1fr)` para el input y `auto` para la acción Buscar. No existe pseudo-elemento ni track fantasma para compensar el botón.
 - El listado de sugerencias vive dentro de `.geo-search__input-wrap`, por lo que su borde izquierdo, borde derecho y ancho siguen exactamente al campo de búsqueda incluso cuando el ancho disponible cambia.
 - Este ajuste no modifica el centrado respecto al mapa, el comportamiento móvil existente, proveedores, búsqueda/autocompletado, selección de resultados, cámara, persistencia ni Storage v4.
+
+## Ajuste solicitado: paridad visual de notas en Mis Rutas
+
+- La nota de un lugar guardado conserva la misma semántica existente de edición/autosave, pero su superficie visual usa exactamente la geometría canónica de `.segnote`: 300 px de ancho en escritorio, radio de 12 px, fondo blanco y sombra `0 6px 24px rgba(0, 0, 0, 0.16)`.
+- Cabecera, título, cierre, textarea, estado de persistencia y contador continúan usando las mismas clases `segnote__*` que origen y trayectos; no se introduce una segunda tipografía, espaciado ni formato de footer.
+- El scrim de la nota de lugar sólo captura el clic exterior y permanece transparente, igual que la capa de descarte de las notas de trayecto; el diálogo de confirmación para eliminar un lugar conserva su scrim oscuro existente.
+- El posicionamiento contextual de la nota de `Mis Rutas` puede permanecer centrado respecto al viewport; la solicitud de paridad afecta diseño, forma y formato de la superficie, no su anclaje.
+- Este ajuste no modifica contenido de notas, límite de 500 caracteres, callbacks, autosave, Storage v4, Firestore Rules, rutas, proveedores, cámara ni costos externos.
