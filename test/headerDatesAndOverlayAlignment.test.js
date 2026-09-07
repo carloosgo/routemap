@@ -17,7 +17,7 @@ test('note and detail overlays sit slightly below the integrated panel top while
   );
   assert.match(
     floating,
-    /\.workspace__desktop--column > \.mappane \.segnote,[\s\S]*left:\s*14px;/s
+    /\.workspace__desktop--column > \.mappane \.segnote\s*\{[^}]*left:\s*14px;/s
   );
 
   for (const source of [segmentHeader, origin]) {
