@@ -77,7 +77,7 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Mientras el modal de detalles está abierto, la pestaña de colapso del panel principal se oculta temporalmente y no recibe eventos; así no puede atravesar ni competir con la superficie de captura.
 - El modal de un destino reutiliza el `SegmentBody` canónico y sus callbacks existentes `updateSegment`/`updateExpenses`.
 - El modal del origen reutiliza `OriginBody`, `updateOriginDetails` y `updateOriginExpenses`; no crea un segmento artificial ni una ruta de persistencia distinta.
-- Como el mapa ya comienza físicamente después del panel integrado, Nota, Detalles y búsqueda usan un gutter local de 14 px respecto al borde izquierdo del mapa. El modal de detalles usa `min(446px, calc(100% - 28px))` en escritorio y no vuelve a restar el ancho del panel una segunda vez.
+- Como el mapa ya comienza físicamente después del panel integrado, Nota y Detalles usan un gutter local de 14 px respecto al borde izquierdo del mapa. La búsqueda se centra horizontalmente dentro del ancho real de `.mappane` y no comparte ese gutter. El modal de detalles usa `min(446px, calc(100% - 28px))` en escritorio y no vuelve a restar el ancho del panel una segunda vez.
 - Nota y Detalles arrancan 12 px por debajo de la cota que usaban bajo el header: `top: calc(var(--trip-header-height) + 12px)`. El panel integrado no se desplaza por este cambio y la búsqueda conserva su colocación actual.
 - Fechas y conceptos comparten exactamente dos columnas `1fr / 1fr` respecto al eje central, con gap de 10 px en escritorio. Ninguna mitad puede reservar un sobrante lateral propio.
 - El body del modal usa padding horizontal simétrico de 8 px. En viewports intermedios puede reducirse a 7 px y el gap central a 8 px para conservar legibilidad.
@@ -107,7 +107,7 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 ## Resto del mapa y aplicación
 
 - `AppWorkspaceMenu` conserva su anclaje flotante fijo al viewport. El panel integrado no usa `transform` en estado abierto, por lo que el botón azul de tres puntos conserva su referencia al viewport; el colapso completo del módulo izquierdo sigue liberando el mapa.
-- Los overlays de nota, detalles y búsqueda viven dentro de la columna real del mapa. Su `left: 14px` se mide desde el borde del mapa, no desde el viewport ni desde una tarjeta flotante superpuesta.
+- Los overlays de nota, detalles y búsqueda viven dentro de la columna real del mapa. Nota y Detalles usan `left: 14px` desde el borde izquierdo de `.mappane`; la búsqueda usa `left: 50%` y `translateX(-50%)` dentro de esa misma columna para quedar centrada en el área de mapa realmente visible.
 - La instalación PWA sólo aparece cuando el navegador emite `beforeinstallprompt`.
 - La búsqueda de lugares conserva sus componentes y proveedores actuales; seleccionar una sugerencia enfoca su resultado y la confirmación permanece anclada al marcador.
 - El marcador final mantiene el banderín SVG de 18 × 18 px y los puntos intermedios mantienen núcleo visual de 7 × 7 px más borde fino.
