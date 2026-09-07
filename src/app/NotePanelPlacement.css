@@ -6,3 +6,31 @@
     left: 14px;
   }
 }
+
+/* La nota de un lugar guardado vive en un scrim modal porque se abre desde
+   Mis Rutas, pero su superficie visual debe ser exactamente la misma que la
+   nota canónica de origen/trayecto. El scrim sólo captura el clic exterior:
+   no oscurece la aplicación ni introduce una segunda estética de modal. */
+.confirm__scrim:has(> .trip-place-note-dialog) {
+  background: transparent;
+}
+
+.trip-place-note-dialog {
+  position: relative;
+  top: auto;
+  left: auto;
+  display: flex;
+  width: min(300px, calc(100vw - 32px));
+  max-width: 300px;
+  flex-direction: column;
+  padding: 0;
+  overflow: visible;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16);
+  animation: segnote-in 0.14s ease;
+}
+
+.trip-place-note-dialog .segnote__textarea {
+  width: auto;
+}
