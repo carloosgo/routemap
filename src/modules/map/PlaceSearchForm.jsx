@@ -39,29 +39,29 @@ export function PlaceSearchForm({
               <span aria-hidden="true">×</span>
             </button>
           )}
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="geo-search__suggestions" role="listbox" aria-label={t('placeSuggestions')}>
+              {suggestions.map((place) => (
+                <button
+                  type="button"
+                  className="geo-search__suggestion"
+                  key={place.id}
+                  role="option"
+                  aria-selected="false"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => onChooseSuggestion(place)}
+                >
+                  <strong>{place.name}</strong>
+                  <small>{place.secondaryText || [place.city, place.country].filter(Boolean).join(', ')}</small>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <button type="submit" className="geo-search__button" disabled={searching}>
           {searching ? t('searching') : t('search')}
         </button>
       </div>
-      {showSuggestions && suggestions.length > 0 && (
-        <div className="geo-search__suggestions" role="listbox" aria-label={t('placeSuggestions')}>
-          {suggestions.map((place) => (
-            <button
-              type="button"
-              className="geo-search__suggestion"
-              key={place.id}
-              role="option"
-              aria-selected="false"
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => onChooseSuggestion(place)}
-            >
-              <strong>{place.name}</strong>
-              <small>{place.secondaryText || [place.city, place.country].filter(Boolean).join(', ')}</small>
-            </button>
-          ))}
-        </div>
-      )}
       {suggesting && query.trim().length >= minChars && !searching && (
         <div className="geo-search__status">{t('searchingSuggestions')}</div>
       )}
