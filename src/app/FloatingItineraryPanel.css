@@ -91,11 +91,15 @@
     transform: translate(0, -50%);
   }
 
-  /* El mapa ya comienza después del panel; sus superficies contextuales sólo
-     necesitan el gutter local de 14px, no volver a restar el ancho del panel. */
-  .workspace__desktop--column > .mappane .segnote,
-  .workspace__desktop--column > .mappane .geo-search {
+  /* El mapa ya comienza después del panel. La nota conserva su gutter local,
+     mientras la búsqueda debe permanecer centrada en el ancho real de mappane. */
+  .workspace__desktop--column > .mappane .segnote {
     left: 14px;
+  }
+
+  .workspace__desktop--column > .mappane .geo-search {
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   /* Nota y detalles dejan una pequeña respiración visual bajo el header sin
