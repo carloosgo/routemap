@@ -30,7 +30,8 @@ test('desktop primary panels keep one integrated left column aligned with the he
   assert.doesNotMatch(headerCss, /\.trip-summary\s*\{[^}]*border-bottom:/s);
   assert.match(css, /\.workspace-panel__toggle\s*\{[^}]*left:\s*var\(--workspace-panel-width\);[^}]*z-index:\s*701;/s);
   assert.match(css, /\.workspace__desktop--column\.is-panel-collapsed\s*\{[^}]*grid-template-columns:\s*0 minmax\(0, 1fr\);/s);
-  assert.match(css, /\.workspace__desktop--column > \.mappane \.segnote,[\s\S]*left:\s*14px;/s);
+  assert.match(css, /\.workspace__desktop--column > \.mappane \.segnote\s*\{[^}]*left:\s*14px;/s);
+  assert.match(css, /\.workspace__desktop--column > \.mappane \.geo-search\s*\{[^}]*left:\s*50%;[^}]*transform:\s*translateX\(-50%\);/s);
   assert.match(css, /\.workspace__desktop--column > \.mappane \.segnote\s*\{[^}]*top:\s*calc\(var\(--trip-header-height\) \+ 12px\)\s*!important;/s);
 
   assert.match(compact, /min-height:\s*40px;[\s\S]*height:\s*40px;/s);
