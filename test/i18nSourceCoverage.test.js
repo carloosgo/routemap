@@ -4,9 +4,14 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import es from '../src/i18n/es.js';
 import en from '../src/i18n/en.js';
+import { unifiedSearchMessages } from '../src/i18n/unifiedSearchMessages.js';
 
 const SOURCE_ROOT = new URL('../src/', import.meta.url);
 const SOURCE_EXTENSIONS = new Set(['.js', '.jsx']);
+const dictionaries = {
+  es: { ...es, ...unifiedSearchMessages.es },
+  en: { ...en, ...unifiedSearchMessages.en },
+};
 
 async function sourceFiles(directoryUrl) {
   const entries = await readdir(directoryUrl, { withFileTypes: true });
@@ -39,7 +44,7 @@ test('cada clave de traducción usada por el frontend existe en español e ingl�
   for (const fileUrl of await sourceFiles(SOURCE_ROOT)) {
     const source = await readFile(fileUrl, 'utf8');
     for (const key of translationKeys(source)) {
-      if (!Object.hasOwn(es, key) || !Object.hasOwn(en, key)) {
+      if (!Object.hasOwn(dictionaries.es, key) || !Object.hasOwn(dictionaries.en, key)) {
         missing.push(`${fileUrl.pathname}: ${key}`);
       }
     }
@@ -51,10 +56,10 @@ test('los placeholders de traducción coinciden entre idiomas', () => {
   const placeholders = (value) =>
     [...value.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map((match) => match[1]).sort();
 
-  for (const key of Object.keys(es)) {
+  for (const key of Object.keys(dictionaries.es)) {
     assert.deepEqual(
-      placeholders(en[key]),
-      placeholders(es[key]),
+      placeholders(dictionaries.en[key]),
+      placeholders(dictionaries.es[key]),
       `${key} debe usar las mismas variables en ambos idiomas`
     );
   }
