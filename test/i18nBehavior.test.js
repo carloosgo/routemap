@@ -10,7 +10,7 @@ test('el proveedor y los módulos reconstruyen su salida cuando cambia el idioma
   const provider = await read('src/i18n/index.jsx');
   const app = await read('src/App.jsx');
   const editorModule = await read('src/app/AppEditorModule.jsx');
-  const editorPane = await read('src/app/AppEditorPane.jsx');
+  const placesPanel = await read('src/modules/places/TripPlacesPanel.jsx');
   const segmentForm = await read('src/modules/trips/SegmentForm.jsx');
   const segmentBody = await read('src/modules/trips/SegmentBody.jsx');
   const originBody = await read('src/modules/trips/OriginBody.jsx');
@@ -28,7 +28,9 @@ test('el proveedor y los módulos reconstruyen su salida cuando cambia el idioma
   assert.match(app, /t=\{t\}/);
   assert.match(app, /intlLocale=\{intlLocale\}/);
   assert.match(editorModule, /intlLocale=\{intlLocale\}/);
-  assert.match(editorPane, /locale=\{intlLocale\}/);
+  assert.match(placesPanel, /compactDateRange\(segment\.startDate, segment\.endDate, intlLocale\)/);
+  assert.match(placesPanel, /formatSegmentAmount\(segmentTotal\(segment\), intlLocale, currency\)/);
+  assert.match(placesPanel, /formatPlanningDate\(originDetails\.departureDate, intlLocale\)/);
   assert.match(segmentForm, /locale=\{locale\}/);
   assert.match(segmentBody, /<CalendarDateInput[\s\S]*?locale=\{locale\}/);
   assert.match(segmentBody, /<ExpenseEditor[\s\S]*?currency=\{currency\}[\s\S]*?locale=\{locale\}/);
