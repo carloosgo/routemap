@@ -15,7 +15,6 @@ export function RouteMap({
   addCity,
   viewMode = 'segments',
   showCityTrace = viewMode === 'segments',
-  showSavedPlaces = viewMode === 'places',
 }) {
   const mapSegmentsSignature = useMemo(
     () => itineraryMapProjectionSignature(origin, segments),
@@ -35,7 +34,7 @@ export function RouteMap({
       addCity={addCity}
       viewMode={viewMode}
       showCityTrace={showCityTrace}
-      showSavedRoutes={showSavedPlaces}
+      showSavedRoutes={viewMode === 'places'}
     />
   );
 }
