@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { IconArrowRight, IconCheck, IconX } from '@tabler/icons-react';
+import { IconArrowRight, IconCheck, IconMap2, IconRoute, IconX } from '@tabler/icons-react';
 import { RouteMap } from '../modules/map/RouteMap.jsx';
 import { ItineraryDetailsModal } from '../modules/trips/ItineraryDetailsModal.jsx';
 import { buildItineraryStopSequence } from '../modules/trips/itineraryStopSequence.js';
@@ -37,10 +37,12 @@ export function AppMapPane({
 }) {
   const { noteTarget, detailsTarget, close } = itineraryPanels;
   const [planningMessage, setPlanningMessage] = useState('');
+  const [myRoutesMapMode, setMyRoutesMapMode] = useState('places');
   const persistenceLabel = t(persistenceLabelKey(persistenceState));
   const persistenceHasCheck = persistenceState === 'saved' || persistenceState === 'local';
   const stopSequence = buildItineraryStopSequence(trip.origin, trip.segments, colorForIndex);
   const planningDays = useMemo(() => tripPlanningDays(trip.segments), [trip.segments]);
+  const effectiveMapView = mapView === 'places' ? myRoutesMapMode : mapView;
 
   const showPlanningMessage = (message, duration = 2600) => {
     setPlanningMessage(message);
@@ -189,8 +191,32 @@ export function AppMapPane({
         places={trip.places || []}
         routeConnections={trip.routeConnections || []}
         addPlace={requestPlaceSave}
-        viewMode={mapView}
+        viewMode={effectiveMapView}
       />
+
+      {mapView === 'places' && (
+        <div className="my-routes-map-mode" role="group" aria-label={t('mapTraceMode')}>
+          <button
+            type="button"
+            className={myRoutesMapMode === 'segments' ? 'is-active' : ''}
+            aria-pressed={myRoutesMapMode === 'segments'}
+            onClick={() => setMyRoutesMapMode('segments')}
+          >
+            <IconMap2 size={15} stroke={1.8} aria-hidden="true" />
+            <span>{t('mapCities')}</span>
+          </button>
+          <button
+            type="button"
+            className={myRoutesMapMode === 'places' ? 'is-active' : ''}
+            aria-pressed={myRoutesMapMode === 'places'}
+            onClick={() => setMyRoutesMapMode('places')}
+          >
+            <IconRoute size={15} stroke={1.8} aria-hidden="true" />
+            <span>{t('mapRoutes')}</span>
+          </button>
+        </div>
+      )}
+
       {hasFloatingPanel && (
         <div
           aria-hidden="true"
