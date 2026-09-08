@@ -1,8 +1,10 @@
 import { config } from '../../config.js';
 import { firebaseCallable } from '../../infrastructure/firebase/callableFunctions.js';
+import { cacheCities, getCachedCities } from './citySearchCache.js';
 
 const SUPPORTED_LANGUAGES = new Set(['es', 'en']);
 const LATIN_NAME_PATTERN = /\p{Script=Latin}/u;
+const BROWSER_CACHE_SOURCES = new Set(['provider', 'provider-cache']);
 
 function normalizeQuery(value) {
   return String(value || '')
@@ -86,6 +88,13 @@ export function createGeoapifyCityProvider() {
 
     const safeLimit = Math.min(Math.max(Number(limit) || config.citySearchLimit, 1), 5);
     const safeLanguage = normalizeLanguage(language);
+    const cacheKey = `${queryKey}|${safeLanguage}|${safeLimit}`;
+    const cached = getCachedCities(cacheKey, config.citySearchCacheTtlMs);
+    if (cached) {
+      const sanitized = sanitizeCitySearchResults(cached, { language: safeLanguage });
+      if (sanitized.length !== cached.length) cacheCities(cacheKey, sanitized);
+      return sanitized;
+    }
 
     throwIfAborted(signal);
     const request = firebaseCallable('geoapifyCityAutocomplete');
@@ -96,9 +105,14 @@ export function createGeoapifyCityProvider() {
     });
     throwIfAborted(signal);
 
-    return sanitizeCitySearchResults(response.data?.results, {
+    const results = sanitizeCitySearchResults(response.data?.results, {
       language: safeLanguage,
     });
+    const responseSource = String(response.data?.source || '').trim();
+    if (BROWSER_CACHE_SOURCES.has(responseSource)) {
+      cacheCities(cacheKey, results);
+    }
+    return results;
   }
 
   return { search };
