@@ -5,6 +5,25 @@ Requested visual scope: selectores de moneda/idioma del header global; contenido
 
 La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atlas debe permanecer intacto. Los controles añadidos reutilizan componentes, dimensiones, espaciados, iconografía, dominio y persistencia ya existentes. Los cambios enumerados abajo son los deltas visuales aprobados.
 
+## Ajuste solicitado: búsqueda unificada, ciudades sin pivote de origen y ancho exacto de Mis Rutas (PR #84)
+
+- Este apartado es autoritativo para la superficie activa de `Mis Rutas` y sustituye únicamente las reglas históricas incompatibles de este documento. No reabre ni rediseña el resto de Atlas.
+- La navegación activa permanece reducida a `Mis Rutas / Notas`; no reaparece una pestaña separada de `Itinerario` ni una segunda superficie de edición.
+- En el flujo activo no existe una fila visual especial de ciudad origen. La lista de ciudades se proyecta desde `trip.segments`; la primera ciudad es simplemente la primera ciudad del viaje. `trip.origin` se conserva sólo como compatibilidad del modelo Storage v4 existente y no se convierte en un nuevo esquema ni se elimina mediante esta PR.
+- El buscador general del mapa comparte una sola superficie visible para dos dominios de resultados: ciudades provenientes de Geoapify y establecimientos/lugares provenientes de Google. Los resultados se distinguen explícitamente por tipo y conservan clientes, cuotas, reglas y políticas de datos independientes.
+- Geoapify conserva mínimo de 3 caracteres y debounce de 450 ms; Google conserva mínimo de 4 caracteres y debounce de 1000 ms. Compartir el campo visible no autoriza a reducir, aumentar ni homogeneizar esas políticas.
+- El antiguo catálogo persistido de ciudades Atlas deja de participar en la búsqueda activa. La búsqueda de ciudades consulta Geoapify Geocoding Search y puede usar únicamente cachés técnicas descartables de proveedor/navegador; esas cachés no son fuente canónica del viaje.
+- Seleccionar una ciudad permite agregarla al viaje mediante los callbacks canónicos de segmentos. Guardar un establecimiento Google lo asigna a una ciudad ya existente cuando la coincidencia es segura; si esa ciudad aún no existe, se resuelve mediante Geoapify y se crea mediante el flujo canónico antes de asociar el lugar. No se crea una ruta paralela de persistencia.
+- Si un lugar pertenece a una ciudad que todavía no tiene fechas, el lugar permanece asociado y pendiente de asignación diaria. El número de día se deriva después del calendario global del viaje; nunca se inventa un día local por ciudad.
+- Las ciudades conservan reordenamiento mediante drag con `pointermove / pointerup / pointercancel`; `pointercancel` no confirma un reorder y sólo el puntero activo puede cerrarlo. El cambio de superficie no degrada esa interacción a botones de subir/bajar.
+- El mapa unificado mantiene `Ciudades` y `Rutas` como capas de visibilidad independientes sobre el mismo renderer. No se crea un segundo mapa, un renderer alternativo ni duplicación de llamadas a proveedores.
+- El separador del header entre `Notas` y `Fechas del viaje` conserva su posición propia mediante `--workspace-header-split-width`; deja de depender de `--workspace-panel-width` para evitar un ciclo geométrico.
+- En escritorio, el borde derecho real de `Mis Rutas` termina exactamente en el punto medio entre el separador `Notas / Fechas del viaje` y el borde izquierdo real del icono de `Fechas del viaje`. La posición se calcula a partir de la geometría renderizada del header; no se aproxima con un offset fijo en píxeles.
+- `--workspace-panel-width` gobierna el ancho real del panel/workspace después de esa medición. Las reglas históricas que exigían que el panel terminara exactamente en el separador del header quedan sustituidas sólo para esta superficie activa.
+- El buscador sigue centrado dentro de `.mappane`, pero su ancho máximo se reduce proporcionalmente al ancho útil de mapa perdido por el ensanchamiento de `Mis Rutas`; mantiene 550 px como máximo histórico y no introduce escala, zoom ni compresión tipográfica.
+- El cambio de ancho no altera alturas de 40 px, tipografías, iconografía, paleta, radios, sombras, comportamiento responsive ni espaciados fuera del alcance descrito.
+- Storage v4, Firestore Rules, autosave, App Check, conexiones, gastos, notas y documentos históricos conservan sus contratos. Ningún payload dinámico de Google o Geoapify se vuelve dato canónico por este ajuste.
+
 ## Invariantes
 
 - No cambiar paleta, tipografías, tamaños, radios, sombras ni espaciados existentes fuera del alcance solicitado explícitamente.
