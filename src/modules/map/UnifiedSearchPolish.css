@@ -21,12 +21,9 @@
   border-radius: 3px;
 }
 
-/* The second map control is the saved-places layer. Keep the saved route
-   geometry coupled to that layer, but hide the saved place pins themselves
-   without removing them from application state (duplicate protection still
-   needs the complete places collection). */
-.mappane:has(.my-routes-map-mode button:nth-child(2)[aria-pressed="false"])
-  .google-saved-place-marker {
+/* Saved-place visibility is an explicit map-pane state. Route geometry remains
+   independent so hiding place pins cannot silently hide existing route lines. */
+.mappane[data-saved-places-visible="false"] .google-saved-place-marker {
   display: none !important;
 }
 
