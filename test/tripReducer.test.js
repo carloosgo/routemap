@@ -253,7 +253,7 @@ test('borrar el ultimo trayecto conserva el origen, pero limpiar origen es una a
   );
 });
 
-test('lugares nuevos admiten asignación válida o Por organizar cuando el itinerario ya tiene días', () => {
+test('lugares nuevos requieren ciudad; si la ciudad aún no tiene fechas el lugar queda pendiente en esa ciudad', () => {
   const state = planningTrip();
   const place = {
     id: 'place-1',
@@ -271,8 +271,9 @@ test('lugares nuevos admiten asignación válida o Por organizar cuando el itine
   const invalidDay = reduce(state, TRIP_ACTIONS.addPlace, {
     place: { ...place, id: 'invalid-day', dayOffset: 99 },
   });
-  const withoutPlanning = reduce(baseTrip(), TRIP_ACTIONS.addPlace, {
-    place: { ...place, id: 'no-planning', segmentId: '', dayOffset: null },
+  const pendingByCity = reduce(baseTrip(), TRIP_ACTIONS.addPlaceWithCity, {
+    place: { ...place, id: 'pending-city', segmentId: '', dayOffset: null },
+    city: reykjavik,
   });
   const full = {
     ...state,
@@ -290,12 +291,14 @@ test('lugares nuevos admiten asignación válida o Por organizar cuando el itine
   assert.equal(added.places[0].segmentId, 'segment-1');
   assert.equal(added.places[0].dayOffset, 0);
   assert.equal(duplicate, added);
-  assert.equal(unassigned.places.length, 1);
-  assert.equal(unassigned.places[0].segmentId, '');
-  assert.equal(unassigned.places[0].dayOffset, null);
+  assert.equal(unassigned, state);
   assert.equal(invalidDay, state);
-  assert.equal(withoutPlanning.id, 'trip-1');
-  assert.equal(withoutPlanning.places.length, 0);
+  assert.equal(pendingByCity.places.length, 1);
+  assert.equal(pendingByCity.places[0].segmentId, 'segment-1');
+  assert.equal(pendingByCity.places[0].dayOffset, 0);
+  assert.equal(pendingByCity.segments[0].destination.id, reykjavik.id);
+  assert.equal(pendingByCity.segments[0].startDate, '');
+  assert.equal(pendingByCity.segments[0].endDate, '');
   assert.equal(rejected, full);
   assert.equal(removed.places.length, 0);
 });
