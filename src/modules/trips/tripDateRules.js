@@ -31,7 +31,7 @@ function comparableDate(value) {
   return isTripISODate(value) ? value : '';
 }
 
-function createDateSlots(trip) {
+function createLegacyDateSlots(trip) {
   const slots = [
     {
       type: 'origin',
@@ -40,6 +40,11 @@ function createDateSlots(trip) {
     },
   ];
 
+  return slots.concat(createSegmentDateSlots(trip));
+}
+
+function createSegmentDateSlots(trip) {
+  const slots = [];
   for (const [segmentIndex, segment] of (trip?.segments || []).entries()) {
     slots.push({
       type: 'segment',
@@ -56,7 +61,6 @@ function createDateSlots(trip) {
       value: segment.endDate || '',
     });
   }
-
   return slots;
 }
 
@@ -99,8 +103,6 @@ function afterError(current, next) {
 }
 
 function validateChangedSlots(slots, changedIndexes) {
-  const originDate = comparableDate(slots[0]?.value);
-
   for (const index of changedIndexes) {
     const current = slots[index];
     const value = current?.value || '';
@@ -110,10 +112,6 @@ function validateChangedSlots(slots, changedIndexes) {
     if (!value) continue;
     if (!isTripISODate(value)) {
       return { valid: false, errorKey: TRIP_DATE_ERRORS.invalidDate };
-    }
-
-    if (current.type === 'segment' && originDate && value < originDate) {
-      return { valid: false, errorKey: TRIP_DATE_ERRORS.beforeOrigin };
     }
 
     const previous = previousComparableSlot(slots, index);
@@ -130,8 +128,10 @@ function validateChangedSlots(slots, changedIndexes) {
   return { valid: true, errorKey: '' };
 }
 
+// Se conserva únicamente para abrir viajes históricos que aún tengan datos de
+// origen. La cronología activa de Mis Rutas ya no usa ese origen como pivote.
 export function validateOriginDepartureDateChange(trip, departureDate) {
-  const slots = createDateSlots(trip);
+  const slots = createLegacyDateSlots(trip);
   slots[0] = { ...slots[0], value: departureDate || '' };
   return validateChangedSlots(slots, [0]);
 }
@@ -141,7 +141,9 @@ export function validateSegmentDatePatch(trip, segmentId, patch) {
   const changesEnd = hasOwn(patch, 'endDate');
   if (!changesStart && !changesEnd) return { valid: true, errorKey: '' };
 
-  const slots = createDateSlots(trip);
+  // Las ciudades forman ahora la cronología completa. Un origin histórico no
+  // puede limitar ni desplazar las fechas elegidas en la superficie unificada.
+  const slots = createSegmentDateSlots(trip);
   const startIndex = slots.findIndex(
     (slot) => slot.segmentId === segmentId && slot.field === 'startDate'
   );
@@ -188,11 +190,9 @@ export function tripBoundaryDates(tripOrSegments) {
     : (tripOrSegments || {});
   const segments = Array.isArray(trip.segments) ? trip.segments : [];
 
-  let startDate = comparableDate(trip.originDetails?.departureDate);
-  if (!startDate) {
-    const firstStart = segments.find((segment) => comparableDate(segment?.startDate));
-    startDate = comparableDate(firstStart?.startDate);
-  }
+  let startDate = '';
+  const firstStart = segments.find((segment) => comparableDate(segment?.startDate));
+  startDate = comparableDate(firstStart?.startDate);
   if (!startDate) {
     const firstEnd = segments.find((segment) => comparableDate(segment?.endDate));
     startDate = comparableDate(firstEnd?.endDate);
