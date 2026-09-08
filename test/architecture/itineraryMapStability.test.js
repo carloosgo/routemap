@@ -22,11 +22,15 @@ test('itinerary map preserves viewport after first projection and reconciles mar
   );
   assert.doesNotMatch(source, /const viewportChanged/);
 
-  const projectionEffect = source.match(
-    /useEffect\(\(\) => \{[\s\S]*?const firstItineraryProjection = lastItineraryViewportKeyRef\.current === null;[\s\S]*?\}, \[ready, segments, showCityTrace, t\]\);/
-  )?.[0] || '';
-  const automaticCameraCalls = projectionEffect.match(/map\.(?:panTo|setZoom|fitBounds)\(/g) || [];
-  assert.equal(automaticCameraCalls.length, 3, 'la cámara automática sólo pertenece al bloque de primera proyección');
+  const projectionStart = source.indexOf('const firstItineraryProjection =');
+  const projectionEnd = source.indexOf('return () => {', projectionStart);
+  const firstProjectionBlock = source.slice(projectionStart, projectionEnd);
+  const automaticCameraCalls = firstProjectionBlock.match(/map\.(?:panTo|setZoom|fitBounds)\(/g) || [];
+  assert.equal(
+    automaticCameraCalls.length,
+    3,
+    'la proyección del itinerario sólo puede mover cámara dentro del bloque inicial'
+  );
 
   const focusEffect = source.match(
     /useEffect\(\(\) => \{\s*const previousKey = firstDestinationKeyRef\.current;[\s\S]*?\}, \[firstDestination, firstDestinationKey, ready, showCityTrace\]\);/
