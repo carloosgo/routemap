@@ -31,16 +31,8 @@ export default function App() {
   const editorState = useAppEditorState(tripStore);
   const itineraryPanels = useItineraryFloatingPanels();
   const {
-    trip,
-    loadTrip,
-    setCurrency,
-    updateSegment,
-    updateExpenses,
-    updateOriginDetails,
-    updateOriginExpenses,
-    addPlace,
-    addCity,
-    addPlaceWithCity,
+    trip, loadTrip, setCurrency, updateSegment, updateExpenses, updateOriginDetails,
+    updateOriginExpenses, addPlace, addCity, addPlaceWithCity,
   } = tripStore;
   const { getTrip, getActiveTripDraft, stageTrip, getTripPersistenceState, saveTrip, deleteTrip, importLocalTrips, getLocalTripCount } = savedTrips;
   const [toast, setToast] = useState('');
@@ -89,20 +81,8 @@ export default function App() {
   }, []);
 
   const {
-    tripNamePromptOpen,
-    tripNameDraft,
-    setTripNameDraft,
-    closeTripNamePrompt,
-    handleSave,
-  } = useTripSaveFlow({
-    trip,
-    loadTrip,
-    stageTrip,
-    saveTrip,
-    persistence,
-    showToast,
-    t,
-  });
+    tripNamePromptOpen, tripNameDraft, setTripNameDraft, closeTripNamePrompt, handleSave,
+  } = useTripSaveFlow({ trip, loadTrip, stageTrip, saveTrip, persistence, showToast, t });
 
   const handleGoogleSignIn = useCallback(async () => {
     try {
