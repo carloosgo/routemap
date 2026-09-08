@@ -30,7 +30,7 @@ test('el proveedor y los módulos reconstruyen su salida cuando cambia el idioma
   assert.match(editorModule, /intlLocale=\{intlLocale\}/);
   assert.match(placesPanel, /compactDateRange\(segment\.startDate, segment\.endDate, intlLocale\)/);
   assert.match(placesPanel, /formatSegmentAmount\(segmentTotal\(segment\), intlLocale, currency\)/);
-  assert.match(placesPanel, /formatPlanningDate\(originDetails\.departureDate, intlLocale\)/);
+  assert.match(placesPanel, /formatPlanningDate\(group\.date, intlLocale\)/);
   assert.match(segmentForm, /locale=\{locale\}/);
   assert.match(segmentBody, /<CalendarDateInput[\s\S]*?locale=\{locale\}/);
   assert.match(segmentBody, /<ExpenseEditor[\s\S]*?currency=\{currency\}[\s\S]*?locale=\{locale\}/);
@@ -47,7 +47,7 @@ test('el proveedor y los módulos reconstruyen su salida cuando cambia el idioma
   assert.doesNotMatch(moneyInput, /moneycard__currency">\$<\/span>/);
 });
 
-test('la búsqueda de ciudades usa el idioma activo y separa catálogo, provider cache y browser cache', async () => {
+test('la búsqueda de ciudades usa el idioma activo y separa provider cache de browser cache sin catálogo canónico', async () => {
   const hook = await read('src/modules/geocoding/useCitySearch.js');
   const client = await read('src/modules/geocoding/citySearchClient.js');
   const cache = await read('src/modules/geocoding/citySearchCache.js');
@@ -70,8 +70,10 @@ test('la búsqueda de ciudades usa el idioma activo y separa catálogo, provider
   assert.match(backend, /const MAX_RESULTS = 5/);
   assert.doesNotMatch(backend, /MAX_PROVIDER_RESULTS|providerLimit/);
   assert.match(backend, /const language = requestedLanguage\(request\.data\?\.language\)/);
-  assert.match(backend, /readCityCatalogQuery/);
   assert.match(backend, /const key = `city:v8:\$\{queryKey\}:lang=\$\{language\}:limit=\$\{MAX_RESULTS\}`/);
+  assert.match(backend, /cached\('citySearchCache'/);
+  assert.match(backend, /source: cacheHit\.hit \? 'provider-cache' : 'provider'/);
+  assert.doesNotMatch(backend, /readCityCatalogQuery|persistCityCatalogQuery|cityCatalog/);
   assert.match(cityUtils, /limit: String\(safeLimit\)/);
   assert.match(cityUtils, /lang: safeLanguage/);
   assert.match(cityUtils, /bias: 'countrycode:none'/);
