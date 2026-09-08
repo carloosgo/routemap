@@ -30,7 +30,7 @@ function mapSources() {
   return mapSourcesPromise;
 }
 
-test('el mapa Google corrige tamaño al cambiar de vista y al redimensionar el panel', async () => {
+test('el mapa Google corrige tamaño al cambiar capas o al redimensionar el panel', async () => {
   const { google } = await mapSources();
 
   assert.match(google, /function syncMapElementSize/);
@@ -40,7 +40,7 @@ test('el mapa Google corrige tamaño al cambiar de vista y al redimensionar el p
   assert.match(google, /maps\.event\.trigger\(currentMap, 'resize'\)/);
   assert.match(google, /requestAnimationFrame\(\(\) => \{/);
   assert.match(google, /maps\.event\.trigger\(map, 'resize'\)/);
-  assert.match(google, /\[ready, viewMode\]/);
+  assert.match(google, /\[ready, showCityTrace, showSavedRoutes, viewMode\]/);
 });
 
 test('Itinerario conserva curvas adaptativas, colores y trazado discontinuo sobre Google', async () => {
@@ -90,61 +90,65 @@ test('Google Maps solo resuelve ubicaciones guardadas cuando Mis Rutas está act
   assert.doesNotMatch(google, /refreshGooglePlace|googlePlaceDetailsEssentials/);
 });
 
-test('la búsqueda Google conserva validación, debounce y protección contra respuestas antiguas', async () => {
+test('la búsqueda unificada conserva políticas, debounce y protección contra respuestas antiguas por proveedor', async () => {
   const { form, search } = await mapSources();
 
   assert.match(search, /async function submitSearch/);
   assert.match(form, /<form className="geo-search" onSubmit=\{onSubmit\}>/);
   assert.match(form, /type="submit"/);
+  assert.match(search, /text\.length < config\.citySearchMinChars/);
   assert.match(search, /text\.length < config\.googleMaps\.searchMinChars/);
+  assert.match(search, /config\.citySearchDebounceMs/);
   assert.match(search, /config\.googleMaps\.searchDebounceMs/);
   assert.match(search, /autocompleteGooglePlaces\(/);
   assert.match(search, /searchGooglePlaces\(/);
   assert.match(search, /searchSequenceRef/);
-  assert.match(search, /autocompleteSequenceRef/);
+  assert.match(search, /cityAutocompleteSequenceRef/);
+  assert.match(search, /googleAutocompleteSequenceRef/);
   assert.match(search, /sequence === searchSequenceRef\.current/);
-  assert.match(search, /sequence === autocompleteSequenceRef\.current/);
+  assert.match(search, /sequence !== cityAutocompleteSequenceRef\.current/);
+  assert.match(search, /sequence !== googleAutocompleteSequenceRef\.current/);
 });
 
-test('volver a Mis Rutas no dispara Autocomplete sin una edición nueva', async () => {
+test('la búsqueda sólo autocompleta en Mis Rutas y una selección no se vuelve a consultar hasta que el usuario edita', async () => {
   const { search } = await mapSources();
 
-  assert.match(search, /const previousViewModeRef = useRef\(viewMode\)/);
-  assert.match(search, /if \(previousViewMode !== 'places'\)/);
-  const guardBlock = search.slice(
-    search.indexOf("if (previousViewMode !== 'places')"),
-    search.indexOf('if (skipAutocompleteRef.current)')
-  );
-  assert.match(guardBlock, /return undefined/);
-  assert.doesNotMatch(guardBlock, /autocompleteGooglePlaces/);
+  assert.match(search, /viewMode !== 'places'/);
+  assert.match(search, /const suppressAutocompleteQueryRef = useRef\(''\)/);
+  assert.match(search, /suppressAutocompleteQueryRef\.current === query/);
+  assert.match(search, /suppressAutocompleteQueryRef\.current = label;[\s\S]*setQuery\(label\)/);
+  assert.match(search, /function handleQueryChange\(event\)[\s\S]*suppressAutocompleteQueryRef\.current = ''/);
 });
 
-test('elegir una sugerencia resuelve Place Details Essentials sin lanzar Text Search', async () => {
+test('elegir una sugerencia Google resuelve Place Details Essentials sin lanzar Text Search', async () => {
   const { search, placesClient } = await mapSources();
 
   assert.match(search, /async function chooseSuggestion\(prediction\)/);
   assert.match(search, /resolveGooglePlace\(prediction, token, \{ signal: controller\.signal \}\)/);
-  assert.match(search, /skipAutocompleteRef\.current = true/);
-  assert.match(search, /setResults\(\[\{ \.\.\.place, userLabel \}\]\)/);
+  assert.match(search, /suppressAutocompleteQueryRef\.current = label/);
+  assert.match(search, /setResults\(\[\{ \.\.\.placeSearchResult\(place\), userLabel \}\]\)/);
   assert.match(placesClient, /firebaseCallable\('googlePlaceDetailsEssentials'\)/);
 
-  const chooseBlock = search.slice(
-    search.indexOf('async function chooseSuggestion'),
-    search.indexOf('function clearSearch')
+  const googleChooseBlock = search.slice(
+    search.indexOf("const placeId = String(prediction?.id || '').trim();"),
+    search.indexOf('const dismissResults')
   );
-  assert.doesNotMatch(chooseBlock, /searchGooglePlaces|googlePlaceSearch/);
+  assert.doesNotMatch(googleChooseBlock, /searchGooglePlaces|googlePlaceSearch/);
 });
 
-test('cerrar la búsqueda limpia estado, renueva sesión y cancela solicitudes activas', async () => {
+test('cerrar la búsqueda limpia ambos proveedores, renueva sesión y cancela solicitudes activas', async () => {
   const { form, search, es, en } = await mapSources();
 
-  assert.match(search, /function clearSearch\(\)/);
-  assert.match(search, /autocompleteAbortRef\.current\?\.abort\(\)/);
+  assert.match(search, /function abortAutocomplete\(\)/);
+  assert.match(search, /cityAutocompleteAbortRef\.current\?\.abort\(\)/);
+  assert.match(search, /googleAutocompleteAbortRef\.current\?\.abort\(\)/);
+  assert.match(search, /function clearSearch\(\)[\s\S]*abortAutocomplete\(\)/);
   assert.match(search, /searchAbortRef\.current\?\.abort\(\)/);
   assert.match(search, /renewSession\(\)/);
   assert.match(search, /setQuery\(''\)/);
   assert.match(search, /setResults\(\[\]\)/);
-  assert.match(search, /setSuggestions\(\[\]\)/);
+  assert.match(search, /setCitySuggestions\(\[\]\)/);
+  assert.match(search, /setPlaceSuggestions\(\[\]\)/);
   assert.match(form, /className="geo-search__clear"/);
   assert.match(es, /closePlaceSearch:/);
   assert.match(en, /closePlaceSearch:/);
