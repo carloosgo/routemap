@@ -13,9 +13,12 @@ test('la búsqueda general compone ciudades Geoapify y lugares Google sin mezcla
   assert.match(search, /createGeoapifyCityProvider/);
   assert.match(search, /autocompleteGooglePlaces/);
   assert.match(search, /searchGooglePlaces/);
-  assert.match(search, /Promise\.allSettled\(\[[\s\S]*autocompleteGooglePlaces[\s\S]*cityProviderRef\.current\.search/);
-  assert.match(search, /Promise\.allSettled\(\[[\s\S]*searchGooglePlaces[\s\S]*cityProviderRef\.current\.search/);
-  assert.match(search, /setSuggestions\(\[\.\.\.citySuggestions, \.\.\.placeSuggestions\]\)/);
+  assert.match(search, /cityProviderRef\.current\.search\(text,[\s\S]*limit: 3,[\s\S]*language: locale/);
+  assert.match(search, /autocompleteGooglePlaces\([\s\S]*sessionTokenRef\.current/);
+  assert.match(search, /const googleSearch = text\.length >= config\.googleMaps\.searchMinChars/);
+  assert.match(search, /const citySearch = text\.length >= config\.citySearchMinChars/);
+  assert.match(search, /Promise\.allSettled\(\[[\s\S]*googleSearch,[\s\S]*citySearch/);
+  assert.match(search, /\(\) => \[\.\.\.citySuggestions, \.\.\.placeSuggestions\]/);
   assert.match(search, /setResults\(\[\.\.\.cities, \.\.\.places\]\)/);
   assert.match(search, /kind: 'city'/);
   assert.match(search, /kind: 'place'/);
@@ -30,12 +33,15 @@ test('el buscador unificado conserva políticas independientes por proveedor', a
   const config = await read('src/config.js');
 
   assert.match(config, /citySearchMinChars:\s*3/);
+  assert.match(config, /citySearchDebounceMs:\s*450/);
   assert.match(config, /citySearchLimit:\s*5/);
   assert.match(config, /googleMaps:\s*\{[\s\S]*searchMinChars:\s*4/);
   assert.match(config, /googleMaps:\s*\{[\s\S]*searchDebounceMs:\s*1000/);
-  assert.match(search, /limit: 3,[\s\S]*language: locale/);
-  assert.match(search, /limit: config\.citySearchLimit,[\s\S]*language: locale/);
+  assert.match(search, /text\.length < config\.citySearchMinChars/);
+  assert.match(search, /\}, config\.citySearchDebounceMs\)/);
   assert.match(search, /text\.length < config\.googleMaps\.searchMinChars/);
+  assert.match(search, /\}, config\.googleMaps\.searchDebounceMs\)/);
+  assert.match(search, /minChars: UNIFIED_SEARCH_MIN_CHARS/);
 });
 
 test('el modelo v4 nunca guarda lugares ni routing dentro de un tramo', async () => {
