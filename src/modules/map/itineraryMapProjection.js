@@ -1,4 +1,5 @@
 import { dominantTransport } from './routeMapModel.js';
+import { isPlaced } from '../trips/tripModel.js';
 
 function finiteCoordinate(value) {
   if (value === null || value === undefined || value === '') return null;
@@ -33,9 +34,9 @@ function projectedTransport(segment) {
 
 export function itineraryMapProjection(origin, segments) {
   const safeSegments = (Array.isArray(segments) ? segments : [])
-    .filter((segment) => projectedPlace(segment?.destination));
+    .filter((segment) => isPlaced(segment?.destination));
 
-  if (projectedPlace(origin)) {
+  if (isPlaced(origin)) {
     return safeSegments.map((segment, index) => ({
       id: String(segment?.id || ''),
       origin: projectedPlace(index === 0
@@ -46,19 +47,14 @@ export function itineraryMapProjection(origin, segments) {
     }));
   }
 
-  if (safeSegments.length === 0) return [];
-  if (safeSegments.length === 1) {
-    return [{
-      id: String(safeSegments[0]?.id || ''),
-      origin: projectedPlace(safeSegments[0]?.destination),
-      destination: null,
-      expenses: projectedTransport(safeSegments[0]),
-    }];
-  }
-
-  return safeSegments.slice(1).map((segment, index) => ({
+  // New unified flow: every segment is a city. The first city is represented as
+  // a destination without a preceding origin, so the existing itinerary renderer
+  // can number/mark it without resurrecting the old special-origin semantics.
+  return safeSegments.map((segment, index) => ({
     id: String(segment?.id || ''),
-    origin: projectedPlace(safeSegments[index]?.destination),
+    origin: index === 0
+      ? null
+      : projectedPlace(safeSegments[index - 1]?.destination),
     destination: projectedPlace(segment?.destination),
     expenses: projectedTransport(segment),
   }));
