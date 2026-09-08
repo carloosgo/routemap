@@ -2,104 +2,54 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import {
-  CITY_CATALOG_COLLECTIONS,
-  CITY_CATALOG_SCHEMA_VERSION,
-  cityCatalogProviderRefDocumentId,
-  cityCatalogQueryDocumentId,
-  evaluateCityCatalogProjection,
-} from '../functions/cityCatalog.js';
 
-function atlasCity(overrides = {}) {
-  return {
-    id: 'atlas-city-1',
-    name: 'Roma',
-    displayName: 'Roma, Italia',
-    region: 'Lazio',
-    regionCode: 'LAZ',
-    country: 'Italia',
-    countryCode: 'IT',
-    lat: 41.8933,
-    lon: 12.4829,
-    ...overrides,
-  };
-}
+const root = new URL('../', import.meta.url);
+const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('el catálogo usa namespaces propios, schema explícito y fingerprints sin consulta en claro', () => {
-  assert.equal(CITY_CATALOG_SCHEMA_VERSION, 1);
-  assert.deepEqual(CITY_CATALOG_COLLECTIONS, {
-    cities: 'cityCatalog',
-    providerRefs: 'cityCatalogProviderRefs',
-    queries: 'cityCatalogQueries',
-  });
+test('la búsqueda activa de ciudades no depende del antiguo catálogo Atlas', async () => {
+  const backend = await read('functions/geoapifyCityFunctions.js');
+  const client = await read('src/modules/geocoding/citySearchClient.js');
+  const hook = await read('src/modules/geocoding/useCitySearch.js');
 
-  const first = cityCatalogQueryDocumentId('rome', 'es');
-  const second = cityCatalogQueryDocumentId('rome', 'es');
-  const english = cityCatalogQueryDocumentId('rome', 'en');
+  assert.match(backend, /cached\('citySearchCache'/);
+  assert.match(backend, /buildGeoapifyCitySearchUrl/);
+  assert.match(backend, /source: cacheHit\.hit \? 'provider-cache' : 'provider'/);
+  assert.doesNotMatch(backend, /readCityCatalogQuery|persistCityCatalogQuery|readCitySearchCatalogProjection|writeCitySearchCatalogProjection/);
+  assert.doesNotMatch(backend, /cityCatalogProviderRefs|cityCatalogQueries|collection\('cityCatalog'\)/);
 
-  assert.equal(first, second);
-  assert.notEqual(first, english);
-  assert.equal(first.length, 64);
-  assert.doesNotMatch(first, /rome/i);
+  assert.match(client, /firebaseCallable\('geoapifyCityAutocomplete'\)/);
+  assert.match(hook, /getGeocoder\(\)\.search/);
+  assert.doesNotMatch(client, /cityCatalog/);
+  assert.doesNotMatch(hook, /cityCatalog/);
 });
 
-test('provider refs son deterministas pero el namespace no confunde proveedores', () => {
-  const geoapify = cityCatalogProviderRefDocumentId('geoapify', 'provider-place-1');
-  const other = cityCatalogProviderRefDocumentId('other', 'provider-place-1');
-
-  assert.equal(geoapify.length, 64);
-  assert.notEqual(geoapify, other);
-  assert.equal(
-    geoapify,
-    cityCatalogProviderRefDocumentId('geoapify', 'provider-place-1')
+test('la ciudad persistible conserva sólo el contrato canónico y descarta metadatos de proveedor', async () => {
+  const client = await read('src/modules/geocoding/citySearchClient.js');
+  const canonicalBlock = client.slice(
+    client.indexOf('export function canonicalCityFromSearchResult'),
+    client.indexOf('export function createGeoapifyCityProvider')
   );
+
+  assert.match(canonicalBlock, /id:/);
+  assert.match(canonicalBlock, /name:/);
+  assert.match(canonicalBlock, /displayName:/);
+  assert.match(canonicalBlock, /country:/);
+  assert.match(canonicalBlock, /countryCode:/);
+  assert.match(canonicalBlock, /lat:/);
+  assert.match(canonicalBlock, /lon:/);
+  assert.doesNotMatch(canonicalBlock, /region:/);
+  assert.doesNotMatch(canonicalBlock, /regionCode:/);
+  assert.doesNotMatch(canonicalBlock, /source:/);
 });
 
-test('una proyección fresca devuelve snapshots Atlas y una vencida queda disponible como stale fallback', () => {
-  const now = 1_000_000;
-  const fresh = evaluateCityCatalogProjection({
-    schemaVersion: 1,
-    results: [atlasCity(), atlasCity({ id: 'atlas-city-2', name: 'Rome', country: 'Estados Unidos', countryCode: 'US' })],
-    revalidateAfter: { toMillis: () => now + 1 },
-  }, { nowMs: now, limit: 1 });
+test('la caché de búsqueda sigue siendo técnica, descartable y sensible a idioma/límite', async () => {
+  const backend = await read('functions/geoapifyCityFunctions.js');
+  const client = await read('src/modules/geocoding/citySearchClient.js');
+  const cache = await read('src/modules/geocoding/citySearchCache.js');
 
-  assert.equal(fresh.status, 'fresh');
-  assert.equal(fresh.results.length, 1);
-  assert.equal(fresh.results[0].id, 'atlas-city-1');
-
-  const stale = evaluateCityCatalogProjection({
-    schemaVersion: 1,
-    results: [atlasCity()],
-    revalidateAfter: { toMillis: () => now - 1 },
-  }, { nowMs: now });
-
-  assert.equal(stale.status, 'stale');
-  assert.deepEqual(stale.results.map((city) => city.displayName), ['Roma, Italia']);
-});
-
-test('proyecciones corruptas o con coordenadas inválidas se tratan como miss', () => {
-  assert.deepEqual(
-    evaluateCityCatalogProjection({ schemaVersion: 999, results: [atlasCity()] }),
-    { status: 'miss', results: [] }
-  );
-  assert.deepEqual(
-    evaluateCityCatalogProjection({
-      schemaVersion: 1,
-      results: [atlasCity({ lat: 200 })],
-      revalidateAfter: { toMillis: () => Date.now() + 10_000 },
-    }),
-    { status: 'miss', results: [] }
-  );
-});
-
-test('el catálogo separa referencia canónica, provider mapping y proyección de búsqueda', async () => {
-  const source = await readFile('functions/cityCatalog.js', 'utf8');
-
-  assert.match(source, /runTransaction/);
-  assert.match(source, /collection\(CITY_CATALOG_COLLECTIONS\.cities\)\.doc\(\)/);
-  assert.match(source, /cityId: cityRef\.id/);
-  assert.match(source, /providerRefs/);
-  assert.match(source, /sourceAttribution/);
-  assert.match(source, /revalidateAfter: Timestamp\.fromMillis/);
-  assert.doesNotMatch(source, /expiresAt/);
+  assert.match(backend, /city:v8:\$\{queryKey\}:lang=\$\{language\}:limit=\$\{MAX_RESULTS\}/);
+  assert.match(client, /`\$\{queryKey\}\|\$\{safeLanguage\}\|\$\{safeLimit\}`/);
+  assert.match(cache, /atlas:geoapify-city-cache:v8/);
+  assert.match(client, /CANONICAL_CACHE_SOURCES/);
+  assert.doesNotMatch(cache, /firestore|cityCatalog/);
 });
