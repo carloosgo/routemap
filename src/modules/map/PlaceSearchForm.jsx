@@ -1,3 +1,4 @@
+import { flagImageUrl } from '../flags/flags.js';
 import { useTranslation } from '../../i18n/index.jsx';
 
 export function PlaceSearchForm({
@@ -40,21 +41,40 @@ export function PlaceSearchForm({
             </button>
           )}
           {showSuggestions && suggestions.length > 0 && (
-            <div className="geo-search__suggestions" role="listbox" aria-label={t('placeSuggestions')}>
-              {suggestions.map((place) => (
-                <button
-                  type="button"
-                  className="geo-search__suggestion"
-                  key={place.id}
-                  role="option"
-                  aria-selected="false"
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => onChooseSuggestion(place)}
-                >
-                  <strong>{place.name}</strong>
-                  <small>{place.secondaryText || [place.city, place.country].filter(Boolean).join(', ')}</small>
-                </button>
-              ))}
+            <div className="geo-search__suggestions" role="listbox" aria-label={t('searchSuggestions')}>
+              {suggestions.map((place) => {
+                const citySuggestion = place.kind === 'city';
+                const secondaryText = citySuggestion
+                  ? [place.region, place.country].filter(Boolean).join(', ')
+                  : place.secondaryText || [place.city, place.country].filter(Boolean).join(', ');
+                return (
+                  <button
+                    type="button"
+                    className={'geo-search__suggestion' + (citySuggestion ? ' is-city' : '')}
+                    key={place.id}
+                    role="option"
+                    aria-selected="false"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => onChooseSuggestion(place)}
+                  >
+                    {citySuggestion && place.countryCode && (
+                      <img
+                        className="geo-search__suggestion-flag"
+                        src={flagImageUrl(place.countryCode, 40)}
+                        alt=""
+                        width={24}
+                        height={17}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    )}
+                    <span className="geo-search__suggestion-copy">
+                      <strong>{place.name}</strong>
+                      {secondaryText && <small>{secondaryText}</small>}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
