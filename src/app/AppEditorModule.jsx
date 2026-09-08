@@ -24,17 +24,13 @@ export function AppEditorModule({
     removeNote,
     toggleChecklistItem,
     removeChecklistItem,
-    addSegment,
     removeSegment,
     reorderSegment,
-    updateSegment,
-    updateOrigin,
     updatePlace,
     removePlace,
     reorderPlace,
     movePlaceToDay,
     upsertRouteConnection,
-    removeRouteConnection,
     setRouteConnectionVisibility,
     setAllRouteConnectionsVisibility,
   } = tripStore;
@@ -57,9 +53,6 @@ export function AppEditorModule({
       segments={trip.segments}
       places={places}
       routes={trip.routeConnections || []}
-      updateSegment={updateSegment}
-      updateOrigin={updateOrigin}
-      addSegment={addSegment}
       removeSegment={removeSegment}
       reorderSegment={reorderSegment}
       toggleSegmentNote={itineraryPanels.toggleNote}
@@ -69,7 +62,6 @@ export function AppEditorModule({
       reorderPlace={reorderPlace}
       movePlaceToDay={movePlaceToDay}
       upsertRoute={upsertRouteConnection}
-      removeRoute={removeRouteConnection}
       setRouteVisibility={setRouteConnectionVisibility}
       setAllRouteVisibility={setAllRouteConnectionsVisibility}
       persistenceState={persistenceState}
