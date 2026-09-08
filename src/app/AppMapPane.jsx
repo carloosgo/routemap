@@ -55,7 +55,7 @@ function bestResolvedCity(place, cities) {
 
 export function AppMapPane({
   trip,
-  mapView = 'segments',
+  mapView = 'places',
   itineraryPanels,
   updateSegment,
   updateExpenses,
@@ -78,7 +78,7 @@ export function AppMapPane({
   const [showSavedRoutes, setShowSavedRoutes] = useState(true);
   const persistenceLabel = t(persistenceLabelKey(persistenceState));
   const persistenceHasCheck = persistenceState === 'saved' || persistenceState === 'local';
-  const stopSequence = buildItineraryStopSequence(trip.origin, trip.segments, colorForIndex);
+  const stopSequence = buildItineraryStopSequence(null, trip.segments, colorForIndex);
   const unifiedRoutesView = mapView === 'places';
 
   const showPlanningMessage = (message, duration = 3000) => {
@@ -176,11 +176,10 @@ export function AppMapPane({
     if (!segment) return null;
     const index = trip.segments.findIndex((item) => item.id === noteTarget);
     const stop = stopSequence[index];
-    const legOrigin = index === 0
-      ? trip.origin
-      : trip.segments[index - 1]?.destination || null;
-    const originName = legOrigin?.name || t('origin');
-    const destinationName = segment.destination?.name || t('destination');
+    const previousCity = index > 0
+      ? trip.segments[index - 1]?.destination || null
+      : null;
+    const destinationName = segment.destination?.name || t('city');
     const note = segment.note || '';
 
     return (
@@ -196,7 +195,9 @@ export function AppMapPane({
             <span className="segnote__badge" style={{ background: stop.color }}>{stop.number}</span>
           )}
           <span className="segnote__title">
-            {originName}<IconArrowRight size={11} aria-hidden="true" />{destinationName}
+            {previousCity?.name ? (
+              <>{previousCity.name}<IconArrowRight size={11} aria-hidden="true" />{destinationName}</>
+            ) : destinationName}
           </span>
           <button type="button" className="segnote__x" aria-label={t('closeNote')} onClick={close}>
             <IconX size={16} aria-hidden="true" />
