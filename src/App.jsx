@@ -17,6 +17,7 @@ import { useAppEditorState } from './app/useAppEditorState.js';
 import { useItineraryFloatingPanels } from './app/useItineraryFloatingPanels.js';
 import { useOutsideClick, useSaveShortcut } from './app/useAppInteractions.js';
 import { useTripSaveFlow } from './app/useTripSaveFlow.js';
+import { useWorkspacePanelGeometry } from './app/useWorkspacePanelGeometry.js';
 import './App.css';
 import './app/FloatingEditor.css';
 import './app/UnifiedMyRoutes.css';
@@ -55,6 +56,7 @@ export default function App() {
   const currentTripRef = useRef(trip);
   const recoveredDraftScopeRef = useRef(null);
   currentTripRef.current = trip;
+  useWorkspacePanelGeometry();
 
   const canSave = isTripSavable(trip);
   const persistence = useTripAutoPersistence({ trip, stageTrip, getTripPersistenceState, canRemoteSync: canSave });
