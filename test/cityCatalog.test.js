@@ -11,9 +11,9 @@ test('la búsqueda activa de ciudades no depende del antiguo catálogo Atlas', a
   const client = await read('src/modules/geocoding/citySearchClient.js');
   const hook = await read('src/modules/geocoding/useCitySearch.js');
 
-  assert.match(backend, /cached\('citySearchCache'/);
+  assert.match(backend, /cached\(\s*'citySearchCache'/);
   assert.match(backend, /buildGeoapifyCitySearchUrl/);
-  assert.match(backend, /source: cacheHit\.hit \? 'provider-cache' : 'provider'/);
+  assert.match(backend, /source: cachedProvider\.cacheHit \? 'provider-cache' : 'provider'/);
   assert.doesNotMatch(backend, /readCityCatalogQuery|persistCityCatalogQuery|readCitySearchCatalogProjection|writeCitySearchCatalogProjection/);
   assert.doesNotMatch(backend, /cityCatalogProviderRefs|cityCatalogQueries|collection\('cityCatalog'\)/);
 
@@ -47,7 +47,7 @@ test('la caché de búsqueda sigue siendo técnica, descartable y sensible a idi
   const client = await read('src/modules/geocoding/citySearchClient.js');
   const cache = await read('src/modules/geocoding/citySearchCache.js');
 
-  assert.match(backend, /city:v8:\$\{queryKey\}:lang=\$\{language\}:limit=\$\{MAX_RESULTS\}/);
+  assert.match(backend, /city:live:v1:\$\{queryKey\}:lang=\$\{language\}:limit=\$\{MAX_RESULTS\}/);
   assert.match(client, /`\$\{queryKey\}\|\$\{safeLanguage\}\|\$\{safeLimit\}`/);
   assert.match(cache, /atlas:geoapify-city-cache:v8/);
   assert.match(client, /CANONICAL_CACHE_SOURCES/);
