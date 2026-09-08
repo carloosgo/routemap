@@ -34,7 +34,7 @@ export function RouteMap({
       addCity={addCity}
       viewMode={viewMode}
       showCityTrace={showCityTrace}
-      showSavedPlaces={showSavedPlaces}
+      showSavedRoutes={showSavedPlaces}
     />
   );
 }
