@@ -6,10 +6,10 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('first destination transition pans the map without changing zoom', async () => {
+test('first destination transition pans the unified map without changing zoom', async () => {
   const map = await read('src/modules/map/GooglePlacesMap.jsx');
   const focusEffect = map.match(
-    /useEffect\(\(\) => \{\s*const previousKey = firstDestinationKeyRef\.current;[\s\S]*?\}, \[firstDestination, firstDestinationKey, placesActive, ready\]\);/
+    /useEffect\(\(\) => \{\s*const previousKey = firstDestinationKeyRef\.current;[\s\S]*?\}, \[firstDestination, firstDestinationKey, ready, showCityTrace\]\);/
   )?.[0] || '';
 
   assert.match(map, /const firstDestinationKeyRef = useRef\(firstDestinationKey\);/);
