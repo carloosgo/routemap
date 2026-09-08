@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { IconArrowRight, IconCheck, IconMap2, IconRoute, IconX } from '@tabler/icons-react';
+import { IconArrowRight, IconCheck, IconMapPin, IconRoute, IconX } from '@tabler/icons-react';
 import { RouteMap } from '../modules/map/RouteMap.jsx';
 import { createGeoapifyCityProvider, canonicalCityFromSearchResult } from '../modules/geocoding/citySearchClient.js';
 import { ItineraryDetailsModal } from '../modules/trips/ItineraryDetailsModal.jsx';
@@ -75,7 +75,7 @@ export function AppMapPane({
   if (!cityProviderRef.current) cityProviderRef.current = createGeoapifyCityProvider();
   const [planningMessage, setPlanningMessage] = useState('');
   const [showCityTrace, setShowCityTrace] = useState(true);
-  const [showSavedRoutes, setShowSavedRoutes] = useState(true);
+  const [showSavedPlaces, setShowSavedPlaces] = useState(true);
   const persistenceLabel = t(persistenceLabelKey(persistenceState));
   const persistenceHasCheck = persistenceState === 'saved' || persistenceState === 'local';
   const stopSequence = buildItineraryStopSequence(null, trip.segments, colorForIndex);
@@ -244,7 +244,7 @@ export function AppMapPane({
         addCity={requestCityAdd}
         viewMode={mapView}
         showCityTrace={unifiedRoutesView ? showCityTrace : true}
-        showSavedRoutes={unifiedRoutesView ? showSavedRoutes : false}
+        showSavedPlaces={unifiedRoutesView ? showSavedPlaces : false}
       />
 
       {unifiedRoutesView && (
@@ -255,17 +255,17 @@ export function AppMapPane({
             aria-pressed={showCityTrace}
             onClick={() => setShowCityTrace((value) => !value)}
           >
-            <IconMap2 size={15} stroke={1.8} aria-hidden="true" />
+            <IconRoute size={15} stroke={1.8} aria-hidden="true" />
             <span>{t('mapCities')}</span>
           </button>
           <button
             type="button"
-            className={showSavedRoutes ? 'is-active' : ''}
-            aria-pressed={showSavedRoutes}
-            onClick={() => setShowSavedRoutes((value) => !value)}
+            className={showSavedPlaces ? 'is-active' : ''}
+            aria-pressed={showSavedPlaces}
+            onClick={() => setShowSavedPlaces((value) => !value)}
           >
-            <IconRoute size={15} stroke={1.8} aria-hidden="true" />
-            <span>{t('mapRoutes')}</span>
+            <IconMapPin size={15} stroke={1.8} aria-hidden="true" />
+            <span>{t('mapSavedPlaces')}</span>
           </button>
         </div>
       )}
