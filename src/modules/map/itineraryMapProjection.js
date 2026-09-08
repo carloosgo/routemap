@@ -1,4 +1,5 @@
 import { dominantTransport } from './routeMapModel.js';
+import { isPlaced } from '../trips/tripModel.js';
 
 function finiteCoordinate(value) {
   if (value === null || value === undefined || value === '') return null;
@@ -19,27 +20,46 @@ function projectedPlace(place) {
   };
 }
 
+function projectedTransport(segment) {
+  const planeDominant = dominantTransport(segment) === 'plane';
+  return {
+    transport: {
+      plane: planeDominant ? 1 : 0,
+      train: 0,
+      bus: 0,
+      taxiUber: 0,
+    },
+  };
+}
+
 export function itineraryMapProjection(origin, segments) {
+  // Preserve every canonical segment, including partially entered legacy rows.
+  // Null/empty coordinates stay null instead of becoming 0,0; downstream map
+  // feature builders remain responsible for deciding which geometry is drawable.
   const safeSegments = Array.isArray(segments) ? segments : [];
-  return safeSegments.map((segment, index) => {
-    const planeDominant = dominantTransport(segment) === 'plane';
-    const legOrigin = index === 0
-      ? origin
-      : safeSegments[index - 1]?.destination || null;
-    return {
+
+  if (isPlaced(origin)) {
+    return safeSegments.map((segment, index) => ({
       id: String(segment?.id || ''),
-      origin: projectedPlace(legOrigin),
+      origin: projectedPlace(index === 0
+        ? origin
+        : safeSegments[index - 1]?.destination || null),
       destination: projectedPlace(segment?.destination),
-      expenses: {
-        transport: {
-          plane: planeDominant ? 1 : 0,
-          train: 0,
-          bus: 0,
-          taxiUber: 0,
-        },
-      },
-    };
-  });
+      expenses: projectedTransport(segment),
+    }));
+  }
+
+  // New unified flow: every segment is a city. The first city is represented as
+  // a destination without a preceding origin, so the existing itinerary renderer
+  // can number/mark it without resurrecting the old special-origin semantics.
+  return safeSegments.map((segment, index) => ({
+    id: String(segment?.id || ''),
+    origin: index === 0
+      ? null
+      : projectedPlace(safeSegments[index - 1]?.destination),
+    destination: projectedPlace(segment?.destination),
+    expenses: projectedTransport(segment),
+  }));
 }
 
 export function itineraryMapProjectionSignature(origin, segments) {

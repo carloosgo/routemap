@@ -33,7 +33,7 @@ function toGooglePath(coordinates) {
 }
 
 function placeLabel(place, t) {
-  return place.name || place.userLabel || t('place');
+  return place.name || place.userLabel || t(place?.kind === 'city' ? 'city' : 'place');
 }
 
 function savedMarkerContent(place, t, color) {
@@ -82,10 +82,10 @@ function updateItineraryCityContent(marker, city, color, t, {
   if (origin && numbers.length) {
     marker.setAttribute(
       'aria-label',
-      `${t('origin')}: ${cityName} · ${numbers.join(', ')}. ${cityName}`
+      `${cityName} · ${numbers.join(', ')}`
     );
   } else if (origin) {
-    marker.setAttribute('aria-label', `${t('origin')}: ${cityName}`);
+    marker.setAttribute('aria-label', cityName);
   } else if (numbers.length) {
     marker.setAttribute('aria-label', `${numbers.join(', ')}. ${cityName}`);
   } else {
@@ -176,6 +176,37 @@ function sameSavedPlace(saved, result) {
   }
   return String(saved?.id || '') === String(result?.id || '');
 }
+
+function normalizedCityText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+function sameCity(left, right) {
+  if (!left || !right) return false;
+  const leftId = String(left.id || '').trim();
+  const rightId = String(right.id || '').trim();
+  if (leftId && rightId && leftId === rightId) return true;
+  if (isPlaced(left) && isPlaced(right) && cityKey(left) === cityKey(right)) return true;
+  const leftCountryCode = String(left.countryCode || '').trim().toUpperCase();
+  const rightCountryCode = String(right.countryCode || '').trim().toUpperCase();
+  const sameCountry = leftCountryCode && rightCountryCode
+    ? leftCountryCode === rightCountryCode
+    : normalizedCityText(left.country) === normalizedCityText(right.country);
+  return sameCountry
+    && normalizedCityText(left.name) === normalizedCityText(right.name);
+}
+
+function itineraryContainsCity(segments, result) {
+  return (Array.isArray(segments) ? segments : []).some((segment) =>
+    sameCity(segment?.origin, result) || sameCity(segment?.destination, result)
+  );
+}
+
 function placeForSaving(selected) {
   return {
     id: selected.id,
@@ -199,7 +230,10 @@ export function GooglePlacesMap({
   places = [],
   routeConnections = [],
   addPlace,
+  addCity,
   viewMode = 'segments',
+  showCityTrace = viewMode === 'segments',
+  showSavedRoutes = viewMode === 'places',
 }) {
   const { t } = useTranslation();
   const wrapRef = useRef(null);
@@ -215,9 +249,12 @@ export function GooglePlacesMap({
   const infoWindowRef = useRef(null);
   const saveNoticeTimerRef = useRef(null);
   const lastItineraryViewportKeyRef = useRef(null);
-  const firstDestination = isPlaced(segments?.[0]?.destination)
-    ? segments[0].destination
-    : null;
+  const placesActive = viewMode === 'places';
+  const firstDestination = placesActive && isPlaced(segments?.[0]?.origin)
+    ? segments[0].origin
+    : isPlaced(segments?.[0]?.destination)
+      ? segments[0].destination
+      : null;
   const firstDestinationKey = firstDestination ? cityKey(firstDestination) : '';
   const firstDestinationKeyRef = useRef(firstDestinationKey);
   const pendingFirstDestinationFocusRef = useRef(null);
@@ -226,7 +263,6 @@ export function GooglePlacesMap({
   const [ready, setReady] = useState(false);
   const [loadErrorKey, setLoadErrorKey] = useState('');
   const [saveNotice, setSaveNotice] = useState('');
-  const placesActive = viewMode === 'places';
   const placeSearch = usePlaceSearch({ viewMode });
   const {
     dismissResults: dismissPlaceSearchResults,
@@ -426,7 +462,7 @@ export function GooglePlacesMap({
       itineraryRoutesOverlayRef.current?.refresh();
     });
     return () => cancelAnimationFrame(frame);
-  }, [ready, viewMode]);
+  }, [ready, showCityTrace, showSavedRoutes, viewMode]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -464,7 +500,7 @@ export function GooglePlacesMap({
       controller?.abort();
       controller = null;
 
-      if (placesActive || !itineraryCountries.length) {
+      if (!showCityTrace || !itineraryCountries.length) {
         countryLayer.style = null;
         return;
       }
@@ -507,15 +543,15 @@ export function GooglePlacesMap({
       controller?.abort();
       capabilityListener?.remove?.();
     };
-  }, [itineraryCountries, placesActive, ready]);
+  }, [itineraryCountries, ready, showCityTrace]);
 
   useEffect(() => {
     const map = mapRef.current;
     const AdvancedMarkerElement = map?.__AdvancedMarkerElement;
     const maps = globalThis.google?.maps;
     const landmarkOverlay = itineraryLandmarkOverlayRef.current;
-    if (!map || !ready || !AdvancedMarkerElement || !maps || placesActive) {
-      if (placesActive) clearItineraryMarkers(itineraryMarkersByKeyRef);
+    if (!map || !ready || !AdvancedMarkerElement || !maps || !showCityTrace) {
+      if (!showCityTrace) clearItineraryMarkers(itineraryMarkersByKeyRef);
       itineraryRoutesOverlayRef.current?.setRoutes([]);
       landmarkOverlay?.setLandmarks([]);
       return undefined;
@@ -638,10 +674,6 @@ export function GooglePlacesMap({
     const firstItineraryProjection = lastItineraryViewportKeyRef.current === null;
     lastItineraryViewportKeyRef.current = viewportKey;
 
-    /* El viewport pertenece al usuario después de la primera proyección. Cargar
-       un itinerario ya existente puede encuadrarlo una vez; agregar, eliminar o
-       reordenar ciudades nunca vuelve a ejecutar movimientos automáticos de cámara.
-       La selección inicial de un destino es una excepción explícita y conserva zoom. */
     if (
       firstItineraryProjection
       && routeCities.length > 0
@@ -672,7 +704,7 @@ export function GooglePlacesMap({
       /* No desmontar aquí trazos, landmarks ni marcadores: el siguiente efecto
          los reconcilia sobre los mismos nodos y evita un frame intermedio vacío. */
     };
-  }, [placesActive, ready, segments, t]);
+  }, [ready, segments, showCityTrace, t]);
 
   useEffect(() => {
     const previousKey = firstDestinationKeyRef.current;
@@ -687,7 +719,7 @@ export function GooglePlacesMap({
 
     const pendingFocus = pendingFirstDestinationFocusRef.current;
     const map = mapRef.current;
-    if (!map || !ready || placesActive || !pendingFocus) return;
+    if (!map || !ready || !showCityTrace || !pendingFocus) return;
     if (!Number.isFinite(pendingFocus.lat) || !Number.isFinite(pendingFocus.lng)) {
       pendingFirstDestinationFocusRef.current = null;
       return;
@@ -695,7 +727,7 @@ export function GooglePlacesMap({
 
     map.panTo({ lat: pendingFocus.lat, lng: pendingFocus.lng });
     pendingFirstDestinationFocusRef.current = null;
-  }, [firstDestination, firstDestinationKey, placesActive, ready]);
+  }, [firstDestination, firstDestinationKey, ready, showCityTrace]);
 
   useEffect(() => {
     if (!ready || !placesActive) return undefined;
@@ -749,6 +781,7 @@ export function GooglePlacesMap({
 
     return () => clearAdvancedMarkers(savedPlaceMarkersRef);
   }, [locatedPlaces, placesActive, ready, savedMarkerColors, t]);
+
   useEffect(() => {
     const map = mapRef.current;
     const AdvancedMarkerElement = map?.__AdvancedMarkerElement;
@@ -761,17 +794,30 @@ export function GooglePlacesMap({
     const results = placeSearchResults.filter(isPlaced);
     const resultBounds = new maps.LatLngBounds();
     results.forEach((place) => {
-      const alreadySaved = places.some((saved) => sameSavedPlace(saved, place));
+      const isCityResult = place.kind === 'city';
+      const alreadySaved = !isCityResult
+        && places.some((saved) => sameSavedPlace(saved, place));
+      const alreadyAdded = isCityResult && itineraryContainsCity(segments, place);
       const content = markerElement(place, t, {
         alreadySaved,
-        onSave: (selected) => {
+        alreadyAdded,
+        onAddCity: (selected) => {
+          const accepted = addCity?.(selected);
+          if (accepted === false) return false;
+          clearTimeout(saveNoticeTimerRef.current);
+          setSaveNotice(t('cityAdded'));
+          saveNoticeTimerRef.current = setTimeout(() => setSaveNotice(''), 2200);
+          return true;
+        },
+        onSave: async (selected) => {
           const savedPlace = placeForSaving(selected);
-          if (!isPlaced(savedPlace)) return;
-          const accepted = addPlace?.(savedPlace);
-          if (accepted === false) return;
+          if (!isPlaced(savedPlace)) return false;
+          const accepted = await addPlace?.(savedPlace);
+          if (accepted === false) return false;
           clearTimeout(saveNoticeTimerRef.current);
           setSaveNotice(t('placeSaved'));
           saveNoticeTimerRef.current = setTimeout(() => setSaveNotice(''), 2200);
+          return true;
         },
       });
       const marker = new AdvancedMarkerElement({
@@ -787,18 +833,20 @@ export function GooglePlacesMap({
 
     if (results.length === 1) {
       map.panTo({ lat: results[0].lat, lng: results[0].lon });
-      map.setZoom(14);
+      map.setZoom(results[0].kind === 'city' ? 10 : 14);
     } else if (results.length > 1 && !resultBounds.isEmpty()) {
       map.fitBounds(resultBounds, 84);
     }
 
     return () => clearAdvancedMarkers(resultPlaceMarkersRef);
   }, [
+    addCity,
     addPlace,
     placeSearchResults,
     places,
     placesActive,
     ready,
+    segments,
     t,
   ]);
 
@@ -806,7 +854,7 @@ export function GooglePlacesMap({
     const map = mapRef.current;
     const maps = globalThis.google?.maps;
     clearPolylines(savedRouteLinesRef);
-    if (!map || !ready || !maps || !placesActive) return undefined;
+    if (!map || !ready || !maps || !placesActive || !showSavedRoutes) return undefined;
 
     routeConnections
       .filter((route) => route.visible !== false && route.geometry)
@@ -826,7 +874,7 @@ export function GooglePlacesMap({
       });
 
     return () => clearPolylines(savedRouteLinesRef);
-  }, [placesActive, ready, routeConnections]);
+  }, [placesActive, ready, routeConnections, showSavedRoutes]);
 
   return (
     <div className="geo-map-wrap google-map-wrap" ref={wrapRef}>
@@ -852,7 +900,7 @@ export function GooglePlacesMap({
           onChooseSuggestion={placeSearch.chooseSuggestion}
         />
       )}
-      {placesActive && routeConnections.some(
+      {placesActive && showSavedRoutes && routeConnections.some(
         (route) => route.visible !== false && route.geometry
       ) && (
         <div className="google-route-attribution">Powered by Google</div>

@@ -63,9 +63,9 @@ function reconcileReorderedSegmentDates(trip, segmentId) {
   if (validateSegmentDatePatch(trip, segmentId, currentDates).valid) return trip;
 
   // Reordering is structural: never shift dates or mutate unaffected legs silently.
-  // Keep the largest valid subset of the moved leg's existing dates. When an old
+  // Keep the largest valid subset of the moved city's existing dates. When an old
   // date cannot fit between its new neighbours, clearing that constraint lets the
-  // user choose a new date without leaving the calendar in an impossible min/max state.
+  // user choose a new date without leaving the calendar in an impossible state.
   const candidates = [
     { startDate: '', endDate: currentDates.endDate },
     { startDate: currentDates.startDate, endDate: '' },
@@ -181,13 +181,11 @@ export function routeStops(trip, { dedupeCountry = false } = {}) {
 }
 
 export function hasSavableRoute(trip) {
-  const segments = Array.isArray(trip?.segments) ? trip.segments : [];
-  return segments.some((segment, index) => {
-    const origin = index === 0
-      ? trip?.origin
-      : segments[index - 1]?.destination;
-    return isPlaced(origin) && isPlaced(segment?.destination);
-  });
+  // El nombre se mantiene por compatibilidad con consumidores existentes, pero
+  // la unidad mínima guardable es ahora una ciudad real del viaje. Ya no se
+  // necesita un par origen→destino para que el viaje sea válido.
+  return (Array.isArray(trip?.segments) ? trip.segments : [])
+    .some((segment) => isPlaced(segment?.destination));
 }
 
 export function isTripSavable(trip) {

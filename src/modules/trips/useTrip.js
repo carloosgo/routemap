@@ -59,6 +59,10 @@ export function useTrip(initialTrip) {
     []
   );
   const addSegment = useCallback(() => dispatch({ type: TRIP_ACTIONS.addSegment }), []);
+  const addCity = useCallback(
+    (city) => dispatch({ type: TRIP_ACTIONS.addCity, city }),
+    []
+  );
   const removeSegment = useCallback(
     (segmentId) => dispatch({ type: TRIP_ACTIONS.removeSegment, segmentId }),
     []
@@ -82,6 +86,10 @@ export function useTrip(initialTrip) {
   );
   const addPlace = useCallback(
     (place) => dispatch({ type: TRIP_ACTIONS.addPlace, place }),
+    []
+  );
+  const addPlaceWithCity = useCallback(
+    (city, place) => dispatch({ type: TRIP_ACTIONS.addPlaceWithCity, city, place }),
     []
   );
   const updatePlace = useCallback(
@@ -147,11 +155,13 @@ export function useTrip(initialTrip) {
     toggleChecklistItem,
     removeChecklistItem,
     addSegment,
+    addCity,
     removeSegment,
     reorderSegment,
     updateSegment,
     updateExpenses,
     addPlace,
+    addPlaceWithCity,
     updatePlace,
     removePlace,
     reorderPlace,

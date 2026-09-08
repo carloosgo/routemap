@@ -5,40 +5,43 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('el autocompletado de ciudades pertenece exclusivamente a Tramos', async () => {
-  const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
-  const header = await read('src/modules/trips/SegmentHeader.jsx');
-  const body = await read('src/modules/trips/SegmentBody.jsx');
-  const cityAutocomplete = await read('src/components/CityAutocomplete.jsx');
-  const citySearch = await read('src/modules/geocoding/useCitySearch.js');
-  const provider = await read('src/modules/geocoding/geocodingProvider.js');
+test('la búsqueda general compone ciudades Geoapify y lugares Google sin mezclar sus clientes', async () => {
+  const search = await read('src/modules/map/usePlaceSearch.js');
   const cityClient = await read('src/modules/geocoding/citySearchClient.js');
-
-  assert.match(origin, /<CityAutocomplete[\s\S]*value=\{city\}[\s\S]*onSelect=\{onSelect\}/);
-  assert.match(header, /<CityAutocomplete[\s\S]*value=\{destination\}[\s\S]*onSelect=\{onDestinationSelect\}/);
-  assert.doesNotMatch(body, /CityAutocomplete/);
-  assert.match(cityAutocomplete, /useCitySearch/);
-  assert.match(citySearch, /getGeocoder\(\)\.search/);
-  assert.match(provider, /createGeoapifyCityProvider/);
-  assert.match(cityClient, /firebaseCallable\('geoapifyCityAutocomplete'\)/);
-
-  const combined = `${origin}\n${header}\n${body}\n${cityAutocomplete}\n${citySearch}\n${provider}\n${cityClient}`;
-  assert.doesNotMatch(combined, /usePlaceSearch|searchGooglePlaces|PlaceSearchForm|TripPlacesPanel|googlePlaceSearch/);
-});
-
-test('la búsqueda general Google no lee origen, destino ni módulos de ciudades', async () => {
-  const routeMap = await read('src/modules/map/RouteMap.jsx');
-  const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
-  const placeSearch = await read('src/modules/map/usePlaceSearch.js');
   const placeClient = await read('src/modules/places/googlePlacesClient.js');
 
-  assert.match(routeMap, /<GooglePlacesMap/);
-  assert.match(googleMap, /usePlaceSearch\(\{ viewMode \}\)/);
-  assert.match(googleMap, /placesActive && mapConfigured/);
-  assert.match(googleMap, /<PlaceSearchForm/);
-  assert.doesNotMatch(routeMap, /placeSearchContext|searchContext|CityAutocomplete/);
-  assert.doesNotMatch(placeSearch, /segments|origin|destination|useCitySearch|getGeocoder/);
-  assert.doesNotMatch(placeClient, /contextualQuery|callableSearchContext|contextKey|searchContext|citySearchClient|geoapifyCityAutocomplete/);
+  assert.match(search, /createGeoapifyCityProvider/);
+  assert.match(search, /autocompleteGooglePlaces/);
+  assert.match(search, /searchGooglePlaces/);
+  assert.match(search, /cityProviderRef\.current\.search\(text,[\s\S]*limit: 3,[\s\S]*language: locale/);
+  assert.match(search, /autocompleteGooglePlaces\([\s\S]*sessionTokenRef\.current/);
+  assert.match(search, /const googleSearch = text\.length >= config\.googleMaps\.searchMinChars/);
+  assert.match(search, /const citySearch = text\.length >= config\.citySearchMinChars/);
+  assert.match(search, /Promise\.allSettled\(\[[\s\S]*googleSearch,[\s\S]*citySearch/);
+  assert.match(search, /\(\) => \[\.\.\.citySuggestions, \.\.\.placeSuggestions\]/);
+  assert.match(search, /setResults\(\[\.\.\.cities, \.\.\.places\]\)/);
+  assert.match(search, /kind: 'city'/);
+  assert.match(search, /kind: 'place'/);
+
+  assert.match(cityClient, /firebaseCallable\('geoapifyCityAutocomplete'\)/);
+  assert.doesNotMatch(cityClient, /googlePlaceSearch|googlePlaceAutocomplete|googlePlacesClient/);
+  assert.doesNotMatch(placeClient, /geoapifyCityAutocomplete|citySearchClient|createGeoapifyCityProvider/);
+});
+
+test('el buscador unificado conserva políticas independientes por proveedor', async () => {
+  const search = await read('src/modules/map/usePlaceSearch.js');
+  const config = await read('src/config.js');
+
+  assert.match(config, /citySearchMinChars:\s*3/);
+  assert.match(config, /citySearchDebounceMs:\s*450/);
+  assert.match(config, /citySearchLimit:\s*5/);
+  assert.match(config, /googleMaps:\s*\{[\s\S]*searchMinChars:\s*4/);
+  assert.match(config, /googleMaps:\s*\{[\s\S]*searchDebounceMs:\s*1000/);
+  assert.match(search, /text\.length < config\.citySearchMinChars/);
+  assert.match(search, /\}, config\.citySearchDebounceMs\)/);
+  assert.match(search, /text\.length < config\.googleMaps\.searchMinChars/);
+  assert.match(search, /\}, config\.googleMaps\.searchDebounceMs\)/);
+  assert.match(search, /minChars: UNIFIED_SEARCH_MIN_CHARS/);
 });
 
 test('el modelo v4 nunca guarda lugares ni routing dentro de un tramo', async () => {
@@ -59,19 +62,22 @@ test('el modelo v4 nunca guarda lugares ni routing dentro de un tramo', async ()
   assert.doesNotMatch(rules, /'route'/);
 });
 
-test('Tramos y Mis Rutas comparten lienzo Google sin compartir lógica de dominio', async () => {
+test('el mapa unificado renderiza ciudades, lugares y rutas sin asumir el origen como pivote', async () => {
   const pane = await read('src/app/AppMapPane.jsx');
   const routeMap = await read('src/modules/map/RouteMap.jsx');
   const projection = await read('src/modules/map/itineraryMapProjection.js');
   const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
 
-  assert.match(pane, /<RouteMap[\s\S]*origin=\{trip\.origin\}[\s\S]*segments=\{trip\.segments\}[\s\S]*places=\{trip\.places \|\| \[\]\}/);
+  assert.match(pane, /origin=\{unifiedRoutesView \? null : trip\.origin\}/);
+  assert.match(pane, /addPlace=\{requestPlaceSave\}/);
+  assert.match(pane, /addCity=\{requestCityAdd\}/);
   assert.match(routeMap, /itineraryMapProjectionSignature\(origin, segments\)/);
   assert.match(routeMap, /segments=\{mapSegments\}/);
   assert.match(routeMap, /places=\{places\}/);
   assert.match(routeMap, /viewMode=\{viewMode\}/);
-  assert.match(projection, /export function itineraryMapProjection/);
+  assert.match(projection, /if \(isPlaced\(origin\)\)/);
+  assert.match(projection, /origin: index === 0\s*\? null/);
   assert.match(googleMap, /buildMapFeatureData/);
   assert.match(googleMap, /const placesActive = viewMode === 'places'/);
-  assert.doesNotMatch(googleMap, /updateSegment|addSegment|removeSegment|CityAutocomplete|geoapifyCityAutocomplete/);
+  assert.doesNotMatch(googleMap, /updateSegment|removeSegment|CityAutocomplete/);
 });

@@ -1,24 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  IconArrowDown,
-  IconArrowUp,
   IconCheck,
   IconChevronDown,
   IconChevronRight,
   IconClock,
-  IconEdit,
   IconExternalLink,
   IconGripVertical,
   IconMapPin,
   IconNote,
-  IconPlus,
   IconReceipt2,
   IconTrash,
   IconX,
 } from '@tabler/icons-react';
-import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
 import { countryColorForIndex } from '../../config.js';
-import { expensesTotal } from '../expenses/expenseModel.js';
 import { flagImageUrl } from '../flags/flags.js';
 import { savedPlaceRoutePairKey } from '../routes/routeModel.js';
 import { SegmentDeleteDialog } from '../trips/SegmentDeleteDialog.jsx';
@@ -27,8 +21,7 @@ import {
   groupPlacesByPlanningDay,
   tripPlanningDays,
 } from '../trips/tripDayPlanning.js';
-import { segmentTotal } from '../trips/tripModel.js';
-import { ORIGIN_NOTE_TARGET } from '../trips/tripNoteTargets.js';
+import { isPlaced, segmentTotal } from '../trips/tripModel.js';
 import { fetchGeoapifyPlaceEnrichment } from './geoapifyPlaceEnrichmentClient.js';
 import { TripRouteConnections } from './TripRouteConnections.jsx';
 import './TripPlacesPanel.css';
@@ -156,9 +149,6 @@ export function TripPlacesPanel({
   segments = [],
   places = [],
   routes = [],
-  updateSegment,
-  updateOrigin,
-  addSegment,
   removeSegment,
   reorderSegment,
   toggleSegmentNote,
@@ -176,25 +166,30 @@ export function TripPlacesPanel({
 }) {
   const [placeToDelete, setPlaceToDelete] = useState(null);
   const [segmentToDelete, setSegmentToDelete] = useState(null);
-  const [dragState, setDragState] = useState(null);
+  const [placeDragState, setPlaceDragState] = useState(null);
+  const [cityDragState, setCityDragState] = useState(null);
   const [placeDetails, setPlaceDetails] = useState({});
   const [moveMenuPlaceId, setMoveMenuPlaceId] = useState('');
   const [notePlaceId, setNotePlaceId] = useState('');
   const [collapsedVisits, setCollapsedVisits] = useState(() => new Set());
-  const [editingSegmentId, setEditingSegmentId] = useState('');
-  const [editingOrigin, setEditingOrigin] = useState(false);
   const panelRef = useRef(null);
-  const dragStateRef = useRef(null);
+  const placeDragStateRef = useRef(null);
+  const cityDragStateRef = useRef(null);
   const enrichmentInFlightRef = useRef(new Set());
   const enrichmentLoadedRef = useRef(new Set());
-  const draggedPlaceId = dragState?.placeId || '';
+  const draggedPlaceId = placeDragState?.placeId || '';
+  const activeCityDragId = cityDragState?.segmentId || '';
 
-  const planningDays = useMemo(() => tripPlanningDays(segments), [segments]);
-  const planned = useMemo(
-    () => groupPlacesByPlanningDay(places, segments),
-    [places, segments]
+  const visibleSegments = useMemo(
+    () => segments.filter((segment) => isPlaced(segment?.destination)),
+    [segments]
   );
-  const colors = useMemo(() => countryColorMap(segments), [segments]);
+  const planningDays = useMemo(() => tripPlanningDays(visibleSegments), [visibleSegments]);
+  const planned = useMemo(
+    () => groupPlacesByPlanningDay(places, visibleSegments),
+    [places, visibleSegments]
+  );
+  const colors = useMemo(() => countryColorMap(visibleSegments), [visibleSegments]);
   const routeByPair = useMemo(
     () => new Map(routes.map((route) => [savedPlaceRoutePairKey(route), route])),
     [routes]
@@ -208,15 +203,25 @@ export function TripPlacesPanel({
     });
     return map;
   }, [planned.groups]);
+  const pendingBySegment = useMemo(() => {
+    const map = new Map();
+    planned.unassigned.forEach((place) => {
+      if (!visibleSegments.some((segment) => segment.id === place.segmentId)) return;
+      const list = map.get(place.segmentId) || [];
+      list.push(place);
+      map.set(place.segmentId, list);
+    });
+    return map;
+  }, [planned.unassigned, visibleSegments]);
   const visits = useMemo(
-    () => segments.map((segment) => ({
+    () => visibleSegments.map((segment) => ({
       segment,
       segmentId: segment.id,
       destination: segment.destination,
-      countryKey: countryKey(segment.destination),
       days: groupsBySegment.get(segment.id) || [],
+      pendingPlaces: pendingBySegment.get(segment.id) || [],
     })),
-    [groupsBySegment, segments]
+    [groupsBySegment, pendingBySegment, visibleSegments]
   );
   const notePlace = notePlaceId
     ? places.find((place) => place.id === notePlaceId) || null
@@ -228,14 +233,6 @@ export function TripPlacesPanel({
   useEffect(() => {
     if (notePlaceId && !notePlace) setNotePlaceId('');
   }, [notePlace, notePlaceId]);
-
-  useEffect(() => {
-    const firstEmpty = segments.find((segment) => !segment?.destination?.name);
-    if (firstEmpty && !editingSegmentId) setEditingSegmentId(firstEmpty.id);
-    if (editingSegmentId && !segments.some((segment) => segment.id === editingSegmentId)) {
-      setEditingSegmentId('');
-    }
-  }, [editingSegmentId, segments]);
 
   useEffect(() => {
     if (!moveMenuPlaceId) return undefined;
@@ -301,7 +298,7 @@ export function TripPlacesPanel({
     function handlePointerMove(event) {
       event.preventDefault();
       const { targetId, placement } = resolveDropTarget(event);
-      setDragState((current) => {
+      setPlaceDragState((current) => {
         if (!current) return current;
         const next = {
           ...current,
@@ -309,18 +306,18 @@ export function TripPlacesPanel({
           targetId,
           placement,
         };
-        dragStateRef.current = next;
+        placeDragStateRef.current = next;
         return next;
       });
     }
 
     function finishDrag(commit) {
-      const current = dragStateRef.current;
+      const current = placeDragStateRef.current;
       if (commit && current?.targetId && current.placement) {
         reorderPlace?.(current.placeId, current.targetId, current.placement);
       }
-      dragStateRef.current = null;
-      setDragState(null);
+      placeDragStateRef.current = null;
+      setPlaceDragState(null);
     }
 
     const handlePointerUp = () => finishDrag(true);
@@ -334,6 +331,107 @@ export function TripPlacesPanel({
       document.removeEventListener('pointercancel', handlePointerCancel);
     };
   }, [draggedPlaceId, reorderPlace]);
+
+  useEffect(() => {
+    if (!activeCityDragId) return undefined;
+    const panel = panelRef.current;
+    if (!panel) return undefined;
+
+    function visibleDropCandidates(sourceId) {
+      return Array.from(panel.querySelectorAll('.trip-city[data-segment-id]'))
+        .map((element) => ({
+          id: element.dataset.segmentId,
+          bounds: element.getBoundingClientRect(),
+        }))
+        .filter(({ id, bounds }) =>
+          id
+          && id !== sourceId
+          && bounds.width > 0
+          && bounds.height > 0
+        )
+        .sort((left, right) => left.bounds.top - right.bounds.top);
+    }
+
+    function resolveDropTarget(event, sourceId) {
+      const candidates = visibleDropCandidates(sourceId);
+      if (candidates.length === 0) return { targetId: null, placement: null };
+      const samePaneCandidates = candidates.filter(
+        ({ bounds }) => event.clientX >= bounds.left && event.clientX <= bounds.right
+      );
+      const available = samePaneCandidates.length > 0 ? samePaneCandidates : candidates;
+      const first = available[0];
+      const last = available[available.length - 1];
+      if (event.clientY <= first.bounds.top + first.bounds.height / 2) {
+        return { targetId: first.id, placement: 'before' };
+      }
+      if (event.clientY >= last.bounds.top + last.bounds.height / 2) {
+        return { targetId: last.id, placement: 'after' };
+      }
+      const nearest = available.reduce((best, candidate) => {
+        const midpoint = candidate.bounds.top + candidate.bounds.height / 2;
+        const distance = Math.abs(event.clientY - midpoint);
+        return !best || distance < best.distance ? { candidate, distance } : best;
+      }, null).candidate;
+      return {
+        targetId: nearest.id,
+        placement: event.clientY >= nearest.bounds.top + nearest.bounds.height / 2
+          ? 'after'
+          : 'before',
+      };
+    }
+
+    function activeDragFor(event) {
+      const current = cityDragStateRef.current;
+      if (
+        !current
+        || current.segmentId !== activeCityDragId
+        || current.pointerId !== event.pointerId
+      ) return null;
+      return current;
+    }
+
+    function clearActiveDrag() {
+      cityDragStateRef.current = null;
+      setCityDragState(null);
+    }
+
+    function handlePointerMove(event) {
+      const current = activeDragFor(event);
+      if (!current) return;
+      const { targetId, placement } = resolveDropTarget(event, current.segmentId);
+      const next = {
+        ...current,
+        offsetY: event.clientY - current.startY,
+        targetId,
+        placement,
+      };
+      cityDragStateRef.current = next;
+      setCityDragState(next);
+    }
+
+    function handlePointerEnd(event) {
+      const current = activeDragFor(event);
+      if (!current) return;
+      clearActiveDrag();
+      if (current.targetId && current.placement) {
+        reorderSegment?.(current.segmentId, current.targetId, current.placement);
+      }
+    }
+
+    function handlePointerCancel(event) {
+      if (!activeDragFor(event)) return;
+      clearActiveDrag();
+    }
+
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerEnd);
+    document.addEventListener('pointercancel', handlePointerCancel);
+    return () => {
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerEnd);
+      document.removeEventListener('pointercancel', handlePointerCancel);
+    };
+  }, [activeCityDragId, reorderSegment]);
 
   useEffect(() => {
     const panel = panelRef.current;
@@ -406,8 +504,24 @@ export function TripPlacesPanel({
       targetId: null,
       placement: null,
     };
-    dragStateRef.current = next;
-    setDragState(next);
+    placeDragStateRef.current = next;
+    setPlaceDragState(next);
+  }
+
+  function startCityDrag(event, segmentId) {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    const next = {
+      segmentId,
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      offsetY: 0,
+      targetId: null,
+      placement: null,
+    };
+    cityDragStateRef.current = next;
+    setCityDragState(next);
   }
 
   function handleMoveKeyDown(event, placeId, groupPlaces) {
@@ -423,9 +537,9 @@ export function TripPlacesPanel({
   }
 
   function renderPlace(place, groupKey, groupPlaces, nextPlace = null) {
-    const dragging = dragState?.placeId === place.id;
-    const dropPlacement = dragState?.targetId === place.id
-      ? dragState.placement
+    const dragging = placeDragState?.placeId === place.id;
+    const dropPlacement = placeDragState?.targetId === place.id
+      ? placeDragState.placement
       : null;
     const className = [
       'trip-place',
@@ -446,7 +560,7 @@ export function TripPlacesPanel({
           data-place-id={place.id}
           data-planning-group={groupKey}
           style={dragging
-            ? { '--trip-place-drag-y': `${dragState.offsetY}px` }
+            ? { '--trip-place-drag-y': `${placeDragState.offsetY}px` }
             : undefined}
         >
           <span className="trip-place__timeline-dot" aria-hidden="true" />
@@ -544,139 +658,65 @@ export function TripPlacesPanel({
     );
   }
 
-  function renderOriginRow() {
-    const origin = trip.origin;
-    const originDetails = trip.originDetails || {};
-    const originDate = formatPlanningDate(originDetails.departureDate, intlLocale) || '—';
-    const amount = formatSegmentAmount(
-      expensesTotal(originDetails.expenses),
-      intlLocale,
-      currency
-    );
-
-    return (
-      <section className="trip-city trip-city--origin">
-        <div className="trip-city__bar trip-city__bar--origin">
-          <CountryFlag city={origin} />
-          <span className="trip-city__heading trip-city__heading--origin">
-            {editingOrigin || !origin?.name ? (
-              <CityAutocomplete
-                value={origin}
-                onSelect={(city) => {
-                  updateOrigin?.(city);
-                  setEditingOrigin(false);
-                }}
-                placeholder={t('originPlaceholder')}
-                selectedDisplay="timeline"
-                focusNextOnSelect
-              />
-            ) : (
-              <button
-                type="button"
-                className="trip-city__name-button"
-                onClick={() => setEditingOrigin(true)}
-                title={`${t('edit')} ${t('origin')}`}
-              >
-                <strong>{t('origin')} · {cityLabel(origin, t)}</strong>
-              </button>
-            )}
-          </span>
-          <button
-            type="button"
-            className="trip-city__date"
-            onClick={() => toggleSegmentDetails?.(ORIGIN_NOTE_TARGET)}
-            title={t('departureDate')}
-          >
-            {originDate}
-          </button>
-          <button
-            type="button"
-            className="trip-city__amount"
-            onClick={() => toggleSegmentDetails?.(ORIGIN_NOTE_TARGET)}
-            title={t('segmentTotal')}
-          >
-            {amount}
-          </button>
-          <button
-            type="button"
-            className="trip-city__action trip-city__expense"
-            onClick={() => toggleSegmentDetails?.(ORIGIN_NOTE_TARGET)}
-            aria-label={t('expenses')}
-            title={t('expenses')}
-          >
-            <IconReceipt2 size={15} stroke={1.8} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className={'trip-city__action trip-city__note' + (originDetails.note ? ' has-note' : '')}
-            onClick={() => toggleSegmentNote?.(ORIGIN_NOTE_TARGET)}
-            aria-label={`${t('segmentNote')}: ${t('origin')}`}
-            title={`${t('segmentNote')}: ${t('origin')}`}
-          >
-            <IconNote size={15} aria-hidden="true" />
-          </button>
-          <span className="trip-city__chevron-spacer" aria-hidden="true" />
-        </div>
-      </section>
-    );
-  }
-
   const hasAnyPlaces = places.length > 0;
-  const hasSegments = segments.length > 0;
+  const hasCities = visits.length > 0;
 
   return (
     <>
       <div
-        className={'trip-places trip-places--unified' + (!hasAnyPlaces && !hasSegments ? ' trip-places--empty-trip' : '')}
+        className={'trip-places trip-places--unified' + (!hasAnyPlaces && !hasCities ? ' trip-places--empty-trip' : '')}
         ref={panelRef}
       >
-        {renderOriginRow()}
-
         <div className="trip-places__cities">
-          {visits.map((visit, visitIndex) => {
+          {visits.map((visit) => {
             const { segment } = visit;
             const city = visit.destination;
             const color = colorForDestination(city, colors);
             const collapsed = collapsedVisits.has(visit.segmentId);
-            const assignedPlaces = places.filter((place) => place.segmentId === visit.segmentId);
-            const hasAssignedPlaces = assignedPlaces.length > 0;
-            const segmentIndex = segments.findIndex((item) => item.id === segment.id);
+            const hasAssignedPlaces = places.some((place) => place.segmentId === visit.segmentId);
             const dateRange = compactDateRange(segment.startDate, segment.endDate, intlLocale);
             const amount = formatSegmentAmount(segmentTotal(segment), intlLocale, currency);
-            const editingCity = editingSegmentId === segment.id || !city?.name;
+            const dragging = cityDragState?.segmentId === segment.id;
+            const dropPlacement = cityDragState?.targetId === segment.id
+              ? cityDragState.placement
+              : null;
+            const cityClassName = [
+              'trip-city',
+              dragging ? 'is-city-dragging' : '',
+              dropPlacement === 'before' ? 'is-city-drop-before' : '',
+              dropPlacement === 'after' ? 'is-city-drop-after' : '',
+            ].filter(Boolean).join(' ');
 
             return (
               <section
-                className="trip-city"
-                style={{ '--trip-day-color': color }}
+                className={cityClassName}
+                style={{
+                  '--trip-day-color': color,
+                  ...(dragging ? { '--trip-city-drag-y': `${cityDragState.offsetY}px` } : {}),
+                }}
                 key={visit.segmentId}
                 data-segment-id={segment.id}
               >
                 <div className="trip-city__bar">
+                  <button
+                    type="button"
+                    className="trip-city__drag"
+                    onPointerDown={(event) => startCityDrag(event, segment.id)}
+                    aria-label={t('moveCity')}
+                    title={t('moveCity')}
+                  >
+                    <IconGripVertical size={15} aria-hidden="true" />
+                  </button>
                   <CountryFlag city={city} />
                   <span className="trip-city__heading">
-                    {editingCity ? (
-                      <CityAutocomplete
-                        value={city}
-                        onSelect={(destination) => {
-                          updateSegment?.(segment.id, { destination });
-                          setEditingSegmentId('');
-                        }}
-                        placeholder={t('destination')}
-                        selectedDisplay="timeline"
-                        focusNextOnSelect
-                        disabled={hasAssignedPlaces}
-                      />
-                    ) : (
-                      <button
-                        type="button"
-                        className="trip-city__name-button"
-                        onClick={() => toggleVisit(visit.segmentId)}
-                        aria-expanded={!collapsed}
-                      >
-                        <strong>{cityLabel(city, t)}</strong>
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      className="trip-city__name-button"
+                      onClick={() => toggleVisit(visit.segmentId)}
+                      aria-expanded={!collapsed}
+                    >
+                      <strong>{cityLabel(city, t)}</strong>
+                    </button>
                   </span>
                   <button
                     type="button"
@@ -727,7 +767,7 @@ export function TripPlacesPanel({
 
                 {!collapsed && (
                   <div className="trip-city__content">
-                    {visit.days.length > 0 ? (
+                    {visit.days.length > 0 && (
                       <div className="trip-city__days">
                         {visit.days.map((group) => (
                           <section className="trip-day" key={group.key}>
@@ -751,7 +791,23 @@ export function TripPlacesPanel({
                           </section>
                         ))}
                       </div>
-                    ) : (
+                    )}
+
+                    {visit.pendingPlaces.length > 0 && (
+                      <div className="trip-city__pending-places">
+                        <div className="trip-city__pending-hint">{t('placeWaitingForDates')}</div>
+                        <div className="trip-places__sequence">
+                          {visit.pendingPlaces.map((place) => renderPlace(
+                            place,
+                            `pending:${segment.id}`,
+                            visit.pendingPlaces,
+                            null
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {visit.days.length === 0 && visit.pendingPlaces.length === 0 && (
                       <button
                         type="button"
                         className="trip-city__planning-empty"
@@ -764,42 +820,9 @@ export function TripPlacesPanel({
                     <div className="trip-city__management" aria-label={t('city')}>
                       <button
                         type="button"
-                        onClick={() => {
-                          const previous = segments[segmentIndex - 1];
-                          if (previous) reorderSegment?.(segment.id, previous.id, 'before');
-                        }}
-                        disabled={segmentIndex <= 0}
-                        aria-label={`${t('movePlace')} ↑`}
-                        title={`${t('movePlace')} ↑`}
-                      >
-                        <IconArrowUp size={13} aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const next = segments[segmentIndex + 1];
-                          if (next) reorderSegment?.(segment.id, next.id, 'after');
-                        }}
-                        disabled={segmentIndex >= segments.length - 1}
-                        aria-label={`${t('movePlace')} ↓`}
-                        title={`${t('movePlace')} ↓`}
-                      >
-                        <IconArrowDown size={13} aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingSegmentId(segment.id)}
-                        disabled={hasAssignedPlaces}
-                        aria-label={`${t('edit')} ${t('city')}`}
-                        title={hasAssignedPlaces ? t('segmentHasPlannedPlaces') : `${t('edit')} ${t('city')}`}
-                      >
-                        <IconEdit size={13} aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => setSegmentToDelete(segment)}
-                        aria-label={t('removeSegment')}
-                        title={hasAssignedPlaces ? t('segmentHasPlannedPlaces') : t('removeSegment')}
+                        aria-label={t('removeCity')}
+                        title={hasAssignedPlaces ? t('segmentHasPlannedPlaces') : t('removeCity')}
                       >
                         <IconTrash size={13} aria-hidden="true" />
                       </button>
@@ -810,35 +833,6 @@ export function TripPlacesPanel({
             );
           })}
         </div>
-
-        {planned.unassigned.length > 0 && (
-          <section className="trip-city trip-city--unassigned">
-            <div className="trip-city__unassigned-header">
-              <span className="trip-place__flag-fallback" aria-hidden="true"><IconMapPin size={15} /></span>
-              <span className="trip-city__heading">
-                <strong>{t('unassignedPlaces')}</strong>
-                <small>{t('unassignedPlacesHint')}</small>
-              </span>
-            </div>
-            <div className="trip-places__sequence trip-places__sequence--unassigned">
-              {planned.unassigned.map((place) => renderPlace(
-                place,
-                'unassigned',
-                planned.unassigned,
-                null
-              ))}
-            </div>
-          </section>
-        )}
-
-        <button
-          type="button"
-          className="trip-city__add"
-          onClick={() => addSegment?.()}
-        >
-          <IconPlus size={14} aria-hidden="true" />
-          <span>{t('addSegment')}</span>
-        </button>
       </div>
 
       {notePlace && (

@@ -4,11 +4,7 @@ import { cacheCities, getCachedCities } from './citySearchCache.js';
 
 const SUPPORTED_LANGUAGES = new Set(['es', 'en']);
 const LATIN_NAME_PATTERN = /\p{Script=Latin}/u;
-const CANONICAL_CACHE_SOURCES = new Set([
-  'catalog',
-  'catalog-refresh',
-  'catalog-stale',
-]);
+const BROWSER_CACHE_SOURCES = new Set(['provider', 'provider-cache']);
 
 function normalizeQuery(value) {
   return String(value || '')
@@ -36,7 +32,7 @@ function cleanString(value, maxLength) {
 }
 
 // La búsqueda puede transportar metadatos de sugerencia (región, ranking, etc.),
-// pero el City persistido mantiene exactamente el contrato canónico de Storage v4.
+// pero la City persistida mantiene exactamente el contrato canónico de Storage v4.
 export function canonicalCityFromSearchResult(result) {
   return {
     id: cleanString(result?.id, 256),
@@ -113,7 +109,7 @@ export function createGeoapifyCityProvider() {
       language: safeLanguage,
     });
     const responseSource = String(response.data?.source || '').trim();
-    if (CANONICAL_CACHE_SOURCES.has(responseSource)) {
+    if (BROWSER_CACHE_SOURCES.has(responseSource)) {
       cacheCities(cacheKey, results);
     }
     return results;

@@ -17,7 +17,7 @@ function translated(t, key, variables) {
 }
 
 function placeName(place, t) {
-  return place?.name || place?.userLabel || translated(t, 'place');
+  return place?.name || place?.userLabel || translated(t, place?.kind === 'city' ? 'city' : 'place');
 }
 
 export function savedPlacePopup(place, t) {
@@ -41,8 +41,6 @@ export function savedPlacePopup(place, t) {
   return wrap;
 }
 
-// Se conserva para compatibilidad con código legado MapLibre, pero Google Maps
-// ya guarda directamente desde la tarjeta del resultado.
 export function savePrompt(place, { alreadySaved = false, onSave, onClose, t } = {}) {
   const wrap = document.createElement('div');
   wrap.className = 'place-save-prompt';
@@ -73,25 +71,32 @@ export function resultMarkerScale(zoom) {
   return Math.max(0.52, Math.min(1, 0.52 + ((value - 5) * 0.48) / 7));
 }
 
-function savedResultAction(t) {
+function savedResultAction(t, city = false) {
   const saved = document.createElement('span');
   saved.className = 'place-result-marker__saved';
-  saved.textContent = translated(t, 'savedShort');
+  saved.textContent = translated(t, city ? 'cityAlreadyAdded' : 'savedShort');
   return saved;
 }
 
 export function markerElement(
   place,
   t,
-  { alreadySaved = false, onSave } = {}
+  {
+    alreadySaved = false,
+    onSave,
+    alreadyAdded = false,
+    onAddCity,
+  } = {}
 ) {
+  const isCity = place?.kind === 'city';
+  const done = isCity ? alreadyAdded : alreadySaved;
   const label = placeName(place, t);
   const wrap = document.createElement('div');
-  wrap.className = 'place-result-marker';
+  wrap.className = `place-result-marker${isCity ? ' is-city-result' : ''}`;
   wrap.setAttribute('role', 'group');
   wrap.setAttribute(
     'aria-label',
-    `${label}, ${place.city || ''}, ${place.country || ''}`
+    `${label}, ${place.city || place.region || ''}, ${place.country || ''}`
   );
 
   const copy = document.createElement('span');
@@ -99,27 +104,37 @@ export function markerElement(
   const name = document.createElement('strong');
   name.textContent = label;
   const location = document.createElement('small');
-  location.textContent = [place.city, place.country || place.countryCode]
+  location.textContent = [place.city || place.region, place.country || place.countryCode]
     .filter(Boolean)
     .join(', ');
   copy.append(name, location);
 
   const action = document.createElement('span');
   action.className = 'place-result-marker__action';
-  if (alreadySaved) {
-    action.append(savedResultAction(t));
+  if (done) {
+    action.append(savedResultAction(t, isCity));
   } else {
     const save = document.createElement('button');
     save.type = 'button';
     save.className = 'place-result-marker__save';
-    save.textContent = translated(t, 'saveTrip');
-    save.addEventListener('click', (event) => {
+    save.textContent = translated(t, isCity ? 'addCity' : 'saveTrip');
+    save.addEventListener('click', async (event) => {
       event.preventDefault();
       event.stopPropagation();
       if (save.disabled) return;
       save.disabled = true;
-      onSave?.(place);
-      action.replaceChildren(savedResultAction(t));
+      try {
+        const accepted = isCity
+          ? await onAddCity?.(place)
+          : await onSave?.(place);
+        if (accepted === false) {
+          save.disabled = false;
+          return;
+        }
+        action.replaceChildren(savedResultAction(t, isCity));
+      } catch {
+        save.disabled = false;
+      }
     });
     action.append(save);
   }

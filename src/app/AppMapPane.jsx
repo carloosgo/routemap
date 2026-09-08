@@ -1,10 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { IconArrowRight, IconCheck, IconMap2, IconRoute, IconX } from '@tabler/icons-react';
 import { RouteMap } from '../modules/map/RouteMap.jsx';
+import { createGeoapifyCityProvider, canonicalCityFromSearchResult } from '../modules/geocoding/citySearchClient.js';
 import { ItineraryDetailsModal } from '../modules/trips/ItineraryDetailsModal.jsx';
 import { buildItineraryStopSequence } from '../modules/trips/itineraryStopSequence.js';
-import { itineraryPlacePlanningTarget } from '../modules/trips/placePlanningAssignment.js';
-import { tripPlanningDays } from '../modules/trips/tripDayPlanning.js';
 import { ORIGIN_NOTE_TARGET } from '../modules/trips/tripNoteTargets.js';
 import { colorForIndex } from '../config.js';
 
@@ -21,62 +20,112 @@ function persistenceLabelKey(state) {
   return PERSISTENCE_LABEL_KEYS[state] || PERSISTENCE_LABEL_KEYS.pending;
 }
 
+function normalizedText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+function sameCountry(left, right) {
+  const leftCode = String(left?.countryCode || '').trim().toUpperCase();
+  const rightCode = String(right?.countryCode || '').trim().toUpperCase();
+  if (leftCode && rightCode) return leftCode === rightCode;
+  return normalizedText(left?.country) === normalizedText(right?.country);
+}
+
+function segmentForPlaceCity(place, segments) {
+  const cityName = normalizedText(place?.city);
+  if (!cityName) return null;
+  return (Array.isArray(segments) ? segments : []).find((segment) => {
+    const destination = segment?.destination;
+    return normalizedText(destination?.name) === cityName && sameCountry(destination, place);
+  }) || null;
+}
+
+function bestResolvedCity(place, cities) {
+  const cityName = normalizedText(place?.city);
+  const exact = (Array.isArray(cities) ? cities : []).find((city) =>
+    normalizedText(city?.name) === cityName && sameCountry(city, place)
+  );
+  return exact || (cities || []).find((city) => sameCountry(city, place)) || null;
+}
+
 export function AppMapPane({
   trip,
-  mapView = 'segments',
+  mapView = 'places',
   itineraryPanels,
   updateSegment,
   updateExpenses,
   updateOriginDetails,
   updateOriginExpenses,
   addPlace,
+  addCity,
+  addPlaceWithCity,
   intlLocale,
+  locale,
   persistenceState = 'saved',
   toast,
   t,
 }) {
   const { noteTarget, detailsTarget, close } = itineraryPanels;
+  const cityProviderRef = useRef(null);
+  if (!cityProviderRef.current) cityProviderRef.current = createGeoapifyCityProvider();
   const [planningMessage, setPlanningMessage] = useState('');
-  const [myRoutesMapMode, setMyRoutesMapMode] = useState('places');
+  const [showCityTrace, setShowCityTrace] = useState(true);
+  const [showSavedRoutes, setShowSavedRoutes] = useState(true);
   const persistenceLabel = t(persistenceLabelKey(persistenceState));
   const persistenceHasCheck = persistenceState === 'saved' || persistenceState === 'local';
-  const stopSequence = buildItineraryStopSequence(trip.origin, trip.segments, colorForIndex);
-  const planningDays = useMemo(() => tripPlanningDays(trip.segments), [trip.segments]);
-  const effectiveMapView = mapView === 'places' ? myRoutesMapMode : mapView;
+  const stopSequence = buildItineraryStopSequence(null, trip.segments, colorForIndex);
+  const unifiedRoutesView = mapView === 'places';
 
-  const showPlanningMessage = (message, duration = 2600) => {
+  const showPlanningMessage = (message, duration = 3000) => {
     setPlanningMessage(message);
     globalThis.setTimeout(() => setPlanningMessage(''), duration);
   };
 
-  const requestPlaceSave = (place) => {
-    if (!planningDays.length) {
-      showPlanningMessage(t('placeNeedsPlannedDay'), 3400);
+  const requestCityAdd = (result) => {
+    const city = canonicalCityFromSearchResult(result);
+    if (!city.name || !Number.isFinite(city.lat) || !Number.isFinite(city.lon)) return false;
+    addCity?.(city);
+    return true;
+  };
+
+  const requestPlaceSave = async (place) => {
+    const existingSegment = segmentForPlaceCity(place, trip.segments);
+    if (existingSegment) {
+      addPlace?.({
+        ...place,
+        segmentId: existingSegment.id,
+        dayOffset: 0,
+      });
+      return true;
+    }
+
+    const cityQuery = [place?.city, place?.country].filter(Boolean).join(', ');
+    if (!place?.city || !cityQuery) {
+      showPlanningMessage(t('placeCityResolveError'), 3400);
       return false;
     }
 
-    const target = itineraryPlacePlanningTarget(place, trip.segments);
-    if (target?.day) {
-      addPlace({
-        ...place,
-        segmentId: target.day.segmentId,
-        dayOffset: target.day.dayOffset,
+    try {
+      const cities = await cityProviderRef.current.search(cityQuery, {
+        limit: 5,
+        language: locale,
       });
-      return {
-        accepted: true,
-        message: `${t('placeSaved')} · ${target.day.destination?.name || t('city')} · ${t('day')} ${target.day.globalDayNumber}`,
-      };
+      const resolved = bestResolvedCity(place, cities);
+      if (!resolved) {
+        showPlanningMessage(t('placeCityResolveError'), 3400);
+        return false;
+      }
+      addPlaceWithCity?.(canonicalCityFromSearchResult(resolved), place);
+      return true;
+    } catch {
+      showPlanningMessage(t('placeCityResolveError'), 3400);
+      return false;
     }
-
-    addPlace({
-      ...place,
-      segmentId: '',
-      dayOffset: null,
-    });
-    return {
-      accepted: true,
-      message: `${t('placeSaved')} · ${t('unassignedPlaces')}`,
-    };
   };
 
   const noteFooter = (length) => (
@@ -127,11 +176,10 @@ export function AppMapPane({
     if (!segment) return null;
     const index = trip.segments.findIndex((item) => item.id === noteTarget);
     const stop = stopSequence[index];
-    const legOrigin = index === 0
-      ? trip.origin
-      : trip.segments[index - 1]?.destination || null;
-    const originName = legOrigin?.name || t('origin');
-    const destinationName = segment.destination?.name || t('destination');
+    const previousCity = index > 0
+      ? trip.segments[index - 1]?.destination || null
+      : null;
+    const destinationName = segment.destination?.name || t('city');
     const note = segment.note || '';
 
     return (
@@ -147,7 +195,9 @@ export function AppMapPane({
             <span className="segnote__badge" style={{ background: stop.color }}>{stop.number}</span>
           )}
           <span className="segnote__title">
-            {originName}<IconArrowRight size={11} aria-hidden="true" />{destinationName}
+            {previousCity?.name ? (
+              <>{previousCity.name}<IconArrowRight size={11} aria-hidden="true" />{destinationName}</>
+            ) : destinationName}
           </span>
           <button type="button" className="segnote__x" aria-label={t('closeNote')} onClick={close}>
             <IconX size={16} aria-hidden="true" />
@@ -186,30 +236,33 @@ export function AppMapPane({
   return (
     <section className="mappane" aria-label={t('mapRegion')}>
       <RouteMap
-        origin={trip.origin}
+        origin={unifiedRoutesView ? null : trip.origin}
         segments={trip.segments}
         places={trip.places || []}
         routeConnections={trip.routeConnections || []}
         addPlace={requestPlaceSave}
-        viewMode={effectiveMapView}
+        addCity={requestCityAdd}
+        viewMode={mapView}
+        showCityTrace={unifiedRoutesView ? showCityTrace : true}
+        showSavedRoutes={unifiedRoutesView ? showSavedRoutes : false}
       />
 
-      {mapView === 'places' && (
+      {unifiedRoutesView && (
         <div className="my-routes-map-mode" role="group" aria-label={t('mapTraceMode')}>
           <button
             type="button"
-            className={myRoutesMapMode === 'segments' ? 'is-active' : ''}
-            aria-pressed={myRoutesMapMode === 'segments'}
-            onClick={() => setMyRoutesMapMode('segments')}
+            className={showCityTrace ? 'is-active' : ''}
+            aria-pressed={showCityTrace}
+            onClick={() => setShowCityTrace((value) => !value)}
           >
             <IconMap2 size={15} stroke={1.8} aria-hidden="true" />
             <span>{t('mapCities')}</span>
           </button>
           <button
             type="button"
-            className={myRoutesMapMode === 'places' ? 'is-active' : ''}
-            aria-pressed={myRoutesMapMode === 'places'}
-            onClick={() => setMyRoutesMapMode('places')}
+            className={showSavedRoutes ? 'is-active' : ''}
+            aria-pressed={showSavedRoutes}
+            onClick={() => setShowSavedRoutes((value) => !value)}
           >
             <IconRoute size={15} stroke={1.8} aria-hidden="true" />
             <span>{t('mapRoutes')}</span>

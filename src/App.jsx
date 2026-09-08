@@ -17,9 +17,11 @@ import { useAppEditorState } from './app/useAppEditorState.js';
 import { useItineraryFloatingPanels } from './app/useItineraryFloatingPanels.js';
 import { useOutsideClick, useSaveShortcut } from './app/useAppInteractions.js';
 import { useTripSaveFlow } from './app/useTripSaveFlow.js';
+import { useWorkspacePanelGeometry } from './app/useWorkspacePanelGeometry.js';
 import './App.css';
 import './app/FloatingEditor.css';
 import './app/UnifiedMyRoutes.css';
+import './app/UnifiedMyRoutesInteraction.css';
 
 export default function App() {
   const { t, locale, intlLocale, setLocale, availableLocales } = useTranslation();
@@ -28,7 +30,10 @@ export default function App() {
   const savedTrips = useSavedTrips(auth.user);
   const editorState = useAppEditorState(tripStore);
   const itineraryPanels = useItineraryFloatingPanels();
-  const { trip, loadTrip, setCurrency, updateSegment, updateExpenses, updateOriginDetails, updateOriginExpenses, addPlace } = tripStore;
+  const {
+    trip, loadTrip, setCurrency, updateSegment, updateExpenses, updateOriginDetails,
+    updateOriginExpenses, addPlace, addCity, addPlaceWithCity,
+  } = tripStore;
   const { getTrip, getActiveTripDraft, stageTrip, getTripPersistenceState, saveTrip, deleteTrip, importLocalTrips, getLocalTripCount } = savedTrips;
   const [toast, setToast] = useState('');
   const [mobileView, setMobileView] = useState('form');
@@ -44,6 +49,7 @@ export default function App() {
   const currentTripRef = useRef(trip);
   const recoveredDraftScopeRef = useRef(null);
   currentTripRef.current = trip;
+  useWorkspacePanelGeometry();
 
   const canSave = isTripSavable(trip);
   const persistence = useTripAutoPersistence({ trip, stageTrip, getTripPersistenceState, canRemoteSync: canSave });
@@ -75,20 +81,8 @@ export default function App() {
   }, []);
 
   const {
-    tripNamePromptOpen,
-    tripNameDraft,
-    setTripNameDraft,
-    closeTripNamePrompt,
-    handleSave,
-  } = useTripSaveFlow({
-    trip,
-    loadTrip,
-    stageTrip,
-    saveTrip,
-    persistence,
-    showToast,
-    t,
-  });
+    tripNamePromptOpen, tripNameDraft, setTripNameDraft, closeTripNamePrompt, handleSave,
+  } = useTripSaveFlow({ trip, loadTrip, stageTrip, saveTrip, persistence, showToast, t });
 
   const handleGoogleSignIn = useCallback(async () => {
     try {
@@ -212,14 +206,17 @@ export default function App() {
   const mapPane = (
     <AppMapPane
       trip={trip}
-      mapView={activeTab === 'places' ? 'places' : 'segments'}
+      mapView="places"
       itineraryPanels={itineraryPanels}
       updateSegment={updateSegment}
       updateExpenses={updateExpenses}
       updateOriginDetails={updateOriginDetails}
       updateOriginExpenses={updateOriginExpenses}
       addPlace={addPlace}
+      addCity={addCity}
+      addPlaceWithCity={addPlaceWithCity}
       intlLocale={intlLocale}
+      locale={locale}
       persistenceState={persistence.state}
       toast={toast}
       t={t}

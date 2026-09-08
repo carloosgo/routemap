@@ -162,14 +162,14 @@ test('reordering the same geographic stops does not change the itinerary viewpor
   assert.equal(itineraryViewportKey(original), itineraryViewportKey(reordered));
 });
 
-test('active map consumes canonical numbering, repeated visit dots and finish flag assets', async () => {
+test('active unified map consumes city numbering, repeated visit dots and finish flag assets without a special origin pivot', async () => {
   const mapPane = await read('src/app/AppMapPane.jsx');
   const headerType = await read('src/app/TripSummaryHeaderTypography.css');
   const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
   const markerCss = await read('src/modules/map/ItineraryNumberMarkers.css');
   const routeMap = await read('src/modules/map/RouteMap.jsx');
 
-  assert.match(mapPane, /buildItineraryStopSequence\(trip\.origin, trip\.segments, colorForIndex\)/);
+  assert.match(mapPane, /buildItineraryStopSequence\(null, trip\.segments, colorForIndex\)/);
   assert.match(mapPane, /\{stop\.number\}/);
   assert.match(headerType, /\.trip-summary__metric-label\s*\{[^}]*color:\s*#0d6078;/s);
   assert.match(headerType, /\.trip-summary__metric-value,[\s\S]*color:\s*#000000;/);

@@ -32,16 +32,18 @@ function sampleTrip() {
   };
 }
 
-test('header start date is authoritative from origin and updates after segment dates existed first', () => {
+test('header start date comes from the first dated city and ignores historical origin metadata', () => {
   const trip = sampleTrip();
-  trip.originDetails.departureDate = '';
   trip.segments[0].startDate = '';
   trip.segments[1].startDate = '2026-09-10';
 
   assert.equal(tripSummary(trip).startDate, '2026-09-10');
 
-  trip.originDetails.departureDate = '2026-09-05';
-  assert.equal(tripSummary(trip).startDate, '2026-09-05');
+  trip.originDetails.departureDate = '2026-09-01';
+  assert.equal(tripSummary(trip).startDate, '2026-09-10');
+
+  trip.segments[0].startDate = '2026-09-07';
+  assert.equal(tripSummary(trip).startDate, '2026-09-07');
 });
 
 test('header end date comes from the last itinerary leg that has an end date, not the global maximum', () => {
@@ -50,7 +52,7 @@ test('header end date comes from the last itinerary leg that has an end date, no
   trip.segments[1].endDate = '2026-09-20';
 
   assert.deepEqual(tripDateRange(trip), {
-    startDate: '2026-09-05',
+    startDate: '2026-09-10',
     endDate: '2026-09-20',
   });
 
@@ -58,14 +60,16 @@ test('header end date comes from the last itinerary leg that has an end date, no
   assert.equal(tripDateRange(trip).endDate, '2026-09-30');
 });
 
-test('date rules enforce itinerary chronology while allowing the true final boundary to move later', () => {
+test('date rules enforce chronology between city legs without using historical origin as a lower bound', () => {
   const trip = sampleTrip();
 
   assert.deepEqual(
     validateSegmentDatePatch(trip, 'a', { startDate: '2026-09-04' }),
-    { valid: false, errorKey: TRIP_DATE_ERRORS.beforeOrigin }
+    { valid: true, errorKey: '' }
   );
 
+  // Legacy origin editing remains guarded for existing v4 data, but it is no
+  // longer part of the active city chronology.
   assert.deepEqual(
     validateOriginDepartureDateChange(trip, '2026-09-11'),
     { valid: false, errorKey: TRIP_DATE_ERRORS.originAfterItinerary }
@@ -92,12 +96,12 @@ test('date rules enforce itinerary chronology while allowing the true final boun
   );
 });
 
-test('reducer rejects invalid date mutations so UI callers cannot bypass chronology rules', () => {
+test('reducer rejects invalid city chronology mutations so UI callers cannot bypass date rules', () => {
   const trip = sampleTrip();
   const invalid = tripReducer(trip, {
     type: TRIP_ACTIONS.updateSegment,
     segmentId: 'a',
-    patch: { startDate: '2026-09-01' },
+    patch: { startDate: '2026-09-13' },
   });
   assert.equal(invalid, trip);
 

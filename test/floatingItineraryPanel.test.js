@@ -6,18 +6,22 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('desktop primary panels keep one integrated left column aligned with the header boundary', async () => {
+test('desktop primary panels keep one integrated left column while the header split stays independent', async () => {
   const css = await read('src/app/FloatingItineraryPanel.css');
   const headerCss = await read('src/app/TripSummaryHeader.css');
   const headerLayout = await read('src/app/TripWorkspaceHeaderLayout.css');
+  const geometry = await read('src/app/useWorkspacePanelGeometry.js');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
   const main = await read('src/main.jsx');
 
   assert.match(css, /@media \(min-width:\s*721px\)/);
   assert.match(css, /\.workspace__desktop--column\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*var\(--workspace-panel-width\) minmax\(0, 1fr\);/s);
   assert.doesNotMatch(css, /workspace-panel-expanded-width/);
-  assert.match(headerLayout, /grid-template-columns:[\s\S]*var\(--atlas-nav-width\)[\s\S]*calc\(var\(--workspace-panel-width\) - var\(--atlas-nav-width\)\)[\s\S]*minmax\(0, 1fr\);/s);
+  assert.match(headerLayout, /--workspace-header-split-width:/);
+  assert.match(headerLayout, /grid-template-columns:[\s\S]*var\(--atlas-nav-width\)[\s\S]*calc\(var\(--workspace-header-split-width\) - var\(--atlas-nav-width\)\)[\s\S]*minmax\(0, 1fr\);/s);
   assert.match(headerLayout, /\.trip-summary__metrics::before\s*\{/);
+  assert.match(geometry, /panelEdge = separatorX \+ \(dateIconX - separatorX\) \/ 2/);
+  assert.match(geometry, /--workspace-panel-width/);
 
   assert.match(css, /\.workspace__desktop--column > \.mappane\s*\{[^}]*position:\s*relative;[^}]*inset:\s*auto;/s);
   assert.match(css, /\.workspace-panel\s*\{[^}]*position:\s*relative;[^}]*z-index:\s*700;[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*display:\s*block;[^}]*border-radius:\s*0;[^}]*box-shadow:\s*8px 0 18px -14px rgba\(15, 23, 42, 0\.34\);/s);

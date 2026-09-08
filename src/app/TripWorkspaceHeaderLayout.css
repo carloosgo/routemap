@@ -3,9 +3,12 @@
    y métricas comparten la misma retícula y la misma superficie. */
 .app {
   --atlas-nav-width: 82px;
-  /* La navegación lateral desapareció: el panel conserva el ancho útil que
-     antes quedaba después de esos 82px, en vez de reservar una franja vacía. */
-  --workspace-panel-width: clamp(458px, calc(40vw - var(--atlas-nav-width)), 540px);
+  /* El corte del header permanece estable. El panel puede crecer de forma
+     independiente hasta el punto medio visual pedido entre este separador
+     y el icono de Fechas. */
+  --workspace-header-split-width: clamp(458px, calc(40vw - var(--atlas-nav-width)), 540px);
+  --workspace-panel-width: var(--workspace-header-split-width);
+  --geo-search-max-width: 550px;
   --trip-header-height: 63px;
 }
 
@@ -22,7 +25,7 @@
     display: grid;
     grid-template-columns:
       var(--atlas-nav-width)
-      calc(var(--workspace-panel-width) - var(--atlas-nav-width))
+      calc(var(--workspace-header-split-width) - var(--atlas-nav-width))
       minmax(0, 1fr);
     align-items: center;
     column-gap: 0;
@@ -51,7 +54,7 @@
     padding-left: 10px;
   }
 
-  /* Separador explícito entre Notas y Total del viaje. */
+  /* Separador explícito entre Notas y Fechas del viaje. */
   .trip-summary__metrics::before {
     content: '';
     position: absolute;
