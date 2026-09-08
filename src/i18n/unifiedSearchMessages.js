@@ -1,6 +1,7 @@
 export const unifiedSearchMessages = Object.freeze({
   es: Object.freeze({
     addCity: 'Agregar ciudad',
+    cityAdded: 'Ciudad agregada',
     cityAlreadyAdded: 'Ciudad agregada',
     moveCity: 'Mover ciudad',
     removeCity: 'Eliminar ciudad',
@@ -9,6 +10,7 @@ export const unifiedSearchMessages = Object.freeze({
   }),
   en: Object.freeze({
     addCity: 'Add city',
+    cityAdded: 'City added',
     cityAlreadyAdded: 'City added',
     moveCity: 'Move city',
     removeCity: 'Remove city',
