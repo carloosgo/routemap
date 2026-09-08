@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { IconArrowRight, IconCheck, IconMapPin, IconRoute, IconX } from '@tabler/icons-react';
 import { RouteMap } from '../modules/map/RouteMap.jsx';
 import { createGeoapifyCityProvider, canonicalCityFromSearchResult } from '../modules/geocoding/citySearchClient.js';
@@ -234,7 +234,11 @@ export function AppMapPane({
   const hasFloatingPanel = Boolean(notePanel || detailsPanel);
 
   return (
-    <section className="mappane" aria-label={t('mapRegion')}>
+    <section
+      className="mappane"
+      data-saved-places-visible={unifiedRoutesView && showSavedPlaces ? 'true' : 'false'}
+      aria-label={t('mapRegion')}
+    >
       <RouteMap
         origin={unifiedRoutesView ? null : trip.origin}
         segments={trip.segments}
@@ -244,7 +248,6 @@ export function AppMapPane({
         addCity={requestCityAdd}
         viewMode={mapView}
         showCityTrace={unifiedRoutesView ? showCityTrace : true}
-        showSavedPlaces={unifiedRoutesView ? showSavedPlaces : false}
       />
 
       {unifiedRoutesView && (
