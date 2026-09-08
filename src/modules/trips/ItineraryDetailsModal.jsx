@@ -85,9 +85,8 @@ export function ItineraryDetailsModal({
   const previousSegment = index > 0 ? trip.segments[index - 1] : null;
   const calendarReferenceDate = previousSegment?.endDate
     || previousSegment?.startDate
-    || trip.originDetails?.departureDate
     || '';
-  const originName = segment.origin?.name || t('origin');
+  const previousCityName = previousSegment?.destination?.name || '';
   const destinationName = segment.destination?.name || t('destination');
 
   const handleSegmentUpdate = (patch) => {
@@ -113,7 +112,9 @@ export function ItineraryDetailsModal({
       <div className="segnote__head">
         <span className="segnote__badge" style={{ background: colorForIndex(index) }}>{index + 1}</span>
         <span className="segnote__title">
-          {originName}<IconArrowRight size={11} aria-hidden="true" />{destinationName}
+          {previousCityName ? (
+            <>{previousCityName}<IconArrowRight size={11} aria-hidden="true" />{destinationName}</>
+          ) : destinationName}
         </span>
         <button
           type="button"
