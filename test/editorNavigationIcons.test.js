@@ -22,18 +22,20 @@ test('canonical header style layers replace the legacy icon injection', async ()
   );
 });
 
-test('primary navigation keeps distinct icons and explicit active-tab semantics', async () => {
+test('primary navigation keeps the two unified destinations and explicit active-tab semantics', async () => {
   const navigation = await read('src/app/TripHeaderNavigation.jsx');
+  const css = await read('src/app/TripHeaderNavigation.css');
 
-  assert.match(navigation, /IconListDetails/);
+  assert.doesNotMatch(navigation, /IconListDetails/);
   assert.match(navigation, /IconRoute/);
   assert.match(navigation, /IconNotebook/);
-  assert.match(navigation, /id: 'segments'/);
+  assert.doesNotMatch(navigation, /id: 'segments'/);
   assert.match(navigation, /id: 'places'/);
   assert.match(navigation, /id: 'notes'/);
   assert.match(navigation, /aria-selected=\{isActive\}/);
   assert.match(navigation, /trip-summary__primary-nav-item\$\{isActive \? ' is-active' : ''\}/);
   assert.match(navigation, /onClick=\{\(\) => setActiveTab\(id\)\}/);
+  assert.match(css, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
   assert.doesNotMatch(navigation, /lugaresIcon|IconMap\b|IconNotes\b/);
 });
 
