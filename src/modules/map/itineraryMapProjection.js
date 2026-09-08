@@ -33,8 +33,10 @@ function projectedTransport(segment) {
 }
 
 export function itineraryMapProjection(origin, segments) {
-  const safeSegments = (Array.isArray(segments) ? segments : [])
-    .filter((segment) => isPlaced(segment?.destination));
+  // Preserve every canonical segment, including partially entered legacy rows.
+  // Null/empty coordinates stay null instead of becoming 0,0; downstream map
+  // feature builders remain responsible for deciding which geometry is drawable.
+  const safeSegments = Array.isArray(segments) ? segments : [];
 
   if (isPlaced(origin)) {
     return safeSegments.map((segment, index) => ({
