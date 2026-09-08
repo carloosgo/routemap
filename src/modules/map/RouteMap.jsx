@@ -4,6 +4,7 @@ import { itineraryMapProjectionSignature } from './itineraryMapProjection.js';
 import './RouteMap.css';
 import './GooglePlacesMap.css';
 import './ItineraryNumberMarkers.css';
+import './UnifiedSearchPolish.css';
 
 export function RouteMap({
   origin,
