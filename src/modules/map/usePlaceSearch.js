@@ -2,14 +2,43 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { config } from '../../config.js';
 import { useTranslation } from '../../i18n/index.jsx';
 import {
+  canonicalCityFromSearchResult,
+  createGeoapifyCityProvider,
+} from '../geocoding/citySearchClient.js';
+import {
   autocompleteGooglePlaces,
   createGooglePlacesSessionToken,
   resolveGooglePlace,
   searchGooglePlaces,
 } from '../places/googlePlacesClient.js';
 
+function citySearchResult(city) {
+  const canonical = canonicalCityFromSearchResult(city);
+  return {
+    ...canonical,
+    kind: 'city',
+    source: 'geoapify',
+    secondaryText: [city?.region, canonical.country].filter(Boolean).join(', '),
+  };
+}
+
+function placeSearchResult(place) {
+  return {
+    ...place,
+    kind: 'place',
+    source: place?.source || 'google',
+  };
+}
+
+function fulfilledValue(result, fallback = []) {
+  return result.status === 'fulfilled' ? result.value : fallback;
+}
+
 export function usePlaceSearch({ viewMode }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const cityProviderRef = useRef(null);
+  if (!cityProviderRef.current) cityProviderRef.current = createGeoapifyCityProvider();
+
   const searchAbortRef = useRef(null);
   const autocompleteAbortRef = useRef(null);
   const searchSequenceRef = useRef(0);
@@ -50,8 +79,6 @@ export function usePlaceSearch({ viewMode }) {
       return undefined;
     }
 
-    // Volver a Mis Rutas no cuenta como una edición del texto y no debe
-    // generar una solicitud nueva de Autocomplete.
     if (previousViewMode !== 'places') {
       setSuggestions([]);
       setSuggesting(false);
@@ -82,24 +109,29 @@ export function usePlaceSearch({ viewMode }) {
     autocompleteAbortRef.current = controller;
     const timer = setTimeout(async () => {
       setSuggesting(true);
-      try {
-        const next = await autocompleteGooglePlaces(
+      const [googleResult, cityResult] = await Promise.allSettled([
+        autocompleteGooglePlaces(
           text,
           sessionTokenRef.current,
           { signal: controller.signal }
-        );
-        if (!controller.signal.aborted && sequence === autocompleteSequenceRef.current) {
-          setSuggestions(next);
-          setShowSuggestions(true);
-        }
-      } catch (suggestionError) {
-        if (suggestionError?.name !== 'AbortError') {
-          console.warn('[Google Places autocomplete] unavailable', suggestionError);
-        }
-      } finally {
-        if (!controller.signal.aborted && sequence === autocompleteSequenceRef.current) {
-          setSuggesting(false);
-        }
+        ),
+        cityProviderRef.current.search(text, {
+          signal: controller.signal,
+          limit: 3,
+          language: locale,
+        }),
+      ]);
+
+      if (!controller.signal.aborted && sequence === autocompleteSequenceRef.current) {
+        const citySuggestions = fulfilledValue(cityResult).map(citySearchResult);
+        const placeSuggestions = fulfilledValue(googleResult).map((place) => ({
+          ...place,
+          kind: 'place',
+          source: 'google',
+        }));
+        setSuggestions([...citySuggestions, ...placeSuggestions]);
+        setShowSuggestions(citySuggestions.length + placeSuggestions.length > 0);
+        setSuggesting(false);
       }
     }, config.googleMaps.searchDebounceMs);
 
@@ -107,7 +139,7 @@ export function usePlaceSearch({ viewMode }) {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query, viewMode]);
+  }, [locale, query, viewMode]);
 
   async function submitSearch(event) {
     event?.preventDefault();
@@ -131,24 +163,48 @@ export function usePlaceSearch({ viewMode }) {
     setSearching(true);
     setErrorState(null);
 
-    try {
-      const next = await searchGooglePlaces(text, { signal: controller.signal });
-      if (!controller.signal.aborted && sequence === searchSequenceRef.current) {
-        setResults(next.map((place) => ({ ...place, userLabel: text })));
-        renewSession();
-      }
-    } catch (searchError) {
-      if (searchError?.name !== 'AbortError' && sequence === searchSequenceRef.current) {
+    const [googleResult, cityResult] = await Promise.allSettled([
+      searchGooglePlaces(text, { signal: controller.signal }),
+      cityProviderRef.current.search(text, {
+        signal: controller.signal,
+        limit: config.citySearchLimit,
+        language: locale,
+      }),
+    ]);
+
+    if (!controller.signal.aborted && sequence === searchSequenceRef.current) {
+      const cities = fulfilledValue(cityResult).map(citySearchResult);
+      const places = fulfilledValue(googleResult).map((place) => ({
+        ...placeSearchResult(place),
+        userLabel: text,
+      }));
+      setResults([...cities, ...places]);
+      if (googleResult.status === 'rejected' && cityResult.status === 'rejected') {
         setErrorState({ key: 'placeSearchError' });
       }
-    } finally {
-      if (!controller.signal.aborted && sequence === searchSequenceRef.current) {
-        setSearching(false);
-      }
+      renewSession();
+      setSearching(false);
     }
   }
 
   async function chooseSuggestion(prediction) {
+    if (prediction?.kind === 'city') {
+      autocompleteAbortRef.current?.abort();
+      autocompleteSequenceRef.current += 1;
+      searchAbortRef.current?.abort();
+      searchSequenceRef.current += 1;
+      skipAutocompleteRef.current = true;
+      const label = prediction.displayName
+        || [prediction.name, prediction.region, prediction.country].filter(Boolean).join(', ');
+      setQuery(label);
+      setSuggestions([]);
+      setShowSuggestions(false);
+      setSuggesting(false);
+      setErrorState(null);
+      setResults([citySearchResult(prediction)]);
+      return;
+    }
+
     const placeId = String(prediction?.id || '').trim();
     if (!placeId) return;
     const userLabel = query.trim();
@@ -171,7 +227,7 @@ export function usePlaceSearch({ viewMode }) {
       const location = [place.city, place.country].filter(Boolean).join(', ');
       skipAutocompleteRef.current = true;
       setQuery([place.name, location].filter(Boolean).join(', '));
-      setResults([{ ...place, userLabel }]);
+      setResults([{ ...placeSearchResult(place), userLabel }]);
       renewSession();
     } catch (detailsError) {
       if (detailsError?.name !== 'AbortError') {
