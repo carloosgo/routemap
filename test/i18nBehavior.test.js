@@ -70,9 +70,9 @@ test('la búsqueda de ciudades usa el idioma activo y separa provider cache de b
   assert.match(backend, /const MAX_RESULTS = 5/);
   assert.doesNotMatch(backend, /MAX_PROVIDER_RESULTS|providerLimit/);
   assert.match(backend, /const language = requestedLanguage\(request\.data\?\.language\)/);
-  assert.match(backend, /const key = `city:v8:\$\{queryKey\}:lang=\$\{language\}:limit=\$\{MAX_RESULTS\}`/);
-  assert.match(backend, /cached\('citySearchCache'/);
-  assert.match(backend, /source: cacheHit\.hit \? 'provider-cache' : 'provider'/);
+  assert.match(backend, /const key = `city:live:v1:\$\{queryKey\}:lang=\$\{language\}:limit=\$\{MAX_RESULTS\}`/);
+  assert.match(backend, /cached\(\s*'citySearchCache'/);
+  assert.match(backend, /source: cachedProvider\.cacheHit \? 'provider-cache' : 'provider'/);
   assert.doesNotMatch(backend, /readCityCatalogQuery|persistCityCatalogQuery|cityCatalog/);
   assert.match(cityUtils, /limit: String\(safeLimit\)/);
   assert.match(cityUtils, /lang: safeLanguage/);
