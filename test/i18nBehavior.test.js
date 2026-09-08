@@ -62,9 +62,10 @@ test('la búsqueda de ciudades usa el idioma activo y separa provider cache de b
   assert.match(client, /language = config\.defaultLocale/);
   assert.match(client, /const safeLanguage = normalizeLanguage\(language\)/);
   assert.match(client, /const cacheKey = `\$\{queryKey\}\|\$\{safeLanguage\}\|\$\{safeLimit\}`/);
+  assert.match(client, /getCachedCities\(cacheKey, config\.citySearchCacheTtlMs\)/);
   assert.match(client, /language: safeLanguage/);
-  assert.match(client, /CANONICAL_CACHE_SOURCES/);
-  assert.match(client, /CANONICAL_CACHE_SOURCES\.has\(responseSource\)/);
+  assert.match(client, /BROWSER_CACHE_SOURCES/);
+  assert.match(client, /BROWSER_CACHE_SOURCES\.has\(responseSource\)/);
   assert.match(cache, /atlas:geoapify-city-cache:v8/);
 
   assert.match(backend, /const MAX_RESULTS = 5/);
