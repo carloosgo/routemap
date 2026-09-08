@@ -25,7 +25,7 @@
     display: grid;
     grid-template-columns:
       var(--atlas-nav-width)
-      calc(var(--workspace-panel-width) - var(--atlas-nav-width))
+      calc(var(--workspace-header-split-width) - var(--atlas-nav-width))
       minmax(0, 1fr);
     align-items: center;
     column-gap: 0;
