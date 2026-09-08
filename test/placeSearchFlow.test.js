@@ -20,6 +20,16 @@ test('Google place search preserves the configured minimum and maximum limits', 
   assert.match(functions, /\.slice\(0, 5\)/);
 });
 
+test('Google autocomplete waits one second of inactivity without imposing a hard request cap', async () => {
+  const config = await read('src/config.js');
+  const search = await read('src/modules/map/usePlaceSearch.js');
+
+  assert.match(config, /googleMaps:\s*\{[\s\S]*?searchDebounceMs: 1000/);
+  assert.match(search, /setTimeout\(async \(\) => \{[\s\S]*?\}, config\.googleMaps\.searchDebounceMs\)/);
+  assert.match(search, /\}, \[query, viewMode\]\)/);
+  assert.doesNotMatch(search, /autocompleteRequestCount|autocompleteRequestLimit|maxAutocompleteRequests/);
+});
+
 test('general Google search sends the literal query to the provider', async () => {
   const client = await read('src/modules/places/googlePlacesClient.js');
 

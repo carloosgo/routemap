@@ -39,7 +39,7 @@ export const config = {
     webApiKey: cleanString(env.VITE_GOOGLE_MAPS_API_KEY),
     mapId: cleanString(env.VITE_GOOGLE_MAPS_MAP_ID),
     searchMinChars: 4,
-    searchDebounceMs: 450,
+    searchDebounceMs: 1000,
     searchLimit: 5,
     memoryCacheTtlMs: 5 * 60 * 1000,
     locationCacheKey: 'atlas:google-place-locations:v1',

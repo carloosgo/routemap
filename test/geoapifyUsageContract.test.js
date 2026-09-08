@@ -29,7 +29,7 @@ test('ciudades Geoapify y búsqueda Google conservan políticas independientes',
   assert.ok(config.citySearchCacheTtlMs <= 90 * DAY_MS);
 
   assert.equal(config.googleMaps.searchMinChars, 4);
-  assert.equal(config.googleMaps.searchDebounceMs, 450);
+  assert.equal(config.googleMaps.searchDebounceMs, 1000);
   assert.equal(config.googleMaps.searchLimit, 5);
   assert.ok(config.googleMaps.locationCacheTtlMs >= 28 * DAY_MS);
   assert.ok(config.googleMaps.locationCacheTtlMs < 30 * DAY_MS);
