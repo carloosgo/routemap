@@ -19,27 +19,49 @@ function projectedPlace(place) {
   };
 }
 
+function projectedTransport(segment) {
+  const planeDominant = dominantTransport(segment) === 'plane';
+  return {
+    transport: {
+      plane: planeDominant ? 1 : 0,
+      train: 0,
+      bus: 0,
+      taxiUber: 0,
+    },
+  };
+}
+
 export function itineraryMapProjection(origin, segments) {
-  const safeSegments = Array.isArray(segments) ? segments : [];
-  return safeSegments.map((segment, index) => {
-    const planeDominant = dominantTransport(segment) === 'plane';
-    const legOrigin = index === 0
-      ? origin
-      : safeSegments[index - 1]?.destination || null;
-    return {
+  const safeSegments = (Array.isArray(segments) ? segments : [])
+    .filter((segment) => projectedPlace(segment?.destination));
+
+  if (projectedPlace(origin)) {
+    return safeSegments.map((segment, index) => ({
       id: String(segment?.id || ''),
-      origin: projectedPlace(legOrigin),
+      origin: projectedPlace(index === 0
+        ? origin
+        : safeSegments[index - 1]?.destination || null),
       destination: projectedPlace(segment?.destination),
-      expenses: {
-        transport: {
-          plane: planeDominant ? 1 : 0,
-          train: 0,
-          bus: 0,
-          taxiUber: 0,
-        },
-      },
-    };
-  });
+      expenses: projectedTransport(segment),
+    }));
+  }
+
+  if (safeSegments.length === 0) return [];
+  if (safeSegments.length === 1) {
+    return [{
+      id: String(safeSegments[0]?.id || ''),
+      origin: projectedPlace(safeSegments[0]?.destination),
+      destination: null,
+      expenses: projectedTransport(safeSegments[0]),
+    }];
+  }
+
+  return safeSegments.slice(1).map((segment, index) => ({
+    id: String(segment?.id || ''),
+    origin: projectedPlace(safeSegments[index]?.destination),
+    destination: projectedPlace(segment?.destination),
+    expenses: projectedTransport(segment),
+  }));
 }
 
 export function itineraryMapProjectionSignature(origin, segments) {
