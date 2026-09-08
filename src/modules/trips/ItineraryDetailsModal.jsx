@@ -30,9 +30,7 @@ export function ItineraryDetailsModal({
   if (!target) return null;
 
   if (target === ORIGIN_NOTE_TARGET) {
-    const firstSegment = trip.segments?.[0];
-    if (!firstSegment) return null;
-    const originName = firstSegment.origin?.name || t('origin');
+    const originName = trip.origin?.name || t('origin');
 
     const handleOriginUpdate = (patch) => {
       if (Object.hasOwn(patch, 'departureDate')) {
