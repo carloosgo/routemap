@@ -11,7 +11,10 @@ export function RouteMap({
   places = [],
   routeConnections = [],
   addPlace,
+  addCity,
   viewMode = 'segments',
+  showCityTrace = viewMode === 'segments',
+  showSavedRoutes = viewMode === 'places',
 }) {
   const mapSegmentsSignature = useMemo(
     () => itineraryMapProjectionSignature(origin, segments),
@@ -28,7 +31,10 @@ export function RouteMap({
       places={places}
       routeConnections={routeConnections}
       addPlace={addPlace}
+      addCity={addCity}
       viewMode={viewMode}
+      showCityTrace={showCityTrace}
+      showSavedRoutes={showSavedRoutes}
     />
   );
 }
