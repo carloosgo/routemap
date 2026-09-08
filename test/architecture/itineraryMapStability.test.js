@@ -21,10 +21,15 @@ test('itinerary map preserves viewport after first projection and reconciles mar
     /if \(\s*firstItineraryProjection\s*&& routeCities\.length > 0\s*&& !pendingFirstDestinationFocusRef\.current\s*\)/s
   );
   assert.doesNotMatch(source, /const viewportChanged/);
-  assert.match(source, /agregar, eliminar o[\s\S]*reordenar ciudades nunca vuelve a ejecutar movimientos automáticos de cámara/s);
+
+  const projectionEffect = source.match(
+    /useEffect\(\(\) => \{[\s\S]*?const firstItineraryProjection = lastItineraryViewportKeyRef\.current === null;[\s\S]*?\}, \[ready, segments, showCityTrace, t\]\);/
+  )?.[0] || '';
+  const automaticCameraCalls = projectionEffect.match(/map\.(?:panTo|setZoom|fitBounds)\(/g) || [];
+  assert.equal(automaticCameraCalls.length, 3, 'la cámara automática sólo pertenece al bloque de primera proyección');
 
   const focusEffect = source.match(
-    /useEffect\(\(\) => \{\s*const previousKey = firstDestinationKeyRef\.current;[\s\S]*?\}, \[firstDestination, firstDestinationKey, placesActive, ready\]\);/
+    /useEffect\(\(\) => \{\s*const previousKey = firstDestinationKeyRef\.current;[\s\S]*?\}, \[firstDestination, firstDestinationKey, ready, showCityTrace\]\);/
   )?.[0] || '';
   assert.match(focusEffect, /if \(!previousKey && firstDestinationKey && firstDestination\)/);
   assert.match(focusEffect, /map\.panTo\(\{ lat: pendingFocus\.lat, lng: pendingFocus\.lng \}\);/);
