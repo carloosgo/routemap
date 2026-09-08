@@ -23,23 +23,29 @@ test('los numeros de marcadores pertenecen al dato y no al orden DOM de Google M
   assert.match(css, /\.google-itinerary-city-marker__dot\s*\{[\s\S]*display:grid;/);
 });
 
-test('el drag confirma el reordenamiento fuera del updater de React y conserva un solo pointer activo', async () => {
-  const editor = await read('src/app/AppEditorPane.jsx');
-  assert.match(editor, /const dragStateRef = useRef\(null\)/);
-  assert.match(editor, /const activeDragId = dragState\?\.segmentId \|\| null/);
-  assert.match(editor, /current\.pointerId !== event\.pointerId/);
-  assert.match(editor, /function clearActiveDrag\(\) \{\s*dragStateRef\.current = null;\s*setDragState\(null\);\s*\}/);
-  assert.match(editor, /function handlePointerEnd\(event\) \{[\s\S]{0,350}clearActiveDrag\(\);[\s\S]{0,250}reorderSegment\(/);
-  assert.match(editor, /\}, \[activeDragId, reorderSegment\]\);/);
-  assert.match(editor, /setPointerCapture\?\.\(event\.pointerId\)/);
-  assert.doesNotMatch(editor, /setDragState\(\(current\) => \{[\s\S]{0,500}reorderSegment\(/);
+test('Mis Rutas reordena ciudades por el callback canónico y respeta los límites de la lista', async () => {
+  const panel = await read('src/modules/places/TripPlacesPanel.jsx');
+
+  assert.match(panel, /const segmentIndex = segments\.findIndex\(\(item\) => item\.id === segment\.id\);/);
+  assert.match(
+    panel,
+    /const previous = segments\[segmentIndex - 1\];[\s\S]{0,120}if \(previous\) reorderSegment\?\.\(segment\.id, previous\.id, 'before'\);/
+  );
+  assert.match(
+    panel,
+    /const next = segments\[segmentIndex \+ 1\];[\s\S]{0,120}if \(next\) reorderSegment\?\.\(segment\.id, next\.id, 'after'\);/
+  );
+  assert.match(panel, /disabled=\{segmentIndex <= 0\}/);
+  assert.match(panel, /disabled=\{segmentIndex >= segments\.length - 1\}/);
+  assert.doesNotMatch(panel, /segments\.(?:splice|sort)\(/);
 });
 
-test('pointercancel cancela el drag y nunca confirma un reordenamiento', async () => {
-  const editor = await read('src/app/AppEditorPane.jsx');
-  const cancelHandler = editor.match(/function handlePointerCancel\(event\) \{([\s\S]*?)\n {4}\}/)?.[1] || '';
-  assert.match(cancelHandler, /activeDragFor\(event\)/);
-  assert.match(cancelHandler, /clearActiveDrag\(\)/);
-  assert.doesNotMatch(cancelHandler, /reorderSegment\(/);
-  assert.match(editor, /addEventListener\('pointercancel', handlePointerCancel\)/);
+test('pointercancel del drag de lugares cancela sin confirmar un reordenamiento', async () => {
+  const panel = await read('src/modules/places/TripPlacesPanel.jsx');
+
+  assert.match(panel, /function finishDrag\(commit\) \{/);
+  assert.match(panel, /if \(commit && current\?\.targetId && current\.placement\) \{\s*reorderPlace\?\.\(/);
+  assert.match(panel, /const handlePointerCancel = \(\) => finishDrag\(false\);/);
+  assert.match(panel, /addEventListener\('pointercancel', handlePointerCancel\)/);
+  assert.match(panel, /removeEventListener\('pointercancel', handlePointerCancel\)/);
 });
