@@ -78,16 +78,6 @@ export function AppEditorModule({
     />
   ) : (
     <AppEditorPane
-      activeTab={activeTab}
-      trip={trip}
-      intlLocale={intlLocale}
-      updateSegment={updateSegment}
-      updateOrigin={updateOrigin}
-      removeSegment={removeSegment}
-      reorderSegment={reorderSegment}
-      toggleNoteTarget={itineraryPanels.toggleNote}
-      toggleDetailsTarget={itineraryPanels.toggleDetails}
-      addSegment={addSegment}
       t={t}
       notes={notes}
       confirmDeleteNote={confirmDeleteNote}
