@@ -17,6 +17,7 @@ import {
   planningGroupKey,
   placePlanningGroupKey,
   samePlanningGroup,
+  segmentPlanningDayCount,
   tripPlanningDays,
 } from './tripDayPlanning.js';
 import {
@@ -44,11 +45,13 @@ export const TRIP_ACTIONS = Object.freeze({
   toggleChecklistItem: 'TOGGLE_CHECKLIST_ITEM',
   removeChecklistItem: 'REMOVE_CHECKLIST_ITEM',
   addSegment: 'ADD_SEGMENT',
+  addCity: 'ADD_CITY',
   removeSegment: 'REMOVE_SEGMENT',
   reorderSegment: 'REORDER_SEGMENT',
   updateSegment: 'UPDATE_SEGMENT',
   updateExpenses: 'UPDATE_EXPENSES',
   addPlace: 'ADD_PLACE',
+  addPlaceWithCity: 'ADD_PLACE_WITH_CITY',
   updatePlace: 'UPDATE_PLACE',
   removePlace: 'REMOVE_PLACE',
   reorderPlace: 'REORDER_PLACE',
@@ -113,6 +116,45 @@ function cityIdentity(city) {
     String(city.name || '').trim().toLowerCase(),
     String(city.countryCode || '').trim().toUpperCase(),
   ].join('|');
+}
+
+function ensureCitySegment(state, city) {
+  const destination = createCity(city);
+  const identity = cityIdentity(destination);
+  if (!identity) return null;
+
+  const segments = Array.isArray(state.segments) ? state.segments : [];
+  const existing = segments.find(
+    (segment) => cityIdentity(segment?.destination) === identity
+  );
+  if (existing) {
+    return { segments, segment: existing, changed: false };
+  }
+
+  const reusableIndex = segments.findIndex(
+    (segment) => !cityIdentity(segment?.destination)
+      && assignedPlacesForSegment(state.places, segment.id).length === 0
+  );
+
+  if (reusableIndex >= 0) {
+    const segment = createSegment({
+      ...segments[reusableIndex],
+      destination,
+      startDate: '',
+      endDate: '',
+    });
+    const nextSegments = [...segments];
+    nextSegments[reusableIndex] = segment;
+    return { segments: nextSegments, segment, changed: true };
+  }
+
+  if (segments.length >= TRIP_LIMITS.segments) return null;
+  const segment = createSegment({ destination, startDate: '', endDate: '' });
+  return {
+    segments: [...segments, segment],
+    segment,
+    changed: true,
+  };
 }
 
 function movePlaceToTargetGroup(places, placeId, segmentId, dayOffset) {
@@ -231,6 +273,12 @@ export function tripReducer(state, action) {
     case TRIP_ACTIONS.addSegment:
       return appendSegment(state);
 
+    case TRIP_ACTIONS.addCity: {
+      const ensured = ensureCitySegment(state, action.city);
+      if (!ensured || !ensured.changed) return state;
+      return touch(state, { segments: ensured.segments });
+    }
+
     case TRIP_ACTIONS.removeSegment: {
       if (assignedPlacesForSegment(state.places, action.segmentId).length > 0) {
         return state;
@@ -300,9 +348,21 @@ export function tripReducer(state, action) {
       );
       const planningDays = tripPlanningDays(state.segments);
       const placeGroupKey = placePlanningGroupKey(place);
-      const validPlanningTarget = placeGroupKey
-        ? planningDays.some((day) => day.key === placeGroupKey)
-        : planningDays.length > 0;
+      const assignedSegment = (state.segments || []).find(
+        (segment) => segment.id === place.segmentId
+      );
+      const pendingFirstDay = Boolean(
+        assignedSegment
+        && place.dayOffset === 0
+        && segmentPlanningDayCount(assignedSegment) === 0
+      );
+      const validPlanningTarget = Boolean(
+        placeGroupKey
+        && (
+          planningDays.some((day) => day.key === placeGroupKey)
+          || pendingFirstDay
+        )
+      );
       if (
         places.length >= TRIP_LIMITS.places
         || duplicate
@@ -312,6 +372,30 @@ export function tripReducer(state, action) {
       }
 
       return touch(state, {
+        places: insertPlaceByCountry(places, place),
+        placeOrderVersion: PLACE_ORDER_VERSION,
+      });
+    }
+
+    case TRIP_ACTIONS.addPlaceWithCity: {
+      const places = state.places || [];
+      if (places.length >= TRIP_LIMITS.places) return state;
+
+      const placeCandidate = createPlace(action.place);
+      if (places.some((currentPlace) => currentPlace.id === placeCandidate.id)) {
+        return state;
+      }
+
+      const ensured = ensureCitySegment(state, action.city);
+      if (!ensured) return state;
+      const place = createPlace({
+        ...placeCandidate,
+        segmentId: ensured.segment.id,
+        dayOffset: 0,
+      });
+
+      return touch(state, {
+        segments: ensured.segments,
         places: insertPlaceByCountry(places, place),
         placeOrderVersion: PLACE_ORDER_VERSION,
       });
