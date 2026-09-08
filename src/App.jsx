@@ -21,6 +21,7 @@ import { useWorkspacePanelGeometry } from './app/useWorkspacePanelGeometry.js';
 import './App.css';
 import './app/FloatingEditor.css';
 import './app/UnifiedMyRoutes.css';
+import './app/UnifiedMyRoutesInteraction.css';
 
 export default function App() {
   const { t, locale, intlLocale, setLocale, availableLocales } = useTranslation();
