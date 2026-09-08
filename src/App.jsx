@@ -19,6 +19,7 @@ import { useOutsideClick, useSaveShortcut } from './app/useAppInteractions.js';
 import { useTripSaveFlow } from './app/useTripSaveFlow.js';
 import './App.css';
 import './app/FloatingEditor.css';
+import './app/UnifiedMyRoutes.css';
 
 export default function App() {
   const { t, locale, intlLocale, setLocale, availableLocales } = useTranslation();
@@ -31,7 +32,7 @@ export default function App() {
   const { getTrip, getActiveTripDraft, stageTrip, getTripPersistenceState, saveTrip, deleteTrip, importLocalTrips, getLocalTripCount } = savedTrips;
   const [toast, setToast] = useState('');
   const [mobileView, setMobileView] = useState('form');
-  const [activeTab, setActiveTab] = useState('segments');
+  const [activeTab, setActiveTab] = useState('places');
   const [tripToDelete, setTripToDelete] = useState(null);
   const [deletePending, setDeletePending] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
