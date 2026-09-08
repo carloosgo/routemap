@@ -23,7 +23,7 @@
 .trip-places--unified .trip-city__bar {
   display: grid;
   width: 100%;
-  min-height: 45px;
+  min-height: 40px;
   box-sizing: border-box;
   grid-template-columns: 24px minmax(0, 1fr) max-content 58px 15px 15px 15px;
   align-items: center;
