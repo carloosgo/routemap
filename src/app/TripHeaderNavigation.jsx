@@ -1,8 +1,7 @@
-import { IconListDetails, IconNotebook, IconRoute } from '@tabler/icons-react';
+import { IconNotebook, IconRoute } from '@tabler/icons-react';
 import { HEADER_ICON_COLOR } from './headerVisualTokens.js';
 
 const NAV_ITEMS = [
-  { id: 'segments', labelKey: 'itinerary', Icon: IconListDetails },
   { id: 'places', labelKey: 'myRoutes', Icon: IconRoute },
   { id: 'notes', labelKey: 'notes', Icon: IconNotebook },
 ];
@@ -17,7 +16,7 @@ export function TripHeaderNavigation({
     <div
       className="trip-summary__primary-nav"
       role="tablist"
-      aria-label={`${t('itinerary')}, ${t('myRoutes')}, ${t('notes')}`}
+      aria-label={`${t('myRoutes')}, ${t('notes')}`}
     >
       {NAV_ITEMS.map(({ id, labelKey, Icon }) => {
         const isActive = activeTab === id;

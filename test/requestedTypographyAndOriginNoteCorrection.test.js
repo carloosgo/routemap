@@ -33,7 +33,7 @@ test('header typography stays isolated while itinerary city text matches note/se
   assert.match(correction, /expenses__add-other\s*\{[^}]*font-size:\s*13px;/s);
 });
 
-test('header trial owns the three primary tabs, omits the routes counter, keeps notes progress, and retires legacy sidebar tabs', async () => {
+test('header unified owns the two primary tabs, omits the routes counter, keeps notes progress, and retires the separate itinerary tab', async () => {
   const navigation = await read('src/app/TripHeaderNavigation.jsx');
   const navigationCss = await read('src/app/TripHeaderNavigation.css');
   const tripHeader = await read('src/app/TripSummaryHeader.jsx');
@@ -41,11 +41,11 @@ test('header trial owns the three primary tabs, omits the routes counter, keeps 
   const app = await read('src/App.jsx');
   const main = await read('src/main.jsx');
 
-  assert.match(navigation, /IconListDetails/);
+  assert.doesNotMatch(navigation, /IconListDetails/);
   assert.match(navigation, /IconRoute/);
   assert.match(navigation, /IconNotebook/);
   assert.doesNotMatch(navigation, /IconMap\b|IconNotes\b|lugaresIcon/);
-  assert.match(navigation, /id: 'segments'/);
+  assert.doesNotMatch(navigation, /id: 'segments'/);
   assert.match(navigation, /id: 'places'/);
   assert.match(navigation, /id: 'notes'/);
   assert.doesNotMatch(navigation, /id === 'places' \? routeCount|badge--places/);
@@ -54,8 +54,9 @@ test('header trial owns the three primary tabs, omits the routes counter, keeps 
   assert.match(tripHeader, /<TripHeaderNavigation \{\.\.\.navigation\} t=\{t\} \/>/);
   assert.doesNotMatch(tripHeader, /className="trip-summary__title"|renameTrip/);
   assert.doesNotMatch(editorModule, /editor-module__tabs|editor-module__nav-tab|lugaresIcon|IconNotes|IconMap\b/);
+  assert.match(editorModule, /activeTab !== 'notes'[\s\S]*?<TripPlacesPanel/);
   assert.match(app, /checklistProgress: editorState\.checklist\?\.length/);
-  assert.match(navigationCss, /grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(navigationCss, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(navigationCss, /\.editor-module\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\);/s);
   assert.doesNotMatch(navigationCss, /\.trip-summary__primary-nav-badge--places/);
   assert.match(navigationCss, /\.trip-summary__primary-nav-badge--notes/);
@@ -64,26 +65,12 @@ test('header trial owns the three primary tabs, omits the routes counter, keeps 
 });
 
 test('origin and segment notes keep one toggle path while details use the parallel note-style surface', async () => {
-  const form = await read('src/modules/trips/SegmentForm.jsx');
-  const origin = await read('src/modules/trips/SegmentOriginSection.jsx');
-  const body = await read('src/modules/trips/OriginBody.jsx');
   const map = await read('src/app/AppMapPane.jsx');
   const app = await read('src/App.jsx');
   const panels = await read('src/app/useItineraryFloatingPanels.js');
   const editorModule = await read('src/app/AppEditorModule.jsx');
-  const editorPane = await read('src/app/AppEditorPane.jsx');
+  const placesPanel = await read('src/modules/places/TripPlacesPanel.jsx');
   const interactions = await read('src/app/useAppInteractions.js');
-
-  assert.match(form, /ORIGIN_NOTE_TARGET/);
-  assert.match(form, /const openSegmentNote = \(\) => onOpenNote\(segment\.id\);/);
-  assert.match(form, /const openOriginNote = \(\) => onOpenNote\(ORIGIN_NOTE_TARGET\);/);
-  assert.match(form, /const openSegmentDetails = \(\) => onOpenDetails\(segment\.id\);/);
-  assert.match(form, /const openOriginDetails = \(\) => onOpenDetails\(ORIGIN_NOTE_TARGET\);/);
-  assert.match(form, /onOpenNote=\{openOriginNote\}/);
-  assert.match(form, /onOpenNote=\{openSegmentNote\}/);
-  assert.match(origin, /onOpenNote=\{onOpenNote\}/);
-  assert.match(origin, /onOpenDetails=\{onOpenDetails\}/);
-  assert.doesNotMatch(body, /itinerary-origin__note-editor|<textarea/);
 
   assert.match(app, /const itineraryPanels = useItineraryFloatingPanels\(\);/);
   assert.match(app, /itineraryPanels=\{itineraryPanels\}/);
@@ -91,10 +78,16 @@ test('origin and segment notes keep one toggle path while details use the parall
   assert.match(panels, /const toggleDetails = useCallback/);
   assert.match(panels, /setDetailsTarget\(null\);[\s\S]*setNoteTarget/s);
   assert.match(panels, /setNoteTarget\(null\);[\s\S]*setDetailsTarget/s);
-  assert.match(editorModule, /toggleNoteTarget=\{itineraryPanels\.toggleNote\}/);
-  assert.match(editorModule, /toggleDetailsTarget=\{itineraryPanels\.toggleDetails\}/);
-  assert.match(editorPane, /onOpenDetails=\{toggleDetailsTarget\}/);
-  assert.match(interactions, /\.segment__note-btn, \.segment__details-btn/);
+  assert.match(editorModule, /toggleSegmentNote=\{itineraryPanels\.toggleNote\}/);
+  assert.match(editorModule, /toggleSegmentDetails=\{itineraryPanels\.toggleDetails\}/);
+  assert.match(placesPanel, /toggleSegmentNote\?\.\(ORIGIN_NOTE_TARGET\)/);
+  assert.match(placesPanel, /toggleSegmentDetails\?\.\(ORIGIN_NOTE_TARGET\)/);
+  assert.match(placesPanel, /toggleSegmentNote\?\.\(segment\.id\)/);
+  assert.match(placesPanel, /toggleSegmentDetails\?\.\(segment\.id\)/);
+  assert.match(
+    interactions,
+    /\.trip-city__note, \.trip-city__expense, \.trip-city__date, \.trip-city__amount/
+  );
   assert.doesNotMatch(interactions, /suppressNextClick|clickedSegmentId|openSegmentId/);
 
   assert.match(map, /noteTarget === ORIGIN_NOTE_TARGET/);

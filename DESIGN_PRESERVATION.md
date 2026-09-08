@@ -189,3 +189,17 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - El scrim de la nota de lugar sólo captura el clic exterior y permanece transparente, igual que la capa de descarte de las notas de trayecto; el diálogo de confirmación para eliminar un lugar conserva su scrim oscuro existente.
 - El posicionamiento contextual de la nota de `Mis Rutas` puede permanecer centrado respecto al viewport; la solicitud de paridad afecta diseño, forma y formato de la superficie, no su anclaje.
 - Este ajuste no modifica contenido de notas, límite de 500 caracteres, callbacks, autosave, Storage v4, Firestore Rules, rutas, proveedores, cámara ni costos externos.
+
+## Ajuste solicitado: mudanza total de Itinerario a Mis Rutas
+
+- Este apartado sustituye, donde exista conflicto, las reglas anteriores que trataban `Itinerario` y `Mis Rutas` como superficies separadas.
+- La navegación primaria queda reducida a `Mis Rutas / Notas`; `Mis Rutas` es la vista inicial del editor. No se mantiene una pestaña paralela de Itinerario escondida ni una segunda ruta de edición.
+- `Mis Rutas` pasa a ser dueña visual de la ciudad origen y de todas las ciudades destino, pero reutiliza el mismo estado `trip.origin` / `trip.segments` y los mismos callbacks de dominio (`updateOrigin`, `updateSegment`, `addSegment`, `removeSegment`, `reorderSegment`).
+- Cada ciudad usa una sola barra compacta de 40 px. La reducción de espacio vertical no usa `scale`, `zoom` ni miniaturización tipográfica.
+- Cada ciudad tiene un divisor horizontal tenue respecto a la siguiente aunque ambas pertenezcan al mismo país. Esta regla sustituye la antigua condición que sólo mostraba el divisor cuando cambiaba el país.
+- La barra mantiene en una sola línea bandera, ciudad/país, resumen de fecha, costo, acceso a gastos, nota y despliegue. Nombres largos deben ceder espacio mediante `minmax(0, 1fr)` y elipsis sin empujar fuera de la retícula las acciones finales.
+- Expandir una ciudad muestra sus días, lugares y controles de gestión. Agregar, editar, reordenar y eliminar ciudades siguen disponibles sin volver a montar `SegmentForm` como segunda superficie de producto.
+- Fecha y costo de la barra son proyecciones locales; al pulsarlos, igual que al pulsar Gastos, se abre el `ItineraryDetailsModal` canónico. Notas reutiliza los targets y el autosave existentes.
+- La ciudad origen usa `trip.origin` como fuente canónica también dentro del modal de detalles; no se deriva de `firstSegment.origin` ni se crea un origen duplicado.
+- En el mapa de `Mis Rutas` existe un selector `Ciudades / Rutas`. `Ciudades` reutiliza la proyección `segments`; `Rutas` reutiliza la proyección `places`, el buscador existente y las conexiones guardadas. No se crea un segundo mapa, un proveedor alternativo ni nuevas llamadas por duplicación de render.
+- El selector de mapa sólo cambia presentación. Storage v4, Firestore Rules, Functions, App Check, Google Places, Geoapify, autosave, contratos de fechas, gastos, notas, lugares y conexiones permanecen en sus rutas canónicas actuales.

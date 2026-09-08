@@ -51,11 +51,19 @@ export function AppEditorModule({
     setNewItemText,
   } = editorState;
 
-  const editorPane = activeTab === 'places' ? (
+  const editorPane = activeTab !== 'notes' ? (
     <TripPlacesPanel
+      trip={trip}
       segments={trip.segments}
       places={places}
       routes={trip.routeConnections || []}
+      updateSegment={updateSegment}
+      updateOrigin={updateOrigin}
+      addSegment={addSegment}
+      removeSegment={removeSegment}
+      reorderSegment={reorderSegment}
+      toggleSegmentNote={itineraryPanels.toggleNote}
+      toggleSegmentDetails={itineraryPanels.toggleDetails}
       updatePlace={updatePlace}
       removePlace={removePlace}
       reorderPlace={reorderPlace}
@@ -70,16 +78,6 @@ export function AppEditorModule({
     />
   ) : (
     <AppEditorPane
-      activeTab={activeTab}
-      trip={trip}
-      intlLocale={intlLocale}
-      updateSegment={updateSegment}
-      updateOrigin={updateOrigin}
-      removeSegment={removeSegment}
-      reorderSegment={reorderSegment}
-      toggleNoteTarget={itineraryPanels.toggleNote}
-      toggleDetailsTarget={itineraryPanels.toggleDetails}
-      addSegment={addSegment}
       t={t}
       notes={notes}
       confirmDeleteNote={confirmDeleteNote}
@@ -99,10 +97,7 @@ export function AppEditorModule({
   );
 
   return (
-    <div
-      className={'editor-module' + (activeTab === 'segments' ? ' editor-module--itinerary' : '')}
-      ref={editorMenuRef}
-    >
+    <div className="editor-module" ref={editorMenuRef}>
       <AppWorkspaceMenu
         tripStore={tripStore}
         savedTrips={savedTrips}
