@@ -55,10 +55,13 @@ export function useOutsideClickSelector(selector, active, onOutside) {
 
       // Nota y detalle son toggles React compartidos para origen y trayectos.
       // No se consideran outside-click para conservar la misma semántica de
-      // abrir/cambiar/cerrar con mouse, touch y teclado.
+      // abrir/cambiar/cerrar con mouse, touch y teclado, tanto en la superficie
+      // histórica como en la superficie unificada de Mis Rutas.
       if (
         selector === '.segnote'
-        && target.closest('.segment__note-btn, .segment__details-btn')
+        && target.closest(
+          '.segment__note-btn, .segment__details-btn, .trip-city__note, .trip-city__expense, .trip-city__date, .trip-city__amount'
+        )
       ) return;
 
       if (!target.closest(selector)) {
