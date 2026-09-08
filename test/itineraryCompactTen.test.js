@@ -21,7 +21,10 @@ test('desktop itinerary keeps compact equal rows, header-aligned panel and stack
   assert.doesNotMatch(floating, /workspace-panel-expanded-width/);
   assert.match(floating, /\.workspace__desktop--column\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*var\(--workspace-panel-width\) minmax\(0, 1fr\);/s);
   assert.match(floating, /\.workspace-panel__toggle\s*\{[^}]*left:\s*var\(--workspace-panel-width\);/s);
-  assert.match(headerLayout, /grid-template-columns:[\s\S]*var\(--workspace-panel-width\)[\s\S]*minmax\(0, 1fr\);/s);
+  assert.match(
+    headerLayout,
+    /grid-template-columns:[\s\S]*var\(--atlas-nav-width\)[\s\S]*calc\(var\(--workspace-header-split-width\) - var\(--atlas-nav-width\)\)[\s\S]*minmax\(0, 1fr\);/s
+  );
   assert.doesNotMatch(headerLayout, /workspace-panel-expanded-width/);
   assert.match(floating, /\.workspace-panel\s*\{[^}]*position:\s*relative;[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*display:\s*block;/s);
   assert.match(floating, /\.workspace-panel__content\.floating-editor\s*\{[^}]*width:\s*100%\s*!important;[^}]*height:\s*100%\s*!important;[^}]*transform:\s*none\s*!important;/s);
