@@ -226,7 +226,7 @@ export default function App() {
   const mapPane = (
     <AppMapPane
       trip={trip}
-      mapView={activeTab === 'places' ? 'places' : 'segments'}
+      mapView="places"
       itineraryPanels={itineraryPanels}
       updateSegment={updateSegment}
       updateExpenses={updateExpenses}
