@@ -1,14 +1,8 @@
 import { config } from '../../config.js';
 import { firebaseCallable } from '../../infrastructure/firebase/callableFunctions.js';
-import { cacheCities, getCachedCities } from './citySearchCache.js';
 
 const SUPPORTED_LANGUAGES = new Set(['es', 'en']);
 const LATIN_NAME_PATTERN = /\p{Script=Latin}/u;
-const CANONICAL_CACHE_SOURCES = new Set([
-  'catalog',
-  'catalog-refresh',
-  'catalog-stale',
-]);
 
 function normalizeQuery(value) {
   return String(value || '')
@@ -36,7 +30,7 @@ function cleanString(value, maxLength) {
 }
 
 // La búsqueda puede transportar metadatos de sugerencia (región, ranking, etc.),
-// pero el City persistido mantiene exactamente el contrato canónico de Storage v4.
+// pero la City persistida mantiene exactamente el contrato canónico de Storage v4.
 export function canonicalCityFromSearchResult(result) {
   return {
     id: cleanString(result?.id, 256),
@@ -92,13 +86,6 @@ export function createGeoapifyCityProvider() {
 
     const safeLimit = Math.min(Math.max(Number(limit) || config.citySearchLimit, 1), 5);
     const safeLanguage = normalizeLanguage(language);
-    const cacheKey = `${queryKey}|${safeLanguage}|${safeLimit}`;
-    const cached = getCachedCities(cacheKey, config.citySearchCacheTtlMs);
-    if (cached) {
-      const sanitized = sanitizeCitySearchResults(cached, { language: safeLanguage });
-      if (sanitized.length !== cached.length) cacheCities(cacheKey, sanitized);
-      return sanitized;
-    }
 
     throwIfAborted(signal);
     const request = firebaseCallable('geoapifyCityAutocomplete');
@@ -109,14 +96,9 @@ export function createGeoapifyCityProvider() {
     });
     throwIfAborted(signal);
 
-    const results = sanitizeCitySearchResults(response.data?.results, {
+    return sanitizeCitySearchResults(response.data?.results, {
       language: safeLanguage,
     });
-    const responseSource = String(response.data?.source || '').trim();
-    if (CANONICAL_CACHE_SOURCES.has(responseSource)) {
-      cacheCities(cacheKey, results);
-    }
-    return results;
   }
 
   return { search };
