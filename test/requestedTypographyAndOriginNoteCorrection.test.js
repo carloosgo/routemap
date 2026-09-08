@@ -64,7 +64,7 @@ test('header unified owns the two primary tabs, omits the routes counter, keeps 
   assert.ok(main.indexOf("./app/TripSummaryHeaderTypography.css") < main.indexOf("./app/TripHeaderNavigation.css"));
 });
 
-test('origin and segment notes keep one toggle path while details use the parallel note-style surface', async () => {
+test('las notas y detalles de ciudades conservan un único toggle sin reintroducir un origen especial en Mis Rutas', async () => {
   const map = await read('src/app/AppMapPane.jsx');
   const app = await read('src/App.jsx');
   const panels = await read('src/app/useItineraryFloatingPanels.js');
@@ -80,8 +80,7 @@ test('origin and segment notes keep one toggle path while details use the parall
   assert.match(panels, /setNoteTarget\(null\);[\s\S]*setDetailsTarget/s);
   assert.match(editorModule, /toggleSegmentNote=\{itineraryPanels\.toggleNote\}/);
   assert.match(editorModule, /toggleSegmentDetails=\{itineraryPanels\.toggleDetails\}/);
-  assert.match(placesPanel, /toggleSegmentNote\?\.\(ORIGIN_NOTE_TARGET\)/);
-  assert.match(placesPanel, /toggleSegmentDetails\?\.\(ORIGIN_NOTE_TARGET\)/);
+  assert.doesNotMatch(placesPanel, /ORIGIN_NOTE_TARGET|originDetails|toggleSegmentNote\?\.\(ORIGIN_NOTE_TARGET\)/);
   assert.match(placesPanel, /toggleSegmentNote\?\.\(segment\.id\)/);
   assert.match(placesPanel, /toggleSegmentDetails\?\.\(segment\.id\)/);
   assert.match(
@@ -90,10 +89,10 @@ test('origin and segment notes keep one toggle path while details use the parall
   );
   assert.doesNotMatch(interactions, /suppressNextClick|clickedSegmentId|openSegmentId/);
 
+  // La rama legacy del panel de origen puede seguir leyendo documentos v4 antiguos,
+  // pero el flujo activo no la invoca y la secuencia nueva parte de null.
   assert.match(map, /noteTarget === ORIGIN_NOTE_TARGET/);
-  assert.equal((map.match(/className="segnote"/g) || []).length, 2);
-  assert.equal((map.match(/className="segnote__textarea"/g) || []).length, 2);
-  assert.match(map, /updateOriginDetails\(\{ note: event\.target\.value \}\)/);
+  assert.match(map, /buildItineraryStopSequence\(null, trip\.segments, colorForIndex\)/);
   assert.match(map, /updateSegment\(segment\.id, \{ note: event\.target\.value \}\)/);
   assert.match(map, /const notePanel = noteTarget \? openNotePanel\(\) : null;/);
   assert.match(map, /const detailsPanel = detailsTarget \?/);
@@ -101,18 +100,23 @@ test('origin and segment notes keep one toggle path while details use the parall
   assert.match(map, /data-persistence-state=\{persistenceState\}/);
 });
 
-test('desktop itinerary uses tighter insets while the primary workspace is integrated', async () => {
+test('desktop itinerary keeps native sizing while the active workspace width is decoupled from the header split', async () => {
   const correction = await read('src/modules/trips/ItineraryCorrectionPolish.css');
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
   const floating = await read('src/app/FloatingItineraryPanel.css');
   const headerLayout = await read('src/app/TripWorkspaceHeaderLayout.css');
+  const geometry = await read('src/app/useWorkspacePanelGeometry.js');
   const floatingEditor = await read('src/app/FloatingEditor.css');
 
   assert.doesNotMatch(correction, /scrollbar-gutter:\s*stable/);
   assert.doesNotMatch(floating, /:has\(\.editor-module--itinerary\)/);
   assert.doesNotMatch(floating, /workspace-panel-expanded-width/);
   assert.match(floating, /\.workspace__desktop--column\s*\{[^}]*display:\s*grid;[^}]*grid-template-columns:\s*var\(--workspace-panel-width\) minmax\(0, 1fr\);/s);
-  assert.match(headerLayout, /calc\(var\(--workspace-panel-width\) - var\(--atlas-nav-width\)\)/);
+  assert.match(headerLayout, /--workspace-header-split-width/);
+  assert.match(headerLayout, /calc\(var\(--workspace-header-split-width\) - var\(--atlas-nav-width\)\)/);
+  assert.match(headerLayout, /--workspace-panel-width: var\(--workspace-header-split-width\)/);
+  assert.match(geometry, /panelEdge = separatorX \+ \(dateIconX - separatorX\) \/ 2/);
+  assert.match(geometry, /--workspace-panel-width/);
   assert.doesNotMatch(headerLayout, /workspace-panel-expanded-width/);
   assert.match(floating, /\.workspace-panel\s*\{[^}]*position:\s*relative;[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*display:\s*block;/s);
   assert.match(floating, /\.workspace-panel__content\.floating-editor\s*\{[^}]*height:\s*100%\s*!important;[^}]*border-radius:\s*0\s*!important;[^}]*box-shadow:\s*none\s*!important;/s);
