@@ -27,7 +27,7 @@ test('la ciudad persistible conserva sólo el contrato canónico y descarta meta
   const client = await read('src/modules/geocoding/citySearchClient.js');
   const canonicalBlock = client.slice(
     client.indexOf('export function canonicalCityFromSearchResult'),
-    client.indexOf('export function createGeoapifyCityProvider')
+    client.indexOf('export function sanitizeCitySearchResults')
   );
 
   assert.match(canonicalBlock, /id:/);
@@ -48,8 +48,10 @@ test('la caché de búsqueda sigue siendo técnica, descartable y sensible a idi
   const cache = await read('src/modules/geocoding/citySearchCache.js');
 
   assert.match(backend, /city:live:v1:\$\{queryKey\}:lang=\$\{language\}:limit=\$\{MAX_RESULTS\}/);
-  assert.match(client, /`\$\{queryKey\}\|\$\{safeLanguage\}\|\$\{safeLimit\}`/);
+  assert.match(client, /const cacheKey = `\$\{queryKey\}\|\$\{safeLanguage\}\|\$\{safeLimit\}`/);
+  assert.match(client, /getCachedCities\(cacheKey, config\.citySearchCacheTtlMs\)/);
+  assert.match(client, /BROWSER_CACHE_SOURCES/);
+  assert.match(client, /cacheCities\(cacheKey, results\)/);
   assert.match(cache, /atlas:geoapify-city-cache:v8/);
-  assert.match(client, /CANONICAL_CACHE_SOURCES/);
   assert.doesNotMatch(cache, /firestore|cityCatalog/);
 });
