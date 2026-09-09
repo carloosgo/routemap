@@ -48,7 +48,7 @@ test('el City canónico de Storage v4 conserva IDs y campos propios sin metadato
   assert.match(canonicalBlock, /lat:/);
   assert.match(canonicalBlock, /lon:/);
   assert.doesNotMatch(canonicalBlock, /providerRefs|sourceAttribution|verifiedAt|revalidateAfter|region:/);
-  assert.match(rulesSource, /'id', 'name', 'displayName', 'country', 'countryCode', 'lat', 'lon'/);
+  assert.match(rulesSource, /'id'\s*,\s*'name'\s*,\s*'displayName'\s*,\s*'country'\s*,\s*'countryCode'\s*,\s*'lat'\s*,\s*'lon'/);
   assert.match(indexSource, /geoapifyCityAutocomplete/);
   assert.doesNotMatch(indexSource, /cityCatalog/);
 });
