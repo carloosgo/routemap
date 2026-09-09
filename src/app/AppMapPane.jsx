@@ -56,7 +56,7 @@ function bestResolvedCity(place, cities) {
 
 function clearSuccessfulMapSearch() {
   if (typeof globalThis.Event !== 'function') return;
-  globalThis.dispatchEvent?.(new Event(SEARCH_SAVE_SUCCESS_EVENT));
+  globalThis.dispatchEvent?.(new globalThis.Event(SEARCH_SAVE_SUCCESS_EVENT));
 }
 
 export function AppMapPane({
