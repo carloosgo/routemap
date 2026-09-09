@@ -33,6 +33,47 @@ test('sin rango global Mis Rutas pide las fechas con el calendario existente', a
   assert.match(messages, /chooseTripDates:/);
 });
 
+test('Mis Rutas usa Día como única jerarquía y coloca ciudad y lugares directamente en ese día', async () => {
+  const panel = await read('src/modules/places/TripDayRoutesPanel.jsx');
+
+  assert.match(panel, /className="trip-day trip-day--flat"/);
+  assert.match(panel, /assignments\.map\(renderCityToken\)/);
+  assert.match(panel, /const entries = dayPlaceEntries\(assignments\)/);
+  assert.match(panel, /entries\.map\(\(\{ place, groupKey, nextPlace \}\) => renderPlace/);
+  assert.match(panel, /collapsedDays\.has\(calendarDay\.date\)/);
+  assert.doesNotMatch(panel, /function renderAssignment/);
+  assert.doesNotMatch(panel, /className="trip-city trip-day-city"/);
+});
+
+test('la cabecera de fechas abre calendarios globales y actualiza el mismo rango del viaje', async () => {
+  const header = await read('src/app/TripSummaryHeader.jsx');
+  const app = await read('src/App.jsx');
+
+  assert.match(header, /const \[showDateEditor, setShowDateEditor\] = useState\(false\)/);
+  assert.match(header, /className="trip-summary__metric--dates"/);
+  assert.match(header, /onClick=\{\(\) => setShowDateEditor/);
+  assert.match(header, /<CalendarDateInput[\s\S]*value=\{trip\.startDate \|\| ''\}/);
+  assert.match(header, /<CalendarDateInput[\s\S]*value=\{trip\.endDate \|\| ''\}/);
+  assert.match(header, /updateTripDates\?\.\(\{ startDate \}\)/);
+  assert.match(header, /updateTripDates\?\.\(\{ endDate \}\)/);
+  assert.match(app, /updateTripDates=\{updateTripDates\}/);
+});
+
+test('cada día puede eliminarse y la operación se ejecuta mediante un plan de colapso testeable', async () => {
+  const panel = await read('src/modules/places/TripDayRoutesPanel.jsx');
+  const editor = await read('src/app/AppEditorModule.jsx');
+  const hook = await read('src/modules/trips/useTrip.js');
+  const planner = await read('src/modules/trips/tripDayRemoval.js');
+
+  assert.match(panel, /removeTripDay\?\.\(calendarDay\.date\)/);
+  assert.match(editor, /removeTripDay=\{removeTripDay\}/);
+  assert.match(hook, /planTripDayRemoval\(trip, dateToRemove\)/);
+  assert.match(planner, /removePlaceIds/);
+  assert.match(planner, /movePlaces/);
+  assert.match(planner, /segmentPatches/);
+  assert.match(planner, /tripDatePatch/);
+});
+
 test('la vista día-primero no reintroduce lugares pendientes y eliminar lugar se presenta como X', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
   const panel = await read('src/modules/places/TripDayRoutesPanel.jsx');
