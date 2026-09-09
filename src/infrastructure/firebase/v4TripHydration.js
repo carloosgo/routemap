@@ -11,6 +11,13 @@ function active(items) {
   return (Array.isArray(items) ? items : []).filter((item) => item?.status !== 'deleted');
 }
 
+function hydratedSegment(segment) {
+  const tripDayOffsets = typeof segment?.tripDayPlan === 'string' && segment.tripDayPlan
+    ? segment.tripDayPlan.split(',').map(Number).filter((offset) => Number.isInteger(offset) && offset >= 0)
+    : [];
+  return { ...segment, tripDayOffsets };
+}
+
 export function v4TripListEntry(id, summary = {}) {
   return {
     id,
@@ -44,7 +51,7 @@ export function hydrateV4Trip(summary = {}, collections = {}) {
     placeOrderVersion: PLACE_ORDER_VERSION,
     createdAt: timestampIso(summary.createdAt),
     updatedAt: timestampIso(summary.updatedAt),
-    segments: active(collections.segments),
+    segments: active(collections.segments).map(hydratedSegment),
     places: active(collections.places),
     routeConnections: active(collections.connections),
     notes: active(collections.notes),

@@ -24,3 +24,15 @@ button.trip-summary__metric--total[aria-expanded='true'] {
   line-height: 1;
   text-align: center;
 }
+
+/* El editor de fechas reutiliza la superficie del desglose, pero contiene
+   calendarios que deben poder desbordar esa tarjeta. El desglose de costos
+   conserva overflow:hidden porque usa role="region", así que esta excepción
+   queda limitada únicamente al diálogo de fechas. */
+.trip-summary__breakdown[role='dialog'] {
+  overflow: visible;
+}
+
+.trip-summary__breakdown[role='dialog'] .calendar-date__popover {
+  z-index: 1200;
+}

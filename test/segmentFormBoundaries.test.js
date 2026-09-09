@@ -6,7 +6,7 @@ const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 const lineCount = (content) => content.split('\n').length;
 
-test('SegmentForm coordina filas compactas con resumen de fechas y el modal posee la edición detallada', async () => {
+test('SegmentForm coordina filas compactas y el header global posee la edición temporal', async () => {
   const form = await read('src/modules/trips/SegmentForm.jsx');
   const originSection = await read('src/modules/trips/SegmentOriginSection.jsx');
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
@@ -14,6 +14,7 @@ test('SegmentForm coordina filas compactas con resumen de fechas y el modal pose
   const modal = await read('src/modules/trips/ItineraryDetailsModal.jsx');
   const body = await read('src/modules/trips/SegmentBody.jsx');
   const originBody = await read('src/modules/trips/OriginBody.jsx');
+  const tripHeader = await read('src/app/TripSummaryHeader.jsx');
   const calendar = await read('src/components/CalendarDateInput.jsx');
   const dialog = await read('src/modules/trips/SegmentDeleteDialog.jsx');
   const model = await read('src/modules/trips/segmentFormModel.js');
@@ -63,16 +64,17 @@ test('SegmentForm coordina filas compactas con resumen de fechas y el modal pose
   assert.match(modal, /validateOriginDepartureDateChange/);
   assert.match(modal, /validateSegmentDatePatch/);
   assert.match(modal, /setDateError\(t\(validation\.errorKey\)\)/);
+
   assert.match(body, /className="segment__body segment-expense-form"/);
-  assert.doesNotMatch(body, /CityAutocomplete|segment-route-editor/);
-  assert.match(body, /CalendarDateInput/);
-  assert.match(body, /max=\{segment\.endDate \|\| undefined\}/);
-  assert.match(body, /min=\{segment\.startDate \|\| undefined\}/);
-  assert.match(body, /segment-details-modal__date-error/);
+  assert.doesNotMatch(body, /CityAutocomplete|segment-route-editor|CalendarDateInput|segment-details-modal__date-error/);
   assert.match(body, /<ExpenseEditor/);
   assert.match(originBody, /<ExpenseEditor/);
-  assert.match(originBody, /segment-details-modal__date-error/);
-  assert.doesNotMatch(body, /dates__label|dates__arrow/);
+
+  assert.match(tripHeader, /className="trip-summary__metric--dates"/);
+  assert.match(tripHeader, /<CalendarDateInput[\s\S]*value=\{trip\.startDate \|\| ''\}[\s\S]*max=\{trip\.endDate \|\| undefined\}/);
+  assert.match(tripHeader, /<CalendarDateInput[\s\S]*value=\{trip\.endDate \|\| ''\}[\s\S]*min=\{trip\.startDate \|\| undefined\}/);
+  assert.match(tripHeader, /updateTripDates\?\.\(\{ startDate \}\)/);
+  assert.match(tripHeader, /updateTripDates\?\.\(\{ endDate \}\)/);
 
   assert.match(calendar, /const maxDate = useMemo/);
   assert.match(calendar, /disabled=\{nextDisabled\}/);

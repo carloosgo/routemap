@@ -11,6 +11,7 @@ on:
       - main
       - agent/phase-1-no-design
       - agent/phase-2-hardening-no-design
+      - agent/phase-3-firebase-foundation
   schedule:
     - cron: '23 8 * * 2'
 

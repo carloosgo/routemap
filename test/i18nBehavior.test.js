@@ -14,6 +14,7 @@ test('el proveedor y los módulos reconstruyen su salida cuando cambia el idioma
   const segmentForm = await read('src/modules/trips/SegmentForm.jsx');
   const segmentBody = await read('src/modules/trips/SegmentBody.jsx');
   const originBody = await read('src/modules/trips/OriginBody.jsx');
+  const tripSummaryHeader = await read('src/app/TripSummaryHeader.jsx');
   const expenseEditor = await read('src/modules/expenses/ExpenseEditor.jsx');
   const fixedExpenseCards = await read('src/modules/expenses/FixedExpenseCards.jsx');
   const lineItemsGrid = await read('src/modules/expenses/ExpenseLineItemsGrid.jsx');
@@ -32,9 +33,11 @@ test('el proveedor y los módulos reconstruyen su salida cuando cambia el idioma
   assert.match(placesPanel, /formatSegmentAmount\(segmentTotal\(segment\), intlLocale, currency\)/);
   assert.match(placesPanel, /formatPlanningDate\(group\.date, intlLocale\)/);
   assert.match(segmentForm, /locale=\{locale\}/);
-  assert.match(segmentBody, /<CalendarDateInput[\s\S]*?locale=\{locale\}/);
+  assert.doesNotMatch(segmentBody, /CalendarDateInput/);
   assert.match(segmentBody, /<ExpenseEditor[\s\S]*?currency=\{currency\}[\s\S]*?locale=\{locale\}/);
   assert.match(originBody, /<ExpenseEditor[\s\S]*?currency=\{currency\}[\s\S]*?locale=\{locale\}/);
+  assert.match(tripSummaryHeader, /<CalendarDateInput[\s\S]*?locale=\{intlLocale\}/);
+  assert.match(tripSummaryHeader, /formatTripDateRange\(summary, intlLocale, t\('noTripDates'\)\)/);
 
   assert.match(expenseEditor, /ExpenseEditor\(\{ expenses, currency, locale, onChange \}\)/);
   assert.match(expenseEditor, /getCurrencySymbol\(currency, locale\)/);

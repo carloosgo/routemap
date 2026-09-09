@@ -24,7 +24,7 @@ test('sin rango global Mis Rutas pide las fechas con el calendario existente', a
   const panel = await read('src/modules/places/TripDayRoutesPanel.jsx');
   const messages = await read('src/i18n/unifiedSearchMessages.js');
 
-  assert.match(panel, /if \(!hasTripDates\)/);
+  assert.match(panel, /if \(!calendarDays\.length\)/);
   assert.match(panel, /t\('chooseTripDates'\)/);
   assert.match(panel, /<CalendarDateInput[\s\S]*value=\{trip\.startDate \|\| ''\}/);
   assert.match(panel, /<CalendarDateInput[\s\S]*value=\{trip\.endDate \|\| ''\}/);
@@ -36,12 +36,11 @@ test('sin rango global Mis Rutas pide las fechas con el calendario existente', a
 test('Mis Rutas usa Día como única jerarquía y coloca ciudad y lugares directamente en ese día', async () => {
   const panel = await read('src/modules/places/TripDayRoutesPanel.jsx');
 
-  assert.match(panel, /className="trip-day trip-day--flat"/);
-  assert.match(panel, /assignments\.map\(renderCityToken\)/);
-  assert.match(panel, /const entries = dayPlaceEntries\(assignments\)/);
-  assert.match(panel, /entries\.map\(\(\{ place, groupKey, nextPlace \}\) => renderPlace/);
+  assert.match(panel, /className=\{\['trip-day', 'trip-day--flat'/);
+  assert.match(panel, /assignments\.map\(\(assignment\) =>/);
+  assert.match(panel, /dayPlaces\.map\(\(place, index\) => renderPlace\(place, calendarDay\.tripDayOffset, dayPlaces\[index \+ 1\] \|\| null\)\)/);
   assert.match(panel, /collapsedDays\.has\(calendarDay\.date\)/);
-  assert.doesNotMatch(panel, /function renderAssignment/);
+  assert.doesNotMatch(panel, /function renderAssignment|dayPlaceEntries/);
   assert.doesNotMatch(panel, /className="trip-city trip-day-city"/);
 });
 

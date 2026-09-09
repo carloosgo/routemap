@@ -303,7 +303,7 @@ test('lugares nuevos requieren ciudad; si la ciudad aún no tiene fechas el luga
   assert.equal(removed.places.length, 0);
 });
 
-test('reordenar lugares permite cambiar de día y país sin mantener un candado geográfico', () => {
+test('reordenar lugares cambia sólo el orden y nunca reinterpreta su ciudad', () => {
   const state = {
     ...planningTrip(),
     places: [
@@ -315,17 +315,39 @@ test('reordenar lugares permite cambiar de día y país sin mantener un candado 
   const sameDay = reduce(state, TRIP_ACTIONS.reorderPlace, {
     sourceId: 'b', targetId: 'a', placement: 'before',
   });
-  const crossCountry = reduce(state, TRIP_ACTIONS.reorderPlace, {
+  const crossCity = reduce(state, TRIP_ACTIONS.reorderPlace, {
     sourceId: 'a', targetId: 'c', placement: 'after',
   });
 
   assert.deepEqual(sameDay.places.map(({ id }) => id), ['b', 'a', 'c']);
-  assert.deepEqual(crossCountry.places.map(({ id }) => id), ['b', 'c', 'a']);
-  assert.equal(crossCountry.places.at(-1).segmentId, 'segment-2');
-  assert.equal(crossCountry.places.at(-1).dayOffset, 0);
+  assert.deepEqual(crossCity.places.map(({ id }) => id), ['b', 'c', 'a']);
+  assert.equal(crossCity.places.at(-1).segmentId, 'segment-1');
+  assert.equal(crossCity.places.at(-1).dayOffset, 0);
+  assert.equal(crossCity.places.at(-1).tripDayOffset, null);
 });
 
-test('reordenar entre días poda conexiones que dejan de unir lugares consecutivos', () => {
+test('pruning de conexiones legacy respeta segmentId+dayOffset cuando tripDayOffset está ausente', () => {
+  const state = {
+    ...planningTrip(),
+    places: [
+      plannedPlace('b', 'segment-2', 0),
+      plannedPlace('a', 'segment-1', 0),
+      plannedPlace('c', 'segment-1', 0),
+    ],
+    routeConnections: [
+      { id: 'cross', fromPlaceId: 'a', toPlaceId: 'b', mode: 'walk', visible: true },
+      { id: 'same', fromPlaceId: 'a', toPlaceId: 'c', mode: 'walk', visible: true },
+    ],
+  };
+  const reordered = reduce(state, TRIP_ACTIONS.reorderPlace, {
+    sourceId: 'a', targetId: 'b', placement: 'before',
+  });
+
+  assert.deepEqual(reordered.places.map(({ id }) => id), ['a', 'b', 'c']);
+  assert.deepEqual(reordered.routeConnections.map(({ id }) => id), ['same']);
+});
+
+test('reordenar visualmente conserva las conexiones válidas de los días que no cambiaron', () => {
   const state = {
     ...planningTrip(),
     places: [
@@ -344,13 +366,15 @@ test('reordenar entre días poda conexiones que dejan de unir lugares consecutiv
   });
 
   assert.deepEqual(moved.places.map(({ id }) => id), ['a', 'c', 'b', 'd']);
-  assert.equal(moved.places[2].segmentId, 'segment-2');
-  assert.deepEqual(moved.routeConnections, []);
+  assert.equal(moved.places[2].segmentId, 'segment-1');
+  assert.deepEqual(moved.routeConnections.map(({ id }) => id), ['ab', 'cd']);
 });
 
-test('Mover a cambia segmentId/dayOffset, lo coloca al final del grupo y elimina conexiones obsoletas', () => {
+test('Mover a cambia sólo el día global, conserva la ciudad y elimina conexiones obsoletas', () => {
   const state = {
     ...planningTrip(),
+    startDate: '2026-09-02',
+    endDate: '2026-09-06',
     places: [
       plannedPlace('a', 'segment-1', 0),
       plannedPlace('b', 'segment-1', 0),
@@ -362,13 +386,47 @@ test('Mover a cambia segmentId/dayOffset, lo coloca al final del grupo y elimina
     ],
   };
   const moved = reduce(state, TRIP_ACTIONS.movePlaceToDay, {
-    placeId: 'b', segmentId: 'segment-2', dayOffset: 0,
+    placeId: 'b', tripDayOffset: 3,
   });
 
   assert.deepEqual(moved.places.map(({ id }) => id), ['a', 'c', 'b']);
-  assert.equal(moved.places.at(-1).segmentId, 'segment-2');
+  assert.equal(moved.places.at(-1).segmentId, 'segment-1');
   assert.equal(moved.places.at(-1).dayOffset, 0);
+  assert.equal(moved.places.at(-1).tripDayOffset, 3);
   assert.deepEqual(moved.routeConnections, []);
+});
+
+test('las conexiones aceptan representación mixta cuando ambos lugares resuelven al mismo día global', () => {
+  const state = {
+    ...planningTrip(),
+    startDate: '2026-09-02',
+    endDate: '2026-09-06',
+    places: [
+      createPlace({
+        id: 'migrated',
+        name: 'Migrated',
+        lat: 64.14,
+        lon: -21.9,
+        segmentId: 'segment-1',
+        dayOffset: 0,
+        tripDayOffset: 3,
+      }),
+      plannedPlace('legacy', 'segment-2', 0),
+    ],
+    routeConnections: [],
+  };
+  const connected = reduce(state, TRIP_ACTIONS.upsertRouteConnection, {
+    connection: {
+      id: 'mixed',
+      fromPlaceId: 'migrated',
+      toPlaceId: 'legacy',
+      mode: 'walk',
+      visible: true,
+    },
+  });
+
+  assert.equal(connected.routeConnections.length, 1);
+  assert.equal(connected.routeConnections[0].id, 'mixed');
 });
 
 test('un trayecto con lugares asignados no se puede borrar ni reinterpretar como otra ciudad', () => {

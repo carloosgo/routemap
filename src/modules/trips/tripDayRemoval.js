@@ -1,3 +1,8 @@
+import {
+  placeTripDayOffset,
+  tripPlanningDays,
+} from './tripDayPlanning.js';
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function parseCivilDate(value) {
@@ -31,60 +36,52 @@ export function planTripDayRemoval(trip, dateToRemove) {
     || target > tripEnd
   ) return null;
 
+  const targetOffset = Math.floor((target - tripStart) / DAY_MS);
   const segments = Array.isArray(trip?.segments) ? trip.segments : [];
   const places = Array.isArray(trip?.places) ? trip.places : [];
-  const segmentById = new Map(segments.map((segment) => [segment.id, segment]));
   const removePlaceIds = [];
   const movePlaces = [];
   const segmentPatches = [];
 
   places.forEach((place) => {
-    const segment = segmentById.get(place.segmentId);
-    const segmentStart = parseCivilDate(segment?.startDate);
-    const segmentEnd = parseCivilDate(segment?.endDate);
-    if (segmentStart == null || segmentEnd == null || target < segmentStart || target > segmentEnd) return;
-    const removedOffset = Math.floor((target - segmentStart) / DAY_MS);
-    const placeOffset = Number(place.dayOffset);
-    if (!Number.isInteger(placeOffset) || placeOffset < 0) return;
-    if (placeOffset === removedOffset) {
+    const offset = placeTripDayOffset(place, trip);
+    if (offset == null) return;
+    if (offset === targetOffset) {
       removePlaceIds.push(place.id);
-    } else if (placeOffset > removedOffset) {
-      movePlaces.push({
-        placeId: place.id,
-        segmentId: place.segmentId,
-        dayOffset: placeOffset - 1,
-      });
+    } else if (offset > targetOffset) {
+      movePlaces.push({ placeId: place.id, tripDayOffset: offset - 1 });
     }
   });
 
+  const assignmentsBySegment = new Map();
+  tripPlanningDays(trip).forEach((assignment) => {
+    if (!assignmentsBySegment.has(assignment.segmentId)) {
+      assignmentsBySegment.set(assignment.segmentId, []);
+    }
+    assignmentsBySegment.get(assignment.segmentId).push(assignment);
+  });
+
   segments.forEach((segment) => {
-    const segmentStart = parseCivilDate(segment?.startDate);
-    const segmentEnd = parseCivilDate(segment?.endDate);
-    if (segmentStart == null || segmentEnd == null) return;
+    const assignments = assignmentsBySegment.get(segment.id) || [];
+    if (!assignments.length) return;
+    const removed = assignments.some((assignment) => assignment.tripDayOffset === targetOffset);
+    const moved = assignments.some((assignment) => assignment.tripDayOffset > targetOffset);
+    if (!removed && !moved) return;
 
-    if (target < segmentStart) {
-      segmentPatches.push({
-        segmentId: segment.id,
-        patch: {
-          startDate: shiftCivilDate(segment.startDate, -1),
-          endDate: shiftCivilDate(segment.endDate, -1),
-        },
-      });
-      return;
-    }
-
-    if (target > segmentEnd) return;
-    if (segmentStart === segmentEnd) {
-      segmentPatches.push({
-        segmentId: segment.id,
-        patch: { startDate: '', endDate: '' },
-      });
-      return;
-    }
+    const tripDayOffsets = [...assignments]
+      .sort((left, right) => left.dayOffset - right.dayOffset)
+      .filter((assignment) => assignment.tripDayOffset !== targetOffset)
+      .map((assignment) => (
+        assignment.tripDayOffset > targetOffset
+          ? assignment.tripDayOffset - 1
+          : assignment.tripDayOffset
+      ));
 
     segmentPatches.push({
       segmentId: segment.id,
-      patch: { endDate: shiftCivilDate(segment.endDate, -1) },
+      patch: tripDayOffsets.length
+        ? { tripDayOffsets }
+        : { tripDayOffsets: [], startDate: '', endDate: '' },
     });
   });
 

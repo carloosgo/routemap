@@ -17,45 +17,53 @@ test('Mis Rutas sigue siendo la superficie principal sin restaurar Itinerario ni
   assert.match(navigation, /id: 'places', labelKey: 'myRoutes'/);
   assert.match(navigation, /id: 'notes', labelKey: 'notes'/);
   assert.match(editorModule, /activeTab !== 'notes'[\s\S]*?<TripDayRoutesPanel/);
-  assert.match(editorModule, /removeSegment=\{removeSegment\}/);
-  assert.match(editorModule, /reorderSegment=\{reorderSegment\}/);
+  assert.match(editorModule, /reorderTripDay=\{reorderTripDay\}/);
   assert.match(editorModule, /toggleSegmentNote=\{itineraryPanels\.toggleNote\}/);
   assert.match(editorModule, /toggleSegmentDetails=\{itineraryPanels\.toggleDetails\}/);
+  assert.doesNotMatch(editorModule, /removeSegment=\{removeSegment\}|reorderSegment=\{reorderSegment\}/);
 
-  assert.doesNotMatch(routesPanel, /<CityAutocomplete|addSegment\?\.|updateOrigin/);
-  assert.match(routesPanel, /className="trip-city__drag"/);
-  assert.match(routesPanel, /reorderSegment\?\.\(current\.segmentId, current\.targetId, current\.placement\)/);
-  assert.match(routesPanel, /removeSegment\?\.\(segmentToDelete\.id\)/);
+  assert.doesNotMatch(routesPanel, /<CityAutocomplete|addSegment\?\.|updateOrigin|removeSegment\?\.|reorderSegment\?\./);
+  assert.match(routesPanel, /className="trip-day__drag"/);
+  assert.match(routesPanel, /startDayDrag\(event, calendarDay\.tripDayOffset\)/);
+  assert.match(routesPanel, /reorderTripDay\?\.\(current\.sourceOffset, current\.targetOffset, current\.placement\)/);
 });
 
-test('cada ciudad vive inline dentro de la cabecera del día y conserva drag y eliminación contextual', async () => {
+test('la ciudad vive inline dentro de la cabecera del día sin drag ni eliminación manual propios', async () => {
   const panel = await read('src/modules/places/TripDayRoutesPanel.jsx');
-  const interactionCss = await read('src/app/UnifiedMyRoutesInteraction.css');
-  const editorModule = await read('src/app/AppEditorModule.jsx');
 
   assert.match(panel, /className="trip-day__city-token"/);
-  assert.match(panel, /data-city-order-id=\{isFirstAssignment \? segment\.id : undefined\}/);
-  assert.match(panel, /className="trip-city__drag"/);
-  assert.match(panel, /className="trip-city__action trip-city__remove"/);
-  assert.match(interactionCss, /\.trip-places--unified \.trip-city__remove\s*\{[^}]*opacity:\s*0;[^}]*pointer-events:\s*none;/s);
-  assert.match(editorModule, /\.editor-module \.trip-day__header:hover \.trip-city__remove,[\s\S]*opacity:\s*1;[\s\S]*pointer-events:\s*auto;/s);
+  assert.match(panel, /<CountryFlag city=\{assignment\.destination\}/);
+  assert.match(panel, /cityLabel\(assignment\.destination, t\)/);
+  assert.doesNotMatch(panel, /className="trip-city__drag"/);
+  assert.doesNotMatch(panel, /className="trip-city__action trip-city__remove"/);
+  assert.doesNotMatch(panel, /segmentToDelete|removeSegment\?\./);
   assert.doesNotMatch(panel, /className="trip-city trip-day-city"/);
   assert.doesNotMatch(panel, /ORIGIN_NOTE_TARGET|itinerary-origin|originDetails/);
 });
 
-test('el día global posee fecha, ciudad, importe y acciones sin una segunda cabecera de ciudad', async () => {
+test('el día global posee drag, fecha, ciudad, importe y acciones sin una segunda cabecera de ciudad', async () => {
   const panel = await read('src/modules/places/TripDayRoutesPanel.jsx');
 
   assert.match(panel, /calendarDays\.map\(\(calendarDay\) =>/);
-  assert.match(panel, /className="trip-day trip-day--flat"/);
-  assert.match(panel, /\{t\('day'\)\} \{calendarDay\.globalDayNumber\} · \{formatDayDate\(calendarDay\.date, intlLocale\)\}/);
-  assert.match(panel, /assignments\.map\(renderCityToken\)/);
+  assert.match(panel, /className=\{\['trip-day', 'trip-day--flat'/);
+  assert.match(panel, /data-trip-day-offset=\{calendarDay\.tripDayOffset\}/);
+  assert.match(panel, /String\(t\('day'\)\)\.toUpperCase\(\)/);
+  assert.match(panel, /color: '#5f6875'[\s\S]*formatDayDate\(calendarDay\.date, intlLocale\)/);
+  assert.match(panel, /assignments\.map\(\(assignment\) =>/);
   assert.match(panel, /<span className="trip-city__amount"/);
   assert.match(panel, /className="trip-city__action trip-city__expense"[\s\S]*toggleSegmentDetails\?\.\(primarySegment\.id\)/);
   assert.match(panel, /className=\{'trip-city__action trip-city__note'[\s\S]*toggleSegmentNote\?\.\(primarySegment\.id\)/);
+  assert.match(panel, /className="trip-city__action trip-day__remove"/);
   assert.doesNotMatch(panel, /function renderAssignment|className="trip-city trip-day-city"/);
   assert.doesNotMatch(panel, /className=\{'trip-city__date'/);
-  assert.match(panel, /assignments\.length > 0[\s\S]*t\('tripDayNoCity'\)/);
+});
+
+test('la guía vacía del día aparece una sola vez debajo de la cabecera y no usa cursivas', async () => {
+  const panel = await read('src/modules/places/TripDayRoutesPanel.jsx');
+
+  const occurrences = panel.match(/t\('tripDayNoCity'\)/g) || [];
+  assert.equal(occurrences.length, 1);
+  assert.match(panel, /className="trip-day__empty-row" style=\{\{ fontStyle: 'normal' \}\}>\{t\('tripDayNoCity'\)\}/);
 });
 
 test('el mapa de Mis Rutas mantiene Ciudades y Lugares independientes sin apagar las rutas guardadas', async () => {

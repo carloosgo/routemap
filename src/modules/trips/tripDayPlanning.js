@@ -23,6 +23,24 @@ function normalizedOptionalId(value) {
   return typeof value === 'string' ? value.trim().slice(0, 128) : '';
 }
 
+function normalizedOffset(value) {
+  if (value === '' || value == null) return null;
+  const offset = Number(value);
+  return Number.isInteger(offset) && offset >= 0 && offset <= 36600 ? offset : null;
+}
+
+function normalizedOffsetList(value) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  return value.reduce((offsets, rawOffset) => {
+    const offset = normalizedOffset(rawOffset);
+    if (offset == null || seen.has(offset)) return offsets;
+    seen.add(offset);
+    offsets.push(offset);
+    return offsets;
+  }, []);
+}
+
 function planningInput(tripOrSegments) {
   if (Array.isArray(tripOrSegments)) {
     return { segments: tripOrSegments, startDate: '', endDate: '' };
@@ -41,8 +59,14 @@ function explicitTripBounds(input) {
   return start != null && end != null && end >= start ? { start, end } : null;
 }
 
+function explicitTripDayCount(bounds) {
+  return bounds ? Math.floor((bounds.end - bounds.start) / DAY_MS) + 1 : 0;
+}
+
 export function segmentPlanningDayCount(segment) {
   if (!isPlaced(segment?.destination)) return 0;
+  const override = normalizedOffsetList(segment?.tripDayOffsets);
+  if (override.length) return override.length;
   const start = parseCivilDate(segment?.startDate);
   const end = parseCivilDate(segment?.endDate);
   if (start == null || end == null || end < start) return 0;
@@ -65,31 +89,32 @@ export function tripCalendarDays(trip) {
   const bounds = explicitTripBounds(input);
   if (!bounds) return [];
   const days = [];
-  const count = Math.floor((bounds.end - bounds.start) / DAY_MS) + 1;
+  const count = explicitTripDayCount(bounds);
   for (let offset = 0; offset < count; offset += 1) {
     days.push({
       date: civilDateFromTimestamp(bounds.start + offset * DAY_MS),
       globalDayNumber: offset + 1,
+      tripDayOffset: offset,
     });
   }
   return days;
 }
 
-function validDatedSegments(segments) {
+function validDatedSegments(segments, overriddenIds = new Set()) {
   return segments
     .map((segment, segmentIndex) => ({
       segment,
       segmentIndex,
       start: parseCivilDate(segment?.startDate),
-      dayCount: segmentPlanningDayCount(segment),
+      dayCount: overriddenIds.has(segment?.id) ? 0 : segmentPlanningDayCount(segment),
     }))
     .filter(({ start, dayCount }) => start != null && dayCount > 0);
 }
 
-function fallbackPlanningDays(segments, bounds, occupiedDates) {
+function fallbackPlanningDays(segments, bounds, occupiedDates, overriddenIds) {
   if (!bounds) return [];
   const calendar = [];
-  const count = Math.floor((bounds.end - bounds.start) / DAY_MS) + 1;
+  const count = explicitTripDayCount(bounds);
   for (let index = 0; index < count; index += 1) {
     calendar.push(bounds.start + index * DAY_MS);
   }
@@ -97,7 +122,11 @@ function fallbackPlanningDays(segments, bounds, occupiedDates) {
   const fallback = [];
   let cursor = 0;
   segments.forEach((segment, segmentIndex) => {
-    if (!isPlaced(segment?.destination) || segmentPlanningDayCount(segment) > 0) return;
+    if (
+      !isPlaced(segment?.destination)
+      || overriddenIds.has(segment?.id)
+      || segmentPlanningDayCount(segment) > 0
+    ) return;
     while (
       cursor < calendar.length - 1
       && occupiedDates.has(civilDateFromTimestamp(calendar[cursor]))
@@ -111,6 +140,7 @@ function fallbackPlanningDays(segments, bounds, occupiedDates) {
       segmentId: segment.id,
       segmentIndex,
       dayOffset: 0,
+      tripDayOffset: Math.floor((timestamp - bounds.start) / DAY_MS),
       date,
       globalDayNumber: Math.floor((timestamp - bounds.start) / DAY_MS) + 1,
       destination: segment.destination,
@@ -124,9 +154,22 @@ function fallbackPlanningDays(segments, bounds, occupiedDates) {
 export function tripPlanningDays(tripOrSegments) {
   const input = planningInput(tripOrSegments);
   const safeSegments = input.segments;
-  const validSegments = validDatedSegments(safeSegments);
   const explicitBounds = explicitTripBounds(input);
+  const overrideBySegment = new Map();
+  const overriddenIds = new Set();
 
+  if (explicitBounds) {
+    const dayCount = explicitTripDayCount(explicitBounds);
+    safeSegments.forEach((segment) => {
+      const offsets = normalizedOffsetList(segment?.tripDayOffsets)
+        .filter((offset) => offset < dayCount);
+      if (!offsets.length) return;
+      overrideBySegment.set(segment.id, offsets);
+      overriddenIds.add(segment.id);
+    });
+  }
+
+  const validSegments = validDatedSegments(safeSegments, overriddenIds);
   if (!validSegments.length && !explicitBounds) return [];
   const legacyTripStart = validSegments.length
     ? Math.min(...validSegments.map(({ start }) => start))
@@ -136,6 +179,29 @@ export function tripPlanningDays(tripOrSegments) {
 
   const days = [];
   const occupiedDates = new Set();
+
+  if (explicitBounds) {
+    safeSegments.forEach((segment, segmentIndex) => {
+      const offsets = overrideBySegment.get(segment.id) || [];
+      offsets.forEach((tripDayOffset, dayOffset) => {
+        const timestamp = explicitBounds.start + tripDayOffset * DAY_MS;
+        const date = civilDateFromTimestamp(timestamp);
+        occupiedDates.add(date);
+        days.push({
+          key: planningGroupKey(segment.id, dayOffset),
+          segmentId: segment.id,
+          segmentIndex,
+          dayOffset,
+          tripDayOffset,
+          date,
+          globalDayNumber: tripDayOffset + 1,
+          destination: segment.destination,
+          provisional: false,
+        });
+      });
+    });
+  }
+
   validSegments.forEach(({ segment, segmentIndex, start, dayCount }) => {
     for (let dayOffset = 0; dayOffset < dayCount; dayOffset += 1) {
       const timestamp = start + dayOffset * DAY_MS;
@@ -150,6 +216,7 @@ export function tripPlanningDays(tripOrSegments) {
         segmentId: segment.id,
         segmentIndex,
         dayOffset,
+        tripDayOffset: Math.floor((timestamp - tripStart) / DAY_MS),
         date,
         globalDayNumber: Math.floor((timestamp - tripStart) / DAY_MS) + 1,
         destination: segment.destination,
@@ -158,7 +225,7 @@ export function tripPlanningDays(tripOrSegments) {
     }
   });
 
-  days.push(...fallbackPlanningDays(safeSegments, explicitBounds, occupiedDates));
+  days.push(...fallbackPlanningDays(safeSegments, explicitBounds, occupiedDates, overriddenIds));
   return days.sort((left, right) =>
     left.date.localeCompare(right.date)
     || left.segmentIndex - right.segmentIndex
@@ -166,10 +233,48 @@ export function tripPlanningDays(tripOrSegments) {
   );
 }
 
+export function placeTripDayOffset(place, tripOrSegments) {
+  const explicit = normalizedOffset(place?.tripDayOffset);
+  if (explicit != null) return explicit;
+  const key = placePlanningGroupKey(place);
+  if (!key) return null;
+  const day = tripPlanningDays(tripOrSegments).find((candidate) => candidate.key === key);
+  return day ? day.tripDayOffset : null;
+}
+
 export function planningDayForPlace(place, tripOrSegments) {
+  const explicitOffset = normalizedOffset(place?.tripDayOffset);
+  if (explicitOffset != null) {
+    const calendarDay = tripCalendarDays(tripOrSegments)[explicitOffset];
+    if (!calendarDay) return null;
+    const ownedAssignment = tripPlanningDays(tripOrSegments).find(
+      (day) => day.segmentId === place?.segmentId && day.tripDayOffset === explicitOffset
+    );
+    return ownedAssignment || {
+      ...calendarDay,
+      key: placePlanningGroupKey(place),
+      segmentId: place?.segmentId || '',
+      dayOffset: place?.dayOffset ?? 0,
+      destination: null,
+      provisional: false,
+    };
+  }
   const key = placePlanningGroupKey(place);
   if (!key) return null;
   return tripPlanningDays(tripOrSegments).find((day) => day.key === key) || null;
+}
+
+export function groupPlacesByTripDay(places, tripOrSegments) {
+  const calendarDays = tripCalendarDays(tripOrSegments);
+  const groups = calendarDays.map((day) => ({ ...day, places: [] }));
+  const unassigned = [];
+  (Array.isArray(places) ? places : []).forEach((place) => {
+    const offset = placeTripDayOffset(place, tripOrSegments);
+    const group = offset == null ? null : groups[offset];
+    if (group) group.places.push(place);
+    else unassigned.push(place);
+  });
+  return { groups, unassigned };
 }
 
 export function groupPlacesByPlanningDay(places, tripOrSegments) {
@@ -179,7 +284,13 @@ export function groupPlacesByPlanningDay(places, tripOrSegments) {
   const unassigned = [];
 
   (Array.isArray(places) ? places : []).forEach((place) => {
-    const group = groupByKey.get(placePlanningGroupKey(place));
+    const explicitOffset = normalizedOffset(place?.tripDayOffset);
+    const group = explicitOffset == null
+      ? groupByKey.get(placePlanningGroupKey(place))
+      : groups.find(
+        (candidate) => candidate.tripDayOffset === explicitOffset
+          && candidate.segmentId === place.segmentId
+      );
     if (group) group.places.push(place);
     else unassigned.push(place);
   });
@@ -209,6 +320,11 @@ export function segmentCanContainAssignedPlaces(segment, places) {
 }
 
 export function samePlanningGroup(left, right) {
+  const leftTripOffset = normalizedOffset(left?.tripDayOffset);
+  const rightTripOffset = normalizedOffset(right?.tripDayOffset);
+  if (leftTripOffset != null || rightTripOffset != null) {
+    return leftTripOffset != null && leftTripOffset === rightTripOffset;
+  }
   const leftKey = placePlanningGroupKey(left);
   return Boolean(leftKey && leftKey === placePlanningGroupKey(right));
 }
