@@ -1,4 +1,4 @@
-import { TripPlacesPanel } from '../modules/places/TripPlacesPanel.jsx';
+import { TripDayRoutesPanel } from '../modules/places/TripDayRoutesPanel.jsx';
 import { AppEditorPane } from './AppEditorPane.jsx';
 import { AppWorkspaceMenu } from './AppWorkspaceMenu.jsx';
 
@@ -52,7 +52,7 @@ export function AppEditorModule({
   const showNotes = activeTab === 'notes';
 
   const routesPane = (
-    <TripPlacesPanel
+    <TripDayRoutesPanel
       trip={trip}
       segments={trip.segments}
       places={places}
@@ -105,7 +105,6 @@ export function AppEditorModule({
   return (
     <div className="editor-module" ref={editorMenuRef}>
       <style>{`
-        .editor-module .trip-city__pending-hint { display: none; }
         .editor-module .trip-place__delete svg { display: none; }
         .editor-module .trip-place__delete::before {
           content: '×';
