@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { IconArrowRight, IconCheck, IconMapPin, IconRoute, IconX } from '@tabler/icons-react';
 import { RouteMap } from '../modules/map/RouteMap.jsx';
 import { createGeoapifyCityProvider, canonicalCityFromSearchResult } from '../modules/geocoding/citySearchClient.js';
+import { SEARCH_SAVE_SUCCESS_EVENT } from '../modules/map/usePlaceSearch.js';
 import { ItineraryDetailsModal } from '../modules/trips/ItineraryDetailsModal.jsx';
 import { buildItineraryStopSequence } from '../modules/trips/itineraryStopSequence.js';
 import { ORIGIN_NOTE_TARGET } from '../modules/trips/tripNoteTargets.js';
@@ -55,7 +56,7 @@ function bestResolvedCity(place, cities) {
 
 function clearSuccessfulMapSearch() {
   if (typeof globalThis.Event !== 'function') return;
-  globalThis.dispatchEvent?.(new Event('atlas:search-save-success'));
+  globalThis.dispatchEvent?.(new Event(SEARCH_SAVE_SUCCESS_EVENT));
 }
 
 export function AppMapPane({
@@ -94,7 +95,8 @@ export function AppMapPane({
   const requestCityAdd = (result) => {
     const city = canonicalCityFromSearchResult(result);
     if (!city.name || !Number.isFinite(city.lat) || !Number.isFinite(city.lon)) return false;
-    addCity?.(city);
+    const accepted = addCity?.(city);
+    if (accepted !== true) return false;
     clearSuccessfulMapSearch();
     return true;
   };
@@ -102,11 +104,12 @@ export function AppMapPane({
   const requestPlaceSave = async (place) => {
     const existingSegment = segmentForPlaceCity(place, trip.segments);
     if (existingSegment) {
-      addPlace?.({
+      const accepted = addPlace?.({
         ...place,
         segmentId: existingSegment.id,
         dayOffset: 0,
       });
+      if (accepted !== true) return false;
       clearSuccessfulMapSearch();
       return true;
     }
@@ -127,7 +130,8 @@ export function AppMapPane({
         showPlanningMessage(t('placeCityResolveError'), 3400);
         return false;
       }
-      addPlaceWithCity?.(canonicalCityFromSearchResult(resolved), place);
+      const accepted = addPlaceWithCity?.(canonicalCityFromSearchResult(resolved), place);
+      if (accepted !== true) return false;
       clearSuccessfulMapSearch();
       return true;
     } catch {
