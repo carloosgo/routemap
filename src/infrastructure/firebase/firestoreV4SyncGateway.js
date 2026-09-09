@@ -87,7 +87,11 @@ async function writeTrip(repository, mutation) {
     return { serverVersion: result.version, serverStatus: 'active' };
   }
   if (mutation.operation === V4_MUTATION_OPERATIONS.UPDATE) {
-    const result = await repository.updateTripMetadata(payload, mutation.baseVersion);
+    const result = await repository.updateTripMetadata(
+      payload,
+      mutation.baseVersion,
+      mutation.fieldMask || null
+    );
     return { serverVersion: result.version, serverStatus: 'active' };
   }
   throw new TypeError('DELETE/RESTORE de viaje pertenece al gate de lifecycle v4.');
