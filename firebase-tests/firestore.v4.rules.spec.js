@@ -196,6 +196,37 @@ test('metadata del viaje avanza una versión y no puede alterar agregados', asyn
   await assertFails(deleteDoc(ref));
 });
 
+test('rango global del viaje acepta updates granulares y rechaza fechas con shape inválido', async () => {
+  const alice = testEnv.authenticatedContext('alice').firestore();
+  const ref = doc(alice, 'users/alice/trips/trip-global-dates');
+
+  await assertSucceeds(setDoc(ref, tripData('trip-global-dates', {
+    startDate: '2026-09-09',
+    endDate: '2026-09-18',
+  })));
+  await assertSucceeds(updateDoc(ref, {
+    startDate: '2026-09-10',
+    version: 2,
+    updatedAt: serverTimestamp(),
+  }));
+  await assertSucceeds(updateDoc(ref, {
+    endDate: '2026-09-19',
+    version: 3,
+    updatedAt: serverTimestamp(),
+  }));
+  await assertFails(updateDoc(ref, {
+    startDate: '09/20/2026',
+    version: 4,
+    updatedAt: serverTimestamp(),
+  }));
+  await assertFails(updateDoc(ref, {
+    startDate: '2026-09-20',
+    derivedDays: 10,
+    version: 4,
+    updatedAt: serverTimestamp(),
+  }));
+});
+
 test('segmentos permiten update versionado, tombstone y restore, nunca hard delete', async () => {
   const alice = testEnv.authenticatedContext('alice').firestore();
   await createTrip(alice, 'trip-segment');
