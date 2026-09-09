@@ -59,13 +59,19 @@ test('assignedPlacesOutOfRange sólo aparece cuando un rango completo excluye un
   );
 });
 
-test('el modal de detalles titula la ciudad destino sin reconstruir Origen → destino', async () => {
+test('el primer destino no reconstruye Origen → destino en el título de detalles', async () => {
   const modal = await read('src/modules/trips/ItineraryDetailsModal.jsx');
+  const segmentBlock = modal.slice(
+    modal.indexOf('const segment = trip.segments.find'),
+    modal.indexOf('const handleSegmentUpdate')
+  );
 
-  assert.match(modal, /const destinationName = String\(segment\?\.destination\?\.name \|\| ''\)\.trim\(\)/);
-  assert.match(modal, /\{destinationName \|\| '—'\}/);
-  assert.doesNotMatch(modal, /originName[\s\S]*destinationName/);
-  assert.doesNotMatch(modal, /IconArrowRight/);
+  assert.match(segmentBlock, /const index = trip\.segments\.findIndex/);
+  assert.match(segmentBlock, /const previousSegment = index > 0 \? trip\.segments\[index - 1\] : null/);
+  assert.match(segmentBlock, /const previousCityName = previousSegment\?\.destination\?\.name \|\| ''/);
+  assert.match(segmentBlock, /const destinationName = segment\.destination\?\.name \|\| t\('destination'\)/);
+  assert.doesNotMatch(segmentBlock, /trip\.origin|originName/);
+  assert.match(modal, /\{previousCityName \? \([\s\S]*?<IconArrowRight[\s\S]*?\) : destinationName\}/);
 });
 
 test('ocultar Lugares sólo oculta pines guardados y no la geometría de rutas', async () => {
