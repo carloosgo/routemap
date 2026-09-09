@@ -12,6 +12,8 @@ export const unifiedSearchMessages = Object.freeze({
     placeWaitingForDates: 'Este lugar ya pertenece a esta ciudad. Agrega fechas para asignarle su día del viaje.',
     placeCityResolveError: 'No fue posible identificar la ciudad de este lugar.',
     emptyRoutesPrompt: 'Agrega tus ciudades o lugares para tu viaje',
+    chooseTripDates: 'Elige las fechas de tu viaje',
+    tripDayNoCity: 'Agrega una ciudad o lugar para este día',
   }),
   en: Object.freeze({
     addCity: 'Add city',
@@ -26,5 +28,7 @@ export const unifiedSearchMessages = Object.freeze({
     placeWaitingForDates: 'This place already belongs to this city. Add dates to assign its trip day.',
     placeCityResolveError: 'The city for this place could not be identified.',
     emptyRoutesPrompt: 'Add your cities or places for your trip',
+    chooseTripDates: 'Choose your trip dates',
+    tripDayNoCity: 'Add a city or place for this day',
   }),
 });
