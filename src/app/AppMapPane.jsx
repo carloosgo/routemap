@@ -53,6 +53,11 @@ function bestResolvedCity(place, cities) {
   return exact || (cities || []).find((city) => sameCountry(city, place)) || null;
 }
 
+function clearSuccessfulMapSearch() {
+  if (typeof globalThis.Event !== 'function') return;
+  globalThis.dispatchEvent?.(new Event('atlas:search-save-success'));
+}
+
 export function AppMapPane({
   trip,
   mapView = 'places',
@@ -90,6 +95,7 @@ export function AppMapPane({
     const city = canonicalCityFromSearchResult(result);
     if (!city.name || !Number.isFinite(city.lat) || !Number.isFinite(city.lon)) return false;
     addCity?.(city);
+    clearSuccessfulMapSearch();
     return true;
   };
 
@@ -101,6 +107,7 @@ export function AppMapPane({
         segmentId: existingSegment.id,
         dayOffset: 0,
       });
+      clearSuccessfulMapSearch();
       return true;
     }
 
@@ -121,6 +128,7 @@ export function AppMapPane({
         return false;
       }
       addPlaceWithCity?.(canonicalCityFromSearchResult(resolved), place);
+      clearSuccessfulMapSearch();
       return true;
     } catch {
       showPlanningMessage(t('placeCityResolveError'), 3400);
