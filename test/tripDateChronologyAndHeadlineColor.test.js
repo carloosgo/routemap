@@ -241,19 +241,19 @@ test('headline text and selected cities are true black without changing active o
   assert.match(header, /\.trip-summary__selector-option\.is-active \.trip-summary__selector-code,[\s\S]*color:\s*#0e6f8c;/s);
 });
 
-test('date validation is visible and localized in both languages', async () => {
-  const modal = await read('src/modules/trips/ItineraryDetailsModal.jsx');
-  const origin = await read('src/modules/trips/OriginBody.jsx');
-  const segment = await read('src/modules/trips/SegmentBody.jsx');
+test('la edición global de fechas impide rangos invertidos desde UI y reducer', async () => {
+  const header = await read('src/app/TripSummaryHeader.jsx');
+  const reducer = await read('src/modules/trips/tripReducer.js');
   const es = await read('src/i18n/es.js');
   const en = await read('src/i18n/en.js');
 
-  assert.match(modal, /validateOriginDepartureDateChange/);
-  assert.match(modal, /validateSegmentDatePatch/);
-  assert.match(origin, /segment-details-modal__date-error[\s\S]*role="alert"/s);
-  assert.match(segment, /segment-details-modal__date-error[\s\S]*role="alert"/s);
-  assert.match(es, /tripDateBeforeOrigin:/);
-  assert.match(es, /tripDateAfterNextSegment:/);
-  assert.match(en, /tripDateBeforeOrigin:/);
-  assert.match(en, /tripDateAfterNextSegment:/);
+  assert.match(header, /value=\{trip\.startDate \|\| ''\}[\s\S]*max=\{trip\.endDate \|\| undefined\}/);
+  assert.match(header, /value=\{trip\.endDate \|\| ''\}[\s\S]*min=\{trip\.startDate \|\| undefined\}/);
+  assert.match(header, /updateTripDates\?\.\(\{ startDate \}\)/);
+  assert.match(header, /updateTripDates\?\.\(\{ endDate \}\)/);
+  assert.match(reducer, /case TRIP_ACTIONS\.updateTripDates:[\s\S]*startDate && endDate && startDate > endDate\) return state/);
+  assert.match(es, /startDate:/);
+  assert.match(es, /endDate:/);
+  assert.match(en, /startDate:/);
+  assert.match(en, /endDate:/);
 });
