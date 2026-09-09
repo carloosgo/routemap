@@ -222,3 +222,17 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - La ciudad origen usa `trip.origin` como fuente canónica también dentro del modal de detalles; no se deriva de `firstSegment.origin` ni se crea un origen duplicado.
 - En el mapa de `Mis Rutas` existe un selector `Ciudades / Rutas`. `Ciudades` reutiliza la proyección `segments`; `Rutas` reutiliza la proyección `places`, el buscador existente y las conexiones guardadas. No se crea un segundo mapa, un proveedor alternativo ni nuevas llamadas por duplicación de render.
 - El selector de mapa sólo cambia presentación. Storage v4, Firestore Rules, Functions, App Check, Google Places, Geoapify, autosave, contratos de fechas, gastos, notas, lugares y conexiones permanecen en sus rutas canónicas actuales.
+
+## Ajuste solicitado: correcciones de búsqueda, mapa y filas de Mis Rutas (PR #85)
+
+- Este apartado es autoritativo para las correcciones de PR #85 y sustituye únicamente las reglas históricas incompatibles de los apartados anteriores.
+- El buscador general sigue siendo una sola superficie visible, pero no ejecuta fan-out Geoapify + Google ni concatena dos listas simultáneas. La intención se enruta primero a un proveedor; si una búsqueda orientada a ciudad no obtiene una coincidencia válida, puede caer secuencialmente a Google respetando el mínimo y debounce propios de Google.
+- Geoapify continúa siendo el proveedor de ciudades y Google el proveedor de establecimientos/lugares. Seleccionar una sugerencia de ciudad produce sólo un resultado `city`; seleccionar una sugerencia Google produce sólo un resultado `place`.
+- El selector de mapa activo es `Ciudades / Lugares`: `Ciudades` controla el trazo del itinerario y `Lugares` controla únicamente la visibilidad de marcadores de lugares guardados. Las rutas/conexiones guardadas permanecen independientes y no se apagan al ocultar `Lugares`.
+- La barra de cada ciudad permanece en 40 px. Fecha e importe son texto informativo, sin cursor ni acción propia; el único acceso al panel canónico de fechas/gastos desde esa zona es el icono de gastos. Cuando no existe rango completo de fechas se muestra la guía traducida `dd/mm – dd/mm`.
+- El control de eliminar ciudad vive dentro de la misma retícula de la fila. En escritorio con puntero preciso permanece oculto hasta hover de la barra o foco de teclado; en dispositivos sin hover sigue disponible sin depender de esa condición.
+- El reordenamiento de ciudades conserva el drag por puntero y `pointercancel` nunca confirma el cambio. No se reemplaza por botones de subir/bajar.
+- Los lugares pueden permanecer asociados a una ciudad que todavía no tenga rango completo de fechas. La validación `assignedPlacesOutOfRange` sólo bloquea cuando existe un rango completo candidato y éste excluiría realmente un `dayOffset` ya asignado.
+- El título del modal de detalles de una ciudad muestra la ciudad destino; no vuelve a construir `Origen → destino` ni reinstala un pivote de origen visual.
+- El buscador de escritorio mantiene su centro geométrico dentro de `.mappane`, pero su máximo solicitado para esta superficie baja a 440 px y puede reducirse proporcionalmente con `--geo-search-max-width`; no mueve el borde derecho calculado de `Mis Rutas`.
+- Estas correcciones no cambian Storage v4, Firestore Rules, Functions, App Check, autosave, esquema persistido, credenciales ni políticas de datos de proveedores.
