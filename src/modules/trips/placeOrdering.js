@@ -7,13 +7,6 @@ function normalizedCountryName(value) {
     .replace(/\s+/g, ' ');
 }
 
-function planningGroupKey(place) {
-  const segmentId = typeof place?.segmentId === 'string' ? place.segmentId.trim() : '';
-  const dayOffset = Number(place?.dayOffset);
-  if (!segmentId || !Number.isInteger(dayOffset) || dayOffset < 0) return 'unassigned';
-  return `${segmentId}\u0000${dayOffset}`;
-}
-
 export function placeCountryKey(place) {
   const countryCode = String(place?.countryCode || '').trim().toUpperCase();
   if (/^[A-Z]{2}$/.test(countryCode)) return `code:${countryCode}`;
@@ -79,20 +72,15 @@ export function reorderPlaceList(
   if (!sourceId || !targetId || sourceId === targetId) return currentPlaces;
 
   const sourceIndex = currentPlaces.findIndex((place) => place.id === sourceId);
-  const target = currentPlaces.find((place) => place.id === targetId);
-  if (sourceIndex < 0 || !target) return currentPlaces;
+  if (sourceIndex < 0 || !currentPlaces.some((place) => place.id === targetId)) {
+    return currentPlaces;
+  }
 
-  const source = currentPlaces[sourceIndex];
-  const sourceGroup = planningGroupKey(source);
-  const targetGroup = planningGroupKey(target);
-  const moved = sourceGroup === targetGroup
-    ? source
-    : targetGroup === 'unassigned'
-      ? { ...source, segmentId: '', dayOffset: null }
-      : { ...source, segmentId: target.segmentId, dayOffset: target.dayOffset };
-
+  // Day-first keeps geographical ownership independent from visual order.
+  // Reordering must never rewrite segmentId/dayOffset/tripDayOffset; changing
+  // the global day is handled exclusively by movePlaceToDay.
   const reordered = [...currentPlaces];
-  reordered.splice(sourceIndex, 1);
+  const [moved] = reordered.splice(sourceIndex, 1);
   const targetIndex = reordered.findIndex((place) => place.id === targetId);
   reordered.splice(targetIndex + (placement === 'after' ? 1 : 0), 0, moved);
 
