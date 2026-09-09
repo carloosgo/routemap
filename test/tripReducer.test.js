@@ -348,7 +348,7 @@ test('reordenar entre días poda conexiones que dejan de unir lugares consecutiv
   assert.deepEqual(moved.routeConnections, []);
 });
 
-test('Mover a cambia segmentId/dayOffset, lo coloca al final del grupo y elimina conexiones obsoletas', () => {
+test('Mover a cambia sólo el día global, conserva la ciudad y elimina conexiones obsoletas', () => {
   const state = {
     ...planningTrip(),
     places: [
@@ -362,12 +362,13 @@ test('Mover a cambia segmentId/dayOffset, lo coloca al final del grupo y elimina
     ],
   };
   const moved = reduce(state, TRIP_ACTIONS.movePlaceToDay, {
-    placeId: 'b', segmentId: 'segment-2', dayOffset: 0,
+    placeId: 'b', tripDayOffset: 3,
   });
 
   assert.deepEqual(moved.places.map(({ id }) => id), ['a', 'c', 'b']);
-  assert.equal(moved.places.at(-1).segmentId, 'segment-2');
+  assert.equal(moved.places.at(-1).segmentId, 'segment-1');
   assert.equal(moved.places.at(-1).dayOffset, 0);
+  assert.equal(moved.places.at(-1).tripDayOffset, 3);
   assert.deepEqual(moved.routeConnections, []);
 });
 
