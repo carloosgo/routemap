@@ -12,6 +12,12 @@ export function useTrip(initialTrip) {
     createInitialTrip
   );
 
+  const dispatchIfChanged = useCallback((action) => {
+    if (tripReducer(trip, action) === trip) return false;
+    dispatch(action);
+    return true;
+  }, [trip]);
+
   const resetTrip = useCallback(() => dispatch({ type: TRIP_ACTIONS.reset }), []);
   const loadTrip = useCallback(
     (tripToLoad) => dispatch({ type: TRIP_ACTIONS.load, trip: tripToLoad }),
@@ -23,6 +29,10 @@ export function useTrip(initialTrip) {
   );
   const setCurrency = useCallback(
     (currency) => dispatch({ type: TRIP_ACTIONS.setCurrency, currency }),
+    []
+  );
+  const updateTripDates = useCallback(
+    (patch) => dispatch({ type: TRIP_ACTIONS.updateTripDates, patch }),
     []
   );
   const updateOrigin = useCallback(
@@ -60,8 +70,8 @@ export function useTrip(initialTrip) {
   );
   const addSegment = useCallback(() => dispatch({ type: TRIP_ACTIONS.addSegment }), []);
   const addCity = useCallback(
-    (city) => dispatch({ type: TRIP_ACTIONS.addCity, city }),
-    []
+    (city) => dispatchIfChanged({ type: TRIP_ACTIONS.addCity, city }),
+    [dispatchIfChanged]
   );
   const removeSegment = useCallback(
     (segmentId) => {
@@ -93,12 +103,12 @@ export function useTrip(initialTrip) {
     []
   );
   const addPlace = useCallback(
-    (place) => dispatch({ type: TRIP_ACTIONS.addPlace, place }),
-    []
+    (place) => dispatchIfChanged({ type: TRIP_ACTIONS.addPlace, place }),
+    [dispatchIfChanged]
   );
   const addPlaceWithCity = useCallback(
-    (city, place) => dispatch({ type: TRIP_ACTIONS.addPlaceWithCity, city, place }),
-    []
+    (city, place) => dispatchIfChanged({ type: TRIP_ACTIONS.addPlaceWithCity, city, place }),
+    [dispatchIfChanged]
   );
   const updatePlace = useCallback(
     (placeId, patch) => dispatch({ type: TRIP_ACTIONS.updatePlace, placeId, patch }),
@@ -153,6 +163,7 @@ export function useTrip(initialTrip) {
     loadTrip,
     renameTrip,
     setCurrency,
+    updateTripDates,
     updateOrigin,
     updateOriginDetails,
     updateOriginExpenses,

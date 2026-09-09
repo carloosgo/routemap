@@ -39,6 +39,14 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function normalizedFieldMask(value) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value
+    .filter((field) => typeof field === 'string' && field.trim())
+    .map((field) => field.trim()))]
+    .sort();
+}
+
 export function pendingMutationOperation({ baseVersion, baseStatus, desiredStatus }) {
   const version = requireVersion(baseVersion);
   const base = requireStatus(baseStatus, 'baseStatus');
@@ -76,6 +84,10 @@ export function upsertPendingMutation({ previous = null, intent, nowMs }) {
   const localRevision = requireLocalRevision(intent.localRevision);
   const operation = pendingMutationOperation({ baseVersion, baseStatus, desiredStatus });
   if (!operation) return null;
+  const fieldMask = normalizedFieldMask([
+    ...(previous?.fieldMask || []),
+    ...(intent.fieldMask || []),
+  ]);
 
   return {
     entityKey,
@@ -89,6 +101,7 @@ export function upsertPendingMutation({ previous = null, intent, nowMs }) {
     desiredStatus,
     localRevision,
     payload: clone(intent.payload),
+    ...(fieldMask.length ? { fieldMask } : {}),
     createdAtLocal: previous?.createdAtLocal ?? nowMs,
     updatedAtLocal: nowMs,
     attempts: 0,

@@ -54,7 +54,7 @@ test('header unified owns the two primary tabs, omits the routes counter, keeps 
   assert.match(tripHeader, /<TripHeaderNavigation \{\.\.\.navigation\} t=\{t\} \/>/);
   assert.doesNotMatch(tripHeader, /className="trip-summary__title"|renameTrip/);
   assert.doesNotMatch(editorModule, /editor-module__tabs|editor-module__nav-tab|lugaresIcon|IconNotes|IconMap\b/);
-  assert.match(editorModule, /activeTab !== 'notes'[\s\S]*?<TripPlacesPanel/);
+  assert.match(editorModule, /activeTab !== 'notes'[\s\S]*?<TripDayRoutesPanel/);
   assert.match(app, /checklistProgress: editorState\.checklist\?\.length/);
   assert.match(navigationCss, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(navigationCss, /\.editor-module\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\);/s);
@@ -69,7 +69,7 @@ test('las notas y detalles de ciudades conservan un único toggle sin reintroduc
   const app = await read('src/App.jsx');
   const panels = await read('src/app/useItineraryFloatingPanels.js');
   const editorModule = await read('src/app/AppEditorModule.jsx');
-  const placesPanel = await read('src/modules/places/TripPlacesPanel.jsx');
+  const routesPanel = await read('src/modules/places/TripDayRoutesPanel.jsx');
   const interactions = await read('src/app/useAppInteractions.js');
 
   assert.match(app, /const itineraryPanels = useItineraryFloatingPanels\(\);/);
@@ -80,9 +80,9 @@ test('las notas y detalles de ciudades conservan un único toggle sin reintroduc
   assert.match(panels, /setNoteTarget\(null\);[\s\S]*setDetailsTarget/s);
   assert.match(editorModule, /toggleSegmentNote=\{itineraryPanels\.toggleNote\}/);
   assert.match(editorModule, /toggleSegmentDetails=\{itineraryPanels\.toggleDetails\}/);
-  assert.doesNotMatch(placesPanel, /ORIGIN_NOTE_TARGET|originDetails|toggleSegmentNote\?\.\(ORIGIN_NOTE_TARGET\)/);
-  assert.match(placesPanel, /toggleSegmentNote\?\.\(segment\.id\)/);
-  assert.match(placesPanel, /toggleSegmentDetails\?\.\(segment\.id\)/);
+  assert.doesNotMatch(routesPanel, /ORIGIN_NOTE_TARGET|originDetails|toggleSegmentNote\?\.\(ORIGIN_NOTE_TARGET\)/);
+  assert.match(routesPanel, /toggleSegmentNote\?\.\(segment\.id\)/);
+  assert.match(routesPanel, /toggleSegmentDetails\?\.\(segment\.id\)/);
   assert.match(
     interactions,
     /\.trip-city__note, \.trip-city__expense, \.trip-city__date, \.trip-city__amount/

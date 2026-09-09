@@ -16,6 +16,8 @@ import {
   preferredSearchProvider,
 } from './searchIntentRouter.js';
 
+export const SEARCH_SAVE_SUCCESS_EVENT = 'atlas:search-save-success';
+
 function citySearchResult(city) {
   const canonical = canonicalCityFromSearchResult(city);
   return {
@@ -88,6 +90,30 @@ export function usePlaceSearch({ viewMode }) {
     },
     []
   );
+
+  useEffect(() => {
+    function clearAfterSuccessfulSave() {
+      autocompleteAbortRef.current?.abort();
+      searchAbortRef.current?.abort();
+      autocompleteSequenceRef.current += 1;
+      searchSequenceRef.current += 1;
+      suppressAutocompleteQueryRef.current = '';
+      sessionTokenRef.current = createGooglePlacesSessionToken();
+      setQuery('');
+      setResults([]);
+      setSuggestions([]);
+      setShowSuggestions(false);
+      setSuggesting(false);
+      setSearching(false);
+      setErrorState(null);
+    }
+
+    globalThis.addEventListener?.(SEARCH_SAVE_SUCCESS_EVENT, clearAfterSuccessfulSave);
+    return () => globalThis.removeEventListener?.(
+      SEARCH_SAVE_SUCCESS_EVENT,
+      clearAfterSuccessfulSave
+    );
+  }, []);
 
   useEffect(() => {
     autocompleteAbortRef.current?.abort();

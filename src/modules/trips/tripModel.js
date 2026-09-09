@@ -11,6 +11,7 @@ export {
   isGooglePlaceReference,
   isPlaced,
   normalizeTrip,
+  normalizeTripDate,
   placeForPersistence,
 } from './tripEntities.js';
 

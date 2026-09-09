@@ -35,6 +35,11 @@ service cloud.firestore {
         && (data.deletedAt == null || data.deletedAt is timestamp);
     }
 
+    function validDateString(value) {
+      return value is string
+        && value.matches('^$|^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
     function validCity(data) {
       return data is map
         && data.keys().hasOnly([
@@ -124,9 +129,9 @@ service cloud.firestore {
 
     function validTrip(data, tripId) {
       return data.keys().hasOnly([
-          'id', 'name', 'currency', 'origin', 'originDetails', 'schemaVersion', 'status', 'version',
-          'createdAt', 'updatedAt', 'deletedAt', 'purgeAfter',
-          'segmentCount', 'placeCount', 'total'
+          'id', 'name', 'currency', 'startDate', 'endDate', 'origin', 'originDetails',
+          'schemaVersion', 'status', 'version', 'createdAt', 'updatedAt',
+          'deletedAt', 'purgeAfter', 'segmentCount', 'placeCount', 'total'
         ])
         && data.keys().hasAll([
           'id', 'name', 'currency', 'origin', 'schemaVersion', 'status', 'version',
@@ -141,6 +146,14 @@ service cloud.firestore {
         && data.name.size() <= 120
         && data.currency is string
         && data.currency.matches('^[A-Z]{3}$')
+        && (
+          !data.keys().hasAny(['startDate'])
+          || validDateString(data.startDate)
+        )
+        && (
+          !data.keys().hasAny(['endDate'])
+          || validDateString(data.endDate)
+        )
         && (data.origin == null || validCity(data.origin))
         && (
           !data.keys().hasAny(['originDetails'])
@@ -180,7 +193,8 @@ service cloud.firestore {
         && request.resource.data.placeCount == resource.data.placeCount
         && request.resource.data.total == resource.data.total
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'name', 'currency', 'origin', 'originDetails', 'version', 'updatedAt'
+          'name', 'currency', 'startDate', 'endDate', 'origin', 'originDetails',
+          'version', 'updatedAt'
         ]);
     }
 

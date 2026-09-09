@@ -18,6 +18,8 @@ function trip(overrides = {}) {
     id: 'trip-1',
     name: 'Europa',
     currency: 'EUR',
+    startDate: '',
+    endDate: '',
     origin: null,
     originDetails: originDetails(),
     segments: [],
@@ -37,6 +39,8 @@ function remoteRoot(overrides = {}) {
     id: 'trip-1',
     name: 'Europa',
     currency: 'EUR',
+    startDate: '',
+    endDate: '',
     origin: null,
     originDetails: originDetails(),
     schemaVersion: 4,
@@ -101,6 +105,8 @@ test('viaje nuevo se descompone en root + entidades v4 sin whole-document write'
     id: 'trip-1',
     name: 'Europa',
     currency: 'EUR',
+    startDate: '',
+    endDate: '',
     origin: null,
     originDetails: originDetails(),
   });
@@ -185,6 +191,8 @@ test('originDetails participa en el root y roots antiguos vacíos no fuerzan una
 
   const legacyRoot = remoteRoot({ version: 6 });
   delete legacyRoot.originDetails;
+  delete legacyRoot.startDate;
+  delete legacyRoot.endDate;
   const unchangedLegacy = planV4TripSave({
     uid: 'alice',
     rawTrip: trip(),

@@ -9,6 +9,7 @@ import {
   createTrip,
   insertPlaceByCountry,
   normalizeTrip,
+  normalizeTripDate,
   reorderPlaces,
   reorderSegments,
 } from './tripModel.js';
@@ -35,6 +36,7 @@ export const TRIP_ACTIONS = Object.freeze({
   load: 'LOAD',
   rename: 'RENAME',
   setCurrency: 'SET_CURRENCY',
+  updateTripDates: 'UPDATE_TRIP_DATES',
   updateOrigin: 'UPDATE_ORIGIN',
   updateOriginDetails: 'UPDATE_ORIGIN_DETAILS',
   updateOriginExpenses: 'UPDATE_ORIGIN_EXPENSES',
@@ -127,9 +129,7 @@ function ensureCitySegment(state, city) {
   const existing = segments.find(
     (segment) => cityIdentity(segment?.destination) === identity
   );
-  if (existing) {
-    return { segments, segment: existing, changed: false };
-  }
+  if (existing) return { segments, segment: existing, changed: false };
 
   const reusableIndex = segments.findIndex(
     (segment) => !cityIdentity(segment?.destination)
@@ -150,18 +150,13 @@ function ensureCitySegment(state, city) {
 
   if (segments.length >= TRIP_LIMITS.segments) return null;
   const segment = createSegment({ destination, startDate: '', endDate: '' });
-  return {
-    segments: [...segments, segment],
-    segment,
-    changed: true,
-  };
+  return { segments: [...segments, segment], segment, changed: true };
 }
 
 function movePlaceToTargetGroup(places, placeId, segmentId, dayOffset) {
   const current = Array.isArray(places) ? places : [];
   const sourceIndex = current.findIndex((place) => place.id === placeId);
   if (sourceIndex < 0) return current;
-
   const targetKey = planningGroupKey(segmentId, dayOffset);
   if (!targetKey) return current;
 
@@ -175,7 +170,6 @@ function movePlaceToTargetGroup(places, placeId, segmentId, dayOffset) {
   remaining.forEach((place, index) => {
     if (placePlanningGroupKey(place) === targetKey) insertIndex = index;
   });
-
   const next = [...remaining];
   next.splice(insertIndex >= 0 ? insertIndex + 1 : next.length, 0, moved);
   return next;
@@ -198,6 +192,19 @@ export function tripReducer(state, action) {
 
     case TRIP_ACTIONS.setCurrency:
       return touch(state, { currency: action.currency });
+
+    case TRIP_ACTIONS.updateTripDates: {
+      const patch = action.patch || {};
+      const startDate = Object.hasOwn(patch, 'startDate')
+        ? normalizeTripDate(patch.startDate)
+        : state.startDate || '';
+      const endDate = Object.hasOwn(patch, 'endDate')
+        ? normalizeTripDate(patch.endDate)
+        : state.endDate || '';
+      if (startDate && endDate && startDate > endDate) return state;
+      if (startDate === state.startDate && endDate === state.endDate) return state;
+      return touch(state, { startDate, endDate });
+    }
 
     case TRIP_ACTIONS.updateOrigin:
       return touch(state, {
@@ -228,18 +235,13 @@ export function tripReducer(state, action) {
 
     case TRIP_ACTIONS.addNote:
       return touch(state, {
-        notes: [
-          ...(state.notes || []),
-          { id: uid(), title: '', text: '' },
-        ],
+        notes: [...(state.notes || []), { id: uid(), title: '', text: '' }],
       });
 
     case TRIP_ACTIONS.updateNote:
       return touch(state, {
         notes: (state.notes || []).map((note) =>
-          note.id === action.id
-            ? { ...note, [action.field]: action.value }
-            : note
+          note.id === action.id ? { ...note, [action.field]: action.value } : note
         ),
       });
 
@@ -250,10 +252,7 @@ export function tripReducer(state, action) {
 
     case TRIP_ACTIONS.addChecklistItem:
       return touch(state, {
-        checklist: [
-          ...(state.checklist || []),
-          createChecklistItem(action.text),
-        ],
+        checklist: [...(state.checklist || []), createChecklistItem(action.text)],
       });
 
     case TRIP_ACTIONS.toggleChecklistItem:
@@ -265,9 +264,7 @@ export function tripReducer(state, action) {
 
     case TRIP_ACTIONS.removeChecklistItem:
       return touch(state, {
-        checklist: (state.checklist || []).filter(
-          (item) => item.id !== action.id
-        ),
+        checklist: (state.checklist || []).filter((item) => item.id !== action.id),
       });
 
     case TRIP_ACTIONS.addSegment:
@@ -280,43 +277,27 @@ export function tripReducer(state, action) {
     }
 
     case TRIP_ACTIONS.removeSegment: {
-      if (assignedPlacesForSegment(state.places, action.segmentId).length > 0) {
-        return state;
-      }
+      if (assignedPlacesForSegment(state.places, action.segmentId).length > 0) return state;
       const segments = Array.isArray(state.segments) ? state.segments : [];
-      const remaining = segments.filter(
-        (segment) => segment.id !== action.segmentId
-      );
-      const nextSegments = remaining.length > 0
-        ? remaining
-        : [createSegment()];
+      const remaining = segments.filter((segment) => segment.id !== action.segmentId);
+      const nextSegments = remaining.length > 0 ? remaining : [createSegment()];
       return touch(state, { segments: nextSegments });
     }
 
     case TRIP_ACTIONS.reorderSegment:
-      return reorderSegments(
-        state,
-        action.sourceId,
-        action.targetId,
-        action.placement
-      );
+      return reorderSegments(state, action.sourceId, action.targetId, action.placement);
 
     case TRIP_ACTIONS.updateSegment: {
       const patch = { ...(action.patch || {}) };
       delete patch.origin;
-
-      const currentSegment = state.segments.find(
-        (segment) => segment.id === action.segmentId
-      );
+      const currentSegment = state.segments.find((segment) => segment.id === action.segmentId);
       const assignedPlaces = assignedPlacesForSegment(state.places, action.segmentId);
       if (
         currentSegment
         && assignedPlaces.length > 0
         && Object.hasOwn(patch, 'destination')
         && cityIdentity(patch.destination) !== cityIdentity(currentSegment.destination)
-      ) {
-        return state;
-      }
+      ) return state;
 
       if (Object.hasOwn(patch, 'startDate') || Object.hasOwn(patch, 'endDate')) {
         const validation = validateSegmentDatePatch(state, action.segmentId, patch);
@@ -343,10 +324,8 @@ export function tripReducer(state, action) {
     case TRIP_ACTIONS.addPlace: {
       const places = state.places || [];
       const place = createPlace(action.place);
-      const duplicate = places.some(
-        (currentPlace) => currentPlace.id === place.id
-      );
-      const planningDays = tripPlanningDays(state.segments);
+      const duplicate = places.some((currentPlace) => currentPlace.id === place.id);
+      const planningDays = tripPlanningDays(state);
       const placeGroupKey = placePlanningGroupKey(place);
       const assignedSegment = (state.segments || []).find(
         (segment) => segment.id === place.segmentId
@@ -358,18 +337,9 @@ export function tripReducer(state, action) {
       );
       const validPlanningTarget = Boolean(
         placeGroupKey
-        && (
-          planningDays.some((day) => day.key === placeGroupKey)
-          || pendingFirstDay
-        )
+        && (planningDays.some((day) => day.key === placeGroupKey) || pendingFirstDay)
       );
-      if (
-        places.length >= TRIP_LIMITS.places
-        || duplicate
-        || !validPlanningTarget
-      ) {
-        return state;
-      }
+      if (places.length >= TRIP_LIMITS.places || duplicate || !validPlanningTarget) return state;
 
       return touch(state, {
         places: insertPlaceByCountry(places, place),
@@ -380,12 +350,8 @@ export function tripReducer(state, action) {
     case TRIP_ACTIONS.addPlaceWithCity: {
       const places = state.places || [];
       if (places.length >= TRIP_LIMITS.places) return state;
-
       const placeCandidate = createPlace(action.place);
-      if (places.some((currentPlace) => currentPlace.id === placeCandidate.id)) {
-        return state;
-      }
-
+      if (places.some((currentPlace) => currentPlace.id === placeCandidate.id)) return state;
       const ensured = ensureCitySegment(state, action.city);
       if (!ensured) return state;
       const place = createPlace({
@@ -393,7 +359,6 @@ export function tripReducer(state, action) {
         segmentId: ensured.segment.id,
         dayOffset: 0,
       });
-
       return touch(state, {
         segments: ensured.segments,
         places: insertPlaceByCountry(places, place),
@@ -418,9 +383,7 @@ export function tripReducer(state, action) {
 
     case TRIP_ACTIONS.removePlace:
       return touch(state, {
-        places: (state.places || []).filter(
-          (place) => place.id !== action.placeId
-        ),
+        places: (state.places || []).filter((place) => place.id !== action.placeId),
         routeConnections: routesWithoutPlace(state.routeConnections, action.placeId),
       });
 
@@ -443,9 +406,7 @@ export function tripReducer(state, action) {
 
     case TRIP_ACTIONS.movePlaceToDay: {
       const targetKey = planningGroupKey(action.segmentId, action.dayOffset);
-      const validPlanningTarget = tripPlanningDays(state.segments).some(
-        (day) => day.key === targetKey
-      );
+      const validPlanningTarget = tripPlanningDays(state).some((day) => day.key === targetKey);
       if (!validPlanningTarget) return state;
       const places = movePlaceToTargetGroup(
         state.places,
@@ -473,25 +434,18 @@ export function tripReducer(state, action) {
         || !fromPlace
         || !toPlace
         || !samePlanningGroup(fromPlace, toPlace)
-      ) {
-        return state;
-      }
+      ) return state;
 
       const routes = state.routeConnections || [];
       const pairKey = savedPlaceRoutePairKey(route);
       const existingIndex = routes.findIndex(
         (current) => savedPlaceRoutePairKey(current) === pairKey
       );
-      if (existingIndex < 0 && routes.length >= TRIP_LIMITS.routeConnections) {
-        return state;
-      }
+      if (existingIndex < 0 && routes.length >= TRIP_LIMITS.routeConnections) return state;
 
       const nextRoutes = [...routes];
       if (existingIndex >= 0) {
-        nextRoutes[existingIndex] = {
-          ...route,
-          id: routes[existingIndex].id,
-        };
+        nextRoutes[existingIndex] = { ...route, id: routes[existingIndex].id };
       } else {
         nextRoutes.push(route);
       }

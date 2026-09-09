@@ -16,24 +16,28 @@ test('Mis Rutas conserva el estado del panel al alternar con Notas sin romper el
   assert.match(editor, /style=\{showNotes \? paneStyle : \{ display: 'none' \}\}/);
   assert.doesNotMatch(editor, /display: showRoutes \? 'contents' : 'none'/);
   assert.doesNotMatch(editor, /display: showNotes \? 'contents' : 'none'/);
-  assert.match(editor, /const routesPane = hasRouteContent \? \([\s\S]*?<TripPlacesPanel/);
+  assert.match(editor, /const routesPane = \([\s\S]*?<TripDayRoutesPanel/);
   assert.match(editor, /const notesPane = \([\s\S]*?<AppEditorPane/);
 });
 
-test('el viaje vacío muestra una guía centrada y no una columna en blanco', async () => {
-  const editor = await read('src/app/AppEditorModule.jsx');
+test('sin rango global Mis Rutas pide las fechas con el calendario existente', async () => {
+  const panel = await read('src/modules/places/TripDayRoutesPanel.jsx');
   const messages = await read('src/i18n/unifiedSearchMessages.js');
 
-  assert.match(editor, /emptyRoutesPrompt/);
-  assert.match(editor, /alignItems: 'center'/);
-  assert.match(editor, /justifyContent: 'center'/);
-  assert.match(messages, /emptyRoutesPrompt: 'Agrega tus ciudades o lugares para tu viaje'/);
+  assert.match(panel, /if \(!hasTripDates\)/);
+  assert.match(panel, /t\('chooseTripDates'\)/);
+  assert.match(panel, /<CalendarDateInput[\s\S]*value=\{trip\.startDate \|\| ''\}/);
+  assert.match(panel, /<CalendarDateInput[\s\S]*value=\{trip\.endDate \|\| ''\}/);
+  assert.match(panel, /alignItems: 'center'/);
+  assert.match(panel, /justifyContent: 'center'/);
+  assert.match(messages, /chooseTripDates:/);
 });
 
-test('la leyenda de espera se oculta y eliminar lugar se presenta como X', async () => {
+test('la vista día-primero no reintroduce lugares pendientes y eliminar lugar se presenta como X', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
+  const panel = await read('src/modules/places/TripDayRoutesPanel.jsx');
 
-  assert.match(editor, /trip-city__pending-hint \{ display: none; \}/);
+  assert.doesNotMatch(panel, /pendingPlaces|trip-city__pending-hint|placeWaitingForDates/);
   assert.match(editor, /trip-place__delete svg \{ display: none; \}/);
   assert.match(editor, /trip-place__delete::before/);
   assert.match(editor, /content: '×'/);
