@@ -31,13 +31,14 @@ test('Mis Rutas sigue siendo la superficie principal sin restaurar Itinerario ni
 test('cada ciudad vive inline dentro de la cabecera del día y conserva drag y eliminación contextual', async () => {
   const panel = await read('src/modules/places/TripDayRoutesPanel.jsx');
   const interactionCss = await read('src/app/UnifiedMyRoutesInteraction.css');
+  const editorModule = await read('src/app/AppEditorModule.jsx');
 
   assert.match(panel, /className="trip-day__city-token"/);
   assert.match(panel, /data-city-order-id=\{isFirstAssignment \? segment\.id : undefined\}/);
   assert.match(panel, /className="trip-city__drag"/);
   assert.match(panel, /className="trip-city__action trip-city__remove"/);
   assert.match(interactionCss, /\.trip-places--unified \.trip-city__remove\s*\{[^}]*opacity:\s*0;[^}]*pointer-events:\s*none;/s);
-  assert.match(interactionCss, /\.trip-places--unified \.trip-day__header:hover \.trip-city__remove,[\s\S]*opacity:\s*1;[\s\S]*pointer-events:\s*auto;/s);
+  assert.match(editorModule, /\.editor-module \.trip-day__header:hover \.trip-city__remove,[\s\S]*opacity:\s*1;[\s\S]*pointer-events:\s*auto;/s);
   assert.doesNotMatch(panel, /className="trip-city trip-day-city"/);
   assert.doesNotMatch(panel, /ORIGIN_NOTE_TARGET|itinerary-origin|originDetails/);
 });
