@@ -86,8 +86,15 @@ function routesWithoutPlace(routes, placeId) {
 }
 
 function placeRouteGroupKey(place) {
-  const tripOffset = Number(place?.tripDayOffset);
-  if (Number.isInteger(tripOffset) && tripOffset >= 0) return `trip:${tripOffset}`;
+  const rawTripOffset = place?.tripDayOffset;
+  if (rawTripOffset !== '' && rawTripOffset != null) {
+    const tripOffset = Number(rawTripOffset);
+    if (
+      Number.isInteger(tripOffset)
+      && tripOffset >= 0
+      && tripOffset <= 36600
+    ) return `trip:${tripOffset}`;
+  }
   return placePlanningGroupKey(place);
 }
 
