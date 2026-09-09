@@ -85,23 +85,16 @@ function routesWithoutPlace(routes, placeId) {
   );
 }
 
-function placeRouteGroupKey(place) {
-  const rawTripOffset = place?.tripDayOffset;
-  if (rawTripOffset !== '' && rawTripOffset != null) {
-    const tripOffset = Number(rawTripOffset);
-    if (
-      Number.isInteger(tripOffset)
-      && tripOffset >= 0
-      && tripOffset <= 36600
-    ) return `trip:${tripOffset}`;
-  }
+function placeRouteGroupKey(place, trip) {
+  const tripOffset = placeTripDayOffset(place, trip);
+  if (tripOffset != null) return `trip:${tripOffset}`;
   return placePlanningGroupKey(place);
 }
 
-function consecutiveRoutePairKeys(places) {
+function consecutiveRoutePairKeys(places, trip) {
   const byGroup = new Map();
   (Array.isArray(places) ? places : []).forEach((place) => {
-    const key = placeRouteGroupKey(place);
+    const key = placeRouteGroupKey(place, trip);
     if (!key) return;
     if (!byGroup.has(key)) byGroup.set(key, []);
     byGroup.get(key).push(place);
@@ -116,8 +109,8 @@ function consecutiveRoutePairKeys(places) {
   return pairs;
 }
 
-function pruneRouteConnections(routes, places) {
-  const validPairs = consecutiveRoutePairKeys(places);
+function pruneRouteConnections(routes, places, trip) {
+  const validPairs = consecutiveRoutePairKeys(places, trip);
   return (routes || []).filter((route) => validPairs.has(savedPlaceRoutePairKey(route)));
 }
 
@@ -310,10 +303,19 @@ export function tripReducer(state, action) {
         action.placement
       );
       if (!plan) return state;
+      const plannedTrip = {
+        ...state,
+        segments: plan.segments,
+        places: plan.places,
+      };
       return touch(state, {
         segments: plan.segments,
         places: plan.places,
-        routeConnections: pruneRouteConnections(state.routeConnections, plan.places),
+        routeConnections: pruneRouteConnections(
+          state.routeConnections,
+          plan.places,
+          plannedTrip
+        ),
       });
     }
 
@@ -436,7 +438,8 @@ export function tripReducer(state, action) {
         ...reorderedTrip,
         routeConnections: pruneRouteConnections(
           reorderedTrip.routeConnections,
-          reorderedTrip.places
+          reorderedTrip.places,
+          reorderedTrip
         ),
       };
     }
@@ -450,10 +453,15 @@ export function tripReducer(state, action) {
       ) return state;
       const places = movePlaceToGlobalDay(state.places, action.placeId, targetOffset, state);
       if (places === state.places) return state;
+      const movedTrip = { ...state, places };
       return touch(state, {
         places,
         placeOrderVersion: PLACE_ORDER_VERSION,
-        routeConnections: pruneRouteConnections(state.routeConnections, places),
+        routeConnections: pruneRouteConnections(
+          state.routeConnections,
+          places,
+          movedTrip
+        ),
       });
     }
 
