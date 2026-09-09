@@ -30,10 +30,18 @@ function requireRank(value) {
   return value;
 }
 
+function persistedSegment(rawEntity) {
+  const segment = createSegment(rawEntity);
+  const { tripDayOffsets, ...payload } = segment;
+  return {
+    ...payload,
+    tripDayPlan: (tripDayOffsets || []).join(','),
+  };
+}
+
 export function v4EntityPayload(entityType, rawEntity, rank) {
   if (entityType === 'segment') {
-    const segment = createSegment(rawEntity);
-    return { ...segment, id: requireId(rawEntity?.id), rank: requireRank(rank) };
+    return { ...persistedSegment(rawEntity), id: requireId(rawEntity?.id), rank: requireRank(rank) };
   }
   if (entityType === 'place') {
     const place = placeForPersistence(createPlace(rawEntity));
@@ -91,10 +99,15 @@ export function v4EntityUpdatePatch(
   rawEntity,
   rank,
   baseVersion,
-  timestampValue
+  timestampValue,
+  fieldMask = null
 ) {
+  const payload = v4EntityPayload(entityType, rawEntity, rank);
+  const selected = Array.isArray(fieldMask) && fieldMask.length
+    ? Object.fromEntries(fieldMask.filter((field) => Object.hasOwn(payload, field)).map((field) => [field, payload[field]]))
+    : payload;
   return {
-    ...v4EntityPayload(entityType, rawEntity, rank),
+    ...selected,
     status: V4_ENTITY_STATUS.ACTIVE,
     version: nextEntityVersion(baseVersion),
     updatedAt: timestampValue,
