@@ -136,7 +136,8 @@
   }
 }
 
-/* City removal remains contextual after flattening City into the Day header. */
+/* Same interaction used by the former compact Itinerary: removal is available
+   in the row but does not add permanent visual noise on precise-pointer desktop. */
 @media (min-width: 721px) and (hover: hover) and (pointer: fine) {
   .trip-places--unified .trip-city__remove {
     opacity: 0;
@@ -145,7 +146,6 @@
   }
 
   .trip-places--unified .trip-city__bar:hover .trip-city__remove,
-  .trip-places--unified .trip-day__header:hover .trip-city__remove,
   .trip-places--unified .trip-city__remove:focus-visible {
     opacity: 1;
     pointer-events: auto;
