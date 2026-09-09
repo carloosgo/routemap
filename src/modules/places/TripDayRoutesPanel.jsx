@@ -9,7 +9,6 @@ import {
   IconMapPin,
   IconNote,
   IconReceipt2,
-  IconTrash,
   IconX,
 } from '@tabler/icons-react';
 import { CalendarDateInput } from '../../components/CalendarDateInput.jsx';
@@ -133,12 +132,22 @@ function dayAssignments(planningDays) {
   return byDate;
 }
 
+function uniqueAssignments(assignments) {
+  const seen = new Set();
+  return assignments.filter((assignment) => {
+    if (!assignment?.segmentId || seen.has(assignment.segmentId)) return false;
+    seen.add(assignment.segmentId);
+    return true;
+  });
+}
+
 export function TripDayRoutesPanel({
   trip = {},
   segments = [],
   places = [],
   routes = [],
   updateTripDates,
+  removeTripDay,
   removeSegment,
   reorderSegment,
   toggleSegmentNote,
@@ -161,7 +170,7 @@ export function TripDayRoutesPanel({
   const [placeDetails, setPlaceDetails] = useState({});
   const [moveMenuPlaceId, setMoveMenuPlaceId] = useState('');
   const [notePlaceId, setNotePlaceId] = useState('');
-  const [collapsedGroups, setCollapsedGroups] = useState(() => new Set());
+  const [collapsedDays, setCollapsedDays] = useState(() => new Set());
   const panelRef = useRef(null);
   const placeDragStateRef = useRef(null);
   const cityDragStateRef = useRef(null);
@@ -403,11 +412,11 @@ export function TripDayRoutesPanel({
     return () => observer.disconnect();
   }, [places]);
 
-  function toggleGroup(key) {
-    setCollapsedGroups((current) => {
+  function toggleDay(date) {
+    setCollapsedDays((current) => {
       const next = new Set(current);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+      if (next.has(date)) next.delete(date);
+      else next.add(date);
       return next;
     });
   }
@@ -440,7 +449,7 @@ export function TripDayRoutesPanel({
     setCityDragState(next);
   }
 
-  function renderPlace(place, groupKey, groupPlaces, nextPlace = null) {
+  function renderPlace(place, groupKey, nextPlace = null) {
     const dragging = placeDragState?.placeId === place.id;
     const dropPlacement = placeDragState?.targetId === place.id
       ? placeDragState.placement
@@ -534,7 +543,7 @@ export function TripDayRoutesPanel({
               onClick={() => setPlaceToDelete(place)}
               aria-label={t('delete')}
             >
-              <IconTrash size={14} aria-hidden="true" />
+              <IconX size={14} aria-hidden="true" />
             </button>
           </div>
         </article>
@@ -554,105 +563,60 @@ export function TripDayRoutesPanel({
     );
   }
 
-  function renderAssignment(assignment, calendarDay) {
+  function dayPlaceEntries(assignments) {
+    const entries = [];
+    assignments.forEach((assignment) => {
+      const group = groupByKey.get(assignment.key);
+      const groupPlaces = group?.places || [];
+      groupPlaces.forEach((place, index) => {
+        entries.push({
+          place,
+          groupKey: assignment.key,
+          nextPlace: groupPlaces[index + 1] || null,
+        });
+      });
+    });
+    return entries;
+  }
+
+  function renderCityToken(assignment) {
     const segment = segmentById.get(assignment.segmentId);
     if (!segment) return null;
-    const group = groupByKey.get(assignment.key) || { ...assignment, places: [] };
-    const city = assignment.destination;
-    const color = colorForDestination(city, colors);
-    const collapsed = collapsedGroups.has(assignment.key);
     const isFirstAssignment = firstAssignmentKeyBySegment.get(segment.id) === assignment.key;
-    const amount = formatSegmentAmount(segmentTotal(segment), intlLocale, currency);
-
     return (
-      <section
-        key={assignment.key}
-        className="trip-city trip-day-city"
+      <span
+        key={assignment.segmentId}
+        className="trip-day__city-token"
         data-city-order-id={isFirstAssignment ? segment.id : undefined}
-        style={{ '--trip-day-color': color, paddingBottom: '3px' }}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', minWidth: 0 }}
       >
-        <div
-          className="trip-city__bar"
-          style={{
-            gridTemplateColumns: '18px 24px minmax(0,1fr) 62px repeat(4,16px)',
-            columnGap: '8px',
-          }}
-        >
-          {isFirstAssignment ? (
-            <button
-              type="button"
-              className="trip-city__drag"
-              onPointerDown={(event) => startCityDrag(event, segment.id)}
-              aria-label={t('moveCity')}
-              title={t('moveCity')}
-            >
-              <IconGripVertical size={15} aria-hidden="true" />
-            </button>
-          ) : <span aria-hidden="true" />}
-          <CountryFlag city={city} />
-          <span className="trip-city__heading">
-            <button
-              type="button"
-              className="trip-city__name-button"
-              onClick={() => toggleGroup(assignment.key)}
-              aria-expanded={!collapsed}
-            >
-              <strong>{cityLabel(city, t)}</strong>
-            </button>
-          </span>
-          <span className="trip-city__amount" title={t('segmentTotal')}>{amount}</span>
+        {isFirstAssignment && (
           <button
             type="button"
-            className="trip-city__action trip-city__expense"
-            onClick={() => toggleSegmentDetails?.(segment.id)}
-            aria-label={t('expenses')}
-            title={t('expenses')}
+            className="trip-city__drag"
+            onPointerDown={(event) => startCityDrag(event, segment.id)}
+            aria-label={t('moveCity')}
+            title={t('moveCity')}
+            style={{ width: '14px', minWidth: '14px' }}
           >
-            <IconReceipt2 size={15} stroke={1.8} aria-hidden="true" />
+            <IconGripVertical size={13} aria-hidden="true" />
           </button>
-          <button
-            type="button"
-            className={'trip-city__action trip-city__note' + (segment.note ? ' has-note' : '')}
-            onClick={() => toggleSegmentNote?.(segment.id)}
-            aria-label={t('segmentNote')}
-            title={t('segmentNote')}
-          >
-            <IconNote size={15} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className="trip-city__action trip-city__expand"
-            aria-expanded={!collapsed}
-            onClick={() => toggleGroup(assignment.key)}
-            aria-label={collapsed ? t('expand') : t('collapse')}
-          >
-            {collapsed
-              ? <IconChevronRight size={15} aria-hidden="true" />
-              : <IconChevronDown size={15} aria-hidden="true" />}
-          </button>
-          <button
-            type="button"
-            className="trip-city__action trip-city__remove"
-            onClick={() => setSegmentToDelete(segment)}
-            aria-label={t('removeCity')}
-            title={t('removeCity')}
-          >
-            <IconTrash size={14} aria-hidden="true" />
-          </button>
-        </div>
-        {!collapsed && (
-          <div className="trip-places__sequence" style={{ '--trip-day-color': color }}>
-            {group.places.length > 0
-              ? group.places.map((place, index) => renderPlace(
-                  place,
-                  group.key,
-                  group.places,
-                  group.places[index + 1] || null
-                ))
-              : <div className="trip-day__empty-row">{t('dayNoPlaces')}</div>}
-          </div>
         )}
-      </section>
+        <CountryFlag city={assignment.destination} />
+        <strong style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {cityLabel(assignment.destination, t)}
+        </strong>
+        <button
+          type="button"
+          className="trip-city__action trip-city__remove"
+          onClick={() => setSegmentToDelete(segment)}
+          aria-label={t('removeCity')}
+          title={t('removeCity')}
+          style={{ width: '14px', minWidth: '14px' }}
+        >
+          <IconX size={12} aria-hidden="true" />
+        </button>
+      </span>
     );
   }
 
@@ -695,33 +659,106 @@ export function TripDayRoutesPanel({
       <div className="trip-places trip-places--unified" ref={panelRef}>
         <div className="trip-places__cities">
           {calendarDays.map((calendarDay) => {
-            const assignments = assignmentsByDate.get(calendarDay.date) || [];
+            const assignments = uniqueAssignments(assignmentsByDate.get(calendarDay.date) || []);
+            const primaryAssignment = assignments[0] || null;
+            const primarySegment = primaryAssignment
+              ? segmentById.get(primaryAssignment.segmentId) || null
+              : null;
+            const entries = dayPlaceEntries(assignments);
+            const collapsed = collapsedDays.has(calendarDay.date);
+            const dayTotal = assignments.reduce((sum, assignment) => {
+              const segment = segmentById.get(assignment.segmentId);
+              return sum + (segment ? segmentTotal(segment) : 0);
+            }, 0);
+            const amount = formatSegmentAmount(dayTotal, intlLocale, currency);
+            const color = primaryAssignment
+              ? colorForDestination(primaryAssignment.destination, colors)
+              : '#94a3b8';
+
             return (
               <section
-                className="trip-day"
+                className="trip-day trip-day--flat"
                 key={calendarDay.date}
-                style={{ '--trip-day-color': assignments[0]
-                  ? colorForDestination(assignments[0].destination, colors)
-                  : '#94a3b8' }}
+                style={{ '--trip-day-color': color }}
               >
                 <header
                   className="trip-day__header"
                   style={{
-                    minHeight: '38px',
-                    gridTemplateColumns: '24px minmax(0,1fr)',
+                    minHeight: '50px',
+                    gridTemplateColumns: '20px minmax(0,1fr) 62px repeat(4,18px)',
+                    columnGap: '7px',
                     borderBottom: '1px solid #eef1f4',
+                    alignItems: 'center',
                   }}
                 >
                   <span className="trip-day__node" aria-hidden="true" />
-                  <span className="trip-day__heading">
-                    <strong style={{ color: '#263445', fontSize: '12.5px', fontWeight: 750 }}>
+                  <span className="trip-day__heading" style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <strong style={{ color: '#263445', fontSize: '12.5px', fontWeight: 750, whiteSpace: 'nowrap' }}>
                       {t('day')} {calendarDay.globalDayNumber} · {formatDayDate(calendarDay.date, intlLocale)}
                     </strong>
+                    {assignments.length > 0 ? (
+                      <span style={{ minWidth: 0, display: 'inline-flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                        {assignments.map(renderCityToken)}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#8a94a3', fontSize: '11px', fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {t('tripDayNoCity')}
+                      </span>
+                    )}
                   </span>
+                  <span className="trip-city__amount" title={t('segmentTotal')}>{amount}</span>
+                  <button
+                    type="button"
+                    className="trip-city__action trip-city__expense"
+                    onClick={() => primarySegment && toggleSegmentDetails?.(primarySegment.id)}
+                    aria-label={t('expenses')}
+                    title={t('expenses')}
+                    disabled={!primarySegment}
+                  >
+                    <IconReceipt2 size={15} stroke={1.8} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className={'trip-city__action trip-city__note' + (primarySegment?.note ? ' has-note' : '')}
+                    onClick={() => primarySegment && toggleSegmentNote?.(primarySegment.id)}
+                    aria-label={t('segmentNote')}
+                    title={t('segmentNote')}
+                    disabled={!primarySegment}
+                  >
+                    <IconNote size={15} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    className="trip-city__action trip-city__expand"
+                    aria-expanded={!collapsed}
+                    onClick={() => toggleDay(calendarDay.date)}
+                    aria-label={collapsed ? t('expand') : t('collapse')}
+                  >
+                    {collapsed
+                      ? <IconChevronRight size={15} aria-hidden="true" />
+                      : <IconChevronDown size={15} aria-hidden="true" />}
+                  </button>
+                  <button
+                    type="button"
+                    className="trip-city__action trip-day__remove"
+                    onClick={() => {
+                      const prompt = `${t('delete')} ${t('day')} ${calendarDay.globalDayNumber}?`;
+                      if (globalThis.confirm(prompt)) removeTripDay?.(calendarDay.date);
+                    }}
+                    aria-label={`${t('delete')} ${t('day')} ${calendarDay.globalDayNumber}`}
+                    title={`${t('delete')} ${t('day')} ${calendarDay.globalDayNumber}`}
+                  >
+                    <IconX size={14} aria-hidden="true" />
+                  </button>
                 </header>
-                {assignments.length > 0
-                  ? assignments.map((assignment) => renderAssignment(assignment, calendarDay))
-                  : <div className="trip-day__empty-row">{t('tripDayNoCity')}</div>}
+
+                {!collapsed && (
+                  <div className="trip-places__sequence" style={{ '--trip-day-color': color }}>
+                    {entries.length > 0
+                      ? entries.map(({ place, groupKey, nextPlace }) => renderPlace(place, groupKey, nextPlace))
+                      : <div className="trip-day__empty-row">{assignments.length ? t('dayNoPlaces') : t('tripDayNoCity')}</div>}
+                  </div>
+                )}
               </section>
             );
           })}
