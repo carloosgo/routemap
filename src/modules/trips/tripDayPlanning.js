@@ -24,6 +24,7 @@ function normalizedOptionalId(value) {
 }
 
 function normalizedOffset(value) {
+  if (value === '' || value == null) return null;
   const offset = Number(value);
   return Number.isInteger(offset) && offset >= 0 && offset <= 36600 ? offset : null;
 }
