@@ -174,3 +174,47 @@
     font-size: 9.5px;
   }
 }
+
+/* La secuencia del día se conecta por tramos reales: nodo → tarjeta de ruta
+   → nodo. No usamos la antigua línea global del día porque empezaba en el
+   encabezado y podía sobresalir después del último lugar. */
+.trip-places--unified .trip-day__rail {
+  display: none;
+}
+
+.trip-places--unified .trip-place-block:not(:first-child) .trip-place::before,
+.trip-places--unified .trip-place-block:not(:last-child) .trip-place::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  left: var(--trip-timeline-x);
+  width: 0;
+  border-left: 2px dotted var(--trip-day-color);
+  opacity: .7;
+  transform: translateX(-1px);
+  pointer-events: none;
+}
+
+.trip-places--unified .trip-place-block:not(:first-child) .trip-place::before {
+  top: 0;
+  height: 50%;
+}
+
+.trip-places--unified .trip-place-block:not(:last-child) .trip-place::after {
+  top: 50%;
+  bottom: 0;
+}
+
+.trip-places--unified .trip-day .trip-connection__rail {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--trip-timeline-x) - 31px);
+  display: block;
+  width: 0;
+  border-left: 2px dotted var(--trip-day-color);
+  opacity: .7;
+  transform: translateX(-1px);
+  pointer-events: none;
+}
