@@ -68,9 +68,15 @@ function globalSegmentDateRange(segments) {
 }
 
 export function tripDateRange(tripOrSegments) {
-  // Preserve the standalone segment-array utility contract. The trip header passes
-  // the full trip object so it can use origin departure + last entered leg end.
   if (Array.isArray(tripOrSegments)) return globalSegmentDateRange(tripOrSegments);
+  const explicitStart = validDate(tripOrSegments?.startDate);
+  const explicitEnd = validDate(tripOrSegments?.endDate);
+  if (explicitStart != null || explicitEnd != null) {
+    return {
+      startDate: explicitStart != null ? tripOrSegments.startDate : '',
+      endDate: explicitEnd != null ? tripOrSegments.endDate : '',
+    };
+  }
   return tripBoundaryDates(tripOrSegments);
 }
 
@@ -81,6 +87,14 @@ export function tripTotalNights(segments) {
     if (start == null || end == null || end < start) return sum;
     return sum + Math.round((end - start) / DAY_MS);
   }, 0);
+}
+
+export function tripGlobalNights(trip) {
+  const { startDate, endDate } = tripDateRange(trip);
+  const start = validDate(startDate);
+  const end = validDate(endDate);
+  if (start == null || end == null || end < start) return tripTotalNights(trip?.segments);
+  return Math.round((end - start) / DAY_MS);
 }
 
 export function tripDestinationCount(segments) {
@@ -121,7 +135,7 @@ export function tripSummary(trip) {
     ...tripDateRange(trip),
     destinations: tripDestinationCount(segments),
     countries: tripCountryCount(segments),
-    nights: tripTotalNights(segments),
+    nights: tripGlobalNights(trip),
     distanceKm: tripTotalDistanceKm(segments),
   };
 }
