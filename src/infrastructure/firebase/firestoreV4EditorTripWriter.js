@@ -49,6 +49,8 @@ function rootPayload(remoteRoot, tripId) {
         id: remoteRoot.id || tripId,
         name: typeof remoteRoot.name === 'string' ? remoteRoot.name : '',
         currency: typeof remoteRoot.currency === 'string' ? remoteRoot.currency : 'USD',
+        startDate: typeof remoteRoot.startDate === 'string' ? remoteRoot.startDate : '',
+        endDate: typeof remoteRoot.endDate === 'string' ? remoteRoot.endDate : '',
         origin: remoteRoot.origin ?? null,
         originDetails: remoteRoot.originDetails,
       }
@@ -179,9 +181,7 @@ export function createFirestoreV4EditorTripWriter({
     telemetryEmitter: emitter,
   });
 
-  if (browserLifecycleAvailable()) {
-    syncComposition.attachLifecycle?.();
-  }
+  if (browserLifecycleAvailable()) syncComposition.attachLifecycle?.();
 
   let operationQueue = Promise.resolve();
   let closed = false;
