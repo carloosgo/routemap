@@ -91,10 +91,10 @@ test('rules y writers conservan originDetails en el camino v4 canónico', async 
   ]);
 
   assert.match(rules, /function validOriginDetails\(data\)/);
-  assert.match(rules, /hasOnly\(\['departureDate', 'expenses', 'note'\]\)/);
+  assert.match(rules, /hasOnly\(\[\s*'departureDate'\s*,\s*'expenses'\s*,\s*'note'\s*\]\)/);
   assert.match(rules, /data\.note\.size\(\) <= 500/);
   assert.match(rules, /validExpenses\(data\.expenses\)/);
-  assert.match(rules, /'name', 'currency', 'startDate', 'endDate', 'origin', 'originDetails'/);
+  assert.match(rules, /'name'\s*,\s*'currency'\s*,\s*'startDate'\s*,\s*'endDate'\s*,\s*'origin'\s*,\s*'originDetails'/);
   assert.match(editorWriter, /originDetails: remoteRoot\.originDetails/);
   assert.match(writer, /originDetails: remoteRoot\.originDetails/);
 });
