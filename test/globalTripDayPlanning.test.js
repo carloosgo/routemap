@@ -8,6 +8,7 @@ import {
   tripCalendarDays,
   tripPlanningDays,
 } from '../src/modules/trips/tripDayPlanning.js';
+import { planTripDayRemoval } from '../src/modules/trips/tripDayRemoval.js';
 import { planV4TripSave } from '../src/infrastructure/firebase/v4TripSavePlan.js';
 import { v4TripMetadataPatch } from '../src/infrastructure/firebase/v4TripDocument.js';
 import { upsertPendingMutation } from '../src/modules/storage-v4/pendingMutationModel.js';
@@ -143,6 +144,53 @@ test('los lugares mantienen segmentId+dayOffset y se proyectan al día global co
     [[2, ['louvre']], [3, ['orsay']]]
   );
   assert.equal(planned.unassigned.length, 0);
+});
+
+test('eliminar un día intermedio colapsa el itinerario sin crear entidades día', () => {
+  const paris = city('paris', 'París', 'FR', 48.8566, 2.3522);
+  const rome = city('rome', 'Roma', 'IT', 41.9028, 12.4964);
+  const trip = rootTrip({
+    startDate: '2026-09-09',
+    endDate: '2026-09-12',
+    segments: [
+      segment('paris-segment', paris, '2026-09-09', '2026-09-11'),
+      segment('rome-segment', rome, '2026-09-12', '2026-09-12'),
+    ],
+    places: [
+      { id: 'day-1', segmentId: 'paris-segment', dayOffset: 0 },
+      { id: 'day-2', segmentId: 'paris-segment', dayOffset: 1 },
+      { id: 'day-3', segmentId: 'paris-segment', dayOffset: 2 },
+    ],
+  });
+
+  const plan = planTripDayRemoval(trip, '2026-09-10');
+  assert.deepEqual(plan.removePlaceIds, ['day-2']);
+  assert.deepEqual(plan.movePlaces, [
+    { placeId: 'day-3', segmentId: 'paris-segment', dayOffset: 1 },
+  ]);
+  assert.deepEqual(plan.segmentPatches, [
+    { segmentId: 'paris-segment', patch: { endDate: '2026-09-10' } },
+    { segmentId: 'rome-segment', patch: { startDate: '2026-09-11', endDate: '2026-09-11' } },
+  ]);
+  assert.deepEqual(plan.tripDatePatch, { endDate: '2026-09-11' });
+});
+
+test('eliminar el único día limpia el rango y las fechas del segmento de ese día', () => {
+  const tokyo = city('tokyo', 'Tokio', 'JP', 35.6762, 139.6503);
+  const trip = rootTrip({
+    startDate: '2026-09-09',
+    endDate: '2026-09-09',
+    segments: [segment('tokyo-segment', tokyo, '2026-09-09', '2026-09-09')],
+    places: [{ id: 'sensoji', segmentId: 'tokyo-segment', dayOffset: 0 }],
+  });
+
+  const plan = planTripDayRemoval(trip, '2026-09-09');
+  assert.deepEqual(plan.removePlaceIds, ['sensoji']);
+  assert.deepEqual(plan.movePlaces, []);
+  assert.deepEqual(plan.segmentPatches, [
+    { segmentId: 'tokyo-segment', patch: { startDate: '', endDate: '' } },
+  ]);
+  assert.deepEqual(plan.tripDatePatch, { startDate: '', endDate: '' });
 });
 
 test('cambiar sólo startDate genera un intent root granular sin tocar hijos ni otros metadatos', () => {
