@@ -251,25 +251,39 @@ export function AppMapPane({
       />
 
       {unifiedRoutesView && (
-        <div className="my-routes-map-mode" role="group" aria-label={t('mapTraceMode')}>
-          <button
-            type="button"
-            className={showCityTrace ? 'is-active' : ''}
-            aria-pressed={showCityTrace}
-            onClick={() => setShowCityTrace((value) => !value)}
+        <div
+          style={{
+            position: 'absolute',
+            zIndex: 60,
+            left: '10px',
+            bottom: '28px',
+          }}
+        >
+          <div
+            className="my-routes-map-mode"
+            style={{ position: 'static' }}
+            role="group"
+            aria-label={t('mapTraceMode')}
           >
-            <IconRoute size={15} stroke={1.8} aria-hidden="true" />
-            <span>{t('mapCities')}</span>
-          </button>
-          <button
-            type="button"
-            className={showSavedPlaces ? 'is-active' : ''}
-            aria-pressed={showSavedPlaces}
-            onClick={() => setShowSavedPlaces((value) => !value)}
-          >
-            <IconMapPin size={15} stroke={1.8} aria-hidden="true" />
-            <span>{t('mapSavedPlaces')}</span>
-          </button>
+            <button
+              type="button"
+              className={showCityTrace ? 'is-active' : ''}
+              aria-pressed={showCityTrace}
+              onClick={() => setShowCityTrace((value) => !value)}
+            >
+              <IconRoute size={15} stroke={1.8} aria-hidden="true" />
+              <span>{t('mapCities')}</span>
+            </button>
+            <button
+              type="button"
+              className={showSavedPlaces ? 'is-active' : ''}
+              aria-pressed={showSavedPlaces}
+              onClick={() => setShowSavedPlaces((value) => !value)}
+            >
+              <IconMapPin size={15} stroke={1.8} aria-hidden="true" />
+              <span>{t('mapSavedPlaces')}</span>
+            </button>
+          </div>
         </div>
       )}
 

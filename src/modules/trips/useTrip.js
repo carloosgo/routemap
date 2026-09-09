@@ -64,8 +64,16 @@ export function useTrip(initialTrip) {
     []
   );
   const removeSegment = useCallback(
-    (segmentId) => dispatch({ type: TRIP_ACTIONS.removeSegment, segmentId }),
-    []
+    (segmentId) => {
+      (trip.places || [])
+        .filter((place) => place.segmentId === segmentId)
+        .forEach((place) => dispatch({
+          type: TRIP_ACTIONS.removePlace,
+          placeId: place.id,
+        }));
+      dispatch({ type: TRIP_ACTIONS.removeSegment, segmentId });
+    },
+    [trip.places]
   );
   const reorderSegment = useCallback(
     (sourceId, targetId, placement) => dispatch({
