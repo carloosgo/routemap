@@ -122,6 +122,13 @@ export function AppEditorModule({
     />
   );
 
+  const paneStyle = {
+    display: 'flex',
+    flex: 1,
+    minHeight: 0,
+    flexDirection: 'column',
+  };
+
   return (
     <div className="editor-module" ref={editorMenuRef}>
       <style>{`
@@ -145,10 +152,10 @@ export function AppEditorModule({
         intlLocale={intlLocale}
         t={t}
       />
-      <div style={{ display: showRoutes ? 'contents' : 'none' }}>
+      <div style={showRoutes ? paneStyle : { display: 'none' }}>
         {routesPane}
       </div>
-      <div style={{ display: showNotes ? 'contents' : 'none' }}>
+      <div style={showNotes ? paneStyle : { display: 'none' }}>
         {notesPane}
       </div>
     </div>
