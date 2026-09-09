@@ -53,7 +53,7 @@ export function savePrompt(place, { alreadySaved = false, onSave, onClose, t } =
   if (!alreadySaved) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = translated(t, 'saveTrip');
+    button.textContent = translated(t, 'savePlace');
     button.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -93,6 +93,7 @@ export function markerElement(
   const label = placeName(place, t);
   const wrap = document.createElement('div');
   wrap.className = `place-result-marker${isCity ? ' is-city-result' : ''}`;
+  wrap.dataset.resultKind = isCity ? 'city' : 'place';
   wrap.setAttribute('role', 'group');
   wrap.setAttribute(
     'aria-label',
@@ -117,7 +118,7 @@ export function markerElement(
     const save = document.createElement('button');
     save.type = 'button';
     save.className = 'place-result-marker__save';
-    save.textContent = translated(t, isCity ? 'addCity' : 'saveTrip');
+    save.textContent = translated(t, isCity ? 'addCity' : 'savePlace');
     save.addEventListener('click', async (event) => {
       event.preventDefault();
       event.stopPropagation();

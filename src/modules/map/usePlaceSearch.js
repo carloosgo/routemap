@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { config } from '../../config.js';
 import { useTranslation } from '../../i18n/index.jsx';
 import {
@@ -11,6 +11,10 @@ import {
   resolveGooglePlace,
   searchGooglePlaces,
 } from '../places/googlePlacesClient.js';
+import {
+  matchingCityResults,
+  preferredSearchProvider,
+} from './searchIntentRouter.js';
 
 function citySearchResult(city) {
   const canonical = canonicalCityFromSearchResult(city);
@@ -18,6 +22,8 @@ function citySearchResult(city) {
     ...canonical,
     kind: 'city',
     source: 'geoapify',
+    region: city?.region || '',
+    regionCode: city?.regionCode || '',
     secondaryText: [city?.region, canonical.country].filter(Boolean).join(', '),
   };
 }
@@ -30,14 +36,21 @@ function placeSearchResult(place) {
   };
 }
 
-function fulfilledValue(result, fallback = []) {
-  return result.status === 'fulfilled' ? result.value : fallback;
-}
-
 const UNIFIED_SEARCH_MIN_CHARS = Math.min(
   config.citySearchMinChars,
   config.googleMaps.searchMinChars
 );
+
+function waitFor(delay, signal) {
+  if (delay <= 0) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, delay);
+    signal?.addEventListener('abort', () => {
+      clearTimeout(timer);
+      reject(new DOMException('Aborted', 'AbortError'));
+    }, { once: true });
+  });
+}
 
 export function usePlaceSearch({ viewMode }) {
   const { t, locale } = useTranslation();
@@ -45,151 +58,133 @@ export function usePlaceSearch({ viewMode }) {
   if (!cityProviderRef.current) cityProviderRef.current = createGeoapifyCityProvider();
 
   const searchAbortRef = useRef(null);
-  const cityAutocompleteAbortRef = useRef(null);
-  const googleAutocompleteAbortRef = useRef(null);
+  const autocompleteAbortRef = useRef(null);
   const searchSequenceRef = useRef(0);
-  const cityAutocompleteSequenceRef = useRef(0);
-  const googleAutocompleteSequenceRef = useRef(0);
+  const autocompleteSequenceRef = useRef(0);
   const suppressAutocompleteQueryRef = useRef('');
   const sessionTokenRef = useRef(createGooglePlacesSessionToken());
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
-  const [citySuggestions, setCitySuggestions] = useState([]);
-  const [placeSuggestions, setPlaceSuggestions] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searching, setSearching] = useState(false);
-  const [citySuggesting, setCitySuggesting] = useState(false);
-  const [placeSuggesting, setPlaceSuggesting] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
   const [errorState, setErrorState] = useState(null);
-
-  const suggestions = useMemo(
-    () => [...citySuggestions, ...placeSuggestions],
-    [citySuggestions, placeSuggestions]
-  );
-  const suggesting = citySuggesting || placeSuggesting;
 
   function renewSession() {
     sessionTokenRef.current = createGooglePlacesSessionToken();
   }
 
   function abortAutocomplete() {
-    cityAutocompleteAbortRef.current?.abort();
-    googleAutocompleteAbortRef.current?.abort();
-    cityAutocompleteSequenceRef.current += 1;
-    googleAutocompleteSequenceRef.current += 1;
+    autocompleteAbortRef.current?.abort();
+    autocompleteSequenceRef.current += 1;
   }
 
   useEffect(
     () => () => {
       searchAbortRef.current?.abort();
-      cityAutocompleteAbortRef.current?.abort();
-      googleAutocompleteAbortRef.current?.abort();
+      autocompleteAbortRef.current?.abort();
     },
     []
   );
 
-  // Geoapify keeps its own threshold and debounce even though it shares the
-  // visible search field with Google.
   useEffect(() => {
-    cityAutocompleteAbortRef.current?.abort();
+    autocompleteAbortRef.current?.abort();
     const text = query.trim();
 
     if (
       viewMode !== 'places'
-      || text.length < config.citySearchMinChars
+      || text.length < UNIFIED_SEARCH_MIN_CHARS
       || suppressAutocompleteQueryRef.current === query
     ) {
-      setCitySuggestions([]);
-      setCitySuggesting(false);
-      if (text.length < UNIFIED_SEARCH_MIN_CHARS) setShowSuggestions(false);
+      setSuggestions([]);
+      setSuggesting(false);
+      setShowSuggestions(false);
       return undefined;
     }
 
-    const sequence = cityAutocompleteSequenceRef.current + 1;
-    cityAutocompleteSequenceRef.current = sequence;
+    const sequence = autocompleteSequenceRef.current + 1;
+    autocompleteSequenceRef.current = sequence;
     const controller = new AbortController();
-    cityAutocompleteAbortRef.current = controller;
+    autocompleteAbortRef.current = controller;
+    const preferredProvider = preferredSearchProvider(text);
+    const startedAt = Date.now();
+    const initialDelay = preferredProvider === 'google'
+      ? config.googleMaps.searchDebounceMs
+      : config.citySearchDebounceMs;
+
     const timer = setTimeout(async () => {
-      setCitySuggesting(true);
+      setSuggesting(true);
       try {
-        const cities = await cityProviderRef.current.search(text, {
-          signal: controller.signal,
-          limit: 3,
-          language: locale,
-        });
-        if (controller.signal.aborted || sequence !== cityAutocompleteSequenceRef.current) return;
-        const next = cities.map(citySearchResult);
-        setCitySuggestions(next);
-        if (next.length) setShowSuggestions(true);
+        if (preferredProvider === 'city') {
+          let cities = [];
+          try {
+            cities = await cityProviderRef.current.search(text, {
+              signal: controller.signal,
+              limit: config.citySearchLimit,
+              language: locale,
+            });
+          } catch (cityError) {
+            if (cityError?.name === 'AbortError') throw cityError;
+          }
+
+          if (controller.signal.aborted || sequence !== autocompleteSequenceRef.current) return;
+          const matchingCities = matchingCityResults(cities, text);
+          if (matchingCities.length) {
+            setSuggestions(matchingCities.map(citySearchResult));
+            setShowSuggestions(true);
+            return;
+          }
+
+          if (text.length < config.googleMaps.searchMinChars) {
+            setSuggestions([]);
+            setShowSuggestions(false);
+            return;
+          }
+
+          const elapsed = Date.now() - startedAt;
+          await waitFor(
+            Math.max(0, config.googleMaps.searchDebounceMs - elapsed),
+            controller.signal
+          );
+        }
+
+        if (text.length < config.googleMaps.searchMinChars) {
+          setSuggestions([]);
+          setShowSuggestions(false);
+          return;
+        }
+
+        const places = await autocompleteGooglePlaces(
+          text,
+          sessionTokenRef.current,
+          { signal: controller.signal }
+        );
+        if (controller.signal.aborted || sequence !== autocompleteSequenceRef.current) return;
+        setSuggestions(places.map((place) => ({
+          ...place,
+          kind: 'place',
+          source: 'google',
+        })));
+        setShowSuggestions(places.length > 0);
       } catch (error) {
-        if (error?.name !== 'AbortError' && sequence === cityAutocompleteSequenceRef.current) {
-          setCitySuggestions([]);
+        if (error?.name !== 'AbortError' && sequence === autocompleteSequenceRef.current) {
+          setSuggestions([]);
+          setShowSuggestions(false);
         }
       } finally {
-        if (!controller.signal.aborted && sequence === cityAutocompleteSequenceRef.current) {
-          setCitySuggesting(false);
+        if (!controller.signal.aborted && sequence === autocompleteSequenceRef.current) {
+          setSuggesting(false);
         }
       }
-    }, config.citySearchDebounceMs);
+    }, initialDelay);
 
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
   }, [locale, query, viewMode]);
-
-  // Google keeps the stricter four-character / one-second policy independently.
-  useEffect(() => {
-    googleAutocompleteAbortRef.current?.abort();
-    const text = query.trim();
-
-    if (
-      viewMode !== 'places'
-      || text.length < config.googleMaps.searchMinChars
-      || suppressAutocompleteQueryRef.current === query
-    ) {
-      setPlaceSuggestions([]);
-      setPlaceSuggesting(false);
-      return undefined;
-    }
-
-    const sequence = googleAutocompleteSequenceRef.current + 1;
-    googleAutocompleteSequenceRef.current = sequence;
-    const controller = new AbortController();
-    googleAutocompleteAbortRef.current = controller;
-    const timer = setTimeout(async () => {
-      setPlaceSuggesting(true);
-      try {
-        const places = await autocompleteGooglePlaces(
-          text,
-          sessionTokenRef.current,
-          { signal: controller.signal }
-        );
-        if (controller.signal.aborted || sequence !== googleAutocompleteSequenceRef.current) return;
-        const next = places.map((place) => ({
-          ...place,
-          kind: 'place',
-          source: 'google',
-        }));
-        setPlaceSuggestions(next);
-        if (next.length) setShowSuggestions(true);
-      } catch (error) {
-        if (error?.name !== 'AbortError' && sequence === googleAutocompleteSequenceRef.current) {
-          setPlaceSuggestions([]);
-        }
-      } finally {
-        if (!controller.signal.aborted && sequence === googleAutocompleteSequenceRef.current) {
-          setPlaceSuggesting(false);
-        }
-      }
-    }, config.googleMaps.searchDebounceMs);
-
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [query, viewMode]);
 
   async function submitSearch(event) {
     event?.preventDefault();
@@ -203,8 +198,7 @@ export function usePlaceSearch({ viewMode }) {
     }
 
     abortAutocomplete();
-    setCitySuggesting(false);
-    setPlaceSuggesting(false);
+    setSuggesting(false);
     searchAbortRef.current?.abort();
     setShowSuggestions(false);
     const sequence = searchSequenceRef.current + 1;
@@ -214,34 +208,46 @@ export function usePlaceSearch({ viewMode }) {
     setSearching(true);
     setErrorState(null);
 
-    const googleSearch = text.length >= config.googleMaps.searchMinChars
-      ? searchGooglePlaces(text, { signal: controller.signal })
-      : Promise.resolve([]);
-    const citySearch = text.length >= config.citySearchMinChars
-      ? cityProviderRef.current.search(text, {
-          signal: controller.signal,
-          limit: config.citySearchLimit,
-          language: locale,
-        })
-      : Promise.resolve([]);
+    try {
+      const preferredProvider = preferredSearchProvider(text);
+      if (preferredProvider === 'city') {
+        let cities = [];
+        try {
+          cities = await cityProviderRef.current.search(text, {
+            signal: controller.signal,
+            limit: config.citySearchLimit,
+            language: locale,
+          });
+        } catch (cityError) {
+          if (cityError?.name === 'AbortError') throw cityError;
+        }
+        if (controller.signal.aborted || sequence !== searchSequenceRef.current) return;
+        const matchingCities = matchingCityResults(cities, text);
+        if (matchingCities.length) {
+          setResults(matchingCities.map(citySearchResult));
+          return;
+        }
+      }
 
-    const [googleResult, cityResult] = await Promise.allSettled([
-      googleSearch,
-      citySearch,
-    ]);
-
-    if (!controller.signal.aborted && sequence === searchSequenceRef.current) {
-      const cities = fulfilledValue(cityResult).map(citySearchResult);
-      const places = fulfilledValue(googleResult).map((place) => ({
+      if (text.length < config.googleMaps.searchMinChars) {
+        setResults([]);
+        return;
+      }
+      const places = await searchGooglePlaces(text, { signal: controller.signal });
+      if (controller.signal.aborted || sequence !== searchSequenceRef.current) return;
+      setResults(places.map((place) => ({
         ...placeSearchResult(place),
         userLabel: text,
-      }));
-      setResults([...cities, ...places]);
-      if (googleResult.status === 'rejected' && cityResult.status === 'rejected') {
+      })));
+      renewSession();
+    } catch (searchError) {
+      if (searchError?.name !== 'AbortError' && sequence === searchSequenceRef.current) {
         setErrorState({ key: 'placeSearchError' });
       }
-      renewSession();
-      setSearching(false);
+    } finally {
+      if (!controller.signal.aborted && sequence === searchSequenceRef.current) {
+        setSearching(false);
+      }
     }
   }
 
@@ -254,11 +260,9 @@ export function usePlaceSearch({ viewMode }) {
         || [prediction.name, prediction.region, prediction.country].filter(Boolean).join(', ');
       suppressAutocompleteQueryRef.current = label;
       setQuery(label);
-      setCitySuggestions([]);
-      setPlaceSuggestions([]);
+      setSuggestions([]);
       setShowSuggestions(false);
-      setCitySuggesting(false);
-      setPlaceSuggesting(false);
+      setSuggesting(false);
       setErrorState(null);
       setResults([citySearchResult(prediction)]);
       return;
@@ -270,11 +274,9 @@ export function usePlaceSearch({ viewMode }) {
     abortAutocomplete();
     searchAbortRef.current?.abort();
     searchSequenceRef.current += 1;
-    setCitySuggestions([]);
-    setPlaceSuggestions([]);
+    setSuggestions([]);
     setShowSuggestions(false);
-    setCitySuggesting(false);
-    setPlaceSuggesting(false);
+    setSuggesting(false);
     setSearching(true);
     setErrorState(null);
     const controller = new AbortController();
@@ -301,8 +303,7 @@ export function usePlaceSearch({ viewMode }) {
 
   const dismissResults = useCallback(() => {
     setResults([]);
-    setCitySuggestions([]);
-    setPlaceSuggestions([]);
+    setSuggestions([]);
     setShowSuggestions(false);
   }, []);
 
@@ -314,11 +315,9 @@ export function usePlaceSearch({ viewMode }) {
     renewSession();
     setQuery('');
     setResults([]);
-    setCitySuggestions([]);
-    setPlaceSuggestions([]);
+    setSuggestions([]);
     setShowSuggestions(false);
-    setCitySuggesting(false);
-    setPlaceSuggesting(false);
+    setSuggesting(false);
     setSearching(false);
     setErrorState(null);
   }
@@ -327,13 +326,13 @@ export function usePlaceSearch({ viewMode }) {
     const next = event.target.value;
     suppressAutocompleteQueryRef.current = '';
     abortAutocomplete();
-    setCitySuggesting(false);
-    setPlaceSuggesting(false);
+    setSuggesting(false);
     setQuery(next);
     setErrorState(null);
-    if (next.trim().length < config.citySearchMinChars) setCitySuggestions([]);
-    if (next.trim().length < config.googleMaps.searchMinChars) setPlaceSuggestions([]);
-    if (next.trim().length < UNIFIED_SEARCH_MIN_CHARS) setShowSuggestions(false);
+    if (next.trim().length < UNIFIED_SEARCH_MIN_CHARS) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
   }
 
   function showSuggestionsOnFocus() {

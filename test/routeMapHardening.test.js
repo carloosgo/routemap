@@ -96,18 +96,18 @@ test('la búsqueda unificada conserva políticas, debounce y protección contra 
   assert.match(search, /async function submitSearch/);
   assert.match(form, /<form className="geo-search" onSubmit=\{onSubmit\}>/);
   assert.match(form, /type="submit"/);
-  assert.match(search, /text\.length < config\.citySearchMinChars/);
+  assert.match(search, /const UNIFIED_SEARCH_MIN_CHARS = Math\.min\([\s\S]*config\.citySearchMinChars,[\s\S]*config\.googleMaps\.searchMinChars/);
   assert.match(search, /text\.length < config\.googleMaps\.searchMinChars/);
+  assert.match(search, /preferredSearchProvider\(text\)/);
+  assert.match(search, /matchingCityResults\(cities, text\)/);
   assert.match(search, /config\.citySearchDebounceMs/);
   assert.match(search, /config\.googleMaps\.searchDebounceMs/);
   assert.match(search, /autocompleteGooglePlaces\(/);
   assert.match(search, /searchGooglePlaces\(/);
   assert.match(search, /searchSequenceRef/);
-  assert.match(search, /cityAutocompleteSequenceRef/);
-  assert.match(search, /googleAutocompleteSequenceRef/);
+  assert.match(search, /autocompleteSequenceRef/);
   assert.match(search, /sequence === searchSequenceRef\.current/);
-  assert.match(search, /sequence !== cityAutocompleteSequenceRef\.current/);
-  assert.match(search, /sequence !== googleAutocompleteSequenceRef\.current/);
+  assert.match(search, /sequence !== autocompleteSequenceRef\.current/);
 });
 
 test('la búsqueda sólo autocompleta en Mis Rutas y una selección no se vuelve a consultar hasta que el usuario edita', async () => {
@@ -136,19 +136,18 @@ test('elegir una sugerencia Google resuelve Place Details Essentials sin lanzar 
   assert.doesNotMatch(googleChooseBlock, /searchGooglePlaces|googlePlaceSearch/);
 });
 
-test('cerrar la búsqueda limpia ambos proveedores, renueva sesión y cancela solicitudes activas', async () => {
+test('cerrar la búsqueda limpia el flujo unificado, renueva sesión y cancela solicitudes activas', async () => {
   const { form, search, es, en } = await mapSources();
 
   assert.match(search, /function abortAutocomplete\(\)/);
-  assert.match(search, /cityAutocompleteAbortRef\.current\?\.abort\(\)/);
-  assert.match(search, /googleAutocompleteAbortRef\.current\?\.abort\(\)/);
+  assert.match(search, /autocompleteAbortRef\.current\?\.abort\(\)/);
+  assert.match(search, /autocompleteSequenceRef\.current \+= 1/);
   assert.match(search, /function clearSearch\(\)[\s\S]*abortAutocomplete\(\)/);
   assert.match(search, /searchAbortRef\.current\?\.abort\(\)/);
   assert.match(search, /renewSession\(\)/);
   assert.match(search, /setQuery\(''\)/);
   assert.match(search, /setResults\(\[\]\)/);
-  assert.match(search, /setCitySuggestions\(\[\]\)/);
-  assert.match(search, /setPlaceSuggestions\(\[\]\)/);
+  assert.match(search, /setSuggestions\(\[\]\)/);
   assert.match(form, /className="geo-search__clear"/);
   assert.match(es, /closePlaceSearch:/);
   assert.match(en, /closePlaceSearch:/);

@@ -20,7 +20,7 @@ test('Google place search preserves the configured minimum and maximum limits', 
   assert.match(functions, /\.slice\(0, 5\)/);
 });
 
-test('el buscador compartido conserva debounce y umbral independientes para Geoapify y Google', async () => {
+test('el buscador compartido conserva umbral y timing independientes para Geoapify y Google', async () => {
   const config = await read('src/config.js');
   const search = await read('src/modules/map/usePlaceSearch.js');
 
@@ -28,12 +28,13 @@ test('el buscador compartido conserva debounce y umbral independientes para Geoa
   assert.match(config, /citySearchDebounceMs:\s*450/);
   assert.match(config, /googleMaps:\s*\{[\s\S]*?searchMinChars:\s*4/);
   assert.match(config, /googleMaps:\s*\{[\s\S]*?searchDebounceMs:\s*1000/);
-  assert.match(search, /text\.length < config\.citySearchMinChars/);
-  assert.match(search, /\}, config\.citySearchDebounceMs\)/);
+  assert.match(search, /const UNIFIED_SEARCH_MIN_CHARS = Math\.min\(\s*config\.citySearchMinChars,\s*config\.googleMaps\.searchMinChars\s*\)/);
+  assert.match(search, /const preferredProvider = preferredSearchProvider\(text\)/);
+  assert.match(search, /const initialDelay = preferredProvider === 'google'\s*\? config\.googleMaps\.searchDebounceMs\s*:\s*config\.citySearchDebounceMs/);
+  assert.match(search, /Math\.max\(0, config\.googleMaps\.searchDebounceMs - elapsed\)/);
   assert.match(search, /text\.length < config\.googleMaps\.searchMinChars/);
-  assert.match(search, /\}, config\.googleMaps\.searchDebounceMs\)/);
   assert.match(search, /minChars: UNIFIED_SEARCH_MIN_CHARS/);
-  assert.match(search, /Math\.min\(\s*config\.citySearchMinChars,\s*config\.googleMaps\.searchMinChars\s*\)/);
+  assert.doesNotMatch(search, /Promise\.allSettled\(/);
   assert.doesNotMatch(search, /autocompleteRequestCount|autocompleteRequestLimit|maxAutocompleteRequests/);
 });
 

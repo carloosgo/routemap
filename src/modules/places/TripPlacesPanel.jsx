@@ -93,7 +93,7 @@ function formatPlanningDate(value, intlLocale) {
 }
 
 function compactDateRange(startDate, endDate, intlLocale) {
-  if (!startDate && !endDate) return '—';
+  if (!startDate && !endDate) return '';
   if (!startDate) return formatPlanningDate(endDate, intlLocale);
   if (!endDate || startDate === endDate) return formatPlanningDate(startDate, intlLocale);
 
@@ -674,7 +674,8 @@ export function TripPlacesPanel({
             const color = colorForDestination(city, colors);
             const collapsed = collapsedVisits.has(visit.segmentId);
             const hasAssignedPlaces = places.some((place) => place.segmentId === visit.segmentId);
-            const dateRange = compactDateRange(segment.startDate, segment.endDate, intlLocale);
+            const formattedRange = compactDateRange(segment.startDate, segment.endDate, intlLocale);
+            const dateRange = formattedRange || t('dateRangeHint');
             const amount = formatSegmentAmount(segmentTotal(segment), intlLocale, currency);
             const dragging = cityDragState?.segmentId === segment.id;
             const dropPlacement = cityDragState?.targetId === segment.id
@@ -718,22 +719,15 @@ export function TripPlacesPanel({
                       <strong>{cityLabel(city, t)}</strong>
                     </button>
                   </span>
-                  <button
-                    type="button"
-                    className="trip-city__date"
-                    onClick={() => toggleSegmentDetails?.(segment.id)}
+                  <span
+                    className={'trip-city__date' + (!formattedRange ? ' is-placeholder' : '')}
                     title={`${t('startDate')} / ${t('endDate')}`}
                   >
                     {dateRange}
-                  </button>
-                  <button
-                    type="button"
-                    className="trip-city__amount"
-                    onClick={() => toggleSegmentDetails?.(segment.id)}
-                    title={t('segmentTotal')}
-                  >
+                  </span>
+                  <span className="trip-city__amount" title={t('segmentTotal')}>
                     {amount}
-                  </button>
+                  </span>
                   <button
                     type="button"
                     className="trip-city__action trip-city__expense"
@@ -762,6 +756,15 @@ export function TripPlacesPanel({
                     {collapsed
                       ? <IconChevronRight size={15} aria-hidden="true" />
                       : <IconChevronDown size={15} aria-hidden="true" />}
+                  </button>
+                  <button
+                    type="button"
+                    className="trip-city__action trip-city__remove"
+                    onClick={() => setSegmentToDelete(segment)}
+                    aria-label={t('removeCity')}
+                    title={hasAssignedPlaces ? t('segmentHasPlannedPlaces') : t('removeCity')}
+                  >
+                    <IconTrash size={14} aria-hidden="true" />
                   </button>
                 </div>
 
@@ -808,25 +811,10 @@ export function TripPlacesPanel({
                     )}
 
                     {visit.days.length === 0 && visit.pendingPlaces.length === 0 && (
-                      <button
-                        type="button"
-                        className="trip-city__planning-empty"
-                        onClick={() => toggleSegmentDetails?.(segment.id)}
-                      >
+                      <div className="trip-city__planning-empty">
                         {t('noPlanningDaysHint')}
-                      </button>
+                      </div>
                     )}
-
-                    <div className="trip-city__management" aria-label={t('city')}>
-                      <button
-                        type="button"
-                        onClick={() => setSegmentToDelete(segment)}
-                        aria-label={t('removeCity')}
-                        title={hasAssignedPlaces ? t('segmentHasPlannedPlaces') : t('removeCity')}
-                      >
-                        <IconTrash size={13} aria-hidden="true" />
-                      </button>
-                    </div>
                   </div>
                 )}
               </section>

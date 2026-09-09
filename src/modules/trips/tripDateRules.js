@@ -107,8 +107,6 @@ function validateChangedSlots(slots, changedIndexes) {
     const current = slots[index];
     const value = current?.value || '';
 
-    // Clearing a date is normally valid because it removes a constraint. A later
-    // planning guard rejects it only when saved places already depend on that range.
     if (!value) continue;
     if (!isTripISODate(value)) {
       return { valid: false, errorKey: TRIP_DATE_ERRORS.invalidDate };
@@ -141,8 +139,6 @@ export function validateSegmentDatePatch(trip, segmentId, patch) {
   const changesEnd = hasOwn(patch, 'endDate');
   if (!changesStart && !changesEnd) return { valid: true, errorKey: '' };
 
-  // Las ciudades forman ahora la cronología completa. Un origin histórico no
-  // puede limitar ni desplazar las fechas elegidas en la superficie unificada.
   const slots = createSegmentDateSlots(trip);
   const startIndex = slots.findIndex(
     (slot) => slot.segmentId === segmentId && slot.field === 'startDate'
@@ -173,7 +169,11 @@ export function validateSegmentDatePatch(trip, segmentId, patch) {
       ...(changesStart ? { startDate: patch.startDate || '' } : {}),
       ...(changesEnd ? { endDate: patch.endDate || '' } : {}),
     };
-    if (segmentPlanningDayCount(candidateSegment) <= highestAssignedOffset) {
+    const hasCompleteRange = Boolean(candidateSegment.startDate && candidateSegment.endDate);
+    if (
+      hasCompleteRange
+      && segmentPlanningDayCount(candidateSegment) <= highestAssignedOffset
+    ) {
       return {
         valid: false,
         errorKey: TRIP_DATE_ERRORS.assignedPlacesOutOfRange,

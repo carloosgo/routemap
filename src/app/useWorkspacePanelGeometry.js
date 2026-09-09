@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 
 const DESKTOP_BREAKPOINT = 721;
-const BASE_SEARCH_WIDTH = 550;
-const MIN_SEARCH_WIDTH = 420;
+const BASE_SEARCH_WIDTH = 440;
+const MIN_SEARCH_WIDTH = 320;
 
 function finiteRectLeft(element) {
   const left = element?.getBoundingClientRect?.().left;
@@ -43,8 +43,9 @@ export function useWorkspacePanelGeometry() {
       const panelEdge = separatorX + (dateIconX - separatorX) / 2;
       app.style.setProperty('--workspace-panel-width', `${panelEdge.toFixed(2)}px`);
 
-      // Keep the search field visually proportional to the map width lost by
-      // widening the panel, while preserving its previous 550px maximum.
+      // Keep the search field proportional to the remaining map space, but
+      // deliberately shorter than the previous 550px surface so it no longer
+      // dominates the map after the routes panel is widened.
       const baselineMapWidth = Math.max(1, viewportWidth - separatorX);
       const currentMapWidth = Math.max(1, viewportWidth - panelEdge);
       const proportionalWidth = BASE_SEARCH_WIDTH * (currentMapWidth / baselineMapWidth);

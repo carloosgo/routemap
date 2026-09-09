@@ -1,0 +1,34 @@
+.geo-search__suggestion-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.geo-search__suggestion.is-city {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.geo-search__suggestion-flag {
+  display: block;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 17px;
+  object-fit: cover;
+  border-radius: 3px;
+}
+
+/* Saved-place visibility is an explicit map-pane state. Route geometry remains
+   independent so hiding place pins cannot silently hide existing route lines. */
+.mappane[data-saved-places-visible="false"] .google-saved-place-marker {
+  display: none !important;
+}
+
+@media (min-width: 721px) {
+  .my-routes-map-mode {
+    top: calc(var(--trip-header-height) + 12px) !important;
+  }
+}

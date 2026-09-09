@@ -4,6 +4,7 @@ import { itineraryMapProjectionSignature } from './itineraryMapProjection.js';
 import './RouteMap.css';
 import './GooglePlacesMap.css';
 import './ItineraryNumberMarkers.css';
+import './UnifiedSearchPolish.css';
 
 export function RouteMap({
   origin,
@@ -14,7 +15,6 @@ export function RouteMap({
   addCity,
   viewMode = 'segments',
   showCityTrace = viewMode === 'segments',
-  showSavedRoutes = viewMode === 'places',
 }) {
   const mapSegmentsSignature = useMemo(
     () => itineraryMapProjectionSignature(origin, segments),
@@ -34,7 +34,7 @@ export function RouteMap({
       addCity={addCity}
       viewMode={viewMode}
       showCityTrace={showCityTrace}
-      showSavedRoutes={showSavedRoutes}
+      showSavedRoutes={viewMode === 'places'}
     />
   );
 }
