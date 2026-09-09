@@ -68,13 +68,12 @@ function normalizeCurrency(value) {
   return /^[A-Z]{3}$/.test(currency) ? currency : 'USD';
 }
 
-function normalizeDate(value) {
+export function normalizeTripDate(value) {
   if (typeof value !== 'string') return '';
   const date = value.trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return '';
   const parsed = new Date(`${date}T00:00:00Z`);
-  return Number.isNaN(parsed.getTime()) ||
-    parsed.toISOString().slice(0, 10) !== date
+  return Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date
     ? ''
     : date;
 }
@@ -96,6 +95,19 @@ function normalizePlaceProvider(partial) {
   return partial?.provider === 'google' || partial?.googlePlaceId
     ? 'google'
     : 'geoapify';
+}
+
+function derivedTripDateRange(segments) {
+  const dates = [];
+  (Array.isArray(segments) ? segments : []).forEach((segment) => {
+    const startDate = normalizeTripDate(segment?.startDate);
+    const endDate = normalizeTripDate(segment?.endDate);
+    if (startDate) dates.push(startDate);
+    if (endDate) dates.push(endDate);
+  });
+  if (!dates.length) return { startDate: '', endDate: '' };
+  dates.sort();
+  return { startDate: dates[0], endDate: dates[dates.length - 1] };
 }
 
 export function isPlaced(point) {
@@ -122,10 +134,7 @@ export function createCity(partial) {
   return {
     id: normalizeExternalId(partial.id || partial.placeId),
     name: sanitizeText(partial.name || '', 120),
-    displayName: sanitizeText(
-      partial.displayName || partial.name || '',
-      200
-    ),
+    displayName: sanitizeText(partial.displayName || partial.name || '', 200),
     country: sanitizeText(partial.country || '', 100),
     countryCode: normalizeCountryCode(partial.countryCode),
     lat: parseCoordinate(partial.lat, -90, 90),
@@ -151,8 +160,7 @@ export function createPlace(partial = {}) {
     countryCode: normalizeCountryCode(partial.countryCode),
     lat: parseCoordinate(partial.lat, -90, 90),
     lon: parseCoordinate(partial.lon, -180, 180),
-    savedAt:
-      typeof partial.savedAt === 'string' ? partial.savedAt : nowISO(),
+    savedAt: typeof partial.savedAt === 'string' ? partial.savedAt : nowISO(),
     segmentId: normalizeOptionalId(partial.segmentId),
     dayOffset: normalizeDayOffset(partial.dayOffset),
     note: sanitizeText(partial.note || '', TRIP_LIMITS.placeNote),
@@ -203,10 +211,8 @@ function uniquePlaces(rawPlaces) {
 export function createOriginDetails(partial = {}) {
   const source = partial && typeof partial === 'object' ? partial : {};
   return {
-    departureDate: normalizeDate(source.departureDate),
-    expenses: source.expenses
-      ? normalizeExpenses(source.expenses)
-      : createExpenses(),
+    departureDate: normalizeTripDate(source.departureDate),
+    expenses: source.expenses ? normalizeExpenses(source.expenses) : createExpenses(),
     note: sanitizeText(source.note || '', TRIP_LIMITS.originNote),
   };
 }
@@ -214,14 +220,10 @@ export function createOriginDetails(partial = {}) {
 export function createSegment(overrides = {}) {
   return {
     id: normalizeId(overrides.id),
-    destination: overrides.destination
-      ? createCity(overrides.destination)
-      : null,
-    startDate: normalizeDate(overrides.startDate),
-    endDate: normalizeDate(overrides.endDate),
-    expenses: overrides.expenses
-      ? normalizeExpenses(overrides.expenses)
-      : createExpenses(),
+    destination: overrides.destination ? createCity(overrides.destination) : null,
+    startDate: normalizeTripDate(overrides.startDate),
+    endDate: normalizeTripDate(overrides.endDate),
+    expenses: overrides.expenses ? normalizeExpenses(overrides.expenses) : createExpenses(),
     note: sanitizeText(overrides.note || '', TRIP_LIMITS.segmentNote),
   };
 }
@@ -248,6 +250,8 @@ export function createTrip(name = '') {
     id: uid(),
     name: sanitizeText(name, TRIP_LIMITS.tripName),
     currency: 'USD',
+    startDate: '',
+    endDate: '',
     origin: null,
     originDetails: createOriginDetails(),
     segments: [],
@@ -267,6 +271,13 @@ export function normalizeTrip(raw) {
   const rawSegments = Array.isArray(raw.segments)
     ? raw.segments.slice(0, TRIP_LIMITS.segments)
     : [];
+  const segments = rawSegments.map(createSegment);
+  const derivedDates = derivedTripDateRange(segments);
+  const explicitStartDate = normalizeTripDate(raw.startDate);
+  const explicitEndDate = normalizeTripDate(raw.endDate);
+  const startDate = explicitStartDate || (!explicitEndDate ? derivedDates.startDate : '');
+  const endDate = explicitEndDate || (!explicitStartDate ? derivedDates.endDate : '');
+
   const legacyPlaces = rawSegments.flatMap((segment) =>
     Array.isArray(segment?.places)
       ? segment.places.slice(0, TRIP_LIMITS.placesPerSegment)
@@ -296,9 +307,11 @@ export function normalizeTrip(raw) {
     id: normalizeId(raw.id),
     name: sanitizeText(raw.name || '', TRIP_LIMITS.tripName),
     currency: normalizeCurrency(raw.currency),
+    startDate,
+    endDate,
     origin: raw.origin ? createCity(raw.origin) : null,
     originDetails: createOriginDetails(raw.originDetails),
-    segments: rawSegments.map(createSegment),
+    segments,
     places,
     routeConnections,
     placeOrderVersion: PLACE_ORDER_VERSION,
