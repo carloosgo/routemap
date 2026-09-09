@@ -48,9 +48,14 @@ export function createFirestoreV4TripRepository({ db, uid }) {
       return { id: data.id, version: data.version };
     },
 
-    async updateTripMetadata(rawTrip, baseVersion) {
+    async updateTripMetadata(rawTrip, baseVersion, fieldMask = null) {
       const ref = tripRef(rawTrip?.id);
-      const patch = v4TripMetadataPatch(rawTrip, baseVersion, serverTimestamp());
+      const patch = v4TripMetadataPatch(
+        rawTrip,
+        baseVersion,
+        serverTimestamp(),
+        fieldMask
+      );
       await updateDoc(ref, patch);
       return { id: rawTrip.id, version: patch.version };
     },
