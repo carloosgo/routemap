@@ -169,8 +169,8 @@ test('eliminar un día intermedio colapsa el itinerario sin crear entidades día
     { placeId: 'day-3', tripDayOffset: 1 },
   ]);
   assert.deepEqual(plan.segmentPatches, [
-    { segmentId: 'paris-segment', patch: { endDate: '2026-09-10' } },
-    { segmentId: 'rome-segment', patch: { startDate: '2026-09-11', endDate: '2026-09-11' } },
+    { segmentId: 'paris-segment', patch: { tripDayOffsets: [0, 1] } },
+    { segmentId: 'rome-segment', patch: { tripDayOffsets: [2] } },
   ]);
   assert.deepEqual(plan.tripDatePatch, { endDate: '2026-09-11' });
 });
