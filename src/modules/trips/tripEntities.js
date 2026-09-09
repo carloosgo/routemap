@@ -86,6 +86,20 @@ function normalizeDayOffset(value) {
     : null;
 }
 
+function normalizeTripDayOffsets(value) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  const offsets = [];
+  for (const rawOffset of value) {
+    const offset = normalizeDayOffset(rawOffset);
+    if (offset == null || seen.has(offset)) continue;
+    seen.add(offset);
+    offsets.push(offset);
+    if (offsets.length >= 36601) break;
+  }
+  return offsets;
+}
+
 function normalizeNoteTitle(value) {
   const title = sanitizeText(value || '', TRIP_LIMITS.noteTitle);
   return LEGACY_SYSTEM_NOTE_TITLES.has(title) ? '' : title;
@@ -163,6 +177,7 @@ export function createPlace(partial = {}) {
     savedAt: typeof partial.savedAt === 'string' ? partial.savedAt : nowISO(),
     segmentId: normalizeOptionalId(partial.segmentId),
     dayOffset: normalizeDayOffset(partial.dayOffset),
+    tripDayOffset: normalizeDayOffset(partial.tripDayOffset),
     note: sanitizeText(partial.note || '', TRIP_LIMITS.placeNote),
   };
 }
@@ -223,6 +238,7 @@ export function createSegment(overrides = {}) {
     destination: overrides.destination ? createCity(overrides.destination) : null,
     startDate: normalizeTripDate(overrides.startDate),
     endDate: normalizeTripDate(overrides.endDate),
+    tripDayOffsets: normalizeTripDayOffsets(overrides.tripDayOffsets),
     expenses: overrides.expenses ? normalizeExpenses(overrides.expenses) : createExpenses(),
     note: sanitizeText(overrides.note || '', TRIP_LIMITS.segmentNote),
   };
