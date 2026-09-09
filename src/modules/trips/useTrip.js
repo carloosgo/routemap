@@ -4,27 +4,7 @@ import {
   createInitialTrip,
   tripReducer,
 } from './tripReducer.js';
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function parseCivilDate(value) {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const [year, month, day] = value.split('-').map(Number);
-  const timestamp = Date.UTC(year, month - 1, day);
-  const date = new Date(timestamp);
-  if (
-    date.getUTCFullYear() !== year
-    || date.getUTCMonth() !== month - 1
-    || date.getUTCDate() !== day
-  ) return null;
-  return timestamp;
-}
-
-function shiftCivilDate(value, amount) {
-  const timestamp = parseCivilDate(value);
-  if (timestamp == null) return value || '';
-  return new Date(timestamp + amount * DAY_MS).toISOString().slice(0, 10);
-}
+import { planTripDayRemoval } from './tripDayRemoval.js';
 
 export function useTrip(initialTrip) {
   const [trip, dispatch] = useReducer(
@@ -57,86 +37,28 @@ export function useTrip(initialTrip) {
     []
   );
   const removeTripDay = useCallback((dateToRemove) => {
-    const tripStart = parseCivilDate(trip.startDate);
-    const tripEnd = parseCivilDate(trip.endDate);
-    const target = parseCivilDate(dateToRemove);
-    if (
-      tripStart == null
-      || tripEnd == null
-      || target == null
-      || target < tripStart
-      || target > tripEnd
-    ) return false;
+    const plan = planTripDayRemoval(trip, dateToRemove);
+    if (!plan) return false;
 
-    const segments = Array.isArray(trip.segments) ? trip.segments : [];
-    const places = Array.isArray(trip.places) ? trip.places : [];
-    const segmentById = new Map(segments.map((segment) => [segment.id, segment]));
-
-    places.forEach((place) => {
-      const segment = segmentById.get(place.segmentId);
-      const segmentStart = parseCivilDate(segment?.startDate);
-      const segmentEnd = parseCivilDate(segment?.endDate);
-      if (segmentStart == null || segmentEnd == null || target < segmentStart || target > segmentEnd) return;
-      const removedOffset = Math.floor((target - segmentStart) / DAY_MS);
-      const placeOffset = Number(place.dayOffset);
-      if (!Number.isInteger(placeOffset) || placeOffset < 0) return;
-      if (placeOffset === removedOffset) {
-        dispatch({ type: TRIP_ACTIONS.removePlace, placeId: place.id });
-      } else if (placeOffset > removedOffset) {
-        dispatch({
-          type: TRIP_ACTIONS.movePlaceToDay,
-          placeId: place.id,
-          segmentId: place.segmentId,
-          dayOffset: placeOffset - 1,
-        });
-      }
+    plan.removePlaceIds.forEach((placeId) => dispatch({
+      type: TRIP_ACTIONS.removePlace,
+      placeId,
+    }));
+    plan.movePlaces.forEach(({ placeId, segmentId, dayOffset }) => dispatch({
+      type: TRIP_ACTIONS.movePlaceToDay,
+      placeId,
+      segmentId,
+      dayOffset,
+    }));
+    plan.segmentPatches.forEach(({ segmentId, patch }) => dispatch({
+      type: TRIP_ACTIONS.updateSegment,
+      segmentId,
+      patch,
+    }));
+    dispatch({
+      type: TRIP_ACTIONS.updateTripDates,
+      patch: plan.tripDatePatch,
     });
-
-    segments.forEach((segment) => {
-      const segmentStart = parseCivilDate(segment?.startDate);
-      const segmentEnd = parseCivilDate(segment?.endDate);
-      if (segmentStart == null || segmentEnd == null) return;
-
-      if (target < segmentStart) {
-        dispatch({
-          type: TRIP_ACTIONS.updateSegment,
-          segmentId: segment.id,
-          patch: {
-            startDate: shiftCivilDate(segment.startDate, -1),
-            endDate: shiftCivilDate(segment.endDate, -1),
-          },
-        });
-        return;
-      }
-
-      if (target > segmentEnd) return;
-      if (segmentStart === segmentEnd) {
-        dispatch({
-          type: TRIP_ACTIONS.updateSegment,
-          segmentId: segment.id,
-          patch: { startDate: '', endDate: '' },
-        });
-        return;
-      }
-
-      dispatch({
-        type: TRIP_ACTIONS.updateSegment,
-        segmentId: segment.id,
-        patch: { endDate: shiftCivilDate(segment.endDate, -1) },
-      });
-    });
-
-    if (tripStart === tripEnd) {
-      dispatch({
-        type: TRIP_ACTIONS.updateTripDates,
-        patch: { startDate: '', endDate: '' },
-      });
-    } else {
-      dispatch({
-        type: TRIP_ACTIONS.updateTripDates,
-        patch: { endDate: shiftCivilDate(trip.endDate, -1) },
-      });
-    }
     return true;
   }, [trip]);
   const updateOrigin = useCallback(
