@@ -47,6 +47,8 @@ export function AppEditorModule({
     setNewItemText,
   } = editorState;
 
+  const showRoutes = activeTab !== 'notes';
+  const showNotes = activeTab === 'notes';
   const hasRouteContent = Boolean(
     places?.length
     || trip.segments?.some((segment) => segment?.destination?.name)
@@ -143,10 +145,10 @@ export function AppEditorModule({
         intlLocale={intlLocale}
         t={t}
       />
-      <div style={{ display: activeTab !== 'notes' ? 'contents' : 'none' }}>
+      <div style={{ display: showRoutes ? 'contents' : 'none' }}>
         {routesPane}
       </div>
-      <div style={{ display: activeTab === 'notes' ? 'contents' : 'none' }}>
+      <div style={{ display: showNotes ? 'contents' : 'none' }}>
         {notesPane}
       </div>
     </div>
