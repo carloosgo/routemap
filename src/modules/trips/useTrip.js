@@ -44,11 +44,10 @@ export function useTrip(initialTrip) {
       type: TRIP_ACTIONS.removePlace,
       placeId,
     }));
-    plan.movePlaces.forEach(({ placeId, segmentId, dayOffset }) => dispatch({
+    plan.movePlaces.forEach(({ placeId, tripDayOffset }) => dispatch({
       type: TRIP_ACTIONS.movePlaceToDay,
       placeId,
-      segmentId,
-      dayOffset,
+      tripDayOffset,
     }));
     plan.segmentPatches.forEach(({ segmentId, patch }) => dispatch({
       type: TRIP_ACTIONS.updateSegment,
@@ -61,6 +60,15 @@ export function useTrip(initialTrip) {
     });
     return true;
   }, [trip]);
+  const reorderTripDay = useCallback(
+    (sourceOffset, targetOffset, placement) => dispatch({
+      type: TRIP_ACTIONS.reorderTripDay,
+      sourceOffset,
+      targetOffset,
+      placement,
+    }),
+    []
+  );
   const updateOrigin = useCallback(
     (origin) => dispatch({ type: TRIP_ACTIONS.updateOrigin, origin }),
     []
@@ -154,11 +162,10 @@ export function useTrip(initialTrip) {
     []
   );
   const movePlaceToDay = useCallback(
-    (placeId, segmentId, dayOffset) => dispatch({
+    (placeId, tripDayOffset) => dispatch({
       type: TRIP_ACTIONS.movePlaceToDay,
       placeId,
-      segmentId,
-      dayOffset,
+      tripDayOffset,
     }),
     []
   );
@@ -191,6 +198,7 @@ export function useTrip(initialTrip) {
     setCurrency,
     updateTripDates,
     removeTripDay,
+    reorderTripDay,
     updateOrigin,
     updateOriginDetails,
     updateOriginExpenses,
