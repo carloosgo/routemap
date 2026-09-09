@@ -115,6 +115,13 @@ export function AppEditorModule({
           font-weight: 400;
           line-height: 1;
         }
+        @media (min-width: 721px) and (hover: hover) and (pointer: fine) {
+          .editor-module .trip-day__header:hover .trip-city__remove,
+          .editor-module .trip-city__remove:focus-visible {
+            opacity: 1;
+            pointer-events: auto;
+          }
+        }
       `}</style>
       <AppWorkspaceMenu
         tripStore={tripStore}
