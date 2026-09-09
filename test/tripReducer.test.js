@@ -347,7 +347,7 @@ test('pruning de conexiones legacy respeta segmentId+dayOffset cuando tripDayOff
   assert.deepEqual(reordered.routeConnections.map(({ id }) => id), ['same']);
 });
 
-test('reordenar entre días poda conexiones que dejan de unir lugares consecutivos', () => {
+test('reordenar visualmente conserva las conexiones válidas de los días que no cambiaron', () => {
   const state = {
     ...planningTrip(),
     places: [
@@ -367,12 +367,14 @@ test('reordenar entre días poda conexiones que dejan de unir lugares consecutiv
 
   assert.deepEqual(moved.places.map(({ id }) => id), ['a', 'c', 'b', 'd']);
   assert.equal(moved.places[2].segmentId, 'segment-1');
-  assert.deepEqual(moved.routeConnections, []);
+  assert.deepEqual(moved.routeConnections.map(({ id }) => id), ['ab', 'cd']);
 });
 
 test('Mover a cambia sólo el día global, conserva la ciudad y elimina conexiones obsoletas', () => {
   const state = {
     ...planningTrip(),
+    startDate: '2026-09-02',
+    endDate: '2026-09-06',
     places: [
       plannedPlace('a', 'segment-1', 0),
       plannedPlace('b', 'segment-1', 0),
@@ -392,6 +394,39 @@ test('Mover a cambia sólo el día global, conserva la ciudad y elimina conexion
   assert.equal(moved.places.at(-1).dayOffset, 0);
   assert.equal(moved.places.at(-1).tripDayOffset, 3);
   assert.deepEqual(moved.routeConnections, []);
+});
+
+test('las conexiones aceptan representación mixta cuando ambos lugares resuelven al mismo día global', () => {
+  const state = {
+    ...planningTrip(),
+    startDate: '2026-09-02',
+    endDate: '2026-09-06',
+    places: [
+      createPlace({
+        id: 'migrated',
+        name: 'Migrated',
+        lat: 64.14,
+        lon: -21.9,
+        segmentId: 'segment-1',
+        dayOffset: 0,
+        tripDayOffset: 3,
+      }),
+      plannedPlace('legacy', 'segment-2', 0),
+    ],
+    routeConnections: [],
+  };
+  const connected = reduce(state, TRIP_ACTIONS.upsertRouteConnection, {
+    connection: {
+      id: 'mixed',
+      fromPlaceId: 'migrated',
+      toPlaceId: 'legacy',
+      mode: 'walk',
+      visible: true,
+    },
+  });
+
+  assert.equal(connected.routeConnections.length, 1);
+  assert.equal(connected.routeConnections[0].id, 'mixed');
 });
 
 test('un trayecto con lugares asignados no se puede borrar ni reinterpretar como otra ciudad', () => {
