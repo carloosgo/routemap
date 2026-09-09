@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   IconBed,
   IconBus,
@@ -16,6 +16,7 @@ import {
   IconTrain,
   IconWallet,
 } from '@tabler/icons-react';
+import { CalendarDateInput } from '../components/CalendarDateInput.jsx';
 import { tripSummary } from '../modules/trips/tripSummaryModel.js';
 import { formatMoney } from '../shared/utils.js';
 import { HEADER_ICON_COLOR } from './headerVisualTokens.js';
@@ -108,6 +109,7 @@ export function TripSummaryHeader({
   trip,
   navigation,
   setCurrency,
+  updateTripDates,
   locale,
   setLocale,
   availableLocales,
@@ -121,6 +123,8 @@ export function TripSummaryHeader({
 }) {
   const summary = useMemo(() => tripSummary(trip), [trip]);
   const breakdownRef = useRef(null);
+  const dateEditorRef = useRef(null);
+  const [showDateEditor, setShowDateEditor] = useState(false);
   const currencyOptions = useMemo(
     () => CURRENCIES.map((code) => ({
       value: code,
@@ -145,6 +149,15 @@ export function TripSummaryHeader({
     return () => document.removeEventListener('pointerdown', closeOnOutsidePointer);
   }, [showBreakdown, setShowBreakdown]);
 
+  useEffect(() => {
+    if (!showDateEditor) return undefined;
+    const closeOnOutsidePointer = (event) => {
+      if (!dateEditorRef.current?.contains(event.target)) setShowDateEditor(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutsidePointer);
+    return () => document.removeEventListener('pointerdown', closeOnOutsidePointer);
+  }, [showDateEditor]);
+
   const tripDateRange = formatTripDateRange(summary, intlLocale, t('noTripDates'));
   const countryLabel = `${summary.countries} ${t(summary.countries === 1 ? 'country' : 'countries')}`;
 
@@ -162,13 +175,48 @@ export function TripSummaryHeader({
       </div>
 
       <div className="trip-summary__metrics" aria-label={t('tripMetrics')}>
-        <Metric
-          Icon={IconCalendar}
-          iconColor={HEADER_ICON_COLOR}
-          label={t('tripDates')}
-          value={tripDateRange}
-          className="trip-summary__metric--dates"
-        />
+        <div className="trip-summary__breakdown-anchor" ref={dateEditorRef}>
+          <Metric
+            Icon={IconCalendar}
+            iconColor={HEADER_ICON_COLOR}
+            label={t('tripDates')}
+            value={tripDateRange}
+            className="trip-summary__metric--dates"
+            onClick={() => setShowDateEditor((value) => !value)}
+            expanded={showDateEditor}
+          />
+          {showDateEditor && (
+            <div
+              className="trip-summary__breakdown"
+              role="dialog"
+              aria-label={t('tripDates')}
+              style={{
+                width: '330px',
+                padding: '14px',
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)',
+                gap: '10px',
+              }}
+            >
+              <CalendarDateInput
+                value={trip.startDate || ''}
+                max={trip.endDate || undefined}
+                locale={intlLocale}
+                ariaLabel={t('startDate')}
+                onChange={(startDate) => updateTripDates?.({ startDate })}
+              />
+              <CalendarDateInput
+                value={trip.endDate || ''}
+                min={trip.startDate || undefined}
+                referenceDate={trip.startDate || undefined}
+                locale={intlLocale}
+                align="end"
+                ariaLabel={t('endDate')}
+                onChange={(endDate) => updateTripDates?.({ endDate })}
+              />
+            </div>
+          )}
+        </div>
 
         <div className="trip-summary__breakdown-anchor" ref={breakdownRef}>
           <Metric

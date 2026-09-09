@@ -27,6 +27,7 @@ export function AppEditorModule({
     removeSegment,
     reorderSegment,
     updateTripDates,
+    removeTripDay,
     updatePlace,
     removePlace,
     reorderPlace,
@@ -58,6 +59,7 @@ export function AppEditorModule({
       places={places}
       routes={trip.routeConnections || []}
       updateTripDates={updateTripDates}
+      removeTripDay={removeTripDay}
       removeSegment={removeSegment}
       reorderSegment={reorderSegment}
       toggleSegmentNote={itineraryPanels.toggleNote}
@@ -112,6 +114,13 @@ export function AppEditorModule({
           font-size: 18px;
           font-weight: 400;
           line-height: 1;
+        }
+        @media (min-width: 721px) and (hover: hover) and (pointer: fine) {
+          .editor-module .trip-day__header:hover .trip-city__remove,
+          .editor-module .trip-city__remove:focus-visible {
+            opacity: 1;
+            pointer-events: auto;
+          }
         }
       `}</style>
       <AppWorkspaceMenu

@@ -31,7 +31,7 @@ export default function App() {
   const editorState = useAppEditorState(tripStore);
   const itineraryPanels = useItineraryFloatingPanels();
   const {
-    trip, loadTrip, setCurrency, updateSegment, updateExpenses, updateOriginDetails,
+    trip, loadTrip, setCurrency, updateTripDates, updateSegment, updateExpenses, updateOriginDetails,
     updateOriginExpenses, addPlace, addCity, addPlaceWithCity,
   } = tripStore;
   const { getTrip, getActiveTripDraft, stageTrip, getTripPersistenceState, saveTrip, deleteTrip, importLocalTrips, getLocalTripCount } = savedTrips;
@@ -172,6 +172,7 @@ export default function App() {
       trip={trip}
       navigation={{ activeTab, setActiveTab, routeCount: editorState.places?.length || 0, checklistProgress: editorState.checklist?.length ? `${editorState.doneCount}/${editorState.checklist.length}` : '' }}
       setCurrency={setCurrency}
+      updateTripDates={updateTripDates}
       locale={locale}
       setLocale={setLocale}
       availableLocales={availableLocales}

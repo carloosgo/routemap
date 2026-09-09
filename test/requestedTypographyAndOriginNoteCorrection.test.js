@@ -64,7 +64,7 @@ test('header unified owns the two primary tabs, omits the routes counter, keeps 
   assert.ok(main.indexOf("./app/TripSummaryHeaderTypography.css") < main.indexOf("./app/TripHeaderNavigation.css"));
 });
 
-test('las notas y detalles de ciudades conservan un único toggle sin reintroducir un origen especial en Mis Rutas', async () => {
+test('las notas y detalles conservan un único toggle desde la cabecera del día sin reintroducir un origen especial', async () => {
   const map = await read('src/app/AppMapPane.jsx');
   const app = await read('src/App.jsx');
   const panels = await read('src/app/useItineraryFloatingPanels.js');
@@ -81,8 +81,8 @@ test('las notas y detalles de ciudades conservan un único toggle sin reintroduc
   assert.match(editorModule, /toggleSegmentNote=\{itineraryPanels\.toggleNote\}/);
   assert.match(editorModule, /toggleSegmentDetails=\{itineraryPanels\.toggleDetails\}/);
   assert.doesNotMatch(routesPanel, /ORIGIN_NOTE_TARGET|originDetails|toggleSegmentNote\?\.\(ORIGIN_NOTE_TARGET\)/);
-  assert.match(routesPanel, /toggleSegmentNote\?\.\(segment\.id\)/);
-  assert.match(routesPanel, /toggleSegmentDetails\?\.\(segment\.id\)/);
+  assert.match(routesPanel, /toggleSegmentNote\?\.\(primarySegment\.id\)/);
+  assert.match(routesPanel, /toggleSegmentDetails\?\.\(primarySegment\.id\)/);
   assert.match(
     interactions,
     /\.trip-city__note, \.trip-city__expense, \.trip-city__date, \.trip-city__amount/

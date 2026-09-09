@@ -4,6 +4,7 @@ import {
   createInitialTrip,
   tripReducer,
 } from './tripReducer.js';
+import { planTripDayRemoval } from './tripDayRemoval.js';
 
 export function useTrip(initialTrip) {
   const [trip, dispatch] = useReducer(
@@ -35,6 +36,31 @@ export function useTrip(initialTrip) {
     (patch) => dispatch({ type: TRIP_ACTIONS.updateTripDates, patch }),
     []
   );
+  const removeTripDay = useCallback((dateToRemove) => {
+    const plan = planTripDayRemoval(trip, dateToRemove);
+    if (!plan) return false;
+
+    plan.removePlaceIds.forEach((placeId) => dispatch({
+      type: TRIP_ACTIONS.removePlace,
+      placeId,
+    }));
+    plan.movePlaces.forEach(({ placeId, segmentId, dayOffset }) => dispatch({
+      type: TRIP_ACTIONS.movePlaceToDay,
+      placeId,
+      segmentId,
+      dayOffset,
+    }));
+    plan.segmentPatches.forEach(({ segmentId, patch }) => dispatch({
+      type: TRIP_ACTIONS.updateSegment,
+      segmentId,
+      patch,
+    }));
+    dispatch({
+      type: TRIP_ACTIONS.updateTripDates,
+      patch: plan.tripDatePatch,
+    });
+    return true;
+  }, [trip]);
   const updateOrigin = useCallback(
     (origin) => dispatch({ type: TRIP_ACTIONS.updateOrigin, origin }),
     []
@@ -164,6 +190,7 @@ export function useTrip(initialTrip) {
     renameTrip,
     setCurrency,
     updateTripDates,
+    removeTripDay,
     updateOrigin,
     updateOriginDetails,
     updateOriginExpenses,
