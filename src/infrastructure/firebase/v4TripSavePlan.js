@@ -14,6 +14,15 @@ export const V4_TRIP_SAVE_COLLECTIONS = Object.freeze([
   Object.freeze({ tripField: 'checklist', entityType: 'checklist' }),
 ]);
 
+export const V4_TRIP_MUTABLE_ROOT_FIELDS = Object.freeze([
+  'name',
+  'currency',
+  'startDate',
+  'endDate',
+  'origin',
+  'originDetails',
+]);
+
 function requiredText(value, field) {
   const normalized = typeof value === 'string' ? value.trim() : '';
   if (!normalized) throw new TypeError(`${field} es obligatorio.`);
@@ -50,27 +59,30 @@ function assertUniqueIds(items, label) {
 
 function normalizeTripForV4Plan(rawTrip) {
   const trip = normalizeTrip(rawTrip);
-  // normalizeTrip keeps the legacy UI invariant of creating a starter note when
-  // notes are absent. Storage v4 must nevertheless preserve an explicitly empty
-  // canonical notes collection; otherwise every plan fabricates a fresh note id.
   if (Array.isArray(rawTrip?.notes) && rawTrip.notes.length === 0) trip.notes = [];
   return trip;
 }
 
-function rootPayload(trip) {
+export function v4TripRootPayload(trip) {
   return {
     id: trip.id,
     name: trip.name,
     currency: trip.currency,
+    startDate: trip.startDate || '',
+    endDate: trip.endDate || '',
     origin: trip.origin || null,
-    // Canonicalize both desired and remote roots. Older v4 roots may not carry
-    // newly optional originDetails fields (for example note), and their absence
-    // must not manufacture a metadata mutation when the desired value is empty.
     originDetails: createOriginDetails(trip.originDetails),
   };
 }
 
+function changedRootFields(current, desired) {
+  return V4_TRIP_MUTABLE_ROOT_FIELDS.filter(
+    (field) => !samePayload(current[field], desired[field])
+  );
+}
+
 function rootIntent({ userId, trip, remoteRoot }) {
+  const desired = v4TripRootPayload(trip);
   if (!remoteRoot) {
     return {
       userId,
@@ -80,7 +92,8 @@ function rootIntent({ userId, trip, remoteRoot }) {
       serverVersion: 0,
       serverStatus: 'missing',
       desiredStatus: V4_ENTITY_STATUS.ACTIVE,
-      payload: rootPayload(trip),
+      payload: desired,
+      fieldMask: [...V4_TRIP_MUTABLE_ROOT_FIELDS],
     };
   }
 
@@ -93,15 +106,17 @@ function rootIntent({ userId, trip, remoteRoot }) {
     throw new Error('Un viaje v4 eliminado requiere restore explícito antes de guardarse.');
   }
 
-  const desired = rootPayload(trip);
-  const current = rootPayload({
+  const current = v4TripRootPayload({
     id: remoteRoot.id || trip.id,
     name: remoteRoot.name,
     currency: remoteRoot.currency,
+    startDate: remoteRoot.startDate,
+    endDate: remoteRoot.endDate,
     origin: remoteRoot.origin,
     originDetails: remoteRoot.originDetails,
   });
-  if (samePayload(current, desired)) return null;
+  const fieldMask = changedRootFields(current, desired);
+  if (!fieldMask.length) return null;
 
   return {
     userId,
@@ -112,6 +127,7 @@ function rootIntent({ userId, trip, remoteRoot }) {
     serverStatus: status,
     desiredStatus: V4_ENTITY_STATUS.ACTIVE,
     payload: desired,
+    fieldMask,
   };
 }
 
