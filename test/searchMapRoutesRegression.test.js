@@ -16,7 +16,12 @@ function tripWithPendingPlace() {
       id: 'madrid',
       startDate: '',
       endDate: '',
-      destination: { name: 'Madrid', countryCode: 'ES' },
+      destination: {
+        name: 'Madrid',
+        countryCode: 'ES',
+        lat: 40.4168,
+        lon: -3.7038,
+      },
       expenses: {},
     }],
     places: [{
