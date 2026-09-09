@@ -30,8 +30,18 @@ function requireRank(value) {
   return value;
 }
 
+function parsedDayPlan(value) {
+  if (typeof value !== 'string' || !value) return [];
+  return value.split(',').map(Number).filter((offset) => Number.isInteger(offset) && offset >= 0 && offset <= 36600);
+}
+
 function persistedSegment(rawEntity) {
-  const segment = createSegment(rawEntity);
+  const segment = createSegment({
+    ...rawEntity,
+    tripDayOffsets: Array.isArray(rawEntity?.tripDayOffsets)
+      ? rawEntity.tripDayOffsets
+      : parsedDayPlan(rawEntity?.tripDayPlan),
+  });
   const { tripDayOffsets, ...payload } = segment;
   return {
     ...payload,
@@ -94,14 +104,7 @@ export function v4EntityCreateDocument(entityType, rawEntity, rank, timestampVal
   };
 }
 
-export function v4EntityUpdatePatch(
-  entityType,
-  rawEntity,
-  rank,
-  baseVersion,
-  timestampValue,
-  fieldMask = null
-) {
+export function v4EntityUpdatePatch(entityType, rawEntity, rank, baseVersion, timestampValue, fieldMask = null) {
   const payload = v4EntityPayload(entityType, rawEntity, rank);
   const selected = Array.isArray(fieldMask) && fieldMask.length
     ? Object.fromEntries(fieldMask.filter((field) => Object.hasOwn(payload, field)).map((field) => [field, payload[field]]))
@@ -124,15 +127,9 @@ export function v4EntityDeletePatch(baseVersion, timestampValue) {
   };
 }
 
-export function v4EntityRestorePatch(
-  baseVersion,
-  timestampValue,
-  { entityType = null, rawEntity = null, rank = null } = {}
-) {
+export function v4EntityRestorePatch(baseVersion, timestampValue, { entityType = null, rawEntity = null, rank = null } = {}) {
   return {
-    ...(entityType && rawEntity
-      ? v4EntityPayload(entityType, rawEntity, rank)
-      : {}),
+    ...(entityType && rawEntity ? v4EntityPayload(entityType, rawEntity, rank) : {}),
     status: V4_ENTITY_STATUS.ACTIVE,
     version: nextEntityVersion(baseVersion),
     updatedAt: timestampValue,
