@@ -47,7 +47,12 @@ export function AppEditorModule({
     setNewItemText,
   } = editorState;
 
-  const editorPane = activeTab !== 'notes' ? (
+  const hasRouteContent = Boolean(
+    places?.length
+    || trip.segments?.some((segment) => segment?.destination?.name)
+  );
+
+  const routesPane = hasRouteContent ? (
     <TripPlacesPanel
       trip={trip}
       segments={trip.segments}
@@ -69,6 +74,33 @@ export function AppEditorModule({
       intlLocale={intlLocale}
     />
   ) : (
+    <div
+      className="trip-places trip-places--unified trip-places--empty-trip"
+      style={{
+        display: 'flex',
+        flex: 1,
+        minHeight: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '28px',
+        textAlign: 'center',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: '300px',
+          color: '#596579',
+          fontSize: '20px',
+          fontWeight: 650,
+          lineHeight: 1.35,
+        }}
+      >
+        {t('emptyRoutesPrompt')}
+      </div>
+    </div>
+  );
+
+  const notesPane = (
     <AppEditorPane
       t={t}
       notes={notes}
@@ -90,6 +122,17 @@ export function AppEditorModule({
 
   return (
     <div className="editor-module" ref={editorMenuRef}>
+      <style>{`
+        .editor-module .trip-city__pending-hint { display: none; }
+        .editor-module .trip-place__delete svg { display: none; }
+        .editor-module .trip-place__delete::before {
+          content: '×';
+          display: block;
+          font-size: 18px;
+          font-weight: 400;
+          line-height: 1;
+        }
+      `}</style>
       <AppWorkspaceMenu
         tripStore={tripStore}
         savedTrips={savedTrips}
@@ -100,7 +143,12 @@ export function AppEditorModule({
         intlLocale={intlLocale}
         t={t}
       />
-      {editorPane}
+      <div style={{ display: activeTab !== 'notes' ? 'contents' : 'none' }}>
+        {routesPane}
+      </div>
+      <div style={{ display: activeTab === 'notes' ? 'contents' : 'none' }}>
+        {notesPane}
+      </div>
     </div>
   );
 }
