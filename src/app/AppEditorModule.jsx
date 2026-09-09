@@ -26,6 +26,7 @@ export function AppEditorModule({
     removeChecklistItem,
     removeSegment,
     reorderSegment,
+    updateTripDates,
     updatePlace,
     removePlace,
     reorderPlace,
@@ -49,17 +50,14 @@ export function AppEditorModule({
 
   const showRoutes = activeTab !== 'notes';
   const showNotes = activeTab === 'notes';
-  const hasRouteContent = Boolean(
-    places?.length
-    || trip.segments?.some((segment) => segment?.destination?.name)
-  );
 
-  const routesPane = hasRouteContent ? (
+  const routesPane = (
     <TripPlacesPanel
       trip={trip}
       segments={trip.segments}
       places={places}
       routes={trip.routeConnections || []}
+      updateTripDates={updateTripDates}
       removeSegment={removeSegment}
       reorderSegment={reorderSegment}
       toggleSegmentNote={itineraryPanels.toggleNote}
@@ -75,31 +73,6 @@ export function AppEditorModule({
       t={t}
       intlLocale={intlLocale}
     />
-  ) : (
-    <div
-      className="trip-places trip-places--unified trip-places--empty-trip"
-      style={{
-        display: 'flex',
-        flex: 1,
-        minHeight: 0,
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '28px',
-        textAlign: 'center',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: '300px',
-          color: '#596579',
-          fontSize: '20px',
-          fontWeight: 650,
-          lineHeight: 1.35,
-        }}
-      >
-        {t('emptyRoutesPrompt')}
-      </div>
-    </div>
   );
 
   const notesPane = (
