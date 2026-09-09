@@ -9,8 +9,10 @@ const read = (path) => readFile(new URL(path, root), 'utf8');
 test('Mis Rutas conserva el estado del panel al alternar con Notas', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
 
-  assert.match(editor, /display: activeTab !== 'notes' \? 'contents' : 'none'/);
-  assert.match(editor, /display: activeTab === 'notes' \? 'contents' : 'none'/);
+  assert.match(editor, /const showRoutes = activeTab !== 'notes'/);
+  assert.match(editor, /const showNotes = activeTab === 'notes'/);
+  assert.match(editor, /display: showRoutes \? 'contents' : 'none'/);
+  assert.match(editor, /display: showNotes \? 'contents' : 'none'/);
   assert.match(editor, /const routesPane = hasRouteContent \? \([\s\S]*?<TripPlacesPanel/);
   assert.match(editor, /const notesPane = \([\s\S]*?<AppEditorPane/);
 });
