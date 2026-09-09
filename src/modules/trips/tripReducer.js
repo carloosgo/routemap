@@ -17,7 +17,6 @@ import {
   assignedPlacesForSegment,
   placePlanningGroupKey,
   placeTripDayOffset,
-  samePlanningGroup,
   segmentPlanningDayCount,
   tripCalendarDays,
   tripPlanningDays,
@@ -470,13 +469,17 @@ export function tripReducer(state, action) {
       const places = state.places || [];
       const fromPlace = places.find((place) => place.id === route.fromPlaceId);
       const toPlace = places.find((place) => place.id === route.toPlaceId);
+      const fromTripDayOffset = fromPlace ? placeTripDayOffset(fromPlace, state) : null;
+      const toTripDayOffset = toPlace ? placeTripDayOffset(toPlace, state) : null;
       if (
         !route.fromPlaceId
         || !route.toPlaceId
         || route.fromPlaceId === route.toPlaceId
         || !fromPlace
         || !toPlace
-        || !samePlanningGroup(fromPlace, toPlace)
+        || fromTripDayOffset == null
+        || toTripDayOffset == null
+        || fromTripDayOffset !== toTripDayOffset
       ) return state;
 
       const routes = state.routeConnections || [];
