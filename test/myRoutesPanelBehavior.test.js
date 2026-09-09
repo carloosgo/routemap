@@ -6,13 +6,16 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('Mis Rutas conserva el estado del panel al alternar con Notas', async () => {
+test('Mis Rutas conserva el estado del panel al alternar con Notas sin romper el layout flex', async () => {
   const editor = await read('src/app/AppEditorModule.jsx');
 
   assert.match(editor, /const showRoutes = activeTab !== 'notes'/);
   assert.match(editor, /const showNotes = activeTab === 'notes'/);
-  assert.match(editor, /display: showRoutes \? 'contents' : 'none'/);
-  assert.match(editor, /display: showNotes \? 'contents' : 'none'/);
+  assert.match(editor, /const paneStyle = \{[\s\S]*display: 'flex',[\s\S]*flex: 1,[\s\S]*minHeight: 0,[\s\S]*flexDirection: 'column'/);
+  assert.match(editor, /style=\{showRoutes \? paneStyle : \{ display: 'none' \}\}/);
+  assert.match(editor, /style=\{showNotes \? paneStyle : \{ display: 'none' \}\}/);
+  assert.doesNotMatch(editor, /display: showRoutes \? 'contents' : 'none'/);
+  assert.doesNotMatch(editor, /display: showNotes \? 'contents' : 'none'/);
   assert.match(editor, /const routesPane = hasRouteContent \? \([\s\S]*?<TripPlacesPanel/);
   assert.match(editor, /const notesPane = \([\s\S]*?<AppEditorPane/);
 });
