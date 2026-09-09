@@ -28,31 +28,31 @@ test('Mis Rutas sigue siendo la superficie principal sin restaurar Itinerario ni
   assert.match(routesPanel, /removeSegment\?\.\(segmentToDelete\.id\)/);
 });
 
-test('cada ciudad conserva banda compacta, drag y eliminación inline dentro del día global', async () => {
+test('cada ciudad vive inline dentro de la cabecera del día y conserva drag y eliminación contextual', async () => {
   const panel = await read('src/modules/places/TripDayRoutesPanel.jsx');
-  const css = await read('src/app/UnifiedMyRoutes.css');
   const interactionCss = await read('src/app/UnifiedMyRoutesInteraction.css');
 
-  assert.match(
-    css,
-    /\.trip-places--unified \.trip-city\s*\{[^}]*margin:\s*0;[^}]*padding:\s*0;[^}]*border-bottom:\s*1px solid #e6e9ed;/s
-  );
-  assert.match(interactionCss, /\.trip-places--unified \.trip-city__bar\s*\{[^}]*height:\s*40px;[^}]*min-height:\s*40px;/s);
-  assert.match(interactionCss, /\.trip-places--unified \.trip-city__drag/);
+  assert.match(panel, /className="trip-day__city-token"/);
   assert.match(panel, /data-city-order-id=\{isFirstAssignment \? segment\.id : undefined\}/);
+  assert.match(panel, /className="trip-city__drag"/);
   assert.match(panel, /className="trip-city__action trip-city__remove"/);
   assert.match(interactionCss, /\.trip-places--unified \.trip-city__remove\s*\{[^}]*opacity:\s*0;[^}]*pointer-events:\s*none;/s);
-  assert.match(interactionCss, /\.trip-places--unified \.trip-city__bar:hover \.trip-city__remove,[\s\S]*opacity:\s*1;[\s\S]*pointer-events:\s*auto;/s);
+  assert.match(interactionCss, /\.trip-places--unified \.trip-day__header:hover \.trip-city__remove,[\s\S]*opacity:\s*1;[\s\S]*pointer-events:\s*auto;/s);
+  assert.doesNotMatch(panel, /className="trip-city trip-day-city"/);
   assert.doesNotMatch(panel, /ORIGIN_NOTE_TARGET|itinerary-origin|originDetails/);
 });
 
-test('el día global posee la fecha y la ciudad conserva importe y acciones de gastos', async () => {
+test('el día global posee fecha, ciudad, importe y acciones sin una segunda cabecera de ciudad', async () => {
   const panel = await read('src/modules/places/TripDayRoutesPanel.jsx');
 
   assert.match(panel, /calendarDays\.map\(\(calendarDay\) =>/);
+  assert.match(panel, /className="trip-day trip-day--flat"/);
   assert.match(panel, /\{t\('day'\)\} \{calendarDay\.globalDayNumber\} · \{formatDayDate\(calendarDay\.date, intlLocale\)\}/);
+  assert.match(panel, /assignments\.map\(renderCityToken\)/);
   assert.match(panel, /<span className="trip-city__amount"/);
-  assert.match(panel, /className="trip-city__action trip-city__expense"[\s\S]*onClick=\{\(\) => toggleSegmentDetails\?\.\(segment\.id\)\}/);
+  assert.match(panel, /className="trip-city__action trip-city__expense"[\s\S]*toggleSegmentDetails\?\.\(primarySegment\.id\)/);
+  assert.match(panel, /className=\{'trip-city__action trip-city__note'[\s\S]*toggleSegmentNote\?\.\(primarySegment\.id\)/);
+  assert.doesNotMatch(panel, /function renderAssignment|className="trip-city trip-day-city"/);
   assert.doesNotMatch(panel, /className=\{'trip-city__date'/);
   assert.match(panel, /assignments\.length > 0[\s\S]*t\('tripDayNoCity'\)/);
 });
