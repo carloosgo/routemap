@@ -27,6 +27,7 @@ export function AppEditorModule({
     removeSegment,
     reorderSegment,
     updateTripDates,
+    removeTripDay,
     updatePlace,
     removePlace,
     reorderPlace,
@@ -58,6 +59,7 @@ export function AppEditorModule({
       places={places}
       routes={trip.routeConnections || []}
       updateTripDates={updateTripDates}
+      removeTripDay={removeTripDay}
       removeSegment={removeSegment}
       reorderSegment={reorderSegment}
       toggleSegmentNote={itineraryPanels.toggleNote}
