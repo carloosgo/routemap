@@ -85,10 +85,10 @@ test('normalizeTrip conserva rango global explícito y deriva el rango para root
 test('el calendario global conserva todos los días aunque alguno no tenga ciudad', () => {
   const trip = rootTrip({ startDate: '2026-09-09', endDate: '2026-09-12' });
   assert.deepEqual(tripCalendarDays(trip), [
-    { date: '2026-09-09', globalDayNumber: 1 },
-    { date: '2026-09-10', globalDayNumber: 2 },
-    { date: '2026-09-11', globalDayNumber: 3 },
-    { date: '2026-09-12', globalDayNumber: 4 },
+    { date: '2026-09-09', globalDayNumber: 1, tripDayOffset: 0 },
+    { date: '2026-09-10', globalDayNumber: 2, tripDayOffset: 1 },
+    { date: '2026-09-11', globalDayNumber: 3, tripDayOffset: 2 },
+    { date: '2026-09-12', globalDayNumber: 4, tripDayOffset: 3 },
   ]);
 });
 
@@ -166,7 +166,7 @@ test('eliminar un día intermedio colapsa el itinerario sin crear entidades día
   const plan = planTripDayRemoval(trip, '2026-09-10');
   assert.deepEqual(plan.removePlaceIds, ['day-2']);
   assert.deepEqual(plan.movePlaces, [
-    { placeId: 'day-3', segmentId: 'paris-segment', dayOffset: 1 },
+    { placeId: 'day-3', tripDayOffset: 1 },
   ]);
   assert.deepEqual(plan.segmentPatches, [
     { segmentId: 'paris-segment', patch: { endDate: '2026-09-10' } },
@@ -188,7 +188,7 @@ test('eliminar el único día limpia el rango y las fechas del segmento de ese d
   assert.deepEqual(plan.removePlaceIds, ['sensoji']);
   assert.deepEqual(plan.movePlaces, []);
   assert.deepEqual(plan.segmentPatches, [
-    { segmentId: 'tokyo-segment', patch: { startDate: '', endDate: '' } },
+    { segmentId: 'tokyo-segment', patch: { startDate: '', endDate: '', tripDayOffsets: [] } },
   ]);
   assert.deepEqual(plan.tripDatePatch, { startDate: '', endDate: '' });
 });
