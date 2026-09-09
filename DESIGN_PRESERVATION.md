@@ -5,6 +5,19 @@ Requested visual scope: selectores de moneda/idioma del header global; contenido
 
 La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atlas debe permanecer intacto. Los controles añadidos reutilizan componentes, dimensiones, espaciados, iconografía, dominio y persistencia ya existentes. Los cambios enumerados abajo son los deltas visuales aprobados.
 
+## Ajuste solicitado: cierre day-first del header y línea temporal de lugares (PR #90)
+
+- Este apartado es autoritativo para el cierre visual de PR #90 y sustituye únicamente las reglas históricas incompatibles de `Mis Rutas` descritas más abajo.
+- El editor global de `Fechas del viaje` mantiene los dos `CalendarDateInput` existentes y debe permitir que el calendario desplegable sea completamente visible. La excepción de overflow se limita al diálogo de fechas; el desglose de `Total del viaje` conserva su clipping actual.
+- En cada día, `DÍA N` permanece en mayúsculas y la fecha usa gris fuerte como información secundaria. No se añade una segunda guía en la cabecera; el estado vacío conserva únicamente la guía inferior y no usa cursivas.
+- Los formularios de gastos de cada ciudad ya no duplican selección de fechas: la edición temporal pertenece al header global y el módulo de detalles conserva sólo los conceptos de costo solicitados.
+- El control de arrastre corresponde al día completo, no a la ciudad. Mover un día desplaza conjuntamente su ciudad y sus lugares y actualiza la posición temporal resultante mediante el modelo canónico existente.
+- La ciudad mostrada dentro de la cabecera del día no expone eliminación manual. Tanto una ciudad agregada explícitamente como una ciudad inferida al guardar primero un lugar muestran bandera y `Ciudad, País` en la misma posición.
+- Los lugares continúan pudiendo moverse entre cualquier día del viaje aunque el destino temporal pertenezca a otra ciudad o país; esa libertad no cambia su pertenencia geográfica canónica por sí sola.
+- La línea punteada vertical de `Mis Rutas` conecta exclusivamente los puntos de lugares consecutivos de un mismo día con el color de ese día. Comienza en el centro del primer nodo, atraviesa la altura real de las tarjetas de conexión/transporte y termina en el centro del último nodo; no sobresale por encima del primero ni por debajo del último.
+- Esta línea pertenece exclusivamente al listado de `Mis Rutas`. No modifica polylines, marcadores, cámara, renderer ni ningún comportamiento del mapa de Google.
+- No se crean entidades de día en Storage v4 ni rutas paralelas de persistencia. Autosave, Firestore Rules, Functions, proveedores, conexiones, gastos, notas y mapa mantienen sus contratos canónicos salvo los campos temporales ya aprobados por la implementación day-first.
+
 ## Ajuste solicitado: búsqueda unificada, ciudades sin pivote de origen y ancho exacto de Mis Rutas (PR #84)
 
 - Este apartado es autoritativo para la superficie activa de `Mis Rutas` y sustituye únicamente las reglas históricas incompatibles de este documento. No reabre ni rediseña el resto de Atlas.
