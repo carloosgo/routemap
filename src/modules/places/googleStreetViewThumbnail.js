@@ -8,6 +8,7 @@ function cleanText(value, max = 260) {
 }
 
 function validCoordinate(value, limit) {
+  if (value === '' || value == null) return null;
   const number = Number(value);
   return Number.isFinite(number) && Math.abs(number) <= limit ? number : null;
 }
