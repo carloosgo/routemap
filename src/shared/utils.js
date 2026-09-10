@@ -78,3 +78,14 @@ export function sanitizeText(value, maxLen = 120) {
   // eslint-disable-next-line no-control-regex
   return value.replace(/[\u0000-\u001F\u007F]/g, '').slice(0, maxLen);
 }
+
+// Sanitiza contenido multilínea (notas) conservando saltos de línea.
+// Normaliza CRLF/CR a LF y elimina los demás caracteres de control.
+export function sanitizeMultilineText(value, maxLen = 120) {
+  if (typeof value !== 'string') return '';
+  const normalized = value.replace(/\r\n?/g, '\n');
+  // eslint-disable-next-line no-control-regex
+  return normalized
+    .replace(/[\u0000-\u0009\u000B-\u000C\u000E-\u001F\u007F]/g, '')
+    .slice(0, maxLen);
+}
