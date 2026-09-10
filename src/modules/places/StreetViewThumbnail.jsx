@@ -15,12 +15,13 @@ export function StreetViewThumbnail({ place }) {
   useEffect(() => {
     const node = hostRef.current;
     if (!url || !node || shouldLoad) return undefined;
-    if (typeof IntersectionObserver !== 'function') {
+    const Observer = globalThis.IntersectionObserver;
+    if (typeof Observer !== 'function') {
       setShouldLoad(true);
       return undefined;
     }
 
-    const observer = new IntersectionObserver((entries) => {
+    const observer = new Observer((entries) => {
       if (!entries.some((entry) => entry.isIntersecting)) return;
       setShouldLoad(true);
       observer.disconnect();
