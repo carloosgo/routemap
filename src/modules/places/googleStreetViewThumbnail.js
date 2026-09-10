@@ -12,26 +12,27 @@ function validCoordinate(value, limit) {
   return Number.isFinite(number) && Math.abs(number) <= limit ? number : null;
 }
 
-export function streetViewLocation(place) {
+export function streetViewLocation(place, fallbackLocation = '') {
   const address = cleanText(place?.address);
   if (address) return address;
 
-  const namedLocation = [
-    cleanText(place?.name, 160),
+  const lat = validCoordinate(place?.lat, 90);
+  const lon = validCoordinate(place?.lon, 180);
+  if (lat !== null && lon !== null) return `${lat},${lon}`;
+
+  const contextualLocation = cleanText(fallbackLocation);
+  if (contextualLocation) return contextualLocation;
+
+  return [
+    cleanText(place?.name || place?.userLabel, 160),
     cleanText(place?.city, 120),
     cleanText(place?.country, 120),
   ].filter(Boolean).join(', ');
-  if (namedLocation) return namedLocation;
-
-  const lat = validCoordinate(place?.lat, 90);
-  const lon = validCoordinate(place?.lon, 180);
-  if (lat === null || lon === null) return '';
-  return `${lat},${lon}`;
 }
 
-export function buildStreetViewThumbnailUrl(place, apiKey) {
+export function buildStreetViewThumbnailUrl(place, apiKey, fallbackLocation = '') {
   const key = cleanText(apiKey, 512);
-  const location = streetViewLocation(place);
+  const location = streetViewLocation(place, fallbackLocation);
   if (!key || !location) return '';
 
   const params = new URLSearchParams({
@@ -50,6 +51,10 @@ export function buildStreetViewThumbnailUrl(place, apiKey) {
   return `${STREET_VIEW_BASE}?${params.toString()}`;
 }
 
-export function googleStreetViewThumbnailUrl(place) {
-  return buildStreetViewThumbnailUrl(place, config.googleMaps.webApiKey);
+export function googleStreetViewThumbnailUrl(place, fallbackLocation = '') {
+  return buildStreetViewThumbnailUrl(
+    place,
+    config.googleMaps.webApiKey,
+    fallbackLocation
+  );
 }
