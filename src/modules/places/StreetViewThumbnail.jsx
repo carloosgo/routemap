@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { googleStreetViewThumbnailUrl } from './googleStreetViewThumbnail.js';
 
-export function StreetViewThumbnail({ place, fallbackLocation = '' }) {
+export function StreetViewThumbnail({ place }) {
   const hostRef = useRef(null);
   const [shouldLoad, setShouldLoad] = useState(false);
   const [failed, setFailed] = useState(false);
-  const url = useMemo(
-    () => googleStreetViewThumbnailUrl(place, fallbackLocation),
-    [fallbackLocation, place]
-  );
+  const url = useMemo(() => googleStreetViewThumbnailUrl(place), [place]);
 
   useEffect(() => {
     setShouldLoad(false);
