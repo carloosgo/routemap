@@ -94,7 +94,7 @@ test('la búsqueda Google conserva validación, debounce y protección contra re
   const { form, search } = await mapSources();
 
   assert.match(search, /async function submitSearch/);
-  assert.match(form, /<form className="geo-search" onSubmit=\{onSubmit\}>/);
+  assert.match(form, /<form className="geo-search"[^>]*onSubmit=\{onSubmit\}>/);
   assert.match(form, /type="submit"/);
   assert.match(search, /text\.length < config\.googleMaps\.searchMinChars/);
   assert.match(search, /config\.googleMaps\.searchDebounceMs/);

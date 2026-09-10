@@ -18,7 +18,7 @@ export function PlaceSearchForm({
   const { t } = useTranslation();
 
   return (
-    <form className="geo-search" onSubmit={onSubmit}>
+    <form className="geo-search" style={{ maxWidth: '470px' }} onSubmit={onSubmit}>
       <div className="geo-search__row">
         <div className="geo-search__input-wrap">
           <input

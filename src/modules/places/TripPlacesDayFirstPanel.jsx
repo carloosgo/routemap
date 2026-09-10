@@ -29,7 +29,7 @@ const PERSISTENCE_LABEL_KEYS = Object.freeze({
 });
 
 const DAY_FIRST_STYLES = `
-.trip-day-first{padding-top:8px}.trip-day-first__days{display:flex;flex-direction:column}.trip-day-first__day{position:relative;border-bottom:1px solid #eef1f4}.trip-day-first__day.is-day-dragging{z-index:20;opacity:.72}.trip-day-first__day.is-day-drop-before:before,.trip-day-first__day.is-day-drop-after:after{content:'';position:absolute;z-index:30;right:8px;left:8px;height:2px;border-radius:999px;background:var(--atlas-accent)}.trip-day-first__day.is-day-drop-before:before{top:-1px}.trip-day-first__day.is-day-drop-after:after{bottom:-1px}.trip-day-first__header{display:grid;min-height:46px;grid-template-columns:24px auto minmax(0,1fr) 28px 28px;align-items:center;column-gap:6px;padding:4px 5px 4px 1px;background:#fff}.trip-day-first__header>strong{color:#263445;font-size:12.5px;font-weight:760;white-space:nowrap}.trip-day-first__date{overflow:hidden;color:#5f6875;font-size:12px;font-weight:650;text-overflow:ellipsis;white-space:nowrap}.trip-day-first__drag,.trip-day-first__note,.trip-day-first__toggle{display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;padding:0;border:0;border-radius:6px;background:transparent;color:#9ca3af}.trip-day-first__drag{cursor:grab;touch-action:none}.trip-day-first__drag:active{cursor:grabbing}.trip-day-first__drag:hover,.trip-day-first__drag:focus-visible,.trip-day-first__note:hover,.trip-day-first__note:focus-visible,.trip-day-first__toggle:hover,.trip-day-first__toggle:focus-visible{background:#eef2f6;color:#475569;outline:none}.trip-day-first__note.has-note{color:#23647a}.trip-day-first__note:disabled{opacity:.35;cursor:default}.trip-day-first__places{position:relative;display:flex;flex-direction:column;padding-bottom:4px}.trip-day-first__empty{padding-left:35px;font-style:normal}.trip-day-first-place-block{--trip-day-color:var(--trip-place-country-color,#64748b);position:relative}.trip-day-first-place{--trip-day-color:var(--trip-place-country-color,#64748b)}.trip-day-first-place:before,.trip-day-first-place:after{content:'';position:absolute;z-index:1;left:var(--trip-timeline-x);width:0;border-left:2px solid var(--trip-place-country-color,#64748b);transform:translateX(-1px);pointer-events:none}.trip-day-first-place:before{top:0;height:50%}.trip-day-first-place:after{top:50%;bottom:0}.trip-day-first__places>.trip-day-first-place-block:first-child .trip-day-first-place:before{display:none}.trip-day-first__places>.trip-day-first-place-block:last-child .trip-day-first-place:after{display:none}.trip-day-first-place .trip-place__timeline-dot{background:var(--trip-place-country-color,#64748b);box-shadow:0 0 0 1px var(--trip-place-country-color,#64748b)}.trip-day-first-place__info strong{font-weight:650}.trip-day-first-connection{--trip-day-color:var(--trip-place-country-color,#64748b);position:relative}.trip-day-first-connection .trip-connection{position:relative}.trip-day-first-connection .trip-connection__rail{position:absolute;z-index:0;top:0;bottom:0;left:-19px;display:block;width:0;border-left:2px solid var(--trip-place-country-color,#64748b);opacity:.9;pointer-events:none}@media(max-width:560px){.trip-day-first__header{grid-template-columns:24px auto minmax(0,1fr) 28px 28px;column-gap:4px}.trip-day-first__header>strong{font-size:12px}.trip-day-first__date{font-size:11px}}
+.trip-day-first{padding-top:8px}.trip-day-first__days{display:flex;flex-direction:column}.trip-day-first__day{position:relative;border-bottom:1px solid #eef1f4}.trip-day-first__day.is-day-dragging{z-index:20;background:rgba(255,255,255,.96);border-radius:8px;box-shadow:0 8px 22px rgba(15,23,42,.11)}.trip-day-first__day.is-day-drop-before:before,.trip-day-first__day.is-day-drop-after:after{content:'';position:absolute;z-index:30;right:8px;left:8px;height:2px;border-radius:999px;background:var(--atlas-accent)}.trip-day-first__day.is-day-drop-before:before{top:-1px}.trip-day-first__day.is-day-drop-after:after{bottom:-1px}.trip-day-first__header{display:grid;min-height:46px;grid-template-columns:24px auto minmax(0,1fr) 28px 28px;align-items:center;column-gap:6px;padding:4px 5px 4px 1px;background:#fff}.trip-day-first__header>strong{color:#263445;font-size:12.5px;font-weight:760;white-space:nowrap}.trip-day-first__date{overflow:hidden;color:#5f6875;font-size:12px;font-weight:650;text-overflow:ellipsis;white-space:nowrap}.trip-day-first__drag,.trip-day-first__note,.trip-day-first__toggle{display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;padding:0;border:0;border-radius:6px;background:transparent;color:#9ca3af}.trip-day-first__drag{cursor:grab;touch-action:none}.trip-day-first__drag:active{cursor:grabbing}.trip-day-first__drag:hover,.trip-day-first__drag:focus-visible,.trip-day-first__note:hover,.trip-day-first__note:focus-visible,.trip-day-first__toggle:hover,.trip-day-first__toggle:focus-visible{background:#eef2f6;color:#475569;outline:none}.trip-day-first__note.has-note{color:#23647a}.trip-day-first__note:disabled{opacity:.35;cursor:default}.trip-day-first__places{--trip-timeline-x:12px;position:relative;display:flex;flex-direction:column;padding-bottom:4px}.trip-day-first__rail{position:absolute;z-index:0;top:24px;bottom:28px;left:var(--trip-timeline-x);width:2px;transform:translateX(-50%);background:var(--trip-day-rail-color,#64748b);pointer-events:none}.trip-day-first__empty{padding-left:35px;font-style:normal}.trip-day-first-place-block{--trip-day-color:var(--trip-place-country-color,#64748b);position:relative}.trip-day-first-place{--trip-day-color:var(--trip-place-country-color,#64748b)}.trip-day-first-place:before,.trip-day-first-place:after{content:none}.trip-day-first-place .trip-place__timeline-dot{background:var(--trip-place-country-color,#64748b);box-shadow:0 0 0 1px var(--trip-place-country-color,#64748b)}.trip-day-first-place__info strong{font-weight:650}.trip-day-first-place__location{color:#475569;font-weight:500}.trip-day-first-connection{--trip-day-color:var(--trip-place-country-color,#64748b);position:relative}.trip-day-first-connection .trip-connection{position:relative}.trip-day-first-connection .trip-connection__rail{display:none}@media(max-width:560px){.trip-day-first__header{grid-template-columns:24px auto minmax(0,1fr) 28px 28px;column-gap:4px}.trip-day-first__header>strong{font-size:12px}.trip-day-first__date{font-size:11px}}
 `;
 
 function persistenceLabelKey(state) {
@@ -69,11 +69,11 @@ function placeTitle(place, t) {
   return place?.name || place?.userLabel || t('place');
 }
 
-function placeLocation(place, segmentById, t) {
+function placeGeography(place, segmentById) {
   const destination = segmentById.get(place?.segmentId)?.destination || null;
   const city = place?.city || destination?.name || '';
   const country = place?.country || destination?.country || '';
-  return [placeTitle(place, t), city, country].filter(Boolean).join(', ');
+  return [city, country].filter(Boolean).join(', ');
 }
 
 function placeCountry(place, segmentById) {
@@ -253,6 +253,7 @@ export function TripPlacesDayFirstPanel({
       }, null);
       const next = {
         ...current,
+        offsetY: event.clientY - current.startY,
         targetOffset: nearest.offset,
         placement: event.clientY >= nearest.bounds.top + nearest.bounds.height / 2
           ? 'after'
@@ -304,6 +305,8 @@ export function TripPlacesDayFirstPanel({
     const next = {
       sourceOffset,
       pointerId: event.pointerId,
+      startY: event.clientY,
+      offsetY: 0,
       targetOffset: null,
       placement: null,
     };
@@ -332,6 +335,7 @@ export function TripPlacesDayFirstPanel({
     const route = pairKey ? routeByPair.get(pairKey) : null;
     const country = placeCountry(place, segmentById);
     const color = colors.get(countryKey(country)) || countryColorForIndex(0);
+    const geography = placeGeography(place, segmentById);
 
     return (
       <div className="trip-day-first-place-block" key={place.id} style={{ '--trip-place-country-color': color }}>
@@ -374,7 +378,10 @@ export function TripPlacesDayFirstPanel({
             </span>
 
             <span className="trip-place__info trip-day-first-place__info">
-              <strong>{placeLocation(place, segmentById, t)}</strong>
+              <strong>
+                {placeTitle(place, t)}
+                {geography && <span className="trip-day-first-place__location">, {geography}</span>}
+              </strong>
             </span>
 
             <button
@@ -440,6 +447,12 @@ export function TripPlacesDayFirstPanel({
             const dropPlacement = dayDrag?.targetOffset === day.tripDayOffset
               ? dayDrag.placement
               : null;
+            const firstPlaceCountry = day.places[0]
+              ? placeCountry(day.places[0], segmentById)
+              : null;
+            const railColor = firstPlaceCountry
+              ? colors.get(countryKey(firstPlaceCountry)) || countryColorForIndex(0)
+              : countryColorForIndex(0);
 
             return (
               <section
@@ -451,6 +464,11 @@ export function TripPlacesDayFirstPanel({
                 ].filter(Boolean).join(' ')}
                 key={day.date}
                 data-trip-day-offset={day.tripDayOffset}
+                style={dayDragging ? {
+                  transform: `translateY(${dayDrag.offsetY}px)`,
+                  pointerEvents: 'none',
+                  zIndex: 20,
+                } : undefined}
               >
                 <header className="trip-day-first__header">
                   <button
@@ -489,7 +507,10 @@ export function TripPlacesDayFirstPanel({
                 </header>
 
                 {!collapsed && (
-                  <div className="trip-day-first__places">
+                  <div className="trip-day-first__places" style={{ '--trip-day-rail-color': railColor }}>
+                    {day.places.length > 1 && (
+                      <span className="trip-day-first__rail" aria-hidden="true" />
+                    )}
                     {day.places.length > 0
                       ? day.places.map((place, index) => renderPlace(
                           place,
