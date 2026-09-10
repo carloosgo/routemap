@@ -102,11 +102,21 @@ export function useTrip(initialTrip) {
     []
   );
   const movePlaceToDay = useCallback(
-    (placeId, segmentId, dayOffset) => dispatch({
+    (placeId, tripDayOffset, targetPlaceId = '', placement = 'after') => dispatch({
       type: TRIP_ACTIONS.movePlaceToDay,
       placeId,
-      segmentId,
-      dayOffset,
+      tripDayOffset,
+      targetPlaceId,
+      placement,
+    }),
+    []
+  );
+  const reorderTripDay = useCallback(
+    (sourceTripDayOffset, targetTripDayOffset, placement) => dispatch({
+      type: TRIP_ACTIONS.reorderTripDay,
+      sourceTripDayOffset,
+      targetTripDayOffset,
+      placement,
     }),
     []
   );
@@ -156,6 +166,7 @@ export function useTrip(initialTrip) {
     removePlace,
     reorderPlace,
     movePlaceToDay,
+    reorderTripDay,
     upsertRouteConnection,
     removeRouteConnection,
     setRouteConnectionVisibility,
