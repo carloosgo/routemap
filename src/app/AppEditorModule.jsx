@@ -1,4 +1,4 @@
-import { TripPlacesPanel } from '../modules/places/TripPlacesPanel.jsx';
+import { TripDayRoutesPanel } from '../modules/places/TripDayRoutesPanel.jsx';
 import { AppEditorPane } from './AppEditorPane.jsx';
 import { AppWorkspaceMenu } from './AppWorkspaceMenu.jsx';
 
@@ -33,6 +33,7 @@ export function AppEditorModule({
     removePlace,
     reorderPlace,
     movePlaceToDay,
+    reorderTripDay,
     upsertRouteConnection,
     removeRouteConnection,
     setRouteConnectionVisibility,
@@ -52,14 +53,16 @@ export function AppEditorModule({
   } = editorState;
 
   const editorPane = activeTab === 'places' ? (
-    <TripPlacesPanel
-      segments={trip.segments}
+    <TripDayRoutesPanel
+      trip={trip}
       places={places}
       routes={trip.routeConnections || []}
       updatePlace={updatePlace}
       removePlace={removePlace}
       reorderPlace={reorderPlace}
       movePlaceToDay={movePlaceToDay}
+      reorderTripDay={reorderTripDay}
+      toggleDayNote={itineraryPanels.toggleNote}
       upsertRoute={upsertRouteConnection}
       removeRoute={removeRouteConnection}
       setRouteVisibility={setRouteConnectionVisibility}
