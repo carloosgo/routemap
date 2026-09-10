@@ -14,6 +14,7 @@ export { geoapifyCountryBoundary } from './countryBoundaryFunction.js';
 export { googlePlaceAutocomplete, googlePlaceSearch } from './googleMapsFunctions.js';
 export { googlePlaceDetailsEssentials } from './googlePlaceDetailsEssentialsFunction.js';
 export { googlePlaceLocations } from './googlePlaceLocationFunction.js';
+export { googlePlacePhoto } from './googlePlacePhotoFunction.js';
 export { googleCountryPlaceIds } from './googleCountryPlaceIdsFunction.js';
 export { googleRouteOptimized } from './googleOptimizedRouteFunction.js';
 export {

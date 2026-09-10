@@ -68,11 +68,11 @@ test('rollback usa token distinto y no exige acknowledgement', () => {
   );
 });
 
-test('los 17 callables canónicos se despliegan completos en lotes de máximo 10', () => {
+test('los 18 callables canónicos se despliegan completos en lotes de máximo 10', () => {
   const batches = buildCallableDeployBatches();
-  assert.equal(CALLABLE_FUNCTION_NAMES.length, 17);
+  assert.equal(CALLABLE_FUNCTION_NAMES.length, 18);
   assert.equal(batches.length, 2);
-  assert.deepEqual(batches.map((batch) => batch.length), [9, 8]);
+  assert.deepEqual(batches.map((batch) => batch.length), [9, 9]);
   assert.deepEqual(batches.flat(), [...CALLABLE_FUNCTION_NAMES]);
   assert.ok(batches.every((batch) => batch.length <= 10));
   assert.throws(() => buildCallableDeployBatches(CALLABLE_FUNCTION_NAMES, 11), /entre 1 y 10/);
