@@ -42,6 +42,7 @@ const hardcodedDomText = new RegExp(
 
 const invariantVisibleLiterals = new Set([
   'Powered by Google',
+  'Google Maps',
 ]);
 
 const staleUiPhrases = [
