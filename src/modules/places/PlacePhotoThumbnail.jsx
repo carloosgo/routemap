@@ -1,6 +1,53 @@
 import { useEffect, useRef, useState } from 'react';
 import { loadGooglePlacePhoto } from './googlePlacePhotoClient.js';
 
+const hostStyle = Object.freeze({
+  display: 'inline-flex',
+  width: '72px',
+  minWidth: '72px',
+  minHeight: '62px',
+  flexDirection: 'column',
+  justifyContent: 'center',
+});
+
+const linkStyle = Object.freeze({
+  display: 'inline-flex',
+  width: '72px',
+  flexDirection: 'column',
+  gap: '2px',
+  color: 'inherit',
+  textDecoration: 'none',
+});
+
+const imageStyle = Object.freeze({
+  display: 'block',
+  width: '72px',
+  height: '48px',
+  border: '1px solid #dde3ea',
+  borderRadius: '6px',
+  background: '#eef2f5',
+  objectFit: 'cover',
+});
+
+const attributionStyle = Object.freeze({
+  color: '#5e5e5e',
+  fontFamily: 'Arial, sans-serif',
+  fontSize: '12px',
+  fontStyle: 'normal',
+  fontWeight: 400,
+  lineHeight: 1,
+  whiteSpace: 'nowrap',
+});
+
+const skeletonStyle = Object.freeze({
+  display: 'block',
+  width: '72px',
+  height: '48px',
+  border: '1px solid #e2e8f0',
+  borderRadius: '6px',
+  background: '#f1f5f9',
+});
+
 export function PlacePhotoThumbnail({ place }) {
   const hostRef = useRef(null);
   const placeId = String(place?.googlePlaceId || '').trim();
@@ -55,14 +102,14 @@ export function PlacePhotoThumbnail({ place }) {
   if (!placeId || failed || (resolved && !photo)) return null;
 
   return (
-    <span className="trip-day-first-place__photo" ref={hostRef}>
+    <span ref={hostRef} style={hostStyle}>
       {photo?.uri ? (
         <a
-          className="trip-day-first-place__photo-link"
           href={photo.googleMapsUri || undefined}
           target={photo.googleMapsUri ? '_blank' : undefined}
           rel={photo.googleMapsUri ? 'noreferrer' : undefined}
           aria-label="Google Maps"
+          style={linkStyle}
         >
           <img
             src={photo.uri}
@@ -72,13 +119,12 @@ export function PlacePhotoThumbnail({ place }) {
             loading="lazy"
             decoding="async"
             onError={() => setFailed(true)}
+            style={imageStyle}
           />
-          <span className="trip-day-first-place__photo-attribution" translate="no">
-            Google Maps
-          </span>
+          <span translate="no" style={attributionStyle}>Google Maps</span>
         </a>
       ) : (
-        <span className="trip-day-first-place__photo-skeleton" aria-hidden="true" />
+        <span aria-hidden="true" style={skeletonStyle} />
       )}
     </span>
   );
