@@ -56,7 +56,10 @@ export async function loadGooglePlacePhoto(placeId, { signal } = {}) {
       return normalizedPhoto(response.data?.photo);
     })();
     pendingPhotos.set(id, pending);
-    pending.finally(() => pendingPhotos.delete(id));
+    pending.then(
+      () => pendingPhotos.delete(id),
+      () => pendingPhotos.delete(id)
+    );
   }
 
   const photo = await pending;
