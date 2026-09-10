@@ -18,7 +18,6 @@ import {
 import { savedPlaceRoutePairKey } from '../routes/routeModel.js';
 import { TripRouteConnections } from './TripRouteConnections.jsx';
 import './TripPlacesPanel.css';
-import './TripPlacesDayFirstPanel.css';
 
 const PERSISTENCE_LABEL_KEYS = Object.freeze({
   saved: 'persistenceSaved',
@@ -28,6 +27,10 @@ const PERSISTENCE_LABEL_KEYS = Object.freeze({
   conflict: 'persistenceConflict',
   error: 'persistenceError',
 });
+
+const DAY_FIRST_STYLES = `
+.trip-day-first{padding-top:8px}.trip-day-first__days{display:flex;flex-direction:column}.trip-day-first__day{position:relative;border-bottom:1px solid #eef1f4}.trip-day-first__day.is-day-dragging{z-index:20;opacity:.72}.trip-day-first__day.is-day-drop-before:before,.trip-day-first__day.is-day-drop-after:after{content:'';position:absolute;z-index:30;right:8px;left:8px;height:2px;border-radius:999px;background:var(--atlas-accent)}.trip-day-first__day.is-day-drop-before:before{top:-1px}.trip-day-first__day.is-day-drop-after:after{bottom:-1px}.trip-day-first__header{display:grid;min-height:46px;grid-template-columns:24px auto minmax(0,1fr) 28px 28px;align-items:center;column-gap:6px;padding:4px 5px 4px 1px;background:#fff}.trip-day-first__header>strong{color:#263445;font-size:12.5px;font-weight:760;white-space:nowrap}.trip-day-first__date{overflow:hidden;color:#5f6875;font-size:12px;font-weight:650;text-overflow:ellipsis;white-space:nowrap}.trip-day-first__drag,.trip-day-first__note,.trip-day-first__toggle{display:inline-flex;width:28px;height:28px;align-items:center;justify-content:center;padding:0;border:0;border-radius:6px;background:transparent;color:#9ca3af}.trip-day-first__drag{cursor:grab;touch-action:none}.trip-day-first__drag:active{cursor:grabbing}.trip-day-first__drag:hover,.trip-day-first__drag:focus-visible,.trip-day-first__note:hover,.trip-day-first__note:focus-visible,.trip-day-first__toggle:hover,.trip-day-first__toggle:focus-visible{background:#eef2f6;color:#475569;outline:none}.trip-day-first__note.has-note{color:#23647a}.trip-day-first__note:disabled{opacity:.35;cursor:default}.trip-day-first__places{position:relative;display:flex;flex-direction:column;padding-bottom:4px}.trip-day-first__empty{padding-left:35px;font-style:normal}.trip-day-first-place-block{--trip-day-color:var(--trip-place-country-color,#64748b);position:relative}.trip-day-first-place{--trip-day-color:var(--trip-place-country-color,#64748b)}.trip-day-first-place:before,.trip-day-first-place:after{content:'';position:absolute;z-index:1;left:var(--trip-timeline-x);width:0;border-left:2px solid var(--trip-place-country-color,#64748b);transform:translateX(-1px);pointer-events:none}.trip-day-first-place:before{top:0;height:50%}.trip-day-first-place:after{top:50%;bottom:0}.trip-day-first__places>.trip-day-first-place-block:first-child .trip-day-first-place:before{display:none}.trip-day-first__places>.trip-day-first-place-block:last-child .trip-day-first-place:after{display:none}.trip-day-first-place .trip-place__timeline-dot{background:var(--trip-place-country-color,#64748b);box-shadow:0 0 0 1px var(--trip-place-country-color,#64748b)}.trip-day-first-place__info strong{font-weight:650}.trip-day-first-connection{--trip-day-color:var(--trip-place-country-color,#64748b);position:relative}.trip-day-first-connection .trip-connection{position:relative}.trip-day-first-connection .trip-connection__rail{position:absolute;z-index:0;top:0;bottom:0;left:-19px;display:block;width:0;border-left:2px solid var(--trip-place-country-color,#64748b);opacity:.9;pointer-events:none}@media(max-width:560px){.trip-day-first__header{grid-template-columns:24px auto minmax(0,1fr) 28px 28px;column-gap:4px}.trip-day-first__header>strong{font-size:12px}.trip-day-first__date{font-size:11px}}
+`;
 
 function persistenceLabelKey(state) {
   return PERSISTENCE_LABEL_KEYS[state] || PERSISTENCE_LABEL_KEYS.pending;
@@ -323,7 +326,7 @@ export function TripPlacesDayFirstPanel({
     setPlaceToDelete(null);
   }
 
-  function renderPlace(place, dayPlaces, nextPlace = null) {
+  function renderPlace(place, nextPlace = null) {
     const dragging = placeDrag?.placeId === place.id;
     const pairKey = nextPlace ? `${place.id}\u0000${nextPlace.id}` : '';
     const route = pairKey ? routeByPair.get(pairKey) : null;
@@ -416,6 +419,7 @@ export function TripPlacesDayFirstPanel({
   if (!calendarDays.length) {
     return (
       <div className="trip-places trip-places--empty" ref={panelRef}>
+        <style>{DAY_FIRST_STYLES}</style>
         <IconMapPin size={22} aria-hidden="true" />
         <strong>{t('noPlanningDaysTitle')}</strong>
         <span>{t('noPlanningDaysHint')}</span>
@@ -425,6 +429,7 @@ export function TripPlacesDayFirstPanel({
 
   return (
     <>
+      <style>{DAY_FIRST_STYLES}</style>
       <div className="trip-places trip-day-first" ref={panelRef}>
         <div className="trip-day-first__days">
           {grouped.groups.map((day) => {
@@ -452,8 +457,8 @@ export function TripPlacesDayFirstPanel({
                     type="button"
                     className="trip-day-first__drag"
                     onPointerDown={(event) => startDayDrag(event, day.tripDayOffset)}
-                    aria-label={`${t('movePlace')} ${t('day')} ${day.globalDayNumber}`}
-                    title={t('movePlace')}
+                    aria-label={`${t('day')} ${day.globalDayNumber}`}
+                    title={`${t('day')} ${day.globalDayNumber}`}
                   >
                     <IconGripVertical size={15} aria-hidden="true" />
                   </button>
@@ -488,7 +493,6 @@ export function TripPlacesDayFirstPanel({
                     {day.places.length > 0
                       ? day.places.map((place, index) => renderPlace(
                           place,
-                          day.places,
                           day.places[index + 1] || null
                         ))
                       : <div className="trip-day__empty-row trip-day-first__empty">{t('dayNoPlaces')}</div>}
