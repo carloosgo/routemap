@@ -5,10 +5,7 @@ export function StreetViewThumbnail({ place }) {
   const hostRef = useRef(null);
   const [shouldLoad, setShouldLoad] = useState(false);
   const [failed, setFailed] = useState(false);
-  const url = useMemo(
-    () => googleStreetViewThumbnailUrl(place),
-    [place?.address, place?.name, place?.city, place?.country, place?.lat, place?.lon]
-  );
+  const url = useMemo(() => googleStreetViewThumbnailUrl(place), [place]);
 
   useEffect(() => {
     setShouldLoad(false);
