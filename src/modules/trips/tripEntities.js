@@ -155,6 +155,7 @@ export function createPlace(partial = {}) {
       typeof partial.savedAt === 'string' ? partial.savedAt : nowISO(),
     segmentId: normalizeOptionalId(partial.segmentId),
     dayOffset: normalizeDayOffset(partial.dayOffset),
+    tripDayOffset: normalizeDayOffset(partial.tripDayOffset),
     note: sanitizeText(partial.note || '', TRIP_LIMITS.placeNote),
   };
 }

@@ -249,7 +249,7 @@ service cloud.firestore {
       return data.keys().hasOnly([
           'id', 'rank', 'provider', 'googlePlaceId', 'userLabel', 'name', 'address',
           'city', 'country', 'category', 'countryCode', 'lat', 'lon', 'savedAt',
-          'segmentId', 'dayOffset', 'note',
+          'segmentId', 'dayOffset', 'tripDayOffset', 'note',
           'status', 'version', 'createdAt', 'updatedAt', 'deletedAt'
         ])
         && data.keys().hasAll([
@@ -285,6 +285,15 @@ service cloud.firestore {
         && (
           !data.keys().hasAny(['note'])
           || (data.note is string && data.note.size() <= 1000)
+        )
+        && (
+          !data.keys().hasAny(['tripDayOffset'])
+          || data.tripDayOffset == null
+          || (
+            data.tripDayOffset is int
+            && data.tripDayOffset >= 0
+            && data.tripDayOffset <= 36600
+          )
         )
         && (
           !data.keys().hasAny(['segmentId', 'dayOffset'])

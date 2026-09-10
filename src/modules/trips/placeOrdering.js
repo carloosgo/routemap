@@ -7,13 +7,6 @@ function normalizedCountryName(value) {
     .replace(/\s+/g, ' ');
 }
 
-function planningGroupKey(place) {
-  const segmentId = typeof place?.segmentId === 'string' ? place.segmentId.trim() : '';
-  const dayOffset = Number(place?.dayOffset);
-  if (!segmentId || !Number.isInteger(dayOffset) || dayOffset < 0) return 'unassigned';
-  return `${segmentId}\u0000${dayOffset}`;
-}
-
 export function placeCountryKey(place) {
   const countryCode = String(place?.countryCode || '').trim().toUpperCase();
   if (/^[A-Z]{2}$/.test(countryCode)) return `code:${countryCode}`;
@@ -69,6 +62,10 @@ export function contiguousPlaceGroups(places) {
   return groups;
 }
 
+/**
+ * Reorders only the visual place sequence. Planning ownership is deliberately
+ * untouched: moving a place between itinerary days is handled by MOVE_PLACE_TO_DAY.
+ */
 export function reorderPlaceList(
   places,
   sourceId,
@@ -79,20 +76,11 @@ export function reorderPlaceList(
   if (!sourceId || !targetId || sourceId === targetId) return currentPlaces;
 
   const sourceIndex = currentPlaces.findIndex((place) => place.id === sourceId);
-  const target = currentPlaces.find((place) => place.id === targetId);
-  if (sourceIndex < 0 || !target) return currentPlaces;
-
-  const source = currentPlaces[sourceIndex];
-  const sourceGroup = planningGroupKey(source);
-  const targetGroup = planningGroupKey(target);
-  const moved = sourceGroup === targetGroup
-    ? source
-    : targetGroup === 'unassigned'
-      ? { ...source, segmentId: '', dayOffset: null }
-      : { ...source, segmentId: target.segmentId, dayOffset: target.dayOffset };
+  const targetIndexBeforeRemoval = currentPlaces.findIndex((place) => place.id === targetId);
+  if (sourceIndex < 0 || targetIndexBeforeRemoval < 0) return currentPlaces;
 
   const reordered = [...currentPlaces];
-  reordered.splice(sourceIndex, 1);
+  const [moved] = reordered.splice(sourceIndex, 1);
   const targetIndex = reordered.findIndex((place) => place.id === targetId);
   reordered.splice(targetIndex + (placement === 'after' ? 1 : 0), 0, moved);
 
