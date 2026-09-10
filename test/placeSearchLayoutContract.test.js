@@ -29,14 +29,14 @@ test('el buscador de lugares permanece centrado en la columna real del mapa', as
   );
 });
 
-test('el buscador de escritorio no reserva columnas fantasma y las sugerencias siguen el ancho del input', async () => {
+test('el buscador de escritorio conserva el shell compacto sin columnas fantasma', async () => {
   const routeMapCss = await read('src/modules/map/RouteMap.css');
   const form = await read('src/modules/map/PlaceSearchForm.jsx');
 
   assert.match(
-    routeMapCss,
-    /@media\(min-width:801px\)\{[\s\S]*?\.geo-search\{[^}]*box-sizing:border-box;[^}]*width:min\(550px,calc\(100% - 32px\)\)[^}]*\}/,
-    'el shell desktop debe abrazar el ancho real de input y acción'
+    form,
+    /<form className="geo-search" style=\{\{ maxWidth: '470px' \}\}/,
+    'el buscador general debe conservar el ancho compacto máximo de 470 px'
   );
   assert.match(
     routeMapCss,
