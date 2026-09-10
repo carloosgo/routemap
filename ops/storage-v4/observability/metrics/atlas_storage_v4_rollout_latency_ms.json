@@ -1,0 +1,27 @@
+{
+  "name": "atlas_storage_v4_rollout_latency_ms",
+  "description": "Atlas Storage v4 repository operation latency distribution in milliseconds.",
+  "filter": "jsonPayload.message=\"storage_v4_rollout_metric\"",
+  "disabled": false,
+  "valueExtractor": "EXTRACT(jsonPayload.durationMs)",
+  "bucketOptions": {
+    "explicitBuckets": {
+      "bounds": [0, 25, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 30000, 60000, 120000]
+    }
+  },
+  "metricDescriptor": {
+    "metricKind": "DELTA",
+    "valueType": "DISTRIBUTION",
+    "unit": "ms",
+    "labels": [
+      { "key": "operation", "valueType": "STRING", "description": "Repository operation." },
+      { "key": "repository_mode", "valueType": "STRING", "description": "Selected repository mode." },
+      { "key": "outcome", "valueType": "STRING", "description": "Operation outcome." }
+    ]
+  },
+  "labelExtractors": {
+    "operation": "EXTRACT(jsonPayload.operation)",
+    "repository_mode": "EXTRACT(jsonPayload.repositoryMode)",
+    "outcome": "EXTRACT(jsonPayload.outcome)"
+  }
+}

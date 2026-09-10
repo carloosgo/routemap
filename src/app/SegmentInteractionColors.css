@@ -1,0 +1,12 @@
+/* Colores de interacción específicos de los tramos. */
+.floating-editor .segment__note-btn.has-note {
+  color: #417c8f;
+}
+
+.floating-editor .segment__note-btn.has-note::after {
+  background: #417c8f;
+}
+
+.floating-editor .segment__route .autocomplete__field:focus-within {
+  border-color: #417c8f;
+}

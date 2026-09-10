@@ -1,0 +1,103 @@
+/* Ajustes visuales estructurales del itinerario. La retícula compacta visible
+   vive en ItineraryCompactTen.css, que se carga al final de la cascada para no
+   heredar geometrías antiguas de Fecha / Noches / Costo. */
+
+@media (min-width: 721px) {
+  .editor-module > .editor-module__tabs {
+    border-right: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* La línea de la timeline atraviesa el centro exacto de las banderas:
+     18px de drag + 6px de gap + 15px de media bandera = 39px. */
+  .segments:not(.segments--compact) {
+    --itinerary-axis-x: 39px;
+  }
+
+  /* Esta hoja conserva únicamente la retícula estructural bandera/ciudad.
+     Costo y acciones pertenecen a la capa compacta final. */
+  .editor-module.editor-module--itinerary .itinerary-segment .segment__header.itinerary-stop {
+    box-sizing: border-box;
+    width: 100%;
+    grid-template-columns: 18px 30px 126px minmax(0, 1fr);
+    column-gap: 6px;
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-stop__place {
+    width: 100%;
+    max-width: 126px;
+  }
+
+  /* Origen replica exactamente las columnas visibles de una parada. El
+     padding inicial ocupa drag + gap para mantener bandera y eje en 39px. */
+  .segments:not(.segments--compact) .itinerary-origin {
+    box-sizing: border-box;
+    width: 100%;
+    padding-left: 24px;
+    grid-template-columns: 30px 126px minmax(0, 1fr);
+    column-gap: 6px;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__place {
+    width: 100%;
+    max-width: 126px;
+  }
+
+  /* Compatibilidad estructural del formulario detallado. El editor de fechas y
+     gastos ya se monta en el modal de detalle; estas reglas no gobiernan la fila. */
+  .segments:not(.segments--compact) .itinerary-origin__body,
+  .itinerary-segment .segment__body {
+    box-sizing: border-box;
+    width: calc(100% - 52px);
+    max-width: calc(100% - 52px);
+    margin: 3px 0 5px 52px;
+    padding: 8px 0 3px;
+  }
+
+  .floating-editor .segment__body.segment-expense-form {
+    --expense-content-end-inset: 32px;
+  }
+
+  .floating-editor .segment__body.segment-expense-form .dates__row,
+  .floating-editor .segment__body .expenses--journey .expenses__fixed-list,
+  .floating-editor .segment__body .expenses--journey .expenses__lineitems {
+    box-sizing: border-box;
+    padding-right: var(--expense-content-end-inset);
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__body .dates--origin .dates__row {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--expense-column-gap);
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__body .dates--origin .calendar-date {
+    grid-column: 1;
+  }
+
+  .floating-editor .segment__body.segment-expense-form .dates__row .calendar-date {
+    width: 100%;
+    max-width: none;
+    justify-self: stretch;
+  }
+
+  .floating-editor .segment__body .expenses--journey .moneycard__icon svg,
+  .floating-editor .segment__body .expenses--journey .expenses__add-other-icon svg {
+    transform: none;
+  }
+
+  .floating-editor .segment__body .expenses--journey .moneycard__label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .floating-editor .segment__body .expenses--journey .expenses__add-other {
+    width: calc(100% - var(--expense-content-end-inset));
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__body .expenses--journey,
+  .itinerary-segment .segment__body .expenses--journey {
+    width: 100%;
+    min-width: 0;
+  }
+}
