@@ -71,10 +71,27 @@ export function formatDate(iso, locale = 'es-MX') {
   return d.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function stripControlCharacters(value, allowLineFeed = false) {
+  return Array.from(value)
+    .filter((character) => {
+      const code = character.charCodeAt(0);
+      const isControl = code <= 31 || code === 127;
+      return !isControl || (allowLineFeed && code === 10);
+    })
+    .join('');
+}
+
 // Sanitiza texto libre del usuario antes de guardarlo/mostrarlo.
 // React ya escapa al renderizar, pero esto limpia control chars y limita longitud.
 export function sanitizeText(value, maxLen = 120) {
   if (typeof value !== 'string') return '';
-  // eslint-disable-next-line no-control-regex
-  return value.replace(/[\u0000-\u001F\u007F]/g, '').slice(0, maxLen);
+  return stripControlCharacters(value).slice(0, maxLen);
+}
+
+// Sanitiza contenido multilínea (notas) conservando saltos de línea.
+// Normaliza CRLF/CR a LF y elimina los demás caracteres de control.
+export function sanitizeMultilineText(value, maxLen = 120) {
+  if (typeof value !== 'string') return '';
+  const normalized = value.replace(/\r\n?/g, '\n');
+  return stripControlCharacters(normalized, true).slice(0, maxLen);
 }

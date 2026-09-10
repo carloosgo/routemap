@@ -1,4 +1,4 @@
-import { sanitizeText, uid } from '../../shared/utils.js';
+import { sanitizeMultilineText, sanitizeText, uid } from '../../shared/utils.js';
 import {
   createExpenses,
   normalizeExpenses,
@@ -156,7 +156,7 @@ export function createPlace(partial = {}) {
     segmentId: normalizeOptionalId(partial.segmentId),
     dayOffset: normalizeDayOffset(partial.dayOffset),
     tripDayOffset: normalizeDayOffset(partial.tripDayOffset),
-    note: sanitizeText(partial.note || '', TRIP_LIMITS.placeNote),
+    note: sanitizeMultilineText(partial.note || '', TRIP_LIMITS.placeNote),
   };
 }
 
@@ -208,7 +208,7 @@ export function createOriginDetails(partial = {}) {
     expenses: source.expenses
       ? normalizeExpenses(source.expenses)
       : createExpenses(),
-    note: sanitizeText(source.note || '', TRIP_LIMITS.originNote),
+    note: sanitizeMultilineText(source.note || '', TRIP_LIMITS.originNote),
   };
 }
 
@@ -223,7 +223,7 @@ export function createSegment(overrides = {}) {
     expenses: overrides.expenses
       ? normalizeExpenses(overrides.expenses)
       : createExpenses(),
-    note: sanitizeText(overrides.note || '', TRIP_LIMITS.segmentNote),
+    note: sanitizeMultilineText(overrides.note || '', TRIP_LIMITS.segmentNote),
   };
 }
 
@@ -231,7 +231,7 @@ export function createNote(text = '', title = '') {
   return {
     id: uid(),
     title: normalizeNoteTitle(title),
-    text: sanitizeText(text, TRIP_LIMITS.noteText),
+    text: sanitizeMultilineText(text, TRIP_LIMITS.noteText),
   };
 }
 
@@ -307,7 +307,7 @@ export function normalizeTrip(raw) {
       ? rawNotes.map((note) => ({
           id: normalizeId(note?.id),
           title: normalizeNoteTitle(note?.title),
-          text: sanitizeText(note?.text || '', TRIP_LIMITS.noteText),
+          text: sanitizeMultilineText(note?.text || '', TRIP_LIMITS.noteText),
         }))
       : typeof raw.notes === 'string'
         ? [createNote(raw.notes)]
