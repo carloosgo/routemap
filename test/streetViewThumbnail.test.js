@@ -6,11 +6,12 @@ import {
   buildStreetViewThumbnailUrl,
   streetViewLocation,
 } from '../src/modules/places/googleStreetViewThumbnail.js';
+import { placeForPersistence } from '../src/modules/trips/tripEntities.js';
 
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('Street View prioriza la dirección real del lugar y conserva coordenadas como fallback', () => {
+test('Street View prioriza la dirección real y luego coordenadas válidas', () => {
   assert.equal(
     streetViewLocation({
       address: 'Schaumainkai 63, Frankfurt am Main, Germany',
@@ -23,6 +24,36 @@ test('Street View prioriza la dirección real del lugar y conserva coordenadas c
   assert.equal(
     streetViewLocation({ lat: 50.1033, lon: 8.6739 }),
     '50.1033,8.6739'
+  );
+});
+
+test('un lugar Google persistido conserva una ubicación textual útil para Street View', () => {
+  const persisted = placeForPersistence({
+    id: 'ChIJD3uTd9hx5kcR1IQvGfr8dbk',
+    provider: 'google',
+    googlePlaceId: 'ChIJD3uTd9hx5kcR1IQvGfr8dbk',
+    userLabel: 'Museo del Louvre, Paris, Francia',
+    name: 'Musée du Louvre',
+    address: 'Rue de Rivoli, 75001 Paris, France',
+    city: 'Paris',
+    country: 'Francia',
+    lat: 48.8606111,
+    lon: 2.337644,
+  });
+
+  assert.equal(persisted.name, '');
+  assert.equal(persisted.address, '');
+  assert.equal(persisted.lat, null);
+  assert.equal(persisted.lon, null);
+  assert.equal(
+    streetViewLocation(persisted),
+    'Museo del Louvre, Paris, Francia'
+  );
+
+  const url = new URL(buildStreetViewThumbnailUrl(persisted, 'public-browser-key'));
+  assert.equal(
+    url.searchParams.get('location'),
+    'Museo del Louvre, Paris, Francia'
   );
 });
 

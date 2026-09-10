@@ -8,6 +8,7 @@ function cleanText(value, max = 260) {
 }
 
 function validCoordinate(value, limit) {
+  if (value === '' || value == null) return null;
   const number = Number(value);
   return Number.isFinite(number) && Math.abs(number) <= limit ? number : null;
 }
@@ -16,17 +17,15 @@ export function streetViewLocation(place) {
   const address = cleanText(place?.address);
   if (address) return address;
 
-  const namedLocation = [
-    cleanText(place?.name, 160),
+  const lat = validCoordinate(place?.lat, 90);
+  const lon = validCoordinate(place?.lon, 180);
+  if (lat !== null && lon !== null) return `${lat},${lon}`;
+
+  return [
+    cleanText(place?.name || place?.userLabel, 160),
     cleanText(place?.city, 120),
     cleanText(place?.country, 120),
   ].filter(Boolean).join(', ');
-  if (namedLocation) return namedLocation;
-
-  const lat = validCoordinate(place?.lat, 90);
-  const lon = validCoordinate(place?.lon, 180);
-  if (lat === null || lon === null) return '';
-  return `${lat},${lon}`;
 }
 
 export function buildStreetViewThumbnailUrl(place, apiKey) {
