@@ -1,0 +1,7 @@
+/* Autoridad tardía del ancho desktop del buscador general.
+   Conserva el centrado y la retícula input + acción existentes. */
+@media (min-width: 801px) {
+  .geo-search {
+    width: min(470px, calc(100% - 32px));
+  }
+}
