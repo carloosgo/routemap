@@ -54,7 +54,8 @@ test('Mis Rutas carga Street View sólo cerca del viewport y antes del nombre', 
   const thumbnail = await read('src/modules/places/StreetViewThumbnail.jsx');
   const panel = await read('src/modules/places/TripPlacesDayFirstPanel.jsx');
 
-  assert.match(thumbnail, /new IntersectionObserver/);
+  assert.match(thumbnail, /const Observer = globalThis\.IntersectionObserver;/);
+  assert.match(thumbnail, /new Observer/);
   assert.match(thumbnail, /rootMargin: '160px 0px'/);
   assert.match(thumbnail, /\{shouldLoad && \(/);
   assert.match(thumbnail, /loading="lazy"/);
