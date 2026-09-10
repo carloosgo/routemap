@@ -4,7 +4,6 @@ import { RouteMap } from '../modules/map/RouteMap.jsx';
 import { ItineraryDetailsModal } from '../modules/trips/ItineraryDetailsModal.jsx';
 import { buildItineraryStopSequence } from '../modules/trips/itineraryStopSequence.js';
 import { itineraryPlacePlanningTarget } from '../modules/trips/placePlanningAssignment.js';
-import { tripPlanningDays } from '../modules/trips/tripDayPlanning.js';
 import { tripCalendarDays } from '../modules/trips/tripGlobalDays.js';
 import { ORIGIN_NOTE_TARGET } from '../modules/trips/tripNoteTargets.js';
 import { colorForIndex } from '../config.js';
@@ -41,7 +40,6 @@ export function AppMapPane({
   const persistenceLabel = t(persistenceLabelKey(persistenceState));
   const persistenceHasCheck = persistenceState === 'saved' || persistenceState === 'local';
   const stopSequence = buildItineraryStopSequence(trip.origin, trip.segments, colorForIndex);
-  const planningDays = useMemo(() => tripPlanningDays(trip.segments), [trip.segments]);
   const calendarDays = useMemo(
     () => tripCalendarDays(trip),
     [trip.originDetails?.departureDate, trip.segments]
