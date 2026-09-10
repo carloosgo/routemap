@@ -5,6 +5,7 @@ import { ItineraryDetailsModal } from '../modules/trips/ItineraryDetailsModal.js
 import { buildItineraryStopSequence } from '../modules/trips/itineraryStopSequence.js';
 import { itineraryPlacePlanningTarget } from '../modules/trips/placePlanningAssignment.js';
 import { tripPlanningDays } from '../modules/trips/tripDayPlanning.js';
+import { tripCalendarDays } from '../modules/trips/tripGlobalDays.js';
 import { ORIGIN_NOTE_TARGET } from '../modules/trips/tripNoteTargets.js';
 import { colorForIndex } from '../config.js';
 
@@ -41,6 +42,10 @@ export function AppMapPane({
   const persistenceHasCheck = persistenceState === 'saved' || persistenceState === 'local';
   const stopSequence = buildItineraryStopSequence(trip.origin, trip.segments, colorForIndex);
   const planningDays = useMemo(() => tripPlanningDays(trip.segments), [trip.segments]);
+  const calendarDays = useMemo(
+    () => tripCalendarDays(trip),
+    [trip.originDetails?.departureDate, trip.segments]
+  );
 
   const showPlanningMessage = (message, duration = 2600) => {
     setPlanningMessage(message);
@@ -48,21 +53,25 @@ export function AppMapPane({
   };
 
   const requestPlaceSave = (place) => {
-    if (!planningDays.length) {
+    if (!calendarDays.length) {
       showPlanningMessage(t('placeNeedsPlannedDay'), 3400);
       return false;
     }
 
     const target = itineraryPlacePlanningTarget(place, trip.segments);
     if (target?.day) {
+      const tripDayOffset = calendarDays.find(
+        (day) => day.date === target.day.date
+      )?.tripDayOffset ?? 0;
       addPlace({
         ...place,
         segmentId: target.day.segmentId,
         dayOffset: target.day.dayOffset,
+        tripDayOffset,
       });
       return {
         accepted: true,
-        message: `${t('placeSaved')} · ${target.day.destination?.name || t('city')} · ${t('day')} ${target.day.globalDayNumber}`,
+        message: `${t('placeSaved')} · ${t('day')} ${tripDayOffset + 1}`,
       };
     }
 
@@ -70,10 +79,11 @@ export function AppMapPane({
       ...place,
       segmentId: '',
       dayOffset: null,
+      tripDayOffset: 0,
     });
     return {
       accepted: true,
-      message: `${t('placeSaved')} · ${t('unassignedPlaces')}`,
+      message: `${t('placeSaved')} · ${t('day')} 1`,
     };
   };
 
