@@ -75,7 +75,6 @@ export function formatDate(iso, locale = 'es-MX') {
 // React ya escapa al renderizar, pero esto limpia control chars y limita longitud.
 export function sanitizeText(value, maxLen = 120) {
   if (typeof value !== 'string') return '';
-  // eslint-disable-next-line no-control-regex
   return value.replace(/[\u0000-\u001F\u007F]/g, '').slice(0, maxLen);
 }
 
@@ -84,7 +83,6 @@ export function sanitizeText(value, maxLen = 120) {
 export function sanitizeMultilineText(value, maxLen = 120) {
   if (typeof value !== 'string') return '';
   const normalized = value.replace(/\r\n?/g, '\n');
-  // eslint-disable-next-line no-control-regex
   return normalized
     .replace(/[\u0000-\u0009\u000B-\u000C\u000E-\u001F\u007F]/g, '')
     .slice(0, maxLen);
