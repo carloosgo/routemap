@@ -30,10 +30,11 @@ function normalizedAttributions(value) {
 
 function normalizedPhoto(value) {
   const uri = safeHttpsUrl(value?.uri);
-  if (!uri) return null;
+  const googleMapsUri = safeHttpsUrl(value?.googleMapsUri);
+  if (!uri || !googleMapsUri) return null;
   return {
     uri,
-    googleMapsUri: safeHttpsUrl(value?.googleMapsUri),
+    googleMapsUri,
     authorAttributions: normalizedAttributions(value?.authorAttributions),
   };
 }
