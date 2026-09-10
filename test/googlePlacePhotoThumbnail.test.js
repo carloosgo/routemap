@@ -58,7 +58,7 @@ test('el cliente no conserva photoUri ni photo name fuera de la solicitud en cur
   const client = await read('src/modules/places/googlePlacePhotoClient.js');
   const server = await read('functions/googlePlacePhotoFunction.js');
 
-  assert.match(client, /pending\.finally\(\(\) => pendingPhotos\.delete\(id\)\)/);
+  assert.match(client, /pending\.then\([\s\S]*?pendingPhotos\.delete\(id\)[\s\S]*?pendingPhotos\.delete\(id\)/);
   assert.doesNotMatch(client, /memoryCache|expiresAt|setItem\(|CacheStorage/);
   assert.doesNotMatch(server, /cacheDb|sharedCache|expiresAt|setItem\(/);
 });
