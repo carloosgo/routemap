@@ -79,10 +79,14 @@ export const googlePlacePhoto = onCall(
       );
 
       const photo = (Array.isArray(details?.photos) ? details.photos : [])
-        .find((candidate) => validPhotoName(candidate?.name, placeId));
+        .find((candidate) => (
+          validPhotoName(candidate?.name, placeId)
+          && validHttpsUrl(candidate?.googleMapsUri)
+        ));
       if (!photo) return { photo: null };
 
       const photoName = validPhotoName(photo.name, placeId);
+      const googleMapsUri = validHttpsUrl(photo.googleMapsUri);
       const params = new URLSearchParams({
         maxWidthPx: String(PHOTO_MAX_WIDTH),
         maxHeightPx: String(PHOTO_MAX_HEIGHT),
@@ -104,7 +108,7 @@ export const googlePlacePhoto = onCall(
       return {
         photo: {
           uri,
-          googleMapsUri: validHttpsUrl(photo?.googleMapsUri),
+          googleMapsUri,
           authorAttributions: mapAuthorAttributions(photo?.authorAttributions),
         },
       };
