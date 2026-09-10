@@ -108,6 +108,7 @@ export function assignedPlacesForSegment(places, segmentId) {
 
 export function maxAssignedDayOffset(places, segmentId) {
   return assignedPlacesForSegment(places, segmentId).reduce((max, place) => {
+    if (place?.tripDayOffset !== '' && place?.tripDayOffset != null) return max;
     const offset = Number(place?.dayOffset);
     return Number.isInteger(offset) && offset >= 0 ? Math.max(max, offset) : max;
   }, -1);
