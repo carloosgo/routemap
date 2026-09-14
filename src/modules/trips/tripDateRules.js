@@ -198,15 +198,22 @@ export function tripBoundaryDates(tripOrSegments) {
     startDate = comparableDate(firstEnd?.endDate);
   }
 
+  let trailingStartDate = '';
   let endDate = '';
   for (let index = segments.length - 1; index >= 0; index -= 1) {
     const segment = segments[index];
-    const candidate = comparableDate(segment?.endDate)
-      || comparableDate(segment?.startDate);
-    if (candidate) {
-      endDate = candidate;
+    const segmentEnd = comparableDate(segment?.endDate);
+    if (segmentEnd) {
+      endDate = segmentEnd;
       break;
     }
+    if (!trailingStartDate) {
+      trailingStartDate = comparableDate(segment?.startDate);
+    }
+  }
+
+  if (trailingStartDate && (!endDate || trailingStartDate > endDate)) {
+    endDate = trailingStartDate;
   }
 
   return { startDate, endDate };
