@@ -4,9 +4,6 @@ import { colorForIndex } from '../config.js';
 import { formatMoney } from '../shared/utils.js';
 import './ItineraryPdfExport.css';
 
-const PREPARE_EXPORT_EVENT = 'atlas:prepare-itinerary-export';
-const RESTORE_EXPORT_EVENT = 'atlas:restore-itinerary-export';
-
 function afterLayout() {
   return new Promise((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(resolve));
@@ -15,6 +12,12 @@ function afterLayout() {
 
 function wait(milliseconds) {
   return new Promise((resolve) => globalThis.setTimeout(resolve, milliseconds));
+}
+
+function notifyViewportResize() {
+  const BrowserEvent = globalThis.Event;
+  if (typeof BrowserEvent !== 'function' || typeof globalThis.dispatchEvent !== 'function') return;
+  globalThis.dispatchEvent(new BrowserEvent('resize'));
 }
 
 function safeDocumentTitle(value) {
@@ -65,8 +68,7 @@ export function ItineraryPdfExportButton({ model, t }) {
       root.classList.add('itinerary-pdf-export');
       document.title = `${safeDocumentTitle(model.name || t('unnamedTrip'))} · ${t('appName')}`;
       await afterLayout();
-      globalThis.dispatchEvent(new Event('resize'));
-      globalThis.dispatchEvent(new CustomEvent(PREPARE_EXPORT_EVENT));
+      notifyViewportResize();
       await wait(650);
       await afterLayout();
       globalThis.print();
@@ -74,8 +76,7 @@ export function ItineraryPdfExportButton({ model, t }) {
       root.classList.remove('itinerary-pdf-export');
       document.title = previousTitle;
       await afterLayout();
-      globalThis.dispatchEvent(new Event('resize'));
-      globalThis.dispatchEvent(new CustomEvent(RESTORE_EXPORT_EVENT));
+      notifyViewportResize();
       setPrinting(false);
     }
   }, [model.name, printing, t]);
