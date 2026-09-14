@@ -1,0 +1,48 @@
+name: Finalize local World Atlas module
+
+on:
+  push:
+    branches:
+      - agent/pdf-bundled-world-atlas
+    paths:
+      - .github/workflows/finalize-world-atlas-module.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/pdf-bundled-world-atlas
+          fetch-depth: 0
+
+      - name: Convert pinned topology to local JavaScript module
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_file='src/modules/export/data/countries-110m.json'
+          target_file='src/modules/export/data/countries-110m.js'
+          test "$(git hash-object "$source_file")" = '055d19ffcf3133435978527737ff8ad37a568c59'
+          {
+            echo '// Natural Earth country topology, World Atlas 2.0.2 (ISC).'
+            echo '// Vendored at build-source level so PDF export has no runtime network dependency.'
+            printf 'export default '
+            cat "$source_file"
+            printf ';\n'
+          } > "$target_file"
+          rm "$source_file"
+
+      - name: Commit module and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/finalize-world-atlas-module.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'chore(export): bundle world atlas as local module'
+          git push origin HEAD:agent/pdf-bundled-world-atlas
