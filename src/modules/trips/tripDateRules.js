@@ -199,12 +199,10 @@ export function tripBoundaryDates(tripOrSegments) {
   }
 
   let endDate = '';
-  for (let index = segments.length - 1; index >= 0; index -= 1) {
-    const candidate = comparableDate(segments[index]?.endDate);
-    if (candidate) {
-      endDate = candidate;
-      break;
-    }
+  for (const segment of segments) {
+    const candidate = comparableDate(segment?.endDate)
+      || comparableDate(segment?.startDate);
+    if (candidate && candidate > endDate) endDate = candidate;
   }
 
   return { startDate, endDate };
