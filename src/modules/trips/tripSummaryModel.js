@@ -74,7 +74,7 @@ export function tripDateRange(tripOrSegments) {
   return tripBoundaryDates(tripOrSegments);
 }
 
-export function tripTotalNights(segments) {
+function segmentNightTotal(segments) {
   const ranges = [];
   for (const segment of Array.isArray(segments) ? segments : []) {
     const start = validDate(segment?.startDate);
@@ -102,6 +102,27 @@ export function tripTotalNights(segments) {
   }
 
   return total + Math.floor((rangeEnd - rangeStart) / DAY_MS);
+}
+
+function tripBoundaryNightTotal(trip) {
+  const { startDate, endDate } = tripDateRange(trip);
+  const start = validDate(startDate);
+  const end = validDate(endDate);
+  if (start == null || end == null || end <= start) return 0;
+
+  // Header nights are a global trip metric, not a sum of per-leg stays.
+  // The final destination date is a checkout/end boundary, so it is excluded by
+  // the date difference itself. When the displayed start is the origin departure,
+  // that origin date is also excluded because it is not a destination night.
+  const calendarDaysBeforeEnd = Math.floor((end - start) / DAY_MS);
+  const originDeparture = trip?.originDetails?.departureDate || '';
+  const excludesOriginDeparture = startDate === originDeparture && validDate(originDeparture) != null;
+  return Math.max(0, calendarDaysBeforeEnd - (excludesOriginDeparture ? 1 : 0));
+}
+
+export function tripTotalNights(tripOrSegments) {
+  if (Array.isArray(tripOrSegments)) return segmentNightTotal(tripOrSegments);
+  return tripBoundaryNightTotal(tripOrSegments || {});
 }
 
 export function tripDestinationCount(segments) {
@@ -142,7 +163,7 @@ export function tripSummary(trip) {
     ...tripDateRange(trip),
     destinations: tripDestinationCount(segments),
     countries: tripCountryCount(segments),
-    nights: tripTotalNights(segments),
+    nights: tripTotalNights(trip),
     distanceKm: tripTotalDistanceKm(segments),
   };
 }
