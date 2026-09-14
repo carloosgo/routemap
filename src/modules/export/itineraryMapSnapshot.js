@@ -1,8 +1,3 @@
-const MAP_REPAINT_SETTLE_MS = 90;
-const STREAM_FRAME_WAIT_MS = 700;
-const MAX_STREAM_FALLBACK_LAYERS = 2;
-const USEFUL_PNG_DATA_URL_LENGTH = 12000;
-
 function wait(milliseconds) {
   return new Promise((resolve) => globalThis.setTimeout(resolve, milliseconds));
 }
@@ -21,169 +16,158 @@ function loadImage(src) {
   });
 }
 
-function backgroundUrl(element) {
-  const backgroundImage = globalThis.getComputedStyle?.(element)?.backgroundImage || '';
-  const match = /url\(["']?(.+?)["']?\)/.exec(backgroundImage);
-  return match?.[1] || '';
-}
-
-async function settleMapRepaint() {
-  const BrowserEvent = globalThis.Event;
-  if (typeof BrowserEvent === 'function' && typeof globalThis.dispatchEvent === 'function') {
-    globalThis.dispatchEvent(new BrowserEvent('resize'));
+function inlineComputedStyles(source, clone) {
+  const style = globalThis.getComputedStyle?.(source);
+  if (!style || !clone?.style) return;
+  if (style.cssText) {
+    clone.style.cssText = style.cssText;
+  } else {
+    for (const property of style) {
+      clone.style.setProperty(
+        property,
+        style.getPropertyValue(property),
+        style.getPropertyPriority(property)
+      );
+    }
   }
-  await wait(MAP_REPAINT_SETTLE_MS);
+  clone.style.transformOrigin = style.transformOrigin || 'center center';
 }
 
-function directCanvasDataUrl(source) {
+async function canvasDataUrl(source) {
   try {
-    return source.toDataURL('image/png') || '';
+    const direct = source.toDataURL('image/png');
+    if (direct && direct.length > 12000) return direct;
   } catch {
-    return '';
+    // Streaming fallback below.
   }
-}
 
-async function streamCanvasDataUrl(source) {
   if (typeof source.captureStream !== 'function') return '';
-  const documentRef = globalThis.document;
-  const video = documentRef?.createElement?.('video');
-  if (!video) return '';
-
   let stream;
   try {
-    stream = source.captureStream(0);
+    stream = source.captureStream(30);
     const track = stream.getVideoTracks?.()[0];
-    if (!track) return '';
-
+    const documentRef = globalThis.document;
+    const video = documentRef?.createElement?.('video');
+    if (!track || !video) return '';
     video.muted = true;
     video.playsInline = true;
     video.srcObject = stream;
-    const playPromise = video.play?.();
-    playPromise?.catch?.(() => {});
-
-    const startedAt = Date.now();
-    while (Date.now() - startedAt < STREAM_FRAME_WAIT_MS) {
-      track.requestFrame?.();
-      if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) break;
-      await wait(35);
-    }
-
-    if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) return '';
+    await video.play();
+    track.requestFrame?.();
+    await wait(120);
 
     const canvas = documentRef.createElement('canvas');
-    canvas.width = Math.max(1, source.width || video.videoWidth);
-    canvas.height = Math.max(1, source.height || video.videoHeight);
+    canvas.width = Math.max(1, source.width);
+    canvas.height = Math.max(1, source.height);
     const context = canvas.getContext('2d');
-    if (!context) return '';
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     return canvas.toDataURL('image/png');
   } catch {
     return '';
   } finally {
-    video.pause?.();
-    video.srcObject = null;
     stream?.getTracks?.().forEach((track) => track.stop());
   }
 }
 
-async function canvasDataUrl(source, allowStreamFallback) {
-  const direct = directCanvasDataUrl(source);
-  if (direct.length > USEFUL_PNG_DATA_URL_LENGTH || !allowStreamFallback) return direct;
-  const streamed = await streamCanvasDataUrl(source);
-  return streamed.length > direct.length ? streamed : direct;
-}
-
-function drawDot(context, dot, rootRect, scale) {
-  const rect = dot.getBoundingClientRect();
-  if (!rect.width || !rect.height) return;
-  const styles = globalThis.getComputedStyle?.(dot);
-  const color = dot.style.getPropertyValue('--itinerary-visit-color')
-    || styles?.backgroundColor
-    || '#111111';
-  const centerX = (rect.left - rootRect.left + (rect.width / 2)) * scale;
-  const centerY = (rect.top - rootRect.top + (rect.height / 2)) * scale;
-  const radius = (Math.min(rect.width, rect.height) / 2) * scale;
-
-  context.save();
-  context.fillStyle = color;
-  context.beginPath();
-  context.arc(centerX, centerY, radius, 0, Math.PI * 2);
-  context.fill();
-  context.strokeStyle = '#ffffff';
-  context.lineWidth = 1.3 * scale;
-  context.stroke();
-  context.fillStyle = '#ffffff';
-  context.font = `800 ${Math.max(9, 9 * scale)}px Arial, sans-serif`;
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-  context.fillText(dot.textContent || '', centerX, centerY + (0.25 * scale));
-  context.restore();
-}
-
-async function drawFlag(context, flag, rootRect, scale) {
-  const src = backgroundUrl(flag);
-  if (!src) return;
-  const rect = flag.getBoundingClientRect();
-  if (!rect.width || !rect.height) return;
-  try {
-    const image = await loadImage(src);
-    context.drawImage(
-      image,
-      (rect.left - rootRect.left) * scale,
-      (rect.top - rootRect.top) * scale,
-      rect.width * scale,
-      rect.height * scale
-    );
-  } catch {
-    // The numbered visit marker still identifies the stop if a flag asset is unavailable.
-  }
-}
-
-async function drawItineraryMarkers(context, root, rootRect, scale) {
-  const markers = [...root.querySelectorAll('.google-itinerary-city-marker')];
-  for (const marker of markers) {
-    for (const child of [...marker.children]) {
-      if (child.classList.contains('google-itinerary-city-marker__dot')) {
-        drawDot(context, child, rootRect, scale);
-      } else if (child.classList.contains('google-itinerary-city-marker__flag')) {
-        await drawFlag(context, child, rootRect, scale);
-      }
-    }
-  }
-}
-
-export async function captureVisibleItineraryMap() {
+async function cloneNodeWithInlineAssets(node) {
   const documentRef = globalThis.document;
-  const root = documentRef?.querySelector?.('.mappane .google-map');
-  if (!root) throw new Error('Itinerary map unavailable');
+  if (!documentRef) throw new Error('Document unavailable');
+
+  const NodeCtor = globalThis.Node;
+  if (node.nodeType === NodeCtor?.TEXT_NODE) {
+    return documentRef.createTextNode(node.textContent || '');
+  }
+  if (node.nodeType !== NodeCtor?.ELEMENT_NODE) {
+    return documentRef.createTextNode('');
+  }
+
+  const tagName = node.tagName?.toLowerCase?.();
+  let clone;
+
+  if (tagName === 'canvas') {
+    clone = documentRef.createElement('img');
+    inlineComputedStyles(node, clone);
+    clone.setAttribute('width', String(node.width || Math.round(node.getBoundingClientRect().width) || 1));
+    clone.setAttribute('height', String(node.height || Math.round(node.getBoundingClientRect().height) || 1));
+    const dataUrl = await canvasDataUrl(node);
+    if (dataUrl) clone.setAttribute('src', dataUrl);
+    return clone;
+  }
+
+  clone = node.cloneNode(false);
+  inlineComputedStyles(node, clone);
+
+  const rect = node.getBoundingClientRect?.();
+  if (rect?.width) clone.style.width = `${rect.width}px`;
+  if (rect?.height) clone.style.height = `${rect.height}px`;
+
+  if (tagName === 'img') {
+    const src = node.currentSrc || node.src;
+    if (src) clone.setAttribute('src', src);
+  }
+
+  for (const child of [...node.childNodes]) {
+    clone.appendChild(await cloneNodeWithInlineAssets(child));
+  }
+  return clone;
+}
+
+async function captureElementScreenshot(element, scale) {
+  const documentRef = globalThis.document;
+  const Serializer = globalThis.XMLSerializer;
+  if (typeof Serializer !== 'function') throw new Error('XMLSerializer unavailable');
+  const serializer = new Serializer();
+  const rect = element.getBoundingClientRect();
+  const width = Math.max(1, Math.round(rect.width));
+  const height = Math.max(1, Math.round(rect.height));
+  const clone = await cloneNodeWithInlineAssets(element);
+  const wrapper = documentRef.createElement('div');
+  wrapper.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+  wrapper.style.width = `${width}px`;
+  wrapper.style.height = `${height}px`;
+  wrapper.style.overflow = 'hidden';
+  wrapper.style.background = globalThis.getComputedStyle?.(element)?.backgroundColor || '#eaf3f6';
+  wrapper.appendChild(clone);
+
+  const markup = serializer.serializeToString(wrapper)
+    .replace(/#/g, '%23')
+    .replace(/\n/g, '%0A');
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${width * scale}" height="${height * scale}" viewBox="0 0 ${width} ${height}">
+      <foreignObject x="0" y="0" width="${width}" height="${height}">${markup}</foreignObject>
+    </svg>`;
+  const dataUrl = `data:image/svg+xml;charset=utf-8,${svg}`;
+  const image = await loadImage(dataUrl);
+  const canvas = documentRef.createElement('canvas');
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+  const context = canvas.getContext('2d');
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  return {
+    dataUrl: canvas.toDataURL('image/png'),
+    width: canvas.width,
+    height: canvas.height,
+  };
+}
+
+async function compositeCanvasFallback(root, scale) {
+  const documentRef = globalThis.document;
   const rootRect = root.getBoundingClientRect();
-  if (rootRect.width < 2 || rootRect.height < 2) throw new Error('Itinerary map has no visible area');
-
-  await settleMapRepaint();
-
-  const scale = Math.min(2, Math.max(1.35, Number(globalThis.devicePixelRatio) || 1));
   const canvas = documentRef.createElement('canvas');
   canvas.width = Math.round(rootRect.width * scale);
   canvas.height = Math.round(rootRect.height * scale);
   const context = canvas.getContext('2d');
-  if (!context) throw new Error('Map capture canvas unavailable');
   context.fillStyle = '#eaf3f6';
   context.fillRect(0, 0, canvas.width, canvas.height);
 
-  const layers = [...root.querySelectorAll('canvas')]
-    .filter((layer) => {
-      const rect = layer.getBoundingClientRect();
-      return rect.width > 2 && rect.height > 2;
-    })
-    .sort((left, right) => {
-      const leftRect = left.getBoundingClientRect();
-      const rightRect = right.getBoundingClientRect();
-      return (rightRect.width * rightRect.height) - (leftRect.width * leftRect.height);
-    });
-  let copiedLayers = 0;
+  const layers = [...root.querySelectorAll('canvas')].filter((layer) => {
+    const rect = layer.getBoundingClientRect();
+    return rect.width > 2 && rect.height > 2;
+  });
 
-  for (const [index, layer] of layers.entries()) {
-    const dataUrl = await canvasDataUrl(layer, index < MAX_STREAM_FALLBACK_LAYERS);
+  let copiedLayers = 0;
+  for (const layer of layers) {
+    const dataUrl = await canvasDataUrl(layer);
     if (!dataUrl) continue;
     try {
       const image = await loadImage(dataUrl);
@@ -195,18 +179,32 @@ export async function captureVisibleItineraryMap() {
         rect.width * scale,
         rect.height * scale
       );
-      if (dataUrl.length > USEFUL_PNG_DATA_URL_LENGTH) copiedLayers += 1;
+      copiedLayers += 1;
     } catch {
-      // Continue with the remaining Google Maps render layers.
+      // Continue with any remaining layers.
     }
   }
 
   if (!copiedLayers) throw new Error('Google Maps render could not be captured');
-  await drawItineraryMarkers(context, root, rootRect, scale);
-
   return {
     dataUrl: canvas.toDataURL('image/png'),
     width: canvas.width,
     height: canvas.height,
   };
+}
+
+export async function captureVisibleItineraryMap() {
+  const documentRef = globalThis.document;
+  const root = documentRef?.querySelector?.('.mappane .google-map');
+  if (!root) throw new Error('Itinerary map unavailable');
+  const rootRect = root.getBoundingClientRect();
+  if (rootRect.width < 2 || rootRect.height < 2) throw new Error('Itinerary map has no visible area');
+
+  const scale = Math.max(2, Math.min(3, Math.ceil(Number(globalThis.devicePixelRatio) || 1)));
+  try {
+    return await captureElementScreenshot(root, scale);
+  } catch (error) {
+    console.warn('[Itinerary PDF] SVG snapshot fallback to layer composite', error);
+    return compositeCanvasFallback(root, scale);
+  }
 }
