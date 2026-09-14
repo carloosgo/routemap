@@ -69,18 +69,39 @@ function globalSegmentDateRange(segments) {
 
 export function tripDateRange(tripOrSegments) {
   // Preserve the standalone segment-array utility contract. The trip header passes
-  // the full trip object so it can use origin departure + last entered leg end.
+  // the full trip object so it can use origin departure + last entered leg date.
   if (Array.isArray(tripOrSegments)) return globalSegmentDateRange(tripOrSegments);
   return tripBoundaryDates(tripOrSegments);
 }
 
 export function tripTotalNights(segments) {
-  return (Array.isArray(segments) ? segments : []).reduce((sum, segment) => {
+  const ranges = [];
+  for (const segment of Array.isArray(segments) ? segments : []) {
     const start = validDate(segment?.startDate);
-    const end = validDate(segment?.endDate);
-    if (start == null || end == null || end < start) return sum;
-    return sum + Math.round((end - start) / DAY_MS);
-  }, 0);
+    if (start == null) continue;
+
+    const explicitEnd = validDate(segment?.endDate);
+    const end = explicitEnd ?? start;
+    if (end < start) continue;
+    ranges.push([start, end]);
+  }
+
+  if (!ranges.length) return 0;
+  ranges.sort((left, right) => left[0] - right[0] || left[1] - right[1]);
+
+  let total = 0;
+  let [rangeStart, rangeEnd] = ranges[0];
+  for (const [start, end] of ranges.slice(1)) {
+    if (start <= rangeEnd + DAY_MS) {
+      rangeEnd = Math.max(rangeEnd, end);
+      continue;
+    }
+    total += Math.floor((rangeEnd - rangeStart) / DAY_MS) + 1;
+    rangeStart = start;
+    rangeEnd = end;
+  }
+
+  return total + Math.floor((rangeEnd - rangeStart) / DAY_MS) + 1;
 }
 
 export function tripDestinationCount(segments) {
