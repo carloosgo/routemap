@@ -1,4 +1,10 @@
-import { tripTotal } from '../trips/tripModel.js';
+import { colorForIndex } from '../../config.js';
+import {
+  isPlaced,
+  segmentTotal,
+  tripTotal,
+} from '../trips/tripModel.js';
+import { buildItineraryStopSequence } from '../trips/itineraryStopSequence.js';
 import { tripSummary } from '../trips/tripSummaryModel.js';
 
 function safeText(value) {
@@ -16,9 +22,18 @@ function citySnapshot(city) {
   };
 }
 
+function hasChosenCity(city) {
+  return Boolean(
+    city
+    && (safeText(city.name || city.displayName).trim() || isPlaced(city))
+  );
+}
+
 export function buildItineraryPdfModel(trip = {}) {
   const segments = Array.isArray(trip.segments) ? trip.segments : [];
   const summary = tripSummary(trip);
+  const hasOrigin = isPlaced(trip.origin) && hasChosenCity(trip.origin);
+  const presentation = buildItineraryStopSequence(trip.origin, segments, colorForIndex);
 
   return {
     tripId: safeText(trip.id),
@@ -26,19 +41,28 @@ export function buildItineraryPdfModel(trip = {}) {
     currency: safeText(trip.currency) || 'USD',
     total: tripTotal(trip),
     summary,
+    hasOrigin,
     origin: {
       ...citySnapshot(trip.origin),
       departureDate: safeText(trip.originDetails?.departureDate),
       note: safeText(trip.originDetails?.note),
+      total: hasOrigin ? segmentTotal({ expenses: trip.originDetails?.expenses }) : 0,
     },
-    stops: segments.map((segment, index) => ({
-      key: safeText(segment?.id) || `segment-${index + 1}`,
-      segmentId: safeText(segment?.id),
-      number: index + 1,
-      ...citySnapshot(segment?.destination),
-      startDate: safeText(segment?.startDate),
-      endDate: safeText(segment?.endDate),
-      note: safeText(segment?.note),
-    })),
+    stops: segments.flatMap((segment, index) => {
+      if (!hasChosenCity(segment?.destination)) return [];
+      const stopPresentation = presentation[index] || {};
+      return [{
+        key: safeText(segment?.id) || `segment-${index + 1}`,
+        segmentId: safeText(segment?.id),
+        number: stopPresentation.number,
+        color: stopPresentation.color,
+        isTerminalReturn: Boolean(stopPresentation.isTerminalReturn),
+        ...citySnapshot(segment?.destination),
+        startDate: safeText(segment?.startDate),
+        endDate: safeText(segment?.endDate),
+        note: safeText(segment?.note),
+        total: segmentTotal(segment),
+      }];
+    }),
   };
 }
