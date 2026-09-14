@@ -212,6 +212,7 @@ export default function App() {
     <AppMapPane
       trip={trip}
       mapView={activeTab === 'places' ? 'places' : 'segments'}
+      allowItineraryPdfExport={activeTab === 'segments'}
       itineraryPanels={itineraryPanels}
       updateSegment={updateSegment}
       updateExpenses={updateExpenses}
