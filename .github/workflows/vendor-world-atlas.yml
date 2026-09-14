@@ -1,0 +1,42 @@
+name: Vendor pinned World Atlas
+
+on:
+  push:
+    branches:
+      - agent/pdf-bundled-world-atlas
+    paths:
+      - .github/workflows/vendor-world-atlas.yml
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/pdf-bundled-world-atlas
+          fetch-depth: 0
+
+      - name: Vendor pinned World Atlas geometry
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p src/modules/export/data
+          curl --fail --location --silent --show-error \
+            'https://raw.githubusercontent.com/seuros/kaunta/b187510894590a32a9aa24e28dcb43071691484a/cmd/kaunta/assets/data/countries-110m.json' \
+            --output src/modules/export/data/countries-110m.json
+          test "$(git hash-object src/modules/export/data/countries-110m.json)" = '055d19ffcf3133435978527737ff8ad37a568c59'
+
+      - name: Commit vendored asset and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/vendor-world-atlas.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'chore(export): vendor pinned world atlas geometry'
+          git push origin HEAD:agent/pdf-bundled-world-atlas
