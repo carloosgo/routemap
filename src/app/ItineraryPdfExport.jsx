@@ -53,6 +53,7 @@ function stopDateRange(stop, locale, emptyLabel) {
 
 export function ItineraryPdfExportButton({ model, t }) {
   const [printing, setPrinting] = useState(false);
+  const exportLabel = `${t('itinerary')} · PDF`;
 
   const exportPdf = useCallback(async () => {
     if (printing || typeof document === 'undefined' || typeof globalThis.print !== 'function') return;
@@ -84,8 +85,8 @@ export function ItineraryPdfExportButton({ model, t }) {
       type="button"
       className="itinerary-pdf-export__button"
       onClick={exportPdf}
-      aria-label={t('exportItineraryPdf')}
-      title={t('exportItineraryPdf')}
+      aria-label={exportLabel}
+      title={exportLabel}
       disabled={printing}
     >
       <IconFileTypePdf size={21} aria-hidden="true" />
@@ -106,10 +107,10 @@ export function ItineraryPdfSummary({ model, intlLocale, t }) {
       </div>
       <div className="itinerary-pdf-export__title-row">
         <div>
-          <div className="itinerary-pdf-export__eyebrow">{t('pdfItinerary')}</div>
+          <div className="itinerary-pdf-export__eyebrow">{t('itinerary')}</div>
           <h1>{model.name || t('unnamedTrip')}</h1>
         </div>
-        <span className="itinerary-pdf-export__map-label">{t('pdfRouteMap')}</span>
+        <span className="itinerary-pdf-export__map-label">{t('mapRegion')}</span>
       </div>
       <div className="itinerary-pdf-export__metrics">
         <div><span>{t('tripDates')}</span><strong>{dates}</strong></div>
@@ -159,7 +160,7 @@ function NoteCard({ stop, intlLocale, t }) {
         </div>
       </header>
       <div className={note ? 'itinerary-pdf-export__note' : 'itinerary-pdf-export__note is-empty'}>
-        {note || t('pdfNoNotes')}
+        {note || '—'}
       </div>
     </article>
   );
@@ -177,7 +178,7 @@ export function ItineraryPdfDetails({ model, intlLocale, t }) {
       <RouteLegend model={model} t={t} />
       <section className="itinerary-pdf-export__notes" aria-hidden="true">
         <div className="itinerary-pdf-export__notes-heading">
-          <span>{t('pdfItineraryNotes')}</span>
+          <span>{t('itinerary')} · {t('notes')}</span>
           <strong>{model.name || t('unnamedTrip')}</strong>
         </div>
         <div className="itinerary-pdf-export__notes-grid">
@@ -190,7 +191,7 @@ export function ItineraryPdfDetails({ model, intlLocale, t }) {
               </div>
             </header>
             <div className={originNote ? 'itinerary-pdf-export__note' : 'itinerary-pdf-export__note is-empty'}>
-              {originNote || t('pdfNoNotes')}
+              {originNote || '—'}
             </div>
           </article>
           {model.stops.map((stop) => (
