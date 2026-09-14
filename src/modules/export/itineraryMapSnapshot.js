@@ -203,8 +203,7 @@ export async function captureVisibleItineraryMap() {
   const scale = Math.max(2, Math.min(3, Math.ceil(Number(globalThis.devicePixelRatio) || 1)));
   try {
     return await captureElementScreenshot(root, scale);
-  } catch (error) {
-    console.warn('[Itinerary PDF] SVG snapshot fallback to layer composite', error);
+  } catch {
     return compositeCanvasFallback(root, scale);
   }
 }
