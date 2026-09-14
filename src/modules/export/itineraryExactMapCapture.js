@@ -1,6 +1,11 @@
 const CAPTURE_TIMEOUT_MS = 60_000;
 const FRAME_TIMEOUT_MS = 5_000;
 const MAP_SELECTOR = '.mappane .google-map';
+const HIDDEN_DURING_CAPTURE = Object.freeze([
+  '.itinerary-pdf-export__button',
+  '.topbar--floating-only',
+  '.editor-module__settings',
+]);
 
 function timeout(promise, milliseconds, message) {
   return new Promise((resolve, reject) => {
@@ -100,6 +105,21 @@ function stopStream(stream) {
   stream?.getTracks?.().forEach((track) => track.stop());
 }
 
+function hideCaptureChrome(documentRef) {
+  const hidden = [];
+  HIDDEN_DURING_CAPTURE.forEach((selector) => {
+    documentRef.querySelectorAll?.(selector)?.forEach((element) => {
+      hidden.push({ element, visibility: element.style.visibility });
+      element.style.visibility = 'hidden';
+    });
+  });
+  return () => {
+    hidden.forEach(({ element, visibility }) => {
+      element.style.visibility = visibility;
+    });
+  };
+}
+
 async function requestCurrentTabStream() {
   const mediaDevices = globalThis.navigator?.mediaDevices;
   if (typeof mediaDevices?.getDisplayMedia !== 'function') {
@@ -149,7 +169,10 @@ export async function captureExactItineraryMap() {
 
   let stream = null;
   let video = null;
+  const restoreChrome = hideCaptureChrome(documentRef);
   try {
+    await nextAnimationFrame();
+    await nextAnimationFrame();
     stream = await requestCurrentTabStream();
     const track = stream.getVideoTracks?.()[0];
     if (!track) throw new Error('Current-tab video track is unavailable');
@@ -199,6 +222,7 @@ export async function captureExactItineraryMap() {
       pixelHeight: canvas.height,
     };
   } finally {
+    restoreChrome();
     if (video) {
       try { video.pause(); } catch { /* no-op */ }
       video.srcObject = null;
