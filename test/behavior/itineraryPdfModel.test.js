@@ -1,7 +1,7 @@
 // test-contract: behavior
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { colorForIndex } from '../../src/config.js';
+import { colorForIndex, countryColorForIndex } from '../../src/config.js';
 import { buildItineraryPdfModel } from '../../src/modules/export/itineraryPdfModel.js';
 import { tripTotal } from '../../src/modules/trips/tripModel.js';
 import { tripSummary } from '../../src/modules/trips/tripSummaryModel.js';
@@ -87,8 +87,8 @@ test('conserva el mismo orden y colores canónicos de países que el mapa de Iti
 
   assert.deepEqual(model.countries.map((country) => country.countryCode), ['FR', 'DE']);
   assert.deepEqual(model.countries.map((country) => country.color), [
-    colorForIndex(0),
-    colorForIndex(1),
+    countryColorForIndex(0),
+    countryColorForIndex(1),
   ]);
   assert.deepEqual(model.countries.map((country) => country.city.name), ['París', 'Núremberg']);
 });
