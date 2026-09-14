@@ -67,7 +67,7 @@ test('el PDF conserva texto vectorial e incrusta solo el mapa como JPEG', () => 
     intlLocale: 'es-MX',
     t,
   });
-  const source = new TextDecoder('windows-1252').decode(bytes);
+  const source = new globalThis.TextDecoder('windows-1252').decode(bytes);
   assert.match(source, /\/Subtype \/Image/);
   assert.match(source, /\(Viaje Europa\)/);
   assert.match(source, /\(París\)/);
