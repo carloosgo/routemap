@@ -1,12 +1,11 @@
 import { useCallback, useState } from 'react';
 import { IconFileTypePdf } from '@tabler/icons-react';
+import { captureExactItineraryMap } from '../modules/export/itineraryExactMapCapture.js';
 import { renderItineraryHybridPdf } from '../modules/export/itineraryPdfHybrid.js';
-import { composeItineraryStaticMap } from '../modules/export/itineraryStaticMapComposer.js';
-import { loadItineraryStaticMap } from '../modules/export/itineraryStaticMapClient.js';
 import { downloadVectorPdf } from '../modules/export/pdfVectorDocument.js';
 import './ItineraryPdfExport.css';
 
-const EXPORT_TIMEOUT_MS = 25_000;
+const PDF_RENDER_TIMEOUT_MS = 15_000;
 
 function safeFileName(value) {
   return String(value || '')
@@ -18,7 +17,7 @@ function safeFileName(value) {
 function withTimeout(promise, milliseconds) {
   return new Promise((resolve, reject) => {
     const timer = globalThis.setTimeout(
-      () => reject(new Error('Itinerary PDF export timed out')),
+      () => reject(new Error('Itinerary PDF rendering timed out')),
       milliseconds
     );
     Promise.resolve(promise).then(
@@ -47,10 +46,8 @@ export function ItineraryPdfExportButton({
     if (exporting) return;
     setExporting(true);
     try {
+      const mapImage = await captureExactItineraryMap();
       await withTimeout((async () => {
-        const language = String(intlLocale || '').toLowerCase().startsWith('en') ? 'en' : 'es';
-        const baseMap = await loadItineraryStaticMap(model, { language });
-        const mapImage = await composeItineraryStaticMap(model, baseMap);
         const bytes = renderItineraryHybridPdf({
           model,
           mapImage,
@@ -59,7 +56,7 @@ export function ItineraryPdfExportButton({
         });
         const baseName = safeFileName(model.name || t('appName')) || t('appName');
         downloadVectorPdf(bytes, `${baseName}.pdf`);
-      })(), EXPORT_TIMEOUT_MS);
+      })(), PDF_RENDER_TIMEOUT_MS);
     } catch (error) {
       console.error('[Itinerary PDF] export failed', error);
       onError?.(error);
