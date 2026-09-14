@@ -191,7 +191,7 @@ export function AppMapPane({
         <ItineraryPdfExportButton
           model={pdfModel}
           intlLocale={intlLocale}
-          onError={() => showPlanningMessage(t('googleMapLoadError'), 3400)}
+          onError={() => showPlanningMessage(t('itineraryPdfExportError'), 3400)}
           t={t}
         />
       )}
