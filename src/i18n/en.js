@@ -139,6 +139,7 @@ export default {
   mapConfigMissingShort: 'VITE_GEOAPIFY_MAPS_API_KEY is missing.',
   googleMapConfigMissingShort: 'VITE_GOOGLE_MAPS_API_KEY or VITE_GOOGLE_MAPS_MAP_ID is missing.',
   googleMapLoadError: 'Google Maps could not be loaded.',
+  itineraryPdfExportError: 'The itinerary PDF could not be generated. Please try again.',
   mapRegion: 'Trip map',
   routeSummary: 'Route summary',
   notes: 'Notes',
