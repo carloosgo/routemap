@@ -1,7 +1,11 @@
 const WORLD_ATLAS_URLS = Object.freeze([
-  'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json',
-  'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json',
+  'https://unpkg.com/world-atlas@2.0.2/countries-110m.json',
+  'https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json',
+  'https://fastly.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json',
 ]);
+const WORLD_ATLAS_CACHE_KEY = 'atlas:itinerary-pdf:world-atlas:110m:v1';
+const WORLD_ATLAS_REQUEST_TIMEOUT_MS = 7000;
+const WORLD_ATLAS_DECODE_TIMEOUT_MS = 4000;
 
 let worldAtlasPromise = null;
 
@@ -19,6 +23,14 @@ function withTimeout(promise, milliseconds, message) {
       }
     );
   });
+}
+
+function storage() {
+  try {
+    return globalThis.localStorage || null;
+  } catch {
+    return null;
+  }
 }
 
 function decodeArc(topology, arcIndex) {
@@ -100,34 +112,73 @@ function decodeCountries(topology) {
   }).filter((country) => country.polygons.length && country.bounds);
 }
 
+function parseTopology(payload) {
+  const topology = typeof payload === 'string' ? JSON.parse(payload) : payload;
+  if (topology?.type !== 'Topology') throw new Error('Invalid world atlas payload');
+  return topology;
+}
+
+function readCachedCountries() {
+  const target = storage();
+  if (!target) return null;
+  try {
+    const raw = target.getItem(WORLD_ATLAS_CACHE_KEY);
+    if (!raw) return null;
+    return decodeCountries(parseTopology(raw));
+  } catch {
+    try {
+      target.removeItem(WORLD_ATLAS_CACHE_KEY);
+    } catch {
+      // Ignore storage cleanup failures and continue with remote fallbacks.
+    }
+    return null;
+  }
+}
+
+function writeCachedTopology(raw) {
+  const target = storage();
+  if (!target || !raw) return;
+  try {
+    target.setItem(WORLD_ATLAS_CACHE_KEY, raw);
+  } catch {
+    // Export still works when browser storage is disabled or full.
+  }
+}
+
 async function fetchAtlas(url) {
   if (typeof globalThis.fetch !== 'function') throw new Error('Fetch unavailable');
   const response = await withTimeout(
     globalThis.fetch(url, { cache: 'force-cache', mode: 'cors' }),
-    9000,
+    WORLD_ATLAS_REQUEST_TIMEOUT_MS,
     'World atlas request timed out'
   );
   if (!response?.ok) throw new Error(`World atlas request failed (${response?.status || 0})`);
-  const topology = await withTimeout(response.json(), 5000, 'World atlas decode timed out');
-  if (topology?.type !== 'Topology') throw new Error('Invalid world atlas payload');
-  return decodeCountries(topology);
+  const raw = await withTimeout(
+    response.text(),
+    WORLD_ATLAS_DECODE_TIMEOUT_MS,
+    'World atlas decode timed out'
+  );
+  const topology = parseTopology(raw);
+  return {
+    countries: decodeCountries(topology),
+    raw,
+  };
 }
 
 export async function loadWorldAtlasCountries() {
+  const cached = readCachedCountries();
+  if (cached?.length) return cached;
+
   if (!worldAtlasPromise) {
-    worldAtlasPromise = (async () => {
-      let lastError = null;
-      for (const url of WORLD_ATLAS_URLS) {
-        try {
-          return await fetchAtlas(url);
-        } catch (error) {
-          lastError = error;
-        }
-      }
-      throw lastError || new Error('World atlas unavailable');
-    })().catch((error) => {
+    worldAtlasPromise = Promise.any(
+      WORLD_ATLAS_URLS.map((url) => fetchAtlas(url))
+    ).then(({ countries, raw }) => {
+      writeCachedTopology(raw);
+      return countries;
+    }).catch((error) => {
       worldAtlasPromise = null;
-      throw error;
+      const cause = error?.errors?.find(Boolean) || error;
+      throw new Error('World atlas unavailable', { cause });
     });
   }
   return worldAtlasPromise;
