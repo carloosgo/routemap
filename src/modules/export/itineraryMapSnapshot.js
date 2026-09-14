@@ -1,3 +1,8 @@
+const MAP_REPAINT_SETTLE_MS = 90;
+const STREAM_FRAME_WAIT_MS = 700;
+const MAX_STREAM_FALLBACK_LAYERS = 2;
+const USEFUL_PNG_DATA_URL_LENGTH = 12000;
+
 function wait(milliseconds) {
   return new Promise((resolve) => globalThis.setTimeout(resolve, milliseconds));
 }
@@ -22,40 +27,70 @@ function backgroundUrl(element) {
   return match?.[1] || '';
 }
 
-async function canvasDataUrl(source) {
-  try {
-    const direct = source.toDataURL('image/png');
-    if (direct && direct.length > 12000) return direct;
-  } catch {
-    // The streaming fallback below is used when a WebGL canvas cannot be read directly.
+async function settleMapRepaint() {
+  const BrowserEvent = globalThis.Event;
+  if (typeof BrowserEvent === 'function' && typeof globalThis.dispatchEvent === 'function') {
+    globalThis.dispatchEvent(new BrowserEvent('resize'));
   }
+  await wait(MAP_REPAINT_SETTLE_MS);
+}
 
+function directCanvasDataUrl(source) {
+  try {
+    return source.toDataURL('image/png') || '';
+  } catch {
+    return '';
+  }
+}
+
+async function streamCanvasDataUrl(source) {
   if (typeof source.captureStream !== 'function') return '';
+  const documentRef = globalThis.document;
+  const video = documentRef?.createElement?.('video');
+  if (!video) return '';
+
   let stream;
   try {
-    stream = source.captureStream(30);
+    stream = source.captureStream(0);
     const track = stream.getVideoTracks?.()[0];
-    const documentRef = globalThis.document;
-    const video = documentRef?.createElement?.('video');
-    if (!track || !video) return '';
+    if (!track) return '';
+
     video.muted = true;
     video.playsInline = true;
     video.srcObject = stream;
-    await video.play();
-    track.requestFrame?.();
-    await wait(120);
+    const playPromise = video.play?.();
+    playPromise?.catch?.(() => {});
+
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < STREAM_FRAME_WAIT_MS) {
+      track.requestFrame?.();
+      if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) break;
+      await wait(35);
+    }
+
+    if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) return '';
 
     const canvas = documentRef.createElement('canvas');
-    canvas.width = Math.max(1, source.width);
-    canvas.height = Math.max(1, source.height);
+    canvas.width = Math.max(1, source.width || video.videoWidth);
+    canvas.height = Math.max(1, source.height || video.videoHeight);
     const context = canvas.getContext('2d');
+    if (!context) return '';
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     return canvas.toDataURL('image/png');
   } catch {
     return '';
   } finally {
+    video.pause?.();
+    video.srcObject = null;
     stream?.getTracks?.().forEach((track) => track.stop());
   }
+}
+
+async function canvasDataUrl(source, allowStreamFallback) {
+  const direct = directCanvasDataUrl(source);
+  if (direct.length > USEFUL_PNG_DATA_URL_LENGTH || !allowStreamFallback) return direct;
+  const streamed = await streamCanvasDataUrl(source);
+  return streamed.length > direct.length ? streamed : direct;
 }
 
 function drawDot(context, dot, rootRect, scale) {
@@ -107,8 +142,7 @@ async function drawFlag(context, flag, rootRect, scale) {
 async function drawItineraryMarkers(context, root, rootRect, scale) {
   const markers = [...root.querySelectorAll('.google-itinerary-city-marker')];
   for (const marker of markers) {
-    const children = [...marker.children];
-    for (const child of children) {
+    for (const child of [...marker.children]) {
       if (child.classList.contains('google-itinerary-city-marker__dot')) {
         drawDot(context, child, rootRect, scale);
       } else if (child.classList.contains('google-itinerary-city-marker__flag')) {
@@ -125,11 +159,14 @@ export async function captureVisibleItineraryMap() {
   const rootRect = root.getBoundingClientRect();
   if (rootRect.width < 2 || rootRect.height < 2) throw new Error('Itinerary map has no visible area');
 
+  await settleMapRepaint();
+
   const scale = Math.min(2, Math.max(1.35, Number(globalThis.devicePixelRatio) || 1));
   const canvas = documentRef.createElement('canvas');
   canvas.width = Math.round(rootRect.width * scale);
   canvas.height = Math.round(rootRect.height * scale);
   const context = canvas.getContext('2d');
+  if (!context) throw new Error('Map capture canvas unavailable');
   context.fillStyle = '#eaf3f6';
   context.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -137,11 +174,16 @@ export async function captureVisibleItineraryMap() {
     .filter((layer) => {
       const rect = layer.getBoundingClientRect();
       return rect.width > 2 && rect.height > 2;
+    })
+    .sort((left, right) => {
+      const leftRect = left.getBoundingClientRect();
+      const rightRect = right.getBoundingClientRect();
+      return (rightRect.width * rightRect.height) - (leftRect.width * leftRect.height);
     });
   let copiedLayers = 0;
 
-  for (const layer of layers) {
-    const dataUrl = await canvasDataUrl(layer);
+  for (const [index, layer] of layers.entries()) {
+    const dataUrl = await canvasDataUrl(layer, index < MAX_STREAM_FALLBACK_LAYERS);
     if (!dataUrl) continue;
     try {
       const image = await loadImage(dataUrl);
@@ -153,7 +195,7 @@ export async function captureVisibleItineraryMap() {
         rect.width * scale,
         rect.height * scale
       );
-      copiedLayers += 1;
+      if (dataUrl.length > USEFUL_PNG_DATA_URL_LENGTH) copiedLayers += 1;
     } catch {
       // Continue with the remaining Google Maps render layers.
     }
