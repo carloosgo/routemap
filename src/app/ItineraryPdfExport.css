@@ -2,7 +2,7 @@
   position: fixed;
   top: calc(var(--trip-header-height, 49px) + 106px);
   right: 14px;
-  z-index: 1198;
+  z-index: 901;
   width: 38px;
   height: 38px;
   display: inline-flex;
@@ -11,15 +11,15 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: #18a9ca;
+  background: var(--marina, #0e4f63);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
   cursor: pointer;
 }
 
 .itinerary-pdf-export__button:hover,
 .itinerary-pdf-export__button:focus-visible {
-  background: #1498b7;
+  background: var(--marina-hover, #0b3f4f);
   outline: none;
 }
 
