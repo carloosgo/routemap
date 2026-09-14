@@ -79,17 +79,17 @@ function drawRouteList(page, model, intlLocale, t, box) {
     if (entry.isOrigin) {
       page.circle(markerX, centerY, 4.8, { fill: '#ffffff', stroke: '#7a858d', lineWidth: 1 });
     } else {
-      page.circle(markerX, centerY, 5.5, { fill: entry.color || '#63727a' });
-      page.text(String(entry.number ?? ''), markerX, centerY - 3.2, {
-        size: Number(entry.number) >= 10 ? 4.8 : 5.3,
+      page.circle(markerX, centerY, 6.1, { fill: entry.color || '#63727a' });
+      page.text(String(entry.number ?? ''), markerX, centerY - 3.5, {
+        size: Number(entry.number) >= 10 ? 5.4 : 6.0,
         bold: true,
         color: '#ffffff',
         align: 'center',
       });
     }
 
-    drawCountryFlag(page, entry.countryCode, flagX, centerY - 4.5, 13.5, 9);
-    page.text(entry.name || t('city'), cityX, centerY - 5.2, {
+    drawCountryFlag(page, entry.countryCode, flagX, centerY - 4.75, 14.2, 9.5);
+    page.text(entry.name || t('city'), cityX, centerY - 4.25, {
       size: 8.5, bold: true, color: TEXT, maxWidth: dateX - cityX - 8,
     });
 
@@ -185,7 +185,7 @@ function noteCardLayout(item, width, intlLocale) {
   const lineHeight = 11.2;
   const titleSize = 10.7;
   const dateSize = 7.9;
-  const titleXOffset = 44;
+  const titleXOffset = 46.5;
   const rightInset = 9;
   const cityText = String(item.name || '');
   const dateText = item.isOrigin
@@ -195,7 +195,7 @@ function noteCardLayout(item, width, intlLocale) {
   const cityWidth = measurePdfText(cityText, titleSize, true);
   const dateWidth = measurePdfText(dateText || '—', dateSize, true);
   const inlineDate = Boolean(dateText) && (cityWidth + 7 + dateWidth <= availableTitleWidth);
-  const separatorOffset = inlineDate ? 32 : 45;
+  const separatorOffset = inlineDate ? 34 : 48;
   const bodyOffset = separatorOffset + 10;
   const lines = wrapPdfText(item.note || '—', width - 20, bodySize, false);
 
@@ -219,23 +219,24 @@ function drawNoteCard(page, item, layout, box, t) {
   page.rect(box.x, box.y, box.width, box.height, {
     fill: '#ffffff', stroke: LIGHT_BORDER, lineWidth: 0.7, radius: 6,
   });
-  const headerCenterY = box.y + 16;
+  const headerCenterY = box.y + 17;
   const markerX = box.x + 12;
   if (item.isOrigin) {
     page.circle(markerX, headerCenterY, 5.3, { fill: '#ffffff', stroke: '#7b878e', lineWidth: 1.1 });
   } else {
-    page.circle(markerX, headerCenterY, 6.3, { fill: item.color || '#63727a' });
-    page.text(String(item.number ?? ''), markerX, headerCenterY - 3.4, {
-      size: Number(item.number) >= 10 ? 5 : 5.6,
+    page.circle(markerX, headerCenterY, 7.2, { fill: item.color || '#63727a' });
+    page.text(String(item.number ?? ''), markerX, headerCenterY - 3.7, {
+      size: Number(item.number) >= 10 ? 5.9 : 6.6,
       bold: true,
       color: '#ffffff',
       align: 'center',
     });
   }
 
-  drawCountryFlag(page, item.countryCode, box.x + 24, headerCenterY - 4.5, 14, 9);
+  drawCountryFlag(page, item.countryCode, box.x + 25, headerCenterY - 5.2, 15.5, 10.4);
   const titleX = box.x + layout.titleXOffset;
-  const titleY = box.y + 9.2;
+  const titleY = headerCenterY - (layout.titleSize * 0.46);
+  const inlineDateY = headerCenterY - (layout.dateSize * 0.46);
   page.text(item.name || t('city'), titleX, titleY, {
     size: layout.titleSize,
     bold: true,
@@ -244,14 +245,14 @@ function drawNoteCard(page, item, layout, box, t) {
   });
 
   if (layout.inlineDate) {
-    page.text(layout.dateText, titleX + layout.cityWidth + 7, titleY + 1.3, {
+    page.text(layout.dateText, titleX + layout.cityWidth + 7, inlineDateY, {
       size: layout.dateSize,
       bold: true,
       color: '#5b6870',
       maxWidth: box.x + box.width - 9 - (titleX + layout.cityWidth + 7),
     });
   } else {
-    page.text(layout.dateText || '—', titleX, box.y + 24.7, {
+    page.text(layout.dateText || '—', titleX, box.y + 28.4, {
       size: layout.dateSize,
       bold: true,
       color: '#5b6870',
