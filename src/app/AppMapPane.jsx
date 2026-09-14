@@ -8,11 +8,7 @@ import { itineraryPlacePlanningTarget } from '../modules/trips/placePlanningAssi
 import { tripPlanningDays } from '../modules/trips/tripDayPlanning.js';
 import { ORIGIN_NOTE_TARGET } from '../modules/trips/tripNoteTargets.js';
 import { colorForIndex } from '../config.js';
-import {
-  ItineraryPdfDetails,
-  ItineraryPdfExportButton,
-  ItineraryPdfSummary,
-} from './ItineraryPdfExport.jsx';
+import { ItineraryPdfExportButton } from './ItineraryPdfExport.jsx';
 
 const PERSISTENCE_LABEL_KEYS = Object.freeze({
   saved: 'persistenceSaved',
@@ -192,10 +188,12 @@ export function AppMapPane({
   return (
     <section className="mappane" aria-label={t('mapRegion')}>
       {allowItineraryPdfExport && (
-        <>
-          <ItineraryPdfExportButton model={pdfModel} t={t} />
-          <ItineraryPdfSummary model={pdfModel} intlLocale={intlLocale} t={t} />
-        </>
+        <ItineraryPdfExportButton
+          model={pdfModel}
+          intlLocale={intlLocale}
+          onError={() => showPlanningMessage(t('googleMapLoadError'), 3400)}
+          t={t}
+        />
       )}
       <RouteMap
         origin={trip.origin}
@@ -205,9 +203,6 @@ export function AppMapPane({
         addPlace={requestPlaceSave}
         viewMode={mapView}
       />
-      {allowItineraryPdfExport && (
-        <ItineraryPdfDetails model={pdfModel} intlLocale={intlLocale} t={t} />
-      )}
       {hasFloatingPanel && (
         <div
           aria-hidden="true"
