@@ -1,6 +1,7 @@
 // test-contract: behavior
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { TextDecoder } from 'node:util';
 import { computeViewportCaptureCrop } from '../../src/modules/export/itineraryExactMapCapture.js';
 import { addJpegImage } from '../../src/modules/export/pdfHybridDocument.js';
 import { VectorPdfPage } from '../../src/modules/export/pdfVectorDocument.js';
