@@ -30,6 +30,7 @@ function persistenceLabelKey(state) {
 export function AppMapPane({
   trip,
   mapView = 'segments',
+  allowItineraryPdfExport = false,
   itineraryPanels,
   updateSegment,
   updateExpenses,
@@ -48,7 +49,6 @@ export function AppMapPane({
   const stopSequence = buildItineraryStopSequence(trip.origin, trip.segments, colorForIndex);
   const planningDays = useMemo(() => tripPlanningDays(trip.segments), [trip.segments]);
   const pdfModel = useMemo(() => buildItineraryPdfModel(trip), [trip]);
-  const itineraryView = mapView === 'segments';
 
   const showPlanningMessage = (message, duration = 2600) => {
     setPlanningMessage(message);
@@ -191,7 +191,7 @@ export function AppMapPane({
 
   return (
     <section className="mappane" aria-label={t('mapRegion')}>
-      {itineraryView && (
+      {allowItineraryPdfExport && (
         <>
           <ItineraryPdfExportButton model={pdfModel} t={t} />
           <ItineraryPdfSummary model={pdfModel} intlLocale={intlLocale} t={t} />
@@ -205,7 +205,7 @@ export function AppMapPane({
         addPlace={requestPlaceSave}
         viewMode={mapView}
       />
-      {itineraryView && (
+      {allowItineraryPdfExport && (
         <ItineraryPdfDetails model={pdfModel} intlLocale={intlLocale} t={t} />
       )}
       {hasFloatingPanel && (
