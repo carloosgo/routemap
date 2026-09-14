@@ -82,6 +82,17 @@ test('conserva el orden cronológico y las visitas repetidas para el PDF', () =>
   assert.equal(model.stops[2].note, 'Segunda visita a París.');
 });
 
+test('conserva el mismo orden y colores canónicos de países que el mapa de Itinerario', () => {
+  const model = buildItineraryPdfModel(trip);
+
+  assert.deepEqual(model.countries.map((country) => country.countryCode), ['FR', 'DE']);
+  assert.deepEqual(model.countries.map((country) => country.color), [
+    colorForIndex(0),
+    colorForIndex(1),
+  ]);
+  assert.deepEqual(model.countries.map((country) => country.city.name), ['París', 'Núremberg']);
+});
+
 test('incluye la nota de origen sin alterar sus saltos de línea', () => {
   const model = buildItineraryPdfModel(trip);
 
