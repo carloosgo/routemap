@@ -44,6 +44,7 @@ export const QUOTAS = Object.freeze({
   placeDetails: { scope: 'geoapify-place-details', maxRequests: 30, windowMs: 60_000 },
   route: { scope: 'geoapify-route', maxRequests: 20, windowMs: 60_000 },
   reverse: { scope: 'geoapify-reverse', maxRequests: 20, windowMs: 60_000 },
+  itineraryStaticMap: { scope: 'geoapify-itinerary-static-map', maxRequests: 12, windowMs: 60_000 },
   googlePlaceAutocomplete: { scope: 'google-place-autocomplete', maxRequests: 40, windowMs: 60_000 },
   googlePlaceDetails: { scope: 'google-place-details', maxRequests: 30, windowMs: 60_000 },
   googlePlaceSearch: { scope: 'google-place-search', maxRequests: 12, windowMs: 60_000 },

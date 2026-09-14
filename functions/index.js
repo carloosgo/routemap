@@ -11,6 +11,7 @@ export {
   geoapifyBatchGeocodeResult,
 } from './geoapifyBatchFunctions.js';
 export { geoapifyCountryBoundary } from './countryBoundaryFunction.js';
+export { geoapifyItineraryStaticMap } from './geoapifyStaticMapFunction.js';
 export { googlePlaceAutocomplete, googlePlaceSearch } from './googleMapsFunctions.js';
 export { googlePlaceDetailsEssentials } from './googlePlaceDetailsEssentialsFunction.js';
 export { googlePlaceLocations } from './googlePlaceLocationFunction.js';

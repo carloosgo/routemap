@@ -11,6 +11,7 @@ export const CALLABLE_FUNCTIONS = Object.freeze([
   Object.freeze({ name: 'geoapifyBatchGeocode', file: 'geoapifyBatchFunctions.js' }),
   Object.freeze({ name: 'geoapifyBatchGeocodeResult', file: 'geoapifyBatchFunctions.js' }),
   Object.freeze({ name: 'geoapifyCountryBoundary', file: 'countryBoundaryFunction.js' }),
+  Object.freeze({ name: 'geoapifyItineraryStaticMap', file: 'geoapifyStaticMapFunction.js' }),
   Object.freeze({ name: 'googlePlaceAutocomplete', file: 'googleMapsFunctions.js' }),
   Object.freeze({ name: 'googlePlaceSearch', file: 'googleMapsFunctions.js' }),
   Object.freeze({ name: 'googlePlaceDetailsEssentials', file: 'googlePlaceDetailsEssentialsFunction.js' }),

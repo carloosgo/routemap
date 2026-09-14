@@ -1,11 +1,12 @@
 import { useCallback, useState } from 'react';
 import { IconFileTypePdf } from '@tabler/icons-react';
-import { buildImagePdf, downloadPdf } from '../modules/export/pdfImageDocument.js';
-import { renderItineraryPdfPages } from '../modules/export/itineraryPdfCanvas.js';
-import { captureVisibleItineraryMap } from '../modules/export/itineraryMapSnapshot.js';
+import { renderItineraryHybridPdf } from '../modules/export/itineraryPdfHybrid.js';
+import { composeItineraryStaticMap } from '../modules/export/itineraryStaticMapComposer.js';
+import { loadItineraryStaticMap } from '../modules/export/itineraryStaticMapClient.js';
+import { downloadVectorPdf } from '../modules/export/pdfVectorDocument.js';
 import './ItineraryPdfExport.css';
 
-const PDF_EXPORT_TIMEOUT_MS = 18000;
+const EXPORT_TIMEOUT_MS = 25_000;
 
 function safeFileName(value) {
   return String(value || '')
@@ -14,9 +15,12 @@ function safeFileName(value) {
     .trim();
 }
 
-function withTimeout(promise, milliseconds, message) {
+function withTimeout(promise, milliseconds) {
   return new Promise((resolve, reject) => {
-    const timer = globalThis.setTimeout(() => reject(new Error(message)), milliseconds);
+    const timer = globalThis.setTimeout(
+      () => reject(new Error('Itinerary PDF export timed out')),
+      milliseconds
+    );
     Promise.resolve(promise).then(
       (value) => {
         globalThis.clearTimeout(timer);
@@ -44,17 +48,18 @@ export function ItineraryPdfExportButton({
     setExporting(true);
     try {
       await withTimeout((async () => {
-        const mapSnapshot = await captureVisibleItineraryMap();
-        const pages = await renderItineraryPdfPages({
+        const language = String(intlLocale || '').toLowerCase().startsWith('en') ? 'en' : 'es';
+        const baseMap = await loadItineraryStaticMap(model, { language });
+        const mapImage = await composeItineraryStaticMap(model, baseMap);
+        const bytes = renderItineraryHybridPdf({
           model,
-          mapSnapshot,
+          mapImage,
           intlLocale,
           t,
         });
-        const bytes = buildImagePdf(pages);
         const baseName = safeFileName(model.name || t('appName')) || t('appName');
-        downloadPdf(bytes, `${baseName}.pdf`);
-      })(), PDF_EXPORT_TIMEOUT_MS, 'Itinerary PDF export timed out');
+        downloadVectorPdf(bytes, `${baseName}.pdf`);
+      })(), EXPORT_TIMEOUT_MS);
     } catch (error) {
       console.error('[Itinerary PDF] export failed', error);
       onError?.(error);

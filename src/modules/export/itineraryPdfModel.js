@@ -1,4 +1,4 @@
-import { colorForIndex } from '../../config.js';
+import { colorForIndex, countryColorForIndex } from '../../config.js';
 import { visitedCountries } from '../map/countryColoring.js';
 import {
   isPlaced,
@@ -35,7 +35,7 @@ export function buildItineraryPdfModel(trip = {}) {
   const summary = tripSummary(trip);
   const hasOrigin = isPlaced(trip.origin) && hasChosenCity(trip.origin);
   const presentation = buildItineraryStopSequence(trip.origin, segments, colorForIndex);
-  const countries = visitedCountries(segments, colorForIndex).map(({ countryCode, city, color }) => ({
+  const countries = visitedCountries(segments, countryColorForIndex).map(({ countryCode, city, color }) => ({
     countryCode,
     country: safeText(city?.country),
     color,
