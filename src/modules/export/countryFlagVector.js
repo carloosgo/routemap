@@ -31,13 +31,9 @@ function normalizeCode(code) {
   return String(code || '').trim().toUpperCase();
 }
 
-function borderedFlag(page, x, y, width, height, draw) {
+function flagSurface(page, x, y, width, height, draw) {
   page.rect(x, y, width, height, { fill: '#FFFFFF' });
   draw();
-  page.rect(x, y, width, height, {
-    stroke: '#C7CED2',
-    lineWidth: 0.35,
-  });
 }
 
 function horizontalBands(page, colors, x, y, width, height, weights = null) {
@@ -138,7 +134,7 @@ export function drawCountryFlag(page, code, x, y, width = 14, height = 9) {
   const normalized = normalizeCode(code);
   if (!normalized) return false;
 
-  borderedFlag(page, x, y, width, height, () => {
+  flagSurface(page, x, y, width, height, () => {
     if (VERTICAL_FLAGS[normalized]) {
       verticalBands(page, VERTICAL_FLAGS[normalized], x, y, width, height);
       return;
