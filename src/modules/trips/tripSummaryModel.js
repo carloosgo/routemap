@@ -81,7 +81,7 @@ export function tripTotalNights(segments) {
     if (start == null) continue;
 
     const explicitEnd = validDate(segment?.endDate);
-    const end = explicitEnd ?? start;
+    const end = explicitEnd ?? (start + DAY_MS);
     if (end < start) continue;
     ranges.push([start, end]);
   }
@@ -92,16 +92,16 @@ export function tripTotalNights(segments) {
   let total = 0;
   let [rangeStart, rangeEnd] = ranges[0];
   for (const [start, end] of ranges.slice(1)) {
-    if (start <= rangeEnd + DAY_MS) {
+    if (start <= rangeEnd) {
       rangeEnd = Math.max(rangeEnd, end);
       continue;
     }
-    total += Math.floor((rangeEnd - rangeStart) / DAY_MS) + 1;
+    total += Math.floor((rangeEnd - rangeStart) / DAY_MS);
     rangeStart = start;
     rangeEnd = end;
   }
 
-  return total + Math.floor((rangeEnd - rangeStart) / DAY_MS) + 1;
+  return total + Math.floor((rangeEnd - rangeStart) / DAY_MS);
 }
 
 export function tripDestinationCount(segments) {
