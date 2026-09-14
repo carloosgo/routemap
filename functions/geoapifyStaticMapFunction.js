@@ -58,7 +58,8 @@ export const geoapifyItineraryStaticMap = onCall(
     await enforceQuota(db, request, QUOTAS.itineraryStaticMap);
     try {
       const url = buildItineraryStaticMapUrl(request.data || {}, staticMapKey());
-      const response = await fetch(url, { signal: AbortSignal.timeout(12_000) });
+      const signal = globalThis.AbortSignal?.timeout?.(12_000);
+      const response = await fetch(url, signal ? { signal } : undefined);
       if (!response.ok) throw new Error(`Geoapify Static Maps responded ${response.status}`);
       const contentType = String(response.headers.get('content-type') || '');
       if (!contentType.startsWith('image/')) throw new Error('Geoapify Static Maps returned a non-image response');
