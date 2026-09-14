@@ -63,7 +63,7 @@ export function ItineraryPdfExportButton({ model, t }) {
 
     try {
       root.classList.add('itinerary-pdf-export');
-      document.title = `${safeDocumentTitle(model.name || t('unnamedTrip'))} · Atlas`;
+      document.title = `${safeDocumentTitle(model.name || t('unnamedTrip'))} · ${t('appName')}`;
       await afterLayout();
       globalThis.dispatchEvent(new Event('resize'));
       globalThis.dispatchEvent(new CustomEvent(PREPARE_EXPORT_EVENT));
@@ -103,7 +103,7 @@ export function ItineraryPdfSummary({ model, intlLocale, t }) {
     <section className="itinerary-pdf-export__summary" aria-hidden="true">
       <div className="itinerary-pdf-export__brand">
         <span className="itinerary-pdf-export__brand-icon"><IconMap2 size={15} /></span>
-        <span>Atlas</span>
+        <span>{t('appName')}</span>
       </div>
       <div className="itinerary-pdf-export__title-row">
         <div>
