@@ -4,7 +4,7 @@ import { downloadVectorPdf } from '../modules/export/pdfVectorDocument.js';
 import { renderItineraryVectorPdf } from '../modules/export/itineraryPdfVector.js';
 import './ItineraryPdfExport.css';
 
-const PDF_RENDER_TIMEOUT_MS = 22000;
+const PDF_RENDER_TIMEOUT_MS = 45000;
 
 function safeFileName(value) {
   return String(value || '')

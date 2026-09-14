@@ -1,37 +1,6 @@
-const WORLD_ATLAS_URLS = Object.freeze([
-  'https://unpkg.com/world-atlas@2.0.2/countries-110m.json',
-  'https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json',
-  'https://fastly.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json',
-]);
-const WORLD_ATLAS_CACHE_KEY = 'atlas:itinerary-pdf:world-atlas:110m:v1';
-const WORLD_ATLAS_REQUEST_TIMEOUT_MS = 7000;
-const WORLD_ATLAS_DECODE_TIMEOUT_MS = 4000;
+import worldAtlasTopology from './data/countries-110m.js';
 
-let worldAtlasPromise = null;
-
-function withTimeout(promise, milliseconds, message) {
-  return new Promise((resolve, reject) => {
-    const timer = globalThis.setTimeout(() => reject(new Error(message)), milliseconds);
-    Promise.resolve(promise).then(
-      (value) => {
-        globalThis.clearTimeout(timer);
-        resolve(value);
-      },
-      (error) => {
-        globalThis.clearTimeout(timer);
-        reject(error);
-      }
-    );
-  });
-}
-
-function storage() {
-  try {
-    return globalThis.localStorage || null;
-  } catch {
-    return null;
-  }
-}
+let worldAtlasCountries = null;
 
 function decodeArc(topology, arcIndex) {
   const index = arcIndex < 0 ? ~arcIndex : arcIndex;
@@ -99,8 +68,9 @@ function polygonBounds(polygons) {
 }
 
 function decodeCountries(topology) {
+  if (topology?.type !== 'Topology') throw new Error('Invalid bundled world atlas payload');
   const geometries = topology?.objects?.countries?.geometries;
-  if (!Array.isArray(geometries)) throw new Error('World atlas countries unavailable');
+  if (!Array.isArray(geometries)) throw new Error('Bundled world atlas countries unavailable');
   return geometries.map((geometry, index) => {
     const polygons = geometryPolygons(topology, geometry);
     return {
@@ -112,76 +82,11 @@ function decodeCountries(topology) {
   }).filter((country) => country.polygons.length && country.bounds);
 }
 
-function parseTopology(payload) {
-  const topology = typeof payload === 'string' ? JSON.parse(payload) : payload;
-  if (topology?.type !== 'Topology') throw new Error('Invalid world atlas payload');
-  return topology;
-}
-
-function readCachedCountries() {
-  const target = storage();
-  if (!target) return null;
-  try {
-    const raw = target.getItem(WORLD_ATLAS_CACHE_KEY);
-    if (!raw) return null;
-    return decodeCountries(parseTopology(raw));
-  } catch {
-    try {
-      target.removeItem(WORLD_ATLAS_CACHE_KEY);
-    } catch {
-      // Ignore storage cleanup failures and continue with remote fallbacks.
-    }
-    return null;
-  }
-}
-
-function writeCachedTopology(raw) {
-  const target = storage();
-  if (!target || !raw) return;
-  try {
-    target.setItem(WORLD_ATLAS_CACHE_KEY, raw);
-  } catch {
-    // Export still works when browser storage is disabled or full.
-  }
-}
-
-async function fetchAtlas(url) {
-  if (typeof globalThis.fetch !== 'function') throw new Error('Fetch unavailable');
-  const response = await withTimeout(
-    globalThis.fetch(url, { cache: 'force-cache', mode: 'cors' }),
-    WORLD_ATLAS_REQUEST_TIMEOUT_MS,
-    'World atlas request timed out'
-  );
-  if (!response?.ok) throw new Error(`World atlas request failed (${response?.status || 0})`);
-  const raw = await withTimeout(
-    response.text(),
-    WORLD_ATLAS_DECODE_TIMEOUT_MS,
-    'World atlas decode timed out'
-  );
-  const topology = parseTopology(raw);
-  return {
-    countries: decodeCountries(topology),
-    raw,
-  };
-}
-
 export async function loadWorldAtlasCountries() {
-  const cached = readCachedCountries();
-  if (cached?.length) return cached;
-
-  if (!worldAtlasPromise) {
-    worldAtlasPromise = Promise.any(
-      WORLD_ATLAS_URLS.map((url) => fetchAtlas(url))
-    ).then(({ countries, raw }) => {
-      writeCachedTopology(raw);
-      return countries;
-    }).catch((error) => {
-      worldAtlasPromise = null;
-      const cause = error?.errors?.find(Boolean) || error;
-      throw new Error('World atlas unavailable', { cause });
-    });
+  if (!worldAtlasCountries) {
+    worldAtlasCountries = decodeCountries(worldAtlasTopology);
   }
-  return worldAtlasPromise;
+  return worldAtlasCountries;
 }
 
 function pointInRing([x, y], ring) {
