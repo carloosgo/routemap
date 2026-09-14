@@ -1,6 +1,7 @@
 // test-contract: behavior
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { colorForIndex } from '../../src/config.js';
 import { buildItineraryPdfModel } from '../../src/modules/export/itineraryPdfModel.js';
 import { tripTotal } from '../../src/modules/trips/tripModel.js';
 import { tripSummary } from '../../src/modules/trips/tripSummaryModel.js';
@@ -72,6 +73,11 @@ test('conserva el orden cronológico y las visitas repetidas para el PDF', () =>
 
   assert.deepEqual(model.stops.map((stop) => stop.number), [1, 2, 3]);
   assert.deepEqual(model.stops.map((stop) => stop.name), ['París', 'Núremberg', 'París']);
+  assert.deepEqual(model.stops.map((stop) => stop.color), [
+    colorForIndex(0),
+    colorForIndex(1),
+    colorForIndex(2),
+  ]);
   assert.equal(model.stops[0].note, 'Primera visita a París.');
   assert.equal(model.stops[2].note, 'Segunda visita a París.');
 });
@@ -79,9 +85,31 @@ test('conserva el orden cronológico y las visitas repetidas para el PDF', () =>
 test('incluye la nota de origen sin alterar sus saltos de línea', () => {
   const model = buildItineraryPdfModel(trip);
 
+  assert.equal(model.hasOrigin, true);
   assert.equal(model.origin.name, 'Ciudad de México');
   assert.equal(model.origin.departureDate, '2026-12-01');
   assert.equal(model.origin.note, 'Llegar tres horas antes.\nDocumentos en la mochila.');
+});
+
+test('omite por completo el origen cuando el usuario no seleccionó uno', () => {
+  const model = buildItineraryPdfModel({
+    ...trip,
+    origin: null,
+    originDetails: {
+      departureDate: '',
+      note: '',
+    },
+    segments: [
+      { ...trip.segments[0], origin: null },
+      ...trip.segments.slice(1),
+      { id: 'empty', destination: null, startDate: '', endDate: '', note: '' },
+    ],
+  });
+
+  assert.equal(model.hasOrigin, false);
+  assert.equal(model.origin.name, '');
+  assert.deepEqual(model.stops.map((stop) => stop.name), ['París', 'Núremberg', 'París']);
+  assert.deepEqual(model.stops.map((stop) => stop.number), [1, 2, 3]);
 });
 
 test('reutiliza las mismas métricas y total que el encabezado del viaje', () => {
