@@ -139,6 +139,7 @@ export default {
   mapConfigMissingShort: 'Falta VITE_GEOAPIFY_MAPS_API_KEY.',
   googleMapConfigMissingShort: 'Faltan VITE_GOOGLE_MAPS_API_KEY o VITE_GOOGLE_MAPS_MAP_ID.',
   googleMapLoadError: 'No fue posible cargar Google Maps.',
+  itineraryPdfExportError: 'No fue posible generar el PDF del itinerario. Intenta de nuevo.',
   mapRegion: 'Mapa del viaje',
   routeSummary: 'Resumen de la ruta',
   notes: 'Notas',
