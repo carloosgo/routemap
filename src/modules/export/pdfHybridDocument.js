@@ -42,7 +42,32 @@ function imageName(value, index) {
   return safe || `Im${index + 1}`;
 }
 
-export function addJpegImage(page, image, box, name = 'MapImage') {
+function imageDrawBox(image, box, fit) {
+  if (fit !== 'contain') return box;
+  const imageAspect = image.pixelWidth / image.pixelHeight;
+  const boxAspect = box.width / box.height;
+  if (!Number.isFinite(imageAspect) || imageAspect <= 0 || !Number.isFinite(boxAspect) || boxAspect <= 0) {
+    return box;
+  }
+  if (imageAspect > boxAspect) {
+    const height = box.width / imageAspect;
+    return {
+      x: box.x,
+      y: box.y + ((box.height - height) / 2),
+      width: box.width,
+      height,
+    };
+  }
+  const width = box.height * imageAspect;
+  return {
+    x: box.x + ((box.width - width) / 2),
+    y: box.y,
+    width,
+    height: box.height,
+  };
+}
+
+export function addJpegImage(page, image, box, name = 'MapImage', { fit = 'stretch' } = {}) {
   if (!page || !image?.bytes?.length) throw new Error('JPEG image bytes are required');
   const pixelWidth = Math.max(1, Math.trunc(Number(image.pixelWidth) || 0));
   const pixelHeight = Math.max(1, Math.trunc(Number(image.pixelHeight) || 0));
@@ -55,9 +80,10 @@ export function addJpegImage(page, image, box, name = 'MapImage') {
     pixelWidth,
     pixelHeight,
   });
-  const bottom = page.height - box.y - box.height;
+  const drawBox = imageDrawBox({ pixelWidth, pixelHeight }, box, fit);
+  const bottom = page.height - drawBox.y - drawBox.height;
   page.commands.push(
-    `q ${number(box.width)} 0 0 ${number(box.height)} ${number(box.x)} ${number(bottom)} cm /${resourceName} Do Q`
+    `q ${number(drawBox.width)} 0 0 ${number(drawBox.height)} ${number(drawBox.x)} ${number(bottom)} cm /${resourceName} Do Q`
   );
   return resourceName;
 }
