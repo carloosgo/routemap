@@ -1,8 +1,10 @@
 import { formatMoney } from '../../shared/utils.js';
+import { drawCountryFlag } from './countryFlagVector.js';
 import {
   PDF_A4_LANDSCAPE,
   VectorPdfPage,
   buildVectorPdf,
+  measurePdfText,
   mixHex,
   wrapPdfText,
 } from './pdfVectorDocument.js';
@@ -73,10 +75,14 @@ function countryKey(city) {
   return name ? `name:${name}` : '';
 }
 
+/* Keep Mercator X and Y in the same unit. Longitudes are expressed in degrees,
+   so the projected latitude must also be expressed in Mercator degrees. Mixing
+   longitude degrees with raw Mercator radians collapses European routes into a
+   thin horizontal strip in wide PDF map boxes. */
 function mercatorY(lat) {
   const clamped = Math.max(-84, Math.min(84, Number(lat) || 0));
   const radians = (clamped * Math.PI) / 180;
-  return Math.log(Math.tan((Math.PI / 4) + (radians / 2)));
+  return Math.log(Math.tan((Math.PI / 4) + (radians / 2))) * (180 / Math.PI);
 }
 
 function normalizeLonNear(lon, reference) {
@@ -99,7 +105,7 @@ function unwrapRouteLongitudes(points) {
   return unwrapped;
 }
 
-function createMapProjection(entries, box) {
+export function createItineraryMapProjection(entries, box) {
   const route = entries.filter(validCoordinate);
   if (!route.length) {
     return {
@@ -116,9 +122,9 @@ function createMapProjection(entries, box) {
   let minY = Math.min(...ys);
   let maxY = Math.max(...ys);
   const xSpan = Math.max(4.5, maxX - minX);
-  const ySpan = Math.max(0.08, maxY - minY);
+  const ySpan = Math.max(4.5, maxY - minY);
   const xPad = Math.max(2.5, xSpan * 0.13);
-  const yPad = Math.max(0.055, ySpan * 0.16);
+  const yPad = Math.max(2.5, ySpan * 0.13);
   const xMid = (minX + maxX) / 2;
   const yMid = (minY + maxY) / 2;
   minX = xMid - (xSpan / 2) - xPad;
@@ -269,7 +275,7 @@ function drawVectorMap(page, model, countries, box) {
   });
   if (!entries.length) return;
 
-  const projection = createMapProjection(entries, box);
+  const projection = createItineraryMapProjection(entries, box);
   const assignments = buildCountryAssignments(entries, countries);
 
   page.save();
@@ -324,8 +330,8 @@ function drawRouteList(page, model, intlLocale, t, box) {
   const available = box.height - headerHeight - 8;
   const rowHeight = Math.min(30, Math.max(20.5, available / Math.max(1, entries.length)));
   const markerX = box.x + 13;
-  const countryX = box.x + 31;
-  const cityX = box.x + 53;
+  const flagX = box.x + 26;
+  const cityX = box.x + 44;
   const dateX = box.x + box.width - 83;
   const amountX = box.x + box.width - 9;
 
@@ -349,9 +355,7 @@ function drawRouteList(page, model, intlLocale, t, box) {
       });
     }
 
-    page.text(entry.countryCode || '', countryX, centerY - 4.1, {
-      size: 6.8, bold: true, color: '#6d7980', maxWidth: 18,
-    });
+    drawCountryFlag(page, entry.countryCode, flagX, centerY - 4.6, 13.5, 9.2);
     page.text(entry.name || t('city'), cityX, centerY - 5.2, {
       size: 8.5, bold: true, color: TEXT, maxWidth: dateX - cityX - 8,
     });
@@ -407,12 +411,9 @@ function overviewPage(model, countries, intlLocale, t) {
   page.text(model.name || t('unnamedTrip'), 22, 15, {
     size: 18, bold: true, color: '#243238', maxWidth: 470,
   });
-  page.text(t('itinerary'), 22, 36, {
-    size: 7.8, bold: true, color: '#758188',
-  });
 
-  const top = 53;
-  const left = { x: 22, y: top, width: 244, height: 518 };
+  const top = 40;
+  const left = { x: 22, y: top, width: 244, height: PAGE.height - top - 22 };
   const rightX = 280;
   const rightWidth = PAGE.width - rightX - 22;
   const metricsHeight = 57;
@@ -446,16 +447,35 @@ function noteItems(model) {
 function noteCardLayout(item, width, intlLocale) {
   const bodySize = 8.35;
   const lineHeight = 11.2;
-  const lines = wrapPdfText(item.note || '—', width - 20, bodySize, false);
+  const titleSize = 10.7;
+  const dateSize = 7.9;
+  const titleXOffset = 43;
+  const rightInset = 9;
+  const cityText = String(item.name || '');
   const dateText = item.isOrigin
     ? formatDate(item.departureDate, intlLocale)
     : formatDateRange(item.startDate, item.endDate, intlLocale);
+  const availableTitleWidth = width - titleXOffset - rightInset;
+  const cityWidth = measurePdfText(cityText, titleSize, true);
+  const dateWidth = measurePdfText(dateText || '—', dateSize, true);
+  const inlineDate = Boolean(dateText) && (cityWidth + 7 + dateWidth <= availableTitleWidth);
+  const separatorOffset = inlineDate ? 31 : 44;
+  const bodyOffset = separatorOffset + 10;
+  const lines = wrapPdfText(item.note || '—', width - 20, bodySize, false);
+
   return {
     lines,
     dateText,
     bodySize,
     lineHeight,
-    height: Math.max(88, 65 + (lines.length * lineHeight)),
+    titleSize,
+    dateSize,
+    titleXOffset,
+    cityWidth,
+    inlineDate,
+    separatorOffset,
+    bodyOffset,
+    height: Math.max(inlineDate ? 74 : 87, bodyOffset + (lines.length * lineHeight) + 9),
   };
 }
 
@@ -477,20 +497,46 @@ function drawNoteCard(page, item, layout, box, t) {
     });
   }
 
-  page.text(item.name || t('city'), box.x + 25, box.y + 7.5, {
-    size: 11.1, bold: true, color: '#3c484f', maxWidth: box.width - 35,
-  });
-  page.text(layout.dateText || '—', box.x + 25, box.y + 24.5, {
-    size: 8.9, bold: true, color: '#5b6870', maxWidth: box.width - 35,
-  });
-  page.line(box.x + 10, box.y + 45, box.x + box.width - 10, box.y + 45, {
-    stroke: '#e3e7e9', lineWidth: 0.55,
+  drawCountryFlag(page, item.countryCode, box.x + 22, box.y + 10.4, 14, 9.4);
+  const titleX = box.x + layout.titleXOffset;
+  const titleY = box.y + 7.6;
+  page.text(item.name || t('city'), titleX, titleY, {
+    size: layout.titleSize,
+    bold: true,
+    color: '#3c484f',
+    maxWidth: box.width - layout.titleXOffset - 9,
   });
 
-  let y = box.y + 55;
+  if (layout.inlineDate) {
+    page.text(layout.dateText, titleX + layout.cityWidth + 7, titleY + 1.7, {
+      size: layout.dateSize,
+      bold: true,
+      color: '#5b6870',
+      maxWidth: box.x + box.width - 9 - (titleX + layout.cityWidth + 7),
+    });
+  } else {
+    page.text(layout.dateText || '—', titleX, box.y + 23.5, {
+      size: layout.dateSize,
+      bold: true,
+      color: '#5b6870',
+      maxWidth: box.width - layout.titleXOffset - 9,
+    });
+  }
+
+  page.line(
+    box.x + 10,
+    box.y + layout.separatorOffset,
+    box.x + box.width - 10,
+    box.y + layout.separatorOffset,
+    { stroke: '#e3e7e9', lineWidth: 0.55 }
+  );
+
+  let y = box.y + layout.bodyOffset;
   layout.lines.forEach((line) => {
     page.text(line || ' ', box.x + 10, y, {
-      size: layout.bodySize, color: '#445159', maxWidth: box.width - 20,
+      size: layout.bodySize,
+      color: '#445159',
+      maxWidth: box.width - 20,
     });
     y += layout.lineHeight;
   });
