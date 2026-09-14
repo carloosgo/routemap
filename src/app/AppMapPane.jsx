@@ -1,12 +1,18 @@
 import { useMemo, useState } from 'react';
 import { IconArrowRight, IconCheck, IconX } from '@tabler/icons-react';
 import { RouteMap } from '../modules/map/RouteMap.jsx';
+import { buildItineraryPdfModel } from '../modules/export/itineraryPdfModel.js';
 import { ItineraryDetailsModal } from '../modules/trips/ItineraryDetailsModal.jsx';
 import { buildItineraryStopSequence } from '../modules/trips/itineraryStopSequence.js';
 import { itineraryPlacePlanningTarget } from '../modules/trips/placePlanningAssignment.js';
 import { tripPlanningDays } from '../modules/trips/tripDayPlanning.js';
 import { ORIGIN_NOTE_TARGET } from '../modules/trips/tripNoteTargets.js';
 import { colorForIndex } from '../config.js';
+import {
+  ItineraryPdfDetails,
+  ItineraryPdfExportButton,
+  ItineraryPdfSummary,
+} from './ItineraryPdfExport.jsx';
 
 const PERSISTENCE_LABEL_KEYS = Object.freeze({
   saved: 'persistenceSaved',
@@ -41,6 +47,8 @@ export function AppMapPane({
   const persistenceHasCheck = persistenceState === 'saved' || persistenceState === 'local';
   const stopSequence = buildItineraryStopSequence(trip.origin, trip.segments, colorForIndex);
   const planningDays = useMemo(() => tripPlanningDays(trip.segments), [trip.segments]);
+  const pdfModel = useMemo(() => buildItineraryPdfModel(trip), [trip]);
+  const itineraryView = mapView === 'segments';
 
   const showPlanningMessage = (message, duration = 2600) => {
     setPlanningMessage(message);
@@ -183,6 +191,12 @@ export function AppMapPane({
 
   return (
     <section className="mappane" aria-label={t('mapRegion')}>
+      {itineraryView && (
+        <>
+          <ItineraryPdfExportButton model={pdfModel} t={t} />
+          <ItineraryPdfSummary model={pdfModel} intlLocale={intlLocale} t={t} />
+        </>
+      )}
       <RouteMap
         origin={trip.origin}
         segments={trip.segments}
@@ -191,6 +205,9 @@ export function AppMapPane({
         addPlace={requestPlaceSave}
         viewMode={mapView}
       />
+      {itineraryView && (
+        <ItineraryPdfDetails model={pdfModel} intlLocale={intlLocale} t={t} />
+      )}
       {hasFloatingPanel && (
         <div
           aria-hidden="true"
