@@ -165,7 +165,10 @@ function overviewPage(model, mapImage, intlLocale, t) {
   };
 
   drawRouteList(page, model, intlLocale, t, left);
-  addJpegImage(page, mapImage, map, 'ItineraryMap');
+  page.rect(map.x, map.y, map.width, map.height, {
+    fill: '#eaf3f6', stroke: '#d4dfe2', lineWidth: 0.7, radius: 8,
+  });
+  addJpegImage(page, mapImage, map, 'ItineraryMap', { fit: 'contain' });
   page.rect(map.x, map.y, map.width, map.height, {
     stroke: '#d4dfe2', lineWidth: 0.7, radius: 8,
   });
