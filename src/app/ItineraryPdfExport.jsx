@@ -1,12 +1,10 @@
 import { useCallback, useState } from 'react';
 import { IconFileTypePdf } from '@tabler/icons-react';
-import { buildImagePdf, downloadPdf } from '../modules/export/pdfImageDocument.js';
-import { renderItineraryPdfPages } from '../modules/export/itineraryPdfCanvas.js';
-import { captureVisibleItineraryMap } from '../modules/export/itineraryMapSnapshot.js';
+import { downloadVectorPdf } from '../modules/export/pdfVectorDocument.js';
+import { renderItineraryVectorPdf } from '../modules/export/itineraryPdfVector.js';
 import './ItineraryPdfExport.css';
 
-const MAP_CAPTURE_TIMEOUT_MS = 5000;
-const PDF_RENDER_TIMEOUT_MS = 15000;
+const PDF_RENDER_TIMEOUT_MS = 22000;
 
 function safeFileName(value) {
   return String(value || '')
@@ -44,24 +42,13 @@ export function ItineraryPdfExportButton({
     if (exporting) return;
     setExporting(true);
     try {
-      const mapSnapshot = await withTimeout(
-        captureVisibleItineraryMap(),
-        MAP_CAPTURE_TIMEOUT_MS,
-        'Itinerary map capture timed out'
-      );
-      const pages = await withTimeout(
-        renderItineraryPdfPages({
-          model,
-          mapSnapshot,
-          intlLocale,
-          t,
-        }),
+      const bytes = await withTimeout(
+        renderItineraryVectorPdf({ model, intlLocale, t }),
         PDF_RENDER_TIMEOUT_MS,
         'Itinerary PDF rendering timed out'
       );
-      const bytes = buildImagePdf(pages);
       const baseName = safeFileName(model.name || t('appName')) || t('appName');
-      downloadPdf(bytes, `${baseName}.pdf`);
+      downloadVectorPdf(bytes, `${baseName}.pdf`);
     } catch (error) {
       console.error('[Itinerary PDF] export failed', error);
       onError?.(error);
