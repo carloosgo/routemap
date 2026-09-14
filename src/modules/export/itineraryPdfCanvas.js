@@ -14,7 +14,7 @@ function createCanvas() {
 
 function canvasPage(canvas) {
   return {
-    dataUrl: canvas.toDataURL('image/jpeg', 0.9),
+    dataUrl: canvas.toDataURL('image/jpeg', 0.94),
     width: canvas.width,
     height: canvas.height,
   };
@@ -61,12 +61,6 @@ function stopDateLines(stop, locale) {
   const end = formatDate(stop.endDate, locale);
   if (start && end && start !== end) return [start, end];
   return [start || end].filter(Boolean);
-}
-
-function countryFlagEmoji(code) {
-  const normalized = String(code || '').trim().toUpperCase();
-  if (!/^[A-Z]{2}$/.test(normalized)) return '';
-  return String.fromCodePoint(...[...normalized].map((letter) => 127397 + letter.charCodeAt(0)));
 }
 
 function roundRect(ctx, x, y, width, height, radius) {
@@ -147,6 +141,61 @@ function drawOriginMark(ctx, x, y, diameter = 20) {
   ctx.restore();
 }
 
+function drawCountryFlag(ctx, code, x, y, width = 26, height = 18) {
+  const normalized = String(code || '').trim().toUpperCase();
+  ctx.save();
+  roundRect(ctx, x, y, width, height, 2.5);
+  ctx.clip();
+  switch (normalized) {
+    case 'FR': {
+      const stripe = width / 3;
+      ctx.fillStyle = '#2952a3'; ctx.fillRect(x, y, stripe, height);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(x + stripe, y, stripe, height);
+      ctx.fillStyle = '#e14b52'; ctx.fillRect(x + (stripe * 2), y, stripe, height);
+      break;
+    }
+    case 'BE': {
+      const stripe = width / 3;
+      ctx.fillStyle = '#151515'; ctx.fillRect(x, y, stripe, height);
+      ctx.fillStyle = '#f2cf19'; ctx.fillRect(x + stripe, y, stripe, height);
+      ctx.fillStyle = '#db3d3d'; ctx.fillRect(x + (stripe * 2), y, stripe, height);
+      break;
+    }
+    case 'NL': {
+      const stripe = height / 3;
+      ctx.fillStyle = '#bf4d57'; ctx.fillRect(x, y, width, stripe);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y + stripe, width, stripe);
+      ctx.fillStyle = '#2f57a7'; ctx.fillRect(x, y + (stripe * 2), width, stripe);
+      break;
+    }
+    case 'DE': {
+      const stripe = height / 3;
+      ctx.fillStyle = '#0f0f10'; ctx.fillRect(x, y, width, stripe);
+      ctx.fillStyle = '#c73f3f'; ctx.fillRect(x, y + stripe, width, stripe);
+      ctx.fillStyle = '#e0ba34'; ctx.fillRect(x, y + (stripe * 2), width, stripe);
+      break;
+    }
+    case 'ES': {
+      const thin = Math.round(height * 0.25);
+      const middle = height - (thin * 2);
+      ctx.fillStyle = '#c73f3f'; ctx.fillRect(x, y, width, thin);
+      ctx.fillStyle = '#e0ba34'; ctx.fillRect(x, y + thin, width, middle);
+      ctx.fillStyle = '#c73f3f'; ctx.fillRect(x, y + thin + middle, width, thin);
+      break;
+    }
+    default: {
+      ctx.fillStyle = '#f3f5f6';
+      ctx.fillRect(x, y, width, height);
+      ctx.fillStyle = '#49555d';
+      ctx.font = '700 9px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(normalized || '·', x + (width / 2), y + (height / 2) + 0.5);
+    }
+  }
+  ctx.restore();
+}
+
 function drawRouteList(ctx, model, intlLocale, t, box) {
   const { x, y, width, height } = box;
   const entries = [
@@ -174,8 +223,8 @@ function drawRouteList(ctx, model, intlLocale, t, box) {
     const rowY = y + titleHeight + (index * rowHeight);
     const centerY = rowY + (rowHeight / 2);
     const numberX = x + 18;
-    const flagX = x + 58;
-    const cityX = x + 92;
+    const flagX = x + 60;
+    const cityX = x + 96;
     const dateX = x + width - 154;
     const costX = x + width - 16;
 
@@ -193,13 +242,8 @@ function drawRouteList(ctx, model, intlLocale, t, box) {
     else if (entry.number != null) drawNumber(ctx, entry.number, numberX, centerY - 14, 28, entry.color);
     else drawOriginMark(ctx, numberX + 4, centerY - 10, 20);
 
-    const flag = countryFlagEmoji(entry.countryCode);
-    if (flag) {
-      ctx.font = '22px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#111827';
-      ctx.fillText(flag, flagX, centerY + 1);
+    if (entry.countryCode) {
+      drawCountryFlag(ctx, entry.countryCode, flagX, centerY - 9, 24, 16);
     }
 
     ctx.font = '700 15px Arial, sans-serif';
@@ -286,15 +330,12 @@ async function renderOverviewPage({ model, mapSnapshot, intlLocale, t }) {
 
   const margin = 44;
   const top = 34;
-  const titleHeight = 62;
+  const titleHeight = 44;
   ctx.fillStyle = '#1f2c32';
   ctx.font = '800 28px Arial, sans-serif';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   drawTextEllipsis(ctx, model.name || t('unnamedTrip'), margin, top + 22, 760);
-  ctx.fillStyle = '#6c7880';
-  ctx.font = '700 13px Arial, sans-serif';
-  ctx.fillText(t('itinerary'), margin, top + 51);
 
   const contentY = top + titleHeight;
   const contentHeight = canvas.height - contentY - margin;
@@ -338,7 +379,7 @@ async function renderOverviewPage({ model, mapSnapshot, intlLocale, t }) {
 function cardHeight(ctx, item, width) {
   ctx.font = '400 14px Arial, sans-serif';
   const noteLines = wrapText(ctx, item.note || '—', width - 34);
-  return Math.max(126, 86 + (noteLines.length * 19));
+  return Math.max(126, 90 + (Math.min(noteLines.length, 13) * 19));
 }
 
 function drawNoteCard(ctx, item, intlLocale, t, box) {
@@ -351,37 +392,62 @@ function drawNoteCard(ctx, item, intlLocale, t, box) {
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  const markerX = x + 16;
-  const markerY = y + 16;
-  if (item.isOrigin) drawOriginMark(ctx, markerX + 4, markerY + 3, 20);
-  else if (item.number != null) drawNumber(ctx, item.number, markerX, markerY, 28, item.color);
-  else drawOriginMark(ctx, markerX + 4, markerY + 3, 20);
+  const markerY = y + 18;
+  const numberX = x + 14;
+  if (item.isOrigin) drawOriginMark(ctx, numberX + 4, markerY + 1, 20);
+  else if (item.number != null) drawNumber(ctx, item.number, numberX, markerY - 2, 28, item.color);
+  else drawOriginMark(ctx, numberX + 4, markerY + 1, 20);
 
-  const titleX = x + 56;
-  ctx.fillStyle = '#3f4a51';
-  ctx.font = '800 19px Arial, sans-serif';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-  drawTextEllipsis(ctx, item.name || t('city'), titleX, y + 15, width - 72);
+  const flagX = x + 50;
+  const titleX = x + 82;
+  const headerRight = x + width - 16;
+  if (item.countryCode) drawCountryFlag(ctx, item.countryCode, flagX, markerY + 3, 24, 16);
 
+  const cityName = item.name || t('city');
   const dateText = item.isOrigin
     ? formatDate(item.departureDate, intlLocale)
     : formatDateRange(item.startDate, item.endDate, intlLocale);
-  ctx.fillStyle = '#59666e';
-  ctx.font = '700 15px Arial, sans-serif';
-  ctx.fillText(dateText || '—', titleX, y + 43);
 
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#46525a';
+  ctx.font = '800 18px Arial, sans-serif';
+  const cityWidth = ctx.measureText(cityName).width;
+  ctx.font = '700 15px Arial, sans-serif';
+  const dateWidth = ctx.measureText(dateText || '').width;
+  const availableInline = headerRight - titleX;
+  const inlineHeader = Boolean(dateText) && (cityWidth + 12 + dateWidth) <= availableInline;
+
+  ctx.fillStyle = '#46525a';
+  ctx.font = '800 18px Arial, sans-serif';
+  if (inlineHeader) {
+    drawTextEllipsis(ctx, cityName, titleX, y + 28, Math.max(60, availableInline - dateWidth - 14));
+    ctx.fillStyle = '#5d6970';
+    ctx.font = '700 15px Arial, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(dateText, headerRight, y + 28);
+  } else {
+    drawTextEllipsis(ctx, cityName, titleX, y + 24, availableInline);
+    ctx.fillStyle = '#5d6970';
+    ctx.font = '700 15px Arial, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(dateText || '—', titleX, y + 47);
+  }
+
+  const dividerY = inlineHeader ? y + 56 : y + 68;
   ctx.strokeStyle = '#e6eaec';
   ctx.beginPath();
-  ctx.moveTo(x + 16, y + 72);
-  ctx.lineTo(x + width - 16, y + 72);
+  ctx.moveTo(x + 16, dividerY);
+  ctx.lineTo(x + width - 16, dividerY);
   ctx.stroke();
 
   ctx.fillStyle = item.note ? '#505c63' : '#8a959b';
   ctx.font = item.note ? '400 14px Arial, sans-serif' : 'italic 400 14px Arial, sans-serif';
-  const lines = wrapText(ctx, item.note || '—', width - 34);
-  let lineY = y + 88;
+  const lines = wrapText(ctx, item.note || '—', width - 34).slice(0, 13);
+  let lineY = dividerY + 20;
   lines.forEach((line) => {
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
     ctx.fillText(line, x + 17, lineY);
     lineY += 19;
   });
