@@ -1,32 +1,15 @@
 import { useCallback, useState } from 'react';
 import { IconFileTypePdf } from '@tabler/icons-react';
-import { downloadVectorPdf } from '../modules/export/pdfVectorDocument.js';
-import { renderItineraryVectorPdf } from '../modules/export/itineraryPdfVector.js';
+import { buildImagePdf, downloadPdf } from '../modules/export/pdfImageDocument.js';
+import { renderItineraryPdfPages } from '../modules/export/itineraryPdfCanvas.js';
+import { captureVisibleItineraryMap } from '../modules/export/itineraryMapSnapshot.js';
 import './ItineraryPdfExport.css';
-
-const PDF_RENDER_TIMEOUT_MS = 45000;
 
 function safeFileName(value) {
   return String(value || '')
     .replace(/[\\/:*?"<>|]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-}
-
-function withTimeout(promise, milliseconds, message) {
-  return new Promise((resolve, reject) => {
-    const timer = globalThis.setTimeout(() => reject(new Error(message)), milliseconds);
-    Promise.resolve(promise).then(
-      (value) => {
-        globalThis.clearTimeout(timer);
-        resolve(value);
-      },
-      (error) => {
-        globalThis.clearTimeout(timer);
-        reject(error);
-      }
-    );
-  });
 }
 
 export function ItineraryPdfExportButton({
@@ -42,13 +25,16 @@ export function ItineraryPdfExportButton({
     if (exporting) return;
     setExporting(true);
     try {
-      const bytes = await withTimeout(
-        renderItineraryVectorPdf({ model, intlLocale, t }),
-        PDF_RENDER_TIMEOUT_MS,
-        'Itinerary PDF rendering timed out'
-      );
+      const mapSnapshot = await captureVisibleItineraryMap();
+      const pages = await renderItineraryPdfPages({
+        model,
+        mapSnapshot,
+        intlLocale,
+        t,
+      });
+      const bytes = buildImagePdf(pages);
       const baseName = safeFileName(model.name || t('appName')) || t('appName');
-      downloadVectorPdf(bytes, `${baseName}.pdf`);
+      downloadPdf(bytes, `${baseName}.pdf`);
     } catch (error) {
       console.error('[Itinerary PDF] export failed', error);
       onError?.(error);
