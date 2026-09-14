@@ -338,7 +338,7 @@ async function renderOverviewPage({ model, mapSnapshot, intlLocale, t }) {
 function cardHeight(ctx, item, width) {
   ctx.font = '400 14px Arial, sans-serif';
   const noteLines = wrapText(ctx, item.note || '—', width - 34);
-  return Math.max(126, 86 + (Math.min(noteLines.length, 13) * 19));
+  return Math.max(126, 86 + (noteLines.length * 19));
 }
 
 function drawNoteCard(ctx, item, intlLocale, t, box) {
@@ -379,7 +379,7 @@ function drawNoteCard(ctx, item, intlLocale, t, box) {
 
   ctx.fillStyle = item.note ? '#505c63' : '#8a959b';
   ctx.font = item.note ? '400 14px Arial, sans-serif' : 'italic 400 14px Arial, sans-serif';
-  const lines = wrapText(ctx, item.note || '—', width - 34).slice(0, 13);
+  const lines = wrapText(ctx, item.note || '—', width - 34);
   let lineY = y + 88;
   lines.forEach((line) => {
     ctx.fillText(line, x + 17, lineY);
