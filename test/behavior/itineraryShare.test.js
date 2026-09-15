@@ -19,11 +19,11 @@ test('Compartir aparece junto al exportador PDF y crea una URL pública de solo 
   assert.match(shareButtonSource, /createItineraryShare\(model/);
   assert.match(shareButtonSource, /\/share\/\$\{encodeURIComponent\(shareId\)\}/);
   assert.match(shareButtonSource, /navigatorRef\?\.share/);
-  assert.match(shareButtonSource, /navigatorRef\.clipboard|clipboard\?\.writeText/);
+  assert.match(shareButtonSource, /clipboard\?\.writeText/);
 });
 
 test('la vista compartida usa cabecera, mapa y ciudades desplegables con fecha, costo y notas', () => {
-  assert.match(mainSource, /\^\\\/share\\\/\(\[\^\/\]\+\)/);
+  assert.ok(mainSource.includes("match(/^\\/share\\/([^/]+)\\/?$/)"));
   assert.match(sharedPageSource, /loadItineraryShare\(shareId\)/);
   assert.match(sharedPageSource, /loadItineraryGoogleStaticMap\(model/);
   assert.match(sharedPageSource, /composeItineraryStaticMap\(model, baseMap\)/);
