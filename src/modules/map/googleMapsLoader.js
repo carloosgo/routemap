@@ -1,16 +1,61 @@
 import { getToken } from 'firebase/app-check';
 import { config } from '../../config.js';
 import { getFirebaseAppCheck } from '../../infrastructure/firebase/firebaseClient.js';
+import { registerItineraryGoogleMap } from './itineraryMapRuntime.js';
 
 let googleMapsPromise = null;
+const instrumentedNamespaces = new WeakMap();
+const instrumentedMapLibraries = new WeakMap();
+
+function instrumentMapLibrary(library) {
+  if (!library?.Map || typeof library.Map !== 'function') return library;
+  if (instrumentedMapLibraries.has(library)) return instrumentedMapLibraries.get(library);
+
+  const OriginalMap = library.Map;
+  function AtlasInstrumentedMap(...args) {
+    const map = new OriginalMap(...args);
+    registerItineraryGoogleMap(map, args[0]);
+    return map;
+  }
+  AtlasInstrumentedMap.prototype = OriginalMap.prototype;
+  Object.setPrototypeOf(AtlasInstrumentedMap, OriginalMap);
+
+  const instrumented = Object.create(library);
+  Object.defineProperty(instrumented, 'Map', {
+    value: AtlasInstrumentedMap,
+    enumerable: true,
+    configurable: false,
+    writable: false,
+  });
+  instrumentedMapLibraries.set(library, instrumented);
+  return instrumented;
+}
+
+function instrumentMapsNamespace(maps) {
+  if (!maps?.importLibrary) return maps;
+  if (instrumentedNamespaces.has(maps)) return instrumentedNamespaces.get(maps);
+
+  const instrumented = Object.create(maps);
+  Object.defineProperty(instrumented, 'importLibrary', {
+    enumerable: true,
+    configurable: false,
+    writable: false,
+    value: async (libraryName) => {
+      const library = await maps.importLibrary(libraryName);
+      return libraryName === 'maps' ? instrumentMapLibrary(library) : library;
+    },
+  });
+  instrumentedNamespaces.set(maps, instrumented);
+  return instrumented;
+}
 
 async function configureGoogleMapsAppCheck(maps) {
   const appCheck = getFirebaseAppCheck();
-  if (!appCheck) return maps;
-
-  const { Settings } = await maps.importLibrary('core');
-  Settings.getInstance().fetchAppCheckToken = () => getToken(appCheck, false);
-  return maps;
+  if (appCheck) {
+    const { Settings } = await maps.importLibrary('core');
+    Settings.getInstance().fetchAppCheckToken = () => getToken(appCheck, false);
+  }
+  return instrumentMapsNamespace(maps);
 }
 
 export function loadGoogleMaps() {
