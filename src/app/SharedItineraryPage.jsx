@@ -5,7 +5,7 @@ import { loadItineraryGoogleStaticMap } from '../modules/export/googleStaticMapC
 import { composeItineraryStaticMap } from '../modules/export/itineraryStaticMapComposer.js';
 import { loadItineraryShare } from '../modules/share/itineraryShareRepository.js';
 import { formatMoney } from '../shared/utils.js';
-import './SharedItineraryPage.css';
+import { SHARED_ITINERARY_STYLES } from './sharedItineraryStyles.js';
 
 function formatCompactDate(iso, locale) {
   if (!iso) return '';
@@ -45,9 +45,14 @@ function mapObjectUrl(image) {
   return globalThis.URL.createObjectURL(blob);
 }
 
+function SharedStyles() {
+  return <style>{SHARED_ITINERARY_STYLES}</style>;
+}
+
 function SharedLoading({ message }) {
   return (
     <main className="shared-itinerary shared-itinerary--state">
+      <SharedStyles />
       <div className="shared-itinerary__state-card" role="status" aria-live="polite">
         <span className="shared-itinerary__spinner" aria-hidden="true" />
         <p>{message}</p>
@@ -59,6 +64,7 @@ function SharedLoading({ message }) {
 function SharedError({ title, message }) {
   return (
     <main className="shared-itinerary shared-itinerary--state">
+      <SharedStyles />
       <div className="shared-itinerary__state-card shared-itinerary__state-card--error">
         <strong>{title}</strong>
         <p>{message}</p>
@@ -161,6 +167,7 @@ export default function SharedItineraryPage({ shareId }) {
 
   return (
     <main className="shared-itinerary">
+      <SharedStyles />
       <div className="shared-itinerary__shell">
         <header className="shared-itinerary__header">
           <div className="shared-itinerary__brand">{t('appName')}</div>
