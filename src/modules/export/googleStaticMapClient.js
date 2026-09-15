@@ -5,6 +5,7 @@ const STATIC_MAP_ENDPOINT = 'https://maps.googleapis.com/maps/api/staticmap';
 const MAX_LOGICAL_SIZE = 640;
 const MIN_LOGICAL_SIZE = 180;
 const REQUEST_TIMEOUT_MS = 12_000;
+const EXPORT_ZOOM_OFFSET = 1;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -34,7 +35,7 @@ function staticSize(view) {
 }
 
 function integerZoom(value) {
-  return clamp(Math.round(Number(value) || 0), 0, 21);
+  return clamp(Math.round(Number(value) || 0) + EXPORT_ZOOM_OFFSET, 0, 21);
 }
 
 export function buildGoogleStaticMapUrl(view, {
