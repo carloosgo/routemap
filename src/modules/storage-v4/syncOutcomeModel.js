@@ -1,9 +1,41 @@
 import { leaseStillOwned } from './crossContextLeaseModel.js';
-import { V4_LOCAL_STATES } from './storageV4Contract.js';
+import {
+  V4_LOCAL_STATES,
+  V4_MUTATION_OPERATIONS,
+} from './storageV4Contract.js';
 
 function sameBase(left, right) {
   return left?.baseVersion === right?.baseVersion
     && left?.baseStatus === right?.baseStatus;
+}
+
+function sameSerializableValue(left, right) {
+  if (Object.is(left, right)) return true;
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) return false;
+    return left.every((value, index) => sameSerializableValue(value, right[index]));
+  }
+  if (
+    left && right
+    && typeof left === 'object'
+    && typeof right === 'object'
+  ) {
+    const leftKeys = Object.keys(left).sort();
+    const rightKeys = Object.keys(right).sort();
+    if (leftKeys.length !== rightKeys.length) return false;
+    return leftKeys.every(
+      (key, index) => key === rightKeys[index]
+        && sameSerializableValue(left[key], right[key])
+    );
+  }
+  return false;
+}
+
+function remoteAlreadyMatchesMutation(remoteEntity, sentMutation) {
+  if (remoteEntity.serverVersion !== sentMutation.baseVersion + 1) return false;
+  if (remoteEntity.serverStatus !== sentMutation.desiredStatus) return false;
+  if (sentMutation.operation === V4_MUTATION_OPERATIONS.DELETE) return true;
+  return sameSerializableValue(remoteEntity.payload ?? null, sentMutation.payload ?? null);
 }
 
 function validCurrentState(currentEntity, currentMutation, sentMutation) {
@@ -74,8 +106,26 @@ export function planSyncConflict({
     return { apply: false, reason: 'local-state-changed' };
   }
 
+  if (remoteAlreadyMatchesMutation(remoteEntity, sentMutation)) {
+    return {
+      apply: true,
+      kind: 'already-applied',
+      entity: {
+        ...currentEntity,
+        payload: remoteEntity.payload ?? currentEntity.payload,
+        serverVersion: remoteEntity.serverVersion,
+        serverStatus: remoteEntity.serverStatus,
+        desiredStatus: remoteEntity.serverStatus,
+        state: V4_LOCAL_STATES.CLEAN,
+        conflict: null,
+      },
+      mutation: null,
+    };
+  }
+
   return {
     apply: true,
+    kind: 'conflict',
     entity: {
       ...currentEntity,
       serverVersion: remoteEntity.serverVersion,
