@@ -83,6 +83,56 @@ test('flush exitoso confirma una mutación y deja la entidad limpia', async () =
   assert.equal((await store.getEntity(key)).state, V4_LOCAL_STATES.CLEAN);
 });
 
+test('dos flush simultáneos del mismo contexto se serializan y no duplican la escritura', async () => {
+  const store = createMemoryV4LocalPersistence();
+  await seed(store);
+  let writes = 0;
+  let releaseFirstWrite;
+  let signalFirstWrite;
+  const firstWriteStarted = new Promise((resolve) => { signalFirstWrite = resolve; });
+  const firstWriteGate = new Promise((resolve) => { releaseFirstWrite = resolve; });
+  const coordinator = createV4SyncCoordinator({
+    localPersistence: store,
+    remoteGateway: {
+      async writeMutation() {
+        writes += 1;
+        if (writes === 1) {
+          signalFirstWrite();
+          await firstWriteGate;
+          return { serverVersion: 4, serverStatus: 'active' };
+        }
+        throw new V4RemoteSyncError(
+          V4_REMOTE_ERROR_KIND.CONFLICT,
+          'duplicate write',
+          {
+            remoteEntity: {
+              serverVersion: 4,
+              serverStatus: 'active',
+              payload: { note: 'local' },
+            },
+          }
+        );
+      },
+    },
+    contextId: 'tab-a',
+    now: () => 2000,
+  });
+
+  const first = coordinator.flush({ userId: 'alice', tripId: 'trip-1' });
+  await firstWriteStarted;
+  const second = coordinator.flush({ userId: 'alice', tripId: 'trip-1' });
+  releaseFirstWrite();
+  const [firstSummary, secondSummary] = await Promise.all([first, second]);
+
+  assert.equal(writes, 1);
+  assert.equal(firstSummary.synced, 1);
+  assert.equal(firstSummary.conflicts, 0);
+  assert.equal(secondSummary.attempted, 0);
+  assert.equal(secondSummary.conflicts, 0);
+  assert.equal(await store.getMutation(key), null);
+  assert.equal((await store.getEntity(key)).state, V4_LOCAL_STATES.CLEAN);
+});
+
 test('error retryable aplica backoff determinista y reporta el próximo intento', async () => {
   const store = createMemoryV4LocalPersistence();
   await seed(store);
