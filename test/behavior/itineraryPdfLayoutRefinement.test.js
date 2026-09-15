@@ -15,7 +15,7 @@ test('el PDF usa fondo blanco y coloca métricas antes del mapa en la portada', 
 });
 
 test('las cards usan interlineado compacto y numeración más legible', () => {
-  assert.match(source, /const lineHeight = 9\.5;/);
+  assert.match(source, /const lineHeight = 9\.25;/);
   assert.match(source, /page\.circle\(markerX, headerCenterY, 7\.5/);
   assert.match(source, /size: Number\(item\.number\) >= 10 \? 6\.6 : 7\.4/);
   assert.match(source, /layout\.titleSize \* 0\.40/);

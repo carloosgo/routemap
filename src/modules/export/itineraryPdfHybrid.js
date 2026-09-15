@@ -190,9 +190,21 @@ function noteItems(model) {
   ];
 }
 
+function compactWrappedNoteLines(value, maxWidth, fontSize) {
+  const paragraphs = String(value || '—')
+    .replace(/\r/g, '')
+    .split('\n')
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+  if (!paragraphs.length) return ['—'];
+  return paragraphs.flatMap((paragraph) => (
+    wrapPdfText(paragraph, maxWidth, fontSize, false).filter(Boolean)
+  ));
+}
+
 function noteCardLayout(item, width, intlLocale) {
   const bodySize = 8.35;
-  const lineHeight = 9.5;
+  const lineHeight = 9.25;
   const titleSize = 10.7;
   const dateSize = 7.9;
   const titleXOffset = 46.5;
@@ -208,7 +220,7 @@ function noteCardLayout(item, width, intlLocale) {
   const inlineDate = Boolean(dateText) && (cityWidth + 6 + dateWidth <= availableTitleWidth);
   const separatorOffset = inlineDate ? 32 : 45;
   const bodyOffset = separatorOffset + 8;
-  const lines = wrapPdfText(item.note || '—', width - 20, bodySize, false);
+  const lines = compactWrappedNoteLines(item.note, width - 20, bodySize);
 
   return {
     lines,
@@ -248,8 +260,6 @@ function drawNoteCard(page, item, layout, box, t) {
   drawCountryFlag(page, item.countryCode, box.x + 25, headerCenterY - 5.2, 15.5, 10.4);
   const titleX = box.x + layout.titleXOffset;
   const titleY = headerCenterY - (layout.titleSize * 0.40);
-  /* VectorPdfPage.text recibe la coordenada superior; esta compensación iguala
-     la línea base de la fecha (más pequeña) con la línea base del nombre. */
   const inlineDateY = titleY + ((layout.titleSize - layout.dateSize) * 0.82);
   page.text(item.name || t('city'), titleX, titleY, {
     size: layout.titleSize,
