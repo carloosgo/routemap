@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { IconChevronDown, IconMapPin } from '@tabler/icons-react';
 import { useTranslation } from '../i18n/index.jsx';
-import { loadItineraryGoogleStaticMap } from '../modules/export/googleStaticMapClient.js';
-import { composeItineraryStaticMap } from '../modules/export/itineraryStaticMapComposer.js';
+import { RouteMap } from '../modules/map/RouteMap.jsx';
 import { loadItineraryShare } from '../modules/share/itineraryShareRepository.js';
 import { formatMoney } from '../shared/utils.js';
 import { SHARED_ITINERARY_STYLES } from './sharedItineraryStyles.js';
@@ -40,9 +39,42 @@ function safeColor(value) {
   return /^#[0-9a-f]{6}$/i.test(color) ? color : '#0e4f63';
 }
 
-function mapObjectUrl(image) {
-  const blob = new globalThis.Blob([image.bytes], { type: 'image/jpeg' });
-  return globalThis.URL.createObjectURL(blob);
+function mapCity(city, fallbackId) {
+  if (!city) return null;
+  const lat = Number(city.lat);
+  const lon = Number(city.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  return {
+    id: String(city.id || fallbackId || ''),
+    name: String(city.name || ''),
+    displayName: String(city.name || ''),
+    country: String(city.country || ''),
+    countryCode: String(city.countryCode || '').toUpperCase(),
+    lat,
+    lon,
+  };
+}
+
+function sharedRouteModel(model) {
+  const origin = model?.hasOrigin ? mapCity(model.origin, 'shared-origin') : null;
+  const stops = Array.isArray(model?.stops) ? model.stops : [];
+  const segments = stops.flatMap((stop, index) => {
+    const destination = mapCity(stop, `shared-stop-${index + 1}`);
+    if (!destination) return [];
+    return [{
+      id: String(stop.segmentId || `shared-segment-${index + 1}`),
+      destination,
+      expenses: {
+        transport: {
+          plane: 0,
+          train: 0,
+          bus: 0,
+          taxiUber: 0,
+        },
+      },
+    }];
+  });
+  return { origin, segments };
 }
 
 function SharedStyles() {
@@ -77,8 +109,6 @@ export default function SharedItineraryPage({ shareId }) {
   const { t, intlLocale: visitorLocale } = useTranslation();
   const [share, setShare] = useState(null);
   const [loadState, setLoadState] = useState('loading');
-  const [mapUrl, setMapUrl] = useState('');
-  const [mapState, setMapState] = useState('idle');
 
   useEffect(() => {
     let cancelled = false;
@@ -102,6 +132,7 @@ export default function SharedItineraryPage({ shareId }) {
 
   const model = share?.model || null;
   const displayLocale = share?.intlLocale || visitorLocale;
+  const routeModel = useMemo(() => sharedRouteModel(model), [model]);
 
   useEffect(() => {
     if (!model) return undefined;
@@ -111,33 +142,6 @@ export default function SharedItineraryPage({ shareId }) {
       document.title = previousTitle;
     };
   }, [model, t]);
-
-  useEffect(() => {
-    if (!model) return undefined;
-    let cancelled = false;
-    let objectUrl = '';
-    setMapState('loading');
-    setMapUrl('');
-
-    const language = String(displayLocale).toLowerCase().startsWith('en') ? 'en' : 'es';
-    loadItineraryGoogleStaticMap(model, { language })
-      .then((baseMap) => composeItineraryStaticMap(model, baseMap))
-      .then((image) => {
-        if (cancelled) return;
-        objectUrl = mapObjectUrl(image);
-        setMapUrl(objectUrl);
-        setMapState('ready');
-      })
-      .catch((error) => {
-        console.error('[Shared itinerary] map failed', error);
-        if (!cancelled) setMapState('error');
-      });
-
-    return () => {
-      cancelled = true;
-      if (objectUrl) globalThis.URL.revokeObjectURL(objectUrl);
-    };
-  }, [displayLocale, model]);
 
   const metrics = useMemo(() => {
     if (!model) return [];
@@ -187,24 +191,13 @@ export default function SharedItineraryPage({ shareId }) {
         </header>
 
         <section className="shared-itinerary__map-card" aria-label={t('mapRegion')}>
-          {mapState === 'loading' && (
-            <div className="shared-itinerary__map-state" role="status">
-              <span className="shared-itinerary__spinner" aria-hidden="true" />
-              {t('sharedMapLoading')}
-            </div>
-          )}
-          {mapState === 'error' && (
-            <div className="shared-itinerary__map-state shared-itinerary__map-state--error">
-              {t('sharedMapError')}
-            </div>
-          )}
-          {mapUrl && (
-            <img
-              src={mapUrl}
-              alt={t('mapRegion')}
-              className="shared-itinerary__map-image"
-            />
-          )}
+          <RouteMap
+            origin={routeModel.origin}
+            segments={routeModel.segments}
+            places={[]}
+            routeConnections={[]}
+            viewMode="segments"
+          />
         </section>
 
         <section className="shared-itinerary__cities" aria-labelledby="shared-itinerary-cities-title">
