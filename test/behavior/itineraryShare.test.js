@@ -34,20 +34,10 @@ test('la vista compartida usa el mapa interactivo web y ciudades desplegables co
   assert.match(sharedPageSource, /String\(stop\.note \|\| ''\)\.trim\(\)/);
 });
 
-test('Compartir dedica el viewport al mapa y muestra cabecera e itinerario sólo como overlays bajo demanda', () => {
-  assert.match(sharedPageSource, /const \[infoOpen, setInfoOpen\] = useState\(false\)/);
-  assert.match(sharedPageSource, /const \[citiesOpen, setCitiesOpen\] = useState\(false\)/);
-  assert.match(sharedPageSource, /shared-itinerary__info-button/);
-  assert.match(sharedPageSource, /aria-expanded=\{infoOpen\}/);
-  assert.match(sharedPageSource, /infoOpen && \(/);
-  assert.match(sharedPageSource, /shared-itinerary__sheet/);
-  assert.match(sharedPageSource, /aria-expanded=\{citiesOpen\}/);
-  assert.match(sharedPageSource, /citiesOpen && \(/);
-  assert.match(sharedStylesSource, /shared-itinerary--map-view\{[^}]*position:fixed;inset:0;[^}]*height:100dvh/);
-  assert.match(sharedStylesSource, /shared-itinerary__map\{position:absolute;inset:0\}/);
-  assert.match(sharedStylesSource, /shared-itinerary__info-panel\{[^}]*position:absolute/);
-  assert.match(sharedStylesSource, /shared-itinerary__sheet\{[^}]*position:absolute/);
-  assert.doesNotMatch(sharedStylesSource, /shared-itinerary__map-card\{/);
+test('la vista compartida puede desplazarse aunque el shell global de la app bloquee el body', () => {
+  assert.match(sharedStylesSource, /height:100%/);
+  assert.match(sharedStylesSource, /overflow-y:auto/);
+  assert.match(sharedStylesSource, /shared-itinerary__map-card\{[^}]*height:clamp\(/);
 });
 
 test('el snapshot compartido no publica el documento privado del viaje y sólo permite get público', () => {
