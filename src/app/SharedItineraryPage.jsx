@@ -35,9 +35,14 @@ function flagEmoji(countryCode) {
   return Array.from(code, (letter) => String.fromCodePoint(127397 + letter.charCodeAt(0))).join('');
 }
 
+function safeColor(value) {
+  const color = String(value || '').trim();
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : '#0e4f63';
+}
+
 function mapObjectUrl(image) {
-  const blob = new Blob([image.bytes], { type: 'image/jpeg' });
-  return URL.createObjectURL(blob);
+  const blob = new globalThis.Blob([image.bytes], { type: 'image/jpeg' });
+  return globalThis.URL.createObjectURL(blob);
 }
 
 function SharedLoading({ message }) {
@@ -124,7 +129,7 @@ export default function SharedItineraryPage({ shareId }) {
 
     return () => {
       cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      if (objectUrl) globalThis.URL.revokeObjectURL(objectUrl);
     };
   }, [displayLocale, model]);
 
@@ -213,7 +218,7 @@ export default function SharedItineraryPage({ shareId }) {
                   <summary>
                     <span
                       className="shared-itinerary__city-number"
-                      style={{ background: stop.color || '#0e4f63' }}
+                      style={{ background: safeColor(stop.color) }}
                       aria-hidden="true"
                     >
                       {number}
