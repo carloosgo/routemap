@@ -17,7 +17,51 @@ export function dominantTransport(segment) {
   return top.amount > 0 ? top.type : null;
 }
 
-export function adaptiveCurve(origin, destination, steps = 32) {
+function approximateMapDistance(left, right) {
+  const leftLon = Number(left?.lon ?? left?.[0]);
+  const leftLat = Number(left?.lat ?? left?.[1]);
+  const rightLon = Number(right?.lon ?? right?.[0]);
+  const rightLat = Number(right?.lat ?? right?.[1]);
+  if (![leftLon, leftLat, rightLon, rightLat].every(Number.isFinite)) return 0;
+  const meanLatitude = ((leftLat + rightLat) / 2) * (Math.PI / 180);
+  const dx = (leftLon - rightLon) * Math.cos(meanLatitude);
+  const dy = leftLat - rightLat;
+  return Math.hypot(dx, dy);
+}
+
+function uniqueCurveReferenceCities(routeCities, origin, destination) {
+  const excluded = new Set([cityKey(origin), cityKey(destination)]);
+  const unique = new Map();
+  (routeCities || []).forEach((city) => {
+    if (!isPlaced(city)) return;
+    const key = cityKey(city);
+    if (!key || excluded.has(key) || unique.has(key)) return;
+    unique.set(key, city);
+  });
+  return [...unique.values()];
+}
+
+function exteriorCurveScore(controlPoint, routeCities, origin, destination) {
+  const referenceCities = uniqueCurveReferenceCities(routeCities, origin, destination);
+  if (!referenceCities.length) return null;
+  const total = referenceCities.reduce(
+    (sum, city) => sum + approximateMapDistance(controlPoint, city),
+    0
+  );
+  return total / referenceCities.length;
+}
+
+export function adaptiveCurve(origin, destination, stepsOrOptions = 32) {
+  const options = typeof stepsOrOptions === 'object' && stepsOrOptions !== null
+    ? stepsOrOptions
+    : {};
+  const requestedSteps = typeof stepsOrOptions === 'number'
+    ? stepsOrOptions
+    : Number(options.steps);
+  const steps = Number.isInteger(requestedSteps) && requestedSteps >= 2
+    ? requestedSteps
+    : 32;
+  const routeCities = Array.isArray(options.routeCities) ? options.routeCities : [];
   const start = [origin.lon, origin.lat];
   const end = [destination.lon, destination.lat];
   const dx = end[0] - start[0];
@@ -30,8 +74,34 @@ export function adaptiveCurve(origin, destination, steps = 32) {
   const middleX = (start[0] + end[0]) / 2;
   const middleY = (start[1] + end[1]) / 2;
   const length = distance || 1;
-  const controlX = middleX + (dy / length) * offset;
-  const controlY = middleY + (-dx / length) * offset;
+  const normalX = dy / length;
+  const normalY = -dx / length;
+  const primaryControl = [
+    middleX + (normalX * offset),
+    middleY + (normalY * offset),
+  ];
+  const oppositeControl = [
+    middleX - (normalX * offset),
+    middleY - (normalY * offset),
+  ];
+  const primaryScore = exteriorCurveScore(
+    primaryControl,
+    routeCities,
+    origin,
+    destination
+  );
+  const oppositeScore = exteriorCurveScore(
+    oppositeControl,
+    routeCities,
+    origin,
+    destination
+  );
+  const control = primaryScore != null
+    && oppositeScore != null
+    && oppositeScore > primaryScore
+    ? oppositeControl
+    : primaryControl;
+  const [controlX, controlY] = control;
   const points = [];
 
   for (let index = 0; index <= steps; index += 1) {
@@ -166,7 +236,7 @@ export function buildMapFeatureData({
         },
         geometry: {
           type: 'LineString',
-          coordinates: adaptiveCurve(segment.origin, segment.destination),
+          coordinates: adaptiveCurve(segment.origin, segment.destination, { routeCities }),
         },
       });
     });
