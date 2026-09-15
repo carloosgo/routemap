@@ -34,6 +34,16 @@ test('las etiquetas cercanas prueban varias posiciones, evitan marcadores y usan
   assert.match(composerSource, /placement\.distance < LEADER_MIN_DISTANCE/);
 });
 
+test('las etiquetas respetan el corredor de la ruta para no tapar el trazo punteado', () => {
+  assert.match(composerSource, /const ROUTE_LABEL_GAP = 3/);
+  assert.match(composerSource, /function projectedRouteSegments/);
+  assert.match(composerSource, /function segmentIntersectsBox/);
+  assert.match(composerSource, /const routeCollisions = routeSegments\.reduce/);
+  assert.match(composerSource, /routeCollisions \* 1_000_000/);
+  assert.match(composerSource, /const routeSegments = projectedRouteSegments\(entries, viewport, scale\)/);
+  assert.match(composerSource, /markerObstacles,\n\s+routeSegments/);
+});
+
 test('las cards conservan un espacio moderado sólo entre párrafos explícitos', () => {
   assert.match(pdfSource, /function noteBodyLines/);
   assert.match(pdfSource, /let pendingParagraphGap = false/);
