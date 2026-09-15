@@ -17,6 +17,10 @@ export function dominantTransport(segment) {
   return top.amount > 0 ? top.type : null;
 }
 
+export function cityKey(city) {
+  return `${Number(city.lat).toFixed(6)},${Number(city.lon).toFixed(6)}`;
+}
+
 function approximateMapDistance(left, right) {
   const leftLon = Number(left?.lon ?? left?.[0]);
   const leftLat = Number(left?.lat ?? left?.[1]);
@@ -114,10 +118,6 @@ export function adaptiveCurve(origin, destination, stepsOrOptions = 32) {
   }
 
   return points;
-}
-
-export function cityKey(city) {
-  return `${Number(city.lat).toFixed(6)},${Number(city.lon).toFixed(6)}`;
 }
 
 export function canonicalSegmentChain(segments) {
