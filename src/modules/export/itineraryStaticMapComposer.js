@@ -7,9 +7,11 @@ const MARKER_SPACING = 14;
 const LABEL_FONT_SIZE = 9.2;
 const LABEL_HEIGHT = 18;
 const LABEL_PADDING_X = 7;
-const LABEL_GAP = 7;
 const LABEL_RADIUS = 6;
+const LABEL_COLLISION_GAP = 4;
+const LABEL_DISTANCE_STEPS = [7, 15, 26, 38, 52];
 const ATTRIBUTION_GUARD = 27;
+const LEADER_MIN_DISTANCE = 15;
 
 function routeEntries(model) {
   return [
@@ -130,6 +132,14 @@ function boxesIntersect(left, right, gap = 0) {
   );
 }
 
+function intersectionArea(left, right, gap = 0) {
+  const leftEdge = Math.max(left.x - gap, right.x - gap);
+  const rightEdge = Math.min(left.x + left.width + gap, right.x + right.width + gap);
+  const topEdge = Math.max(left.y - gap, right.y - gap);
+  const bottomEdge = Math.min(left.y + left.height + gap, right.y + right.height + gap);
+  return Math.max(0, rightEdge - leftEdge) * Math.max(0, bottomEdge - topEdge);
+}
+
 function clampBox(box, canvas, scale) {
   const margin = 6 * scale;
   const bottomGuard = ATTRIBUTION_GUARD * scale;
@@ -142,48 +152,155 @@ function clampBox(box, canvas, scale) {
   };
 }
 
-function labelCandidates(baseX, baseY, clusterHalfWidth, width, height, scale) {
-  const gap = LABEL_GAP * scale;
-  const verticalGap = 7 * scale;
-  return [
-    { x: baseX + clusterHalfWidth + gap, y: baseY - (height / 2) },
-    { x: baseX - clusterHalfWidth - gap - width, y: baseY - (height / 2) },
-    { x: baseX + clusterHalfWidth + gap, y: baseY - height - verticalGap },
-    { x: baseX + clusterHalfWidth + gap, y: baseY + verticalGap },
-    { x: baseX - clusterHalfWidth - gap - width, y: baseY - height - verticalGap },
-    { x: baseX - clusterHalfWidth - gap - width, y: baseY + verticalGap },
+function candidateForDirection(direction, {
+  baseX, baseY, clusterHalfWidth, width, height, distance, scale,
+}) {
+  const markerY = MARKER_RADIUS * scale;
+  const gap = distance * scale;
+  switch (direction) {
+    case 'left':
+      return { x: baseX - clusterHalfWidth - gap - width, y: baseY - (height / 2) };
+    case 'top':
+      return { x: baseX - (width / 2), y: baseY - markerY - gap - height };
+    case 'bottom':
+      return { x: baseX - (width / 2), y: baseY + markerY + gap };
+    case 'top-right':
+      return { x: baseX + clusterHalfWidth + gap, y: baseY - markerY - (gap * 0.6) - height };
+    case 'top-left':
+      return { x: baseX - clusterHalfWidth - gap - width, y: baseY - markerY - (gap * 0.6) - height };
+    case 'bottom-right':
+      return { x: baseX + clusterHalfWidth + gap, y: baseY + markerY + (gap * 0.6) };
+    case 'bottom-left':
+      return { x: baseX - clusterHalfWidth - gap - width, y: baseY + markerY + (gap * 0.6) };
+    case 'right':
+    default:
+      return { x: baseX + clusterHalfWidth + gap, y: baseY - (height / 2) };
+  }
+}
+
+function labelCandidates(geometry, width, height, canvas, scale) {
+  const directionSets = [
+    ['right', 'left', 'top', 'bottom', 'top-right', 'top-left', 'bottom-right', 'bottom-left'],
+    ['left', 'right', 'bottom', 'top', 'bottom-left', 'bottom-right', 'top-left', 'top-right'],
   ];
-}
-
-function chooseLabelBox({ baseX, baseY, clusterHalfWidth, width, height, canvas, scale, occupied }) {
-  const candidates = labelCandidates(baseX, baseY, clusterHalfWidth, width, height, scale)
-    .map((candidate) => clampBox({ ...candidate, width, height }, canvas, scale));
-  return candidates.find((candidate) => (
-    !occupied.some((placed) => boxesIntersect(candidate, placed, 3 * scale))
-  )) || candidates[0];
-}
-
-function drawCityLabel(ctx, group, geometry, canvas, scale, occupied) {
-  const cityName = String(group.entries.find((entry) => entry.name)?.name || '').trim();
-  if (!cityName) return;
-  const accentEntry = group.entries.find((entry) => !entry.isOrigin) || group.entries[0];
-  const color = normalizedHex(accentEntry?.color, SYSTEM_TEAL);
-  const fontSize = LABEL_FONT_SIZE * scale;
-  const labelHeight = LABEL_HEIGHT * scale;
-  ctx.save();
-  ctx.font = `700 ${fontSize}px Arial, sans-serif`;
-  const labelWidth = Math.ceil(ctx.measureText(cityName).width + (LABEL_PADDING_X * 2 * scale));
-  const box = chooseLabelBox({
-    baseX: geometry.baseX,
-    baseY: geometry.baseY,
-    clusterHalfWidth: geometry.clusterHalfWidth,
-    width: labelWidth,
-    height: labelHeight,
-    canvas,
-    scale,
-    occupied,
+  const directions = directionSets[geometry.routeIndex % directionSets.length];
+  const candidates = [];
+  LABEL_DISTANCE_STEPS.forEach((distance, distanceIndex) => {
+    directions.forEach((direction, directionIndex) => {
+      const raw = candidateForDirection(direction, {
+        ...geometry,
+        width,
+        height,
+        distance,
+        scale,
+      });
+      const box = clampBox({ ...raw, width, height }, canvas, scale);
+      const duplicate = candidates.some((candidate) => (
+        Math.abs(candidate.x - box.x) < 0.5 && Math.abs(candidate.y - box.y) < 0.5
+      ));
+      if (!duplicate) {
+        candidates.push({
+          ...box,
+          direction,
+          distance,
+          preference: (distanceIndex * 10) + directionIndex,
+        });
+      }
+    });
   });
+  return candidates;
+}
 
+function scoreLabelCandidate(candidate, obstacles, scale) {
+  let collisions = 0;
+  let overlap = 0;
+  const gap = LABEL_COLLISION_GAP * scale;
+  obstacles.forEach((obstacle) => {
+    if (!boxesIntersect(candidate, obstacle, gap)) return;
+    collisions += 1;
+    overlap += intersectionArea(candidate, obstacle, gap);
+  });
+  return {
+    collisions,
+    overlap,
+    score: (collisions * 1_000_000) + (overlap * 100) + candidate.preference,
+  };
+}
+
+function chooseLabelBox({ geometry, width, height, canvas, scale, occupied, markerObstacles }) {
+  const candidates = labelCandidates(geometry, width, height, canvas, scale);
+  const obstacles = [...markerObstacles, ...occupied];
+  let best = null;
+  candidates.forEach((candidate) => {
+    const scored = scoreLabelCandidate(candidate, obstacles, scale);
+    const option = { ...candidate, ...scored };
+    if (!best || option.score < best.score) best = option;
+  });
+  return best || candidates[0];
+}
+
+function markerObstacle(geometry, scale) {
+  const horizontalPad = 3 * scale;
+  const verticalRadius = (MARKER_RADIUS + 3) * scale;
+  return {
+    x: geometry.baseX - geometry.clusterHalfWidth - horizontalPad,
+    y: geometry.baseY - verticalRadius,
+    width: (geometry.clusterHalfWidth * 2) + (horizontalPad * 2),
+    height: verticalRadius * 2,
+  };
+}
+
+function nearestNeighborDistance(geometry, geometries) {
+  let nearest = Number.POSITIVE_INFINITY;
+  geometries.forEach((other) => {
+    if (other === geometry) return;
+    nearest = Math.min(nearest, Math.hypot(other.baseX - geometry.baseX, other.baseY - geometry.baseY));
+  });
+  return nearest;
+}
+
+function closestPointOnBox(baseX, baseY, box) {
+  return {
+    x: Math.max(box.x, Math.min(box.x + box.width, baseX)),
+    y: Math.max(box.y, Math.min(box.y + box.height, baseY)),
+  };
+}
+
+function drawLeaderLine(ctx, placement, scale) {
+  if (placement.distance < LEADER_MIN_DISTANCE) return;
+  const { geometry, box } = placement;
+  const target = closestPointOnBox(geometry.baseX, geometry.baseY, box);
+  const dx = target.x - geometry.baseX;
+  const dy = target.y - geometry.baseY;
+  const length = Math.hypot(dx, dy);
+  if (length < 1) return;
+
+  const rx = Math.max(MARKER_RADIUS * scale, geometry.clusterHalfWidth + (1.5 * scale));
+  const ry = (MARKER_RADIUS + 1.5) * scale;
+  const ellipseFactor = 1 / Math.sqrt(((dx * dx) / (rx * rx)) + ((dy * dy) / (ry * ry)));
+  const startX = geometry.baseX + (dx * Math.min(1, ellipseFactor));
+  const startY = geometry.baseY + (dy * Math.min(1, ellipseFactor));
+  const unitX = dx / length;
+  const unitY = dy / length;
+  const endX = target.x - (unitX * 2 * scale);
+  const endY = target.y - (unitY * 2 * scale);
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(55, 70, 78, 0.58)';
+  ctx.lineWidth = 0.85 * scale;
+  ctx.lineCap = 'round';
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+  ctx.lineTo(endX, endY);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawCityLabel(ctx, placement, scale) {
+  const { cityName, color, box } = placement;
+  ctx.save();
+  ctx.font = `700 ${LABEL_FONT_SIZE * scale}px Arial, sans-serif`;
   ctx.shadowColor = 'rgba(20, 33, 40, 0.18)';
   ctx.shadowBlur = 2.5 * scale;
   ctx.shadowOffsetY = 1 * scale;
@@ -200,24 +317,49 @@ function drawCityLabel(ctx, group, geometry, canvas, scale, occupied) {
   ctx.textBaseline = 'middle';
   ctx.fillText(cityName, box.x + (box.width / 2), box.y + (box.height / 2) + (0.25 * scale));
   ctx.restore();
-  occupied.push(box);
+}
+
+function buildLabelPlacement(ctx, geometry, canvas, scale, occupied, markerObstacles) {
+  const cityName = String(geometry.group.entries.find((entry) => entry.name)?.name || '').trim();
+  if (!cityName) return null;
+  const accentEntry = geometry.group.entries.find((entry) => !entry.isOrigin) || geometry.group.entries[0];
+  const color = normalizedHex(accentEntry?.color, SYSTEM_TEAL);
+  ctx.save();
+  ctx.font = `700 ${LABEL_FONT_SIZE * scale}px Arial, sans-serif`;
+  const labelWidth = Math.ceil(ctx.measureText(cityName).width + (LABEL_PADDING_X * 2 * scale));
+  ctx.restore();
+  const labelHeight = LABEL_HEIGHT * scale;
+  const box = chooseLabelBox({
+    geometry,
+    width: labelWidth,
+    height: labelHeight,
+    canvas,
+    scale,
+    occupied,
+    markerObstacles,
+  });
+  return {
+    geometry,
+    cityName,
+    color,
+    distance: box.distance,
+    box,
+  };
 }
 
 function drawMarkers(ctx, entries, viewport, scale, canvas) {
   const groups = groupedStops(entries);
-  const occupiedLabels = [];
   const geometries = [];
 
   groups.forEach((group, groupIndex) => {
     const [projectedX, projectedY] = projectToStaticMap(group.lon, group.lat, viewport);
-    const spacing = MARKER_SPACING;
-    const totalWidth = Math.max(0, (group.entries.length - 1) * spacing);
+    const totalWidth = Math.max(0, (group.entries.length - 1) * MARKER_SPACING);
     const baseX = projectedX * scale;
     const baseY = projectedY * scale;
     const clusterHalfWidth = ((totalWidth / 2) + MARKER_RADIUS) * scale;
 
     group.entries.forEach((entry, index) => {
-      const x = (projectedX - (totalWidth / 2) + (index * spacing)) * scale;
+      const x = (projectedX - (totalWidth / 2) + (index * MARKER_SPACING)) * scale;
       const y = baseY;
       if (entry.isOrigin) {
         ctx.fillStyle = '#ffffff';
@@ -247,7 +389,8 @@ function drawMarkers(ctx, entries, viewport, scale, canvas) {
       ctx.fillText(String(entry.number ?? ''), x, y + (0.25 * scale));
     });
 
-    geometries.push({ group, baseX, baseY, clusterHalfWidth });
+    const geometry = { group, baseX, baseY, clusterHalfWidth, routeIndex: groupIndex };
+    geometries.push(geometry);
     if (groupIndex === groups.length - 1) {
       drawFinishFlag(
         ctx,
@@ -258,9 +401,32 @@ function drawMarkers(ctx, entries, viewport, scale, canvas) {
     }
   });
 
-  geometries.forEach(({ group, baseX, baseY, clusterHalfWidth }) => {
-    drawCityLabel(ctx, group, { baseX, baseY, clusterHalfWidth }, canvas, scale, occupiedLabels);
+  const markerObstacles = geometries.map((geometry) => markerObstacle(geometry, scale));
+  const occupiedLabels = [];
+  const placementOrder = [...geometries].sort((left, right) => {
+    const leftNearest = nearestNeighborDistance(left, geometries);
+    const rightNearest = nearestNeighborDistance(right, geometries);
+    if (leftNearest !== rightNearest) return leftNearest - rightNearest;
+    return right.group.entries.length - left.group.entries.length;
   });
+
+  const placements = [];
+  placementOrder.forEach((geometry) => {
+    const placement = buildLabelPlacement(
+      ctx,
+      geometry,
+      canvas,
+      scale,
+      occupiedLabels,
+      markerObstacles
+    );
+    if (!placement) return;
+    occupiedLabels.push(placement.box);
+    placements.push(placement);
+  });
+
+  placements.forEach((placement) => drawLeaderLine(ctx, placement, scale));
+  placements.forEach((placement) => drawCityLabel(ctx, placement, scale));
 }
 
 function canvasToJpeg(canvas) {

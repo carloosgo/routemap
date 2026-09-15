@@ -24,10 +24,21 @@ test('el mapa PDF usa etiquetas de ciudad, marcadores compactos y no colorea pa�
   assert.doesNotMatch(composerSource, /findCountryContainingPoint/);
 });
 
-test('las cards eliminan líneas vacías duplicadas de notas y mantienen interlineado compacto', () => {
-  assert.match(pdfSource, /function compactWrappedNoteLines/);
-  assert.match(pdfSource, /\.map\(\(paragraph\) => paragraph\.trim\(\)\)/);
-  assert.match(pdfSource, /\.filter\(Boolean\)/);
-  assert.match(pdfSource, /wrapPdfText\(paragraph, maxWidth, fontSize, false\)\.filter\(Boolean\)/);
+test('las etiquetas cercanas prueban varias posiciones, evitan marcadores y usan guía al alejarse', () => {
+  assert.match(composerSource, /const LABEL_DISTANCE_STEPS = \[7, 15, 26, 38, 52\]/);
+  assert.match(composerSource, /function intersectionArea/);
+  assert.match(composerSource, /function scoreLabelCandidate/);
+  assert.match(composerSource, /const markerObstacles = geometries\.map/);
+  assert.match(composerSource, /nearestNeighborDistance/);
+  assert.match(composerSource, /function drawLeaderLine/);
+  assert.match(composerSource, /placement\.distance < LEADER_MIN_DISTANCE/);
+});
+
+test('las cards conservan un espacio moderado sólo entre párrafos explícitos', () => {
+  assert.match(pdfSource, /function noteBodyLines/);
+  assert.match(pdfSource, /let pendingParagraphGap = false/);
+  assert.match(pdfSource, /if \(pendingParagraphGap && lines\.length/);
   assert.match(pdfSource, /const lineHeight = 9\.25/);
+  assert.match(pdfSource, /const paragraphGap = 4\.25/);
+  assert.match(pdfSource, /y \+= layout\.paragraphGap/);
 });
