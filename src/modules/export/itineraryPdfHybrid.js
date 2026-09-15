@@ -190,21 +190,34 @@ function noteItems(model) {
   ];
 }
 
-function compactWrappedNoteLines(value, maxWidth, fontSize) {
-  const paragraphs = String(value || '—')
-    .replace(/\r/g, '')
-    .split('\n')
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
-  if (!paragraphs.length) return ['—'];
-  return paragraphs.flatMap((paragraph) => (
-    wrapPdfText(paragraph, maxWidth, fontSize, false).filter(Boolean)
-  ));
+function noteBodyLines(value, maxWidth, fontSize) {
+  const rawLines = String(value || '—').replace(/\r/g, '').split('\n');
+  const lines = [];
+  let pendingParagraphGap = false;
+
+  rawLines.forEach((rawLine) => {
+    const text = rawLine.trim();
+    if (!text) {
+      if (lines.length) pendingParagraphGap = true;
+      return;
+    }
+    if (pendingParagraphGap && lines.length && lines[lines.length - 1] !== '') lines.push('');
+    const wrapped = wrapPdfText(text, maxWidth, fontSize, false).filter(Boolean);
+    lines.push(...wrapped);
+    pendingParagraphGap = false;
+  });
+
+  return lines.length ? lines : ['—'];
+}
+
+function noteBodyHeight(lines, lineHeight, paragraphGap) {
+  return lines.reduce((height, line) => height + (line ? lineHeight : paragraphGap), 0);
 }
 
 function noteCardLayout(item, width, intlLocale) {
   const bodySize = 8.35;
   const lineHeight = 9.25;
+  const paragraphGap = 4.25;
   const titleSize = 10.7;
   const dateSize = 7.9;
   const titleXOffset = 46.5;
@@ -220,7 +233,8 @@ function noteCardLayout(item, width, intlLocale) {
   const inlineDate = Boolean(dateText) && (cityWidth + 6 + dateWidth <= availableTitleWidth);
   const separatorOffset = inlineDate ? 32 : 45;
   const bodyOffset = separatorOffset + 8;
-  const lines = compactWrappedNoteLines(item.note, width - 20, bodySize);
+  const lines = noteBodyLines(item.note, width - 20, bodySize);
+  const bodyHeight = noteBodyHeight(lines, lineHeight, paragraphGap);
 
   return {
     lines,
@@ -228,6 +242,7 @@ function noteCardLayout(item, width, intlLocale) {
     inlineDateText,
     bodySize,
     lineHeight,
+    paragraphGap,
     titleSize,
     dateSize,
     titleXOffset,
@@ -235,7 +250,7 @@ function noteCardLayout(item, width, intlLocale) {
     inlineDate,
     separatorOffset,
     bodyOffset,
-    height: Math.max(inlineDate ? 66 : 79, bodyOffset + (lines.length * lineHeight) + 7),
+    height: Math.max(inlineDate ? 66 : 79, bodyOffset + bodyHeight + 7),
   };
 }
 
@@ -294,7 +309,11 @@ function drawNoteCard(page, item, layout, box, t) {
 
   let y = box.y + layout.bodyOffset;
   layout.lines.forEach((line) => {
-    page.text(line || ' ', box.x + 10, y, {
+    if (!line) {
+      y += layout.paragraphGap;
+      return;
+    }
+    page.text(line, box.x + 10, y, {
       size: layout.bodySize,
       color: '#445159',
       maxWidth: box.width - 20,
