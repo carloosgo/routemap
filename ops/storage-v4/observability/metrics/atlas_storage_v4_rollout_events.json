@@ -1,0 +1,23 @@
+{
+  "name": "atlas_storage_v4_rollout_events",
+  "description": "Atlas Storage v4 rollout repository events. Labels are bounded operational metadata only; no trip content or user identifiers.",
+  "filter": "jsonPayload.message=\"storage_v4_rollout_metric\"",
+  "disabled": false,
+  "metricDescriptor": {
+    "metricKind": "DELTA",
+    "valueType": "INT64",
+    "unit": "1",
+    "labels": [
+      { "key": "operation", "valueType": "STRING", "description": "Repository operation." },
+      { "key": "repository_mode", "valueType": "STRING", "description": "Selected repository mode." },
+      { "key": "outcome", "valueType": "STRING", "description": "Operation outcome." },
+      { "key": "result_schema", "valueType": "STRING", "description": "Observed result schema when present." }
+    ]
+  },
+  "labelExtractors": {
+    "operation": "EXTRACT(jsonPayload.operation)",
+    "repository_mode": "EXTRACT(jsonPayload.repositoryMode)",
+    "outcome": "EXTRACT(jsonPayload.outcome)",
+    "result_schema": "EXTRACT(jsonPayload.resultSchema)"
+  }
+}

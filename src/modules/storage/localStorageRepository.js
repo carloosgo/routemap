@@ -1,8 +1,35 @@
-import { normalizeTrip } from '../trips/tripModel.js';
+import {
+  normalizeTrip,
+  placeForPersistence,
+} from '../trips/tripModel.js';
 
 // Implementación de almacenamiento en el navegador (localStorage).
 // Apta para uso individual / modo offline. Para multiusuario global se usa
-// la implementación 'api' contra el backend.
+// el repositorio remoto canónico Storage v4.
+
+function normalizeStoredTrip(rawTrip) {
+  return normalizeTrip(rawTrip);
+}
+
+function tripForPersistence(rawTrip) {
+  const trip = normalizeStoredTrip(rawTrip);
+  return {
+    ...trip,
+    places: trip.places.map(placeForPersistence),
+    routeConnections: trip.routeConnections.map((route) =>
+      route.provider === 'google'
+        ? {
+            ...route,
+            distance: 0,
+            duration: 0,
+            geometry: null,
+            calculatedAt: '',
+            transitSteps: [],
+          }
+        : route
+    ),
+  };
+}
 
 export function createLocalStorageRepository(storageKey) {
   const safeStorageKey = typeof storageKey === 'string' ? storageKey.trim() : '';
@@ -30,7 +57,7 @@ export function createLocalStorageRepository(storageKey) {
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) return [];
-      return parsed.map(normalizeTrip);
+      return parsed.map(normalizeStoredTrip);
     } catch (error) {
       if (error instanceof SyntaxError) return [];
       throw error;
@@ -38,7 +65,7 @@ export function createLocalStorageRepository(storageKey) {
   }
 
   function writeAll(trips) {
-    storage().setItem(safeStorageKey, JSON.stringify(trips));
+    storage().setItem(safeStorageKey, JSON.stringify(trips.map(tripForPersistence)));
   }
 
   return {
@@ -52,7 +79,7 @@ export function createLocalStorageRepository(storageKey) {
     },
 
     async save(trip) {
-      const normalized = normalizeTrip(trip);
+      const normalized = normalizeStoredTrip(trip);
       const trips = readAll();
       const stamped = normalizeTrip({ ...normalized, updatedAt: new Date().toISOString() });
       const index = trips.findIndex((storedTrip) => storedTrip.id === stamped.id);

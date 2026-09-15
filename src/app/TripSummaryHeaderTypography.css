@@ -1,0 +1,10 @@
+.trip-summary__metric-label {
+  color: #0d6078;
+  font-size: 11px;
+}
+
+.trip-summary__metric-value,
+.trip-summary__selector-trigger {
+  color: #000000;
+  font-size: 14px;
+}

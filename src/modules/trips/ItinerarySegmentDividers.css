@@ -1,0 +1,607 @@
+/* Separadores horizontales discretos entre trayectos. El eje vertical general
+   permanece eliminado. Los bloques de tres o más ciudades consecutivas del
+   mismo país usan un único riel punteado detrás de sus nodos. */
+
+.segments:not(.segments--compact) {
+  --country-run-track-w: 30px;
+  --country-run-flag-w: 30px;
+  --country-run-flag-h: 20px;
+  --country-run-dot-size: 7px;
+  --country-run-rail-w: 1px;
+  --country-run-track-color: #667085;
+  --country-run-dash-length: 3px;
+  --country-run-dash-period: 7px;
+  --country-run-mask-gap: 4px;
+  --country-run-surface: var(--bg, #fafbfc);
+  --country-run-axis-inline: var(--itinerary-axis-x, 38px);
+}
+
+.segments:not(.segments--compact)::before {
+  content: none;
+}
+
+.itinerary-segment::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: -1px;
+  left: 53px;
+  right: 4px;
+  height: 1px;
+  background: repeating-linear-gradient(
+    to right,
+    #c9ced7 0 3px,
+    transparent 3px 7px
+  );
+  opacity: 0.78;
+  pointer-events: none;
+}
+
+.itinerary-segment.is-country-run-joined::before {
+  content: none;
+}
+
+.itinerary-country-run-rail {
+  position: absolute;
+  z-index: 0;
+  top: var(--country-run-top);
+  inset-inline-start: var(--country-run-axis-inline);
+  width: var(--country-run-rail-w);
+  height: var(--country-run-height);
+  transform: translateX(-50%);
+  background-image: linear-gradient(
+    to bottom,
+    var(--country-run-track-color) 0 var(--country-run-dash-length),
+    transparent var(--country-run-dash-length) var(--country-run-dash-period)
+  );
+  background-size: 100% var(--country-run-dash-period);
+  background-repeat: repeat-y;
+  pointer-events: none;
+}
+
+.itinerary-stop__marker.is-country-run-marker {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  width: var(--country-run-track-w);
+  min-width: var(--country-run-track-w);
+  justify-self: center;
+}
+
+.itinerary-stop__country-run-dot {
+  position: relative;
+  z-index: 1;
+  display: block;
+  box-sizing: border-box;
+  width: var(--country-run-dot-size);
+  min-width: var(--country-run-dot-size);
+  max-width: var(--country-run-dot-size);
+  height: var(--country-run-dot-size);
+  min-height: var(--country-run-dot-size);
+  max-height: var(--country-run-dot-size);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background: var(--country-run-track-color);
+  box-shadow: 0 0 0 var(--country-run-mask-gap) var(--country-run-surface);
+  transform: translateX(-0.5px);
+}
+
+.itinerary-stop__marker.is-country-run-marker .itinerary-stop__marker-flag {
+  position: relative;
+  z-index: 1;
+  width: var(--country-run-flag-w);
+  height: var(--country-run-flag-h);
+  box-shadow: 0 0 0 var(--country-run-mask-gap) var(--country-run-surface);
+}
+
+.segments:not(.segments--compact):has(> .itinerary-segment.is-country-run-joined-from-origin)
+  > .itinerary-origin-section .itinerary-origin__marker {
+  z-index: 1;
+  width: var(--country-run-track-w);
+  justify-self: center;
+}
+
+.segments:not(.segments--compact):has(> .itinerary-segment.is-country-run-joined-from-origin)
+  > .itinerary-origin-section .itinerary-origin__marker img {
+  width: var(--country-run-flag-w);
+  height: var(--country-run-flag-h);
+  box-shadow: 0 0 0 var(--country-run-mask-gap) var(--country-run-surface);
+}
+
+.segments:not(.segments--compact):has(> .itinerary-segment.is-dragging)
+  > .itinerary-country-run-rail {
+  opacity: 0;
+}
+
+@media (min-width: 721px) {
+  .editor-module--itinerary .segments:not(.segments--compact) {
+    --country-run-drag-w: 14px;
+    --country-run-sequence-w: 19px;
+    --country-run-column-gap: var(--itinerary-compact-gap, 10px);
+    --country-run-axis-inline: calc(
+      var(--country-run-drag-w) +
+      var(--country-run-column-gap) +
+      var(--country-run-sequence-w) +
+      var(--country-run-column-gap) +
+      (var(--country-run-track-w) / 2)
+    );
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Vista de tarjetas del itinerario
+
+   Es una proyección puramente visual del mismo SegmentForm. No cambia el
+   modelo, los handlers, las notas, los gastos ni el orden canónico. La fila de
+   origen conserva su formato lineal y las ciudades se distribuyen de tres en
+   tres dentro del panel existente, sin añadir un segundo encabezado.
+   -------------------------------------------------------------------------- */
+
+.editor:not(.is-panel-collapsed) .editor__body > .segments:not(.segments--compact) {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: start;
+  align-items: stretch;
+  gap: 9px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 7px 10px 14px;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)::before {
+  content: none !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact) > .itinerary-origin-section {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0 0 2px;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact) > .itinerary-country-run-rail {
+  display: none !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact) > .itinerary-segment.segment {
+  position: relative;
+  min-width: 0;
+  min-height: 118px;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 1px solid #e2e7eb !important;
+  border-radius: 11px !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 7px rgba(33, 52, 60, 0.055) !important;
+  overflow: visible !important;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact) > .itinerary-segment.segment::before,
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact) > .itinerary-segment.segment::after {
+  content: none !important;
+  display: none !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact) > .itinerary-segment.segment:hover,
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact) > .itinerary-segment.segment:focus-within {
+  border-color: #cbd7dc !important;
+  box-shadow: 0 5px 14px rgba(33, 52, 60, 0.095) !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact) > .itinerary-segment.is-dragging {
+  z-index: 30;
+  border-color: #b8c9d0 !important;
+  box-shadow: 0 10px 24px rgba(27, 49, 58, 0.16) !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .segment__header.itinerary-stop {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 116px;
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr) 18px;
+  grid-template-areas:
+    'sequence spacer drag'
+    'marker place place'
+    'after after after';
+  align-content: start;
+  align-items: center;
+  column-gap: 5px;
+  row-gap: 4px;
+  padding: 9px 9px 8px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__drag {
+  grid-area: drag;
+  width: 18px;
+  height: 18px;
+  justify-self: end;
+  color: #b2bac1;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__sequence {
+  grid-area: sequence;
+  position: relative;
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__sequence-badge {
+  position: static;
+  width: 23px;
+  height: 23px;
+  transform: none;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  box-shadow: 0 1px 3px rgba(18, 34, 41, 0.14);
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__marker {
+  grid-area: marker;
+  z-index: 2;
+  box-sizing: border-box;
+  width: 25px;
+  min-width: 25px;
+  height: 20px;
+  justify-self: center;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__marker img {
+  width: 25px;
+  height: 17px;
+  border-radius: 3px;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__country-run-dot {
+  width: 7px;
+  min-width: 7px;
+  max-width: 7px;
+  height: 7px;
+  min-height: 7px;
+  max-height: 7px;
+  box-shadow: none;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__place {
+  grid-area: place;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__picker,
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__picker .autocomplete {
+  width: 100%;
+  min-width: 0;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__picker .autocomplete__field {
+  min-height: 31px;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__picker .input {
+  height: 31px;
+  padding: 2px 3px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__picker .autocomplete__selected-value {
+  left: 3px;
+  right: 3px;
+  max-height: 29px;
+  color: #25343a;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.15;
+  -webkit-line-clamp: 2;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment.is-country-run-middle
+  .itinerary-stop__picker .autocomplete__selected-value {
+  color: #25343a;
+  font-weight: 750;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__after-place {
+  grid-area: after;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22px 22px 22px;
+  align-items: end;
+  gap: 4px;
+  margin-top: 1px;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__metrics {
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__date-range {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1px 3px;
+  overflow: hidden;
+  color: #167b9b;
+  font-size: 9.5px;
+  font-weight: 650;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__date-range > span {
+  white-space: nowrap;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__date-range > span + span:not(:empty)::before {
+  content: '–';
+  margin-right: 3px;
+  color: #8b98a0;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__amount {
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #24343a;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .segment__note-btn,
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .segment__details-btn,
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__remove-btn {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  box-shadow: none;
+  color: #55798a;
+  transition:
+    opacity 130ms ease,
+    visibility 130ms ease,
+    transform 130ms ease,
+    background 130ms ease,
+    color 130ms ease;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__remove-btn {
+  color: #c6535f;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .segment__note-btn:hover,
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .segment__details-btn:hover,
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .segment__note-btn:focus-visible,
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .segment__details-btn:focus-visible {
+  background: #edf4f6;
+  color: #285f73;
+  outline: none;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__remove-btn:hover,
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__remove-btn:focus-visible {
+  background: #fff0f1;
+  color: #b73d4a;
+  outline: none;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-details-chevron {
+  transform: rotate(-90deg);
+}
+
+@media (min-width: 721px) and (hover: hover) and (pointer: fine) {
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment .segment__note-btn,
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment .segment__details-btn,
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment .itinerary-stop__remove-btn {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(3px);
+    pointer-events: none;
+  }
+
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment:hover .segment__note-btn,
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment:hover .segment__details-btn,
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment:hover .itinerary-stop__remove-btn,
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment:focus-within .segment__note-btn,
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment:focus-within .segment__details-btn,
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment:focus-within .itinerary-stop__remove-btn {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment .itinerary-stop__drag {
+    opacity: 0.34;
+    transition: opacity 130ms ease, color 130ms ease, background 130ms ease;
+  }
+
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment:hover .itinerary-stop__drag,
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment:focus-within .itinerary-stop__drag {
+    opacity: 0.9;
+  }
+}
+
+@media (max-width: 720px) {
+  .editor:not(.is-panel-collapsed) .editor__body > .segments:not(.segments--compact) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 8px 9px 14px;
+  }
+
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment .segment__header.itinerary-stop {
+    grid-template-columns: 25px minmax(0, 1fr) 18px;
+    grid-template-areas:
+      'sequence spacer drag'
+      'marker place place'
+      'after after after';
+  }
+
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment .itinerary-stop__metrics,
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment .segment__note-btn {
+    display: flex !important;
+  }
+
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment .segment__note-btn {
+    display: grid !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .editor:not(.is-panel-collapsed) .editor__body > .segments:not(.segments--compact) {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact) > .itinerary-segment.segment,
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment .segment__note-btn,
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment .segment__details-btn,
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment .itinerary-stop__remove-btn {
+    transition: none;
+  }
+}

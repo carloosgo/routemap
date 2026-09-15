@@ -1,0 +1,25 @@
+{
+  "name": "atlas_storage_v4_sync_latency_ms",
+  "description": "Atlas Storage v4 sync flush latency distribution in milliseconds. Queue-recovery events are excluded because they have no flush duration.",
+  "filter": "jsonPayload.message=\"storage_v4_sync_metric\" AND jsonPayload.event=\"flush\"",
+  "disabled": false,
+  "valueExtractor": "EXTRACT(jsonPayload.durationMs)",
+  "bucketOptions": {
+    "explicitBuckets": {
+      "bounds": [0, 25, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 30000, 60000, 120000]
+    }
+  },
+  "metricDescriptor": {
+    "metricKind": "DELTA",
+    "valueType": "DISTRIBUTION",
+    "unit": "ms",
+    "labels": [
+      { "key": "outcome", "valueType": "STRING", "description": "Flush outcome." },
+      { "key": "reason", "valueType": "STRING", "description": "Flush reason." }
+    ]
+  },
+  "labelExtractors": {
+    "outcome": "EXTRACT(jsonPayload.outcome)",
+    "reason": "EXTRACT(jsonPayload.reason)"
+  }
+}
