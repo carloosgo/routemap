@@ -38,6 +38,7 @@ export const config = {
   googleMaps: {
     webApiKey: cleanString(env.VITE_GOOGLE_MAPS_API_KEY),
     mapId: cleanString(env.VITE_GOOGLE_MAPS_MAP_ID),
+    staticMapId: cleanString(env.VITE_GOOGLE_MAPS_STATIC_MAP_ID),
     searchMinChars: 4,
     searchDebounceMs: 1000,
     searchLimit: 5,
