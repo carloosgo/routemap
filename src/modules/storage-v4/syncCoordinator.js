@@ -152,7 +152,10 @@ export function createV4SyncCoordinator({
               generation: lease.generation,
               nowMs: now(),
             });
-            if (outcome.apply) summary.conflicts += 1;
+            if (outcome.apply) {
+              if (outcome.kind === 'already-applied') summary.synced += 1;
+              else summary.conflicts += 1;
+            }
             if (outcome.reason === 'lease-lost') break;
             continue;
           }
