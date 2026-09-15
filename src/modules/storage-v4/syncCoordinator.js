@@ -77,6 +77,8 @@ export function createV4SyncCoordinator({
     throw new TypeError('maxMutationsPerFlush debe ser un entero positivo.');
   }
 
+  let flushQueue = Promise.resolve();
+
   async function renewLease() {
     return local.tryAcquireSyncLease({
       contextId: ownerContextId,
@@ -85,112 +87,121 @@ export function createV4SyncCoordinator({
     });
   }
 
-  return {
-    async flush({ userId, tripId = null } = {}) {
-      const ownerId = requiredText(userId, 'userId');
-      let lease = await renewLease();
-      if (!lease) {
-        return {
-          leader: false,
-          attempted: 0,
-          synced: 0,
-          retried: 0,
-          conflicts: 0,
-          pending: null,
-          nextAttemptAt: null,
-        };
-      }
-
-      const summary = {
-        leader: true,
+  async function flushOnce({ userId, tripId = null } = {}) {
+    const ownerId = requiredText(userId, 'userId');
+    let lease = await renewLease();
+    if (!lease) {
+      return {
+        leader: false,
         attempted: 0,
         synced: 0,
         retried: 0,
         conflicts: 0,
-        pending: 0,
+        pending: null,
         nextAttemptAt: null,
       };
+    }
 
-      try {
-        const listed = await local.listMutations({ userId: ownerId, tripId });
-        const eligible = listed
-          .filter((mutation) => dueMutation(mutation, now()))
-          .slice(0, maxMutationsPerFlush);
+    const summary = {
+      leader: true,
+      attempted: 0,
+      synced: 0,
+      retried: 0,
+      conflicts: 0,
+      pending: 0,
+      nextAttemptAt: null,
+    };
 
-        for (const sentMutation of eligible) {
-          const renewedLease = await renewLease();
-          if (!renewedLease) {
-            lease = null;
-            break;
-          }
-          lease = renewedLease;
-          summary.attempted += 1;
+    try {
+      const listed = await local.listMutations({ userId: ownerId, tripId });
+      const eligible = listed
+        .filter((mutation) => dueMutation(mutation, now()))
+        .slice(0, maxMutationsPerFlush);
 
-          try {
-            const remoteResult = validWriteResult(
-              await remote.writeMutation(sentMutation)
-            );
-            const outcome = await local.acknowledgeSyncedMutation({
-              sentMutation,
-              serverVersion: remoteResult.serverVersion,
-              serverStatus: remoteResult.serverStatus,
-              contextId: ownerContextId,
-              generation: lease.generation,
-              nowMs: now(),
-            });
-            if (outcome.apply) summary.synced += 1;
-            if (outcome.reason === 'lease-lost') break;
-          } catch (error) {
-            if (!isKnownRemoteError(error)) throw error;
-
-            if (error.kind === V4_REMOTE_ERROR_KIND.CONFLICT) {
-              const outcome = await local.recordSyncConflict({
-                sentMutation,
-                remoteEntity: error.remoteEntity,
-                contextId: ownerContextId,
-                generation: lease.generation,
-                nowMs: now(),
-              });
-              if (outcome.apply) summary.conflicts += 1;
-              if (outcome.reason === 'lease-lost') break;
-              continue;
-            }
-
-            const failureTime = now();
-            const delay = syncRetryDelayMs(sentMutation.attempts, {
-              randomUnit: randomUnit(),
-            });
-            const outcome = await local.recordSyncFailure({
-              sentMutation,
-              contextId: ownerContextId,
-              generation: lease.generation,
-              nowMs: failureTime,
-              nextAttemptAt: failureTime + delay,
-            });
-            if (outcome.apply) summary.retried += 1;
-            if (outcome.reason === 'lease-lost') break;
-          }
+      for (const sentMutation of eligible) {
+        const renewedLease = await renewLease();
+        if (!renewedLease) {
+          lease = null;
+          break;
         }
+        lease = renewedLease;
+        summary.attempted += 1;
 
-        if (lease) {
-          Object.assign(
-            summary,
-            pendingSchedule(
-              await local.listMutations({ userId: ownerId, tripId }),
-              now()
-            )
+        try {
+          const remoteResult = validWriteResult(
+            await remote.writeMutation(sentMutation)
           );
-        }
-        return summary;
-      } finally {
-        if (lease) {
-          await local.releaseSyncLeaseIfOwned({
+          const outcome = await local.acknowledgeSyncedMutation({
+            sentMutation,
+            serverVersion: remoteResult.serverVersion,
+            serverStatus: remoteResult.serverStatus,
             contextId: ownerContextId,
             generation: lease.generation,
             nowMs: now(),
           });
+          if (outcome.apply) summary.synced += 1;
+          if (outcome.reason === 'lease-lost') break;
+        } catch (error) {
+          if (!isKnownRemoteError(error)) throw error;
+
+          if (error.kind === V4_REMOTE_ERROR_KIND.CONFLICT) {
+            const outcome = await local.recordSyncConflict({
+              sentMutation,
+              remoteEntity: error.remoteEntity,
+              contextId: ownerContextId,
+              generation: lease.generation,
+              nowMs: now(),
+            });
+            if (outcome.apply) summary.conflicts += 1;
+            if (outcome.reason === 'lease-lost') break;
+            continue;
+          }
+
+          const failureTime = now();
+          const delay = syncRetryDelayMs(sentMutation.attempts, {
+            randomUnit: randomUnit(),
+          });
+          const outcome = await local.recordSyncFailure({
+            sentMutation,
+            contextId: ownerContextId,
+            generation: lease.generation,
+            nowMs: failureTime,
+            nextAttemptAt: failureTime + delay,
+          });
+          if (outcome.apply) summary.retried += 1;
+          if (outcome.reason === 'lease-lost') break;
         }
       }
+
+      if (lease) {
+        Object.assign(
+          summary,
+          pendingSchedule(
+            await local.listMutations({ userId: ownerId, tripId }),
+            now()
+          )
+        );
+      }
+      return summary;
+    } finally {
+      if (lease) {
+        await local.releaseSyncLeaseIfOwned({
+          contextId: ownerContextId,
+          generation: lease.generation,
+          nowMs: now(),
+        });
+      }
+    }
+  }
+
+  return {
+    flush(input = {}) {
+      const result = flushQueue.then(
+        () => flushOnce(input),
+        () => flushOnce(input)
+      );
+      flushQueue = result.catch(() => undefined);
+      return result;
     },
   };
 }
