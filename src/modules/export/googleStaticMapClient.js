@@ -6,32 +6,22 @@ const MAX_LOGICAL_SIZE = 640;
 const MIN_LOGICAL_SIZE = 180;
 const REQUEST_TIMEOUT_MS = 12_000;
 const EXPORT_ZOOM_OFFSET = 1;
+/* La caja del mapa en la portada A4 mide 539.89 x 466.28 pt. Pedir Static Maps
+   con esa misma proporción evita letterboxing y usa la altura completa para mapa real. */
+const PDF_MAP_ASPECT_RATIO = 539.89 / 466.28;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-function staticSize(view) {
-  const sourceWidth = Math.max(1, Number(view?.width) || 1);
-  const sourceHeight = Math.max(1, Number(view?.height) || 1);
-  if (sourceWidth >= sourceHeight) {
-    return {
-      width: MAX_LOGICAL_SIZE,
-      height: clamp(
-        Math.round(MAX_LOGICAL_SIZE * (sourceHeight / sourceWidth)),
-        MIN_LOGICAL_SIZE,
-        MAX_LOGICAL_SIZE
-      ),
-    };
-  }
-  return {
-    width: clamp(
-      Math.round(MAX_LOGICAL_SIZE * (sourceWidth / sourceHeight)),
-      MIN_LOGICAL_SIZE,
-      MAX_LOGICAL_SIZE
-    ),
-    height: MAX_LOGICAL_SIZE,
-  };
+function staticSize() {
+  const width = MAX_LOGICAL_SIZE;
+  const height = clamp(
+    Math.round(width / PDF_MAP_ASPECT_RATIO),
+    MIN_LOGICAL_SIZE,
+    MAX_LOGICAL_SIZE
+  );
+  return { width, height };
 }
 
 function integerZoom(value) {
@@ -49,7 +39,7 @@ export function buildGoogleStaticMapUrl(view, {
     throw new Error('VITE_GOOGLE_MAPS_STATIC_MAP_ID is required to preserve the Atlas map style');
   }
 
-  const size = staticSize(view);
+  const size = staticSize();
   const params = new URLSearchParams({
     center: `${Number(view.center.lat).toFixed(7)},${Number(view.center.lon).toFixed(7)}`,
     zoom: String(integerZoom(view.zoom)),
