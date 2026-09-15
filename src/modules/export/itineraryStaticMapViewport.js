@@ -4,7 +4,7 @@ export const ITINERARY_STATIC_MAP_SIZE = Object.freeze({
   scaleFactor: 2,
 });
 
-const TILE_SIZE = 512;
+const DEFAULT_TILE_SIZE = 512;
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 18;
 const DEFAULT_PADDING = 54;
@@ -59,6 +59,7 @@ export function itineraryMapViewport(entries, {
   width = ITINERARY_STATIC_MAP_SIZE.width,
   height = ITINERARY_STATIC_MAP_SIZE.height,
   padding = DEFAULT_PADDING,
+  tileSize = DEFAULT_TILE_SIZE,
 } = {}) {
   const valid = (Array.isArray(entries) ? entries : []).filter(validCoordinate);
   if (!valid.length) {
@@ -68,6 +69,7 @@ export function itineraryMapViewport(entries, {
       width,
       height,
       padding,
+      tileSize,
     };
   }
 
@@ -78,12 +80,12 @@ export function itineraryMapViewport(entries, {
   const maxX = Math.max(...xs);
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
-  const spanX = Math.max(1 / (TILE_SIZE * (2 ** MAX_ZOOM)), maxX - minX);
-  const spanY = Math.max(1 / (TILE_SIZE * (2 ** MAX_ZOOM)), maxY - minY);
+  const spanX = Math.max(1 / (tileSize * (2 ** MAX_ZOOM)), maxX - minX);
+  const spanY = Math.max(1 / (tileSize * (2 ** MAX_ZOOM)), maxY - minY);
   const drawableWidth = Math.max(80, width - (padding * 2));
   const drawableHeight = Math.max(80, height - (padding * 2));
-  const zoomX = Math.log2(drawableWidth / (TILE_SIZE * spanX));
-  const zoomY = Math.log2(drawableHeight / (TILE_SIZE * spanY));
+  const zoomX = Math.log2(drawableWidth / (tileSize * spanX));
+  const zoomY = Math.log2(drawableHeight / (tileSize * spanY));
   const zoom = clamp(Math.min(zoomX, zoomY), MIN_ZOOM, MAX_ZOOM);
   const centerWorldX = (minX + maxX) / 2;
   const centerWorldY = (minY + maxY) / 2;
@@ -100,6 +102,7 @@ export function itineraryMapViewport(entries, {
     width,
     height,
     padding,
+    tileSize,
   };
 }
 
@@ -107,12 +110,13 @@ export function projectToStaticMap(lon, lat, viewport) {
   const width = Number(viewport?.width) || ITINERARY_STATIC_MAP_SIZE.width;
   const height = Number(viewport?.height) || ITINERARY_STATIC_MAP_SIZE.height;
   const zoom = Number(viewport?.zoom) || 2;
+  const tileSize = Number(viewport?.tileSize) || DEFAULT_TILE_SIZE;
   const center = mercatorWorldPoint(viewport?.center?.lon, viewport?.center?.lat);
   const point = mercatorWorldPoint(lon, lat);
   let deltaX = point.x - center.x;
   while (deltaX > 0.5) deltaX -= 1;
   while (deltaX < -0.5) deltaX += 1;
-  const worldPixels = TILE_SIZE * (2 ** zoom);
+  const worldPixels = tileSize * (2 ** zoom);
   return [
     (width / 2) + (deltaX * worldPixels),
     (height / 2) + ((point.y - center.y) * worldPixels),
