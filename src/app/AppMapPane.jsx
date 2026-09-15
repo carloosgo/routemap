@@ -9,6 +9,7 @@ import { tripPlanningDays } from '../modules/trips/tripDayPlanning.js';
 import { ORIGIN_NOTE_TARGET } from '../modules/trips/tripNoteTargets.js';
 import { colorForIndex } from '../config.js';
 import { ItineraryPdfExportButton } from './ItineraryPdfExport.jsx';
+import { ItineraryShareButton } from './ItineraryShareButton.jsx';
 
 const PERSISTENCE_LABEL_KEYS = Object.freeze({
   saved: 'persistenceSaved',
@@ -188,12 +189,26 @@ export function AppMapPane({
   return (
     <section className="mappane" aria-label={t('mapRegion')}>
       {allowItineraryPdfExport && (
-        <ItineraryPdfExportButton
-          model={pdfModel}
-          intlLocale={intlLocale}
-          onError={() => showPlanningMessage(t('itineraryPdfExportError'), 3400)}
-          t={t}
-        />
+        <>
+          <ItineraryPdfExportButton
+            model={pdfModel}
+            intlLocale={intlLocale}
+            onError={() => showPlanningMessage(t('itineraryPdfExportError'), 3400)}
+            t={t}
+          />
+          <ItineraryShareButton
+            model={pdfModel}
+            intlLocale={intlLocale}
+            onStatus={(message) => showPlanningMessage(message, 3000)}
+            onError={(error) => showPlanningMessage(
+              t(error?.code === 'itinerary-share/auth-required'
+                ? 'shareSignInRequired'
+                : 'shareItineraryError'),
+              3600
+            )}
+            t={t}
+          />
+        </>
       )}
       <RouteMap
         origin={trip.origin}

@@ -1,5 +1,6 @@
 import { config } from '../../config.js';
 import { getItineraryMapRuntimeView } from '../map/itineraryMapRuntime.js';
+import { itineraryMapViewport } from './itineraryStaticMapViewport.js';
 
 const STATIC_MAP_ENDPOINT = 'https://maps.googleapis.com/maps/api/staticmap';
 const MAX_LOGICAL_SIZE = 640;
@@ -24,14 +25,15 @@ function staticSize() {
   return { width, height };
 }
 
-function integerZoom(value) {
-  return clamp(Math.round(Number(value) || 0) + EXPORT_ZOOM_OFFSET, 0, 21);
+function integerZoom(value, offset = EXPORT_ZOOM_OFFSET) {
+  return clamp(Math.round(Number(value) || 0) + Number(offset || 0), 0, 21);
 }
 
 export function buildGoogleStaticMapUrl(view, {
   language = 'es',
   apiKey = config.googleMaps.webApiKey,
   mapId = config.googleMaps.staticMapId,
+  zoomOffset = EXPORT_ZOOM_OFFSET,
 } = {}) {
   if (!view?.center) throw new Error('Google map viewport is unavailable');
   if (!apiKey) throw new Error('VITE_GOOGLE_MAPS_API_KEY is required for Maps Static API');
@@ -40,9 +42,10 @@ export function buildGoogleStaticMapUrl(view, {
   }
 
   const size = staticSize();
+  const zoom = integerZoom(view.zoom, zoomOffset);
   const params = new URLSearchParams({
     center: `${Number(view.center.lat).toFixed(7)},${Number(view.center.lon).toFixed(7)}`,
-    zoom: String(integerZoom(view.zoom)),
+    zoom: String(zoom),
     size: `${size.width}x${size.height}`,
     scale: '2',
     format: 'png32',
@@ -54,7 +57,7 @@ export function buildGoogleStaticMapUrl(view, {
   return {
     url: `${STATIC_MAP_ENDPOINT}?${params.toString()}`,
     size,
-    zoom: integerZoom(view.zoom),
+    zoom,
   };
 }
 
@@ -91,11 +94,7 @@ async function fetchWithTimeout(url) {
   }
 }
 
-export async function loadCurrentGoogleStaticMap({ language = 'es' } = {}) {
-  const view = getItineraryMapRuntimeView();
-  if (!view) throw new Error('The current Google map viewport is unavailable');
-  const request = buildGoogleStaticMapUrl(view, { language });
-  const image = await fetchWithTimeout(request.url);
+function staticMapResult(image, request, view) {
   return {
     ...image,
     pixelWidth: request.size.width * 2,
@@ -108,4 +107,34 @@ export async function loadCurrentGoogleStaticMap({ language = 'es' } = {}) {
       tileSize: 256,
     },
   };
+}
+
+export async function loadCurrentGoogleStaticMap({ language = 'es' } = {}) {
+  const view = getItineraryMapRuntimeView();
+  if (!view) throw new Error('The current Google map viewport is unavailable');
+  const request = buildGoogleStaticMapUrl(view, { language });
+  const image = await fetchWithTimeout(request.url);
+  return staticMapResult(image, request, view);
+}
+
+export async function loadItineraryGoogleStaticMap(model, { language = 'es' } = {}) {
+  const size = staticSize();
+  const entries = [
+    ...(model?.hasOrigin && model?.origin ? [model.origin] : []),
+    ...(Array.isArray(model?.stops) ? model.stops : []),
+  ];
+  const fittedView = itineraryMapViewport(entries, {
+    width: size.width,
+    height: size.height,
+    padding: 54,
+    tileSize: 256,
+  });
+  const view = {
+    ...fittedView,
+    zoom: Math.floor(fittedView.zoom),
+    mapType: 'roadmap',
+  };
+  const request = buildGoogleStaticMapUrl(view, { language, zoomOffset: 0 });
+  const image = await fetchWithTimeout(request.url);
+  return staticMapResult(image, request, view);
 }
