@@ -419,6 +419,70 @@ service cloud.firestore {
         && validLifecycle(data);
     }
 
+    function validSharedItineraryModel(data) {
+      return data is map
+        && data.keys().hasOnly([
+          'name', 'currency', 'hasOrigin', 'origin', 'stops', 'summary', 'total'
+        ])
+        && data.keys().hasAll([
+          'name', 'currency', 'hasOrigin', 'origin', 'stops', 'summary', 'total'
+        ])
+        && data.name is string
+        && data.name.size() <= 120
+        && data.currency is string
+        && data.currency.matches('^[A-Z]{3}$')
+        && data.hasOrigin is bool
+        && data.stops is list
+        && data.stops.size() <= 500
+        && validAmount(data.total)
+        && data.summary is map
+        && data.summary.keys().hasOnly([
+          'startDate', 'endDate', 'countries', 'destinations', 'nights'
+        ])
+        && data.summary.keys().hasAll([
+          'startDate', 'endDate', 'countries', 'destinations', 'nights'
+        ])
+        && data.summary.startDate is string
+        && data.summary.startDate.size() <= 10
+        && data.summary.endDate is string
+        && data.summary.endDate.size() <= 10
+        && validCount(data.summary.countries, 500)
+        && validCount(data.summary.destinations, 500)
+        && validCount(data.summary.nights, 36600)
+        && (
+          (data.hasOrigin && data.origin is map)
+          || (!data.hasOrigin && data.origin == null)
+        );
+    }
+
+    function validItineraryShare(data) {
+      return data is map
+        && data.keys().hasOnly([
+          'schemaVersion', 'ownerId', 'intlLocale', 'model', 'createdAt'
+        ])
+        && data.keys().hasAll([
+          'schemaVersion', 'ownerId', 'intlLocale', 'model', 'createdAt'
+        ])
+        && data.schemaVersion == 1
+        && data.ownerId is string
+        && data.ownerId.size() > 0
+        && data.ownerId.size() <= 128
+        && data.intlLocale is string
+        && (data.intlLocale == 'es-MX' || data.intlLocale == 'en-US')
+        && data.createdAt is timestamp
+        && data.createdAt == request.time
+        && validSharedItineraryModel(data.model);
+    }
+
+    match /itineraryShares/{shareId} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if signedIn()
+        && request.auth.uid == request.resource.data.ownerId
+        && validItineraryShare(request.resource.data);
+      allow update, delete: if false;
+    }
+
     match /users/{userId} {
       allow read, write: if false;
 
