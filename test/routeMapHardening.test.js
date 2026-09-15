@@ -48,7 +48,8 @@ test('Itinerario conserva curvas adaptativas, colores y trazado discontinuo sobr
 
   assert.match(model, /export function adaptiveCurve/);
   assert.match(model, /dominantTransport\(segment\) === 'plane'/);
-  assert.match(model, /coordinates: adaptiveCurve\(segment\.origin, segment\.destination\)/);
+  assert.match(model, /const routeCities = showSegments \? orderedCities\(routeSegments\) : \[\]/);
+  assert.match(model, /coordinates: adaptiveCurve\(segment\.origin, segment\.destination, \{ routeCities \}\)/);
   assert.match(google, /buildMapFeatureData\(\{[\s\S]*segments,[\s\S]*viewMode: 'segments'/);
   assert.match(google, /color: feature\.properties\?\.color \|\| '#111111'/);
   assert.match(google, /createCrispDashedRoutes\(\{ maps, map, routes \}\)/);
