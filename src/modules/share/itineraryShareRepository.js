@@ -19,6 +19,7 @@ function publicOrigin(origin) {
   if (!origin) return null;
   return {
     name: String(origin.name || '').slice(0, 120),
+    country: String(origin.country || '').slice(0, 100),
     countryCode: String(origin.countryCode || '').slice(0, 2).toUpperCase(),
     departureDate: String(origin.departureDate || '').slice(0, 10),
     nights: Math.max(0, Math.round(finiteNumber(origin.nights))),
@@ -34,6 +35,7 @@ function publicStop(stop, index) {
   return {
     number: Math.max(1, Math.round(finiteNumber(stop?.number, index + 1))),
     name: String(stop?.name || '').slice(0, 120),
+    country: String(stop?.country || '').slice(0, 100),
     countryCode: String(stop?.countryCode || '').slice(0, 2).toUpperCase(),
     startDate: String(stop?.startDate || '').slice(0, 10),
     endDate: String(stop?.endDate || '').slice(0, 10),
