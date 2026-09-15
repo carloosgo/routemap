@@ -140,7 +140,7 @@ function drawMetrics(page, model, intlLocale, t, box) {
 
 function overviewPage(model, mapImage, intlLocale, t) {
   const page = new VectorPdfPage();
-  page.rect(0, 0, PAGE.width, PAGE.height, { fill: '#f8fafb' });
+  page.rect(0, 0, PAGE.width, PAGE.height, { fill: '#ffffff' });
   page.text(model.name || t('unnamedTrip'), 22, 15, {
     size: 18, bold: true, color: '#243238', maxWidth: 470,
   });
@@ -151,20 +151,21 @@ function overviewPage(model, mapImage, intlLocale, t) {
   const rightWidth = PAGE.width - rightX - 22;
   const metricsHeight = 57;
   const gap = 10;
-  const map = {
+  const metrics = {
     x: rightX,
     y: top,
     width: rightWidth,
-    height: left.height - metricsHeight - gap,
-  };
-  const metrics = {
-    x: rightX,
-    y: map.y + map.height + gap,
-    width: rightWidth,
     height: metricsHeight,
+  };
+  const map = {
+    x: rightX,
+    y: metrics.y + metrics.height + gap,
+    width: rightWidth,
+    height: left.height - metricsHeight - gap,
   };
 
   drawRouteList(page, model, intlLocale, t, left);
+  drawMetrics(page, model, intlLocale, t, metrics);
   page.rect(map.x, map.y, map.width, map.height, {
     fill: '#eaf3f6', stroke: '#d4dfe2', lineWidth: 0.7, radius: 8,
   });
@@ -172,7 +173,6 @@ function overviewPage(model, mapImage, intlLocale, t) {
   page.rect(map.x, map.y, map.width, map.height, {
     stroke: '#d4dfe2', lineWidth: 0.7, radius: 8,
   });
-  drawMetrics(page, model, intlLocale, t, metrics);
   return page;
 }
 
@@ -185,7 +185,7 @@ function noteItems(model) {
 
 function noteCardLayout(item, width, intlLocale) {
   const bodySize = 8.35;
-  const lineHeight = 11.2;
+  const lineHeight = 9.5;
   const titleSize = 10.7;
   const dateSize = 7.9;
   const titleXOffset = 46.5;
@@ -198,8 +198,8 @@ function noteCardLayout(item, width, intlLocale) {
   const cityWidth = measurePdfText(cityText, titleSize, true);
   const dateWidth = measurePdfText(dateText || '—', dateSize, true);
   const inlineDate = Boolean(dateText) && (cityWidth + 7 + dateWidth <= availableTitleWidth);
-  const separatorOffset = inlineDate ? 34 : 48;
-  const bodyOffset = separatorOffset + 10;
+  const separatorOffset = inlineDate ? 32 : 45;
+  const bodyOffset = separatorOffset + 8;
   const lines = wrapPdfText(item.note || '—', width - 20, bodySize, false);
 
   return {
@@ -214,7 +214,7 @@ function noteCardLayout(item, width, intlLocale) {
     inlineDate,
     separatorOffset,
     bodyOffset,
-    height: Math.max(inlineDate ? 75 : 88, bodyOffset + (lines.length * lineHeight) + 9),
+    height: Math.max(inlineDate ? 66 : 79, bodyOffset + (lines.length * lineHeight) + 7),
   };
 }
 
@@ -227,9 +227,9 @@ function drawNoteCard(page, item, layout, box, t) {
   if (item.isOrigin) {
     page.circle(markerX, headerCenterY, 5.3, { fill: '#ffffff', stroke: '#7b878e', lineWidth: 1.1 });
   } else {
-    page.circle(markerX, headerCenterY, 7.2, { fill: item.color || '#63727a' });
-    page.text(String(item.number ?? ''), markerX, headerCenterY - 3.7, {
-      size: Number(item.number) >= 10 ? 5.9 : 6.6,
+    page.circle(markerX, headerCenterY, 7.5, { fill: item.color || '#63727a' });
+    page.text(String(item.number ?? ''), markerX, headerCenterY - 4.0, {
+      size: Number(item.number) >= 10 ? 6.6 : 7.4,
       bold: true,
       color: '#ffffff',
       align: 'center',
@@ -238,8 +238,8 @@ function drawNoteCard(page, item, layout, box, t) {
 
   drawCountryFlag(page, item.countryCode, box.x + 25, headerCenterY - 5.2, 15.5, 10.4);
   const titleX = box.x + layout.titleXOffset;
-  const titleY = headerCenterY - (layout.titleSize * 0.46);
-  const inlineDateY = headerCenterY - (layout.dateSize * 0.46);
+  const titleY = headerCenterY - (layout.titleSize * 0.40);
+  const inlineDateY = headerCenterY - (layout.dateSize * 0.40);
   page.text(item.name || t('city'), titleX, titleY, {
     size: layout.titleSize,
     bold: true,
@@ -298,7 +298,7 @@ function notesPages(model, intlLocale, t) {
 
   const newPage = () => {
     page = new VectorPdfPage();
-    page.rect(0, 0, PAGE.width, PAGE.height, { fill: '#f8fafb' });
+    page.rect(0, 0, PAGE.width, PAGE.height, { fill: '#ffffff' });
     page.text(t('notes'), marginX, 16, { size: 17, bold: true, color: '#27343a' });
     page.text(model.name || t('unnamedTrip'), marginX, 37, {
       size: 7.8, bold: true, color: '#748087', maxWidth: 420,
