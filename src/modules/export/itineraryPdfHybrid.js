@@ -11,6 +11,7 @@ import {
 const PAGE = PDF_A4_LANDSCAPE;
 const TEXT = '#2f3b42';
 const MUTED = '#68757d';
+const SYSTEM_TEAL = '#0e4f63';
 const LIGHT_BORDER = '#dce2e5';
 
 function formatDate(iso, locale) {
@@ -95,10 +96,16 @@ function drawRouteList(page, model, intlLocale, t, box) {
 
     const dateLines = entryDateLines(entry, intlLocale);
     if (dateLines.length > 1 && rowHeight >= 25) {
-      page.text(dateLines[0], dateX, centerY - 8.1, { size: 6.6, bold: true, color: MUTED });
-      page.text(dateLines[1], dateX, centerY + 0.7, { size: 6.6, bold: true, color: MUTED });
+      page.text(dateLines[0], dateX, centerY - 8.1, {
+        size: 6.6, bold: true, color: SYSTEM_TEAL,
+      });
+      page.text(dateLines[1], dateX, centerY + 0.7, {
+        size: 6.6, bold: true, color: SYSTEM_TEAL,
+      });
     } else if (dateLines[0]) {
-      page.text(dateLines[0], dateX, centerY - 4.1, { size: 6.8, bold: true, color: MUTED });
+      page.text(dateLines[0], dateX, centerY - 4.1, {
+        size: 6.8, bold: true, color: SYSTEM_TEAL,
+      });
     }
 
     page.text(formatMoney(entry.total || 0, model.currency, intlLocale), amountX, centerY - 4.1, {
@@ -130,7 +137,7 @@ function drawMetrics(page, model, intlLocale, t, box) {
       });
     }
     page.text(String(metric.label || '').toUpperCase(), cellX + (cellWidth / 2), box.y + 10, {
-      size: 6.2, bold: true, color: '#7a868d', align: 'center', maxWidth: cellWidth - 10,
+      size: 6.2, bold: true, color: SYSTEM_TEAL, align: 'center', maxWidth: cellWidth - 10,
     });
     page.text(metric.value, cellX + (cellWidth / 2), box.y + 28, {
       size: 9.4, bold: true, color: '#354047', align: 'center', maxWidth: cellWidth - 12,
@@ -167,7 +174,7 @@ function overviewPage(model, mapImage, intlLocale, t) {
   drawRouteList(page, model, intlLocale, t, left);
   drawMetrics(page, model, intlLocale, t, metrics);
   page.rect(map.x, map.y, map.width, map.height, {
-    fill: '#eaf3f6', stroke: '#d4dfe2', lineWidth: 0.7, radius: 8,
+    fill: '#ffffff', stroke: '#d4dfe2', lineWidth: 0.7, radius: 8,
   });
   addJpegImage(page, mapImage, map, 'ItineraryMap', { fit: 'contain' });
   page.rect(map.x, map.y, map.width, map.height, {
@@ -194,10 +201,11 @@ function noteCardLayout(item, width, intlLocale) {
   const dateText = item.isOrigin
     ? formatDate(item.departureDate, intlLocale)
     : formatDateRange(item.startDate, item.endDate, intlLocale);
+  const inlineDateText = dateText ? `· ${dateText}` : '';
   const availableTitleWidth = width - titleXOffset - rightInset;
   const cityWidth = measurePdfText(cityText, titleSize, true);
-  const dateWidth = measurePdfText(dateText || '—', dateSize, true);
-  const inlineDate = Boolean(dateText) && (cityWidth + 7 + dateWidth <= availableTitleWidth);
+  const dateWidth = measurePdfText(inlineDateText || '—', dateSize, true);
+  const inlineDate = Boolean(dateText) && (cityWidth + 6 + dateWidth <= availableTitleWidth);
   const separatorOffset = inlineDate ? 32 : 45;
   const bodyOffset = separatorOffset + 8;
   const lines = wrapPdfText(item.note || '—', width - 20, bodySize, false);
@@ -205,6 +213,7 @@ function noteCardLayout(item, width, intlLocale) {
   return {
     lines,
     dateText,
+    inlineDateText,
     bodySize,
     lineHeight,
     titleSize,
@@ -239,7 +248,9 @@ function drawNoteCard(page, item, layout, box, t) {
   drawCountryFlag(page, item.countryCode, box.x + 25, headerCenterY - 5.2, 15.5, 10.4);
   const titleX = box.x + layout.titleXOffset;
   const titleY = headerCenterY - (layout.titleSize * 0.40);
-  const inlineDateY = headerCenterY - (layout.dateSize * 0.40);
+  /* VectorPdfPage.text recibe la coordenada superior; esta compensación iguala
+     la línea base de la fecha (más pequeña) con la línea base del nombre. */
+  const inlineDateY = titleY + ((layout.titleSize - layout.dateSize) * 0.82);
   page.text(item.name || t('city'), titleX, titleY, {
     size: layout.titleSize,
     bold: true,
@@ -248,11 +259,11 @@ function drawNoteCard(page, item, layout, box, t) {
   });
 
   if (layout.inlineDate) {
-    page.text(layout.dateText, titleX + layout.cityWidth + 7, inlineDateY, {
+    page.text(layout.inlineDateText, titleX + layout.cityWidth + 6, inlineDateY, {
       size: layout.dateSize,
       bold: true,
       color: '#5b6870',
-      maxWidth: box.x + box.width - 9 - (titleX + layout.cityWidth + 7),
+      maxWidth: box.x + box.width - 9 - (titleX + layout.cityWidth + 6),
     });
   } else {
     page.text(layout.dateText || '—', titleX, box.y + 28.4, {

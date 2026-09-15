@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildGoogleStaticMapUrl } from '../../src/modules/export/googleStaticMapClient.js';
 
-test('Google Static Maps conserva cámara, map type, map id, usa scale 2 y acerca un nivel el PDF', () => {
+test('Google Static Maps conserva cámara y estilo, acerca un nivel y llena la proporción vertical del PDF', () => {
   const { url, size, zoom } = buildGoogleStaticMapUrl({
     center: { lat: 50.1109, lon: 8.6821 },
     zoom: 5.2,
@@ -24,9 +24,9 @@ test('Google Static Maps conserva cámara, map type, map id, usa scale 2 y acerc
   assert.equal(parsed.searchParams.get('maptype'), 'roadmap');
   assert.equal(parsed.searchParams.get('map_id'), 'static-map-id');
   assert.equal(parsed.searchParams.get('scale'), '2');
-  assert.equal(parsed.searchParams.get('size'), '640x320');
+  assert.equal(parsed.searchParams.get('size'), '640x553');
   assert.equal(parsed.searchParams.get('key'), 'public-test-key');
-  assert.deepEqual(size, { width: 640, height: 320 });
+  assert.deepEqual(size, { width: 640, height: 553 });
   assert.equal(zoom, 6);
 });
 
