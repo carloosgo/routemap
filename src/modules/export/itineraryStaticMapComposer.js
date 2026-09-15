@@ -12,6 +12,7 @@ const LABEL_COLLISION_GAP = 4;
 const LABEL_DISTANCE_STEPS = [7, 15, 26, 38, 52];
 const ATTRIBUTION_GUARD = 27;
 const LEADER_MIN_DISTANCE = 15;
+const ROUTE_LABEL_GAP = 3;
 
 function routeEntries(model) {
   return [
@@ -56,6 +57,18 @@ function groupedStops(entries) {
     group.entries.push(entry);
   });
   return groups;
+}
+
+function projectedRouteSegments(entries, viewport, scale) {
+  const points = entries.map((entry) => {
+    const [x, y] = projectToStaticMap(entry.lon, entry.lat, viewport);
+    return { x: x * scale, y: y * scale };
+  });
+  const segments = [];
+  for (let index = 1; index < points.length; index += 1) {
+    segments.push({ start: points[index - 1], end: points[index] });
+  }
+  return segments;
 }
 
 function drawRoute(ctx, entries, viewport, scale) {
@@ -140,6 +153,36 @@ function intersectionArea(left, right, gap = 0) {
   return Math.max(0, rightEdge - leftEdge) * Math.max(0, bottomEdge - topEdge);
 }
 
+function segmentIntersectsBox(segment, box, padding = 0) {
+  const left = box.x - padding;
+  const right = box.x + box.width + padding;
+  const top = box.y - padding;
+  const bottom = box.y + box.height + padding;
+  const dx = segment.end.x - segment.start.x;
+  const dy = segment.end.y - segment.start.y;
+  const p = [-dx, dx, -dy, dy];
+  const q = [
+    segment.start.x - left,
+    right - segment.start.x,
+    segment.start.y - top,
+    bottom - segment.start.y,
+  ];
+  let minimum = 0;
+  let maximum = 1;
+
+  for (let index = 0; index < p.length; index += 1) {
+    if (Math.abs(p[index]) < 1e-9) {
+      if (q[index] < 0) return false;
+      continue;
+    }
+    const ratio = q[index] / p[index];
+    if (p[index] < 0) minimum = Math.max(minimum, ratio);
+    else maximum = Math.min(maximum, ratio);
+    if (minimum > maximum) return false;
+  }
+  return true;
+}
+
 function clampBox(box, canvas, scale) {
   const margin = 6 * scale;
   const bottomGuard = ATTRIBUTION_GUARD * scale;
@@ -211,7 +254,7 @@ function labelCandidates(geometry, width, height, canvas, scale) {
   return candidates;
 }
 
-function scoreLabelCandidate(candidate, obstacles, scale) {
+function scoreLabelCandidate(candidate, obstacles, routeSegments, scale) {
   let collisions = 0;
   let overlap = 0;
   const gap = LABEL_COLLISION_GAP * scale;
@@ -220,19 +263,31 @@ function scoreLabelCandidate(candidate, obstacles, scale) {
     collisions += 1;
     overlap += intersectionArea(candidate, obstacle, gap);
   });
+
+  const routePadding = ROUTE_LABEL_GAP * scale;
+  const routeCollisions = routeSegments.reduce((count, segment) => (
+    count + (segmentIntersectsBox(segment, candidate, routePadding) ? 1 : 0)
+  ), 0);
+
   return {
     collisions,
     overlap,
-    score: (collisions * 1_000_000) + (overlap * 100) + candidate.preference,
+    routeCollisions,
+    score: (collisions * 1_000_000_000)
+      + (routeCollisions * 1_000_000)
+      + (overlap * 100)
+      + candidate.preference,
   };
 }
 
-function chooseLabelBox({ geometry, width, height, canvas, scale, occupied, markerObstacles }) {
+function chooseLabelBox({
+  geometry, width, height, canvas, scale, occupied, markerObstacles, routeSegments,
+}) {
   const candidates = labelCandidates(geometry, width, height, canvas, scale);
   const obstacles = [...markerObstacles, ...occupied];
   let best = null;
   candidates.forEach((candidate) => {
-    const scored = scoreLabelCandidate(candidate, obstacles, scale);
+    const scored = scoreLabelCandidate(candidate, obstacles, routeSegments, scale);
     const option = { ...candidate, ...scored };
     if (!best || option.score < best.score) best = option;
   });
@@ -319,7 +374,15 @@ function drawCityLabel(ctx, placement, scale) {
   ctx.restore();
 }
 
-function buildLabelPlacement(ctx, geometry, canvas, scale, occupied, markerObstacles) {
+function buildLabelPlacement(
+  ctx,
+  geometry,
+  canvas,
+  scale,
+  occupied,
+  markerObstacles,
+  routeSegments
+) {
   const cityName = String(geometry.group.entries.find((entry) => entry.name)?.name || '').trim();
   if (!cityName) return null;
   const accentEntry = geometry.group.entries.find((entry) => !entry.isOrigin) || geometry.group.entries[0];
@@ -337,6 +400,7 @@ function buildLabelPlacement(ctx, geometry, canvas, scale, occupied, markerObsta
     scale,
     occupied,
     markerObstacles,
+    routeSegments,
   });
   return {
     geometry,
@@ -402,6 +466,7 @@ function drawMarkers(ctx, entries, viewport, scale, canvas) {
   });
 
   const markerObstacles = geometries.map((geometry) => markerObstacle(geometry, scale));
+  const routeSegments = projectedRouteSegments(entries, viewport, scale);
   const occupiedLabels = [];
   const placementOrder = [...geometries].sort((left, right) => {
     const leftNearest = nearestNeighborDistance(left, geometries);
@@ -418,7 +483,8 @@ function drawMarkers(ctx, entries, viewport, scale, canvas) {
       canvas,
       scale,
       occupiedLabels,
-      markerObstacles
+      markerObstacles,
+      routeSegments
     );
     if (!placement) return;
     occupiedLabels.push(placement.box);
