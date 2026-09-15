@@ -132,6 +132,30 @@ test('conflicto conserva la intención local y captura por separado la versión 
   });
 });
 
+test('si el remoto ya contiene exactamente la mutación enviada no crea un falso conflicto', async () => {
+  const { store, sent, lease } = await setup();
+  const result = await store.recordSyncConflict({
+    sentMutation: sent,
+    remoteEntity: {
+      serverVersion: 4,
+      serverStatus: 'active',
+      payload: { note: 'local' },
+    },
+    contextId: 'tab-a',
+    generation: lease.generation,
+    nowMs: 2500,
+  });
+
+  assert.equal(result.apply, true);
+  assert.equal(result.kind, 'already-applied');
+  assert.equal(await store.getMutation(key), null);
+  const saved = await store.getEntity(key);
+  assert.equal(saved.state, V4_LOCAL_STATES.CLEAN);
+  assert.equal(saved.serverVersion, 4);
+  assert.equal(saved.conflict, null);
+  assert.deepEqual(saved.payload, { note: 'local' });
+});
+
 test('conflicto detectado por líder antiguo no altera estado tras takeover', async () => {
   const { store, sent, lease } = await setup();
   const nextLease = await store.tryAcquireSyncLease({
