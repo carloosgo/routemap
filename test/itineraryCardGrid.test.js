@@ -43,7 +43,7 @@ test('origin is rendered as a first-class card inside both itinerary layouts', a
   const css = await read('src/modules/trips/ItineraryCardVisual.css');
 
   assert.match(pane, /<SegmentOriginSection[\s\S]*onUpdateOrigin=\{updateOrigin\}/s);
-  assert.match(origin, /itinerary-origin itinerary-origin--card/);
+  assert.match(origin, /itinerary-origin itinerary-origin--card itinerary-card__content/);
   assert.match(origin, /<ItineraryCityVisual city=\{city\}/);
   assert.match(origin, /itinerary-origin__badge/);
   assert.match(css, /> \.itinerary-origin-section\s*\{[\s\S]*grid-column:\s*auto\s*!important;/s);
@@ -63,16 +63,50 @@ test('city visuals are local and representative for known itinerary cities', asy
   assert.doesNotMatch(visual, /https?:\/\/|google.*photo|street.?view/i);
 });
 
+test('card content is isolated from the legacy compact row geometry', async () => {
+  const header = await read('src/modules/trips/SegmentHeader.jsx');
+  const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
+  const form = await read('src/modules/trips/SegmentForm.jsx');
+  const css = await read('src/modules/trips/ItineraryCardLayoutFix.css');
+
+  assert.match(header, /itinerary-card__content/);
+  assert.match(header, /itinerary-card__footer/);
+  assert.match(header, /itinerary-card__actions/);
+  assert.match(header, /selectedDisplay="timeline"/);
+  assert.match(origin, /selectedDisplay="timeline"/);
+  assert.match(form, /import '\.\/ItineraryCardVisual\.css';\s*\nimport '\.\/ItineraryCardLayoutFix\.css';/);
+  assert.match(css, /\.itinerary-card__place \.autocomplete__selected-value\s*\{[\s\S]*display:\s*none\s*!important;/s);
+  assert.match(
+    css,
+    /> \.itinerary-segment\.segment,[\s\S]*> \.itinerary-origin-section\s*\{[\s\S]*height:\s*auto\s*!important;[\s\S]*max-height:\s*none\s*!important;/s
+  );
+  assert.match(
+    css,
+    /\.itinerary-card__content\s*\{[\s\S]*grid-template-areas:[\s\S]*'visual'[\s\S]*'place'[\s\S]*'footer'[\s\S]*height:\s*auto\s*!important;/s
+  );
+});
+
+test('two-column cards reserve separate footer space for metrics and actions', async () => {
+  const css = await read('src/modules/trips/ItineraryCardLayoutFix.css');
+
+  assert.match(
+    css,
+    /\.itinerary-cards\.itinerary-cards--grid[\s\S]*\.itinerary-card__footer\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*!important;[\s\S]*grid-template-rows:\s*auto 28px\s*!important;/s
+  );
+  assert.match(css, /\.itinerary-card__metrics\s*\{[\s\S]*justify-content:\s*space-between\s*!important;/s);
+  assert.match(css, /\.itinerary-card__place \.input\s*\{[\s\S]*text-overflow:\s*ellipsis\s*!important;/s);
+});
+
 test('card actions stay quiet until hover or keyboard focus on fine pointers', async () => {
-  const css = await read('src/modules/trips/ItineraryCardVisual.css');
+  const css = await read('src/modules/trips/ItineraryCardLayoutFix.css');
 
   assert.match(css, /@media \(min-width:\s*721px\) and \(hover:\s*hover\) and \(pointer:\s*fine\)/);
   assert.match(
     css,
-    /\.segment__note-btn,[\s\S]*\.segment__details-btn,[\s\S]*\.itinerary-stop__remove-btn\s*\{[\s\S]*opacity:\s*0;[\s\S]*visibility:\s*hidden;[\s\S]*pointer-events:\s*none;/s
+    /\.itinerary-card__actions\s*\{[\s\S]*opacity:\s*0;[\s\S]*visibility:\s*hidden;[\s\S]*pointer-events:\s*none;/s
   );
-  assert.match(css, /\.itinerary-segment:hover \.segment__note-btn/);
-  assert.match(css, /\.itinerary-origin:hover \.segment__note-btn/);
-  assert.match(css, /\.itinerary-segment:focus-within \.segment__details-btn/);
-  assert.match(css, /\.itinerary-origin:focus-within \.itinerary-stop__remove-btn/);
+  assert.match(css, /\.itinerary-segment:hover \.itinerary-card__actions/);
+  assert.match(css, /\.itinerary-origin:hover \.itinerary-card__actions/);
+  assert.match(css, /\.itinerary-segment:focus-within \.itinerary-card__actions/);
+  assert.match(css, /\.itinerary-origin:focus-within \.itinerary-card__actions/);
 });

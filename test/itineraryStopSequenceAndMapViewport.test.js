@@ -162,11 +162,11 @@ test('reordering the same geographic stops does not change the itinerary viewpor
   assert.equal(itineraryViewportKey(original), itineraryViewportKey(reordered));
 });
 
-test('UI consumes canonical numbering, repeated visit dots and finish flag assets', async () => {
+test('UI consumes canonical numbering while repeated visits and finish assets remain map concerns', async () => {
   const editor = await read('src/app/AppEditorPane.jsx');
   const mapPane = await read('src/app/AppMapPane.jsx');
   const segmentHeader = await read('src/modules/trips/SegmentHeader.jsx');
-  const compact = await read('src/modules/trips/ItineraryCompactTen.css');
+  const cardCss = await read('src/modules/trips/ItineraryCardLayoutFix.css');
   const headerType = await read('src/app/TripSummaryHeaderTypography.css');
   const googleMap = await read('src/modules/map/GooglePlacesMap.jsx');
   const markerCss = await read('src/modules/map/ItineraryNumberMarkers.css');
@@ -179,11 +179,7 @@ test('UI consumes canonical numbering, repeated visit dots and finish flag asset
   assert.match(mapPane, /buildItineraryStopSequence\(trip\.origin, trip\.segments, colorForIndex\)/);
   assert.match(mapPane, /\{stop\.number\}/);
   assert.match(segmentHeader, /className="itinerary-stop__sequence-badge"/);
-  assert.match(segmentHeader, /countryRunPosition === 'middle'/);
-  assert.match(segmentHeader, /className="itinerary-stop__country-run-dot"/);
-  assert.match(compact, /--itinerary-compact-gap:\s*10px;/);
-  assert.match(compact, /--itinerary-city-width:\s*calc\(\(var\(--workspace-panel-width\) - 147px\) \/ 3\);/);
-  assert.match(compact, /grid-template-columns:[\s\S]*var\(--country-run-drag-w, 14px\)[\s\S]*var\(--country-run-sequence-w, 19px\)[\s\S]*var\(--country-run-track-w, 30px\)[\s\S]*var\(--itinerary-city-width\)[\s\S]*minmax\(0, 1fr\);/s);
+  assert.match(cardCss, /\.itinerary-card__visual-frame/);
   assert.match(headerType, /\.trip-summary__metric-label\s*\{[^}]*color:\s*#0d6078;/s);
   assert.match(headerType, /\.trip-summary__metric-value,[\s\S]*color:\s*#000000;/);
   assert.match(googleMap, /const isOrigin = feature\.properties\?\.role === 'origin';/);
