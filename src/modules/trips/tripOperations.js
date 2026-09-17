@@ -31,12 +31,15 @@ export function nextSegmentDefaults(trip) {
   };
 }
 
-export function appendSegment(trip) {
+export function appendSegment(trip, initial = {}) {
   const segments = Array.isArray(trip?.segments) ? trip.segments : [];
   if (segments.length >= TRIP_LIMITS.segments) return trip;
   return {
     ...trip,
-    segments: [...segments, createSegment(nextSegmentDefaults(trip))],
+    segments: [
+      ...segments,
+      createSegment({ ...nextSegmentDefaults(trip), ...(initial || {}) }),
+    ],
     updatedAt: nowISO(),
   };
 }
@@ -178,18 +181,4 @@ export function routeStops(trip, { dedupeCountry = false } = {}) {
     stops.push(city);
   });
   return stops;
-}
-
-export function hasSavableRoute(trip) {
-  const segments = Array.isArray(trip?.segments) ? trip.segments : [];
-  return segments.some((segment, index) => {
-    const origin = index === 0
-      ? trip?.origin
-      : segments[index - 1]?.destination;
-    return isPlaced(origin) && isPlaced(segment?.destination);
-  });
-}
-
-export function isTripSavable(trip) {
-  return Boolean(trip?.name?.trim() && hasSavableRoute(trip));
 }
