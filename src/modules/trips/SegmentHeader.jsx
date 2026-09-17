@@ -29,6 +29,47 @@ const SELECTED_FLAG_STYLE = Object.freeze({
   height: '18px',
 });
 
+function CityCardIllustration({ sequenceNumber, sequenceColor }) {
+  const variant = Math.abs(Number(sequenceNumber) || 0) % 4;
+  const style = sequenceColor ? { '--city-visual-accent': sequenceColor } : undefined;
+
+  return (
+    <span
+      className="itinerary-stop__visual"
+      data-variant={variant}
+      style={style}
+      aria-hidden="true"
+    >
+      <svg viewBox="0 0 48 48" fill="none" focusable="false">
+        {variant === 0 && (
+          <>
+            <path d="M10 35h28M13 31h22M15 31V20l9-7 9 7v11" />
+            <path d="M19 31V22M24 31V22M29 31V22M12 20h24" />
+          </>
+        )}
+        {variant === 1 && (
+          <>
+            <path d="M9 35h30M12 35V18h15v17M16 22h3M22 22h2M16 27h3M22 27h2M16 32h3M22 32h2" />
+            <path d="M33 35v-9M29 28l4-7 4 7-4 3-4-3Z" />
+          </>
+        )}
+        {variant === 2 && (
+          <>
+            <path d="M8 34h32M11 34V24M37 34V24M11 25c4-9 22-9 26 0" />
+            <path d="M16 34v-5M24 34v-7M32 34v-5M8 39c4-3 7 3 11 0s7 3 11 0 7 3 10 0" />
+          </>
+        )}
+        {variant === 3 && (
+          <>
+            <path d="M13 35h22M17 35l2-16h10l2 16M20 19l4-9 4 9" />
+            <path d="M21 24h6M20 29h8M24 10V7M11 35h26" />
+          </>
+        )}
+      </svg>
+    </span>
+  );
+}
+
 export function SegmentHeader({
   segment,
   locale,
@@ -84,6 +125,11 @@ export function SegmentHeader({
           </span>
         )}
       </span>
+
+      <CityCardIllustration
+        sequenceNumber={sequenceNumber}
+        sequenceColor={sequenceColor}
+      />
 
       <span className={markerClassName}>
         {showCountryRunDot ? (
