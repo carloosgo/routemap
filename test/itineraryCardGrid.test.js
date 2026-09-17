@@ -72,11 +72,10 @@ test('card content is isolated from the legacy compact row geometry', async () =
   assert.match(header, /itinerary-card__content/);
   assert.match(header, /itinerary-card__footer/);
   assert.match(header, /itinerary-card__actions/);
-  assert.match(header, /selectedDisplay="full"/);
-  assert.doesNotMatch(header, /selectedDisplay="timeline"/);
-  assert.match(origin, /selectedDisplay="full"/);
-  assert.doesNotMatch(origin, /selectedDisplay="timeline"/);
+  assert.match(header, /selectedDisplay="timeline"/);
+  assert.match(origin, /selectedDisplay="timeline"/);
   assert.match(form, /import '\.\/ItineraryCardVisual\.css';\s*\nimport '\.\/ItineraryCardLayoutFix\.css';/);
+  assert.match(css, /\.itinerary-card__place \.autocomplete__selected-value\s*\{[\s\S]*display:\s*none\s*!important;/s);
   assert.match(
     css,
     /> \.itinerary-segment\.segment,[\s\S]*> \.itinerary-origin-section\s*\{[\s\S]*height:\s*auto\s*!important;[\s\S]*max-height:\s*none\s*!important;/s
