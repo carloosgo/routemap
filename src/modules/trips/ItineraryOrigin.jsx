@@ -34,7 +34,6 @@ export function ItineraryOrigin({
   const { t } = useTranslation();
   const originNoteLabel = `${t('segmentNote')}: ${t('origin')}`;
   const clearOriginLabel = `${t('delete')} ${t('origin')}`;
-  const departureDate = formattedDepartureDate || '—';
 
   return (
     <div
@@ -51,17 +50,23 @@ export function ItineraryOrigin({
           value={city}
           onSelect={onSelect}
           placeholder={t('originPlaceholder')}
-          selectedDisplay="full"
+          selectedDisplay="timeline"
           focusNextOnSelect
         />
       </div>
 
       <div className="itinerary-card__footer">
         <div className="itinerary-card__metrics">
-          <span className="itinerary-card__date" title={departureDate}>
-            {departureDate}
+          <span
+            className="itinerary-card__date itinerary-stop__date-range"
+            title={formattedDepartureDate || undefined}
+          >
+            <span>{formattedDepartureDate || ''}</span>
+            <span aria-hidden="true" />
           </span>
-          <span className="itinerary-card__amount">{formattedAmount}</span>
+          <span className="itinerary-card__amount itinerary-stop__amount">
+            {formattedAmount}
+          </span>
         </div>
 
         <div className="itinerary-card__actions">
