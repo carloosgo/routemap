@@ -182,3 +182,17 @@ export function routeStops(trip, { dedupeCountry = false } = {}) {
   });
   return stops;
 }
+
+export function hasSavableRoute(trip) {
+  const segments = Array.isArray(trip?.segments) ? trip.segments : [];
+  return segments.some((segment, index) => {
+    const origin = index === 0
+      ? trip?.origin
+      : segments[index - 1]?.destination;
+    return isPlaced(origin) && isPlaced(segment?.destination);
+  });
+}
+
+export function isTripSavable(trip) {
+  return Boolean(trip?.name?.trim() && hasSavableRoute(trip));
+}
