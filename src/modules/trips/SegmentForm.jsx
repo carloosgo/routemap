@@ -11,6 +11,7 @@ import './ItineraryRequestedPolish.css';
 import './ItineraryCorrectionPolish.css';
 import './ItinerarySegmentDividers.css';
 import './ItineraryCardVisual.css';
+import './ItineraryCardLayoutFix.css';
 
 function SegmentDropIndicator({ placement }) {
   if (!placement) return null;
@@ -89,7 +90,6 @@ export function SegmentForm({
           formattedAmount={formattedAmount}
           sequenceNumber={sequenceNumber}
           sequenceColor={sequenceColor}
-          countryRunPosition={countryRunPosition}
           dragging={dragging}
           destinationLocked={hasAssignedPlaces}
           onDestinationSelect={(destination) => onUpdate({ destination })}
