@@ -5,7 +5,6 @@ import {
 } from '@tabler/icons-react';
 import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
-import { flagImageUrl } from '../flags/flags.js';
 import { ItineraryCityVisual } from './ItineraryCityVisual.jsx';
 import './OriginOptions.css';
 
@@ -22,11 +21,6 @@ const NOTE_DOT_STYLE = Object.freeze({
   pointerEvents: 'none',
 });
 
-const SELECTED_FLAG_STYLE = Object.freeze({
-  width: '27px',
-  height: '18px',
-});
-
 export function ItineraryOrigin({
   city,
   formattedDepartureDate,
@@ -40,85 +34,69 @@ export function ItineraryOrigin({
   const { t } = useTranslation();
   const originNoteLabel = `${t('segmentNote')}: ${t('origin')}`;
   const clearOriginLabel = `${t('delete')} ${t('origin')}`;
+  const departureDate = formattedDepartureDate || '—';
 
   return (
-    <div className="itinerary-origin itinerary-origin--card" aria-label={t('origin')}>
-      <div className="itinerary-origin__visual-frame">
+    <div
+      className="itinerary-origin itinerary-origin--card itinerary-card__content"
+      aria-label={t('origin')}
+    >
+      <div className="itinerary-origin__visual-frame itinerary-card__visual-frame">
         <ItineraryCityVisual city={city} accent="#6d7b86" />
         <span className="itinerary-origin__badge">{t('origin')}</span>
-        <span
-          className={'itinerary-origin__marker' + (!city?.countryCode ? ' is-empty' : '')}
-          aria-hidden="true"
-        >
-          {city?.countryCode ? (
-            <img
-              src={flagImageUrl(city.countryCode, 80)}
-              alt=""
-              width={27}
-              height={18}
-              style={SELECTED_FLAG_STYLE}
-              loading="lazy"
-              decoding="async"
-            />
-          ) : null}
-        </span>
       </div>
 
-      <div className="itinerary-origin__place">
-        <div className="itinerary-origin__picker">
-          <CityAutocomplete
-            value={city}
-            onSelect={onSelect}
-            placeholder={t('originPlaceholder')}
-            selectedDisplay="timeline"
-            focusNextOnSelect
-          />
-        </div>
+      <div className="itinerary-card__place">
+        <CityAutocomplete
+          value={city}
+          onSelect={onSelect}
+          placeholder={t('originPlaceholder')}
+          selectedDisplay="full"
+          focusNextOnSelect
+        />
       </div>
 
-      <div className="itinerary-stop__after-place itinerary-origin__after-place">
-        <div className="itinerary-stop__metrics itinerary-origin__metrics">
-          <span
-            className="itinerary-stop__date-range"
-            title={formattedDepartureDate || undefined}
-          >
-            <span>{formattedDepartureDate || ''}</span>
-            <span aria-hidden="true" />
+      <div className="itinerary-card__footer">
+        <div className="itinerary-card__metrics">
+          <span className="itinerary-card__date" title={departureDate}>
+            {departureDate}
           </span>
-          <span className="itinerary-stop__amount">{formattedAmount}</span>
+          <span className="itinerary-card__amount">{formattedAmount}</span>
         </div>
 
-        <button
-          type="button"
-          className="btn btn--icon segment__note-btn itinerary-origin__note-btn"
-          style={hasNote ? { color: '#417c8f' } : undefined}
-          aria-label={originNoteLabel}
-          title={originNoteLabel}
-          onClick={onOpenNote}
-        >
-          <IconNote size={14} aria-hidden="true" />
-          {hasNote && <span aria-hidden="true" style={NOTE_DOT_STYLE} />}
-        </button>
+        <div className="itinerary-card__actions">
+          <button
+            type="button"
+            className="btn btn--icon segment__note-btn itinerary-origin__note-btn itinerary-card__action"
+            style={hasNote ? { color: '#417c8f' } : undefined}
+            aria-label={originNoteLabel}
+            title={originNoteLabel}
+            onClick={onOpenNote}
+          >
+            <IconNote size={14} aria-hidden="true" />
+            {hasNote && <span aria-hidden="true" style={NOTE_DOT_STYLE} />}
+          </button>
 
-        <button
-          type="button"
-          className="btn btn--icon segment__toggle segment__details-btn itinerary-origin__details-btn"
-          aria-label={t('openSegmentDetails')}
-          title={t('openSegmentDetails')}
-          onClick={onOpenDetails}
-        >
-          <IconChevronDown className="itinerary-details-chevron" size={14} aria-hidden="true" />
-        </button>
+          <button
+            type="button"
+            className="btn btn--icon segment__toggle segment__details-btn itinerary-origin__details-btn itinerary-card__action"
+            aria-label={t('openSegmentDetails')}
+            title={t('openSegmentDetails')}
+            onClick={onOpenDetails}
+          >
+            <IconChevronDown className="itinerary-details-chevron" size={14} aria-hidden="true" />
+          </button>
 
-        <button
-          type="button"
-          className="btn btn--icon itinerary-stop__remove-btn itinerary-origin__clear"
-          aria-label={clearOriginLabel}
-          title={clearOriginLabel}
-          onClick={onClear}
-        >
-          <IconX size={14} aria-hidden="true" />
-        </button>
+          <button
+            type="button"
+            className="btn btn--icon itinerary-stop__remove-btn itinerary-origin__clear itinerary-card__action"
+            aria-label={clearOriginLabel}
+            title={clearOriginLabel}
+            onClick={onClear}
+          >
+            <IconX size={14} aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </div>
   );
