@@ -58,7 +58,10 @@ export function useTrip(initialTrip) {
     (id) => dispatch({ type: TRIP_ACTIONS.removeChecklistItem, id }),
     []
   );
-  const addSegment = useCallback(() => dispatch({ type: TRIP_ACTIONS.addSegment }), []);
+  const addSegment = useCallback(
+    (initial = {}) => dispatch({ type: TRIP_ACTIONS.addSegment, initial }),
+    []
+  );
   const removeSegment = useCallback(
     (segmentId) => dispatch({ type: TRIP_ACTIONS.removeSegment, segmentId }),
     []
