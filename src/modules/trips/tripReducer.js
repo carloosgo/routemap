@@ -241,7 +241,7 @@ export function tripReducer(state, action) {
       });
 
     case TRIP_ACTIONS.addSegment:
-      return appendSegment(state);
+      return appendSegment(state, action.initial || {});
 
     case TRIP_ACTIONS.removeSegment: {
       if (assignedPlacesForSegment(state.places, action.segmentId).length > 0) {
