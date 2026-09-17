@@ -5,30 +5,37 @@ import { readFile } from 'node:fs/promises';
 
 const read = (path) => readFile(path, 'utf8');
 
-test('la ciudad origen comparte la retícula de fecha, costo y acciones de los trayectos', async () => {
-  const [origin, originSection, compactCss] = await Promise.all([
+test('la ciudad origen comparte la composición de fecha, costo y acciones de las cards de destino', async () => {
+  const [origin, header, originSection, cardCss] = await Promise.all([
     read('src/modules/trips/ItineraryOrigin.jsx'),
+    read('src/modules/trips/SegmentHeader.jsx'),
     read('src/modules/trips/SegmentOriginSection.jsx'),
-    read('src/modules/trips/ItineraryCompactTen.css'),
+    read('src/modules/trips/ItineraryCardLayoutFix.css'),
   ]);
 
   assert.match(originSection, /formatSegmentDate\(\s*originDetails\?\.departureDate,\s*locale\s*\)/);
   assert.match(originSection, /formattedDepartureDate=\{formattedDepartureDate\}/);
-  assert.match(origin, /className="itinerary-stop__date-range"/);
+  assert.match(origin, /itinerary-origin itinerary-origin--card itinerary-card__content/);
+  assert.match(origin, /className="itinerary-card__date itinerary-stop__date-range"/);
   assert.match(origin, /\{formattedDepartureDate \|\| ''\}/);
   assert.doesNotMatch(origin, /formattedEndDate|endDate/);
+  assert.match(origin, /className="itinerary-card__amount itinerary-stop__amount"/);
+  assert.match(origin, /className="itinerary-card__actions"/);
+  assert.match(header, /className="segment__header itinerary-stop itinerary-card__content"/);
+  assert.match(header, /className="itinerary-card__date itinerary-stop__date-range"/);
+  assert.match(header, /className="itinerary-card__amount itinerary-stop__amount"/);
+  assert.match(header, /className="itinerary-card__actions"/);
 
   assert.match(
-    compactCss,
-    /\.editor-module\.editor-module--itinerary \.itinerary-stop__after-place,\s*\.segments:not\(\.segments--compact\) \.itinerary-origin__after-place[\s\S]*?grid-template-columns: minmax\(60px, 1fr\) 78px repeat\(3, 14px\)/
+    cardCss,
+    /\.itinerary-card__content\s*\{[\s\S]*grid-template-areas:[\s\S]*'visual'[\s\S]*'place'[\s\S]*'footer'/s
   );
   assert.match(
-    compactCss,
-    /\.editor-module\.editor-module--itinerary \.itinerary-stop__metrics,\s*\.segments:not\(\.segments--compact\) \.itinerary-origin__metrics\s*\{\s*display: contents;/
+    cardCss,
+    /\.itinerary-card__footer\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\) auto\s*!important;/s
   );
-  assert.match(compactCss, /\.itinerary-stop__date-range\s*\{[^}]*width:\s*60px;[^}]*min-width:\s*60px;[^}]*max-width:\s*60px;/s);
-  assert.match(compactCss, /\.itinerary-stop__amount\s*\{[^}]*width:\s*78px;[^}]*min-width:\s*78px;[^}]*max-width:\s*78px;/s);
-  assert.doesNotMatch(compactCss, /\.itinerary-origin__after-place\s*\{\s*width: max-content;/);
+  assert.match(cardCss, /\.itinerary-card__metrics\s*\{[\s\S]*justify-content:\s*space-between\s*!important;/s);
+  assert.doesNotMatch(cardCss, /\.itinerary-origin__after-place\s*\{\s*width:\s*max-content;/);
 });
 
 test('la ayuda de ciudad origen es breve y localizada para una app de viajes', async () => {
