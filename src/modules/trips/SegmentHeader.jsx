@@ -43,9 +43,9 @@ export function SegmentHeader({
   const hasNote = Boolean(segment.note);
   const formattedStartDate = formatSegmentDate(segment.startDate, locale);
   const formattedEndDate = formatSegmentDate(segment.endDate, locale);
-  const formattedDateRange = formattedStartDate && formattedEndDate
-    ? `${formattedStartDate} – ${formattedEndDate}`
-    : formattedStartDate || formattedEndDate || '—';
+  const formattedDatesTitle = formattedStartDate || formattedEndDate
+    ? `${formattedStartDate || '—'} – ${formattedEndDate || '—'}`
+    : undefined;
 
   return (
     <header className="segment__header itinerary-stop itinerary-card__content">
@@ -67,7 +67,7 @@ export function SegmentHeader({
 
         {sequenceNumber != null && (
           <span
-            className="itinerary-stop__sequence-badge itinerary-card__sequence-badge"
+            className="itinerary-stop__sequence-badge"
             style={sequenceColor ? { background: sequenceColor } : undefined}
             aria-hidden="true"
           >
@@ -84,7 +84,7 @@ export function SegmentHeader({
           value={destination}
           onSelect={onDestinationSelect}
           placeholder={t('destination')}
-          selectedDisplay="full"
+          selectedDisplay="timeline"
           focusNextOnSelect
           disabled={destinationLocked}
         />
@@ -92,10 +92,16 @@ export function SegmentHeader({
 
       <div className="itinerary-card__footer">
         <div className="itinerary-card__metrics">
-          <span className="itinerary-card__date" title={formattedDateRange}>
-            {formattedDateRange}
+          <span
+            className="itinerary-card__date itinerary-stop__date-range"
+            title={formattedDatesTitle}
+          >
+            <span>{formattedStartDate || ''}</span>
+            <span>{formattedEndDate || ''}</span>
           </span>
-          <span className="itinerary-card__amount">{formattedAmount}</span>
+          <span className="itinerary-card__amount itinerary-stop__amount">
+            {formattedAmount}
+          </span>
         </div>
 
         <div className="itinerary-card__actions">
@@ -113,7 +119,7 @@ export function SegmentHeader({
 
           <button
             type="button"
-            className="btn btn--icon segment__toggle segment__details-btn itinerary-card__action"
+            className="btn btn--icon segment__toggle segment__details-btn itinerary-stop__details-btn itinerary-card__action"
             aria-label={t('openSegmentDetails')}
             title={t('openSegmentDetails')}
             onClick={onOpenDetails}
@@ -123,7 +129,7 @@ export function SegmentHeader({
 
           <button
             type="button"
-            className="btn btn--icon itinerary-stop__remove-btn itinerary-card__action"
+            className="btn btn--icon itinerary-stop__remove-btn"
             aria-label={t('removeSegment')}
             title={destinationLocked ? t('segmentHasPlannedPlaces') : t('removeSegment')}
             onClick={onRemoveRequest}
