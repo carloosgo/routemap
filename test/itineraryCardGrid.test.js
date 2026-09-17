@@ -6,21 +6,36 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('expanded itinerary presents destinations as a three-column card grid', async () => {
-  const css = await read('src/modules/trips/ItinerarySegmentDividers.css');
+test('expanded itinerary presents destinations as a two-column card grid', async () => {
+  const css = await read('src/modules/trips/ItineraryCardVisual.css');
 
   assert.match(
     css,
-    /\.editor:not\(\.is-panel-collapsed\)[\s\S]*\.editor__body > \.segments:not\(\.segments--compact\)[\s\S]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/s
+    /\.editor:not\(\.is-panel-collapsed\)[\s\S]*\.editor__body > \.segments:not\(\.segments--compact\)[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/s
   );
   assert.match(
     css,
+    /> \.itinerary-segment\.segment\s*\{[\s\S]*border-radius:\s*12px\s*!important;/s
+  );
+
+  const legacyCss = await read('src/modules/trips/ItinerarySegmentDividers.css');
+  assert.match(
+    legacyCss,
     /> \.itinerary-origin-section\s*\{[\s\S]*grid-column:\s*1\s*\/\s*-1;/s
   );
-  assert.match(
-    css,
-    /> \.itinerary-segment\.segment\s*\{[\s\S]*border-radius:\s*11px\s*!important;[\s\S]*background:\s*#ffffff\s*!important;/s
-  );
+});
+
+test('cards render a local generic travel illustration without provider photos', async () => {
+  const header = await read('src/modules/trips/SegmentHeader.jsx');
+  const css = await read('src/modules/trips/ItineraryCardVisual.css');
+
+  assert.match(header, /function CityCardIllustration/);
+  assert.match(header, /className="itinerary-stop__visual"/);
+  assert.match(header, /<svg viewBox="0 0 48 48"/);
+  assert.match(header, /--city-visual-accent/);
+  assert.doesNotMatch(header, /photo|places\/.*photo|google.*photo/i);
+  assert.match(css, /\.itinerary-stop__visual\s*\{[\s\S]*display:\s*none;/s);
+  assert.match(css, /\.itinerary-segment \.itinerary-stop__visual\s*\{[\s\S]*display:\s*grid;/s);
 });
 
 test('card actions stay quiet until hover or keyboard focus on fine pointers', async () => {
