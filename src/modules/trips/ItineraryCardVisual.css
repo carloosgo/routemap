@@ -1,0 +1,312 @@
+/* Iteración solicitada del panel de itinerario: dos cards por fila y un visual
+   genérico local por ciudad. El visual no descarga fotos ni consulta proveedores. */
+
+.itinerary-stop__visual {
+  display: none;
+}
+
+.editor:not(.is-panel-collapsed) .editor__body > .segments:not(.segments--compact) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 8px 10px 14px;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact) > .itinerary-segment.segment {
+  min-height: 112px;
+  border-radius: 12px !important;
+  border-color: #e2e7eb !important;
+  box-shadow: 0 2px 8px rgba(33, 52, 60, 0.055) !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact) > .itinerary-segment.segment:hover,
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact) > .itinerary-segment.segment:focus-within {
+  border-color: #cbd7dc !important;
+  box-shadow: 0 6px 16px rgba(33, 52, 60, 0.095) !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .segment__header.itinerary-stop {
+  min-height: 110px;
+  grid-template-columns: 58px minmax(0, 1fr);
+  grid-template-areas:
+    'visual place'
+    'visual after';
+  align-content: center;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 7px;
+  padding: 10px;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__visual {
+  --city-visual-accent: #8a7967;
+  grid-area: visual;
+  position: relative;
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  align-self: center;
+  justify-self: start;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--city-visual-accent) 16%, #e8e4df);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--city-visual-accent) 8%, #faf8f5);
+  color: color-mix(in srgb, var(--city-visual-accent) 72%, #6e645b);
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__visual::after {
+  content: '';
+  position: absolute;
+  inset: auto -12px -16px auto;
+  width: 36px;
+  height: 36px;
+  border: 1px solid color-mix(in srgb, var(--city-visual-accent) 12%, transparent);
+  border-radius: 50%;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__visual svg {
+  position: relative;
+  z-index: 1;
+  width: 38px;
+  height: 38px;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__sequence {
+  position: absolute;
+  z-index: 6;
+  top: 5px;
+  left: 5px;
+  width: 23px;
+  height: 23px;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__sequence-badge {
+  width: 21px;
+  height: 21px;
+  border: 2px solid #fff;
+  font-size: 9px;
+  box-shadow: 0 1px 4px rgba(18, 34, 41, 0.18);
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__marker {
+  position: absolute;
+  z-index: 6;
+  top: 49px;
+  left: 49px;
+  width: 25px;
+  min-width: 25px;
+  height: 19px;
+  padding: 1px;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(18, 34, 41, 0.14);
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__marker img {
+  width: 23px;
+  height: 15px;
+  border-radius: 3px;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__country-run-dot {
+  width: 7px;
+  min-width: 7px;
+  max-width: 7px;
+  height: 7px;
+  min-height: 7px;
+  max-height: 7px;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__drag {
+  position: absolute;
+  z-index: 7;
+  top: 7px;
+  right: 7px;
+  width: 18px;
+  height: 18px;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__place {
+  grid-area: place;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  padding-right: 18px;
+  align-self: end;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__picker .autocomplete__field {
+  min-height: 30px;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__picker .input {
+  height: 30px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__picker .autocomplete__selected-value {
+  left: 3px;
+  right: 3px;
+  max-height: 30px;
+  color: #25343a;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.15;
+  -webkit-line-clamp: 2;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment.is-country-run-middle
+  .itinerary-stop__picker .autocomplete__selected-value {
+  color: #25343a;
+  font-weight: 700;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__after-place {
+  grid-area: after;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22px 22px 22px;
+  align-items: end;
+  gap: 4px;
+  margin-top: 0;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__metrics {
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 3px;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__date-range {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1px 3px;
+  overflow: hidden;
+  color: #6f7f87;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__date-range > span {
+  white-space: nowrap;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__date-range > span + span:not(:empty)::before {
+  content: '–';
+  margin-right: 3px;
+  color: #a0a8ad;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments:not(.segments--compact)
+  .itinerary-segment .itinerary-stop__amount {
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #24343a;
+  font-size: 11.5px;
+  font-weight: 750;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 721px) and (hover: hover) and (pointer: fine) {
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment .itinerary-stop__drag {
+    opacity: 0.28;
+  }
+
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment:hover .itinerary-stop__drag,
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment:focus-within .itinerary-stop__drag {
+    opacity: 0.9;
+  }
+}
+
+@media (max-width: 560px) {
+  .editor:not(.is-panel-collapsed) .editor__body > .segments:not(.segments--compact) {
+    grid-template-columns: 1fr;
+  }
+
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact)
+    .itinerary-segment .segment__header.itinerary-stop {
+    min-height: 104px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments:not(.segments--compact) > .itinerary-segment.segment {
+    transition: none;
+  }
+}
