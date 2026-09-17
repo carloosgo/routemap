@@ -4,12 +4,18 @@ import {
   IconChecklist,
   IconChevronLeft,
   IconChevronRight,
+  IconLayoutGrid,
+  IconList,
   IconPlus,
   IconTrash,
   IconX,
 } from '@tabler/icons-react';
+import { CityAutocomplete } from '../components/CityAutocomplete.jsx';
 import { SegmentForm } from '../modules/trips/SegmentForm.jsx';
+import { SegmentOriginSection } from '../modules/trips/SegmentOriginSection.jsx';
 import { buildItineraryStopSequence } from '../modules/trips/itineraryStopSequence.js';
+import { segmentTotal } from '../modules/trips/tripModel.js';
+import { ORIGIN_NOTE_TARGET } from '../modules/trips/tripNoteTargets.js';
 import { flagImageUrl } from '../modules/flags/flags.js';
 import { colorForIndex } from '../config.js';
 
@@ -27,6 +33,15 @@ function CompactFlag({ city }) {
       loading="lazy"
     />
   );
+}
+
+function isPristineDestinationSegment(segment) {
+  return Boolean(segment)
+    && !segment.destination
+    && !segment.startDate
+    && !segment.endDate
+    && !String(segment.note || '').trim()
+    && segmentTotal(segment) === 0;
 }
 
 export function AppEditorPane({
@@ -59,8 +74,13 @@ export function AppEditorPane({
   const [dragState, setDragState] = useState(null);
   const dragStateRef = useRef(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [itineraryLayout, setItineraryLayout] = useState('list');
+  const [addCityOpen, setAddCityOpen] = useState(false);
   const activeDragId = dragState?.segmentId || null;
   const stopSequence = buildItineraryStopSequence(trip.origin, trip.segments, colorForIndex);
+  const visibleSegmentEntries = trip.segments
+    .map((segment, index) => ({ segment, index }))
+    .filter(({ segment }) => !isPristineDestinationSegment(segment));
 
   useEffect(() => {
     if (!activeDragId) return undefined;
@@ -158,6 +178,17 @@ export function AppEditorPane({
     };
   }, [activeDragId, reorderSegment]);
 
+  function handleAddCity(city) {
+    if (!city) return;
+    const reusable = trip.segments.find(isPristineDestinationSegment);
+    if (reusable) {
+      updateSegment(reusable.id, { destination: city });
+    } else {
+      addSegment({ destination: city });
+    }
+    setAddCityOpen(false);
+  }
+
   return (
     <section className={'editor' + (panelCollapsed ? ' is-panel-collapsed' : '')}>
       <button
@@ -204,8 +235,75 @@ export function AppEditorPane({
           <>
             {activeTab === 'segments' && (
               <>
-                <div className="segments">
-                  {trip.segments.map((segment, index) => (
+                <div className="itinerary-card-toolbar">
+                  <div className={'itinerary-add-city' + (addCityOpen ? ' is-open' : '')}>
+                    {addCityOpen ? (
+                      <>
+                        <div className="itinerary-add-city__picker">
+                          <CityAutocomplete
+                            value={null}
+                            onSelect={handleAddCity}
+                            placeholder={t('addCity')}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          className="btn btn--icon itinerary-add-city__cancel"
+                          aria-label={t('cancel')}
+                          title={t('cancel')}
+                          onClick={() => setAddCityOpen(false)}
+                        >
+                          <IconX size={15} aria-hidden="true" />
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        className="itinerary-add-city__trigger"
+                        onClick={() => setAddCityOpen(true)}
+                      >
+                        <IconPlus size={16} aria-hidden="true" />
+                        <span>{t('addCity')}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="itinerary-layout-switch" role="group" aria-label={t('itineraryView')}>
+                    <button
+                      type="button"
+                      className={'itinerary-layout-switch__button' + (itineraryLayout === 'list' ? ' is-active' : '')}
+                      aria-label={t('listView')}
+                      title={t('listView')}
+                      aria-pressed={itineraryLayout === 'list'}
+                      onClick={() => setItineraryLayout('list')}
+                    >
+                      <IconList size={16} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      className={'itinerary-layout-switch__button' + (itineraryLayout === 'grid' ? ' is-active' : '')}
+                      aria-label={t('gridView')}
+                      title={t('gridView')}
+                      aria-pressed={itineraryLayout === 'grid'}
+                      onClick={() => setItineraryLayout('grid')}
+                    >
+                      <IconLayoutGrid size={16} aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className={`segments itinerary-cards itinerary-cards--${itineraryLayout}`}>
+                  <SegmentOriginSection
+                    origin={trip.origin}
+                    locale={intlLocale}
+                    currency={trip.currency}
+                    originDetails={trip.originDetails}
+                    onUpdateOrigin={updateOrigin}
+                    onOpenNote={() => toggleNoteTarget(ORIGIN_NOTE_TARGET)}
+                    onOpenDetails={() => toggleDetailsTarget(ORIGIN_NOTE_TARGET)}
+                  />
+
+                  {visibleSegmentEntries.map(({ segment, index }) => (
                     <SegmentForm
                       key={segment.id}
                       segment={segment}
@@ -218,6 +316,7 @@ export function AppEditorPane({
                       locale={intlLocale}
                       currency={trip.currency}
                       originDetails={trip.originDetails}
+                      showOrigin={false}
                       hasAssignedPlaces={(trip.places || []).some((place) => place.segmentId === segment.id)}
                       dragging={dragState?.segmentId === segment.id}
                       dragOffsetY={dragState?.segmentId === segment.id ? dragState.offsetY : 0}
@@ -245,10 +344,6 @@ export function AppEditorPane({
                     />
                   ))}
                 </div>
-
-                <button type="button" className="btn btn--add" onClick={addSegment}>
-                  + {t('addSegment')}
-                </button>
               </>
             )}
 
