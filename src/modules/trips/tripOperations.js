@@ -31,12 +31,15 @@ export function nextSegmentDefaults(trip) {
   };
 }
 
-export function appendSegment(trip) {
+export function appendSegment(trip, initial = {}) {
   const segments = Array.isArray(trip?.segments) ? trip.segments : [];
   if (segments.length >= TRIP_LIMITS.segments) return trip;
   return {
     ...trip,
-    segments: [...segments, createSegment(nextSegmentDefaults(trip))],
+    segments: [
+      ...segments,
+      createSegment({ ...nextSegmentDefaults(trip), ...(initial || {}) }),
+    ],
     updatedAt: nowISO(),
   };
 }

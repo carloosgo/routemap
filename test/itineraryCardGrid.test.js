@@ -6,61 +6,73 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('expanded itinerary presents destinations as a two-column card grid', async () => {
+test('itinerary defaults to one card per row and offers a two-column grid', async () => {
+  const pane = await read('src/app/AppEditorPane.jsx');
   const css = await read('src/modules/trips/ItineraryCardVisual.css');
 
+  assert.match(pane, /useState\('list'\)/);
+  assert.match(pane, /itinerary-cards--\$\{itineraryLayout\}/);
+  assert.match(pane, /setItineraryLayout\('list'\)/);
+  assert.match(pane, /setItineraryLayout\('grid'\)/);
   assert.match(
     css,
-    /\.editor:not\(\.is-panel-collapsed\)[\s\S]*\.editor__body > \.segments:not\(\.segments--compact\)[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/s
+    /\.itinerary-cards\.itinerary-cards--list\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*!important;/s
   );
   assert.match(
     css,
-    /> \.itinerary-segment\.segment\s*\{[\s\S]*border-radius:\s*12px\s*!important;/s
-  );
-
-  const legacyCss = await read('src/modules/trips/ItinerarySegmentDividers.css');
-  assert.match(
-    legacyCss,
-    /> \.itinerary-origin-section\s*\{[\s\S]*grid-column:\s*1\s*\/\s*-1;/s
+    /\.itinerary-cards\.itinerary-cards--grid\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)\s*!important;/s
   );
 });
 
-test('cards render a local generic travel illustration without provider photos', async () => {
-  const header = await read('src/modules/trips/SegmentHeader.jsx');
+test('add city control stays above cards and only creates or fills a card after selection', async () => {
+  const pane = await read('src/app/AppEditorPane.jsx');
+
+  const toolbarIndex = pane.indexOf('itinerary-card-toolbar');
+  const cardsIndex = pane.indexOf('segments itinerary-cards');
+  assert.ok(toolbarIndex >= 0 && cardsIndex > toolbarIndex);
+  assert.match(pane, /<CityAutocomplete[\s\S]*onSelect=\{handleAddCity\}[\s\S]*placeholder=\{t\('addCity'\)\}/s);
+  assert.match(pane, /const reusable = trip\.segments\.find\(isPristineDestinationSegment\)/);
+  assert.match(pane, /updateSegment\(reusable\.id, \{ destination: city \}\)/);
+  assert.match(pane, /addSegment\(\{ destination: city \}\)/);
+  assert.doesNotMatch(pane, /className="btn btn--add" onClick=\{addSegment\}/);
+});
+
+test('origin is rendered as a first-class card inside both itinerary layouts', async () => {
+  const pane = await read('src/app/AppEditorPane.jsx');
+  const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const css = await read('src/modules/trips/ItineraryCardVisual.css');
 
-  assert.match(header, /function CityCardIllustration/);
-  assert.match(header, /className="itinerary-stop__visual"/);
-  assert.match(header, /<svg viewBox="0 0 48 48"/);
-  assert.match(header, /--city-visual-accent/);
-  assert.doesNotMatch(header, /photo|places\/.*photo|google.*photo/i);
-  assert.match(css, /\.itinerary-stop__visual\s*\{[\s\S]*display:\s*none;/s);
-  assert.match(css, /\.itinerary-segment \.itinerary-stop__visual\s*\{[\s\S]*display:\s*grid;/s);
+  assert.match(pane, /<SegmentOriginSection[\s\S]*onUpdateOrigin=\{updateOrigin\}/s);
+  assert.match(origin, /itinerary-origin itinerary-origin--card/);
+  assert.match(origin, /<ItineraryCityVisual city=\{city\}/);
+  assert.match(origin, /itinerary-origin__badge/);
+  assert.match(css, /> \.itinerary-origin-section\s*\{[\s\S]*grid-column:\s*auto\s*!important;/s);
+});
+
+test('city visuals are local and representative for known itinerary cities', async () => {
+  const visual = await read('src/modules/trips/ItineraryCityVisual.jsx');
+  const header = await read('src/modules/trips/SegmentHeader.jsx');
+
+  for (const cityKind of [
+    'paris', 'amsterdam', 'bruges', 'ghent', 'brussels', 'cologne', 'berlin',
+    'munich', 'nuremberg', 'bamberg', 'rothenburg', 'london', 'madrid',
+  ]) {
+    assert.match(visual, new RegExp(`'${cityKind}'`));
+  }
+  assert.match(header, /<ItineraryCityVisual city=\{destination\} accent=\{sequenceColor\}/);
+  assert.doesNotMatch(visual, /https?:\/\/|google.*photo|street.?view/i);
 });
 
 test('card actions stay quiet until hover or keyboard focus on fine pointers', async () => {
-  const css = await read('src/modules/trips/ItinerarySegmentDividers.css');
+  const css = await read('src/modules/trips/ItineraryCardVisual.css');
 
   assert.match(css, /@media \(min-width:\s*721px\) and \(hover:\s*hover\) and \(pointer:\s*fine\)/);
   assert.match(
     css,
-    /\.itinerary-segment \.segment__note-btn,[\s\S]*\.itinerary-segment \.segment__details-btn,[\s\S]*\.itinerary-segment \.itinerary-stop__remove-btn\s*\{[\s\S]*opacity:\s*0;[\s\S]*visibility:\s*hidden;[\s\S]*pointer-events:\s*none;/s
+    /\.segment__note-btn,[\s\S]*\.segment__details-btn,[\s\S]*\.itinerary-stop__remove-btn\s*\{[\s\S]*opacity:\s*0;[\s\S]*visibility:\s*hidden;[\s\S]*pointer-events:\s*none;/s
   );
   assert.match(css, /\.itinerary-segment:hover \.segment__note-btn/);
-  assert.match(css, /\.itinerary-segment:hover \.segment__details-btn/);
-  assert.match(css, /\.itinerary-segment:hover \.itinerary-stop__remove-btn/);
-  assert.match(css, /\.itinerary-segment:focus-within \.segment__note-btn/);
+  assert.match(css, /\.itinerary-origin:hover \.segment__note-btn/);
   assert.match(css, /\.itinerary-segment:focus-within \.segment__details-btn/);
-  assert.match(css, /\.itinerary-segment:focus-within \.itinerary-stop__remove-btn/);
-});
-
-test('card view reuses the existing itinerary markup without adding a duplicate summary header', async () => {
-  const pane = await read('src/app/AppEditorPane.jsx');
-  const header = await read('src/modules/trips/SegmentHeader.jsx');
-
-  assert.doesNotMatch(pane, /itinerary-card-grid__header/);
-  assert.doesNotMatch(pane, /itinerary-card-grid__summary/);
-  assert.match(header, /segment__note-btn/);
-  assert.match(header, /segment__details-btn/);
-  assert.match(header, /itinerary-stop__remove-btn/);
+  assert.match(css, /\.itinerary-origin:focus-within \.itinerary-stop__remove-btn/);
 });

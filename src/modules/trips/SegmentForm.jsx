@@ -33,6 +33,7 @@ export function SegmentForm({
   countryRunPosition, joinsPreviousCountryRun = false,
   origin, locale, currency, originDetails, dragging, dragOffsetY, dropPlacement,
   hasAssignedPlaces = false,
+  showOrigin = index === 0,
   onUpdate, onUpdateOrigin, onRemove, onOpenNote, onOpenDetails, onReorderPointerStart,
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -55,7 +56,7 @@ export function SegmentForm({
 
   return (
     <>
-      {index === 0 && (
+      {showOrigin && (
         <SegmentOriginSection
           origin={origin}
           locale={locale}

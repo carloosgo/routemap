@@ -6,6 +6,7 @@ import {
 import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
 import { flagImageUrl } from '../flags/flags.js';
+import { ItineraryCityVisual } from './ItineraryCityVisual.jsx';
 import './OriginOptions.css';
 
 const NOTE_DOT_STYLE = Object.freeze({
@@ -41,23 +42,27 @@ export function ItineraryOrigin({
   const clearOriginLabel = `${t('delete')} ${t('origin')}`;
 
   return (
-    <div className="itinerary-origin" aria-label={t('origin')}>
-      <span
-        className={'itinerary-origin__marker' + (!city?.countryCode ? ' is-empty' : '')}
-        aria-hidden="true"
-      >
-        {city?.countryCode ? (
-          <img
-            src={flagImageUrl(city.countryCode, 80)}
-            alt=""
-            width={27}
-            height={18}
-            style={SELECTED_FLAG_STYLE}
-            loading="lazy"
-            decoding="async"
-          />
-        ) : null}
-      </span>
+    <div className="itinerary-origin itinerary-origin--card" aria-label={t('origin')}>
+      <div className="itinerary-origin__visual-frame">
+        <ItineraryCityVisual city={city} accent="#6d7b86" />
+        <span className="itinerary-origin__badge">{t('origin')}</span>
+        <span
+          className={'itinerary-origin__marker' + (!city?.countryCode ? ' is-empty' : '')}
+          aria-hidden="true"
+        >
+          {city?.countryCode ? (
+            <img
+              src={flagImageUrl(city.countryCode, 80)}
+              alt=""
+              width={27}
+              height={18}
+              style={SELECTED_FLAG_STYLE}
+              loading="lazy"
+              decoding="async"
+            />
+          ) : null}
+        </span>
+      </div>
 
       <div className="itinerary-origin__place">
         <div className="itinerary-origin__picker">
