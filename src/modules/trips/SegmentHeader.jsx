@@ -24,6 +24,29 @@ const NOTE_DOT_STYLE = Object.freeze({
   pointerEvents: 'none',
 });
 
+const SEQUENCE_BADGE_STYLE = Object.freeze({
+  position: 'absolute',
+  zIndex: 12,
+  top: '8px',
+  left: '8px',
+  width: '28px',
+  minWidth: '28px',
+  height: '28px',
+  minHeight: '28px',
+  display: 'grid',
+  placeItems: 'center',
+  margin: 0,
+  transform: 'none',
+  border: '2px solid rgba(255, 255, 255, 0.96)',
+  borderRadius: '50%',
+  color: '#fff',
+  fontSize: '11px',
+  fontWeight: 800,
+  lineHeight: 1,
+  boxShadow: '0 2px 7px rgba(23, 38, 45, 0.18)',
+  pointerEvents: 'none',
+});
+
 export function SegmentHeader({
   segment,
   locale,
@@ -46,6 +69,10 @@ export function SegmentHeader({
   const formattedDatesTitle = formattedStartDate || formattedEndDate
     ? `${formattedStartDate || '—'} – ${formattedEndDate || '—'}`
     : undefined;
+  const sequenceBadgeStyle = {
+    ...SEQUENCE_BADGE_STYLE,
+    background: sequenceColor || '#1f718c',
+  };
 
   return (
     <header className="segment__header itinerary-stop itinerary-card__content">
@@ -68,7 +95,7 @@ export function SegmentHeader({
         {sequenceNumber != null && (
           <span
             className="itinerary-stop__sequence-badge"
-            style={sequenceColor ? { background: sequenceColor } : undefined}
+            style={sequenceBadgeStyle}
             aria-hidden="true"
           >
             {sequenceNumber}
