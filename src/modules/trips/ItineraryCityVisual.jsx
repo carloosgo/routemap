@@ -7,6 +7,25 @@ import {
   IconBuildingSkyscraper,
 } from '@tabler/icons-react';
 
+const VISUAL_STYLE = Object.freeze({
+  '--city-visual-accent': '#71818a',
+  position: 'absolute',
+  inset: 0,
+  display: 'grid',
+  placeItems: 'center',
+  overflow: 'hidden',
+  borderRadius: 'inherit',
+  background: 'linear-gradient(145deg, color-mix(in srgb, var(--city-visual-accent) 15%, #f1f6f8) 0%, color-mix(in srgb, var(--city-visual-accent) 7%, #fbfaf7) 54%, color-mix(in srgb, var(--city-visual-accent) 11%, #eef3f4) 100%)',
+  color: 'color-mix(in srgb, var(--city-visual-accent) 76%, #3f5159)',
+});
+
+const ICON_STYLE = Object.freeze({
+  width: '58px',
+  height: '58px',
+  opacity: 0.88,
+  pointerEvents: 'none',
+});
+
 function normalizeCityName(value) {
   return String(value || '')
     .normalize('NFD')
@@ -68,18 +87,21 @@ const ICON_BY_KIND = Object.freeze({
 export function ItineraryCityVisual({ city, accent }) {
   const kind = itineraryCityVisualKind(city);
   const VisualIcon = ICON_BY_KIND[kind] || IconBuilding;
+  const visualStyle = accent
+    ? { ...VISUAL_STYLE, '--city-visual-accent': accent }
+    : VISUAL_STYLE;
 
   return (
     <span
-      className="itinerary-city-visual itinerary-city-visual--icon"
+      className="itinerary-card-city-icon"
       data-city-visual={kind}
-      style={accent ? { '--city-visual-accent': accent } : undefined}
+      style={visualStyle}
       aria-hidden="true"
     >
       <VisualIcon
-        className="itinerary-city-visual__icon"
         size={58}
         stroke={1.45}
+        style={ICON_STYLE}
         aria-hidden="true"
       />
     </span>
