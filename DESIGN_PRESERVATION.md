@@ -226,3 +226,16 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Nota, Detalles/conceptos y Eliminar permanecen siempre visibles y clicables en escritorio y táctil; ya no dependen de hover o `focus-within` para aparecer.
 - Origen usa el mismo tratamiento tipográfico y formato de fecha completa, sin cambiar su semántica ni persistencia.
 - Estos ajustes son exclusivamente de presentación y no modifican dominio, numeración canónica, mapa, autosave, Storage v4, Firestore Rules ni proveedores.
+
+## Ajuste solicitado: lista única compacta con miniaturas de ciudad
+
+- Este apartado sustituye únicamente las reglas conflictivas de los dos apartados anteriores de cards; el resto del contrato visual permanece vigente.
+- El Itinerario usa una sola lista de una ciudad por fila. El selector `lista/cuadrícula` deja de mostrarse y no existe una proyección visual de dos columnas.
+- `Agregar ciudad` permanece arriba de la lista y conserva exactamente su flujo actual: abrir el buscador no crea un trayecto; la nueva fila aparece únicamente después de seleccionar una ciudad válida.
+- Cada fila usa una miniatura de 72 × 72 px con esquinas redondeadas a la izquierda. Sobre esa miniatura se conservan el número canónico de destino o la etiqueta `Origen`; el drag existente de destinos continúa sobre el visual y no cambia su callback ni su semántica.
+- Las miniaturas reutilizan la infraestructura existente de Google Places: `googlePlaceSearch` resuelve un landmark cercano a la ciudad y `googlePlacePhoto` obtiene su foto. La carga es diferida por `IntersectionObserver`, se cachea en memoria y usa la iconografía oficial de Tabler ya existente como fallback si Google no devuelve foto. No se añade un proveedor nuevo, una API key nueva ni un campo persistido.
+- A la derecha de la miniatura, la bandera y el nombre de ciudad comparten la primera fila. El nombre permanece en negrita y puede ocupar hasta dos líneas sin solaparse con costo ni acciones.
+- Debajo del nombre se muestra la fecha/rango completo en gris, peso normal y una sola línea, por ejemplo `3 Noviembre - 5 Noviembre`; no se altera el dato canónico ni su validación.
+- El costo ocupa el extremo derecho de la misma fila visual que el nombre de ciudad. Nota, Detalles/conceptos y Eliminar permanecen siempre visibles y se centran debajo del costo dentro del mismo track derecho.
+- Las filas se separan mediante una línea gris tenue; se retiran para esta vista la caja grande, sombra y visual panorámico de las cards anteriores. La lista mantiene el scrollbar y el ancho actual del panel integrado.
+- Este ajuste no modifica reordenamiento, numeración del mapa, notas, detalles, gastos, autosave, Storage v4, Firestore Rules, cámara ni modelo de dominio.
