@@ -74,7 +74,7 @@ export function AppEditorPane({
   const [dragState, setDragState] = useState(null);
   const dragStateRef = useRef(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
-  const [itineraryLayout, setItineraryLayout] = useState('list');
+  const [itineraryLayout, setItineraryLayout] = useState('grid');
   const [addCityOpen, setAddCityOpen] = useState(false);
   const activeDragId = dragState?.segmentId || null;
   const stopSequence = buildItineraryStopSequence(trip.origin, trip.segments, colorForIndex);
