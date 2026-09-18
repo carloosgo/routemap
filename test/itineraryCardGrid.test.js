@@ -49,7 +49,7 @@ test('origin is rendered as a first-class card inside both itinerary layouts', a
   assert.match(css, /> \.itinerary-origin-section\s*\{[\s\S]*grid-column:\s*auto\s*!important;/s);
 });
 
-test('city visuals are local and representative for known itinerary cities', async () => {
+test('city visuals use official Tabler icons and no handmade SVG scenes', async () => {
   const visual = await read('src/modules/trips/ItineraryCityVisual.jsx');
   const header = await read('src/modules/trips/SegmentHeader.jsx');
 
@@ -59,8 +59,24 @@ test('city visuals are local and representative for known itinerary cities', asy
   ]) {
     assert.match(visual, new RegExp(`'${cityKind}'`));
   }
-  assert.match(header, /<ItineraryCityVisual city=\{destination\} accent=\{sequenceColor\}/);
+  assert.match(visual, /from '@tabler\/icons-react'/);
+  assert.match(visual, /IconBuildingBridge/);
+  assert.match(visual, /IconBuildingCastle/);
+  assert.match(visual, /IconBuildingMonument/);
+  assert.match(visual, /IconBuildingSkyscraper/);
+  assert.match(visual, /<VisualIcon/);
+  assert.doesNotMatch(visual, /<path\b|<circle\b|<svg\b/i);
   assert.doesNotMatch(visual, /https?:\/\/|google.*photo|street.?view/i);
+  assert.match(header, /<ItineraryCityVisual city=\{destination\} accent=\{sequenceColor\}/);
+});
+
+test('canonical destination number stays visible over every numbered card visual', async () => {
+  const header = await read('src/modules/trips/SegmentHeader.jsx');
+  const pane = await read('src/app/AppEditorPane.jsx');
+
+  assert.match(pane, /sequenceNumber=\{stopSequence\[index\]\?\.number \?\? null\}/);
+  assert.match(header, /const SEQUENCE_BADGE_STYLE = Object\.freeze\(\{[\s\S]*position: 'absolute',[\s\S]*top: '8px',[\s\S]*left: '8px',[\s\S]*display: 'grid'/s);
+  assert.match(header, /className="itinerary-stop__sequence-badge"[\s\S]*style=\{sequenceBadgeStyle\}/s);
 });
 
 test('card content is isolated from the legacy compact row geometry', async () => {
