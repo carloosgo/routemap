@@ -1,5 +1,5 @@
 import { expensesTotal } from '../expenses/expenseModel.js';
-import { formatSegmentAmount, formatSegmentDate } from './segmentFormModel.js';
+import { formatSegmentAmount, formatSegmentCardDate } from './segmentFormModel.js';
 import { ItineraryOrigin } from './ItineraryOrigin.jsx';
 
 export function SegmentOriginSection({
@@ -16,7 +16,7 @@ export function SegmentOriginSection({
     locale,
     currency
   );
-  const formattedDepartureDate = formatSegmentDate(
+  const formattedDepartureDate = formatSegmentCardDate(
     originDetails?.departureDate,
     locale
   );
