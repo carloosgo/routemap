@@ -1,0 +1,372 @@
+/*
+ * Vista única del itinerario: lista compacta inspirada en resultados de viaje.
+ * Mantiene Agregar ciudad arriba, drag/drop existente y acciones siempre visibles.
+ */
+
+.itinerary-card-toolbar {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+}
+
+.itinerary-layout-switch {
+  display: none !important;
+}
+
+.editor:not(.is-panel-collapsed) .editor__body > .segments.itinerary-cards,
+.editor:not(.is-panel-collapsed) .editor__body > .segments.itinerary-cards.itinerary-cards--grid,
+.editor:not(.is-panel-collapsed) .editor__body > .segments.itinerary-cards.itinerary-cards--list {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+  padding: 5px 10px 14px !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards > .itinerary-segment.segment,
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards > .itinerary-origin-section > .itinerary-origin {
+  border: 0 !important;
+  border-bottom: 1px solid #e5e9ec !important;
+  border-radius: 0 !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards > .itinerary-segment.segment:hover,
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards > .itinerary-segment.segment:focus-within,
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards > .itinerary-origin-section > .itinerary-origin:hover,
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards > .itinerary-origin-section > .itinerary-origin:focus-within {
+  border-color: #d9dfe3 !important;
+  box-shadow: none !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__content {
+  display: grid !important;
+  grid-template-columns: 72px minmax(0, 1fr) 98px !important;
+  grid-template-rows: minmax(34px, auto) 34px !important;
+  grid-template-areas:
+    'visual place amount'
+    'visual date actions' !important;
+  column-gap: 10px !important;
+  row-gap: 2px !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+  min-height: 90px !important;
+  padding: 9px 8px !important;
+  overflow: visible !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__visual-frame {
+  grid-area: visual !important;
+  position: relative !important;
+  width: 72px !important;
+  min-width: 72px !important;
+  max-width: 72px !important;
+  height: 72px !important;
+  min-height: 72px !important;
+  max-height: 72px !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid #e0e5e8 !important;
+  border-radius: 11px !important;
+  background: #f2f5f6 !important;
+}
+
+.itinerary-card-city-icon {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: grid !important;
+  place-items: center !important;
+  overflow: hidden !important;
+  border-radius: inherit !important;
+}
+
+.itinerary-card-city-photo-link,
+.itinerary-card-city-photo {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.itinerary-card-city-photo {
+  object-fit: cover;
+}
+
+.itinerary-card-city-photo__attribution {
+  position: absolute;
+  z-index: 2;
+  right: 3px;
+  bottom: 2px;
+  padding: 1px 2px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #47545a;
+  font-size: 6px;
+  font-weight: 600;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-stop__sequence-badge {
+  top: 5px !important;
+  left: 5px !important;
+  width: 24px !important;
+  min-width: 24px !important;
+  height: 24px !important;
+  min-height: 24px !important;
+  font-size: 10px !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-origin__badge {
+  top: 5px !important;
+  left: 5px !important;
+  min-height: 22px !important;
+  padding: 0 7px !important;
+  font-size: 9px !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__drag {
+  top: 5px !important;
+  right: 5px !important;
+  width: 22px !important;
+  min-width: 22px !important;
+  height: 22px !important;
+  min-height: 22px !important;
+  border-radius: 7px !important;
+  background: rgba(255, 255, 255, 0.86) !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__place {
+  grid-area: place !important;
+  align-self: center !important;
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  min-height: 34px !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__place .autocomplete,
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__place .autocomplete__field {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__place .autocomplete__field {
+  display: grid !important;
+  grid-template-columns: 20px minmax(0, 1fr) !important;
+  grid-template-rows: minmax(34px, auto) !important;
+  align-items: center !important;
+  gap: 7px !important;
+  box-sizing: border-box !important;
+  min-height: 34px !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 1px solid transparent !important;
+  border-radius: 7px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__place .autocomplete__field > .flag {
+  position: static !important;
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  align-self: center !important;
+  justify-self: center !important;
+  width: 20px !important;
+  min-width: 20px !important;
+  height: 14px !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__place .input {
+  position: static !important;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 34px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #1f2b31 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1.15 !important;
+  box-shadow: none !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__place .autocomplete--timeline-selected:not(.is-open) .input {
+  color: transparent !important;
+  caret-color: transparent !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__place .autocomplete--timeline-selected:not(.is-open) .autocomplete__selected-value {
+  position: static !important;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  align-self: center !important;
+  display: -webkit-box !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  max-height: 34px !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  color: #1f2b31 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1.15 !important;
+  white-space: normal !important;
+  text-overflow: ellipsis !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  pointer-events: none !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__date.itinerary-stop__date-range {
+  grid-area: date !important;
+  align-self: center !important;
+  justify-self: stretch !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  color: #7a8389 !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  line-height: 1.2 !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__amount.itinerary-stop__amount {
+  grid-area: amount !important;
+  align-self: center !important;
+  justify-self: end !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #25343a !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__actions {
+  grid-area: actions !important;
+  align-self: center !important;
+  justify-self: stretch !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 28px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__actions .itinerary-card__action,
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__actions .itinerary-stop__remove-btn {
+  position: relative !important;
+  width: 28px !important;
+  min-width: 28px !important;
+  max-width: 28px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  max-height: 28px !important;
+  display: grid !important;
+  place-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  border-radius: 7px !important;
+}
+
+@media (max-width: 430px) {
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments.itinerary-cards
+    .itinerary-card__content {
+    grid-template-columns: 64px minmax(0, 1fr) 90px !important;
+    min-height: 82px !important;
+    column-gap: 8px !important;
+    padding-inline: 6px !important;
+  }
+
+  .editor:not(.is-panel-collapsed)
+    .editor__body > .segments.itinerary-cards
+    .itinerary-card__visual-frame {
+    width: 64px !important;
+    min-width: 64px !important;
+    max-width: 64px !important;
+    height: 64px !important;
+    min-height: 64px !important;
+    max-height: 64px !important;
+  }
+}
