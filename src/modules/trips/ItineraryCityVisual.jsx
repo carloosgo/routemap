@@ -220,7 +220,6 @@ export function ItineraryCityVisual({ city, accent }) {
             referrerPolicy="no-referrer"
             onError={() => setPhotoFailed(true)}
           />
-          <span className="itinerary-card-city-photo__attribution">Google Maps</span>
         </a>
       ) : (
         <VisualIcon
