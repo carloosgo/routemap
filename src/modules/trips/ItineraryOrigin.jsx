@@ -61,8 +61,7 @@ export function ItineraryOrigin({
             className="itinerary-card__date itinerary-stop__date-range"
             title={formattedDepartureDate || undefined}
           >
-            <span>{formattedDepartureDate || ''}</span>
-            <span aria-hidden="true" />
+            {formattedDepartureDate || ''}
           </span>
           <span className="itinerary-card__amount itinerary-stop__amount">
             {formattedAmount}
