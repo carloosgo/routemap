@@ -45,7 +45,7 @@ test('city thumbnail reuses existing Google Places search and photo infrastructu
   assert.match(visual, /IntersectionObserver/);
   assert.match(visual, /cityPhotoCache/);
   assert.match(visual, /className="itinerary-card-city-photo"/);
-  assert.match(visual, /itinerary-card-city-photo__attribution/);
+  assert.doesNotMatch(visual, /itinerary-card-city-photo__attribution|>Google Maps</);
   assert.match(visual, /from '@tabler\/icons-react'/);
   assert.match(visual, /<VisualIcon/);
   assert.doesNotMatch(visual, /fetch\(|https?:\/\//);
@@ -61,24 +61,25 @@ test('canonical number and existing drag interaction remain over each destinatio
   assert.match(header, /IconGripVertical/);
 });
 
-test('compact list composes thumbnail, flag-city, date, amount and centered actions without overlap', async () => {
+test('compact list uses a square thumbnail, tight city/date identity and right-aligned controls', async () => {
   const header = await read('src/modules/trips/SegmentHeader.jsx');
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const form = await read('src/modules/trips/SegmentForm.jsx');
   const css = await read('src/modules/trips/ItineraryCompactList.css');
 
-  assert.doesNotMatch(header, /itinerary-card__footer|itinerary-card__metrics/);
-  assert.doesNotMatch(origin, /itinerary-card__footer|itinerary-card__metrics/);
-  assert.match(header, /itinerary-card__place[\s\S]*itinerary-card__date[\s\S]*itinerary-card__amount[\s\S]*itinerary-card__actions/s);
-  assert.match(origin, /itinerary-card__place[\s\S]*itinerary-card__date[\s\S]*itinerary-card__amount[\s\S]*itinerary-card__actions/s);
+  assert.match(header, /itinerary-card__identity[\s\S]*itinerary-card__place[\s\S]*itinerary-card__date/s);
+  assert.match(origin, /itinerary-card__identity[\s\S]*itinerary-card__place[\s\S]*itinerary-card__date/s);
+  assert.match(header, /itinerary-card__side[\s\S]*itinerary-card__amount[\s\S]*itinerary-card__actions/s);
+  assert.match(origin, /itinerary-card__side[\s\S]*itinerary-card__amount[\s\S]*itinerary-card__actions/s);
   assert.match(form, /import '\.\/ItineraryCompactList\.css';/);
-  assert.match(css, /grid-template-columns:\s*72px minmax\(0, 1fr\) 98px\s*!important;/);
-  assert.match(css, /'visual place amount'[\s\S]*'visual date actions'/s);
-  assert.match(css, /\.itinerary-card__visual-frame\s*\{[\s\S]*width:\s*72px\s*!important;[\s\S]*height:\s*72px\s*!important;[\s\S]*border-radius:\s*11px\s*!important;/s);
+  assert.match(css, /grid-template-columns:\s*88px minmax\(0, 1fr\) 88px\s*!important;/);
+  assert.match(css, /grid-template-areas:\s*'visual identity side'\s*!important;/);
+  assert.match(css, /\.itinerary-card__visual-frame\s*\{[\s\S]*width:\s*88px\s*!important;[\s\S]*height:\s*88px\s*!important;[\s\S]*aspect-ratio:\s*1 \/ 1\s*!important;/s);
+  assert.match(css, /\.itinerary-card__identity\s*\{[\s\S]*flex-direction:\s*column\s*!important;[\s\S]*gap:\s*0\s*!important;/s);
   assert.match(css, /autocomplete--timeline-selected:not\(\.is-open\) \.autocomplete__selected-value[\s\S]*font-weight:\s*700\s*!important;[\s\S]*-webkit-line-clamp:\s*2\s*!important;/s);
-  assert.match(css, /\.itinerary-card__date\.itinerary-stop__date-range\s*\{[\s\S]*color:\s*#7a8389\s*!important;[\s\S]*font-weight:\s*400\s*!important;[\s\S]*white-space:\s*nowrap\s*!important;/s);
-  assert.match(css, /\.itinerary-card__amount\.itinerary-stop__amount\s*\{[\s\S]*grid-area:\s*amount\s*!important;[\s\S]*justify-self:\s*end\s*!important;/s);
-  assert.match(css, /\.itinerary-card__actions\s*\{[\s\S]*grid-area:\s*actions\s*!important;[\s\S]*justify-content:\s*center\s*!important;/s);
+  assert.match(css, /\.itinerary-card__date\.itinerary-stop__date-range\s*\{[\s\S]*color:\s*#7a8389\s*!important;[\s\S]*font-style:\s*normal\s*!important;[\s\S]*font-weight:\s*400\s*!important;/s);
+  assert.match(css, /\.itinerary-card__side\s*\{[\s\S]*align-items:\s*flex-end\s*!important;/s);
+  assert.match(css, /\.itinerary-card__actions\s*\{[\s\S]*justify-content:\s*flex-end\s*!important;[\s\S]*gap:\s*1px\s*!important;/s);
 });
 
 test('card dates keep complete month names on one line', async () => {
@@ -95,15 +96,21 @@ test('card dates keep complete month names on one line', async () => {
   assert.match(origin, /\{formattedDepartureDate \|\| ''\}/);
 });
 
-test('note, details and remove actions remain permanently visible', async () => {
+test('note, concepts and delete use dedicated professional icons while remaining visible', async () => {
+  const header = await read('src/modules/trips/SegmentHeader.jsx');
+  const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const css = await read('src/modules/trips/ItineraryCompactList.css');
 
+  assert.match(header, /IconMessageCircle/);
+  assert.match(header, /IconReceipt/);
+  assert.match(header, /IconTrash/);
+  assert.match(origin, /IconMessageCircle/);
+  assert.match(origin, /IconReceipt/);
+  assert.match(origin, /IconTrash/);
+  assert.doesNotMatch(header, /IconChevronDown|IconX/);
+  assert.doesNotMatch(origin, /IconChevronDown|IconX/);
   assert.match(
     css,
     /\.itinerary-card__actions\s*\{[\s\S]*opacity:\s*1\s*!important;[\s\S]*visibility:\s*visible\s*!important;[\s\S]*pointer-events:\s*auto\s*!important;/s
-  );
-  assert.match(
-    css,
-    /\.itinerary-card__actions \.itinerary-card__action,[\s\S]*\.itinerary-card__actions \.itinerary-stop__remove-btn\s*\{[\s\S]*display:\s*grid\s*!important;/s
   );
 });
