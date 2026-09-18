@@ -6,23 +6,27 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('origin keeps an explicit clear control without losing its regular typography', async () => {
+test('origin keeps an explicit trash clear control and the requested bold city / normal date typography', async () => {
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const originSection = await read('src/modules/trips/SegmentOriginSection.jsx');
-  const compact = await read('src/modules/trips/ItineraryCompactTen.css');
+  const compactList = await read('src/modules/trips/ItineraryCompactList.css');
 
-  assert.match(origin, /IconX/);
+  assert.match(origin, /IconTrash/);
   assert.match(origin, /itinerary-stop__remove-btn itinerary-origin__clear/);
   assert.match(origin, /onClick=\{onClear\}/);
   assert.match(originSection, /onClear=\{\(\) => onUpdateOrigin\(null\)\}/);
   assert.match(originSection, /onSelect=\{onUpdateOrigin\}/);
   assert.match(
-    compact,
-    /\.itinerary-origin__picker \.autocomplete__selected-value,[\s\S]*\.itinerary-origin__picker \.input\s*\{[^}]*font-weight:\s*400;/s
+    compactList,
+    /autocomplete--timeline-selected:not\(\.is-open\) \.autocomplete__selected-value\s*\{[\s\S]*font-weight:\s*700\s*!important;/s
   );
   assert.match(
-    compact,
-    /\.itinerary-origin:hover \.itinerary-origin__clear,[\s\S]*\.itinerary-stop__remove-btn:focus-visible\s*\{[^}]*opacity:\s*1;[^}]*pointer-events:\s*auto;/s
+    compactList,
+    /\.itinerary-card__date\.itinerary-stop__date-range\s*\{[\s\S]*font-style:\s*normal\s*!important;[\s\S]*font-weight:\s*400\s*!important;/s
+  );
+  assert.match(
+    compactList,
+    /\.itinerary-card__actions\s*\{[\s\S]*opacity:\s*1\s*!important;[\s\S]*pointer-events:\s*auto\s*!important;/s
   );
 });
 
