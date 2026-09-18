@@ -61,7 +61,7 @@ test('desktop itinerary keeps compact panel geometry while cards render one-line
   assert.match(originRow, /IconX/);
   assert.match(originRow, /itinerary-stop__date-range/);
   assert.match(originRow, /\{formattedDepartureDate \|\| ''\}/);
-  assert.match(originRow, /<span aria-hidden="true" \/>/);
+  assert.doesNotMatch(originRow, /<span aria-hidden="true" \/>/);
   assert.match(header, /itinerary-stop__amount/);
   assert.match(originRow, /itinerary-stop__amount/);
 
