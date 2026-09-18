@@ -50,8 +50,8 @@ test('concepts action uses the requested receipt icon while retaining the existi
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const header = await read('src/modules/trips/SegmentHeader.jsx');
 
-  assert.match(origin, /IconReceipt size=\{15\}[\s\S]*onClick=\{onOpenDetails\}/s);
-  assert.match(header, /IconReceipt size=\{15\}[\s\S]*onClick=\{onOpenDetails\}/s);
+  assert.match(origin, /onClick=\{onOpenDetails\}[\s\S]*<IconReceipt size=\{15\}/s);
+  assert.match(header, /onClick=\{onOpenDetails\}[\s\S]*<IconReceipt size=\{15\}/s);
   assert.doesNotMatch(origin, /IconChevronDown className="itinerary-details-chevron"/);
   assert.doesNotMatch(header, /IconChevronDown className="itinerary-details-chevron"/);
 });
