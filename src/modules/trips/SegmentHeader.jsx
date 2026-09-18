@@ -7,7 +7,7 @@ import {
 import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
 import { ItineraryCityVisual } from './ItineraryCityVisual.jsx';
-import { formatSegmentDate } from './segmentFormModel.js';
+import { formatSegmentCardDateRange } from './segmentFormModel.js';
 import './SegmentHeader.css';
 import './ItinerarySequenceLeft.css';
 
@@ -64,11 +64,7 @@ export function SegmentHeader({
   const { t } = useTranslation();
   const destination = segment.destination;
   const hasNote = Boolean(segment.note);
-  const formattedStartDate = formatSegmentDate(segment.startDate, locale);
-  const formattedEndDate = formatSegmentDate(segment.endDate, locale);
-  const formattedDatesTitle = formattedStartDate || formattedEndDate
-    ? `${formattedStartDate || '—'} – ${formattedEndDate || '—'}`
-    : undefined;
+  const formattedDateRange = formatSegmentCardDateRange(segment, locale);
   const sequenceBadgeStyle = {
     ...SEQUENCE_BADGE_STYLE,
     background: sequenceColor || '#1f718c',
@@ -121,10 +117,9 @@ export function SegmentHeader({
         <div className="itinerary-card__metrics">
           <span
             className="itinerary-card__date itinerary-stop__date-range"
-            title={formattedDatesTitle}
+            title={formattedDateRange || undefined}
           >
-            <span>{formattedStartDate || ''}</span>
-            <span>{formattedEndDate || ''}</span>
+            {formattedDateRange || ''}
           </span>
           <span className="itinerary-card__amount itinerary-stop__amount">
             {formattedAmount}
