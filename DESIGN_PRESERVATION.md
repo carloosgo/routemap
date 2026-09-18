@@ -239,3 +239,13 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - El costo ocupa el extremo derecho de la misma fila visual que el nombre de ciudad. Nota, Detalles/conceptos y Eliminar permanecen siempre visibles y se centran debajo del costo dentro del mismo track derecho.
 - Las filas se separan mediante una línea gris tenue; se retiran para esta vista la caja grande, sombra y visual panorámico de las cards anteriores. La lista mantiene el scrollbar y el ancho actual del panel integrado.
 - Este ajuste no modifica reordenamiento, numeración del mapa, notas, detalles, gastos, autosave, Storage v4, Firestore Rules, cámara ni modelo de dominio.
+
+## Ajuste solicitado: pulido de fila compacta del Itinerario
+
+- Este apartado sustituye únicamente las reglas conflictivas del apartado anterior de lista compacta; el resto del contrato permanece vigente.
+- La miniatura de ciudad pasa a 88 × 88 px en escritorio, con `aspect-ratio: 1 / 1`, `object-fit: cover` y esquinas redondeadas. La ampliación toma ancho del bloque central de ciudad sin modificar el ancho global del panel ni la lógica del autocompletado.
+- La leyenda visual `Google Maps` deja de superponerse a la fotografía. La obtención de imagen, caché, fallback y proveedor permanecen intactos.
+- Bandera y nombre de ciudad siguen formando el bloque principal; el nombre conserva negrita y hasta dos líneas. La fecha vive inmediatamente debajo dentro del mismo bloque de identidad, sin separación vertical artificial, en gris, `font-style: normal` y `font-weight: 400`.
+- Costo y acciones se agrupan en un track derecho de 88 px. El costo permanece alineado a la derecha; Nota, Conceptos/Detalles y Eliminar se alinean también a la derecha y usan botones de 24 px con 1 px de separación.
+- Nota usa `IconMessageCircle`, Conceptos/Detalles usa `IconReceipt` y Eliminar usa `IconTrash`, todos de la librería Tabler ya instalada. El comportamiento, `aria-label`, tooltips y callbacks existentes no cambian.
+- El número canónico, la etiqueta `Origen`, el drag para reordenar, `Agregar ciudad`, autosave, mapa, gastos, Storage v4, Firestore Rules y proveedores permanecen sin cambios funcionales.

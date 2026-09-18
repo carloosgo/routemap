@@ -1,7 +1,7 @@
 import {
-  IconChevronDown,
-  IconNote,
-  IconX,
+  IconMessageCircle,
+  IconReceipt,
+  IconTrash,
 } from '@tabler/icons-react';
 import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
@@ -45,59 +45,63 @@ export function ItineraryOrigin({
         <span className="itinerary-origin__badge">{t('origin')}</span>
       </div>
 
-      <div className="itinerary-card__place">
-        <CityAutocomplete
-          value={city}
-          onSelect={onSelect}
-          placeholder={t('originPlaceholder')}
-          selectedDisplay="timeline"
-          focusNextOnSelect
-        />
+      <div className="itinerary-card__identity">
+        <div className="itinerary-card__place">
+          <CityAutocomplete
+            value={city}
+            onSelect={onSelect}
+            placeholder={t('originPlaceholder')}
+            selectedDisplay="timeline"
+            focusNextOnSelect
+          />
+        </div>
+
+        <span
+          className="itinerary-card__date itinerary-stop__date-range"
+          title={formattedDepartureDate || undefined}
+        >
+          {formattedDepartureDate || ''}
+        </span>
       </div>
 
-      <span
-        className="itinerary-card__date itinerary-stop__date-range"
-        title={formattedDepartureDate || undefined}
-      >
-        {formattedDepartureDate || ''}
-      </span>
+      <div className="itinerary-card__side">
+        <span className="itinerary-card__amount itinerary-stop__amount">
+          {formattedAmount}
+        </span>
 
-      <span className="itinerary-card__amount itinerary-stop__amount">
-        {formattedAmount}
-      </span>
+        <div className="itinerary-card__actions">
+          <button
+            type="button"
+            className="btn btn--icon segment__note-btn itinerary-origin__note-btn itinerary-card__action"
+            style={hasNote ? { color: '#417c8f' } : undefined}
+            aria-label={originNoteLabel}
+            title={originNoteLabel}
+            onClick={onOpenNote}
+          >
+            <IconMessageCircle size={15} stroke={1.8} aria-hidden="true" />
+            {hasNote && <span aria-hidden="true" style={NOTE_DOT_STYLE} />}
+          </button>
 
-      <div className="itinerary-card__actions">
-        <button
-          type="button"
-          className="btn btn--icon segment__note-btn itinerary-origin__note-btn itinerary-card__action"
-          style={hasNote ? { color: '#417c8f' } : undefined}
-          aria-label={originNoteLabel}
-          title={originNoteLabel}
-          onClick={onOpenNote}
-        >
-          <IconNote size={14} aria-hidden="true" />
-          {hasNote && <span aria-hidden="true" style={NOTE_DOT_STYLE} />}
-        </button>
+          <button
+            type="button"
+            className="btn btn--icon segment__toggle segment__details-btn itinerary-origin__details-btn itinerary-card__action"
+            aria-label={t('openSegmentDetails')}
+            title={t('openSegmentDetails')}
+            onClick={onOpenDetails}
+          >
+            <IconReceipt size={15} stroke={1.8} aria-hidden="true" />
+          </button>
 
-        <button
-          type="button"
-          className="btn btn--icon segment__toggle segment__details-btn itinerary-origin__details-btn itinerary-card__action"
-          aria-label={t('openSegmentDetails')}
-          title={t('openSegmentDetails')}
-          onClick={onOpenDetails}
-        >
-          <IconChevronDown className="itinerary-details-chevron" size={14} aria-hidden="true" />
-        </button>
-
-        <button
-          type="button"
-          className="btn btn--icon itinerary-stop__remove-btn itinerary-origin__clear itinerary-card__action"
-          aria-label={clearOriginLabel}
-          title={clearOriginLabel}
-          onClick={onClear}
-        >
-          <IconX size={14} aria-hidden="true" />
-        </button>
+          <button
+            type="button"
+            className="btn btn--icon itinerary-stop__remove-btn itinerary-origin__clear itinerary-card__action"
+            aria-label={clearOriginLabel}
+            title={clearOriginLabel}
+            onClick={onClear}
+          >
+            <IconTrash size={15} stroke={1.8} aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -58,7 +58,7 @@ test('desktop itinerary keeps compact panel geometry while cards render one-line
   assert.doesNotMatch(header, /itinerary-stop__country(?:["'\s])|itinerary-stop__nights|itinerary-stop__dates/);
   assert.doesNotMatch(originRow, /itinerary-origin__country|itinerary-stop__nights|itinerary-stop__dates/);
   assert.match(originRow, /itinerary-stop__remove-btn itinerary-origin__clear/);
-  assert.match(originRow, /IconX/);
+  assert.match(originRow, /IconTrash/);
   assert.match(originRow, /itinerary-stop__date-range/);
   assert.match(originRow, /\{formattedDepartureDate \|\| ''\}/);
   assert.doesNotMatch(originRow, /<span aria-hidden="true" \/>/);
@@ -74,7 +74,7 @@ test('desktop itinerary keeps compact panel geometry while cards render one-line
   assert.doesNotMatch(form, /useExpandedSegmentReveal|scrollIntoView/);
 });
 
-test('note expand and close keep their order while expand opens a symmetric note-style detail modal', async () => {
+test('note, concepts and delete keep their order while concepts opens the symmetric detail modal', async () => {
   const header = await read('src/modules/trips/SegmentHeader.jsx');
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const modal = await read('src/modules/trips/ItineraryDetailsModal.jsx');
@@ -89,11 +89,14 @@ test('note expand and close keep their order while expand opens a symmetric note
 
   assert.match(header, /segment__note-btn[\s\S]*segment__toggle segment__details-btn itinerary-stop__details-btn[\s\S]*aria-label=\{t\('removeSegment'\)\}/s);
   assert.match(origin, /segment__note-btn itinerary-origin__note-btn[\s\S]*segment__toggle segment__details-btn itinerary-origin__details-btn[\s\S]*itinerary-stop__remove-btn itinerary-origin__clear/s);
-  assert.match(origin, /IconX/);
-  assert.match(header, /IconChevronDown/);
-  assert.match(origin, /IconChevronDown/);
-  assert.doesNotMatch(header, /IconChevronRight|IconChevronUp|aria-expanded|aria-controls/);
-  assert.doesNotMatch(origin, /IconChevronRight|IconChevronUp|aria-expanded|aria-controls/);
+  assert.match(header, /IconMessageCircle/);
+  assert.match(header, /IconReceipt/);
+  assert.match(header, /IconTrash/);
+  assert.match(origin, /IconMessageCircle/);
+  assert.match(origin, /IconReceipt/);
+  assert.match(origin, /IconTrash/);
+  assert.doesNotMatch(header, /IconChevronRight|IconChevronDown|IconChevronUp|IconX|aria-expanded|aria-controls/);
+  assert.doesNotMatch(origin, /IconChevronRight|IconChevronDown|IconChevronUp|IconX|aria-expanded|aria-controls/);
 
   assert.doesNotMatch(header, /itinerary-stop__dates|itinerary-stop__nights|segment__pill/);
   assert.doesNotMatch(origin, /itinerary-stop__dates|itinerary-stop__nights|segment__pill/);
