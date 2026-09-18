@@ -27,12 +27,12 @@ const NOTE_DOT_STYLE = Object.freeze({
 const SEQUENCE_BADGE_STYLE = Object.freeze({
   position: 'absolute',
   zIndex: 12,
-  top: '8px',
-  left: '8px',
-  width: '28px',
-  minWidth: '28px',
-  height: '28px',
-  minHeight: '28px',
+  top: '6px',
+  left: '6px',
+  width: '24px',
+  minWidth: '24px',
+  height: '24px',
+  minHeight: '24px',
   display: 'grid',
   placeItems: 'center',
   margin: 0,
@@ -40,10 +40,10 @@ const SEQUENCE_BADGE_STYLE = Object.freeze({
   border: '2px solid rgba(255, 255, 255, 0.96)',
   borderRadius: '50%',
   color: '#fff',
-  fontSize: '11px',
+  fontSize: '10px',
   fontWeight: 800,
   lineHeight: 1,
-  boxShadow: '0 2px 7px rgba(23, 38, 45, 0.18)',
+  boxShadow: '0 2px 6px rgba(23, 38, 45, 0.18)',
   pointerEvents: 'none',
 });
 
@@ -85,7 +85,7 @@ export function SegmentHeader({
           onPointerDown={onReorderPointerStart}
           aria-hidden="true"
         >
-          <IconGripVertical size={14} stroke={1.8} />
+          <IconGripVertical size={13} stroke={1.8} />
         </span>
 
         {sequenceNumber != null && (
@@ -113,52 +113,49 @@ export function SegmentHeader({
         />
       </div>
 
-      <div className="itinerary-card__footer">
-        <div className="itinerary-card__metrics">
-          <span
-            className="itinerary-card__date itinerary-stop__date-range"
-            title={formattedDateRange || undefined}
-          >
-            {formattedDateRange || ''}
-          </span>
-          <span className="itinerary-card__amount itinerary-stop__amount">
-            {formattedAmount}
-          </span>
-        </div>
+      <span
+        className="itinerary-card__date itinerary-stop__date-range"
+        title={formattedDateRange || undefined}
+      >
+        {formattedDateRange || ''}
+      </span>
 
-        <div className="itinerary-card__actions">
-          <button
-            type="button"
-            className="btn btn--icon segment__note-btn itinerary-card__action"
-            style={hasNote ? { color: '#417c8f' } : undefined}
-            aria-label={t('segmentNote')}
-            title={t('segmentNote')}
-            onClick={onOpenNote}
-          >
-            <IconNote size={14} aria-hidden="true" />
-            {hasNote && <span aria-hidden="true" style={NOTE_DOT_STYLE} />}
-          </button>
+      <span className="itinerary-card__amount itinerary-stop__amount">
+        {formattedAmount}
+      </span>
 
-          <button
-            type="button"
-            className="btn btn--icon segment__toggle segment__details-btn itinerary-stop__details-btn itinerary-card__action"
-            aria-label={t('openSegmentDetails')}
-            title={t('openSegmentDetails')}
-            onClick={onOpenDetails}
-          >
-            <IconChevronDown className="itinerary-details-chevron" size={14} aria-hidden="true" />
-          </button>
+      <div className="itinerary-card__actions">
+        <button
+          type="button"
+          className="btn btn--icon segment__note-btn itinerary-card__action"
+          style={hasNote ? { color: '#417c8f' } : undefined}
+          aria-label={t('segmentNote')}
+          title={t('segmentNote')}
+          onClick={onOpenNote}
+        >
+          <IconNote size={14} aria-hidden="true" />
+          {hasNote && <span aria-hidden="true" style={NOTE_DOT_STYLE} />}
+        </button>
 
-          <button
-            type="button"
-            className="btn btn--icon itinerary-stop__remove-btn"
-            aria-label={t('removeSegment')}
-            title={destinationLocked ? t('segmentHasPlannedPlaces') : t('removeSegment')}
-            onClick={onRemoveRequest}
-          >
-            <IconX size={14} aria-hidden="true" />
-          </button>
-        </div>
+        <button
+          type="button"
+          className="btn btn--icon segment__toggle segment__details-btn itinerary-stop__details-btn itinerary-card__action"
+          aria-label={t('openSegmentDetails')}
+          title={t('openSegmentDetails')}
+          onClick={onOpenDetails}
+        >
+          <IconChevronDown className="itinerary-details-chevron" size={14} aria-hidden="true" />
+        </button>
+
+        <button
+          type="button"
+          className="btn btn--icon itinerary-stop__remove-btn"
+          aria-label={t('removeSegment')}
+          title={destinationLocked ? t('segmentHasPlannedPlaces') : t('removeSegment')}
+          onClick={onRemoveRequest}
+        >
+          <IconX size={14} aria-hidden="true" />
+        </button>
       </div>
     </header>
   );
