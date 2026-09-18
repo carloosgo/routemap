@@ -6,12 +6,12 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('origin and middle same-country cities share the same compact typography', async () => {
-  const compact = await read('src/modules/trips/ItineraryCompactTen.css');
+test('origin and destination city identities keep the requested compact typography', async () => {
+  const compactList = await read('src/modules/trips/ItineraryCompactList.css');
 
   assert.match(
-    compact,
-    /\.itinerary-origin__picker \.autocomplete__selected-value,[\s\S]*\.itinerary-segment\.is-country-run-middle \.itinerary-stop__picker \.autocomplete__selected-value\s*\{[^}]*font-size:\s*13px;[^}]*font-weight:\s*400;/s
+    compactList,
+    /autocomplete--timeline-selected:not\(\.is-open\) \.autocomplete__selected-value\s*\{[\s\S]*font-size:\s*14px\s*!important;[\s\S]*font-weight:\s*700\s*!important;[\s\S]*-webkit-line-clamp:\s*2\s*!important;/s
   );
 });
 
@@ -29,27 +29,29 @@ test('city autocomplete advances focus only inside the current itinerary after a
   assert.match(header, /selectedDisplay="timeline"[\s\S]*focusNextOnSelect/);
 });
 
-test('remove control is hover-revealed on desktop without collapsing its layout slot', async () => {
+test('compact list keeps all three row actions permanently visible without changing their handlers', async () => {
   const header = await read('src/modules/trips/SegmentHeader.jsx');
-  const compact = await read('src/modules/trips/ItineraryCompactTen.css');
+  const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
+  const compactList = await read('src/modules/trips/ItineraryCompactList.css');
 
-  assert.match(header, /className="btn btn--icon itinerary-stop__remove-btn"/);
+  assert.match(header, /segment__note-btn/);
+  assert.match(header, /segment__details-btn itinerary-stop__details-btn/);
+  assert.match(header, /itinerary-stop__remove-btn/);
+  assert.match(origin, /segment__note-btn itinerary-origin__note-btn/);
+  assert.match(origin, /segment__details-btn itinerary-origin__details-btn/);
+  assert.match(origin, /itinerary-stop__remove-btn itinerary-origin__clear/);
   assert.match(
-    compact,
-    /@media \(min-width: 721px\) and \(hover: hover\) and \(pointer: fine\)[\s\S]*\.itinerary-stop__remove-btn\s*\{[^}]*opacity:\s*0;[^}]*pointer-events:\s*none;/s
-  );
-  assert.match(
-    compact,
-    /\.segment__header\.itinerary-stop:hover \.itinerary-stop__remove-btn,[\s\S]*\.itinerary-stop__remove-btn:focus-visible\s*\{[^}]*opacity:\s*1;[^}]*pointer-events:\s*auto;/s
+    compactList,
+    /\.itinerary-card__actions\s*\{[\s\S]*opacity:\s*1\s*!important;[\s\S]*visibility:\s*visible\s*!important;[\s\S]*pointer-events:\s*auto\s*!important;/s
   );
 });
 
-test('details chevron points toward the map while retaining the existing icon contract', async () => {
+test('concepts action uses the requested receipt icon while retaining the existing details callback contract', async () => {
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const header = await read('src/modules/trips/SegmentHeader.jsx');
-  const compact = await read('src/modules/trips/ItineraryCompactTen.css');
 
-  assert.match(origin, /IconChevronDown className="itinerary-details-chevron"/);
-  assert.match(header, /IconChevronDown className="itinerary-details-chevron"/);
-  assert.match(compact, /\.itinerary-details-chevron\s*\{[^}]*transform:\s*rotate\(-90deg\);/s);
+  assert.match(origin, /IconReceipt size=\{15\}[\s\S]*onClick=\{onOpenDetails\}/s);
+  assert.match(header, /IconReceipt size=\{15\}[\s\S]*onClick=\{onOpenDetails\}/s);
+  assert.doesNotMatch(origin, /IconChevronDown className="itinerary-details-chevron"/);
+  assert.doesNotMatch(header, /IconChevronDown className="itinerary-details-chevron"/);
 });
