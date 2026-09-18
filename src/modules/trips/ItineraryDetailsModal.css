@@ -1,0 +1,224 @@
+/* El editor de fechas/gastos usa la misma superficie flotante de las notas,
+   pero con ancho suficiente para conservar la rejilla canónica de dos columnas.
+   El contenido no vive dentro de la fila: así dropdowns/calendarios no alteran
+   la altura compacta del itinerario. */
+.segment-details-modal {
+  width: min(446px, calc(100% - 28px));
+  min-width: 360px;
+  max-height: calc(100% - var(--trip-header-height, 63px) - 24px);
+  overflow: hidden;
+}
+
+.segment-details-modal__content {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+}
+
+.segment-details-modal .segment__body,
+.segment-details-modal .itinerary-origin__body {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 14px 8px 16px !important;
+  border: 0 !important;
+  border-radius: 0;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+/* La línea central gobierna fechas y conceptos. El padding exterior se mantiene
+   corto y el gap central es único para que ambas mitades tengan el mismo ancho. */
+.segment-details-modal .segment-expense-form {
+  --expense-column-gap: 10px;
+}
+
+.segment-details-modal .segment-expense-form .dates,
+.segment-details-modal .expenses--journey,
+.segment-details-modal .segment-expense-form .dates__row,
+.segment-details-modal .expenses--journey .expenses__fixed-list,
+.segment-details-modal .expenses--journey .expenses__lineitems {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.segment-details-modal .segment-expense-form .dates__row,
+.segment-details-modal .expenses--journey .expenses__fixed-list,
+.segment-details-modal .expenses--journey .expenses__lineitems {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--expense-column-gap);
+}
+
+.segment-details-modal .itinerary-origin__body .dates--origin .dates__row {
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--expense-column-gap);
+}
+
+.segment-details-modal .itinerary-origin__body .dates--origin .calendar-date {
+  grid-column: 1;
+}
+
+.segment-details-modal__date-error {
+  margin: 6px 0 0;
+  color: #b42318;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+/* Cada fecha ocupa toda su mitad. Sólo se reserva el espacio real del botón X;
+   no hay un colchón lateral que acorte visualmente el campo. */
+.segment-details-modal .segment-expense-form .calendar-date,
+.segment-details-modal .segment-expense-form .calendar-date__trigger {
+  box-sizing: border-box;
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.segment-details-modal .segment-expense-form .calendar-date__trigger,
+.segment-details-modal .segment-expense-form .calendar-date__trigger:hover,
+.segment-details-modal .segment-expense-form .calendar-date__trigger:focus,
+.segment-details-modal .segment-expense-form .calendar-date__trigger:focus-visible,
+.segment-details-modal .segment-expense-form .calendar-date__trigger.is-open {
+  padding-left: 12px;
+  padding-right: 26px;
+}
+
+.segment-details-modal .segment-expense-form .calendar-date__value,
+.segment-details-modal .segment-expense-form .calendar-date__placeholder {
+  width: calc(100% - 30px);
+  max-width: calc(100% - 30px);
+}
+
+.segment-details-modal .segment-expense-form .calendar-date__clear,
+.segment-details-modal .segment-expense-form .calendar-date__clear:hover,
+.segment-details-modal .segment-expense-form .calendar-date__clear:focus-visible {
+  right: 5px;
+}
+
+/* El calendario del modal conserva las 6 semanas canónicas pero reduce sólo
+   su densidad vertical para que el mes completo quede visible sin desplazar
+   el contenido del modal. El CalendarDateInput global mantiene su tamaño. */
+.segment-details-modal .calendar-date__popover {
+  top: calc(100% + 4px);
+  width: 252px;
+  padding: 9px;
+}
+
+.segment-details-modal .calendar-date__header {
+  grid-template-columns: 26px 1fr 26px;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.segment-details-modal .calendar-date__month-button {
+  width: 26px;
+  height: 26px;
+}
+
+.segment-details-modal .calendar-date__weekdays {
+  margin-bottom: 2px;
+}
+
+.segment-details-modal .calendar-date__weekdays span {
+  height: 18px;
+}
+
+.segment-details-modal .calendar-date__weekdays,
+.segment-details-modal .calendar-date__days {
+  gap: 2px;
+}
+
+.segment-details-modal .calendar-date__day {
+  justify-self: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  font-size: 10px;
+}
+
+/* Cada concepto fijo se centra como bloque completo respecto a su mitad y,
+   por tanto, respecto al campo de fecha correspondiente. */
+.segment-details-modal .expenses--journey .moneycard {
+  min-width: 0;
+}
+
+.segment-details-modal .expenses--journey .moneycard__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: normal;
+  line-height: 1.15;
+}
+
+.segment-details-modal .expenses--journey .moneycard__typeinput {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.segment-details-modal .expenses--journey .moneycard__amount {
+  width: 70px;
+  min-width: 70px;
+  margin-left: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.segment-details-modal .expenses--journey .moneycard__input {
+  width: 52px;
+}
+
+@media (max-width: 980px) and (min-width: 721px) {
+  .segment-details-modal {
+    min-width: 320px;
+    width: calc(100% - 28px);
+  }
+
+  .segment-details-modal .segment__body,
+  .segment-details-modal .itinerary-origin__body {
+    padding-left: 7px !important;
+    padding-right: 7px !important;
+  }
+
+  .segment-details-modal .segment-expense-form {
+    --expense-column-gap: 8px;
+  }
+
+  .segment-details-modal .expenses--journey .moneycard__amount {
+    width: 66px;
+    min-width: 66px;
+  }
+
+  .segment-details-modal .expenses--journey .moneycard__input {
+    width: 48px;
+  }
+}
+
+@media (max-width: 720px) {
+  .segment-details-modal {
+    left: 12px !important;
+    right: 12px;
+    width: auto;
+    min-width: 0;
+    max-height: calc(100% - 24px);
+  }
+
+  .segment-details-modal .expenses--journey .moneycard__amount {
+    width: 66px;
+    min-width: 66px;
+  }
+
+  .segment-details-modal .expenses--journey .moneycard__input {
+    width: 48px;
+  }
+}

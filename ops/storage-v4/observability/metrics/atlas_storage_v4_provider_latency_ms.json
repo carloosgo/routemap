@@ -1,0 +1,27 @@
+{
+  "name": "atlas_storage_v4_provider_latency_ms",
+  "description": "Atlas outbound provider request latency distribution in milliseconds. No URL, query string, key, body or response is extracted.",
+  "filter": "jsonPayload.message=\"storage_v4_provider_request_metric\"",
+  "disabled": false,
+  "valueExtractor": "EXTRACT(jsonPayload.durationMs)",
+  "bucketOptions": {
+    "explicitBuckets": {
+      "bounds": [0, 25, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 30000, 60000, 120000]
+    }
+  },
+  "metricDescriptor": {
+    "metricKind": "DELTA",
+    "valueType": "DISTRIBUTION",
+    "unit": "ms",
+    "labels": [
+      { "key": "provider", "valueType": "STRING", "description": "Provider family." },
+      { "key": "operation", "valueType": "STRING", "description": "Bounded provider operation." },
+      { "key": "outcome", "valueType": "STRING", "description": "Provider request outcome." }
+    ]
+  },
+  "labelExtractors": {
+    "provider": "EXTRACT(jsonPayload.provider)",
+    "operation": "EXTRACT(jsonPayload.operation)",
+    "outcome": "EXTRACT(jsonPayload.outcome)"
+  }
+}

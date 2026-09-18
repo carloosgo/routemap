@@ -1,0 +1,27 @@
+/* Número y bandera son elementos independientes. El número ocupa su propio
+   track de 19px y la bandera conserva 30x20; la separación exterior la gobierna
+   la retícula compacta para que todos los pasos usen el mismo gap. */
+@media (min-width: 721px) {
+  .editor-module.editor-module--itinerary .itinerary-stop__sequence {
+    width: 19px;
+    min-width: 19px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-stop__sequence-badge {
+    position: static;
+    width: 19px;
+    height: 19px;
+    transform: none;
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-stop__marker {
+    box-sizing: border-box;
+    width: 30px;
+    min-width: 30px;
+    display: grid;
+    place-items: center;
+  }
+}

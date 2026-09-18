@@ -1,0 +1,305 @@
+/* Fuente única de verdad para la navegación lateral del editor en desktop.
+   Los estilos visuales de iconos se mantienen en EditorNavigationIcons.css. */
+@media (min-width: 721px) {
+  .docked-editor-shell {
+    width: 540px;
+    flex-basis: 540px;
+  }
+
+  .floating-editor {
+    width: 540px;
+  }
+
+  .editor-module {
+    display: grid;
+    grid-template-columns: 82px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    min-width: 0;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .editor-module > .editor-module__tabs {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    min-width: 0;
+    min-height: 0;
+    padding: 8px 6px;
+    overflow: visible !important;
+    border: 0;
+    border-right: 1px solid #eceef1;
+    background: #fdfdfd !important;
+    box-shadow: 1px 0 2px rgba(15, 23, 42, 0.025);
+  }
+
+  /* Rutas y Notas reservan una tercera fila para su badge. El estado activo
+     nunca altera dimensiones, padding ni transformaciones. */
+  .editor-module__tabs > .editor-module__nav-tab,
+  .editor-module__tabs > .editor-module__nav-tab.is-active {
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 76px;
+    height: 76px;
+    max-height: 76px;
+    flex: 0 0 76px;
+    display: grid !important;
+    grid-template-rows: 38px 14px 14px;
+    grid-template-columns: 1fr;
+    align-content: center;
+    align-items: center;
+    justify-items: center;
+    row-gap: 2px;
+    margin: 0 !important;
+    padding: 3px 3px !important;
+    border: 0;
+    border-radius: 0;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #68707d;
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.15;
+    text-align: center;
+    white-space: normal;
+    transform: none !important;
+    translate: none !important;
+  }
+
+  /* Itinerario no tiene contador, por lo que no conserva una fila vacía.
+     Su caja es más corta para que el espacio visual hasta el divisor sea el
+     mismo que en Rutas y Notas. */
+  .editor-module__tabs > .editor-module__nav-tab--plain,
+  .editor-module__tabs > .editor-module__nav-tab--plain.is-active {
+    min-height: 62px;
+    height: 62px;
+    max-height: 62px;
+    flex: 0 0 62px;
+    grid-template-rows: 38px 14px;
+  }
+
+  /* FloatingEditor.css todavía contiene la regla histórica que agrega
+     margin-left: 9px a los botones 2 y 3. Se neutraliza aquí para que la
+     navegación se comporte como una sola barra estable. */
+  .editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .editor-module__tabs > .editor-module__nav-tab:hover,
+  .editor-module__tabs > .editor-module__nav-tab:focus,
+  .editor-module__tabs > .editor-module__nav-tab:focus-visible,
+  .editor-module__tabs > .editor-module__nav-tab:active,
+  .editor-module__tabs > .editor-module__nav-tab.is-active,
+  .editor-module__tabs > .editor-module__nav-tab.is-active:hover {
+    margin: 0 !important;
+    padding: 3px 3px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    transform: none !important;
+    translate: none !important;
+  }
+
+  .editor-module__tabs > .editor-module__nav-tab.is-active {
+    color: #26313a;
+  }
+
+  .editor-module__tabs .editor-module__tab-icon {
+    grid-row: 1;
+    grid-column: 1;
+    position: static !important;
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: grid;
+    place-items: center;
+    color: #4e8da0;
+    background-size: 34px 34px !important;
+    background-position: center;
+    background-repeat: no-repeat;
+    transform: none !important;
+  }
+
+  .editor-module__tabs .editor-module__tab-icon > img,
+  .editor-module__tabs .editor-module__tab-icon > svg {
+    width: 34px !important;
+    height: 34px !important;
+    max-width: none;
+    margin: 0 !important;
+    object-fit: contain;
+    transform: none !important;
+  }
+
+  .editor-module__tabs .editor-module__tab-label {
+    grid-row: 2;
+    grid-column: 1;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    height: 14px;
+    margin: 0;
+    overflow: visible;
+    color: inherit;
+    font: inherit;
+    line-height: 14px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* Solo Rutas y Notas montan esta fila. El badge conserva su estilo original
+     y el espacio de la fila evita cualquier salto al aparecer/desaparecer. */
+  .editor-module__tabs .editor-module__tab-count {
+    grid-row: 3;
+    grid-column: 1;
+    position: static !important;
+    width: 100%;
+    min-width: 0;
+    height: 14px;
+    margin: 0 !important;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: none !important;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .editor-module__tabs .editor-module__tab-count .tabbar__badge {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: auto;
+    min-width: 16px;
+    max-width: 54px;
+    margin: 0 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    transform: none !important;
+  }
+
+  /* Hay 12px reales entre cajas y el divisor vive exactamente en la mitad
+     de ese hueco. Como Itinerario ya no conserva fila vacía, las distancias
+     visuales a los tres grupos quedan equilibradas. */
+  .editor-module__tabs > .editor-module__nav-tab + .editor-module__nav-tab::before {
+    content: '' !important;
+    display: block !important;
+    position: absolute !important;
+    top: -6px !important;
+    left: 50% !important;
+    right: auto !important;
+    width: 26px !important;
+    height: 1px !important;
+    background: #e3e6e9 !important;
+    transform: translateX(-50%) !important;
+    pointer-events: none;
+  }
+
+  .editor-module > :not(.editor-module__tabs) {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .editor-module > .editor {
+    min-width: 0;
+    min-height: 0;
+  }
+
+  /* El menú de tres puntos vuelve a su anclaje flotante original. */
+  .editor-module__settings {
+    display: block !important;
+    margin: 0 !important;
+  }
+
+  .editor-module__workspace-anchor {
+    position: fixed !important;
+    top: 118px !important;
+    right: 14px !important;
+    left: auto !important;
+    bottom: auto !important;
+    z-index: 950 !important;
+    width: auto !important;
+    margin: 0 !important;
+  }
+
+  .editor-module__workspace-anchor .editor-module__more-button {
+    width: 38px;
+    height: 38px;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 50%;
+    background: var(--atlas-accent);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+  }
+
+  .editor-module__workspace-anchor .editor-module__more-menu {
+    position: absolute;
+    top: 0;
+    right: calc(100% + 10px);
+    left: auto;
+    bottom: auto;
+    z-index: 1000;
+    width: 286px;
+    max-height: min(540px, calc(100vh - 28px));
+    overflow-y: auto;
+    padding: 8px;
+    border: 1px solid #e6e8ec;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.2);
+  }
+
+  .editor-module__currency-options {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+    padding: 0 2px 4px;
+  }
+
+  .editor-module__currency-option {
+    min-width: 0;
+    padding: 7px 5px;
+    border: 1px solid #e4e7eb;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #4b5563;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .editor-module__currency-option:hover {
+    background: #f7f9fa;
+  }
+
+  .editor-module__currency-option.is-active {
+    border-color: #9dcfdd;
+    background: #eef7fa;
+    color: #357d94;
+  }
+}

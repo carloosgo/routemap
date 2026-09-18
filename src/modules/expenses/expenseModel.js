@@ -19,7 +19,7 @@ export function createExpenses() {
       return acc;
     }, {}),
     transportOthers: [], // tipo libre: [{ id, label, amount }]
-    attractions: [],     // [{ id, label, amount }]
+    attractions: [],     // legado v4; la UI nueva migra su contenido a others
     others: [],          // [{ id, label, amount }]
   };
 }
@@ -74,16 +74,22 @@ function normalizeFood(rawFood, baseFood) {
   };
 }
 
-// Migración defensiva: completa campos faltantes en datos viejos cargados
-// desde almacenamiento y fusiona taxi+uber→taxiUber, convierte ferry/boat
-// a ítems libres de transportOthers para no perder datos.
+function normalizeLineItems(items) {
+  return Array.isArray(items)
+    ? items.map((item) => createLineItem(item?.label, item?.amount))
+    : [];
+}
+
+// Migración defensiva: completa campos faltantes en datos viejos cargados,
+// fusiona taxi+uber→taxiUber y conserva categorías retiradas de UI dentro de
+// `others`. El contrato persistido mantiene `attractions` por compatibilidad,
+// pero una vez normalizado queda vacío para que ningún monto quede oculto.
 export function normalizeExpenses(raw) {
   const base = createExpenses();
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return base;
 
   const oldT = raw.transport && typeof raw.transport === 'object' ? raw.transport : {};
 
-  // Fusionar taxi + uber (campos anteriores) con taxiUber si ya existía.
   const taxiUber =
     toAmount(oldT.taxiUber) + toAmount(oldT.taxi) + toAmount(oldT.uber);
 
@@ -94,12 +100,7 @@ export function normalizeExpenses(raw) {
     taxiUber,
   };
 
-  // Ítems libres de transporte existentes.
-  const transportOthers = Array.isArray(raw.transportOthers)
-    ? raw.transportOthers.map((item) => createLineItem(item?.label, item?.amount))
-    : [];
-
-  // Migrar ferry y boat a transportOthers si tenían monto.
+  const transportOthers = normalizeLineItems(raw.transportOthers);
   if (toAmount(oldT.ferry) > 0) {
     transportOthers.push(createLineItem('Ferry', oldT.ferry));
   }
@@ -107,23 +108,41 @@ export function normalizeExpenses(raw) {
     transportOthers.push(createLineItem('Barco', oldT.boat));
   }
 
+  const legacyAttractions = normalizeLineItems(raw.attractions).map((item) => ({
+    ...item,
+    label: item.label || 'Atracción',
+  }));
+  const others = [
+    ...normalizeLineItems(raw.others),
+    ...legacyAttractions,
+  ];
+
   return {
     lodging: toAmount(raw.lodging),
     food: normalizeFood(raw.food, base.food),
     transport: fixedTransport,
     transportOthers,
-    attractions: Array.isArray(raw.attractions)
-      ? raw.attractions.map((item) => createLineItem(item?.label, item?.amount))
-      : [],
-    others: Array.isArray(raw.others)
-      ? raw.others.map((item) => createLineItem(item?.label, item?.amount))
-      : [],
+    attractions: [],
+    others,
   };
 }
 
-// Agrega los gastos de todos los tramos por categoría, para el desglose del total.
-// Devuelve un objeto con el monto sumado de cada categoría a través de todos los tramos.
-export function tripBreakdown(segments) {
+function expenseSets(source) {
+  if (Array.isArray(source)) {
+    return source.map((segment) => segment?.expenses).filter(Boolean);
+  }
+  const trip = source && typeof source === 'object' ? source : {};
+  const sets = [];
+  if (trip.originDetails?.expenses) sets.push(trip.originDetails.expenses);
+  (Array.isArray(trip.segments) ? trip.segments : []).forEach((segment) => {
+    if (segment?.expenses) sets.push(segment.expenses);
+  });
+  return sets;
+}
+
+// Agrega gastos por categoría. Acepta el viaje completo para incluir el origen
+// y conserva compatibilidad con llamadas antiguas que pasan solo `segments`.
+export function tripBreakdown(source) {
   const acc = {
     plane: 0,
     train: 0,
@@ -135,9 +154,7 @@ export function tripBreakdown(segments) {
     others: 0,
   };
 
-  (Array.isArray(segments) ? segments : []).forEach((segment) => {
-    const expenses = segment?.expenses;
-    if (!expenses) return;
+  expenseSets(source).forEach((expenses) => {
     acc.plane += toAmount(expenses.transport?.plane);
     acc.train += toAmount(expenses.transport?.train);
     acc.bus += toAmount(expenses.transport?.bus);
@@ -145,7 +162,6 @@ export function tripBreakdown(segments) {
     acc.lodging += toAmount(expenses.lodging);
     acc.food += foodTotal(expenses.food);
     acc.attractions += lineItemsTotal(expenses.attractions);
-    // "Otros" agrupa gastos libres de transporte + otros generales.
     acc.others += lineItemsTotal(expenses.transportOthers) + lineItemsTotal(expenses.others);
   });
 

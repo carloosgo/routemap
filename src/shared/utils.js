@@ -1,12 +1,31 @@
 // Utilidades compartidas, sin dependencias de UI ni de framework.
 // Reutilizables tal cual en una futura app React Native.
 
-// ID único y estable. Usa crypto.randomUUID cuando está disponible.
-export function uid() {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
+function secureUuidFallback(cryptoApi) {
+  if (typeof cryptoApi?.getRandomValues !== 'function') {
+    throw new Error('No hay un generador criptográfico seguro disponible para crear IDs.');
   }
-  return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+  const bytes = new Uint8Array(16);
+  cryptoApi.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (value) => value.toString(16).padStart(2, '0'));
+  return [
+    hex.slice(0, 4).join(''),
+    hex.slice(4, 6).join(''),
+    hex.slice(6, 8).join(''),
+    hex.slice(8, 10).join(''),
+    hex.slice(10, 16).join(''),
+  ].join('-');
+}
+
+// ID único y estable. Nunca cae a Math.random: Storage v4 usa estos IDs como identidad persistida.
+export function uid() {
+  const cryptoApi = globalThis.crypto;
+  if (typeof cryptoApi?.randomUUID === 'function') {
+    return cryptoApi.randomUUID();
+  }
+  return secureUuidFallback(cryptoApi);
 }
 
 // Convierte un valor de input a número seguro (>= 0). Evita NaN en los totales.
@@ -29,6 +48,21 @@ export function formatMoney(amount, currency = 'USD', locale = 'es-MX') {
   }
 }
 
+// Devuelve únicamente el símbolo compacto de la moneda configurada en el viaje.
+// currencyDisplay=narrowSymbol mantiene el input visualmente compacto (por ejemplo, EUR -> €).
+export function getCurrencySymbol(currency = 'USD', locale = 'es-MX') {
+  try {
+    const formatter = new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      currencyDisplay: 'narrowSymbol',
+    });
+    return formatter.formatToParts(0).find((part) => part.type === 'currency')?.value || currency;
+  } catch {
+    return currency || '$';
+  }
+}
+
 // Formatea una fecha ISO (YYYY-MM-DD) para mostrar.
 export function formatDate(iso, locale = 'es-MX') {
   if (!iso) return '';
@@ -37,10 +71,27 @@ export function formatDate(iso, locale = 'es-MX') {
   return d.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function stripControlCharacters(value, allowLineFeed = false) {
+  return Array.from(value)
+    .filter((character) => {
+      const code = character.charCodeAt(0);
+      const isControl = code <= 31 || code === 127;
+      return !isControl || (allowLineFeed && code === 10);
+    })
+    .join('');
+}
+
 // Sanitiza texto libre del usuario antes de guardarlo/mostrarlo.
 // React ya escapa al renderizar, pero esto limpia control chars y limita longitud.
 export function sanitizeText(value, maxLen = 120) {
   if (typeof value !== 'string') return '';
-  // eslint-disable-next-line no-control-regex
-  return value.replace(/[\u0000-\u001F\u007F]/g, '').slice(0, maxLen);
+  return stripControlCharacters(value).slice(0, maxLen);
+}
+
+// Sanitiza contenido multilínea (notas) conservando saltos de línea.
+// Normaliza CRLF/CR a LF y elimina los demás caracteres de control.
+export function sanitizeMultilineText(value, maxLen = 120) {
+  if (typeof value !== 'string') return '';
+  const normalized = value.replace(/\r\n?/g, '\n');
+  return stripControlCharacters(normalized, true).slice(0, maxLen);
 }
