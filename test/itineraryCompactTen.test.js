@@ -6,7 +6,7 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('desktop itinerary keeps compact equal rows, header-aligned panel and stacked date summaries', async () => {
+test('desktop itinerary keeps compact panel geometry while cards render one-line date summaries', async () => {
   const compact = await read('src/modules/trips/ItineraryCompactTen.css');
   const floating = await read('src/app/FloatingItineraryPanel.css');
   const headerLayout = await read('src/app/TripWorkspaceHeaderLayout.css');
@@ -52,9 +52,9 @@ test('desktop itinerary keeps compact equal rows, header-aligned panel and stack
   assert.match(compact, /\.itinerary-segment \.itinerary-stop__amount,[\s\S]*\.itinerary-origin \.itinerary-stop__amount\s*\{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;/s);
   assert.doesNotMatch(compact, /\.itinerary-stop__dates|\.itinerary-stop__nights|segment__pill|background:\s*var\(--atlas-accent\)/);
   assert.match(header, /itinerary-stop__date-range/);
-  assert.match(header, /formatSegmentDate\(segment\.startDate, locale\)/);
-  assert.match(header, /formatSegmentDate\(segment\.endDate, locale\)/);
-  assert.match(header, /<span>\{formattedStartDate \|\| ''\}<\/span>[\s\S]*<span>\{formattedEndDate \|\| ''\}<\/span>/s);
+  assert.match(header, /formatSegmentCardDateRange\(segment, locale\)/);
+  assert.match(header, /\{formattedDateRange \|\| ''\}/);
+  assert.doesNotMatch(header, /formattedStartDate|formattedEndDate/);
   assert.doesNotMatch(header, /itinerary-stop__country(?:["'\s])|itinerary-stop__nights|itinerary-stop__dates/);
   assert.doesNotMatch(originRow, /itinerary-origin__country|itinerary-stop__nights|itinerary-stop__dates/);
   assert.match(originRow, /itinerary-stop__remove-btn itinerary-origin__clear/);
