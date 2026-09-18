@@ -6,11 +6,11 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('itinerary defaults to one card per row and offers a two-column grid', async () => {
+test('itinerary defaults to the two-column grid and still offers one-card list view', async () => {
   const pane = await read('src/app/AppEditorPane.jsx');
   const css = await read('src/modules/trips/ItineraryCardVisual.css');
 
-  assert.match(pane, /useState\('list'\)/);
+  assert.match(pane, /useState\('grid'\)/);
   assert.match(pane, /itinerary-cards--\$\{itineraryLayout\}/);
   assert.match(pane, /setItineraryLayout\('list'\)/);
   assert.match(pane, /setItineraryLayout\('grid'\)/);
@@ -90,7 +90,7 @@ test('card content is isolated from the legacy compact row geometry', async () =
   assert.match(header, /itinerary-card__actions/);
   assert.match(header, /selectedDisplay="timeline"/);
   assert.match(origin, /selectedDisplay="timeline"/);
-  assert.match(form, /import '\.\/ItineraryCardVisual\.css';\s*\nimport '\.\/ItineraryCardLayoutFix\.css';/);
+  assert.match(form, /import '\.\/ItineraryCardVisual\.css';\s*\nimport '\.\/ItineraryCardLayoutFix\.css';\s*\nimport '\.\/ItineraryCardRequestedPolish\.css';/);
   assert.match(css, /\.itinerary-card__place \.autocomplete__selected-value\s*\{[\s\S]*display:\s*none\s*!important;/s);
   assert.match(
     css,
@@ -102,27 +102,55 @@ test('card content is isolated from the legacy compact row geometry', async () =
   );
 });
 
-test('two-column cards reserve separate footer space for metrics and actions', async () => {
-  const css = await read('src/modules/trips/ItineraryCardLayoutFix.css');
+test('card dates use complete month names on a single line', async () => {
+  const model = await read('src/modules/trips/segmentFormModel.js');
+  const header = await read('src/modules/trips/SegmentHeader.jsx');
+  const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
+  const polish = await read('src/modules/trips/ItineraryCardRequestedPolish.css');
 
-  assert.match(
-    css,
-    /\.itinerary-cards\.itinerary-cards--grid[\s\S]*\.itinerary-card__footer\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*!important;[\s\S]*grid-template-rows:\s*auto 28px\s*!important;/s
-  );
-  assert.match(css, /\.itinerary-card__metrics\s*\{[\s\S]*justify-content:\s*space-between\s*!important;/s);
-  assert.match(css, /\.itinerary-card__place \.input\s*\{[\s\S]*text-overflow:\s*ellipsis\s*!important;/s);
+  assert.match(model, /export function formatSegmentCardDate\(/);
+  assert.match(model, /month:\s*'long'/);
+  assert.match(model, /return `\$\{day\} \$\{capitalizedMonth\}`/);
+  assert.match(model, /return `\$\{start\} - \$\{end\}`/);
+  assert.match(header, /formatSegmentCardDateRange\(segment, locale\)/);
+  assert.match(header, /\{formattedDateRange \|\| ''\}/);
+  assert.doesNotMatch(header, /<span>\{formattedStartDate/);
+  assert.match(origin, /\{formattedDepartureDate \|\| ''\}/);
+  assert.match(polish, /itinerary-card__date\.itinerary-stop__date-range[\s\S]*white-space:\s*nowrap\s*!important;/s);
 });
 
-test('card actions stay quiet until hover or keyboard focus on fine pointers', async () => {
-  const css = await read('src/modules/trips/ItineraryCardLayoutFix.css');
+test('city, date and amount typography grows by two pixels in both card layouts', async () => {
+  const polish = await read('src/modules/trips/ItineraryCardRequestedPolish.css');
 
-  assert.match(css, /@media \(min-width:\s*721px\) and \(hover:\s*hover\) and \(pointer:\s*fine\)/);
+  assert.match(polish, /\.itinerary-card__place \.input\s*\{[^}]*font-size:\s*15px\s*!important;/s);
+  assert.match(polish, /itinerary-cards--grid[\s\S]*\.itinerary-card__place \.input\s*\{[^}]*font-size:\s*14px\s*!important;/s);
+  assert.match(polish, /\.itinerary-card__date\.itinerary-stop__date-range\s*\{[^}]*font-size:\s*13px\s*!important;/s);
+  assert.match(polish, /\.itinerary-card__amount\.itinerary-stop__amount\s*\{[^}]*font-size:\s*14px\s*!important;/s);
+  assert.match(polish, /itinerary-cards--grid[\s\S]*\.itinerary-card__date\.itinerary-stop__date-range\s*\{[^}]*font-size:\s*12px\s*!important;/s);
+  assert.match(polish, /itinerary-cards--grid[\s\S]*\.itinerary-card__amount\.itinerary-stop__amount\s*\{[^}]*font-size:\s*13px\s*!important;/s);
+});
+
+test('two-column cards reserve separate rows for full date, amount and actions', async () => {
+  const layout = await read('src/modules/trips/ItineraryCardLayoutFix.css');
+  const polish = await read('src/modules/trips/ItineraryCardRequestedPolish.css');
+
   assert.match(
-    css,
-    /\.itinerary-card__actions\s*\{[\s\S]*opacity:\s*0;[\s\S]*visibility:\s*hidden;[\s\S]*pointer-events:\s*none;/s
+    layout,
+    /\.itinerary-cards\.itinerary-cards--grid[\s\S]*\.itinerary-card__footer\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*!important;[\s\S]*grid-template-rows:\s*auto 28px\s*!important;/s
   );
-  assert.match(css, /\.itinerary-segment:hover \.itinerary-card__actions/);
-  assert.match(css, /\.itinerary-origin:hover \.itinerary-card__actions/);
-  assert.match(css, /\.itinerary-segment:focus-within \.itinerary-card__actions/);
-  assert.match(css, /\.itinerary-origin:focus-within \.itinerary-card__actions/);
+  assert.match(polish, /\.itinerary-card__metrics\s*\{[\s\S]*grid-template-rows:\s*auto auto\s*!important;/s);
+  assert.match(layout, /\.itinerary-card__place \.input\s*\{[\s\S]*text-overflow:\s*ellipsis\s*!important;/s);
+});
+
+test('card actions are permanently visible and clickable', async () => {
+  const polish = await read('src/modules/trips/ItineraryCardRequestedPolish.css');
+
+  assert.match(
+    polish,
+    /\.itinerary-card__actions\s*\{[^}]*opacity:\s*1\s*!important;[^}]*visibility:\s*visible\s*!important;[^}]*pointer-events:\s*auto\s*!important;/s
+  );
+  assert.match(
+    polish,
+    /\.itinerary-card__actions \.itinerary-stop__remove-btn,[\s\S]*\.itinerary-card__actions \.itinerary-card__action\s*\{[^}]*opacity:\s*1\s*!important;[^}]*visibility:\s*visible\s*!important;[^}]*pointer-events:\s*auto\s*!important;/s
+  );
 });
