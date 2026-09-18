@@ -13,6 +13,7 @@ import './ItinerarySegmentDividers.css';
 import './ItineraryCardVisual.css';
 import './ItineraryCardLayoutFix.css';
 import './ItineraryCardRequestedPolish.css';
+import './ItineraryCompactList.css';
 
 function SegmentDropIndicator({ placement }) {
   if (!placement) return null;
