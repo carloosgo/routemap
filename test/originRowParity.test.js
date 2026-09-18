@@ -13,7 +13,7 @@ test('la ciudad origen comparte la composición de fecha, costo y acciones de la
     read('src/modules/trips/ItineraryCardLayoutFix.css'),
   ]);
 
-  assert.match(originSection, /formatSegmentDate\(\s*originDetails\?\.departureDate,\s*locale\s*\)/);
+  assert.match(originSection, /formatSegmentCardDate\(\s*originDetails\?\.departureDate,\s*locale\s*\)/);
   assert.match(originSection, /formattedDepartureDate=\{formattedDepartureDate\}/);
   assert.match(origin, /itinerary-origin itinerary-origin--card itinerary-card__content/);
   assert.match(origin, /className="itinerary-card__date itinerary-stop__date-range"/);

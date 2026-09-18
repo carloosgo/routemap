@@ -26,6 +26,30 @@ export function formatSegmentDate(value, locale) {
   });
 }
 
+export function formatSegmentCardDate(value, locale) {
+  if (!value) return null;
+  try {
+    const parts = new Intl.DateTimeFormat(locale, {
+      day: 'numeric',
+      month: 'long',
+    }).formatToParts(new Date(`${value}T00:00:00`));
+    const day = parts.find((part) => part.type === 'day')?.value;
+    const month = parts.find((part) => part.type === 'month')?.value;
+    if (!day || !month) return formatSegmentDate(value, locale);
+    const capitalizedMonth = month.charAt(0).toLocaleUpperCase(locale) + month.slice(1);
+    return `${day} ${capitalizedMonth}`;
+  } catch {
+    return formatSegmentDate(value, locale);
+  }
+}
+
+export function formatSegmentCardDateRange(segment, locale) {
+  const start = formatSegmentCardDate(segment?.startDate, locale);
+  const end = formatSegmentCardDate(segment?.endDate, locale);
+  if (start && end) return `${start} - ${end}`;
+  return start || end || null;
+}
+
 export function formatSegmentDates(segment, locale) {
   if (!segment?.startDate && !segment?.endDate) return null;
   const formatDate = (value) => formatSegmentDate(value, locale) || '—';

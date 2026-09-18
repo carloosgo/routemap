@@ -35,7 +35,7 @@ test('SegmentForm coordina filas compactas con resumen de fechas y el modal pose
   assert.match(originSection, /onOpenDetails=\{onOpenDetails\}/);
   assert.match(originSection, /originDetails/);
   assert.match(originSection, /formatSegmentAmount\([\s\S]*locale,[\s\S]*currency/);
-  assert.match(originSection, /formatSegmentDate\(\s*originDetails\?\.departureDate,\s*locale\s*\)/);
+  assert.match(originSection, /formatSegmentCardDate\(\s*originDetails\?\.departureDate,\s*locale\s*\)/);
   assert.match(originSection, /formattedDepartureDate=\{formattedDepartureDate\}/);
   assert.doesNotMatch(originSection, /formatSegmentNights|formattedStartDate|formattedEndDate|<OriginBody|CollapsibleRegion|useState/);
 

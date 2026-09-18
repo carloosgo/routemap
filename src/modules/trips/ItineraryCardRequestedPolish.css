@@ -1,0 +1,110 @@
+/* Ajustes solicitados para la presentación final de cards del itinerario. */
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__place .input {
+  font-size: 15px !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards.itinerary-cards--grid
+  .itinerary-card__place .input {
+  font-size: 14px !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__date.itinerary-stop__date-range {
+  display: block !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  box-sizing: border-box !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: auto !important;
+  grid-column: auto !important;
+  grid-row: auto !important;
+  justify-self: start !important;
+  overflow: hidden !important;
+  color: #5d7884 !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  line-height: 1.25 !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__amount.itinerary-stop__amount {
+  position: static !important;
+  box-sizing: border-box !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: auto !important;
+  grid-column: auto !important;
+  grid-row: auto !important;
+  justify-self: end !important;
+  padding: 0 !important;
+  color: #25343a !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards.itinerary-cards--grid
+  .itinerary-card__date.itinerary-stop__date-range {
+  width: 100% !important;
+  font-size: 12px !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards.itinerary-cards--grid
+  .itinerary-card__amount.itinerary-stop__amount {
+  font-size: 13px !important;
+}
+
+/* En dos columnas, la fecha completa ocupa su propia línea y la cantidad queda
+   debajo. Así el mes largo nunca compite con el importe ni con las acciones. */
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards.itinerary-cards--grid
+  .itinerary-card__metrics {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards.itinerary-cards--grid
+  .itinerary-card__amount {
+  justify-self: end !important;
+}
+
+/* Las acciones ya no dependen de hover: permanecen visibles y clicables. */
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__actions {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__actions .itinerary-stop__remove-btn,
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__actions .itinerary-card__action {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
