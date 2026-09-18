@@ -55,52 +55,49 @@ export function ItineraryOrigin({
         />
       </div>
 
-      <div className="itinerary-card__footer">
-        <div className="itinerary-card__metrics">
-          <span
-            className="itinerary-card__date itinerary-stop__date-range"
-            title={formattedDepartureDate || undefined}
-          >
-            {formattedDepartureDate || ''}
-          </span>
-          <span className="itinerary-card__amount itinerary-stop__amount">
-            {formattedAmount}
-          </span>
-        </div>
+      <span
+        className="itinerary-card__date itinerary-stop__date-range"
+        title={formattedDepartureDate || undefined}
+      >
+        {formattedDepartureDate || ''}
+      </span>
 
-        <div className="itinerary-card__actions">
-          <button
-            type="button"
-            className="btn btn--icon segment__note-btn itinerary-origin__note-btn itinerary-card__action"
-            style={hasNote ? { color: '#417c8f' } : undefined}
-            aria-label={originNoteLabel}
-            title={originNoteLabel}
-            onClick={onOpenNote}
-          >
-            <IconNote size={14} aria-hidden="true" />
-            {hasNote && <span aria-hidden="true" style={NOTE_DOT_STYLE} />}
-          </button>
+      <span className="itinerary-card__amount itinerary-stop__amount">
+        {formattedAmount}
+      </span>
 
-          <button
-            type="button"
-            className="btn btn--icon segment__toggle segment__details-btn itinerary-origin__details-btn itinerary-card__action"
-            aria-label={t('openSegmentDetails')}
-            title={t('openSegmentDetails')}
-            onClick={onOpenDetails}
-          >
-            <IconChevronDown className="itinerary-details-chevron" size={14} aria-hidden="true" />
-          </button>
+      <div className="itinerary-card__actions">
+        <button
+          type="button"
+          className="btn btn--icon segment__note-btn itinerary-origin__note-btn itinerary-card__action"
+          style={hasNote ? { color: '#417c8f' } : undefined}
+          aria-label={originNoteLabel}
+          title={originNoteLabel}
+          onClick={onOpenNote}
+        >
+          <IconNote size={14} aria-hidden="true" />
+          {hasNote && <span aria-hidden="true" style={NOTE_DOT_STYLE} />}
+        </button>
 
-          <button
-            type="button"
-            className="btn btn--icon itinerary-stop__remove-btn itinerary-origin__clear itinerary-card__action"
-            aria-label={clearOriginLabel}
-            title={clearOriginLabel}
-            onClick={onClear}
-          >
-            <IconX size={14} aria-hidden="true" />
-          </button>
-        </div>
+        <button
+          type="button"
+          className="btn btn--icon segment__toggle segment__details-btn itinerary-origin__details-btn itinerary-card__action"
+          aria-label={t('openSegmentDetails')}
+          title={t('openSegmentDetails')}
+          onClick={onOpenDetails}
+        >
+          <IconChevronDown className="itinerary-details-chevron" size={14} aria-hidden="true" />
+        </button>
+
+        <button
+          type="button"
+          className="btn btn--icon itinerary-stop__remove-btn itinerary-origin__clear itinerary-card__action"
+          aria-label={clearOriginLabel}
+          title={clearOriginLabel}
+          onClick={onClear}
+        >
+          <IconX size={14} aria-hidden="true" />
+        </button>
       </div>
     </div>
   );
