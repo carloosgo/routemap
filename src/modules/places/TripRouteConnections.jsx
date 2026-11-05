@@ -20,7 +20,7 @@ const QUICK_MODES = Object.freeze([
 const estimateCache = new Map();
 const pendingEstimateCache = new Map();
 
-function formatDuration(value) {
+export function formatDuration(value) {
   const minutes = Math.max(0, Math.round((Number(value) || 0) / 60));
   if (!minutes) return '—';
   if (minutes < 60) return `${minutes} min`;
@@ -102,7 +102,7 @@ function routeIsFresh(route, mode) {
   return age >= 0 && age <= ttl;
 }
 
-function TransitDetails({ route, locale }) {
+export function TransitDetails({ route, locale }) {
   const steps = Array.isArray(route?.transitSteps) ? route.transitSteps : [];
   if (!steps.length) return null;
 

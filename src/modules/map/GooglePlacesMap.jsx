@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { IconBus } from '@tabler/icons-react';
 import { config, colorForIndex, countryColorForIndex } from '../../config.js';
 import { useTranslation } from '../../i18n/index.jsx';
 import { loadGooglePlaceLocations } from '../places/googlePlacesClient.js';
@@ -30,6 +32,51 @@ function toGooglePath(coordinates) {
     .filter((point) => Array.isArray(point) && point.length >= 2)
     .map(([lng, lat]) => ({ lat: Number(lat), lng: Number(lng) }))
     .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
+}
+
+const TRANSIT_FALLBACK_COLOR = '#23647a';
+
+function transitToggleStyle(active) {
+  // Mismo tamaño y sombra que los controles nativos de Google Maps.
+  return {
+    display: 'inline-flex',
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+    border: 0,
+    borderRadius: 2,
+    background: active ? TRANSIT_FALLBACK_COLOR : '#ffffff',
+    color: active ? '#ffffff' : '#666666',
+    boxShadow: 'rgba(0, 0, 0, 0.3) 0 1px 4px -1px',
+    cursor: 'pointer',
+  };
+}
+const WALK_ROUTE_COLOR = '#475569';
+
+export function routeSegmentLineOptions(map, path, segment) {
+  if (segment?.kind === 'walk') {
+    return {
+      map,
+      path,
+      strokeOpacity: 0,
+      clickable: false,
+      icons: [{
+        icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.9, strokeColor: WALK_ROUTE_COLOR, scale: 2 },
+        offset: '0',
+        repeat: '9px',
+      }],
+    };
+  }
+  return {
+    map,
+    path,
+    strokeColor: segment?.color || TRANSIT_FALLBACK_COLOR,
+    strokeOpacity: 0.95,
+    strokeWeight: segment?.kind === 'transit' ? 5 : 3,
+    clickable: false,
+  };
 }
 
 function placeLabel(place, t) {
@@ -209,6 +256,9 @@ export function GooglePlacesMap({
   const savedPlaceMarkersRef = useRef([]);
   const resultPlaceMarkersRef = useRef([]);
   const savedRouteLinesRef = useRef([]);
+  const transitLayerRef = useRef(null);
+  const [transitControlNode, setTransitControlNode] = useState(null);
+  const [transitLayerOn, setTransitLayerOn] = useState(false);
   const itineraryMarkersByKeyRef = useRef(new Map());
   const itineraryRoutesOverlayRef = useRef(null);
   const itineraryLandmarkOverlayRef = useRef(null);
@@ -810,23 +860,57 @@ export function GooglePlacesMap({
 
     routeConnections
       .filter((route) => route.visible !== false && route.geometry)
-      .flatMap((route) => geometryPaths(route.geometry))
-      .forEach((coordinates) => {
-        const path = toGooglePath(coordinates);
-        if (path.length < 2) return;
-        savedRouteLinesRef.current.push(new maps.Polyline({
-          map,
-          path,
-          strokeColor: '#111111',
-          strokeOpacity: 0.9,
-          strokeWeight: 2,
-          clickable: false,
-          geodesic: true,
-        }));
+      .forEach((route) => {
+        // Transporte público: cada tramo con el color de su línea y caminatas punteadas.
+        if (Array.isArray(route.segments) && route.segments.length > 0) {
+          route.segments.forEach((segment) => {
+            const path = toGooglePath(segment.geometry?.coordinates || []);
+            if (path.length < 2) return;
+            savedRouteLinesRef.current.push(new maps.Polyline(routeSegmentLineOptions(map, path, segment)));
+          });
+          return;
+        }
+        geometryPaths(route.geometry).forEach((coordinates) => {
+          const path = toGooglePath(coordinates);
+          if (path.length < 2) return;
+          savedRouteLinesRef.current.push(new maps.Polyline({
+            map,
+            path,
+            strokeColor: '#111111',
+            strokeOpacity: 0.9,
+            strokeWeight: 2,
+            clickable: false,
+            geodesic: true,
+          }));
+        });
       });
 
     return () => clearPolylines(savedRouteLinesRef);
   }, [placesActive, ready, routeConnections]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const maps = globalThis.google?.maps;
+    if (!map || !ready || !maps?.ControlPosition) return undefined;
+    const node = document.createElement('div');
+    node.style.margin = '0 10px 10px 0';
+    const controls = map.controls[maps.ControlPosition.RIGHT_BOTTOM];
+    controls.push(node);
+    setTransitControlNode(node);
+    return () => {
+      const index = controls.getArray().indexOf(node);
+      if (index >= 0) controls.removeAt(index);
+      setTransitControlNode(null);
+    };
+  }, [ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const maps = globalThis.google?.maps;
+    if (!map || !ready || !maps?.TransitLayer) return;
+    if (!transitLayerRef.current) transitLayerRef.current = new maps.TransitLayer();
+    transitLayerRef.current.setMap(transitLayerOn ? map : null);
+  }, [ready, transitLayerOn]);
 
   return (
     <div className="geo-map-wrap google-map-wrap" ref={wrapRef}>
@@ -859,6 +943,19 @@ export function GooglePlacesMap({
       )}
       {saveNotice && (
         <div className="toast" role="status" aria-live="polite">{saveNotice}</div>
+      )}
+      {transitControlNode && createPortal(
+        <button
+          type="button"
+          aria-pressed={transitLayerOn}
+          aria-label={t('transitLayerToggle')}
+          title={t('transitLayerToggle')}
+          onClick={() => setTransitLayerOn((current) => !current)}
+          style={transitToggleStyle(transitLayerOn)}
+        >
+          <IconBus size={20} aria-hidden="true" />
+        </button>,
+        transitControlNode
       )}
     </div>
   );

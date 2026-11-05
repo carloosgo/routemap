@@ -25,6 +25,7 @@ function tripForPersistence(rawTrip) {
             geometry: null,
             calculatedAt: '',
             transitSteps: [],
+            segments: [],
           }
         : route
     ),

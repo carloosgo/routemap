@@ -90,6 +90,26 @@ function normalizeTransitSteps(value) {
     }));
 }
 
+const ROUTE_SEGMENT_KINDS = new Set(['transit', 'walk', 'other']);
+const MAX_ROUTE_SEGMENTS = 40;
+
+export function normalizeRouteSegments(value) {
+  return (Array.isArray(value) ? value : [])
+    .slice(0, MAX_ROUTE_SEGMENTS)
+    .map((segment) => {
+      const coordinates = normalizeLine(segment?.geometry?.coordinates, 2000);
+      if (coordinates.length < 2) return null;
+      const color = String(segment?.color || '');
+      return {
+        kind: ROUTE_SEGMENT_KINDS.has(segment?.kind) ? segment.kind : 'other',
+        color: /^#[0-9a-f]{6}$/i.test(color) ? color : '',
+        label: normalizeShortText(segment?.label, 60),
+        geometry: { type: 'LineString', coordinates },
+      };
+    })
+    .filter(Boolean);
+}
+
 export function normalizeRouteGeometry(value) {
   if (!value || typeof value !== 'object') return null;
   if (value.type === 'LineString') {
@@ -130,6 +150,7 @@ export function createSavedPlaceRoute(partial = {}) {
     geometry: normalizeRouteGeometry(partial.geometry),
     calculatedAt: normalizeTimestamp(partial.calculatedAt),
     transitSteps: normalizeTransitSteps(partial.transitSteps),
+    segments: normalizeRouteSegments(partial.segments),
   };
 }
 
