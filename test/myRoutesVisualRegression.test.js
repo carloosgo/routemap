@@ -6,13 +6,12 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('arrastrar un día sigue al puntero y reutiliza la elevación visual del itinerario', async () => {
+test('Mis Rutas no permite arrastrar días completos y muestra Por organizar arriba', async () => {
   const panel = await read('src/modules/places/TripPlacesDayFirstPanel.jsx');
 
-  assert.match(panel, /sourceOffset,\s*pointerId: event\.pointerId,\s*startY: event\.clientY,\s*offsetY: 0,/s);
-  assert.match(panel, /offsetY: event\.clientY - current\.startY,\s*targetOffset:/s);
-  assert.match(panel, /transform: `translateY\(\$\{dayDrag\.offsetY\}px\)`,\s*pointerEvents: 'none',\s*zIndex: 20,/s);
-  assert.match(panel, /\.trip-day-first__day\.is-day-dragging\{[^}]*background:rgba\(255,255,255,\.96\)[^}]*border-radius:8px[^}]*box-shadow:0 8px 22px rgba\(15,23,42,\.11\)/);
+  assert.doesNotMatch(panel, /startDayDrag|reorderTripDay|dayDrag/);
+  assert.match(panel, /grouped\.unassigned\.length > 0 && \([\s\S]*?data-unassigned-places/);
+  assert.match(panel, /dayCityNames\(assignmentsByDay\.get\(day\.tripDayOffset\)\)/);
 });
 
 test('Mis Rutas dibuja un único rail recto entre el primer y último punto', async () => {

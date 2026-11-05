@@ -41,6 +41,11 @@ export function SegmentBody({
             {dateError}
           </p>
         )}
+        {!dateError && segment.startDate && !segment.endDate && (
+          <p className="segment-details-modal__date-error" role="status">
+            {t('segmentEndDateInferred')}
+          </p>
+        )}
       </div>
 
       <ExpenseEditor

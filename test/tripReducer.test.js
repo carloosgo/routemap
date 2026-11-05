@@ -14,6 +14,7 @@ import {
   createTrip,
   routeStops,
 } from '../src/modules/trips/tripModel.js';
+import { placeTripDayOffset } from '../src/modules/trips/globalTripDayPlanning.js';
 
 const reduce = (state, type, values = {}) =>
   tripReducer(state, { type, ...values });
@@ -346,7 +347,7 @@ test('reordenar visualmente no poda rutas mientras la asignación de día no cam
   assert.deepEqual(reordered.routeConnections.map(({ id }) => id), ['ab', 'cd']);
 });
 
-test('Mover a cambia sólo el día global, conserva ciudad y elimina conexiones obsoletas', () => {
+test('Mover a cambia estancia y día juntos y elimina conexiones obsoletas', () => {
   const state = {
     ...planningTrip(),
     places: [
@@ -364,36 +365,55 @@ test('Mover a cambia sólo el día global, conserva ciudad y elimina conexiones 
   });
 
   assert.deepEqual(moved.places.map(({ id }) => id), ['a', 'c', 'b']);
-  assert.equal(moved.places.at(-1).segmentId, 'segment-1');
+  assert.equal(moved.places.at(-1).segmentId, 'segment-2');
   assert.equal(moved.places.at(-1).dayOffset, 0);
-  assert.equal(moved.places.at(-1).tripDayOffset, 3);
+  assert.equal(moved.places.at(-1).tripDayOffset, null);
   assert.deepEqual(moved.routeConnections, []);
 });
 
-test('reordenar un día mueve sus lugares entre fechas sin cambiar su ciudad', () => {
+test('un lugar movido sigue a su nueva ciudad al cambiar fechas y protege esa estancia', () => {
   const state = {
     ...planningTrip(),
-    places: [
-      plannedPlace('a', 'segment-1', 0),
-      plannedPlace('b', 'segment-1', 1),
-      plannedPlace('c', 'segment-2', 0),
-    ],
+    places: [plannedPlace('a', 'segment-1', 0)],
   };
-  const reordered = reduce(state, TRIP_ACTIONS.reorderTripDay, {
-    sourceOffset: 0,
-    targetOffset: 3,
-    placement: 'after',
+  const moved = reduce(state, TRIP_ACTIONS.movePlaceToDay, { placeId: 'a', tripDayOffset: 4 });
+
+  assert.notEqual(reduce(moved, TRIP_ACTIONS.removeSegment, { segmentId: 'segment-1' }), moved);
+  assert.equal(reduce(moved, TRIP_ACTIONS.removeSegment, { segmentId: 'segment-2' }), moved);
+  assert.equal(
+    reduce(moved, TRIP_ACTIONS.updateSegment, { segmentId: 'segment-2', patch: { endDate: '2026-09-05' } }),
+    moved
+  );
+
+  const shifted = reduce(moved, TRIP_ACTIONS.updateSegment, {
+    segmentId: 'segment-2',
+    patch: { startDate: '2026-09-06', endDate: '2026-09-07' },
+  });
+  assert.equal(placeTripDayOffset(shifted.places[0], shifted.segments), 5);
+});
+
+test('Mover a no acepta días sin ciudad', () => {
+  const [first, second] = planningTrip().segments;
+  const state = {
+    ...planningTrip(),
+    segments: [first, createSegment({ ...second, startDate: '2026-09-07', endDate: '2026-09-08' })],
+    places: [plannedPlace('a', 'segment-1', 0)],
+  };
+
+  assert.equal(reduce(state, TRIP_ACTIONS.movePlaceToDay, { placeId: 'a', tripDayOffset: 3 }), state);
+});
+
+test('al cargar un viaje, los lugares con el antiguo tripDayOffset se migran a estancia y día', () => {
+  const loaded = reduce(createInitialTrip(), TRIP_ACTIONS.load, {
+    trip: {
+      ...planningTrip(),
+      places: [createPlace({ ...plannedPlace('a', 'segment-1', 0), tripDayOffset: 4 })],
+    },
   });
 
-  const a = reordered.places.find((place) => place.id === 'a');
-  const b = reordered.places.find((place) => place.id === 'b');
-  const c = reordered.places.find((place) => place.id === 'c');
-  assert.equal(a.segmentId, 'segment-1');
-  assert.equal(a.dayOffset, 0);
-  assert.equal(a.tripDayOffset, 3);
-  assert.equal(b.tripDayOffset, 0);
-  assert.equal(c.segmentId, 'segment-2');
-  assert.equal(c.tripDayOffset, 2);
+  assert.equal(loaded.places[0].segmentId, 'segment-2');
+  assert.equal(loaded.places[0].dayOffset, 1);
+  assert.equal(loaded.places[0].tripDayOffset, null);
 });
 
 test('un trayecto con lugares asignados no se puede borrar ni reinterpretar como otra ciudad', () => {
@@ -458,12 +478,14 @@ test('la nota del lugar se sanitiza y no permite modificar la asignación por up
   assert.equal(updated.places[0].note.length, TRIP_LIMITS.placeNote);
 });
 
-test('las conexiones de ruta se aceptan entre lugares del mismo día global aunque sean de ciudades distintas', () => {
+test('las conexiones de ruta se aceptan entre lugares del mismo día, incluido el día de traslado', () => {
+  const [first, second] = planningTrip().segments;
   const state = {
     ...planningTrip(),
+    segments: [first, createSegment({ ...second, startDate: '2026-09-04', endDate: '2026-09-06' })],
     places: [
-      plannedPlace('a', 'segment-1', 0),
-      createPlace({ ...plannedPlace('b', 'segment-2', 0), tripDayOffset: 0 }),
+      plannedPlace('a', 'segment-1', 2),
+      plannedPlace('b', 'segment-2', 0),
       plannedPlace('c', 'segment-1', 1),
     ],
   };

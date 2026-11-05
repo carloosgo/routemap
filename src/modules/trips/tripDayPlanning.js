@@ -25,12 +25,42 @@ function normalizedOptionalId(value) {
   return typeof value === 'string' ? value.trim().slice(0, 128) : '';
 }
 
-export function segmentPlanningDayCount(segment) {
+/**
+ * Rango civil efectivo de cada estancia, alineado con `segments`.
+ * Itinerario es la única fuente del calendario: si a una estancia le falta la
+ * salida, se toma la llegada a la siguiente estancia con fecha; si tampoco hay,
+ * la estancia ocupa solo su día de llegada. `endInferred` permite avisarlo en UI.
+ */
+export function segmentDateRanges(segments) {
+  const safeSegments = Array.isArray(segments) ? segments : [];
+  const starts = safeSegments.map((segment) => parseCivilDate(segment?.startDate));
+  return safeSegments.map((segment, index) => {
+    const start = starts[index];
+    if (start == null) return { start: null, end: null, endInferred: false };
+    const explicitEnd = parseCivilDate(segment?.endDate);
+    if (explicitEnd != null) {
+      return explicitEnd >= start
+        ? { start, end: explicitEnd, endInferred: false }
+        : { start: null, end: null, endInferred: false };
+    }
+    const nextStart = starts.slice(index + 1).find((value) => value != null);
+    const end = nextStart != null && nextStart >= start ? nextStart : start;
+    return { start, end, endInferred: true };
+  });
+}
+
+function rangeDayCount(range) {
+  if (range?.start == null || range?.end == null || range.end < range.start) return 0;
+  return Math.floor((range.end - range.start) / DAY_MS) + 1;
+}
+
+export function segmentPlanningDayCount(segment, segments = null) {
   if (!isPlaced(segment?.destination)) return 0;
-  const start = parseCivilDate(segment?.startDate);
-  const end = parseCivilDate(segment?.endDate);
-  if (start == null || end == null || end < start) return 0;
-  return Math.floor((end - start) / DAY_MS) + 1;
+  const list = Array.isArray(segments) && segments.some((candidate) => candidate?.id === segment?.id)
+    ? segments
+    : [segment];
+  const index = list.findIndex((candidate) => candidate === segment || candidate?.id === segment?.id);
+  return rangeDayCount(segmentDateRanges(list)[index]);
 }
 
 export function planningGroupKey(segmentId, dayOffset) {
@@ -46,12 +76,13 @@ export function placePlanningGroupKey(place) {
 
 export function tripPlanningDays(segments) {
   const safeSegments = Array.isArray(segments) ? segments : [];
+  const ranges = segmentDateRanges(safeSegments);
   const validSegments = safeSegments
     .map((segment, segmentIndex) => ({
       segment,
       segmentIndex,
-      start: parseCivilDate(segment?.startDate),
-      dayCount: segmentPlanningDayCount(segment),
+      start: ranges[segmentIndex].start,
+      dayCount: isPlaced(segment?.destination) ? rangeDayCount(ranges[segmentIndex]) : 0,
     }))
     .filter(({ start, dayCount }) => start != null && dayCount > 0);
 
@@ -113,10 +144,10 @@ export function maxAssignedDayOffset(places, segmentId) {
   }, -1);
 }
 
-export function segmentCanContainAssignedPlaces(segment, places) {
+export function segmentCanContainAssignedPlaces(segment, places, segments = null) {
   const highestOffset = maxAssignedDayOffset(places, segment?.id);
   if (highestOffset < 0) return true;
-  return segmentPlanningDayCount(segment) > highestOffset;
+  return segmentPlanningDayCount(segment, segments) > highestOffset;
 }
 
 export function samePlanningGroup(left, right) {

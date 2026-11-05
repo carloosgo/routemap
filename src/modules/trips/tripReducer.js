@@ -19,8 +19,9 @@ import {
 } from './tripDayPlanning.js';
 import {
   itineraryCalendarDays,
+  migrateLegacyTripDayOffset,
   placeTripDayOffset,
-  reorderItineraryDayContents,
+  planningTargetForTripDay,
   sameItineraryDay,
 } from './globalTripDayPlanning.js';
 import {
@@ -50,7 +51,6 @@ export const TRIP_ACTIONS = Object.freeze({
   addSegment: 'ADD_SEGMENT',
   removeSegment: 'REMOVE_SEGMENT',
   reorderSegment: 'REORDER_SEGMENT',
-  reorderTripDay: 'REORDER_TRIP_DAY',
   updateSegment: 'UPDATE_SEGMENT',
   updateExpenses: 'UPDATE_EXPENSES',
   addPlace: 'ADD_PLACE',
@@ -129,17 +129,19 @@ function cityIdentity(city) {
 function movePlaceToGlobalDay(places, placeId, tripDayOffset, segments) {
   const current = Array.isArray(places) ? places : [];
   const sourceIndex = current.findIndex((place) => place.id === placeId);
-  const targetOffset = Number(tripDayOffset);
+  if (sourceIndex < 0) return current;
+  const source = current[sourceIndex];
+  const target = planningTargetForTripDay(source, segments, tripDayOffset);
+  if (!target) return current;
   if (
-    sourceIndex < 0
-    || !Number.isInteger(targetOffset)
-    || targetOffset < 0
+    source.segmentId === target.segmentId
+    && source.dayOffset === target.dayOffset
+    && source.tripDayOffset == null
   ) return current;
 
-  const moved = createPlace({
-    ...current[sourceIndex],
-    tripDayOffset: targetOffset,
-  });
+  // Una sola referencia: mover de día cambia la estancia y el día local juntos.
+  const moved = createPlace({ ...source, ...target, tripDayOffset: null });
+  const targetOffset = Number(tripDayOffset);
   const remaining = current.filter((place) => place.id !== placeId);
   let insertIndex = -1;
   remaining.forEach((place, index) => {
@@ -151,8 +153,16 @@ function movePlaceToGlobalDay(places, placeId, tripDayOffset, segments) {
   return next;
 }
 
+function normalizeTripForEditing(rawTrip) {
+  const trip = normalizeTrip(rawTrip);
+  const places = (trip.places || []).map((place) => migrateLegacyTripDayOffset(place, trip.segments));
+  return places.some((place, index) => place !== trip.places[index])
+    ? { ...trip, places }
+    : trip;
+}
+
 export function createInitialTrip(initialTrip) {
-  return initialTrip ? normalizeTrip(initialTrip) : appendSegment(createTrip());
+  return initialTrip ? normalizeTripForEditing(initialTrip) : appendSegment(createTrip());
 }
 
 export function tripReducer(state, action) {
@@ -161,7 +171,7 @@ export function tripReducer(state, action) {
       return appendSegment(createTrip());
 
     case TRIP_ACTIONS.load:
-      return normalizeTrip(action.trip);
+      return normalizeTripForEditing(action.trip);
 
     case TRIP_ACTIONS.rename:
       return touch(state, { name: sanitizeText(action.name) });
@@ -264,26 +274,6 @@ export function tripReducer(state, action) {
         action.targetId,
         action.placement
       );
-
-    case TRIP_ACTIONS.reorderTripDay: {
-      const places = reorderItineraryDayContents(
-        state.places,
-        state.segments,
-        action.sourceOffset,
-        action.targetOffset,
-        action.placement
-      );
-      if (!places) return state;
-      return touch(state, {
-        places,
-        placeOrderVersion: PLACE_ORDER_VERSION,
-        routeConnections: pruneRouteConnections(
-          state.routeConnections,
-          places,
-          state.segments
-        ),
-      });
-    }
 
     case TRIP_ACTIONS.updateSegment: {
       const patch = { ...(action.patch || {}) };
