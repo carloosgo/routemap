@@ -8,6 +8,8 @@ const localeInvariantKeys = new Set([
   'taxiUber',
   'taxi',
   'bus',
+  'transitVehicleBus',
+  'transitVehicleFerry',
   'no',
 ]);
 

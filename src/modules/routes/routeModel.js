@@ -91,6 +91,17 @@ export function normalizeTransitIcon(value) {
   }
 }
 
+function normalizeTimeZone(value) {
+  const zone = typeof value === 'string' ? value.trim().slice(0, 64) : '';
+  if (!zone) return '';
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: zone });
+    return zone;
+  } catch {
+    return '';
+  }
+}
+
 function normalizeTransitSteps(value) {
   return (Array.isArray(value) ? value : [])
     .slice(0, 24)
@@ -99,6 +110,8 @@ function normalizeTransitSteps(value) {
       arrivalStop: normalizeShortText(step?.arrivalStop),
       departureTime: normalizeTimestamp(step?.departureTime),
       arrivalTime: normalizeTimestamp(step?.arrivalTime),
+      departureTimeZone: normalizeTimeZone(step?.departureTimeZone),
+      arrivalTimeZone: normalizeTimeZone(step?.arrivalTimeZone),
       lineName: normalizeShortText(step?.lineName, 120),
       lineShortName: normalizeShortText(step?.lineShortName, 60),
       lineColor: hexColor(step?.lineColor),

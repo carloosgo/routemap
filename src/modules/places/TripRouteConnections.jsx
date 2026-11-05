@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import {
   IconBike,
   IconBus,
@@ -22,7 +22,7 @@ import { distanceKm } from '../trips/placePlanningAssignment.js';
 import { isGooglePlaceReference, isPlaced } from '../trips/tripModel.js';
 import { transferDepartureTime } from './cityTransferModel.js';
 import { formatDistance } from './placesDayModel.js';
-import { ROUTE_STROKES, routeStroke, transitLineBadges } from './routeConnectionStyle.js';
+import { ROUTE_STROKES, routeStroke, transitItinerary, transitLineBadges, transitVehicleKey } from './routeConnectionStyle.js';
 
 export const ROUTE_MODES = Object.freeze([
   { id: 'walk', labelKey: 'routeModeWalk', Icon: IconWalk },
@@ -46,11 +46,17 @@ export function formatDuration(value) {
   return remainingHours ? `${days} d ${remainingHours} h` : `${days} d`;
 }
 
-export function formatTransitTime(value, locale) {
+/** Hora de una salida o llegada, en la zona horaria de la estación si se conoce. */
+export function formatTransitTime(value, locale, timeZone = '') {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(date);
+  const options = { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' };
+  try {
+    return new Intl.DateTimeFormat(locale, timeZone ? { ...options, timeZone } : options).format(date);
+  } catch {
+    return new Intl.DateTimeFormat(locale, options).format(date);
+  }
 }
 
 function estimateKey(origin, destination, mode) {
@@ -312,7 +318,7 @@ export function TripRouteConnections({
   const stroke = routeStroke(chosen);
   const ModeIcon = ROUTE_MODES.find(({ id }) => id === chosenMode)?.Icon || IconRoute;
   const departure = chosenMode === 'transit'
-    ? formatTransitTime(chosen?.transitSteps?.[0]?.departureTime, intlLocale)
+    ? formatTransitTime(chosen?.transitSteps?.[0]?.departureTime, intlLocale, chosen?.transitSteps?.[0]?.departureTimeZone)
     : '';
   const distanceLabel = formatDistance(chosen?.distance, intlLocale);
   const pairKey = `${origin.id}>${destination.id}`;
@@ -425,29 +431,70 @@ export function LineBadge({ label = '', color, textColor, icon = '' }) {
   );
 }
 
-export function TransitDetails({ route, locale }) {
-  const steps = Array.isArray(route?.transitSteps) ? route.transitSteps : [];
-  if (!steps.length) return null;
+const itineraryStyles = {
+  list: { display: 'grid', gridTemplateColumns: '40px 14px minmax(0, 1fr)', columnGap: 8, fontSize: 12, color: '#3b4556' },
+  time: { alignSelf: 'center', color: '#0b1f2c', fontWeight: 600, fontVariantNumeric: 'tabular-nums', textAlign: 'right' },
+  dot: { alignSelf: 'center', justifySelf: 'center', width: 10, height: 10, boxSizing: 'border-box', borderRadius: '50%', border: '2px solid #0b1f2c', background: '#ffffff' },
+  station: { alignSelf: 'center', minWidth: 0, padding: '3px 0', color: '#0b1f2c', fontWeight: 500, overflowWrap: 'anywhere' },
+  rail: (color) => ({ justifySelf: 'center', width: 4, minHeight: 36, borderRadius: 2, background: color }),
+  walkRail: { justifySelf: 'center', width: 0, minHeight: 22, borderLeft: '2px dotted #98a2b3' },
+  ride: { display: 'flex', minWidth: 0, flexDirection: 'column', justifyContent: 'center', gap: 3, padding: '6px 0' },
+  rideHead: { display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  muted: { color: '#667085' },
+};
+
+/** Itinerario de transporte público: estaciones con su hora, tramos con su línea y transbordos. */
+export function TransitDetails({ route, locale, t = (key) => key }) {
+  const items = transitItinerary(route?.transitSteps);
+  if (!items.length) return null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12, color: '#3b4556' }}>
-      {steps.slice(0, 5).map((step, index) => {
-        const line = step.lineShortName || step.lineName || step.tripShortText || step.vehicleType || '';
-        const departure = formatTransitTime(step.departureTime, locale);
-        const arrival = formatTransitTime(step.arrivalTime, locale);
-        const stops = [step.departureStop, step.arrivalStop].filter(Boolean).join(' → ');
+    <div style={itineraryStyles.list}>
+      {items.map((item, index) => {
+        const key = `${item.type}:${index}`;
+        if (item.type === 'stop') {
+          return (
+            <Fragment key={key}>
+              <span style={itineraryStyles.time}>{formatTransitTime(item.time, locale, item.timeZone)}</span>
+              <span aria-hidden="true" style={itineraryStyles.dot} />
+              <span style={itineraryStyles.station}>{item.name}</span>
+            </Fragment>
+          );
+        }
+        if (item.type === 'transfer') {
+          const wait = item.seconds ? formatDuration(item.seconds) : '';
+          const label = item.walk ? t('transitWalkTransfer') : t('transitTransfer');
+          return (
+            <Fragment key={key}>
+              <span />
+              <span aria-hidden="true" style={itineraryStyles.walkRail} />
+              <span style={{ ...itineraryStyles.muted, alignSelf: 'center' }}>{[label, wait].filter(Boolean).join(' · ')}</span>
+            </Fragment>
+          );
+        }
+        const { step } = item;
+        const color = step.lineColor || ROUTE_STROKES.transit.color;
+        const line = step.lineShortName || step.lineName || step.tripShortText || '';
+        const vehicleKey = transitVehicleKey(step.vehicleType);
+        const stops = Number(step.stopCount) || 0;
+        const detail = [
+          step.headsign ? t('transitTowards', { place: step.headsign }) : '',
+          stops ? t(stops === 1 ? 'transitStopOne' : 'transitStopMany', { count: stops }) : '',
+        ].filter(Boolean).join(' · ');
         return (
-          <div key={`${line}:${index}`} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            {(line || step.lineIcon) && (
-              <LineBadge
-                label={line}
-                color={step.lineColor || ROUTE_STROKES.transit.color}
-                textColor={step.lineTextColor}
-                icon={step.lineIcon}
-              />
-            )}
-            <span>{[departure && arrival ? `${departure} – ${arrival}` : '', stops].filter(Boolean).join(' · ')}</span>
-          </div>
+          <Fragment key={key}>
+            <span />
+            <span aria-hidden="true" style={itineraryStyles.rail(color)} />
+            <span style={itineraryStyles.ride}>
+              <span style={itineraryStyles.rideHead}>
+                <LineBadge label={line} color={color} textColor={step.lineTextColor} icon={step.lineIcon} />
+                <span style={{ color: '#0b1f2c' }}>
+                  {[vehicleKey ? t(vehicleKey) : '', item.seconds ? formatDuration(item.seconds) : ''].filter(Boolean).join(' · ')}
+                </span>
+              </span>
+              {detail && <span style={itineraryStyles.muted}>{detail}</span>}
+            </span>
+          </Fragment>
         );
       })}
     </div>

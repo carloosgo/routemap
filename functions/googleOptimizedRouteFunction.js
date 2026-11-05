@@ -16,6 +16,7 @@ const ROUTE_FIELDS = [
   'routes.legs.steps.transitDetails.transitLine',
   'routes.legs.steps.transitDetails.stopCount',
   'routes.legs.steps.transitDetails.tripShortText',
+  'routes.legs.steps.transitDetails.localizedValues',
 ].join(',');
 const GOOGLE_ROUTE_MODES = new Set(['drive', 'transit', 'train', 'bus', 'bicycle', 'walk']);
 
@@ -117,6 +118,30 @@ function routeRequestMode(mode) {
   return { travelMode: 'TRANSIT' };
 }
 
+const BUS_VEHICLES = new Set(['BUS', 'INTERCITY_BUS', 'TROLLEYBUS', 'SHARE_TAXI']);
+const RAIL_ONLY_TRANSIT = Object.freeze({ allowedTravelModes: ['SUBWAY', 'TRAIN', 'LIGHT_RAIL', 'RAIL'] });
+// Una alternativa en metro o tren se prefiere si no tarda mucho más que la de bus.
+const RAIL_MAX_RATIO = 1.35;
+const RAIL_MAX_EXTRA_SECONDS = 20 * 60;
+
+export function routeUsesBus(route) {
+  const steps = route?.legs?.flatMap((leg) => leg?.steps || []) || [];
+  return steps.some((step) =>
+    step?.travelMode === 'TRANSIT'
+    && BUS_VEHICLES.has(String(step?.transitDetails?.transitLine?.vehicle?.type || ''))
+  );
+}
+
+/** Entre la ruta por defecto (con bus) y la de solo metro/tren, elige la de riel si es razonable. */
+export function preferRailRoute(defaultRoute, railRoute) {
+  if (!railRoute) return defaultRoute;
+  if (!defaultRoute) return railRoute;
+  const base = parseDurationSeconds(defaultRoute.duration);
+  const rail = parseDurationSeconds(railRoute.duration);
+  if (!base || !rail) return defaultRoute;
+  return rail <= base * RAIL_MAX_RATIO && rail - base <= RAIL_MAX_EXTRA_SECONDS ? railRoute : defaultRoute;
+}
+
 function routeWaypoint(value) {
   const placeId = cleanText(value?.placeId, 256);
   if (placeId) return { placeId };
@@ -144,6 +169,9 @@ function transitSummary(route) {
         arrivalStop: cleanText(stops.arrivalStop?.name, 160),
         departureTime: cleanText(stops.departureTime, 48),
         arrivalTime: cleanText(stops.arrivalTime, 48),
+        // Hora local de cada estación: el viajero la lee en la hora de la ciudad.
+        departureTimeZone: cleanText(details.localizedValues?.departureTime?.timeZone, 64),
+        arrivalTimeZone: cleanText(details.localizedValues?.arrivalTime?.timeZone, 64),
         lineName: cleanText(line.name, 120),
         lineShortName: cleanText(line.nameShort, 60),
         lineColor: HEX_COLOR.test(String(line.color || '')) ? line.color : '',
@@ -229,16 +257,24 @@ export const googleRouteOptimized = onCall(
         body.departureTime = departureTime;
       }
 
-      const payload = await limitedFetch(
-        GOOGLE_ROUTES_URL,
-        {
-          method: 'POST',
-          headers: googleHeaders(),
-          body: JSON.stringify(body),
-        },
-        'Google Routes'
-      );
-      const route = payload.routes?.[0];
+      const fetchRoute = async (requestBody) => {
+        const payload = await limitedFetch(
+          GOOGLE_ROUTES_URL,
+          {
+            method: 'POST',
+            headers: googleHeaders(),
+            body: JSON.stringify(requestBody),
+          },
+          'Google Routes'
+        );
+        return payload.routes?.[0] || null;
+      };
+      let route = await fetchRoute(body);
+      // Transporte público: si Google propone bus, se busca también en metro/tren.
+      if (requestedMode === 'transit' && routeUsesBus(route)) {
+        const railRoute = await fetchRoute({ ...body, transitPreferences: RAIL_ONLY_TRANSIT }).catch(() => null);
+        route = preferRailRoute(route, railRoute);
+      }
       if (!route) throw new Error('Google Routes no devolvió una ruta.');
       const geometry = decodeGooglePolyline(cleanText(route.polyline?.encodedPolyline, 1000000));
       if (!geometry) throw new Error('Google Routes no devolvió una geometría válida.');
