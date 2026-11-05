@@ -52,7 +52,7 @@ const MY_ROUTES_STYLES = `
 .mr__city small{color:#667085;font-size:12.5px;font-weight:500}
 .mr__day{position:relative;border-bottom:1px solid #eef0f2}
 .mr__day.is-drop-target{box-shadow:inset 3px 0 0 var(--atlas-accent)}
-.mr__row{display:grid;width:100%;min-height:52px;grid-template-columns:minmax(0,1fr) auto 16px;align-items:center;gap:12px;padding:6px 16px;border:0;background:#fff;color:#0b1f2c;font:500 13.5px var(--font-body);text-align:left;cursor:pointer}
+.mr__row{display:grid;width:100%;min-height:52px;grid-template-columns:minmax(0,1fr) 16px;align-items:center;gap:12px;padding:6px 16px;border:0;background:#fff;color:#0b1f2c;font:500 13.5px var(--font-body);text-align:left;cursor:pointer}
 .mr__row:hover,.mr__row:focus-visible{background:#f8fafb;outline:none}
 .mr__row:focus-visible{box-shadow:inset 0 0 0 2px #19a5d0}
 .mr__title{min-width:0}
@@ -96,7 +96,7 @@ const MY_ROUTES_STYLES = `
 .mr-place__has-note-dot{position:absolute;top:8px;right:4px;width:6px;height:6px;border-radius:50%;background:#0e4f63}
 .mr-place:hover .mr-place__has-note-dot,.mr-place:focus-within .mr-place__has-note-dot,.mr-place.is-selected .mr-place__has-note-dot{display:none}
 .mr__transfer{margin:2px 0}
-@media (max-width:560px){.mr__row{grid-template-columns:minmax(0,1fr) 16px}.mr__row .mr__summary{display:none}.mr__head .mr__row{grid-template-columns:minmax(0,1fr)}.mr__head .mr__summary{display:none}}
+@media (max-width:560px){.mr__head .mr__row{grid-template-columns:minmax(0,1fr)}.mr__head .mr__summary{display:none}}
 `;
 
 const UNASSIGNED_KEY = 'unassigned';
@@ -460,11 +460,11 @@ export function TripPlacesDayFirstPanel({
     );
   }
 
+  // Solo el día abierto resume sus traslados; las filas cerradas quedan limpias.
   function daySummary(day) {
-    if (!day.places.length) return t('dayNoPlacesShort');
+    if (!day.places.length) return '';
     const totals = dayRouteTotals(day.places, routeFor);
     return [
-      t(day.places.length === 1 ? 'placeCountOne' : 'placeCountMany', { count: day.places.length }),
       formatDistance(totals.distance, intlLocale),
       totals.duration ? formatDuration(totals.duration) : '',
     ].filter(Boolean).join(' · ');
@@ -489,7 +489,7 @@ export function TripPlacesDayFirstPanel({
         onClick={() => toggleDay(day.tripDayOffset)}
       >
         <span className="mr__title"><strong>{title}</strong><small>{date}</small></span>
-        <span className="mr__summary">{daySummary(day)}</span>
+        {open && <span className="mr__summary">{daySummary(day)}</span>}
         {!open && <IconChevronRight size={15} color="#8a94a3" aria-hidden="true" />}
       </button>
     );

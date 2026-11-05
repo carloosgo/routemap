@@ -7,7 +7,7 @@ export const MY_ROUTE_COLORS = Object.freeze({
   transit: '#23647a',
   drive: '#0e4f63',
   bicycle: '#2a9d8f',
-  pending: '#9aa3af',
+  pending: '#0b1f2c',
   casing: '#ffffff',
 });
 
@@ -78,14 +78,42 @@ export function routeLineLayers(maps, { kind, color = '' }, path) {
 }
 
 /** Recta tenue entre dos paradas consecutivas sin modo elegido. */
+/**
+ * Arco suave entre dos puntos (curva cuadrática), para unir lugares que aún no
+ * tienen ruta sin que parezca un trayecto real. Se calcula en un plano local
+ * corregido por la latitud, suficiente para distancias dentro de una ciudad.
+ */
+export function arcPath(from, to, bend = 0.2, samples = 32) {
+  if (!from || !to) return [];
+  const scaleX = Math.cos(((from.lat + to.lat) / 2) * Math.PI / 180) || 1;
+  const ax = from.lng * scaleX;
+  const bx = to.lng * scaleX;
+  const dx = bx - ax;
+  const dy = to.lat - from.lat;
+  if (!dx && !dy) return [from, to];
+  // Punto de control desplazado en perpendicular al centro del segmento.
+  const cx = (ax + bx) / 2 - dy * bend;
+  const cy = (from.lat + to.lat) / 2 + dx * bend;
+  const points = [];
+  for (let index = 0; index <= samples; index += 1) {
+    const step = index / samples;
+    const inverse = 1 - step;
+    const x = inverse * inverse * ax + 2 * inverse * step * cx + step * step * bx;
+    const y = inverse * inverse * from.lat + 2 * inverse * step * cy + step * step * to.lat;
+    points.push({ lat: y, lng: x / scaleX });
+  }
+  return points;
+}
+
 export function pendingLineLayer(maps, path) {
+  const arc = path?.length === 2 ? arcPath(path[0], path[1]) : path;
   return {
-    path,
+    path: arc,
     clickable: false,
-    geodesic: true,
+    geodesic: false,
     strokeOpacity: 0,
     zIndex: 0,
-    icons: dashes(maps, MY_ROUTE_COLORS.pending, 2, '12px', 0.9),
+    icons: dashes(maps, MY_ROUTE_COLORS.pending, 2, '8px', 0.85),
   };
 }
 

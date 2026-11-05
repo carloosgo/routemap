@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { routeSegments, transitIconUri } from '../functions/googleOptimizedRouteFunction.js';
+import { preferRailRoute, routeSegments, routeUsesBus, transitIconUri } from '../functions/googleOptimizedRouteFunction.js';
 import { normalizeRouteSegments, normalizeTransitIcon, createSavedPlaceRoute } from '../src/modules/routes/routeModel.js';
 import { transitLineBadges } from '../src/modules/places/routeConnectionStyle.js';
 import { cityTransfers, transferDepartureTime } from '../src/modules/places/cityTransferModel.js';
@@ -108,4 +108,22 @@ test('la salida de referencia es a las 9 de la mañana locales y solo en fechas 
   assert.equal(transferDepartureTime('2026-12-23', -99.13, now), '2026-12-23T16:00:00.000Z');
   assert.equal(transferDepartureTime('2026-01-01', 0, now), '');
   assert.equal(transferDepartureTime('no-date', 0, now), '');
+});
+
+test('en transporte público se prefiere metro o tren si no tarda mucho más que el bus', () => {
+  const busRoute = {
+    duration: '1800s',
+    legs: [{ steps: [{ travelMode: 'TRANSIT', transitDetails: { transitLine: { vehicle: { type: 'BUS' } } } }] }],
+  };
+  const metroRoute = {
+    duration: '2100s',
+    legs: [{ steps: [{ travelMode: 'TRANSIT', transitDetails: { transitLine: { vehicle: { type: 'SUBWAY' } } } }] }],
+  };
+  const slowTrain = { ...metroRoute, duration: '4000s' };
+
+  assert.equal(routeUsesBus(busRoute), true);
+  assert.equal(routeUsesBus(metroRoute), false);
+  assert.equal(preferRailRoute(busRoute, metroRoute), metroRoute);
+  assert.equal(preferRailRoute(busRoute, slowTrain), busRoute, 'no a costa de tardar mucho más');
+  assert.equal(preferRailRoute(busRoute, null), busRoute);
 });

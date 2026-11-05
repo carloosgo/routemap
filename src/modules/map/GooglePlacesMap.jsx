@@ -925,7 +925,7 @@ export function GooglePlacesMap({
         });
       });
 
-    // Paradas consecutivas del día abierto sin modo elegido: recta tenue.
+    // Paradas consecutivas del día abierto sin modo elegido: arco punteado.
     if (focusedPlaceIds) {
       const ordered = [...dayIndex]
         .filter(([id]) => focusedPlaceIds.has(id))
@@ -1018,7 +1018,7 @@ export function GooglePlacesMap({
             { key: 'transit', label: t('routeModeTransit'), line: <path d="M2 3 H20" stroke="#23647a" strokeWidth="4" strokeLinecap="round" /> },
             { key: 'drive', label: t('routeModeDrive'), line: <path d="M2 3 H20" stroke="#0e4f63" strokeWidth="4" strokeLinecap="round" /> },
             { key: 'bicycle', label: t('routeModeBicycle'), line: <path d="M2 3 H20" stroke="#2a9d8f" strokeWidth="3.5" strokeDasharray="6 4" /> },
-            { key: 'pending', label: t('legendNotChosen'), line: <path d="M2 3 H20" stroke="#9aa3af" strokeWidth="2" strokeDasharray="4 4" /> },
+            { key: 'pending', label: t('legendNotChosen'), line: <path d="M2 5 Q11 0 20 5" fill="none" stroke="#0b1f2c" strokeOpacity="0.85" strokeWidth="2" strokeDasharray="3 3" /> },
           ].map((item) => (
             <span key={item.key} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
               <svg width="22" height="6" aria-hidden="true">{item.line}</svg>

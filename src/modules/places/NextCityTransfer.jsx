@@ -108,8 +108,8 @@ export function NextCityTransfer({ from, to, date, t, intlLocale }) {
           </span>
         )}
         {showTransit && state.transit && (
-          <div style={{ paddingTop: 2 }}>
-            <TransitDetails route={state.transit} locale={intlLocale} />
+          <div style={{ padding: '6px 0 2px' }}>
+            <TransitDetails route={state.transit} locale={intlLocale} t={t} />
           </div>
         )}
       </div>

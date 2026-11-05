@@ -274,3 +274,6 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - El botón de nota del día es solo el icono, sin recuadro ni fondo.
 - No hay enlace «Agregar lugar a este día»: los lugares se agregan desde el buscador y se guardan en la ciudad que les corresponde (en el día abierto si es de esa ciudad; si no, en el primer día de la estancia).
 - Los distintivos de línea muestran el logo de la línea u operador cuando Google lo proporciona (16 px, sobre blanco en el mapa) junto al nombre corto en el color y color de texto oficiales; sin logo, solo la píldora de color.
+- Las filas de día cerradas solo llevan título, línea de fecha y flecha; no muestran «Sin lugares» ni el número de lugares. El día abierto resume solo la distancia y el tiempo de sus rutas.
+- El detalle de transporte público es un itinerario vertical: hora local de la estación (24 h) a la izquierda, nodo circular y nombre de la estación; cada tramo es un riel de 4 px en el color de la línea con su distintivo, tipo de vehículo, duración y «Hacia … · N paradas»; los transbordos van con riel punteado gris («Transbordo» o «Transbordo a pie» · espera). Una estación de transbordo no se repite.
+- Dos lugares consecutivos sin modo elegido se unen en el mapa con un arco suave (curva cuadrática) de guiones cortos en tinta `#0b1f2c` al 85 %, no con una recta gris.

@@ -20,11 +20,12 @@ import {
   withLiveGeometry,
 } from '../src/modules/routes/liveRouteStore.js';
 import {
+  arcPath,
   pendingLineLayer,
   routeDrawSegments,
   routeLineLayers,
 } from '../src/modules/map/myRoutesMapStyle.js';
-import { routeStroke, transitLineBadges } from '../src/modules/places/routeConnectionStyle.js';
+import { routeStroke, transitItinerary, transitLineBadges, transitVehicleKey } from '../src/modules/places/routeConnectionStyle.js';
 
 function city(id, name, country, countryCode, lat, lon) {
   return { id, name, displayName: `${name}, ${country}`, country, countryCode, lat, lon };
@@ -163,4 +164,48 @@ test('una ruta con tramos de transporte se dibuja por tramo con distintivo de lÃ
       .map(({ kind }) => kind),
     ['drive']
   );
+});
+
+test('dos lugares sin ruta se unen con un arco punteado negro, no con una recta', () => {
+  const from = { lat: 52.36, lng: 4.88 };
+  const to = { lat: 52.37, lng: 4.9 };
+  const arc = arcPath(from, to);
+  assert.equal(arc.length, 33);
+  assert.deepEqual(arc[0], from);
+  assert.ok(Math.abs(arc.at(-1).lat - to.lat) < 1e-9 && Math.abs(arc.at(-1).lng - to.lng) < 1e-9);
+  const middle = arc[16];
+  const straightMiddle = { lat: (from.lat + to.lat) / 2, lng: (from.lng + to.lng) / 2 };
+  assert.ok(Math.hypot(middle.lat - straightMiddle.lat, middle.lng - straightMiddle.lng) > 1e-4, 'el centro se separa de la recta');
+
+  const layer = pendingLineLayer(fakeMaps, [from, to]);
+  assert.equal(layer.path.length, 33);
+  assert.equal(layer.icons[0].icon.strokeColor, '#0b1f2c');
+  assert.equal(layer.icons[0].repeat, '8px');
+});
+
+test('el itinerario de transporte lista estaciones, tramos y transbordos sin repetir estaciones', () => {
+  const steps = [
+    { departureStop: 'Brugge Stadsschouwburg', arrivalStop: 'Brugge', departureTime: '2026-12-02T09:37:00Z', arrivalTime: '2026-12-02T09:45:00Z', vehicleType: 'BUS' },
+    { departureStop: 'Brugge Station', arrivalStop: 'Gent-Sint-Pieters', departureTime: '2026-12-02T09:58:00Z', arrivalTime: '2026-12-02T10:20:00Z', vehicleType: 'HEAVY_RAIL' },
+    { departureStop: 'Gent-Sint-Pieters', arrivalStop: 'Antwerpen-Centraal', departureTime: '2026-12-02T10:27:00Z', arrivalTime: '2026-12-02T11:23:00Z', vehicleType: 'HEAVY_RAIL' },
+  ];
+  const items = transitItinerary(steps);
+
+  assert.deepEqual(items.map(({ type, name, walk }) => [type, name || (walk ? 'walk' : '')]), [
+    ['stop', 'Brugge Stadsschouwburg'],
+    ['ride', ''],
+    ['stop', 'Brugge'],
+    ['transfer', 'walk'],
+    ['stop', 'Brugge Station'],
+    ['ride', ''],
+    ['stop', 'Gent-Sint-Pieters'],
+    ['transfer', ''],
+    ['ride', ''],
+    ['stop', 'Antwerpen-Centraal'],
+  ]);
+  assert.equal(items[1].seconds, 8 * 60);
+  assert.equal(items[3].seconds, 13 * 60);
+  assert.equal(transitVehicleKey('HEAVY_RAIL'), 'transitVehicleTrain');
+  assert.equal(transitVehicleKey('SUBWAY'), 'transitVehicleSubway');
+  assert.equal(transitVehicleKey('ROCKET'), '');
 });
