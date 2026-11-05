@@ -55,71 +55,64 @@ export function NextCityTransfer({ from, to, date, t, intlLocale }) {
   if (!located) return null;
 
   const TransferIcon = likelyFlight ? IconPlane : IconRoute;
-  const rowStyle = (active) => ({
-    display: 'grid',
-    width: '100%',
-    gridTemplateColumns: '22px minmax(0, 1fr) auto 14px',
+  const pill = {
+    display: 'inline-flex',
     alignItems: 'center',
-    gap: 10,
-    minHeight: 46,
-    padding: '0 14px',
+    gap: 7,
+    minHeight: 28,
+    padding: '0 10px 0 8px',
     border: 0,
-    borderTop: '1px solid #eef0f2',
-    background: active ? '#f7f9fa' : '#ffffff',
-    color: '#0b1f2c',
-    font: '500 13px var(--font-body)',
-    textAlign: 'left',
-  });
+    borderRadius: 7,
+    background: '#f4f6f8',
+    color: '#3b4556',
+    font: '500 12px var(--font-body)',
+  };
 
+  // Traslado entre ciudades: una línea más del día, con el mismo riel que los tramos.
   return (
-    <section
+    <div
       data-next-city-transfer
-      aria-label={`${from.name} → ${to.name}`}
-      style={{ border: '1px solid #e2e4e9', borderRadius: 12, background: '#ffffff', boxShadow: '0 4px 14px rgba(15, 23, 42, 0.06)', overflow: 'hidden' }}
+      style={{ display: 'grid', gridTemplateColumns: '32px minmax(0, 1fr)', columnGap: 12, alignItems: 'stretch' }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
-        <span aria-hidden="true" style={{ display: 'flex', width: 38, height: 38, flex: '0 0 38px', alignItems: 'center', justifyContent: 'center', borderRadius: 10, background: '#0b1f2c', color: '#ffffff' }}>
-          <TransferIcon size={19} stroke={1.8} />
-        </span>
-        <span style={{ minWidth: 0 }}>
-          <strong style={{ display: 'block', fontSize: 14.5, fontWeight: 600 }}>{t('transferTo', { city: to.name })}</strong>
-          <span style={{ display: 'block', marginTop: 2, color: '#5b6080', fontSize: 12 }}>
-            {[
-              `${formatKm(straightKm, intlLocale)} ${t('straightLineDistance')}`,
-              likelyFlight ? t('transferLikelyFlight') : '',
-            ].filter(Boolean).join(' · ')}
+      <span aria-hidden="true" style={{ justifySelf: 'center', width: 0, minHeight: 44, borderLeft: '2px dashed #0b1f2c', opacity: 0.55 }} />
+      <div style={{ display: 'flex', minWidth: 0, flexDirection: 'column', gap: 6, padding: '8px 0' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#3b4556', fontSize: 12.5 }}>
+          <TransferIcon size={15} stroke={1.8} color="#0b1f2c" aria-hidden="true" />
+          <span>
+            <strong style={{ color: '#0b1f2c', fontWeight: 600 }}>{t('transferTo', { city: to.name })}</strong>
+            {` · ${formatKm(straightKm, intlLocale)} ${t('straightLineDistance')}`}
+            {likelyFlight && ` · ${t('transferLikelyFlight')}`}
           </span>
         </span>
-      </div>
-      {!likelyFlight && (
-        <>
-          <button
-            type="button"
-            onClick={() => setShowTransit((current) => !current)}
-            disabled={!state.transit}
-            aria-expanded={showTransit}
-            style={{ ...rowStyle(showTransit), cursor: state.transit ? 'pointer' : 'default' }}
-          >
-            <IconBus size={18} stroke={1.8} color="#3b4556" aria-hidden="true" />
-            <span>{t('routeModeTransit')}</span>
-            <strong style={{ fontWeight: 600 }}>{state.loading ? '…' : formatDuration(state.transit?.duration)}</strong>
-            {state.transit
-              ? (showTransit ? <IconChevronUp size={14} color="#667085" aria-hidden="true" /> : <IconChevronDown size={14} color="#667085" aria-hidden="true" />)
-              : <span />}
-          </button>
-          {showTransit && state.transit && (
-            <div style={{ padding: '4px 14px 12px 46px', background: '#f7f9fa' }}>
-              <TransitDetails route={state.transit} locale={intlLocale} />
-            </div>
-          )}
-          <div style={{ ...rowStyle(false), cursor: 'default' }}>
-            <IconCar size={18} stroke={1.8} color="#3b4556" aria-hidden="true" />
-            <span>{t('routeModeDrive')}</span>
-            <strong style={{ fontWeight: 600 }}>{state.loading ? '…' : formatDuration(state.drive?.duration)}</strong>
-            <span />
+        {!likelyFlight && (
+          <span style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            <button
+              type="button"
+              onClick={() => setShowTransit((current) => !current)}
+              disabled={!state.transit}
+              aria-expanded={showTransit}
+              aria-label={t('routeModeTransit')}
+              title={t('routeModeTransit')}
+              style={{ ...pill, cursor: state.transit ? 'pointer' : 'default', ...(showTransit ? { background: '#ffffff', boxShadow: 'inset 0 0 0 1px #0b1f2c' } : null) }}
+            >
+              <IconBus size={15} stroke={1.8} aria-hidden="true" />
+              <strong style={{ color: '#0b1f2c', fontWeight: 600 }}>{state.loading ? '…' : formatDuration(state.transit?.duration)}</strong>
+              {state.transit && (showTransit
+                ? <IconChevronUp size={12} aria-hidden="true" />
+                : <IconChevronDown size={12} aria-hidden="true" />)}
+            </button>
+            <span style={pill} aria-label={t('routeModeDrive')} title={t('routeModeDrive')}>
+              <IconCar size={15} stroke={1.8} aria-hidden="true" />
+              <strong style={{ color: '#0b1f2c', fontWeight: 600 }}>{state.loading ? '…' : formatDuration(state.drive?.duration)}</strong>
+            </span>
+          </span>
+        )}
+        {showTransit && state.transit && (
+          <div style={{ paddingTop: 2 }}>
+            <TransitDetails route={state.transit} locale={intlLocale} />
           </div>
-        </>
-      )}
-    </section>
+        )}
+      </div>
+    </div>
   );
 }

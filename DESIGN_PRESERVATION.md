@@ -265,3 +265,10 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - El mapa de Mis Rutas pinta solo el día abierto: marcadores numerados en el color del país (el seleccionado crece con halo), lugares de otros días como puntos grises pequeños, trazos con borde blanco y distintivo de línea sobre el transporte, y recta tenue entre paradas sin modo elegido. Al abrir un día el mapa encuadra sus lugares una vez; después la cámara es del usuario.
 - Los controles del mapa de Mis Rutas se agrupan abajo a la derecha: botón `Capas` (blanco, 40 px, radio 10) con `Líneas de transporte` y `Lugares de otros días`, y zoom propio con el mismo estilo. El zoom nativo de Google se oculta solo en Mis Rutas. Abajo a la izquierda, una leyenda con el día y los tipos de trazo incluye `Powered by Google` cuando hay rutas de Google.
 - El viaje persiste únicamente el modo elegido de cada tramo; la geometría, los tramos de transporte y los tiempos de Google se recalculan en la sesión (`liveRouteStore`) sin disparar autosave.
+
+### Pulido posterior solicitado (variante D)
+
+- Las filas de día no llevan punto de color. La cabecera de ciudad es la referencia visual: bandera de 24 × 16 px, nombre de 15 px / 600 y número de días en gris.
+- El título de cada día es solo `Día N`. La línea de fecha agrega la ciudad (`fecha · Ciudad`) o el trayecto en un día de traslado (`fecha · Origen → Destino`). La palabra «traslado» no aparece.
+- El traslado entre ciudades no es una tarjeta: es una línea más del día con riel discontinuo oscuro, `Traslado a <ciudad> · km en línea recta` y píldoras de transporte público (desplegable) y coche.
+- El botón de nota del día es solo el icono, sin recuadro ni fondo.
