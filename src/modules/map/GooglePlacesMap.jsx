@@ -226,7 +226,6 @@ export function GooglePlacesMap({
   focusDay = null,
   selectedPlaceId = '',
   onSelectPlace,
-  focusLabel = '',
 }) {
   const { t } = useTranslation();
   const liveRoutesVersion = useLiveRoutesVersion();
@@ -955,7 +954,7 @@ export function GooglePlacesMap({
     map.setOptions?.({ zoomControl: !placesActive });
     if (!placesActive) return undefined;
     const node = document.createElement('div');
-    node.style.margin = '0 16px 24px 0';
+    node.style.margin = '0 10px 10px 0';
     const controls = map.controls[maps.ControlPosition.RIGHT_BOTTOM];
     controls.push(node);
     setLayersControlNode(node);
@@ -1006,29 +1005,6 @@ export function GooglePlacesMap({
           onClear={placeSearch.clearSearch}
           onChooseSuggestion={placeSearch.chooseSuggestion}
         />
-      )}
-      {placesActive && mapConfigured && (
-        <div
-          aria-label={t('mapLegend')}
-          style={{ position: 'absolute', zIndex: 650, left: 16, bottom: 24, display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: 14, rowGap: 4, maxWidth: 'calc(100% - 260px)', minHeight: 40, padding: '6px 14px', boxSizing: 'border-box', borderRadius: 10, background: '#ffffff', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.16)', color: '#3b4556', fontFamily: 'var(--font-body)', fontSize: 12 }}
-        >
-          {focusLabel && <strong style={{ color: '#0b1f2c', fontWeight: 600 }}>{focusLabel}</strong>}
-          {[
-            { key: 'walk', label: t('routeModeWalk'), line: <path d="M2 3 H20" stroke="#475569" strokeWidth="3" strokeLinecap="round" strokeDasharray="0.1 6" /> },
-            { key: 'transit', label: t('routeModeTransit'), line: <path d="M2 3 H20" stroke="#23647a" strokeWidth="4" strokeLinecap="round" /> },
-            { key: 'drive', label: t('routeModeDrive'), line: <path d="M2 3 H20" stroke="#0e4f63" strokeWidth="4" strokeLinecap="round" /> },
-            { key: 'bicycle', label: t('routeModeBicycle'), line: <path d="M2 3 H20" stroke="#2a9d8f" strokeWidth="3.5" strokeDasharray="6 4" /> },
-            { key: 'pending', label: t('legendNotChosen'), line: <path d="M2 5 Q11 0 20 5" fill="none" stroke="#0b1f2c" strokeOpacity="0.85" strokeWidth="2" strokeDasharray="3 3" /> },
-          ].map((item) => (
-            <span key={item.key} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
-              <svg width="22" height="6" aria-hidden="true">{item.line}</svg>
-              {item.label}
-            </span>
-          ))}
-          {routeConnections.some((route) => route.visible !== false && withLiveGeometry(route)?.geometry) && (
-            <span style={{ color: '#5f6368', fontSize: 10 }}>Powered by Google</span>
-          )}
-        </div>
       )}
       {saveNotice && (
         <div className="toast" role="status" aria-live="polite">{saveNotice}</div>

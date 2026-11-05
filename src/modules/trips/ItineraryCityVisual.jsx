@@ -1,12 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  IconBuilding,
-  IconBuildingBridge,
-  IconBuildingCastle,
-  IconBuildingChurch,
-  IconBuildingMonument,
-  IconBuildingSkyscraper,
-} from '@tabler/icons-react';
+import { cityLandmarkShapes } from './cityLandmarkIcons.js';
 import { loadGooglePlacePhoto } from '../places/googlePlacePhotoClient.js';
 import { searchGooglePlaces } from '../places/googlePlacesClient.js';
 
@@ -26,11 +19,24 @@ const VISUAL_STYLE = Object.freeze({
 });
 
 const ICON_STYLE = Object.freeze({
-  width: '34px',
-  height: '34px',
-  opacity: 0.82,
+  width: '38px',
+  height: '38px',
+  opacity: 0.9,
   pointerEvents: 'none',
 });
+
+/** Icono del lugar emblemático de la ciudad, en la misma familia de trazo que Tabler. */
+function VisualIcon({ kind }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={ICON_STYLE} aria-hidden="true">
+      {cityLandmarkShapes(kind).map((shape, index) => (
+        typeof shape === 'string'
+          ? <path key={index} d={shape} />
+          : <circle key={index} cx={shape.cx} cy={shape.cy} r={shape.r} />
+      ))}
+    </svg>
+  );
+}
 
 function normalizeCityName(value) {
   return String(value || '')
@@ -123,34 +129,10 @@ export function itineraryCityVisualKind(city) {
   return 'generic';
 }
 
-const ICON_BY_KIND = Object.freeze({
-  metropolis: IconBuildingSkyscraper,
-  paris: IconBuildingMonument,
-  amsterdam: IconBuildingBridge,
-  bruges: IconBuildingBridge,
-  ghent: IconBuildingCastle,
-  brussels: IconBuildingMonument,
-  cologne: IconBuildingChurch,
-  berlin: IconBuildingMonument,
-  munich: IconBuildingChurch,
-  nuremberg: IconBuildingCastle,
-  bamberg: IconBuildingCastle,
-  rothenburg: IconBuildingCastle,
-  london: IconBuildingBridge,
-  madrid: IconBuildingMonument,
-  barcelona: IconBuildingChurch,
-  rome: IconBuildingMonument,
-  venice: IconBuildingBridge,
-  prague: IconBuildingCastle,
-  vienna: IconBuildingMonument,
-  frankfurt: IconBuildingSkyscraper,
-  generic: IconBuilding,
-});
 
 export function ItineraryCityVisual({ city, accent }) {
   const hostRef = useRef(null);
   const kind = itineraryCityVisualKind(city);
-  const VisualIcon = ICON_BY_KIND[kind] || IconBuilding;
   const [shouldLoad, setShouldLoad] = useState(false);
   const [photo, setPhoto] = useState(null);
   const [photoFailed, setPhotoFailed] = useState(false);
@@ -222,12 +204,7 @@ export function ItineraryCityVisual({ city, accent }) {
           />
         </a>
       ) : (
-        <VisualIcon
-          size={34}
-          stroke={1.45}
-          style={ICON_STYLE}
-          aria-hidden="true"
-        />
+        <VisualIcon kind={kind} />
       )}
     </span>
   );

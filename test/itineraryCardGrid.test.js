@@ -37,7 +37,7 @@ test('origin remains a first-class row with its label over the thumbnail', async
   assert.match(origin, /itinerary-origin__badge/);
 });
 
-test('city thumbnail reuses existing Google Places search and photo infrastructure with a Tabler fallback', async () => {
+test('city thumbnail reuses existing Google Places search and photo infrastructure with a landmark icon fallback', async () => {
   const visual = await read('src/modules/trips/ItineraryCityVisual.jsx');
 
   assert.match(visual, /searchGooglePlaces/);
@@ -46,7 +46,7 @@ test('city thumbnail reuses existing Google Places search and photo infrastructu
   assert.match(visual, /cityPhotoCache/);
   assert.match(visual, /className="itinerary-card-city-photo"/);
   assert.doesNotMatch(visual, /itinerary-card-city-photo__attribution|>Google Maps</);
-  assert.match(visual, /from '@tabler\/icons-react'/);
+  assert.match(visual, /from '.\/cityLandmarkIcons.js'/);
   assert.match(visual, /<VisualIcon/);
   assert.doesNotMatch(visual, /fetch\(|https?:\/\//);
 });

@@ -15,7 +15,6 @@ export function RouteMap({
   focusDay,
   selectedPlaceId = '',
   onSelectPlace,
-  focusLabel = '',
 }) {
   const mapSegmentsSignature = useMemo(
     () => itineraryMapProjectionSignature(origin, segments),
@@ -37,7 +36,6 @@ export function RouteMap({
       focusDay={focusDay}
       selectedPlaceId={selectedPlaceId}
       onSelectPlace={onSelectPlace}
-      focusLabel={focusLabel}
     />
   );
 }

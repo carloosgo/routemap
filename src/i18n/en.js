@@ -114,8 +114,6 @@ export default {
   mapLayerOtherDays: 'Places from other days',
   zoomIn: 'Zoom in',
   zoomOut: 'Zoom out',
-  legendNotChosen: 'Not chosen',
-  mapLegend: 'Map legend',
   routeModeTransit: 'Public transport',
   routeModeTrain: 'Train / rail',
   routeModeBus: 'Bus',
