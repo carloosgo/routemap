@@ -13,6 +13,7 @@ export function AppEditorModule({
   editorMenuRef,
   setTripToDelete,
   handleOpenSavedTrip,
+  placesFocus,
   persistenceState = 'saved',
   t,
   intlLocale,
@@ -65,6 +66,10 @@ export function AppEditorModule({
       removeRoute={removeRouteConnection}
       setRouteVisibility={setRouteConnectionVisibility}
       setAllRouteVisibility={setAllRouteConnectionsVisibility}
+      openDay={placesFocus?.focus.day}
+      setOpenDay={placesFocus?.setOpenDay}
+      selectedPlaceId={placesFocus?.focus.placeId}
+      selectPlace={placesFocus?.selectPlace}
       persistenceState={persistenceState}
       t={t}
       intlLocale={intlLocale}

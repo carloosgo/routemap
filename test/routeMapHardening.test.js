@@ -67,15 +67,16 @@ test('todo el lienzo de mapa exige Google key + Map ID', async () => {
   assert.doesNotMatch(google, /config\.geoapify\.mapApiKey/);
 });
 
-test('Mis Rutas usa Advanced Markers y dibuja solo rutas visibles en negro', async () => {
+test('Mis Rutas usa Advanced Markers y dibuja solo las rutas visibles del día abierto', async () => {
   const { google, dom } = await mapSources();
 
   assert.match(google, /AdvancedMarkerElement/);
-  assert.match(google, /google-saved-place-marker/);
-  assert.match(google, /route\.visible !== false && route\.geometry/);
+  assert.match(google, /numberedPlaceMarker\(/);
+  assert.match(google, /route\.visible !== false && inFocus\(route\.fromPlaceId\) && inFocus\(route\.toPlaceId\)/);
+  assert.match(google, /\.map\(withLiveGeometry\)/);
   assert.match(google, /new maps\.Polyline/);
-  assert.match(google, /strokeColor: '#111111'/);
-  assert.match(google, /strokeWeight: 2/);
+  assert.match(google, /routeLineLayers\(maps, segment, path\)/);
+  assert.match(google, /pendingLineLayer\(maps, path\)/);
   assert.match(dom, /export function markerElement/);
   assert.match(dom, /place-result-marker/);
   assert.doesNotMatch(dom, /representativePlaceIcon|place-result-marker__media|place-result-marker__fallback/);

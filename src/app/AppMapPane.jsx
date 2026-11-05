@@ -34,6 +34,7 @@ export function AppMapPane({
   updateOriginDetails,
   updateOriginExpenses,
   addPlace,
+  placesFocus,
   intlLocale,
   persistenceState = 'saved',
   toast,
@@ -217,6 +218,10 @@ export function AppMapPane({
         routeConnections={trip.routeConnections || []}
         addPlace={requestPlaceSave}
         viewMode={mapView}
+        focusDay={placesFocus?.focus.day}
+        selectedPlaceId={placesFocus?.focus.placeId}
+        onSelectPlace={placesFocus?.selectPlaceFromMap}
+        focusLabel={placesFocus?.focusLabel}
       />
       {hasFloatingPanel && (
         <div

@@ -249,3 +249,19 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Costo y acciones se agrupan en un track derecho de 88 px. El costo permanece alineado a la derecha; Nota, Conceptos/Detalles y Eliminar se alinean también a la derecha y usan botones de 24 px con 1 px de separación.
 - Nota usa `IconMessageCircle`, Conceptos/Detalles usa `IconReceipt` y Eliminar usa `IconTrash`, todos de la librería Tabler ya instalada. El comportamiento, `aria-label`, tooltips y callbacks existentes no cambian.
 - El número canónico, la etiqueta `Origen`, el drag para reordenar, `Agregar ciudad`, autosave, mapa, gastos, Storage v4, Firestore Rules y proveedores permanecen sin cambios funcionales.
+
+## Ajuste solicitado: rediseño de Mis Rutas y su mapa (variante D)
+
+- Este apartado sustituye, donde haya conflicto, las reglas anteriores de `Mis Rutas` (organización por día, flexible por ciudad y paridad de notas en su anclaje). Header, Itinerario, Notas, gastos y exportación PDF no cambian.
+- Referencia visual aprobada por el product owner: lienzo "Atlas · Rediseño Mis rutas", variante D integrada.
+- El panel es una lista de días agrupada por la ciudad en la que termina cada día (`Bandera · Ciudad · N días`). Un día de traslado queda en la ciudad de llegada y se titula `Día N · traslado` con `Origen → Destino`.
+- Solo un día está abierto a la vez. La fila cerrada muestra punto de país, `Día N`, fecha larga y resumen (`N lugares · km · tiempo` o `Sin lugares`). La fila abierta usa fondo `#f1f8f7`, resumen en `#2a7d73`, botón de nota del día y chevron.
+- El día abierto inicial es hoy si cae en el viaje; si no, el primero con lugares. La lista y el mapa comparten el día abierto y el lugar seleccionado.
+- `Por organizar` es una píldora coral arriba (`#fbe8e3` / `#a3422e`) que abre sus lugares; no se eliminan ni se reasignan solos.
+- Cada parada usa un número de 28 px en el color de su país (mismo número en el mapa), nombre 14 px / 600 y subtítulo `categoría · ciudad` 12 px. No hay miniatura de Street View ni foto. Arrastrar, nota y eliminar aparecen al pasar el cursor, al enfocar o al seleccionar (siempre visibles en pantallas táctiles).
+- Entre dos paradas del mismo día hay un único tramo: muestra el modo elegido con icono, duración y distancia (en transporte, distintivos de línea y hora de salida) o `Elegir cómo llegar · km`. Al tocarlo se despliega una lista (`listbox`) con A pie, Transporte público, Coche y Bicicleta con sus tiempos estimados y `Sin ruta`. Las estimaciones solo se piden al desplegar.
+- El riel vertical del tramo usa el mismo trazo que el mapa: punteado gris pizarra a pie, color de la línea en transporte, marina continuo en coche, rayas en bici y rayas tenues sin elegir.
+- En un día de traslado, la tarjeta `Traslado a <ciudad>` se coloca entre las paradas de la ciudad de salida y las de llegada, con distancia en línea recta, aviso de vuelo (> 900 km), transporte público desplegable y coche.
+- El mapa de Mis Rutas pinta solo el día abierto: marcadores numerados en el color del país (el seleccionado crece con halo), lugares de otros días como puntos grises pequeños, trazos con borde blanco y distintivo de línea sobre el transporte, y recta tenue entre paradas sin modo elegido. Al abrir un día el mapa encuadra sus lugares una vez; después la cámara es del usuario.
+- Los controles del mapa de Mis Rutas se agrupan abajo a la derecha: botón `Capas` (blanco, 40 px, radio 10) con `Líneas de transporte` y `Lugares de otros días`, y zoom propio con el mismo estilo. El zoom nativo de Google se oculta solo en Mis Rutas. Abajo a la izquierda, una leyenda con el día y los tipos de trazo incluye `Powered by Google` cuando hay rutas de Google.
+- El viaje persiste únicamente el modo elegido de cada tramo; la geometría, los tramos de transporte y los tiempos de Google se recalculan en la sesión (`liveRouteStore`) sin disparar autosave.
