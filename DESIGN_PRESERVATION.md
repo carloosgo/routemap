@@ -277,3 +277,13 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Las filas de día cerradas solo llevan título, línea de fecha y flecha; no muestran «Sin lugares» ni el número de lugares. El día abierto resume solo la distancia y el tiempo de sus rutas.
 - El detalle de transporte público es un itinerario vertical: hora local de la estación (24 h) a la izquierda, nodo circular y nombre de la estación; cada tramo es un riel de 4 px en el color de la línea con su distintivo, tipo de vehículo, duración y «Hacia … · N paradas»; los transbordos van con riel punteado gris («Transbordo» o «Transbordo a pie» · espera). Una estación de transbordo no se repite.
 - Dos lugares consecutivos sin modo elegido se unen en el mapa con un arco suave (curva cuadrática) de guiones cortos en tinta `#0b1f2c` al 85 %, no con una recta gris.
+
+## Ajuste solicitado: versión móvil instalable en iPhone (PWA)
+
+- Solo aplica por debajo de 721 px (`src/app/MobileAppShell.css`, importado al final de `main.jsx`). Escritorio no cambia, salvo la sección `Cuenta` del menú ⋮.
+- Instalación con «Añadir a pantalla de inicio»: `public/manifest.webmanifest` (`display: standalone`, `start_url: /`), `apple-touch-icon` de 180 px en `public/pwa/` con el mismo símbolo de `atlas-icon.svg` sobre el rojo de marca `#c9224d`, `apple-mobile-web-app-status-bar-style: default` y `theme-color` blanco a juego con la cabecera. El viewport fija `maximum-scale=1` para que iOS no haga zoom al enfocar campos.
+- La altura raíz usa `100dvh` y la cabecera y la barra inferior suman `env(safe-area-inset-top/bottom)`.
+- Cabecera móvil de una fila (56 px + zona segura): marca, métricas en una tira desplazable horizontal sin recortes (con fundido a la derecha) y el botón ⋮ de 36 px fijo a la derecha. La navegación Itinerario / Mis Rutas / Notas no aparece en la cabecera móvil.
+- Barra inferior de cuatro pestañas tipo app (icono de 22 px sobre etiqueta de 11 px / 600): Itinerario, Mis Rutas, Notas y Mapa. La activa usa el coral existente, sin línea superior. El mapa muestra el modo de la sección elegida (Mis Rutas → mapa de lugares). La insignia del checklist de Notas se conserva en la pestaña.
+- La vista inactiva se oculta con `visibility` (no `display: none`) para que el menú ⋮ esté disponible en todas las pestañas y para que la nota y los datos del trayecto (que viven en el panel del mapa) se abran desde el Itinerario como hoja fija bajo la cabecera, con márgenes de 10 px.
+- El menú ⋮ empieza con `Cuenta`: `Continuar con Google` sin sesión; con sesión muestra el correo, `Importar viajes locales` y `Cerrar sesión`.

@@ -382,3 +382,9 @@
     max-width: calc(100vw - 24px);
   }
 }
+.editor-module__account-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

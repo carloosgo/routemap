@@ -1,8 +1,12 @@
 import {
   IconBookmark,
+  IconBrandGoogle,
+  IconCloudUpload,
   IconDotsVertical,
+  IconLogout,
   IconPlus,
   IconTrash,
+  IconUserCircle,
 } from '@tabler/icons-react';
 import { tripTotal } from '../modules/trips/tripModel.js';
 import { formatMoney } from '../shared/utils.js';
@@ -14,6 +18,7 @@ export function AppWorkspaceMenu({
   setOpenMenu,
   handleOpenSavedTrip,
   setTripToDelete,
+  account = null,
   intlLocale,
   t,
 }) {
@@ -36,6 +41,47 @@ export function AppWorkspaceMenu({
 
         {openMenu === 'workspace' && (
           <div className="editor-module__more-menu" role="menu">
+            {account && (
+              <>
+                <div className="editor-module__menu-heading">
+                  <IconUserCircle size={17} aria-hidden="true" />
+                  <span className="editor-module__account-label">
+                    {account.user ? (account.user.email || account.user.displayName || t('account')) : t('account')}
+                  </span>
+                </div>
+                {account.user ? (
+                  <>
+                    <button
+                      type="button"
+                      className="editor-module__menu-item"
+                      onClick={account.onImportLocalTrips}
+                    >
+                      <IconCloudUpload size={17} aria-hidden="true" />
+                      <span>{t('importLocalTrips')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="editor-module__menu-item"
+                      onClick={account.onSignOut}
+                    >
+                      <IconLogout size={17} aria-hidden="true" />
+                      <span>{t('signOut')}</span>
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="editor-module__menu-item"
+                    disabled={account.loading}
+                    onClick={account.onSignIn}
+                  >
+                    <IconBrandGoogle size={17} aria-hidden="true" />
+                    <span>{t('continueWithGoogle')}</span>
+                  </button>
+                )}
+                <div className="editor-module__menu-separator" />
+              </>
+            )}
             <button
               type="button"
               className="editor-module__menu-item"

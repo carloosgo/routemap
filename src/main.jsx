@@ -20,6 +20,7 @@ import './app/HeaderRequestedPolish.css';
 import './app/NotePanelPlacement.css';
 import './app/FloatingItineraryPanel.css';
 import './modules/trips/ItineraryCompactTen.css';
+import './app/MobileAppShell.css';
 
 const sharedRoute = globalThis.location?.pathname?.match(/^\/share\/([^/]+)\/?$/);
 const content = sharedRoute
