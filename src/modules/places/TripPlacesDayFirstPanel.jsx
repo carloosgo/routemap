@@ -17,6 +17,8 @@ import {
 } from '../trips/globalTripDayPlanning.js';
 import { savedPlaceRoutePairKey } from '../routes/routeModel.js';
 import { StreetViewThumbnail } from './StreetViewThumbnail.jsx';
+import { NextCityTransfer } from './NextCityTransfer.jsx';
+import { cityTransfers } from './cityTransferModel.js';
 import { TripRouteConnections } from './TripRouteConnections.jsx';
 import './TripPlacesPanel.css';
 
@@ -452,6 +454,11 @@ export function TripPlacesDayFirstPanel({
                   </button>
                 </header>
 
+                {!collapsed && cityTransfers(dayAssignments).map(({ key, from, to }) => (
+                  <div className="trip-day-first-connection" key={key}>
+                    <NextCityTransfer from={from} to={to} date={day.date} t={t} intlLocale={intlLocale} />
+                  </div>
+                ))}
                 {!collapsed && (
                   <div className="trip-day-first__places" style={{ '--trip-day-rail-color': railColor }}>
                     {day.places.length > 1 && (

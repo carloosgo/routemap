@@ -10,6 +10,7 @@ const ROUTE_FIELDS = [
   'routes.distanceMeters',
   'routes.polyline.encodedPolyline',
   'routes.legs.steps.travelMode',
+  'routes.legs.steps.polyline.encodedPolyline',
   'routes.legs.steps.transitDetails.stopDetails',
   'routes.legs.steps.transitDetails.headsign',
   'routes.legs.steps.transitDetails.transitLine',
@@ -137,6 +138,40 @@ function transitSummary(route) {
     .slice(0, 24);
 }
 
+const MAX_ROUTE_SEGMENTS = 40;
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+function stepKind(step) {
+  if (step?.travelMode === 'TRANSIT') return 'transit';
+  if (step?.travelMode === 'WALK') return 'walk';
+  return 'other';
+}
+
+/**
+ * Tramos de la ruta para pintarla por línea: cada tramo de transporte público
+ * lleva el color oficial de su línea y las caminatas se agrupan.
+ */
+export function routeSegments(route) {
+  const steps = route?.legs?.flatMap((leg) => leg?.steps || []) || [];
+  if (!steps.some((step) => step?.travelMode === 'TRANSIT')) return [];
+  const segments = [];
+  steps.forEach((step) => {
+    const geometry = decodeGooglePolyline(cleanText(step?.polyline?.encodedPolyline, 200000));
+    if (!geometry) return;
+    const kind = stepKind(step);
+    const line = step?.transitDetails?.transitLine || {};
+    const color = kind === 'transit' && HEX_COLOR.test(String(line.color || '')) ? line.color : '';
+    const label = kind === 'transit' ? cleanText(line.nameShort || line.name, 60) : '';
+    const previous = segments.at(-1);
+    if (previous && previous.kind === kind && previous.color === color && previous.label === label) {
+      previous.geometry.coordinates.push(...geometry.coordinates.slice(1));
+      return;
+    }
+    segments.push({ kind, color, label, geometry });
+  });
+  return segments.slice(0, MAX_ROUTE_SEGMENTS);
+}
+
 export const googleRouteOptimized = onCall(
   callableOptions({
     secrets: [GOOGLE_ROUTES_API_KEY],
@@ -191,6 +226,7 @@ export const googleRouteOptimized = onCall(
         duration: parseDurationSeconds(route.duration),
         calculatedAt: new Date().toISOString(),
         transitSteps: transitSummary(route),
+        segments: routeSegments(route),
       };
     } catch (error) {
       logError('Optimized Google route calculation failed.', {

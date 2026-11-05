@@ -57,6 +57,7 @@ export async function requestGooglePlaceRoute(
       geometry: route.geometry,
       calculatedAt: String(route.calculatedAt || ''),
       transitSteps: Array.isArray(route.transitSteps) ? route.transitSteps : [],
+      segments: Array.isArray(route.segments) ? route.segments : [],
     };
   })();
 
