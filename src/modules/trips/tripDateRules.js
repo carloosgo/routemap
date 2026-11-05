@@ -171,7 +171,10 @@ export function validateSegmentDatePatch(trip, segmentId, patch) {
       ...(changesStart ? { startDate: patch.startDate || '' } : {}),
       ...(changesEnd ? { endDate: patch.endDate || '' } : {}),
     };
-    if (segmentPlanningDayCount(candidateSegment) <= highestAssignedOffset) {
+    const candidateSegments = (trip?.segments || []).map((segment) =>
+      segment.id === segmentId ? candidateSegment : segment
+    );
+    if (segmentPlanningDayCount(candidateSegment, candidateSegments) <= highestAssignedOffset) {
       return {
         valid: false,
         errorKey: TRIP_DATE_ERRORS.assignedPlacesOutOfRange,

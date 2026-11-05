@@ -73,14 +73,32 @@ test('los números de día son globales y dos ciudades pueden compartir el mismo
   assert.equal(berlinEnd.date, londonDay.date);
 });
 
-test('rangos incompletos, inválidos o sin destino no crean días organizables', () => {
+test('rangos inválidos o sin destino no crean días organizables', () => {
   const segments = [
     createSegment({ id: 'sin-destino', startDate: '2026-09-02', endDate: '2026-09-03' }),
-    createSegment({ id: 'sin-fin', destination: reykjavik, startDate: '2026-09-02' }),
     createSegment({ id: 'invertido', destination: berlin, startDate: '2026-09-05', endDate: '2026-09-04' }),
   ];
 
   assert.deepEqual(tripPlanningDays(segments), []);
+});
+
+test('una estancia sin salida termina en la llegada a la siguiente ciudad', () => {
+  const segments = [
+    createSegment({ id: 'sin-fin', destination: reykjavik, startDate: '2026-11-30' }),
+    createSegment({ id: 'berlin', destination: berlin, startDate: '2026-12-03', endDate: '2026-12-05' }),
+  ];
+
+  const reykjavikDays = tripPlanningDays(segments).filter(({ segmentId }) => segmentId === 'sin-fin');
+  assert.deepEqual(reykjavikDays.map(({ date }) => date), ['2026-11-30', '2026-12-01', '2026-12-02', '2026-12-03']);
+  assert.equal(tripPlanningDays(segments)[0].globalDayNumber, 1);
+});
+
+test('la última estancia sin salida ocupa solo su día de llegada', () => {
+  const days = tripPlanningDays([
+    createSegment({ id: 'sin-fin', destination: reykjavik, startDate: '2026-09-02' }),
+  ]);
+
+  assert.deepEqual(days.map(({ date }) => date), ['2026-09-02']);
 });
 
 test('el cálculo usa fechas civiles sin deriva por DST, fin de mes ni huso horario', () => {

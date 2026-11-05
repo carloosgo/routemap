@@ -27,7 +27,6 @@ export function AppEditorModule({
     addSegment,
     removeSegment,
     reorderSegment,
-    reorderTripDay,
     updateSegment,
     updateOrigin,
     updatePlace,
@@ -61,7 +60,6 @@ export function AppEditorModule({
       updatePlace={updatePlace}
       removePlace={removePlace}
       reorderPlace={reorderPlace}
-      reorderTripDay={reorderTripDay}
       movePlaceToDay={movePlaceToDay}
       upsertRoute={upsertRouteConnection}
       removeRoute={removeRouteConnection}

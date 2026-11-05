@@ -6,8 +6,9 @@ import {
   groupPlacesByItineraryDay,
   itineraryAssignmentsByDay,
   itineraryCalendarDays,
+  migrateLegacyTripDayOffset,
   placeTripDayOffset,
-  reorderItineraryDayContents,
+  planningTargetForTripDay,
   sameItineraryDay,
 } from '../src/modules/trips/globalTripDayPlanning.js';
 import { createPlace, createSegment } from '../src/modules/trips/tripModel.js';
@@ -66,57 +67,58 @@ test('dos ciudades pueden pertenecer al mismo día global sin crear otra secció
   assert.deepEqual(assignments.map(({ segmentId }) => segmentId), ['de', 'fr']);
 });
 
-test('tripDayOffset mueve la visita temporal sin cambiar la ciudad propietaria', () => {
+test('el día del viaje se deriva solo de la estancia y su día local', () => {
   const itinerarySegments = segments();
-  const moved = place('museum', 'de', 0, { tripDayOffset: 4 });
+  const legacy = place('museum', 'de', 0, { tripDayOffset: 4 });
 
-  assert.equal(placeTripDayOffset(moved, itinerarySegments), 4);
-  assert.equal(moved.segmentId, 'de');
-  assert.equal(moved.dayOffset, 0);
+  assert.equal(placeTripDayOffset(legacy, itinerarySegments), 0);
+  assert.equal(placeTripDayOffset(place('paris-2', 'fr', 1), itinerarySegments), 3);
 });
 
-test('lugares heredados se proyectan a su fecha de Itinerario y no quedan Por organizar', () => {
+test('lugares sin estancia o fuera de su rango quedan Por organizar', () => {
   const itinerarySegments = segments();
   const places = [
     place('legacy-de', 'de', 1),
     place('legacy-fr', 'fr', 0),
     place('without-assignment', '', null),
+    place('out-of-range', 'fr', 9),
   ];
   const grouped = groupPlacesByItineraryDay(places, itinerarySegments);
 
   assert.deepEqual(grouped.groups[1].places.map(({ id }) => id), ['legacy-de']);
   assert.deepEqual(grouped.groups[2].places.map(({ id }) => id), ['legacy-fr']);
-  assert.deepEqual(grouped.groups[0].places.map(({ id }) => id), ['without-assignment']);
-  assert.deepEqual(grouped.unassigned, []);
+  assert.deepEqual(grouped.groups[0].places, []);
+  assert.deepEqual(grouped.unassigned.map(({ id }) => id), ['without-assignment', 'out-of-range']);
 });
 
-test('reordenar un día mueve contenido entre slots cronológicos conservando ciudad y día local', () => {
+test('en un día de traslado se elige la ciudad del lugar y, si no coincide, la de llegada', () => {
   const itinerarySegments = segments();
-  const original = [
-    place('day-1', 'de', 0),
-    place('day-2', 'de', 1),
-    place('day-4', 'fr', 1),
-  ];
-  const reordered = reorderItineraryDayContents(original, itinerarySegments, 0, 3, 'after');
+  const parisian = place('louvre', 'de', 0, { city: 'Paris', countryCode: 'FR' });
+  const generic = place('generic', 'de', 0);
+  const unknown = place('unknown', '', null);
 
-  const first = reordered.find(({ id }) => id === 'day-1');
-  const second = reordered.find(({ id }) => id === 'day-2');
-  const fourth = reordered.find(({ id }) => id === 'day-4');
-  assert.equal(first.tripDayOffset, 3);
-  assert.equal(first.segmentId, 'de');
-  assert.equal(first.dayOffset, 0);
-  assert.equal(second.tripDayOffset, 0);
-  assert.equal(fourth.tripDayOffset, 2);
+  assert.deepEqual(planningTargetForTripDay(parisian, itinerarySegments, 2), { segmentId: 'fr', dayOffset: 0 });
+  assert.deepEqual(planningTargetForTripDay(generic, itinerarySegments, 2), { segmentId: 'de', dayOffset: 2 });
+  assert.deepEqual(planningTargetForTripDay(unknown, itinerarySegments, 2), { segmentId: 'fr', dayOffset: 0 });
+  assert.equal(planningTargetForTripDay(generic, itinerarySegments, 9), null);
 });
 
-test('las rutas usan día global resuelto y no exigen la misma ciudad', () => {
-  const itinerarySegments = segments();
-  const german = place('german', 'de', 0);
-  const frenchOnDayOne = place('french', 'fr', 0, { tripDayOffset: 0 });
-  const frenchOwnDay = place('french-own', 'fr', 0);
+test('la migración del antiguo tripDayOffset deja una sola referencia', () => {
+  const migrated = migrateLegacyTripDayOffset(place('museum', 'de', 0, { tripDayOffset: 4 }), segments());
 
-  assert.equal(sameItineraryDay(german, frenchOnDayOne, itinerarySegments), true);
-  assert.equal(sameItineraryDay(german, frenchOwnDay, itinerarySegments), false);
+  assert.equal(migrated.segmentId, 'fr');
+  assert.equal(migrated.dayOffset, 2);
+  assert.equal(migrated.tripDayOffset, null);
+});
+
+test('las rutas usan el día resuelto y no exigen la misma ciudad', () => {
+  const itinerarySegments = segments();
+  const germanTransferDay = place('german', 'de', 2);
+  const frenchArrival = place('french', 'fr', 0);
+  const frenchNextDay = place('french-own', 'fr', 1);
+
+  assert.equal(sameItineraryDay(germanTransferDay, frenchArrival, itinerarySegments), true);
+  assert.equal(sameItineraryDay(germanTransferDay, frenchNextDay, itinerarySegments), false);
 });
 
 test('el calendario usa fechas civiles sin deriva de DST ni cambio de mes', () => {

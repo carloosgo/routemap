@@ -75,15 +75,6 @@ export function useTrip(initialTrip) {
     }),
     []
   );
-  const reorderTripDay = useCallback(
-    (sourceOffset, targetOffset, placement) => dispatch({
-      type: TRIP_ACTIONS.reorderTripDay,
-      sourceOffset,
-      targetOffset,
-      placement,
-    }),
-    []
-  );
   const updateSegment = useCallback(
     (segmentId, patch) => dispatch({ type: TRIP_ACTIONS.updateSegment, segmentId, patch }),
     []
@@ -160,7 +151,6 @@ export function useTrip(initialTrip) {
     addSegment,
     removeSegment,
     reorderSegment,
-    reorderTripDay,
     updateSegment,
     updateExpenses,
     addPlace,

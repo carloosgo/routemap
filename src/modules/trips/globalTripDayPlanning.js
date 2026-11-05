@@ -1,19 +1,7 @@
 import { createPlace } from './tripEntities.js';
+import { segmentDateRanges } from './tripDayPlanning.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-function parseCivilDate(value) {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const [year, month, day] = value.split('-').map(Number);
-  const timestamp = Date.UTC(year, month - 1, day);
-  const date = new Date(timestamp);
-  if (
-    date.getUTCFullYear() !== year
-    || date.getUTCMonth() !== month - 1
-    || date.getUTCDate() !== day
-  ) return null;
-  return timestamp;
-}
 
 function civilDate(timestamp) {
   return new Date(timestamp).toISOString().slice(0, 10);
@@ -25,17 +13,31 @@ function normalizedOffset(value) {
   return Number.isInteger(offset) && offset >= 0 && offset <= 36600 ? offset : null;
 }
 
+function normalizedText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
 function validDatedSegments(segments) {
-  return (Array.isArray(segments) ? segments : [])
+  const safeSegments = Array.isArray(segments) ? segments : [];
+  const ranges = segmentDateRanges(safeSegments);
+  return safeSegments
     .map((segment, segmentIndex) => ({
       segment,
       segmentIndex,
-      start: parseCivilDate(segment?.startDate),
-      end: parseCivilDate(segment?.endDate),
+      start: ranges[segmentIndex].start,
+      end: ranges[segmentIndex].end,
     }))
     .filter(({ start, end }) => start != null && end != null && end >= start);
 }
 
+/**
+ * Calendario corrido del viaje. Itinerario es su única fuente: Mis rutas, PDF y
+ * mapa leen este calendario y no guardan fechas propias.
+ */
 export function itineraryCalendarDays(segments) {
   const dated = validDatedSegments(segments);
   if (!dated.length) return [];
@@ -50,11 +52,12 @@ export function itineraryCalendarDays(segments) {
 }
 
 export function itineraryAssignmentsByDay(segments) {
+  const dated = validDatedSegments(segments);
+  if (!dated.length) return new Map();
+  const tripStart = Math.min(...dated.map((entry) => entry.start));
   const calendar = itineraryCalendarDays(segments);
-  if (!calendar.length) return new Map();
-  const tripStart = parseCivilDate(calendar[0].date);
   const assignments = new Map(calendar.map((day) => [day.tripDayOffset, []]));
-  validDatedSegments(segments).forEach(({ segment, segmentIndex, start, end }) => {
+  dated.forEach(({ segment, segmentIndex, start, end }) => {
     for (let timestamp = start; timestamp <= end; timestamp += DAY_MS) {
       const tripDayOffset = Math.floor((timestamp - tripStart) / DAY_MS);
       const list = assignments.get(tripDayOffset);
@@ -73,36 +76,32 @@ export function itineraryAssignmentsByDay(segments) {
   return assignments;
 }
 
+/**
+ * Día del viaje de un lugar, derivado solo de su estancia (segmentId) y su día
+ * dentro de esa estancia (dayOffset). Devuelve null si el lugar no tiene un día
+ * válido en el Itinerario actual: ese lugar va a "Por organizar".
+ */
 export function placeTripDayOffset(place, segments) {
-  const calendar = itineraryCalendarDays(segments);
-  if (!calendar.length) return null;
-
-  const explicit = normalizedOffset(place?.tripDayOffset);
-  if (explicit != null && explicit < calendar.length) return explicit;
-
-  const tripStart = parseCivilDate(calendar[0].date);
-  const segment = (Array.isArray(segments) ? segments : []).find(
-    (candidate) => candidate?.id === place?.segmentId
-  );
-  const segmentStart = parseCivilDate(segment?.startDate);
+  const dated = validDatedSegments(segments);
+  if (!dated.length) return null;
+  const entry = dated.find(({ segment }) => segment?.id === place?.segmentId);
   const localOffset = normalizedOffset(place?.dayOffset);
-  if (segmentStart != null) {
-    const timestamp = segmentStart + (localOffset ?? 0) * DAY_MS;
-    const offset = Math.floor((timestamp - tripStart) / DAY_MS);
-    if (offset >= 0 && offset < calendar.length) return offset;
-  }
-
-  return 0;
+  if (!entry || localOffset == null) return null;
+  const timestamp = entry.start + localOffset * DAY_MS;
+  if (timestamp > entry.end) return null;
+  const tripStart = Math.min(...dated.map(({ start }) => start));
+  return Math.floor((timestamp - tripStart) / DAY_MS);
 }
 
 export function groupPlacesByItineraryDay(places, segments) {
   const groups = itineraryCalendarDays(segments).map((day) => ({ ...day, places: [] }));
-  if (!groups.length) return { groups, unassigned: Array.isArray(places) ? places : [] };
+  const unassigned = [];
   (Array.isArray(places) ? places : []).forEach((place) => {
     const offset = placeTripDayOffset(place, segments);
     if (offset != null && groups[offset]) groups[offset].places.push(place);
+    else unassigned.push(place);
   });
-  return { groups, unassigned: [] };
+  return { groups, unassigned };
 }
 
 export function sameItineraryDay(left, right, segments) {
@@ -111,36 +110,40 @@ export function sameItineraryDay(left, right, segments) {
   return leftOffset != null && leftOffset === rightOffset;
 }
 
-function reorderedOffsets(dayCount, sourceOffset, targetOffset, placement) {
-  const source = normalizedOffset(sourceOffset);
-  const target = normalizedOffset(targetOffset);
-  if (
-    source == null
-    || target == null
-    || source >= dayCount
-    || target >= dayCount
-    || source === target
-  ) return null;
-
-  const order = Array.from({ length: dayCount }, (_, index) => index);
-  const [moved] = order.splice(source, 1);
-  const targetIndex = order.indexOf(target);
-  if (targetIndex < 0) return null;
-  order.splice(targetIndex + (placement === 'after' ? 1 : 0), 0, moved);
-  return new Map(order.map((oldOffset, newOffset) => [oldOffset, newOffset]));
+function placeMatchesDestination(place, destination) {
+  const city = normalizedText(place?.city);
+  if (!city || city !== normalizedText(destination?.name)) return false;
+  const placeCountry = String(place?.countryCode || '').trim().toUpperCase();
+  const destinationCountry = String(destination?.countryCode || '').trim().toUpperCase();
+  return !placeCountry || !destinationCountry || placeCountry === destinationCountry;
 }
 
 /**
- * Reorders a day's scheduled contents while the chronological date slots from
- * Itinerario remain fixed. City ownership never changes.
+ * Estancia y día local que corresponden a un día del viaje. En un día de
+ * traslado hay dos estancias: gana la ciudad del lugar, luego la estancia que el
+ * lugar ya tenía y, si no, la ciudad a la que se llega ese día.
  */
-export function reorderItineraryDayContents(places, segments, sourceOffset, targetOffset, placement = 'before') {
-  const calendar = itineraryCalendarDays(segments);
-  const mapping = reorderedOffsets(calendar.length, sourceOffset, targetOffset, placement);
-  if (!mapping) return null;
-  return (Array.isArray(places) ? places : []).map((place) => {
-    const currentOffset = placeTripDayOffset(place, segments);
-    if (currentOffset == null || !mapping.has(currentOffset)) return place;
-    return createPlace({ ...place, tripDayOffset: mapping.get(currentOffset) });
+export function planningTargetForTripDay(place, segments, tripDayOffset) {
+  const offset = normalizedOffset(tripDayOffset);
+  if (offset == null) return null;
+  const assignments = itineraryAssignmentsByDay(segments).get(offset) || [];
+  if (!assignments.length) return null;
+  const chosen = assignments.find(({ destination }) => placeMatchesDestination(place, destination))
+    || assignments.find(({ segmentId }) => segmentId === place?.segmentId)
+    || assignments.at(-1);
+  return { segmentId: chosen.segmentId, dayOffset: chosen.dayOffset };
+}
+
+/**
+ * Migra lugares guardados con el antiguo `tripDayOffset` (día del viaje guardado
+ * aparte de la estancia) a una sola referencia: estancia + día local.
+ */
+export function migrateLegacyTripDayOffset(place, segments) {
+  if (normalizedOffset(place?.tripDayOffset) == null) return place;
+  const target = planningTargetForTripDay(place, segments, place.tripDayOffset);
+  return createPlace({
+    ...place,
+    ...(target || {}),
+    tripDayOffset: null,
   });
 }
