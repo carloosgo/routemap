@@ -26,38 +26,6 @@ function hash(value) {
   return createHash('sha256').update(String(value)).digest('hex');
 }
 
-function firstHeaderValue(value) {
-  const raw = Array.isArray(value) ? value[0] : value;
-  return String(raw || '').split(',')[0].trim();
-}
-
-function requestIp(request) {
-  const rawRequest = request.rawRequest;
-  const headers = rawRequest?.headers || {};
-  return firstHeaderValue(
-    headers['x-forwarded-for']
-      || headers['x-appengine-user-ip']
-      || headers['fastly-client-ip']
-      || rawRequest?.ip
-      || rawRequest?.socket?.remoteAddress
-      || rawRequest?.connection?.remoteAddress
-  );
-}
-
-function anonymousFingerprint(request) {
-  const headers = request.rawRequest?.headers || {};
-  const userAgent = firstHeaderValue(headers['user-agent']);
-  const language = firstHeaderValue(headers['accept-language']);
-  return hash(`${userAgent}|${language}|anonymous`);
-}
-
-function requestPrincipal(request) {
-  if (request.auth?.uid) return `uid:${request.auth.uid}`;
-  const ip = requestIp(request);
-  if (ip) return `ip:${hash(ip)}`;
-  return `anonymous:${anonymousFingerprint(request)}`;
-}
-
 export function callableOptions(overrides = {}) {
   const safeOverrides = { ...overrides };
   const enforceAppCheck = Object.hasOwn(safeOverrides, 'enforceAppCheck')
@@ -94,7 +62,10 @@ export async function enforceQuota(
   const safeWindow = Math.max(1_000, Math.trunc(Number(windowMs) || 60_000));
   if (!safeScope) throw new Error('La cuota requiere un scope.');
 
-  const principal = requestPrincipal(request);
+  // Toda callable con cuota llama a un proveedor de pago (Google/Geoapify).
+  // Exigimos sesión para que el límite se aplique por UID: un límite por IP
+  // se puede evadir cambiando X-Forwarded-For, que controla el cliente.
+  const principal = `uid:${requireAuthenticated(request)}`;
   const now = Date.now();
   const windowStart = Math.floor(now / safeWindow) * safeWindow;
   const ref = db.collection('functionRateLimits').doc(hash(`${safeScope}:${principal}`));
