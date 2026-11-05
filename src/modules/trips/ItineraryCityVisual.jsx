@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { cityLandmarkShapes } from './cityLandmarkIcons.js';
+import { cityLandmarkGlyph } from './cityLandmarkGlyphs.js';
 import { loadGooglePlacePhoto } from '../places/googlePlacePhotoClient.js';
 import { searchGooglePlaces } from '../places/googlePlacesClient.js';
 
@@ -7,33 +7,35 @@ const cityPhotoCache = new Map();
 const pendingCityPhotos = new Map();
 
 const VISUAL_STYLE = Object.freeze({
-  '--city-visual-accent': '#71818a',
+  '--city-visual-accent': '#475467',
   position: 'absolute',
   inset: 0,
   display: 'grid',
   placeItems: 'center',
   overflow: 'hidden',
   borderRadius: 'inherit',
-  background: 'linear-gradient(145deg, color-mix(in srgb, var(--city-visual-accent) 15%, #f1f6f8) 0%, color-mix(in srgb, var(--city-visual-accent) 7%, #fbfaf7) 54%, color-mix(in srgb, var(--city-visual-accent) 11%, #eef3f4) 100%)',
-  color: 'color-mix(in srgb, var(--city-visual-accent) 76%, #3f5159)',
+  background: 'var(--city-visual-accent)',
+  color: '#ffffff',
 });
 
-const ICON_STYLE = Object.freeze({
-  width: '38px',
-  height: '38px',
-  opacity: 0.9,
+const GLYPH_STYLE = Object.freeze({
+  width: '46px',
+  height: '46px',
+  transform: 'translateY(3px)',
   pointerEvents: 'none',
 });
 
-/** Icono del lugar emblemático de la ciudad, en la misma familia de trazo que Tabler. */
+/** Silueta del lugar emblemático de la ciudad, en blanco sobre su color de parada. */
 function VisualIcon({ kind }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={ICON_STYLE} aria-hidden="true">
-      {cityLandmarkShapes(kind).map((shape, index) => (
-        typeof shape === 'string'
-          ? <path key={index} d={shape} />
-          : <circle key={index} cx={shape.cx} cy={shape.cy} r={shape.r} />
-      ))}
+    <svg viewBox="0 0 24 24" style={GLYPH_STYLE} aria-hidden="true">
+      {cityLandmarkGlyph(kind).map((shape, index) => {
+        if (typeof shape === 'string') return <path key={index} d={shape} fill="currentColor" fillRule="evenodd" />;
+        if (shape.line) {
+          return <path key={index} d={shape.line} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />;
+        }
+        return <circle key={index} cx={shape.cx} cy={shape.cy} r={shape.r} fill="currentColor" />;
+      })}
     </svg>
   );
 }
@@ -137,9 +139,12 @@ export function ItineraryCityVisual({ city, accent }) {
   const [photo, setPhoto] = useState(null);
   const [photoFailed, setPhotoFailed] = useState(false);
   const key = cityPhotoKey(city);
-  const visualStyle = useMemo(() => (
-    accent ? { ...VISUAL_STYLE, '--city-visual-accent': accent } : VISUAL_STYLE
-  ), [accent]);
+  const hasCity = Boolean(String(city?.name || '').trim());
+  const visualStyle = useMemo(() => {
+    // Tarjeta aún vacía: miniatura neutra con la silueta genérica en gris.
+    if (!hasCity) return { ...VISUAL_STYLE, background: '#eef1f3', color: '#b4bcc4' };
+    return accent ? { ...VISUAL_STYLE, '--city-visual-accent': accent } : VISUAL_STYLE;
+  }, [accent, hasCity]);
 
   useEffect(() => {
     setShouldLoad(false);
@@ -204,7 +209,7 @@ export function ItineraryCityVisual({ city, accent }) {
           />
         </a>
       ) : (
-        <VisualIcon kind={kind} />
+        <VisualIcon kind={hasCity ? kind : 'generic'} />
       )}
     </span>
   );

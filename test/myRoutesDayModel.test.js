@@ -210,13 +210,16 @@ test('el itinerario de transporte lista estaciones, tramos y transbordos sin rep
   assert.equal(transitVehicleKey('ROCKET'), '');
 });
 
-test('cada ciudad conocida tiene su icono emblemático y las demás un icono genérico de ciudad', async () => {
-  const { CITY_LANDMARK_ICONS, cityLandmarkShapes } = await import('../src/modules/trips/cityLandmarkIcons.js');
-  for (const kind of Object.keys(CITY_LANDMARK_ICONS)) {
-    const shapes = cityLandmarkShapes(kind);
-    assert.ok(Array.isArray(shapes) && shapes.length > 2, `${kind} tiene trazos`);
-    shapes.forEach((shape) => assert.ok(typeof shape === 'string' || Number.isFinite(shape.r), `${kind} trazo válido`));
+test('cada ciudad conocida tiene su silueta emblemática y las demás una silueta genérica de ciudad', async () => {
+  const { CITY_LANDMARK_GLYPHS, cityLandmarkGlyph } = await import('../src/modules/trips/cityLandmarkGlyphs.js');
+  for (const kind of Object.keys(CITY_LANDMARK_GLYPHS)) {
+    const shapes = cityLandmarkGlyph(kind);
+    assert.ok(Array.isArray(shapes) && shapes.length > 0, `${kind} tiene formas`);
+    shapes.forEach((shape) => assert.ok(
+      typeof shape === 'string' || typeof shape.line === 'string' || Number.isFinite(shape.r),
+      `${kind} forma válida`
+    ));
   }
-  assert.equal(cityLandmarkShapes('rothenburg'), cityLandmarkShapes('nuremberg'));
-  assert.equal(cityLandmarkShapes('atlantis'), CITY_LANDMARK_ICONS.generic);
+  assert.equal(cityLandmarkGlyph('rothenburg'), cityLandmarkGlyph('nuremberg'));
+  assert.equal(cityLandmarkGlyph('atlantis'), CITY_LANDMARK_GLYPHS.generic);
 });
