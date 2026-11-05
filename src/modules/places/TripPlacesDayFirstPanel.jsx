@@ -6,7 +6,6 @@ import {
   IconGripVertical,
   IconMapPin,
   IconNote,
-  IconPlus,
   IconX,
 } from '@tabler/icons-react';
 import { flagImageUrl } from '../flags/flags.js';
@@ -70,8 +69,6 @@ const MY_ROUTES_STYLES = `
 .mr__icon-btn:disabled{opacity:.4;cursor:default}.mr__icon-btn--plain{color:#2a7d73}
 .mr__body{padding:6px 16px 14px 16px;background:#fbfcfc}
 .mr__empty{padding:10px 0 6px 44px;color:#7c8797;font-size:12.5px}
-.mr__add{display:inline-flex;align-items:center;gap:6px;margin:8px 0 0 44px;padding:4px 0;border:0;background:none;color:#0e4f63;font:600 12.5px var(--font-body);cursor:pointer}
-.mr__add:hover,.mr__add:focus-visible{color:#0b3f4f;text-decoration:underline;outline:none}
 .mr-place{position:relative;display:grid;min-height:52px;grid-template-columns:32px minmax(0,1fr) auto;align-items:center;column-gap:12px;margin:0 -8px 0 0;padding:4px 8px 4px 0;border-radius:10px;cursor:pointer}
 .mr-place:hover{background:#f3f6f7}
 .mr-place.is-selected{background:#e8f3f1}
@@ -133,11 +130,6 @@ function placeSubtitle(place, segmentById) {
   const city = place?.city || destination?.name || '';
   const parts = [place?.category, city].map((value) => String(value || '').trim()).filter(Boolean);
   return [...new Set(parts)].join(' · ');
-}
-
-function focusPlaceSearch() {
-  const input = document.querySelector('.geo-search input');
-  input?.focus();
 }
 
 export function TripPlacesDayFirstPanel({
@@ -464,10 +456,6 @@ export function TripPlacesDayFirstPanel({
           );
         })}
         {transferIndex > 0 && transferIndex === day.places.length && transferCards}
-        <button type="button" className="mr__add" onClick={focusPlaceSearch}>
-          <IconPlus size={14} aria-hidden="true" />
-          {t('addPlaceToDay')}
-        </button>
       </div>
     );
   }

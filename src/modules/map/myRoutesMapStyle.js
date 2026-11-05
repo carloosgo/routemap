@@ -99,6 +99,8 @@ export function routeDrawSegments(route, geometryPaths) {
       kind: segment.kind === 'other' ? route.mode : segment.kind,
       color: segment.color || '',
       label: segment.kind === 'transit' ? segment.label || '' : '',
+      textColor: segment.kind === 'transit' ? segment.textColor || '' : '',
+      icon: segment.kind === 'transit' ? segment.icon || '' : '',
       coordinates: segment.geometry?.coordinates || [],
     }));
   }
@@ -106,6 +108,8 @@ export function routeDrawSegments(route, geometryPaths) {
     kind: route?.mode || 'drive',
     color: '',
     label: '',
+    textColor: '',
+    icon: '',
     coordinates,
   }));
 }
@@ -147,22 +151,33 @@ export function numberedPlaceMarker({ number, color, selected = false, muted = f
 }
 
 /** Distintivo de línea sobre el trazo (DOM). */
-export function transitBadgeElement(label, color) {
+export function transitBadgeElement(label, color, { textColor = '', icon = '' } = {}) {
   const badge = document.createElement('span');
-  badge.textContent = label;
   Object.assign(badge.style, {
     display: 'inline-flex',
     alignItems: 'center',
-    height: '20px',
-    padding: '0 7px',
+    gap: '4px',
+    height: '22px',
+    padding: icon ? '0 7px 0 3px' : '0 7px',
     borderRadius: '6px',
     background: color || MY_ROUTE_COLORS.transit,
-    color: '#ffffff',
+    color: textColor || '#ffffff',
     font: '700 11px var(--font-body, sans-serif)',
     boxShadow: '0 0 0 2px #ffffff, 0 2px 6px rgba(15, 23, 42, 0.2)',
     transform: 'translateY(50%)',
     pointerEvents: 'none',
     whiteSpace: 'nowrap',
   });
+  if (icon) {
+    // El logo va sobre blanco para que se lea sobre cualquier color de línea.
+    const logo = document.createElement('img');
+    logo.src = icon;
+    logo.alt = '';
+    logo.referrerPolicy = 'no-referrer';
+    Object.assign(logo.style, { width: '16px', height: '16px', objectFit: 'contain', borderRadius: '4px', background: '#ffffff' });
+    logo.addEventListener('error', () => logo.remove());
+    badge.append(logo);
+  }
+  if (label) badge.append(document.createTextNode(label));
   return badge;
 }

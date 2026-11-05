@@ -155,7 +155,7 @@ test('una ruta con tramos de transporte se dibuja por tramo con distintivo de lÃ
   const drawn = routeDrawSegments(route, () => []);
 
   assert.deepEqual(drawn.map(({ kind, label }) => [kind, label]), [['walk', ''], ['transit', 'L2'], ['transit', 'L2']]);
-  assert.deepEqual(transitLineBadges(route), [{ label: 'L2', color: '#d7262b' }]);
+  assert.deepEqual(transitLineBadges(route), [{ label: 'L2', color: '#d7262b', textColor: '#ffffff', icon: '' }]);
   assert.equal(routeStroke(route).color, '#d7262b');
   assert.equal(routeStroke(null).style, 'dashed');
   assert.deepEqual(

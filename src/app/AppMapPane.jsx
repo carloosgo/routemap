@@ -4,7 +4,7 @@ import { RouteMap } from '../modules/map/RouteMap.jsx';
 import { buildItineraryPdfModel } from '../modules/export/itineraryPdfModel.js';
 import { ItineraryDetailsModal } from '../modules/trips/ItineraryDetailsModal.jsx';
 import { buildItineraryStopSequence } from '../modules/trips/itineraryStopSequence.js';
-import { itineraryPlacePlanningTarget } from '../modules/trips/placePlanningAssignment.js';
+import { placeSaveDay } from '../modules/trips/placePlanningAssignment.js';
 import { tripPlanningDays } from '../modules/trips/tripDayPlanning.js';
 import { ORIGIN_NOTE_TARGET } from '../modules/trips/tripNoteTargets.js';
 import { colorForIndex } from '../config.js';
@@ -59,16 +59,16 @@ export function AppMapPane({
       return false;
     }
 
-    const target = itineraryPlacePlanningTarget(place, trip.segments);
-    if (target?.day) {
+    const day = placeSaveDay(place, trip.segments, placesFocus?.focus.day);
+    if (day) {
       addPlace({
         ...place,
-        segmentId: target.day.segmentId,
-        dayOffset: target.day.dayOffset,
+        segmentId: day.segmentId,
+        dayOffset: day.dayOffset,
       });
       return {
         accepted: true,
-        message: `${t('placeSaved')} · ${target.day.destination?.name || t('city')} · ${t('day')} ${target.day.globalDayNumber}`,
+        message: `${t('placeSaved')} · ${day.destination?.name || t('city')} · ${t('day')} ${day.globalDayNumber}`,
       };
     }
 

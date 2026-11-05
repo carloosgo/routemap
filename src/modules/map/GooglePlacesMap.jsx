@@ -914,11 +914,11 @@ export function GooglePlacesMap({
           routeLineLayers(maps, segment, path).forEach((options) => {
             savedRouteLinesRef.current.push(new maps.Polyline({ ...options, map }));
           });
-          if (segment.kind === 'transit' && segment.label && AdvancedMarkerElement) {
+          if (segment.kind === 'transit' && (segment.label || segment.icon) && AdvancedMarkerElement) {
             routeBadgeMarkersRef.current.push(new AdvancedMarkerElement({
               map,
               position: middlePoint(path),
-              content: transitBadgeElement(segment.label, segment.color),
+              content: transitBadgeElement(segment.label, segment.color, segment),
               zIndex: 25,
             }));
           }

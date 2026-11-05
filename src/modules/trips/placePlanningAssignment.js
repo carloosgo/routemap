@@ -83,3 +83,18 @@ export function itineraryPlacePlanningTarget(place, segments) {
 
   return nearby ? { ...nearby, reason: 'nearby' } : null;
 }
+
+/**
+ * Día en el que se guarda un lugar encontrado en el buscador: la ciudad la
+ * decide el propio lugar; si el día abierto en Mis rutas es de esa ciudad, se
+ * guarda ahí, y si no, en el primer día de la estancia.
+ */
+export function placeSaveDay(place, segments, openTripDay = null) {
+  const target = itineraryPlacePlanningTarget(place, segments);
+  if (!target?.day) return null;
+  if (!Number.isInteger(openTripDay)) return target.day;
+  const openDay = tripPlanningDays(segments).find((day) =>
+    day.segmentId === target.day.segmentId && day.globalDayNumber === openTripDay + 1
+  );
+  return openDay || target.day;
+}

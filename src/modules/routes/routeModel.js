@@ -69,6 +69,28 @@ function normalizeLine(value, maxPoints = MAX_GEOMETRY_POINTS) {
   return sampleLine(coordinates, maxPoints);
 }
 
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+const TRANSIT_ICON_HOSTS = ['gstatic.com', 'google.com', 'googleapis.com', 'googleusercontent.com'];
+
+function hexColor(value) {
+  const color = String(value || '');
+  return HEX_COLOR.test(color) ? color : '';
+}
+
+/** Logo de línea de Google: solo https y dominios de Google. */
+export function normalizeTransitIcon(value) {
+  const raw = typeof value === 'string' ? value.trim().slice(0, 500) : '';
+  if (!raw) return '';
+  try {
+    const url = new URL(raw.startsWith('//') ? `https:${raw}` : raw);
+    const host = url.hostname.toLowerCase();
+    const trusted = TRANSIT_ICON_HOSTS.some((domain) => host === domain || host.endsWith(`.${domain}`));
+    return url.protocol === 'https:' && trusted ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+
 function normalizeTransitSteps(value) {
   return (Array.isArray(value) ? value : [])
     .slice(0, 24)
@@ -79,6 +101,9 @@ function normalizeTransitSteps(value) {
       arrivalTime: normalizeTimestamp(step?.arrivalTime),
       lineName: normalizeShortText(step?.lineName, 120),
       lineShortName: normalizeShortText(step?.lineShortName, 60),
+      lineColor: hexColor(step?.lineColor),
+      lineTextColor: hexColor(step?.lineTextColor),
+      lineIcon: normalizeTransitIcon(step?.lineIcon),
       vehicleType: normalizeShortText(step?.vehicleType, 60),
       agencies: (Array.isArray(step?.agencies) ? step.agencies : [])
         .map((agency) => normalizeShortText(agency, 120))
@@ -99,11 +124,12 @@ export function normalizeRouteSegments(value) {
     .map((segment) => {
       const coordinates = normalizeLine(segment?.geometry?.coordinates, 2000);
       if (coordinates.length < 2) return null;
-      const color = String(segment?.color || '');
       return {
         kind: ROUTE_SEGMENT_KINDS.has(segment?.kind) ? segment.kind : 'other',
-        color: /^#[0-9a-f]{6}$/i.test(color) ? color : '',
+        color: hexColor(segment?.color),
+        textColor: hexColor(segment?.textColor),
         label: normalizeShortText(segment?.label, 60),
+        icon: normalizeTransitIcon(segment?.icon),
         geometry: { type: 'LineString', coordinates },
       };
     })
