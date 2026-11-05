@@ -15,6 +15,7 @@ import { TripDeleteDialog } from './app/TripDeleteDialog.jsx';
 import { normalizeRecoveredDraft } from './app/recoveredTripDraft.js';
 import { useAppEditorState } from './app/useAppEditorState.js';
 import { useItineraryFloatingPanels } from './app/useItineraryFloatingPanels.js';
+import { usePlacesFocus } from './app/usePlacesFocus.js';
 import { useOutsideClick, useSaveShortcut } from './app/useAppInteractions.js';
 import { useTripSaveFlow } from './app/useTripSaveFlow.js';
 import './App.css';
@@ -28,6 +29,7 @@ export default function App() {
   const editorState = useAppEditorState(tripStore);
   const itineraryPanels = useItineraryFloatingPanels();
   const { trip, loadTrip, setCurrency, updateSegment, updateExpenses, updateOriginDetails, updateOriginExpenses, addPlace } = tripStore;
+  const placesFocus = usePlacesFocus({ tripId: trip.id, segments: trip.segments, places: trip.places || [], t });
   const { getTrip, getActiveTripDraft, stageTrip, getTripPersistenceState, saveTrip, deleteTrip, importLocalTrips, getLocalTripCount } = savedTrips;
   const [toast, setToast] = useState('');
   const [mobileView, setMobileView] = useState('form');
@@ -202,6 +204,7 @@ export default function App() {
       editorMenuRef={editorMenuRef}
       setTripToDelete={setTripToDelete}
       handleOpenSavedTrip={handleOpenSavedTrip}
+      placesFocus={placesFocus}
       persistenceState={persistence.state}
       t={t}
       intlLocale={intlLocale}
@@ -219,6 +222,7 @@ export default function App() {
       updateOriginDetails={updateOriginDetails}
       updateOriginExpenses={updateOriginExpenses}
       addPlace={addPlace}
+      placesFocus={placesFocus}
       intlLocale={intlLocale}
       persistenceState={persistence.state}
       toast={toast}

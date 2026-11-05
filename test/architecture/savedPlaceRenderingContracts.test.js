@@ -16,10 +16,10 @@ test('saved-place rendering keeps one reusable pin pipeline and lazy ISO country
   assert.match(symbol, /saved-place-pin\.svg\?raw/);
   assert.match(symbol, /export function savedPlacePinUrl/);
   assert.match(symbol, /savedPlacePinTemplate\.replace\('#19a5d0', color\)/);
-  assert.match(googleMap, /savedPlaceMarkerStyle/);
-  assert.match(googleMap, /savedPlacePinUrl/);
-  assert.match(googleMap, /placeCountryKey/);
-  assert.match(googleMap, /image\.src = savedPlacePinUrl\(color\)/);
+  // Mis rutas: marcador numerado con el mismo color de país y número que la lista.
+  assert.match(googleMap, /numberedPlaceMarker\(\{/);
+  assert.match(googleMap, /placeCountryColors\(planningSegments, places\)/);
+  assert.match(googleMap, /placeDayIndex\(places, planningSegments\)/);
 
   assert.match(dom, /function normalizedCountryCode/);
   assert.match(dom, /\/\^\[a-z\]\{2\}\$\//);

@@ -10,26 +10,45 @@ test('Mis Rutas no permite arrastrar días completos y muestra Por organizar arr
   const panel = await read('src/modules/places/TripPlacesDayFirstPanel.jsx');
 
   assert.doesNotMatch(panel, /startDayDrag|reorderTripDay|dayDrag/);
-  assert.match(panel, /grouped\.unassigned\.length > 0 && \([\s\S]*?data-unassigned-places/);
+  assert.match(panel, /grouped\.unassigned\.length > 0 && \(\s*<button[\s\S]*?mr__pending/);
+  assert.match(panel, /data-unassigned-places/);
   assert.match(panel, /dayCityNames\(assignmentsByDay\.get\(day\.tripDayOffset\)\)/);
 });
 
-test('Mis Rutas dibuja un único rail recto entre el primer y último punto', async () => {
+test('Mis Rutas agrupa los días por ciudad y abre un solo día a la vez', async () => {
   const panel = await read('src/modules/places/TripPlacesDayFirstPanel.jsx');
 
-  assert.match(
-    panel,
-    /\.trip-day-first__rail\{[^}]*top:24px;bottom:28px;left:var\(--trip-timeline-x\);width:2px;transform:translateX\(-50%\);background:var\(--trip-day-rail-color,#64748b\)/,
-    'el rail debe ser un solo eje de 2px colocado en el mismo x que los puntos'
-  );
-  assert.match(panel, /day\.places\.length > 1 && \([\s\S]*?<span className="trip-day-first__rail" aria-hidden="true" \/>/);
-  assert.match(panel, /\.trip-day-first-place:before,\.trip-day-first-place:after\{content:none\}/);
-  assert.match(panel, /\.trip-day-first-connection \.trip-connection__rail\{display:none\}/);
+  assert.match(panel, /cityDayGroups\(grouped\.groups, assignmentsByDay\)/);
+  assert.match(panel, /setOpenDay\(openDay === key \? null : key\)/);
+  assert.match(panel, /const open = openDay === day\.tripDayOffset/);
+  assert.match(panel, /\{open && renderDayBody\(day\)\}/);
 });
 
-test('el título del lugar permanece principal y ciudad país usan gris oscuro', async () => {
+test('cada parada muestra su número del día, sin miniatura de Street View', async () => {
   const panel = await read('src/modules/places/TripPlacesDayFirstPanel.jsx');
 
-  assert.match(panel, /\{placeTitle\(place, t\)\}[\s\S]*?trip-day-first-place__location/);
-  assert.match(panel, /\.trip-day-first-place__location\{color:#475569;font-weight:500\}/);
+  assert.match(panel, /renderPlace\(place, index \+ 1\)/);
+  assert.match(panel, /className=\{'mr-place__num'/);
+  assert.doesNotMatch(panel, /StreetViewThumbnail|PlacePhotoThumbnail/);
+});
+
+test('el tramo entre lugares muestra el modo elegido y se cambia desde una lista desplegable', async () => {
+  const connector = await read('src/modules/places/TripRouteConnections.jsx');
+
+  assert.match(connector, /aria-haspopup="listbox"/);
+  assert.match(connector, /role="listbox"/);
+  assert.match(connector, /role="option"/);
+  assert.match(connector, /\/\/ Las estimaciones \(Geoapify\) se piden solo al desplegar la lista\./);
+  assert.doesNotMatch(connector, /IntersectionObserver/);
+});
+
+test('el mapa agrupa transporte y lugares de otros días en un único control Capas', async () => {
+  const map = await read('src/modules/map/GooglePlacesMap.jsx');
+
+  assert.match(map, /data-map-layers/);
+  assert.match(map, /t\('mapLayers'\)/);
+  assert.match(map, /t\('mapLayerTransit'\)/);
+  assert.match(map, /t\('mapLayerOtherDays'\)/);
+  assert.match(map, /map\.setOptions\?\.\(\{ zoomControl: !placesActive \}\)/);
+  assert.doesNotMatch(map, /IconBus/);
 });

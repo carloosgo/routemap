@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { IconBus, IconCar } from '@tabler/icons-react';
+import { IconBus, IconCar, IconChevronDown, IconChevronUp, IconPlane, IconRoute } from '@tabler/icons-react';
 import { requestGooglePlaceRoute } from '../routes/googleRouteClient.js';
 import { requestSavedPlaceRoute } from '../routes/geoapifyRouteClient.js';
 import { distanceKm } from '../trips/placePlanningAssignment.js';
@@ -54,40 +54,72 @@ export function NextCityTransfer({ from, to, date, t, intlLocale }) {
 
   if (!located) return null;
 
+  const TransferIcon = likelyFlight ? IconPlane : IconRoute;
+  const rowStyle = (active) => ({
+    display: 'grid',
+    width: '100%',
+    gridTemplateColumns: '22px minmax(0, 1fr) auto 14px',
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 46,
+    padding: '0 14px',
+    border: 0,
+    borderTop: '1px solid #eef0f2',
+    background: active ? '#f7f9fa' : '#ffffff',
+    color: '#0b1f2c',
+    font: '500 13px var(--font-body)',
+    textAlign: 'left',
+  });
+
   return (
-    <div className="trip-connection" data-next-city-transfer>
-      <div className="trip-connection__transit">
-        <div className="trip-connection__transit-step">
-          <strong>{`${from.name} → ${to.name}`}</strong>
-          <span>
+    <section
+      data-next-city-transfer
+      aria-label={`${from.name} → ${to.name}`}
+      style={{ border: '1px solid #e2e4e9', borderRadius: 12, background: '#ffffff', boxShadow: '0 4px 14px rgba(15, 23, 42, 0.06)', overflow: 'hidden' }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
+        <span aria-hidden="true" style={{ display: 'flex', width: 38, height: 38, flex: '0 0 38px', alignItems: 'center', justifyContent: 'center', borderRadius: 10, background: '#0b1f2c', color: '#ffffff' }}>
+          <TransferIcon size={19} stroke={1.8} />
+        </span>
+        <span style={{ minWidth: 0 }}>
+          <strong style={{ display: 'block', fontSize: 14.5, fontWeight: 600 }}>{t('transferTo', { city: to.name })}</strong>
+          <span style={{ display: 'block', marginTop: 2, color: '#5b6080', fontSize: 12 }}>
             {[
               `${formatKm(straightKm, intlLocale)} ${t('straightLineDistance')}`,
               likelyFlight ? t('transferLikelyFlight') : '',
             ].filter(Boolean).join(' · ')}
           </span>
-        </div>
+        </span>
       </div>
       {!likelyFlight && (
-        <div className="trip-connection__modes" aria-label={t('routeMode')}>
+        <>
           <button
             type="button"
-            className={`trip-connection__mode${showTransit ? ' is-active' : ''}`}
             onClick={() => setShowTransit((current) => !current)}
             disabled={!state.transit}
-            aria-pressed={showTransit}
-            aria-label={t('routeModeTransit')}
-            title={t('routeModeTransit')}
+            aria-expanded={showTransit}
+            style={{ ...rowStyle(showTransit), cursor: state.transit ? 'pointer' : 'default' }}
           >
-            <IconBus size={16} stroke={1.8} aria-hidden="true" />
-            <span>{state.loading ? '…' : formatDuration(state.transit?.duration)}</span>
+            <IconBus size={18} stroke={1.8} color="#3b4556" aria-hidden="true" />
+            <span>{t('routeModeTransit')}</span>
+            <strong style={{ fontWeight: 600 }}>{state.loading ? '…' : formatDuration(state.transit?.duration)}</strong>
+            {state.transit
+              ? (showTransit ? <IconChevronUp size={14} color="#667085" aria-hidden="true" /> : <IconChevronDown size={14} color="#667085" aria-hidden="true" />)
+              : <span />}
           </button>
-          <span className="trip-connection__mode" aria-label={t('routeModeDrive')} title={t('routeModeDrive')}>
-            <IconCar size={16} stroke={1.8} aria-hidden="true" />
-            <span>{state.loading ? '…' : formatDuration(state.drive?.duration)}</span>
-          </span>
-        </div>
+          {showTransit && state.transit && (
+            <div style={{ padding: '4px 14px 12px 46px', background: '#f7f9fa' }}>
+              <TransitDetails route={state.transit} locale={intlLocale} />
+            </div>
+          )}
+          <div style={{ ...rowStyle(false), cursor: 'default' }}>
+            <IconCar size={18} stroke={1.8} color="#3b4556" aria-hidden="true" />
+            <span>{t('routeModeDrive')}</span>
+            <strong style={{ fontWeight: 600 }}>{state.loading ? '…' : formatDuration(state.drive?.duration)}</strong>
+            <span />
+          </div>
+        </>
       )}
-      {showTransit && state.transit && <TransitDetails route={state.transit} locale={intlLocale} />}
-    </div>
+    </section>
   );
 }

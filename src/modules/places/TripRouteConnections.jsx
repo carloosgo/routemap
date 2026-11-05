@@ -3,18 +3,32 @@ import {
   IconBike,
   IconBus,
   IconCar,
+  IconCheck,
+  IconChevronDown,
+  IconChevronUp,
+  IconRoute,
   IconWalk,
 } from '@tabler/icons-react';
 import { loadGooglePlaceLocations } from './googlePlacesClient.js';
 import { requestGooglePlaceRoute } from '../routes/googleRouteClient.js';
 import { requestSavedPlaceRoute } from '../routes/geoapifyRouteClient.js';
+import {
+  ensureLiveRoute,
+  setLiveRoute,
+  useLiveRoutesVersion,
+  withLiveGeometry,
+} from '../routes/liveRouteStore.js';
+import { distanceKm } from '../trips/placePlanningAssignment.js';
 import { isGooglePlaceReference, isPlaced } from '../trips/tripModel.js';
+import { transferDepartureTime } from './cityTransferModel.js';
+import { formatDistance } from './placesDayModel.js';
+import { ROUTE_STROKES, routeStroke, transitLineBadges } from './routeConnectionStyle.js';
 
-const QUICK_MODES = Object.freeze([
-  { id: 'drive', labelKey: 'routeModeDrive', Icon: IconCar },
-  { id: 'transit', labelKey: 'routeModeTransit', Icon: IconBus },
-  { id: 'bicycle', labelKey: 'routeModeBicycle', Icon: IconBike },
+export const ROUTE_MODES = Object.freeze([
   { id: 'walk', labelKey: 'routeModeWalk', Icon: IconWalk },
+  { id: 'transit', labelKey: 'routeModeTransit', Icon: IconBus },
+  { id: 'drive', labelKey: 'routeModeDrive', Icon: IconCar },
+  { id: 'bicycle', labelKey: 'routeModeBicycle', Icon: IconBike },
 ]);
 
 const estimateCache = new Map();
@@ -32,14 +46,11 @@ export function formatDuration(value) {
   return remainingHours ? `${days} d ${remainingHours} h` : `${days} d`;
 }
 
-function formatTransitTime(value, locale) {
+export function formatTransitTime(value, locale) {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat(locale, {
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
+  return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(date);
 }
 
 function estimateKey(origin, destination, mode) {
@@ -91,164 +102,200 @@ async function resolveEstimatePair(origin, destination, signal) {
   return { origin: locatedOrigin, destination: locatedDestination };
 }
 
-function routeIsFresh(route, mode) {
-  if (route?.provider !== 'google' || !route.geometry || route.mode !== mode) return false;
-  const calculatedAt = new Date(route.calculatedAt || '').getTime();
-  if (!Number.isFinite(calculatedAt)) return false;
-  const age = Date.now() - calculatedAt;
-  const ttl = mode === 'transit'
-    ? 30 * 60 * 1000
-    : 7 * 24 * 60 * 60 * 1000;
-  return age >= 0 && age <= ttl;
+// Horarios de transporte del día del viaje (9:00 local); si ya pasó, ahora.
+function transitDeparture(date, origin) {
+  return transferDepartureTime(date, origin?.lon) || new Date().toISOString();
 }
 
-export function TransitDetails({ route, locale }) {
-  const steps = Array.isArray(route?.transitSteps) ? route.transitSteps : [];
-  if (!steps.length) return null;
-
-  return (
-    <div className="trip-connection__transit">
-      {steps.slice(0, 5).map((step, index) => {
-        const line = step.lineShortName || step.lineName || step.tripShortText || step.vehicleType || '';
-        const departure = formatTransitTime(step.departureTime, locale);
-        const arrival = formatTransitTime(step.arrivalTime, locale);
-        const stops = [step.departureStop, step.arrivalStop].filter(Boolean).join(' → ');
-        return (
-          <div className="trip-connection__transit-step" key={`${line}:${index}`}>
-            <strong>{[line, departure && arrival ? `${departure}–${arrival}` : ''].filter(Boolean).join(' · ')}</strong>
-            {stops && <span>{stops}</span>}
-          </div>
-        );
-      })}
-    </div>
+function calculateRoute(origin, destination, mode, date) {
+  return requestGooglePlaceRoute(
+    origin,
+    destination,
+    mode,
+    { departureTime: mode === 'transit' ? transitDeparture(date, origin) : '' }
   );
+}
+
+const styles = {
+  wrap: { display: 'grid', gridTemplateColumns: '32px minmax(0, 1fr)', columnGap: 12, alignItems: 'stretch', position: 'relative' },
+  body: { padding: '4px 0', minWidth: 0, position: 'relative' },
+  trigger: (open) => ({
+    display: 'inline-flex',
+    maxWidth: '100%',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 28,
+    padding: '0 10px 0 8px',
+    border: `1px solid ${open ? '#0b1f2c' : 'transparent'}`,
+    borderRadius: 7,
+    background: open ? '#ffffff' : '#f4f6f8',
+    color: '#3b4556',
+    font: '500 12px var(--font-body)',
+    cursor: 'pointer',
+    textAlign: 'left',
+  }),
+  pendingTrigger: (open) => ({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 28,
+    padding: '0 10px',
+    border: `1px ${open ? 'solid #0b1f2c' : 'dashed #c9ced7'}`,
+    borderRadius: 7,
+    background: '#ffffff',
+    color: '#5b6080',
+    font: '500 12px var(--font-body)',
+    cursor: 'pointer',
+  }),
+  strong: { fontWeight: 600, color: '#0b1f2c' },
+  badge: (color) => ({
+    display: 'inline-flex',
+    alignItems: 'center',
+    height: 18,
+    padding: '0 6px',
+    borderRadius: 4,
+    background: color,
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: 700,
+    whiteSpace: 'nowrap',
+  }),
+  list: {
+    position: 'absolute',
+    zIndex: 40,
+    top: 'calc(100% - 2px)',
+    left: 0,
+    width: 'min(262px, 100%)',
+    margin: 0,
+    padding: 4,
+    listStyle: 'none',
+    border: '1px solid #e2e4e9',
+    borderRadius: 10,
+    background: '#ffffff',
+    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.14)',
+  },
+  option: (selected) => ({
+    display: 'grid',
+    width: '100%',
+    gridTemplateColumns: '20px minmax(0, 1fr) auto 16px',
+    alignItems: 'center',
+    gap: 10,
+    height: 38,
+    padding: '0 10px',
+    border: 0,
+    borderRadius: 7,
+    background: selected ? '#f1f8f7' : 'transparent',
+    color: '#0b1f2c',
+    font: '500 13px var(--font-body)',
+    textAlign: 'left',
+    cursor: 'pointer',
+  }),
+  status: { display: 'block', padding: '6px 10px 4px', color: '#9a3412', fontSize: 11.5 },
+};
+
+function railStyle(stroke) {
+  if (stroke.style === 'solid') {
+    return { justifySelf: 'center', width: 4, borderRadius: 2, background: stroke.color, minHeight: 36 };
+  }
+  return {
+    justifySelf: 'center',
+    width: 0,
+    minHeight: 36,
+    borderLeft: `${stroke.style === 'dotted' ? 3 : 2}px ${stroke.style} ${stroke.color}`,
+  };
 }
 
 export function TripRouteConnections({
   origin,
   destination,
   route,
+  date = '',
   upsertRoute,
-  setRouteVisibility,
-  setAllRouteVisibility,
+  removeRoute,
   t,
   intlLocale,
 }) {
+  useLiveRoutesVersion();
   const rootRef = useRef(null);
-  const [shouldEstimate, setShouldEstimate] = useState(false);
+  const [open, setOpen] = useState(false);
   const [estimates, setEstimates] = useState({});
   const [estimating, setEstimating] = useState(false);
-  const [estimateError, setEstimateError] = useState(false);
-  const [selectedMode, setSelectedMode] = useState(
-    route?.visible !== false && QUICK_MODES.some((item) => item.id === route?.mode)
-      ? route.mode
-      : ''
-  );
   const [loadingMode, setLoadingMode] = useState('');
   const [routeError, setRouteError] = useState(false);
-  const [liveRoute, setLiveRoute] = useState(route || null);
 
-  const pairKey = `${origin.id}>${destination.id}`;
+  const chosen = route && route.visible !== false && ROUTE_MODES.some(({ id }) => id === route.mode)
+    ? withLiveGeometry(route)
+    : null;
+  const chosenMode = chosen?.mode || '';
+  const straightKm = isPlaced(origin) && isPlaced(destination) ? distanceKm(origin, destination) : 0;
+
+  // El viaje guarda solo el modo: al abrir el día se recalcula la línea una vez por sesión.
+  useEffect(() => {
+    if (!chosenMode || chosen?.geometry) return;
+    ensureLiveRoute(origin.id, destination.id, chosenMode, () =>
+      calculateRoute(origin, destination, chosenMode, date)
+    ).catch(() => {});
+  }, [chosen?.geometry, chosenMode, date, destination, origin]);
 
   useEffect(() => {
-    setLiveRoute(route || null);
-    if (route?.visible !== false && QUICK_MODES.some((item) => item.id === route?.mode)) {
-      setSelectedMode(route.mode);
-    }
-  }, [route]);
-
-  useEffect(() => {
-    const node = rootRef.current;
-    if (!node || shouldEstimate) return undefined;
-    if (typeof globalThis.IntersectionObserver === 'undefined') {
-      setShouldEstimate(true);
-      return undefined;
-    }
-
-    let timer = 0;
-    const observer = new globalThis.IntersectionObserver(
-      (entries) => {
-        const visible = entries.some((entry) => entry.isIntersecting);
-        if (visible) {
-          if (!timer) timer = globalThis.setTimeout(() => setShouldEstimate(true), 320);
-        } else if (timer) {
-          globalThis.clearTimeout(timer);
-          timer = 0;
-        }
-      },
-      { rootMargin: '120px 0px', threshold: 0.05 }
-    );
-    observer.observe(node);
-    return () => {
-      if (timer) globalThis.clearTimeout(timer);
-      observer.disconnect();
+    if (!open) return undefined;
+    const close = (event) => {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
     };
-  }, [shouldEstimate, pairKey]);
+    const escape = (event) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [open]);
 
+  // Las estimaciones (Geoapify) se piden solo al desplegar la lista.
   useEffect(() => {
-    if (!shouldEstimate) return undefined;
+    if (!open) return undefined;
     const controller = new AbortController();
     setEstimating(true);
-    setEstimateError(false);
-
     resolveEstimatePair(origin, destination, controller.signal)
       .then(async (resolved) => {
         const results = await Promise.allSettled(
-          QUICK_MODES.map(async ({ id }) => [
-            id,
-            await cachedEstimate(resolved.origin, resolved.destination, id),
-          ])
+          ROUTE_MODES.map(async ({ id }) => [id, await cachedEstimate(resolved.origin, resolved.destination, id)])
         );
         if (controller.signal.aborted) return;
         const next = {};
         results.forEach((result) => {
-          if (result.status === 'fulfilled') {
-            const [mode, estimate] = result.value;
-            next[mode] = estimate;
-          }
+          if (result.status === 'fulfilled') next[result.value[0]] = result.value[1];
         });
         setEstimates(next);
-        setEstimateError(Object.keys(next).length === 0);
       })
-      .catch((error) => {
-        if (error?.name !== 'AbortError') setEstimateError(true);
-      })
+      .catch(() => {})
       .finally(() => {
         if (!controller.signal.aborted) setEstimating(false);
       });
-
     return () => controller.abort();
-  }, [destination, origin, pairKey, shouldEstimate]);
+  }, [destination, open, origin]);
 
   async function selectMode(mode) {
     if (loadingMode) return;
-    setSelectedMode(mode);
     setRouteError(false);
-    setAllRouteVisibility?.(false);
-
-    if (routeIsFresh(route, mode)) {
-      setRouteVisibility?.(route.id, true);
-      setLiveRoute(route);
+    if (mode === chosenMode && chosen?.geometry) {
+      setOpen(false);
       return;
     }
-
     setLoadingMode(mode);
     try {
-      const calculated = await requestGooglePlaceRoute(
-        origin,
-        destination,
-        mode,
-        { departureTime: mode === 'transit' ? new Date().toISOString() : '' }
-      );
-      const nextRoute = {
+      const calculated = await calculateRoute(origin, destination, mode, date);
+      setLiveRoute(origin.id, destination.id, mode, calculated);
+      upsertRoute?.({
         id: route?.id,
         fromPlaceId: origin.id,
         toPlaceId: destination.id,
         visible: true,
         ...calculated,
-      };
-      setLiveRoute(nextRoute);
-      upsertRoute?.(nextRoute);
+      });
+      setOpen(false);
     } catch {
       setRouteError(true);
     } finally {
@@ -256,50 +303,122 @@ export function TripRouteConnections({
     }
   }
 
-  const selectedRoute = useMemo(() => {
-    if (!liveRoute || liveRoute.fromPlaceId !== origin.id || liveRoute.toPlaceId !== destination.id) {
-      return null;
-    }
-    return liveRoute;
-  }, [destination.id, liveRoute, origin.id]);
+  function clearMode() {
+    if (route?.id) removeRoute?.(route.id);
+    setOpen(false);
+  }
+
+  const badges = useMemo(() => transitLineBadges(chosen), [chosen]);
+  const stroke = routeStroke(chosen);
+  const ModeIcon = ROUTE_MODES.find(({ id }) => id === chosenMode)?.Icon || IconRoute;
+  const departure = chosenMode === 'transit'
+    ? formatTransitTime(chosen?.transitSteps?.[0]?.departureTime, intlLocale)
+    : '';
+  const distanceLabel = formatDistance(chosen?.distance, intlLocale);
+  const pairKey = `${origin.id}>${destination.id}`;
 
   return (
-    <div className="trip-connection" ref={rootRef} data-route-pair={pairKey}>
-      <div className="trip-connection__rail" aria-hidden="true" />
-      <div className="trip-connection__modes" aria-label={t('routeMode')}>
-        {QUICK_MODES.map(({ id, labelKey, Icon }) => {
-          const estimate = estimates[id];
-          const active = selectedMode === id;
-          const loading = loadingMode === id;
-          return (
-            <button
-              type="button"
-              className={`trip-connection__mode${active ? ' is-active' : ''}`}
-              key={id}
-              onClick={() => selectMode(id)}
-              disabled={Boolean(loadingMode)}
-              aria-pressed={active}
-              aria-label={t(labelKey)}
-              title={t(labelKey)}
-            >
-              <Icon size={16} stroke={1.8} aria-hidden="true" />
-              <span>{loading ? '…' : estimating && !estimate ? '…' : formatDuration(estimate?.duration)}</span>
-            </button>
-          );
-        })}
-      </div>
+    <div className="trip-connection mr-connector" ref={rootRef} data-route-pair={pairKey} style={{ ...styles.wrap, zIndex: open ? 60 : 1 }}>
+      <span aria-hidden="true" style={railStyle(stroke)} />
+      <div style={styles.body}>
+        {chosenMode ? (
+          <button
+            type="button"
+            aria-haspopup="listbox"
+            aria-expanded={open}
+            onClick={() => setOpen((current) => !current)}
+            style={styles.trigger(open)}
+          >
+            <ModeIcon size={15} stroke={1.8} aria-hidden="true" />
+            {badges.map((badge) => (
+              <span key={`${badge.label}:${badge.color}`} style={styles.badge(badge.color)}>{badge.label}</span>
+            ))}
+            <span>
+              <strong style={styles.strong}>{chosen?.duration ? formatDuration(chosen.duration) : '…'}</strong>
+              {chosenMode !== 'transit' && ` ${t(ROUTE_MODES.find(({ id }) => id === chosenMode).labelKey).toLowerCase()}`}
+              {departure && ` · ${t('routeDeparts')} ${departure}`}
+              {!departure && distanceLabel && ` · ${distanceLabel}`}
+            </span>
+            {open
+              ? <IconChevronUp size={12} aria-hidden="true" />
+              : <IconChevronDown size={12} aria-hidden="true" />}
+          </button>
+        ) : (
+          <button
+            type="button"
+            aria-haspopup="listbox"
+            aria-expanded={open}
+            onClick={() => setOpen((current) => !current)}
+            style={styles.pendingTrigger(open)}
+          >
+            <IconRoute size={14} stroke={1.8} aria-hidden="true" />
+            {t('chooseHowToGetThere')}
+            {Number.isFinite(straightKm) && straightKm > 0 && ` · ${formatDistance(straightKm * 1000, intlLocale)}`}
+          </button>
+        )}
 
-      {estimateError && !estimating && (
-        <span className="trip-connection__status">{t('routeCalculationError')}</span>
-      )}
-      {routeError && (
-        <span className="trip-connection__status trip-connection__status--error">
-          {t('routeCalculationError')}
-        </span>
-      )}
-      {selectedMode === 'transit' && selectedRoute?.mode === 'transit' && (
-        <TransitDetails route={selectedRoute} locale={intlLocale} />
-      )}
+        {open && (
+          <ul role="listbox" aria-label={t('routeMode')} style={styles.list}>
+            {ROUTE_MODES.map(({ id, labelKey, Icon }) => {
+              const selected = id === chosenMode;
+              const estimate = estimates[id];
+              const loading = loadingMode === id;
+              return (
+                <li key={id} role="presentation">
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    disabled={Boolean(loadingMode)}
+                    onClick={() => selectMode(id)}
+                    style={styles.option(selected)}
+                  >
+                    <Icon size={16} stroke={1.8} color="#3b4556" aria-hidden="true" />
+                    <span>{t(labelKey)}</span>
+                    <strong style={{ fontWeight: 600 }}>
+                      {loading || (estimating && !estimate) ? '…' : formatDuration(estimate?.duration)}
+                    </strong>
+                    {selected ? <IconCheck size={16} color="#2a7d73" aria-hidden="true" /> : <span />}
+                  </button>
+                </li>
+              );
+            })}
+            {chosenMode && (
+              <li role="presentation" style={{ borderTop: '1px solid #eef0f2', marginTop: 4, paddingTop: 4 }}>
+                <button type="button" role="option" aria-selected={false} onClick={clearMode} style={{ ...styles.option(false), color: '#5b6080' }}>
+                  <IconRoute size={16} stroke={1.8} aria-hidden="true" />
+                  <span>{t('routeModeNone')}</span>
+                  <span />
+                  <span />
+                </button>
+              </li>
+            )}
+            {routeError && <li role="presentation" style={styles.status}>{t('routeCalculationError')}</li>}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function TransitDetails({ route, locale }) {
+  const steps = Array.isArray(route?.transitSteps) ? route.transitSteps : [];
+  if (!steps.length) return null;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12, color: '#3b4556' }}>
+      {steps.slice(0, 5).map((step, index) => {
+        const line = step.lineShortName || step.lineName || step.tripShortText || step.vehicleType || '';
+        const departure = formatTransitTime(step.departureTime, locale);
+        const arrival = formatTransitTime(step.arrivalTime, locale);
+        const stops = [step.departureStop, step.arrivalStop].filter(Boolean).join(' → ');
+        return (
+          <div key={`${line}:${index}`} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            {line && <span style={styles.badge(step.lineColor || ROUTE_STROKES.transit.color)}>{line}</span>}
+            <span>{[departure && arrival ? `${departure} – ${arrival}` : '', stops].filter(Boolean).join(' · ')}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }

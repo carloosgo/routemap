@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { IconBus } from '@tabler/icons-react';
+import { IconMinus, IconPlus, IconStack2 } from '@tabler/icons-react';
 import { config, colorForIndex, countryColorForIndex } from '../../config.js';
 import { useTranslation } from '../../i18n/index.jsx';
 import { loadGooglePlaceLocations } from '../places/googlePlacesClient.js';
@@ -15,9 +15,17 @@ import {
 import { loadGoogleMaps } from './googleMapsLoader.js';
 import { itineraryLandmarksFromFeatures } from './itineraryLandmarkCatalog.js';
 import { markerElement, savedPlacePopup } from './placeMapDom.js';
-import { buildMapFeatureData, cityKey, placeCountryKey } from './routeMapModel.js';
-import { savedPlaceMarkerStyle } from './savedPlaceMarkerPalette.js';
-import { savedPlacePinUrl } from './savedPlaceSymbol.js';
+import { buildMapFeatureData, cityKey } from './routeMapModel.js';
+import {
+  middlePoint,
+  numberedPlaceMarker,
+  pendingLineLayer,
+  routeDrawSegments,
+  routeLineLayers,
+  transitBadgeElement,
+} from './myRoutesMapStyle.js';
+import { placeColor, placeCountryColors, placeDayIndex } from '../places/placesDayModel.js';
+import { useLiveRoutesVersion, withLiveGeometry } from '../routes/liveRouteStore.js';
 import { usePlaceSearch } from './usePlaceSearch.js';
 import { createWebglLandmarkOverlay } from './webglLandmarkOverlay.js';
 
@@ -34,68 +42,35 @@ function toGooglePath(coordinates) {
     .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
 }
 
-const TRANSIT_FALLBACK_COLOR = '#23647a';
-
-function transitToggleStyle(active) {
-  // Mismo tamaño y sombra que los controles nativos de Google Maps.
-  return {
-    display: 'inline-flex',
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    border: 0,
-    borderRadius: 2,
-    background: active ? TRANSIT_FALLBACK_COLOR : '#ffffff',
-    color: active ? '#ffffff' : '#666666',
-    boxShadow: 'rgba(0, 0, 0, 0.3) 0 1px 4px -1px',
-    cursor: 'pointer',
-  };
-}
-const WALK_ROUTE_COLOR = '#475569';
-
-export function routeSegmentLineOptions(map, path, segment) {
-  if (segment?.kind === 'walk') {
-    return {
-      map,
-      path,
-      strokeOpacity: 0,
-      clickable: false,
-      icons: [{
-        icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.9, strokeColor: WALK_ROUTE_COLOR, scale: 2 },
-        offset: '0',
-        repeat: '9px',
-      }],
-    };
-  }
-  return {
-    map,
-    path,
-    strokeColor: segment?.color || TRANSIT_FALLBACK_COLOR,
-    strokeOpacity: 0.95,
-    strokeWeight: segment?.kind === 'transit' ? 5 : 3,
-    clickable: false,
-  };
-}
+const controlButtonStyle = (active = false) => ({
+  display: 'inline-flex',
+  height: 40,
+  alignItems: 'center',
+  gap: 8,
+  padding: '0 14px 0 12px',
+  border: 0,
+  borderRadius: 10,
+  background: active ? '#0b1f2c' : '#ffffff',
+  color: active ? '#ffffff' : '#0b1f2c',
+  font: '600 13px var(--font-body)',
+  boxShadow: '0 2px 8px rgba(15, 23, 42, 0.16)',
+  cursor: 'pointer',
+});
+const zoomButtonStyle = {
+  display: 'flex',
+  width: 40,
+  height: 40,
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+  border: 0,
+  background: '#ffffff',
+  color: '#3b4556',
+  cursor: 'pointer',
+};
 
 function placeLabel(place, t) {
   return place.name || place.userLabel || t('place');
-}
-
-function savedMarkerContent(place, t, color) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'google-saved-place-marker';
-  button.setAttribute('aria-label', placeLabel(place, t));
-  const image = document.createElement('img');
-  image.src = savedPlacePinUrl(color);
-  image.width = 26;
-  image.height = 28;
-  image.alt = '';
-  image.decoding = 'async';
-  button.append(image);
-  return button;
 }
 
 function itineraryFlag(kind) {
@@ -247,8 +222,14 @@ export function GooglePlacesMap({
   routeConnections = [],
   addPlace,
   viewMode = 'segments',
+  planningSegments = [],
+  focusDay = null,
+  selectedPlaceId = '',
+  onSelectPlace,
+  focusLabel = '',
 }) {
   const { t } = useTranslation();
+  const liveRoutesVersion = useLiveRoutesVersion();
   const wrapRef = useRef(null);
   const nodeRef = useRef(null);
   const mapRef = useRef(null);
@@ -257,8 +238,12 @@ export function GooglePlacesMap({
   const resultPlaceMarkersRef = useRef([]);
   const savedRouteLinesRef = useRef([]);
   const transitLayerRef = useRef(null);
-  const [transitControlNode, setTransitControlNode] = useState(null);
+  const routeBadgeMarkersRef = useRef([]);
+  const lastFocusedDayRef = useRef(undefined);
+  const [layersControlNode, setLayersControlNode] = useState(null);
+  const [layersOpen, setLayersOpen] = useState(false);
   const [transitLayerOn, setTransitLayerOn] = useState(false);
+  const [showOtherDays, setShowOtherDays] = useState(true);
   const itineraryMarkersByKeyRef = useRef(new Map());
   const itineraryRoutesOverlayRef = useRef(null);
   const itineraryLandmarkOverlayRef = useRef(null);
@@ -297,20 +282,20 @@ export function GooglePlacesMap({
     [cachedLocations, places]
   );
 
-  const savedMarkerColors = useMemo(() => {
-    const countryIndexes = new Map();
-    const colors = new Map();
-    let nextCountryIndex = 0;
-    locatedPlaces.forEach((place) => {
-      const countryKey = placeCountryKey(place);
-      if (!countryIndexes.has(countryKey)) {
-        countryIndexes.set(countryKey, nextCountryIndex);
-        nextCountryIndex += 1;
-      }
-      colors.set(place.id, savedPlaceMarkerStyle(countryIndexes.get(countryKey)).color);
-    });
-    return colors;
-  }, [locatedPlaces]);
+  // Mismo color por país y mismo número de parada que la lista de Mis rutas.
+  const planningSegmentById = useMemo(
+    () => new Map((planningSegments || []).map((segment) => [segment.id, segment])),
+    [planningSegments]
+  );
+  const placeColors = useMemo(
+    () => placeCountryColors(planningSegments, places),
+    [planningSegments, places]
+  );
+  const dayIndex = useMemo(() => placeDayIndex(places, planningSegments), [places, planningSegments]);
+  const focusedPlaceIds = useMemo(() => {
+    if (focusDay == null || typeof focusDay !== 'number') return null;
+    return new Set([...dayIndex].filter(([, info]) => info.tripDayOffset === focusDay).map(([id]) => id));
+  }, [dayIndex, focusDay]);
 
   const itineraryCountries = useMemo(
     () => visitedCountries(segments, countryColorForIndex)
@@ -774,19 +759,26 @@ export function GooglePlacesMap({
     }
 
     locatedPlaces.filter(isPlaced).forEach((place) => {
-      const content = savedMarkerContent(
-        place,
-        t,
-        savedMarkerColors.get(place.id) || savedPlaceMarkerStyle(0).color
-      );
+      const inFocus = !focusedPlaceIds || focusedPlaceIds.has(place.id);
+      if (!inFocus && !showOtherDays) return;
+      const selected = inFocus && selectedPlaceId === place.id;
+      const content = numberedPlaceMarker({
+        number: dayIndex.get(place.id)?.number || 0,
+        color: placeColor(place, planningSegmentById, placeColors),
+        selected,
+        muted: !inFocus,
+        label: placeLabel(place, t),
+      });
       const marker = new AdvancedMarkerElement({
         map,
         position: { lat: place.lat, lng: place.lon },
         title: placeLabel(place, t),
         content,
+        zIndex: selected ? 30 : inFocus ? 10 : 1,
       });
       content.addEventListener('click', (event) => {
         event.stopPropagation();
+        onSelectPlace?.(place.id);
         infoWindowRef.current?.setContent(savedPlacePopup(place, t));
         infoWindowRef.current?.open({
           map,
@@ -798,7 +790,55 @@ export function GooglePlacesMap({
     });
 
     return () => clearAdvancedMarkers(savedPlaceMarkersRef);
-  }, [locatedPlaces, placesActive, ready, savedMarkerColors, t]);
+  }, [
+    dayIndex,
+    focusedPlaceIds,
+    locatedPlaces,
+    onSelectPlace,
+    placeColors,
+    placesActive,
+    planningSegmentById,
+    ready,
+    selectedPlaceId,
+    showOtherDays,
+    t,
+  ]);
+
+  // Al abrir un día, el mapa encuadra sus lugares. Después, la cámara es del usuario.
+  useEffect(() => {
+    const map = mapRef.current;
+    const maps = globalThis.google?.maps;
+    if (!placesActive) {
+      lastFocusedDayRef.current = undefined;
+      return;
+    }
+    if (!map || !ready || !maps || typeof focusDay !== 'number') return;
+    if (lastFocusedDayRef.current === focusDay) return;
+    const targets = locatedPlaces.filter(
+      (place) => isPlaced(place) && (!focusedPlaceIds || focusedPlaceIds.has(place.id))
+    );
+    if (!targets.length) return;
+    lastFocusedDayRef.current = focusDay;
+    if (targets.length === 1) {
+      map.panTo({ lat: targets[0].lat, lng: targets[0].lon });
+      if ((map.getZoom?.() || 0) < 14) map.setZoom(15);
+      return;
+    }
+    const bounds = new maps.LatLngBounds();
+    targets.forEach((place) => bounds.extend({ lat: place.lat, lng: place.lon }));
+    map.fitBounds(bounds, { top: 90, right: 70, bottom: 90, left: 60 });
+  }, [focusDay, focusedPlaceIds, locatedPlaces, placesActive, ready]);
+
+  // El lugar elegido en la lista queda a la vista.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !placesActive || !selectedPlaceId) return;
+    const place = locatedPlaces.find((candidate) => candidate.id === selectedPlaceId);
+    if (!isPlaced(place)) return;
+    const position = { lat: place.lat, lng: place.lon };
+    if (!map.getBounds?.()?.contains(position)) map.panTo(position);
+  }, [locatedPlaces, placesActive, ready, selectedPlaceId]);
+
   useEffect(() => {
     const map = mapRef.current;
     const AdvancedMarkerElement = map?.__AdvancedMarkerElement;
@@ -855,62 +895,93 @@ export function GooglePlacesMap({
   useEffect(() => {
     const map = mapRef.current;
     const maps = globalThis.google?.maps;
+    const AdvancedMarkerElement = map?.__AdvancedMarkerElement;
     clearPolylines(savedRouteLinesRef);
+    clearAdvancedMarkers(routeBadgeMarkersRef);
     if (!map || !ready || !maps || !placesActive) return undefined;
 
+    const inFocus = (placeId) => !focusedPlaceIds || focusedPlaceIds.has(placeId);
+    const drawn = new Set();
     routeConnections
-      .filter((route) => route.visible !== false && route.geometry)
+      .filter((route) => route.visible !== false && inFocus(route.fromPlaceId) && inFocus(route.toPlaceId))
+      .map(withLiveGeometry)
+      .filter((route) => route?.geometry)
       .forEach((route) => {
-        // Transporte público: cada tramo con el color de su línea y caminatas punteadas.
-        if (Array.isArray(route.segments) && route.segments.length > 0) {
-          route.segments.forEach((segment) => {
-            const path = toGooglePath(segment.geometry?.coordinates || []);
-            if (path.length < 2) return;
-            savedRouteLinesRef.current.push(new maps.Polyline(routeSegmentLineOptions(map, path, segment)));
-          });
-          return;
-        }
-        geometryPaths(route.geometry).forEach((coordinates) => {
-          const path = toGooglePath(coordinates);
+        drawn.add(`${route.fromPlaceId}>${route.toPlaceId}`);
+        routeDrawSegments(route, geometryPaths).forEach((segment) => {
+          const path = toGooglePath(segment.coordinates);
           if (path.length < 2) return;
-          savedRouteLinesRef.current.push(new maps.Polyline({
-            map,
-            path,
-            strokeColor: '#111111',
-            strokeOpacity: 0.9,
-            strokeWeight: 2,
-            clickable: false,
-            geodesic: true,
-          }));
+          routeLineLayers(maps, segment, path).forEach((options) => {
+            savedRouteLinesRef.current.push(new maps.Polyline({ ...options, map }));
+          });
+          if (segment.kind === 'transit' && segment.label && AdvancedMarkerElement) {
+            routeBadgeMarkersRef.current.push(new AdvancedMarkerElement({
+              map,
+              position: middlePoint(path),
+              content: transitBadgeElement(segment.label, segment.color),
+              zIndex: 25,
+            }));
+          }
         });
       });
 
-    return () => clearPolylines(savedRouteLinesRef);
-  }, [placesActive, ready, routeConnections]);
+    // Paradas consecutivas del día abierto sin modo elegido: recta tenue.
+    if (focusedPlaceIds) {
+      const ordered = [...dayIndex]
+        .filter(([id]) => focusedPlaceIds.has(id))
+        .sort((left, right) => left[1].number - right[1].number)
+        .map(([id]) => locatedPlaces.find((place) => place.id === id))
+        .filter(Boolean);
+      for (let index = 1; index < ordered.length; index += 1) {
+        const from = ordered[index - 1];
+        const to = ordered[index];
+        if (!isPlaced(from) || !isPlaced(to) || drawn.has(`${from.id}>${to.id}`)) continue;
+        const path = [{ lat: from.lat, lng: from.lon }, { lat: to.lat, lng: to.lon }];
+        savedRouteLinesRef.current.push(new maps.Polyline({ ...pendingLineLayer(maps, path), map }));
+      }
+    }
+
+    return () => {
+      clearPolylines(savedRouteLinesRef);
+      clearAdvancedMarkers(routeBadgeMarkersRef);
+    };
+  }, [dayIndex, focusedPlaceIds, liveRoutesVersion, locatedPlaces, placesActive, ready, routeConnections]);
 
   useEffect(() => {
     const map = mapRef.current;
     const maps = globalThis.google?.maps;
     if (!map || !ready || !maps?.ControlPosition) return undefined;
+    // En Mis rutas el zoom vive junto a «Capas», con el mismo lenguaje visual.
+    map.setOptions?.({ zoomControl: !placesActive });
+    if (!placesActive) return undefined;
     const node = document.createElement('div');
-    node.style.margin = '0 10px 10px 0';
+    node.style.margin = '0 16px 24px 0';
     const controls = map.controls[maps.ControlPosition.RIGHT_BOTTOM];
     controls.push(node);
-    setTransitControlNode(node);
+    setLayersControlNode(node);
     return () => {
       const index = controls.getArray().indexOf(node);
       if (index >= 0) controls.removeAt(index);
-      setTransitControlNode(null);
+      setLayersControlNode(null);
     };
-  }, [ready]);
+  }, [placesActive, ready]);
 
   useEffect(() => {
     const map = mapRef.current;
     const maps = globalThis.google?.maps;
     if (!map || !ready || !maps?.TransitLayer) return;
     if (!transitLayerRef.current) transitLayerRef.current = new maps.TransitLayer();
-    transitLayerRef.current.setMap(transitLayerOn ? map : null);
-  }, [ready, transitLayerOn]);
+    transitLayerRef.current.setMap(transitLayerOn && placesActive ? map : null);
+  }, [placesActive, ready, transitLayerOn]);
+
+  useEffect(() => {
+    if (!layersOpen) return undefined;
+    const close = (event) => {
+      if (!event.target?.closest?.('[data-map-layers]')) setLayersOpen(false);
+    };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, [layersOpen]);
 
   return (
     <div className="geo-map-wrap google-map-wrap" ref={wrapRef}>
@@ -936,26 +1007,85 @@ export function GooglePlacesMap({
           onChooseSuggestion={placeSearch.chooseSuggestion}
         />
       )}
-      {placesActive && routeConnections.some(
-        (route) => route.visible !== false && route.geometry
-      ) && (
-        <div className="google-route-attribution">Powered by Google</div>
+      {placesActive && mapConfigured && (
+        <div
+          aria-label={t('mapLegend')}
+          style={{ position: 'absolute', zIndex: 650, left: 16, bottom: 24, display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: 14, rowGap: 4, maxWidth: 'calc(100% - 260px)', minHeight: 40, padding: '6px 14px', boxSizing: 'border-box', borderRadius: 10, background: '#ffffff', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.16)', color: '#3b4556', fontFamily: 'var(--font-body)', fontSize: 12 }}
+        >
+          {focusLabel && <strong style={{ color: '#0b1f2c', fontWeight: 600 }}>{focusLabel}</strong>}
+          {[
+            { key: 'walk', label: t('routeModeWalk'), line: <path d="M2 3 H20" stroke="#475569" strokeWidth="3" strokeLinecap="round" strokeDasharray="0.1 6" /> },
+            { key: 'transit', label: t('routeModeTransit'), line: <path d="M2 3 H20" stroke="#23647a" strokeWidth="4" strokeLinecap="round" /> },
+            { key: 'drive', label: t('routeModeDrive'), line: <path d="M2 3 H20" stroke="#0e4f63" strokeWidth="4" strokeLinecap="round" /> },
+            { key: 'bicycle', label: t('routeModeBicycle'), line: <path d="M2 3 H20" stroke="#2a9d8f" strokeWidth="3.5" strokeDasharray="6 4" /> },
+            { key: 'pending', label: t('legendNotChosen'), line: <path d="M2 3 H20" stroke="#9aa3af" strokeWidth="2" strokeDasharray="4 4" /> },
+          ].map((item) => (
+            <span key={item.key} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+              <svg width="22" height="6" aria-hidden="true">{item.line}</svg>
+              {item.label}
+            </span>
+          ))}
+          {routeConnections.some((route) => route.visible !== false && withLiveGeometry(route)?.geometry) && (
+            <span style={{ color: '#5f6368', fontSize: 10 }}>Powered by Google</span>
+          )}
+        </div>
       )}
       {saveNotice && (
         <div className="toast" role="status" aria-live="polite">{saveNotice}</div>
       )}
-      {transitControlNode && createPortal(
-        <button
-          type="button"
-          aria-pressed={transitLayerOn}
-          aria-label={t('transitLayerToggle')}
-          title={t('transitLayerToggle')}
-          onClick={() => setTransitLayerOn((current) => !current)}
-          style={transitToggleStyle(transitLayerOn)}
-        >
-          <IconBus size={20} aria-hidden="true" />
-        </button>,
-        transitControlNode
+      {layersControlNode && createPortal(
+        <div data-map-layers style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', gap: 8, fontFamily: 'var(--font-body)' }}>
+          {layersOpen && (
+            <div
+              role="dialog"
+              aria-label={t('mapLayers')}
+              style={{ position: 'absolute', right: 48, bottom: 48, width: 244, padding: 6, borderRadius: 12, background: '#ffffff', boxShadow: '0 6px 24px rgba(0, 0, 0, 0.16)' }}
+            >
+              <div style={{ padding: '8px 10px 6px', color: '#667085', fontSize: 11, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>{t('mapLayers')}</div>
+              {[
+                { key: 'transit', label: t('mapLayerTransit'), hint: t('mapLayerTransitHint'), checked: transitLayerOn, toggle: () => setTransitLayerOn((value) => !value) },
+                { key: 'others', label: t('mapLayerOtherDays'), hint: '', checked: showOtherDays, toggle: () => setShowOtherDays((value) => !value) },
+              ].map((layer) => (
+                <label
+                  key={layer.key}
+                  style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 36px', alignItems: 'center', gap: 10, minHeight: 46, padding: '0 10px', borderRadius: 8, color: '#0b1f2c', fontSize: 13, cursor: 'pointer' }}
+                >
+                  <span>
+                    {layer.label}
+                    {layer.hint && <span style={{ display: 'block', color: '#667085', fontSize: 11.5 }}>{layer.hint}</span>}
+                  </span>
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    checked={layer.checked}
+                    onChange={layer.toggle}
+                    style={{ width: 18, height: 18, margin: 0, justifySelf: 'end', accentColor: '#0b1f2c' }}
+                  />
+                </label>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            aria-expanded={layersOpen}
+            aria-haspopup="dialog"
+            onClick={() => setLayersOpen((value) => !value)}
+            style={controlButtonStyle(layersOpen)}
+          >
+            <IconStack2 size={17} stroke={1.8} aria-hidden="true" />
+            {t('mapLayers')}
+          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', borderRadius: 10, background: '#ffffff', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.16)', overflow: 'hidden' }}>
+            <button type="button" aria-label={t('zoomIn')} title={t('zoomIn')} style={zoomButtonStyle} onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() || 0) + 1)}>
+              <IconPlus size={17} aria-hidden="true" />
+            </button>
+            <span aria-hidden="true" style={{ height: 1, margin: '0 8px', background: '#eef0f2' }} />
+            <button type="button" aria-label={t('zoomOut')} title={t('zoomOut')} style={zoomButtonStyle} onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() || 0) - 1)}>
+              <IconMinus size={17} aria-hidden="true" />
+            </button>
+          </div>
+        </div>,
+        layersControlNode
       )}
     </div>
   );
