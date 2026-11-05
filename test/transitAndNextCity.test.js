@@ -2,8 +2,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { routeSegments } from '../functions/googleOptimizedRouteFunction.js';
-import { normalizeRouteSegments, createSavedPlaceRoute } from '../src/modules/routes/routeModel.js';
+import { routeSegments, transitIconUri } from '../functions/googleOptimizedRouteFunction.js';
+import { normalizeRouteSegments, normalizeTransitIcon, createSavedPlaceRoute } from '../src/modules/routes/routeModel.js';
+import { transitLineBadges } from '../src/modules/places/routeConnectionStyle.js';
 import { cityTransfers, transferDepartureTime } from '../src/modules/places/cityTransferModel.js';
 
 // Polilínea codificada de ejemplo de la documentación de Google (2 puntos).
@@ -35,6 +36,41 @@ test('la ruta de transporte se divide en tramos con el color oficial de cada lí
     ['transit', '', 'Bus 24'],
   ]);
   assert.equal(segments[0].geometry.coordinates.length, 3);
+});
+
+test('cada tramo de transporte lleva el logo de su línea y el color de texto oficial', () => {
+  const segments = routeSegments({
+    legs: [{
+      steps: [{
+        travelMode: 'TRANSIT',
+        polyline: { encodedPolyline: LINE_A },
+        transitDetails: {
+          transitLine: {
+            color: '#FFCE00',
+            textColor: '#000000',
+            nameShort: 'M1',
+            iconUri: '//maps.gstatic.com/mapfiles/transit/iw2/svg/fr-paris-metro.svg',
+          },
+        },
+      }, {
+        travelMode: 'TRANSIT',
+        polyline: { encodedPolyline: LINE_A },
+        transitDetails: { transitLine: { nameShort: 'IC', iconUri: 'https://evil.example/logo.png' } },
+      }],
+    }],
+  });
+
+  assert.equal(segments[0].icon, 'https://maps.gstatic.com/mapfiles/transit/iw2/svg/fr-paris-metro.svg');
+  assert.equal(segments[0].textColor, '#000000');
+  assert.equal(segments[1].icon, '', 'solo se aceptan logos de dominios de Google');
+  assert.equal(transitIconUri('javascript:alert(1)'), '');
+  assert.equal(normalizeTransitIcon('http://maps.gstatic.com/x.png'), '');
+
+  const [stored] = normalizeRouteSegments([segments[0]]);
+  assert.equal(stored.icon, segments[0].icon);
+  assert.deepEqual(transitLineBadges({ segments: [stored] }), [
+    { label: 'M1', color: '#FFCE00', textColor: '#000000', icon: segments[0].icon },
+  ]);
 });
 
 test('una ruta sin transporte público no genera tramos', () => {

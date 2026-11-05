@@ -14,10 +14,16 @@ export function transitLineBadges(route) {
   (Array.isArray(route?.segments) ? route.segments : []).forEach((segment) => {
     if (segment?.kind !== 'transit') return;
     const label = String(segment.label || '').trim();
-    const key = `${label}|${segment.color || ''}`;
-    if (!label || seen.has(key)) return;
+    const icon = String(segment.icon || '');
+    const key = `${label}|${segment.color || ''}|${icon}`;
+    if ((!label && !icon) || seen.has(key)) return;
     seen.add(key);
-    badges.push({ label, color: segment.color || ROUTE_STROKES.transit.color });
+    badges.push({
+      label,
+      color: segment.color || ROUTE_STROKES.transit.color,
+      textColor: segment.textColor || '#ffffff',
+      icon,
+    });
   });
   return badges.slice(0, 3);
 }

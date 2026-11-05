@@ -6,6 +6,7 @@ import {
   NEARBY_ITINERARY_CITY_MAX_KM,
   distanceKm,
   itineraryPlacePlanningTarget,
+  placeSaveDay,
 } from '../src/modules/trips/placePlanningAssignment.js';
 import { createSegment } from '../src/modules/trips/tripModel.js';
 
@@ -97,4 +98,17 @@ test('no fuerza una ciudad lejana ni de otro país', () => {
 
 test('distanceKm devuelve infinito si faltan coordenadas válidas', () => {
   assert.equal(distanceKm({ lat: null, lon: null }, madrid), Number.POSITIVE_INFINITY);
+});
+
+test('el lugar del buscador se guarda en su ciudad y en el día abierto si es de esa ciudad', () => {
+  const louvre = { city: 'Paris', countryCode: 'FR', lat: 48.8606, lon: 2.3376 };
+
+  assert.equal(placeSaveDay(louvre, segments(), null)?.dayOffset, 0);
+  const openParisDay = placeSaveDay(louvre, segments(), 3);
+  assert.equal(openParisDay?.segmentId, 'paris-leg');
+  assert.equal(openParisDay?.dayOffset, 1);
+  const openMadridDay = placeSaveDay(louvre, segments(), 1);
+  assert.equal(openMadridDay?.segmentId, 'paris-leg', 'un día de otra ciudad no cambia la ciudad');
+  assert.equal(openMadridDay?.dayOffset, 0);
+  assert.equal(placeSaveDay({ city: 'Munich', countryCode: 'DE', lat: 48.1351, lon: 11.582 }, segments(), 3), null);
 });

@@ -31,6 +31,27 @@ function cleanText(value, max = 240) {
   return typeof value === 'string' ? value.trim().slice(0, max) : '';
 }
 
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+const TRANSIT_ICON_HOSTS = ['gstatic.com', 'google.com', 'googleapis.com', 'googleusercontent.com'];
+
+/** Logo de línea u operador que da Google; solo https y dominios de Google. */
+export function transitIconUri(value) {
+  const raw = cleanText(value, 500);
+  if (!raw) return '';
+  try {
+    const url = new URL(raw.startsWith('//') ? `https:${raw}` : raw);
+    const host = url.hostname.toLowerCase();
+    const trusted = TRANSIT_ICON_HOSTS.some((domain) => host === domain || host.endsWith(`.${domain}`));
+    return url.protocol === 'https:' && trusted ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+
+function transitLineLogo(line) {
+  return transitIconUri(line?.iconUri) || transitIconUri(line?.vehicle?.localIconUri);
+}
+
 function validLanguage(value) {
   return value === 'en' ? 'en' : 'es';
 }
@@ -125,6 +146,9 @@ function transitSummary(route) {
         arrivalTime: cleanText(stops.arrivalTime, 48),
         lineName: cleanText(line.name, 120),
         lineShortName: cleanText(line.nameShort, 60),
+        lineColor: HEX_COLOR.test(String(line.color || '')) ? line.color : '',
+        lineTextColor: HEX_COLOR.test(String(line.textColor || '')) ? line.textColor : '',
+        lineIcon: transitLineLogo(line),
         vehicleType: cleanText(line.vehicle?.type, 60),
         agencies: (Array.isArray(line.agencies) ? line.agencies : [])
           .map((agency) => cleanText(agency?.name, 120))
@@ -139,7 +163,6 @@ function transitSummary(route) {
 }
 
 const MAX_ROUTE_SEGMENTS = 40;
-const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 
 function stepKind(step) {
   if (step?.travelMode === 'TRANSIT') return 'transit';
@@ -162,12 +185,14 @@ export function routeSegments(route) {
     const line = step?.transitDetails?.transitLine || {};
     const color = kind === 'transit' && HEX_COLOR.test(String(line.color || '')) ? line.color : '';
     const label = kind === 'transit' ? cleanText(line.nameShort || line.name, 60) : '';
+    const textColor = kind === 'transit' && HEX_COLOR.test(String(line.textColor || '')) ? line.textColor : '';
+    const icon = kind === 'transit' ? transitLineLogo(line) : '';
     const previous = segments.at(-1);
-    if (previous && previous.kind === kind && previous.color === color && previous.label === label) {
+    if (previous && previous.kind === kind && previous.color === color && previous.label === label && previous.icon === icon) {
       previous.geometry.coordinates.push(...geometry.coordinates.slice(1));
       return;
     }
-    segments.push({ kind, color, label, geometry });
+    segments.push({ kind, color, textColor, label, icon, geometry });
   });
   return segments.slice(0, MAX_ROUTE_SEGMENTS);
 }

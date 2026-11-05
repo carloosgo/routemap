@@ -148,14 +148,14 @@ const styles = {
     cursor: 'pointer',
   }),
   strong: { fontWeight: 600, color: '#0b1f2c' },
-  badge: (color) => ({
+  badge: (color, textColor = '#ffffff') => ({
     display: 'inline-flex',
     alignItems: 'center',
     height: 18,
     padding: '0 6px',
     borderRadius: 4,
     background: color,
-    color: '#ffffff',
+    color: textColor || '#ffffff',
     fontSize: 11,
     fontWeight: 700,
     whiteSpace: 'nowrap',
@@ -331,7 +331,7 @@ export function TripRouteConnections({
           >
             <ModeIcon size={15} stroke={1.8} aria-hidden="true" />
             {badges.map((badge) => (
-              <span key={`${badge.label}:${badge.color}`} style={styles.badge(badge.color)}>{badge.label}</span>
+              <LineBadge key={`${badge.label}:${badge.color}:${badge.icon}`} {...badge} />
             ))}
             <span>
               <strong style={styles.strong}>{chosen?.duration ? formatDuration(chosen.duration) : '…'}</strong>
@@ -401,6 +401,30 @@ export function TripRouteConnections({
   );
 }
 
+/** Logo de la línea u operador (si Google lo da) y su nombre corto en el color oficial. */
+export function LineBadge({ label = '', color, textColor, icon = '' }) {
+  const [iconFailed, setIconFailed] = useState(false);
+  const showIcon = Boolean(icon) && !iconFailed;
+  if (!label && !showIcon) return null;
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+      {showIcon && (
+        <img
+          src={icon}
+          alt=""
+          width={16}
+          height={16}
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => setIconFailed(true)}
+          style={{ display: 'block', width: 16, height: 16, objectFit: 'contain' }}
+        />
+      )}
+      {label && <span style={styles.badge(color || ROUTE_STROKES.transit.color, textColor)}>{label}</span>}
+    </span>
+  );
+}
+
 export function TransitDetails({ route, locale }) {
   const steps = Array.isArray(route?.transitSteps) ? route.transitSteps : [];
   if (!steps.length) return null;
@@ -414,7 +438,14 @@ export function TransitDetails({ route, locale }) {
         const stops = [step.departureStop, step.arrivalStop].filter(Boolean).join(' → ');
         return (
           <div key={`${line}:${index}`} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            {line && <span style={styles.badge(step.lineColor || ROUTE_STROKES.transit.color)}>{line}</span>}
+            {(line || step.lineIcon) && (
+              <LineBadge
+                label={line}
+                color={step.lineColor || ROUTE_STROKES.transit.color}
+                textColor={step.lineTextColor}
+                icon={step.lineIcon}
+              />
+            )}
             <span>{[departure && arrival ? `${departure} – ${arrival}` : '', stops].filter(Boolean).join(' · ')}</span>
           </div>
         );

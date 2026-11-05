@@ -80,7 +80,7 @@ export function NextCityTransfer({ from, to, date, t, intlLocale }) {
           <TransferIcon size={15} stroke={1.8} color="#0b1f2c" aria-hidden="true" />
           <span>
             <strong style={{ color: '#0b1f2c', fontWeight: 600 }}>{t('transferTo', { city: to.name })}</strong>
-            {` · ${formatKm(straightKm, intlLocale)} ${t('straightLineDistance')}`}
+            {` · ${formatKm(straightKm, intlLocale)}`}
             {likelyFlight && ` · ${t('transferLikelyFlight')}`}
           </span>
         </span>
