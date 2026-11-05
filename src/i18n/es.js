@@ -97,7 +97,6 @@ export default {
   addPlaceToDay: 'Agregar lugar a este día',
   placeCountOne: '1 lugar',
   placeCountMany: '{count} lugares',
-  transferDay: 'traslado',
   tripDaysCount: 'Tu viaje · {count} días',
   unassignedPlacesCount: '{count} por organizar',
   dayCountOne: '1 día',
