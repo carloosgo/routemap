@@ -174,13 +174,13 @@ test('Google Routes usa placeId directamente y evita duplicar la misma ruta en v
   assert.match(routeClient, /if \(pendingRoutes\.has\(key\)\) return pendingRoutes\.get\(key\)/);
 });
 
-test('el workspace monta una sola instancia del mapa y en móvil espera hasta abrir Mapa', async () => {
+test('el workspace monta una sola instancia del mapa y en móvil espera a una sección con mapa', async () => {
   const { workspace } = await mapSources();
 
   assert.match(workspace, /const MOBILE_MEDIA_QUERY = '\(max-width: 720px\)'/);
   assert.match(workspace, /\{!mobileViewport && mapPane\}/);
   assert.match(workspace, /\{mobileViewport && mobileMapMounted && mapPane\}/);
-  assert.match(workspace, /mobileView === 'map'/);
+  assert.match(workspace, /const MAP_SECTIONS = new Set\(\['segments', 'places'\]\)/);
   assert.match(workspace, /setMobileMapMounted\(true\)/);
 });
 

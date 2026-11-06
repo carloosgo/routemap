@@ -1,7 +1,8 @@
 /* Shell móvil tipo app (iPhone "Añadir a pantalla de inicio").
    Solo actúa por debajo de 721 px: el escritorio no cambia.
    - Cabecera de una fila: marca + métricas desplazables + menú ⋮.
-   - Navegación principal en barra inferior (Itinerario, Mis Rutas, Notas, Mapa).
+   - Navegación principal en barra inferior (Itinerario, Mis Rutas, Notas).
+   - Itinerario y Mis Rutas: su mapa de fondo + hoja deslizable con la lista.
    - Respeta las zonas seguras (notch / indicador de inicio) en modo standalone. */
 
 .app {
@@ -178,26 +179,94 @@
   }
 }
 
-/* ===== Paneles fuera de la vista activa =====
-   El menú ⋮ vive en el editor y la nota / datos del trayecto en el panel del
-   mapa. En lugar de desmontar la vista inactiva (display: none), se oculta con
-   visibility para que esos elementos fijos sigan disponibles en cualquier
-   pestaña. El mapa conserva además su tamaño real mientras está oculto. */
+/* ===== Escenario: mapa de fondo + hoja deslizable =====
+   Itinerario y Mis Rutas pintan su propio mapa detrás y la lista va en una
+   hoja con tres alturas (AppWorkspace calcula la altura en px). Notas usa la
+   hoja a altura completa y sin mapa. La hoja nunca usa transform: el menú ⋮ y
+   los paneles fijos que viven dentro deben seguir anclados a la ventana. */
 @media (max-width: 720px) {
   .workspace__mobile {
     position: relative;
   }
 
-  .mobilepane:not(.is-active) {
-    display: flex;
-    flex-direction: column;
+  .workspace__mobile .mobile-stage {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .workspace__mobile .mobile-mapstage {
     position: absolute;
-    top: var(--trip-header-height);
+    top: 0;
+    right: 0;
+    left: 0;
+    /* z-index 0: encierra las capas internas del mapa sin tapar la hoja. */
+    z-index: 0;
+    transition: height 0.22s ease;
+  }
+
+  /* Nota, datos del trayecto y avisos viven dentro del mapa: mientras están
+     abiertos, el mapa sube por encima de la hoja para que se vean. */
+  .workspace__mobile .mobile-mapstage:has(.segnote, .toast) {
+    z-index: 10;
+  }
+
+  .workspace__mobile.is-sheet-only .mobile-mapstage {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .workspace__mobile .mobile-sheet {
+    position: absolute;
     right: 0;
     bottom: 0;
     left: 0;
-    visibility: hidden;
-    pointer-events: none;
+    /* Sin z-index propio (no crea contexto de apilamiento): así el menú ⋮,
+       que es fijo y vive dentro de la hoja, sigue por encima de la cabecera. */
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--bg, #ffffff);
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -6px 24px rgba(15, 23, 42, 0.14);
+    transition: height 0.22s ease;
+  }
+
+  .workspace__mobile .mobile-sheet.is-dragging {
+    transition: none;
+  }
+
+  .workspace__mobile.is-sheet-only .mobile-sheet {
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .workspace__mobile .mobile-sheet__handle {
+    flex: 0 0 auto;
+    width: 100%;
+    height: 22px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .workspace__mobile .mobile-sheet__handle span {
+    width: 36px;
+    height: 5px;
+    border-radius: 3px;
+    background: #d5d9de;
+  }
+
+  .workspace__mobile .mobile-sheet__body {
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .mobilepane .editor-module__workspace-anchor {
