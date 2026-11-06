@@ -164,13 +164,9 @@ export function ItineraryCityVisual({ city, accent }) {
       aria-hidden="true"
     >
       {showPhoto ? (
-        <a
-          className="itinerary-card-city-photo-link"
-          href={photo.googleMapsUri || undefined}
-          target={photo.googleMapsUri ? '_blank' : undefined}
-          rel={photo.googleMapsUri ? 'noreferrer' : undefined}
-          tabIndex={-1}
-        >
+        // La foto es solo visual: tocarla no abre Google Maps (en móvil
+        // sacaba al usuario de la app).
+        <span className="itinerary-card-city-photo-link">
           <img
             className="itinerary-card-city-photo"
             src={photo.uri}
@@ -180,7 +176,7 @@ export function ItineraryCityVisual({ city, accent }) {
             referrerPolicy="no-referrer"
             onError={() => setPhotoFailed(true)}
           />
-        </a>
+        </span>
       ) : (
         <VisualIcon type={type} />
       )}

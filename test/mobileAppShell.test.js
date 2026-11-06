@@ -74,3 +74,9 @@ test('el acceso con Google es obligatorio y la cuenta vive en una cápsula sobre
   assert.match(css, /\.itinerary-pdf-export__button \{[\s\S]*?top: calc\(var\(--trip-header-height, 63px\) \+ 164px\);/);
   assert.doesNotMatch(css, /#0e4f63/i, 'el avatar no usa un color fijo ajeno a la paleta de acento');
 });
+
+test('la foto de la ciudad en el Itinerario no es un enlace a Google Maps', () => {
+  const visual = read('src/modules/trips/ItineraryCityVisual.jsx');
+  assert.doesNotMatch(visual, /<a\b/);
+  assert.doesNotMatch(visual, /href=\{photo\.googleMapsUri/);
+});
