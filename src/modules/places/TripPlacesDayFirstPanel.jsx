@@ -52,14 +52,14 @@ const MY_ROUTES_STYLES = `
 .mr__city small{color:#667085;font-size:12.5px;font-weight:500}
 .mr__day{position:relative;border-bottom:1px solid #eef0f2}
 .mr__day.is-drop-target{box-shadow:inset 3px 0 0 var(--atlas-accent)}
-.mr__row{display:grid;width:100%;min-height:52px;grid-template-columns:minmax(0,1fr) 16px;align-items:center;gap:12px;padding:6px 16px;border:0;background:#fff;color:#0b1f2c;font:500 13.5px var(--font-body);text-align:left;cursor:pointer}
+.mr__row{display:grid;width:100%;min-height:46px;grid-template-columns:minmax(0,1fr) 16px;align-items:center;gap:12px;padding:6px 16px;border:0;background:#fff;color:#0b1f2c;font:500 13.5px var(--font-body);text-align:left;cursor:pointer}
 .mr__row:hover,.mr__row:focus-visible{background:#f8fafb;outline:none}
 .mr__row:focus-visible{box-shadow:inset 0 0 0 2px #19a5d0}
-.mr__title{min-width:0}
-.mr__title strong{display:block;overflow:hidden;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
-.mr__title small{display:block;overflow:hidden;color:#667085;font-size:12px;text-overflow:ellipsis;white-space:nowrap}
+.mr__title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mr__title strong{font-weight:600}
+.mr__title small{color:#667085;font-size:13px;font-weight:500}
 .mr__summary{color:#5b6080;font-size:12px;white-space:nowrap}
-.mr__head{display:flex;min-height:56px;align-items:center;gap:6px;padding-right:12px;background:#f1f8f7}.mr__head .mr__row{flex:1;min-width:0;min-height:56px;grid-template-columns:minmax(0,1fr) auto;background:transparent}.mr__head .mr__row:hover{background:transparent}
+.mr__head{display:flex;min-height:50px;align-items:center;gap:6px;padding-right:12px;background:#f1f8f7}.mr__head .mr__row{flex:1;min-width:0;min-height:50px;grid-template-columns:minmax(0,1fr) auto;background:transparent}.mr__head .mr__row:hover{background:transparent}
 
 .mr__head .mr__summary{color:#2a7d73;font-weight:600}
 .mr__head .mr__title strong{font-weight:700}
@@ -475,11 +475,8 @@ export function TripPlacesDayFirstPanel({
     const dropTarget = placeDrag && placeDrag.targetOffset === day.tripDayOffset;
     const noteSegment = day.assignments[0]?.segment || null;
     const title = `${t('day')} ${day.globalDayNumber}`;
-    // Cada día dice dónde estás; el de traslado, de dónde a dónde.
-    const place = day.transfer && day.from && day.to
-      ? `${day.from.name} → ${day.to.name}`
-      : day.to?.name || '';
-    const date = [formatDayDate(day.date, intlLocale), place].filter(Boolean).join(' · ');
+    // La ciudad ya la dice la cabecera del grupo: el día solo lleva su fecha.
+    const date = formatDayDate(day.date, intlLocale);
     const color = groupColor;
     const rowButton = (
       <button
@@ -488,7 +485,7 @@ export function TripPlacesDayFirstPanel({
         aria-expanded={open}
         onClick={() => toggleDay(day.tripDayOffset)}
       >
-        <span className="mr__title"><strong>{title}</strong><small>{date}</small></span>
+        <span className="mr__title"><strong>{title}</strong>{date && <small>{`\u00a0· ${date}`}</small>}</span>
         {open && <span className="mr__summary">{daySummary(day)}</span>}
         {!open && <IconChevronRight size={15} color="#8a94a3" aria-hidden="true" />}
       </button>

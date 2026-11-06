@@ -221,7 +221,6 @@ export function AppMapPane({
         focusDay={placesFocus?.focus.day}
         selectedPlaceId={placesFocus?.focus.placeId}
         onSelectPlace={placesFocus?.selectPlaceFromMap}
-        focusLabel={placesFocus?.focusLabel}
       />
       {hasFloatingPanel && (
         <div
