@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App.jsx';
+import AuthGate from './app/AuthGate.jsx';
 import SharedItineraryPage from './app/SharedItineraryPage.jsx';
 import { I18nProvider } from './i18n/index.jsx';
 import './modules/map/placeSavePopupDismiss.js';
@@ -21,11 +21,12 @@ import './app/NotePanelPlacement.css';
 import './app/FloatingItineraryPanel.css';
 import './modules/trips/ItineraryCompactTen.css';
 import './app/MobileAppShell.css';
+import './app/MapCapsules.css';
 
 const sharedRoute = globalThis.location?.pathname?.match(/^\/share\/([^/]+)\/?$/);
 const content = sharedRoute
   ? <SharedItineraryPage shareId={decodeURIComponent(sharedRoute[1])} />
-  : <App />;
+  : <AuthGate />;
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <I18nProvider>

@@ -4,7 +4,6 @@ import { useTrip } from './modules/trips/useTrip.js';
 import { useSavedTrips } from './modules/trips/useSavedTrips.js';
 import { useTripAutoPersistence } from './modules/trips/useTripAutoPersistence.js';
 import { savedTripErrorTranslationKey } from './modules/trips/savedTripOperations.js';
-import { useFirebaseAuth } from './infrastructure/firebase/useFirebaseAuth.js';
 import { isTripSavable, TRIP_LIMITS } from './modules/trips/tripModel.js';
 import { AppTopbar } from './app/AppTopbar.jsx';
 import { AppEditorModule } from './app/AppEditorModule.jsx';
@@ -19,12 +18,12 @@ import { usePlacesFocus } from './app/usePlacesFocus.js';
 import { useOutsideClick, useSaveShortcut } from './app/useAppInteractions.js';
 import { useTripSaveFlow } from './app/useTripSaveFlow.js';
 import { useAccountMenu } from './app/useAccountMenu.js';
+import { AccountCapsule } from './app/AccountCapsule.jsx';
 import './App.css';
 import './app/FloatingEditor.css';
 
-export default function App() {
+export default function App({ auth }) {
   const { t, locale, intlLocale, setLocale, availableLocales } = useTranslation();
-  const auth = useFirebaseAuth();
   const tripStore = useTrip();
   const savedTrips = useSavedTrips(auth.user);
   const editorState = useAppEditorState(tripStore);
@@ -92,7 +91,7 @@ export default function App() {
     t,
   });
 
-  const account = useAccountMenu({ auth, savedTrips, setOpenMenu, showToast, t });
+  const account = useAccountMenu({ auth, setOpenMenu, showToast, t });
 
   const handleOpenSavedTrip = useCallback(async (savedTrip) => {
     try {
@@ -183,7 +182,6 @@ export default function App() {
       handleOpenSavedTrip={handleOpenSavedTrip}
       placesFocus={placesFocus}
       persistenceState={persistence.state}
-      account={account}
       t={t}
       intlLocale={intlLocale}
     />
@@ -212,6 +210,13 @@ export default function App() {
     <div className="app">
       {topbar}
       {tripHeader}
+      <AccountCapsule
+        account={account}
+        menuRef={menuWrapRef}
+        open={openMenu === 'account'}
+        onToggle={() => setOpenMenu(openMenu === 'account' ? null : 'account')}
+        t={t}
+      />
       <AppWorkspace
         editorModule={editorModule}
         mapPane={mapPane}

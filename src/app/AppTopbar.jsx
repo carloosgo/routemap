@@ -56,7 +56,8 @@ export function AppTopbar({
         aria-label={t('saveTrip')}
         title={t('saveTrip')}
       >
-        <IconDeviceFloppy size={22} aria-hidden="true" />
+        <IconDeviceFloppy size={18} aria-hidden="true" />
+        <span className="topbar__save-label">{t('saveTrip')}</span>
       </button>
     </div>
   );
