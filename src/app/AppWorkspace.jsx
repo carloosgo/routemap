@@ -43,7 +43,9 @@ export function AppWorkspace({
     setActiveTab?.(id);
   };
   const stageRef = useRef(null);
+  const sheetRef = useRef(null);
   const dragRef = useRef(null);
+  const pointerTypeRef = useRef('');
   const [stageHeight, setStageHeight] = useState(0);
   const [sheetSnap, setSheetSnap] = useState('mid');
   const [dragHeight, setDragHeight] = useState(null);
@@ -89,7 +91,91 @@ export function AppWorkspace({
     return () => observer.disconnect();
   }, [mobileViewport]);
 
+  // Arrastre táctil desde cualquier punto de la hoja (no solo el asa), como en
+  // las apps de mapas: hacia arriba mueve la hoja hasta su altura máxima y
+  // después desplaza la lista; hacia abajo baja la hoja cuando la lista ya está
+  // arriba del todo. Necesita un listener no pasivo para poder evitar el scroll.
+  const sheetStateRef = useRef({});
+  sheetStateRef.current = { sectionHasMap, sheetSnap, snapHeights };
+  useEffect(() => {
+    const sheet = sheetRef.current;
+    if (!mobileViewport || !sheet) return undefined;
+    let touch = null;
+    const scrollerFor = (target) => {
+      for (let node = target; node && node !== sheet; node = node.parentElement) {
+        const style = globalThis.getComputedStyle?.(node);
+        if (/(auto|scroll)/.test(style?.overflowY || '') && node.scrollHeight > node.clientHeight) return node;
+      }
+      return null;
+    };
+    const onStart = (event) => {
+      const state = sheetStateRef.current;
+      if (!state.sectionHasMap || event.touches.length !== 1) return;
+      // Campos de texto y asas de reordenar (ciudades / lugares) conservan su gesto.
+      if (event.target.closest?.('input, textarea, select, [contenteditable="true"], .segment__drag-handle, .mr-place__drag')) return;
+      const point = event.touches[0];
+      touch = {
+        startX: point.clientX,
+        startY: point.clientY,
+        startHeight: state.snapHeights[state.sheetSnap],
+        scroller: scrollerFor(event.target),
+        dragging: false,
+        decided: false,
+      };
+    };
+    const onMove = (event) => {
+      if (!touch) return;
+      const state = sheetStateRef.current;
+      const point = event.touches[0];
+      const dx = point.clientX - touch.startX;
+      const dy = point.clientY - touch.startY;
+      if (!touch.decided) {
+        if (Math.abs(dy) < 6 && Math.abs(dx) < 6) return;
+        touch.decided = true;
+        const vertical = Math.abs(dy) > Math.abs(dx);
+        const listAtTop = !touch.scroller || touch.scroller.scrollTop <= 0;
+        const canGrow = dy < 0 && state.sheetSnap !== 'high';
+        const canShrink = dy > 0 && listAtTop;
+        touch.dragging = vertical && (canGrow || canShrink);
+        if (!touch.dragging) {
+          touch = null;
+          return;
+        }
+        touch.startY = point.clientY;
+      }
+      event.preventDefault();
+      const next = touch.startHeight - (point.clientY - touch.startY);
+      setDragHeight(Math.min(state.snapHeights.high, Math.max(state.snapHeights.low, next)));
+    };
+    const onEnd = (event) => {
+      if (!touch?.dragging) {
+        touch = null;
+        return;
+      }
+      const state = sheetStateRef.current;
+      const point = event.changedTouches[0];
+      const endHeight = touch.startHeight - (point.clientY - touch.startY);
+      setSheetSnap(nextSheetSnap(state.sheetSnap, touch.startHeight, endHeight, state.snapHeights, { tapToggles: false }));
+      setDragHeight(null);
+      touch = null;
+    };
+    sheet.addEventListener('touchstart', onStart, { passive: true });
+    sheet.addEventListener('touchmove', onMove, { passive: false });
+    sheet.addEventListener('touchend', onEnd);
+    sheet.addEventListener('touchcancel', onEnd);
+    return () => {
+      sheet.removeEventListener('touchstart', onStart);
+      sheet.removeEventListener('touchmove', onMove);
+      sheet.removeEventListener('touchend', onEnd);
+      sheet.removeEventListener('touchcancel', onEnd);
+    };
+  }, [mobileViewport]);
+
   const handleSheetPointerDown = (event) => {
+    // Los dedos usan el arrastre táctil de toda la hoja; el puntero queda
+    // para ratón / lápiz sobre el asa.
+    pointerTypeRef.current = event.pointerType;
+    if (!sectionHasMap || event.pointerType === 'touch') return;
     if (!sectionHasMap) return;
     dragRef.current = { startY: event.clientY, startHeight: snapHeights[sheetSnap] };
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -146,6 +232,7 @@ export function AppWorkspace({
             {mobileViewport && mobileMapMounted && mapPane}
           </div>
           <section
+            ref={sheetRef}
             className={'mobile-sheet' + (dragHeight != null ? ' is-dragging' : '')}
             style={{ height: `${sheetHeight}px` }}
           >
@@ -154,6 +241,13 @@ export function AppWorkspace({
                 type="button"
                 className="mobile-sheet__handle"
                 aria-label={t(sheetSnap === 'high' ? 'collapse' : 'expand')}
+                onClick={() => {
+                  // Toque con el dedo en el asa: alterna media ↔ arriba (el
+                  // ratón lo resuelve en onPointerUp).
+                  if (pointerTypeRef.current === 'touch') {
+                    setSheetSnap((current) => nextSheetSnap(current, 0, 0, snapHeights));
+                  }
+                }}
                 onPointerDown={handleSheetPointerDown}
                 onPointerMove={handleSheetPointerMove}
                 onPointerUp={handleSheetPointerUp}

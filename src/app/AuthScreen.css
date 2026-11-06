@@ -77,38 +77,51 @@
 }
 
 .auth-screen__google {
-  height: 48px;
+  align-self: center;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 10px;
-  border: 1px solid #dde0e6;
-  border-radius: 12px;
-  background: #ffffff;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--text, #0b1f2c);
   font: inherit;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
   cursor: pointer;
 }
 
-.auth-screen__google:hover {
+/* Iniciar sesión: círculo de 64 px con la G de Google y el texto debajo. */
+.auth-screen__google-mark {
+  width: 64px;
+  height: 64px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dde0e6;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  transition: background 0.15s ease;
+}
+
+.auth-screen__google:hover .auth-screen__google-mark {
   background: #f4f5f7;
 }
 
 .auth-screen__google:focus-visible {
+  outline: none;
+}
+
+.auth-screen__google:focus-visible .auth-screen__google-mark {
   outline: 2px solid var(--atlas-accent);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 .auth-screen__google:disabled {
   opacity: 0.6;
   cursor: wait;
-}
-
-.auth-screen__google-mark {
-  display: inline-flex;
 }
 
 .auth-screen__error {
@@ -152,25 +165,12 @@
   }
 
   .auth-screen__google {
-    height: 52px;
-    border: 0;
-    border-radius: 14px;
-    background: var(--ink, #0b1f2c);
-    color: #ffffff;
-    font-size: 16px;
-  }
-
-  .auth-screen__google:hover {
-    background: var(--ink, #0b1f2c);
+    font-size: 15px;
   }
 
   .auth-screen__google-mark {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: #ffffff;
-    align-items: center;
-    justify-content: center;
+    width: 68px;
+    height: 68px;
   }
 
   .auth-screen--loading {

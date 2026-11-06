@@ -42,13 +42,16 @@
 }
 
 .account-capsule__button {
+  width: 40px;
   height: 40px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 0 14px 0 5px;
+  padding: 0;
   border: 0;
-  border-radius: 999px;
+  /* Círculo (antes cápsula): solo el avatar. */
+  border-radius: 50%;
   background: #ffffff;
   color: var(--text, #0b1f2c);
   font: inherit;
@@ -151,37 +154,32 @@
 }
 
 @media (min-width: 721px) {
-  /* Guardar: cápsula azul con texto. */
+  /* Guardar: círculo azul de 40 px (antes cápsula con texto). */
   .app .topbar .topbar__save {
     top: calc(var(--trip-header-height, 63px) + 64px) !important;
     right: 14px !important;
-    width: auto !important;
-    min-width: 0 !important;
+    width: 40px !important;
+    min-width: 40px !important;
     height: 40px !important;
-    gap: 7px;
-    padding: 0 16px 0 13px !important;
-    border-radius: 999px !important;
-    font-size: 13px !important;
-    font-weight: 600;
+    padding: 0 !important;
+    justify-content: center;
+    border-radius: 50% !important;
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.16);
   }
 
-  .app .topbar__save-label {
-    display: inline;
-  }
-
-  /* ⋯ Viajes: cápsula blanca con texto; su menú sigue abriéndose a la izquierda. */
+  /* ⋯ Viajes: círculo blanco de 40 px; su menú sigue abriéndose a la izquierda. */
   .app .editor-module__settings > .editor-module__menu-anchor.editor-module__workspace-anchor {
     top: calc(var(--trip-header-height, 63px) + 114px) !important;
   }
 
   .app .editor-module__settings .editor-module__workspace-anchor .editor-module__more-button {
-    width: auto;
+    width: 40px;
     height: 40px;
-    gap: 6px;
-    padding: 0 14px 0 11px;
+    gap: 0;
+    padding: 0;
+    justify-content: center;
     border: 0;
-    border-radius: 999px;
+    border-radius: 50%;
     background: #ffffff;
     color: var(--text, #0b1f2c);
     font-family: var(--font-body);
@@ -200,10 +198,6 @@
     background: #f4f5f7;
     color: var(--text, #0b1f2c);
     filter: none;
-  }
-
-  .app .editor-module__more-label {
-    display: inline;
   }
 
   .app .itinerary-pdf-export__button {
