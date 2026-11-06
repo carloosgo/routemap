@@ -56,7 +56,6 @@ test('errores, confirmaciones, placeholders y estados vacíos existen en ambos i
       'confirmDeletePlace',
       'confirmDeleteSegment',
       'savePlacePrompt',
-      'confirmImportLocalTrips',
     ],
     placeholders: [
       'tripNamePlaceholder',
@@ -74,7 +73,6 @@ test('errores, confirmaciones, placeholders y estados vacíos existen en ambos i
       'noSavedPlaces',
       'noSegments',
       'noResults',
-      'noLocalTrips',
     ],
   };
 

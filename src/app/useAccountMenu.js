@@ -1,46 +1,19 @@
 import { useCallback, useMemo } from 'react';
 
 /**
- * Acciones de cuenta del menú ⋮: iniciar/cerrar sesión con Google e importar
- * los viajes guardados en este dispositivo a la cuenta (sincronización
- * ordenador ↔ iPhone).
+ * Cuenta de la cápsula sobre el mapa. El acceso con Google es obligatorio
+ * (ver AuthGate), así que aquí sólo queda cerrar sesión. Los viajes se
+ * guardan directamente en Firebase con la cuenta activa.
  */
-export function useAccountMenu({ auth, savedTrips, setOpenMenu, showToast, t }) {
-  const { importLocalTrips, getLocalTripCount } = savedTrips;
-
-  const onSignIn = useCallback(async () => {
-    try {
-      await auth.signInWithGoogle();
-      setOpenMenu(null);
-      showToast(t('signedIn'));
-    } catch {
-      showToast(t('signInError'), 3000);
-    }
-  }, [auth, setOpenMenu, showToast, t]);
-
+export function useAccountMenu({ auth, setOpenMenu, showToast, t }) {
   const onSignOut = useCallback(async () => {
-    await auth.signOutUser();
     setOpenMenu(null);
+    await auth.signOutUser();
     showToast(t('signedOut'));
   }, [auth, setOpenMenu, showToast, t]);
 
-  const onImportLocalTrips = useCallback(async () => {
-    const count = await getLocalTripCount();
-    if (count === 0) {
-      showToast(t('noLocalTrips'));
-      return;
-    }
-    if (!globalThis.confirm(t('confirmImportLocalTrips'))) return;
-    const imported = await importLocalTrips();
-    setOpenMenu(null);
-    showToast(`${t('importedTrips')}: ${imported}`);
-  }, [getLocalTripCount, importLocalTrips, setOpenMenu, showToast, t]);
-
   return useMemo(() => ({
     user: auth.user,
-    loading: auth.loading,
-    onSignIn,
     onSignOut,
-    onImportLocalTrips,
-  }), [auth.loading, auth.user, onImportLocalTrips, onSignIn, onSignOut]);
+  }), [auth.user, onSignOut]);
 }

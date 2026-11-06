@@ -8,6 +8,7 @@ function publicUser(user) {
     uid: user.uid,
     displayName: typeof user.displayName === 'string' ? user.displayName.trim() : '',
     email: typeof user.email === 'string' ? user.email.trim() : '',
+    photoURL: typeof user.photoURL === 'string' && /^https:\/\//.test(user.photoURL) ? user.photoURL : '',
   };
 }
 

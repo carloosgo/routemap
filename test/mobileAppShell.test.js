@@ -34,9 +34,28 @@ test('el shell móvil respeta zonas seguras y lleva la navegación a la barra in
   }
 });
 
-test('el menú ⋮ ofrece iniciar sesión con Google para sincronizar dispositivos', () => {
+test('el acceso con Google es obligatorio y la cuenta vive en una cápsula sobre el mapa', () => {
+  const main = read('src/main.jsx');
+  assert.match(main, /<AuthGate \/>/);
+  assert.match(main, /import '\.\/app\/MapCapsules\.css';/);
+
+  const gate = read('src/app/AuthGate.jsx');
+  assert.match(gate, /continueWithGoogle/);
+  assert.match(gate, /if \(!auth\.user\) return <SignInScreen/);
+  assert.match(gate, /return <App auth=\{auth\} \/>;/);
+
+  const capsule = read('src/app/AccountCapsule.jsx');
+  assert.match(capsule, /signOut/);
+  assert.match(read('src/App.jsx'), /<AccountCapsule/);
+
   const menu = read('src/app/AppWorkspaceMenu.jsx');
-  assert.match(menu, /continueWithGoogle/);
-  assert.match(menu, /importLocalTrips/);
-  assert.match(menu, /signOut/);
+  assert.doesNotMatch(menu, /continueWithGoogle|importLocalTrips|signOut/);
+  assert.doesNotMatch(read('src/app/useAccountMenu.js'), /importLocalTrips/);
+
+  const css = read('src/app/MapCapsules.css');
+  assert.match(css, /\.account-capsule \{[\s\S]*?top: calc\(var\(--trip-header-height, 63px\) \+ 14px\);/);
+  assert.match(css, /\.topbar__save \{[\s\S]*?top: calc\(var\(--trip-header-height, 63px\) \+ 64px\) !important;/);
+  assert.match(css, /workspace-anchor \{[\s\S]*?top: calc\(var\(--trip-header-height, 63px\) \+ 114px\) !important;/);
+  assert.match(css, /\.itinerary-pdf-export__button \{[\s\S]*?top: calc\(var\(--trip-header-height, 63px\) \+ 164px\);/);
+  assert.doesNotMatch(css, /#0e4f63/i, 'el avatar no usa un color fijo ajeno a la paleta de acento');
 });
