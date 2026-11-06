@@ -1,6 +1,8 @@
 /**
- * Iconos propios de Atlas por tipo de ciudad (no por monumento): sirven para
- * cualquier ciudad del mundo y varias ciudades pueden compartir uno.
+ * Iconos propios de Atlas para cada ciudad. Si la ciudad tiene un monumento
+ * emblemático dibujado (`cityEmblemIcons.js`) se usa ese; si no, un icono
+ * genérico de su tipo o región (pueblo bávaro, colonial, costa…), y en último
+ * caso el de ciudad.
  *
  * Lienzo 48 × 48, formas rellenas en tres tonos del color de la parada:
  *   - `mid`: el color de la parada;
@@ -10,10 +12,8 @@
  * El fondo de la miniatura es el color muy aclarado (`tint`).
  */
 
-const r = (x, y, w, h, rx = 0) => `M${x + rx} ${y}h${w - 2 * rx}${rx ? `a${rx} ${rx} 0 0 1 ${rx} ${rx}` : ''}v${h - 2 * rx}${rx ? `a${rx} ${rx} 0 0 1 -${rx} ${rx}` : ''}h-${w - 2 * rx}${rx ? `a${rx} ${rx} 0 0 1 -${rx} -${rx}` : ''}v-${h - 2 * rx}${rx ? `a${rx} ${rx} 0 0 1 ${rx} -${rx}` : ''}z`;
-const windows = (positions, w = 2.4, h = 3) => positions.map(([x, y]) => r(x, y, w, h, 0.6)).join('');
-// Ola suave que cabe dentro del agua (x de 9 a 39).
-const WAVE_LINE = (y) => `M9 ${y}${'c1.9 0 1.9-1.5 3.75-1.5s1.9 1.5 3.75 1.5'.repeat(4)}`;
+import { CITY_EMBLEM_BY_NAME, CITY_EMBLEM_ICONS } from './cityEmblemIcons.js';
+import { GROUND, WAVE_LINE, arch, bar, circle, r, windows } from './cityIconShapes.js';
 
 export const CITY_TYPE_ICONS = Object.freeze({
   // Ciudad: el icono por defecto, un barrio con cúpula, torre y casas.
@@ -122,29 +122,101 @@ export const CITY_TYPE_ICONS = Object.freeze({
     { tone: 'mid', d: r(5, 36, 38, 6, 1.6) },
     { tone: 'wave', d: WAVE_LINE(39.5) },
   ],
+  // Pueblo con casas de entramado (Baviera, Alsacia, Franconia…).
+  timbered: [
+    { tone: 'mid', d: 'M4.6 23.2 14.5 9.4l9.9 13.8z' },
+    { tone: 'white', d: r(13.4, 15.8, 2.2, 3, 0.6) },
+    { tone: 'soft', d: r(6, 22.6, 17, 16.9) },
+    { tone: 'deep', rule: 'nonzero', d: r(6, 22.6, 17, 1.1) + r(6, 30.4, 17, 1.1) + r(6, 22.6, 1.1, 16.9) + r(11.6, 22.6, 1.1, 16.9) + r(17.2, 22.6, 1.1, 16.9) + r(21.9, 22.6, 1.1, 16.9)
+      + bar(12.7, 23.7, 17.2, 30.4, 1) + bar(17.2, 23.7, 12.7, 30.4, 1) },
+    { tone: 'white', d: windows([[8.2, 25.4], [19.1, 25.4], [8.2, 33.4], [19.1, 33.4]], 2.4, 3) + arch(13.4, 39.5, 3.1, 6.4) },
+    { tone: 'deep', d: 'M23.6 26.8 33 14.6l9.4 12.2z' },
+    { tone: 'white', d: r(26, 26.2, 15, 13.3) },
+    { tone: 'mid', rule: 'nonzero', d: r(26, 26.2, 15, 1) + r(26, 32.6, 15, 1) + r(26, 26.2, 1, 13.3) + r(33, 26.2, 1, 13.3) + r(40, 26.2, 1, 13.3)
+      + bar(27, 27.2, 33, 32.6, 0.9) + bar(34, 32.6, 40, 27.2, 0.9) },
+    { tone: 'soft', d: windows([[28.8, 34.8], [35.8, 34.8]], 2.4, 3) + r(31.9, 19.6, 2.2, 2.8, 0.6) },
+    GROUND,
+  ],
+  // Pueblo blanco del Mediterráneo: casas encaladas y cúpula.
+  whitewashed: [
+    { tone: 'mid', d: r(4, 33.5, 40, 8.5, 1.6) },
+    { tone: 'wave', d: WAVE_LINE(38.8) },
+    { tone: 'white', d: r(7, 22, 11, 12, 1) },
+    { tone: 'soft', d: r(15, 22, 3, 12, 0.6) },
+    { tone: 'white', d: r(16.4, 27, 9, 7, 1) },
+    { tone: 'white', d: r(26, 21, 13, 13, 1) },
+    { tone: 'soft', d: r(36, 21, 3, 13, 0.6) },
+    { tone: 'mid', d: 'M27 21.2a5.5 5.5 0 0 1 11 0z' },
+    { tone: 'deep', d: r(32, 12.6, 1, 3.6, 0.4) + r(31.2, 13.4, 2.6, 0.9, 0.4) },
+    { tone: 'mid', d: arch(9.4, 34, 2.4, 4.4) + r(13, 25.4, 2.2, 2.2, 0.6) + r(19.4, 29.4, 2, 2, 0.6) + arch(31.2, 34, 2.6, 5.4) },
+  ],
+  // Pueblo colonial: iglesia de dos campanarios y portales.
+  colonial: [
+    { tone: 'soft', d: r(4.5, 28, 9, 11.5, 0.6) + r(34.5, 28, 9, 11.5, 0.6) },
+    { tone: 'white', d: arch(5.5, 39.5, 2, 5) + arch(8.5, 39.5, 2, 5) + arch(11.5, 39.5, 1.6, 5)
+      + arch(34.9, 39.5, 1.6, 5) + arch(37.5, 39.5, 2, 5) + arch(40.5, 39.5, 2, 5) },
+    { tone: 'mid', d: 'M19.5 39.5V22.6c1.4-2.6 2.8-4.2 4.5-5 1.7.8 3.1 2.4 4.5 5v16.9z' },
+    { tone: 'deep', d: r(13.5, 19, 6, 20.5, 0.4) + r(28.5, 19, 6, 20.5, 0.4) },
+    { tone: 'mid', d: r(14.3, 12.6, 4.4, 6.4, 0.4) + r(29.3, 12.6, 4.4, 6.4, 0.4) },
+    { tone: 'deep', d: 'M14.1 12.8a2.4 2.8 0 0 1 4.8 0zM29.1 12.8a2.4 2.8 0 0 1 4.8 0z' + r(16, 7.2, 1, 3, 0.5) + r(31, 7.2, 1, 3, 0.5) },
+    { tone: 'white', d: arch(15.4, 18.2, 2.2, 4) + arch(30.4, 18.2, 2.2, 4) + arch(22.4, 39.5, 3.2, 6.4) + circle(24, 25.4, 1.5)
+      + r(15.8, 25, 1.4, 3, 0.7) + r(30.8, 25, 1.4, 3, 0.7) },
+    GROUND,
+  ],
+  // Cúpulas y minarete (norte de África, Oriente Medio).
+  medina: [
+    { tone: 'soft', d: r(7, 27, 22, 12.5, 0.6) },
+    { tone: 'deep', d: 'M10.5 27.2a7.5 7.5 0 0 1 15 0z' },
+    { tone: 'deep', d: r(17.5, 16.4, 1, 3.4, 0.5) + circle(18, 16, 0.9) },
+    { tone: 'mid', d: 'M6.6 27.2a2.6 2.6 0 0 1 5.2 0zM24.2 27.2a2.6 2.6 0 0 1 5.2 0z' },
+    { tone: 'mid', d: r(31, 12, 4.6, 27.5, 0.4) },
+    { tone: 'deep', d: r(30, 17.4, 6.6, 1.6, 0.6) + 'M31 12.2a2.3 3 0 0 1 4.6 0z' + r(32.9, 6.4, 0.8, 3, 0.4) },
+    { tone: 'white', d: arch(10.2, 39.5, 2.4, 5) + arch(14.4, 39.5, 2.4, 5) + arch(18.6, 39.5, 2.4, 5) + arch(22.8, 39.5, 2.4, 5)
+      + r(32.6, 22, 1.4, 3, 0.7) + r(32.6, 29, 1.4, 3, 0.7) },
+    GROUND,
+  ],
 });
 
-/** Tipo de ciudad por defecto para algunas ciudades conocidas; el resto usa `city`. */
+/** Icono genérico para ciudades conocidas sin monumento dibujado; el resto usa `city`. */
 const CITY_TYPE_BY_NAME = Object.freeze({
-  amsterdam: 'waterfront', brujas: 'waterfront', bruges: 'waterfront', brugge: 'waterfront', venecia: 'waterfront',
-  venice: 'waterfront', venezia: 'waterfront', estocolmo: 'waterfront', stockholm: 'waterfront', copenhague: 'waterfront',
-  copenhagen: 'waterfront', colonia: 'waterfront', cologne: 'waterfront', koln: 'waterfront', budapest: 'waterfront',
-  'ciudad de mexico': 'metropolis', 'mexico city': 'metropolis', cdmx: 'metropolis', 'nueva york': 'metropolis',
-  'new york': 'metropolis', tokio: 'metropolis', tokyo: 'metropolis', frankfurt: 'metropolis', londres: 'metropolis',
-  london: 'metropolis', berlin: 'metropolis', paris: 'metropolis', madrid: 'metropolis', 'sao paulo': 'metropolis',
-  'hong kong': 'metropolis', singapur: 'metropolis', singapore: 'metropolis', dubai: 'metropolis', shanghai: 'metropolis',
-  gante: 'oldTown', ghent: 'oldTown', gent: 'oldTown', praga: 'oldTown', prague: 'oldTown', praha: 'oldTown',
-  nuremberg: 'oldTown', nurnberg: 'oldTown', bamberg: 'oldTown', rothenburg: 'oldTown', 'rothenburg ob der tauber': 'oldTown',
+  estocolmo: 'waterfront', stockholm: 'waterfront', copenhague: 'waterfront', copenhagen: 'waterfront', budapest: 'waterfront',
+  utrecht: 'waterfront', delft: 'waterfront', 'san petersburgo': 'waterfront', 'saint petersburg': 'waterfront',
+  tokio: 'metropolis', tokyo: 'metropolis', frankfurt: 'metropolis', madrid: 'metropolis',
+  'sao paulo': 'metropolis', 'hong kong': 'metropolis', singapur: 'metropolis', singapore: 'metropolis', shanghai: 'metropolis',
+  chicago: 'metropolis', toronto: 'metropolis', seul: 'metropolis', seoul: 'metropolis', monterrey: 'metropolis',
   toledo: 'oldTown', florencia: 'oldTown', florence: 'oldTown', firenze: 'oldTown', cracovia: 'oldTown', krakow: 'oldTown',
-  roma: 'oldTown', rome: 'oldTown', munich: 'oldTown', munchen: 'oldTown', viena: 'oldTown', vienna: 'oldTown', wien: 'oldTown',
-  barcelona: 'coast', lisboa: 'coast', lisbon: 'coast', niza: 'coast', nice: 'coast', cancun: 'tropical', tulum: 'tropical',
-  'rio de janeiro': 'coast', sydney: 'harbor', marsella: 'harbor', marseille: 'harbor', hamburgo: 'harbor', hamburg: 'harbor',
-  interlaken: 'mountain', zermatt: 'mountain', innsbruck: 'mountain', cusco: 'mountain', 'la paz': 'mountain',
+  tallin: 'oldTown', tallinn: 'oldTown', riga: 'oldTown', siena: 'oldTown', segovia: 'oldTown', salamanca: 'oldTown',
+  nuremberg: 'timbered', nurnberg: 'timbered', nuernberg: 'timbered', bamberg: 'timbered', rothenburg: 'timbered',
+  'rothenburg ob der tauber': 'timbered', heidelberg: 'timbered', regensburg: 'timbered', ratisbona: 'timbered',
+  wurzburg: 'timbered', wuerzburg: 'timbered', dinkelsbuhl: 'timbered', quedlinburg: 'timbered', goslar: 'timbered',
+  tubinga: 'timbered', tubingen: 'timbered', estrasburgo: 'timbered', strasbourg: 'timbered', colmar: 'timbered',
+  cochem: 'timbered', fussen: 'timbered', mittenwald: 'timbered', 'garmisch partenkirchen': 'timbered',
+  santorini: 'whitewashed', oia: 'whitewashed', fira: 'whitewashed', mykonos: 'whitewashed', mikonos: 'whitewashed',
+  ronda: 'whitewashed', mijas: 'whitewashed', frigiliana: 'whitewashed', ostuni: 'whitewashed', chefchaouen: 'whitewashed',
+  oaxaca: 'colonial', guanajuato: 'colonial', 'san miguel de allende': 'colonial', puebla: 'colonial', queretaro: 'colonial',
+  morelia: 'colonial', zacatecas: 'colonial', taxco: 'colonial', 'san cristobal de las casas': 'colonial', merida: 'colonial',
+  campeche: 'colonial', cartagena: 'colonial', 'cartagena de indias': 'colonial', antigua: 'colonial',
+  'antigua guatemala': 'colonial', quito: 'colonial', sucre: 'colonial', arequipa: 'colonial', 'la habana': 'colonial',
+  havana: 'colonial', cusco: 'colonial', cuzco: 'colonial', 'villa de leyva': 'colonial',
+  kioto: 'pagoda', kyoto: 'pagoda', nara: 'pagoda', osaka: 'pagoda', pekin: 'pagoda', beijing: 'pagoda', hanoi: 'pagoda',
+  marrakech: 'medina', marrakesh: 'medina', fez: 'medina', estambul: 'medina', istanbul: 'medina', 'el cairo': 'medina',
+  cairo: 'medina', doha: 'medina', 'abu dabi': 'medina', 'abu dhabi': 'medina', mascate: 'medina', muscat: 'medina',
+  lisboa: 'coast', lisbon: 'coast', niza: 'coast', nice: 'coast', dubrovnik: 'coast', malaga: 'coast', valencia: 'coast',
+  cancun: 'tropical', tulum: 'tropical', bali: 'tropical', honolulu: 'tropical', 'playa del carmen': 'tropical', 'puerto vallarta': 'tropical',
+  marsella: 'harbor', marseille: 'harbor', hamburgo: 'harbor', hamburg: 'harbor', rotterdam: 'harbor', bergen: 'harbor',
+  interlaken: 'mountain', zermatt: 'mountain', innsbruck: 'mountain', 'la paz': 'mountain', chamonix: 'mountain',
   ginebra: 'lake', geneva: 'lake', zurich: 'lake', lucerna: 'lake', lucerne: 'lake', hallstatt: 'lake', como: 'lake',
-  marrakech: 'desert', dubrovnik: 'coast', santorini: 'coast', oia: 'coast', bali: 'tropical', honolulu: 'tropical',
   burdeos: 'countryside', bordeaux: 'countryside', mendoza: 'countryside', toscana: 'countryside',
   reikiavik: 'winter', reykjavik: 'winter', rovaniemi: 'winter', tromso: 'winter', quebec: 'winter',
 });
+
+// Región por país, para ciudades que no están en las listas.
+const CITY_TYPE_BY_COUNTRY = Object.freeze({
+  JP: 'pagoda', CN: 'pagoda', KR: 'pagoda', TW: 'pagoda', VN: 'pagoda',
+  MA: 'medina', TN: 'medina', EG: 'medina', TR: 'medina', JO: 'medina', OM: 'medina',
+});
+
+export const CITY_ICONS = Object.freeze({ ...CITY_TYPE_ICONS, ...CITY_EMBLEM_ICONS });
 
 function normalizedName(value) {
   return String(value || '')
@@ -156,12 +228,13 @@ function normalizedName(value) {
     .trim();
 }
 
-/** Tipo de icono de una ciudad. */
+/** Icono de una ciudad: su monumento, si no su tipo o región, y si no `city`. */
 export function cityTypeFor(city) {
   const name = normalizedName(city?.name || String(city?.displayName || '').split(',')[0]);
-  return CITY_TYPE_BY_NAME[name] || 'city';
+  const country = String(city?.countryCode || '').trim().toUpperCase();
+  return CITY_EMBLEM_BY_NAME[name] || CITY_TYPE_BY_NAME[name] || CITY_TYPE_BY_COUNTRY[country] || 'city';
 }
 
 export function cityTypeIcon(type) {
-  return CITY_TYPE_ICONS[type] || CITY_TYPE_ICONS.city;
+  return CITY_ICONS[type] || CITY_TYPE_ICONS.city;
 }

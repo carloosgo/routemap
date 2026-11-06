@@ -29,15 +29,19 @@ const ICON_STYLE = Object.freeze({
   pointerEvents: 'none',
 });
 
-/** Icono propio de Atlas según el tipo de ciudad (costa, montaña, canales…). */
+/** Icono propio de Atlas: el monumento de la ciudad o, si no hay, su tipo o región. */
 function VisualIcon({ type }) {
   return (
     <svg viewBox="0 0 48 48" style={ICON_STYLE} aria-hidden="true">
-      {cityTypeIcon(type).map((shape, index) => (
-        shape.tone === 'wave'
-          ? <path key={index} d={shape.d} fill="none" stroke="var(--city-icon-white)" strokeWidth="1.6" strokeLinecap="round" />
-          : <path key={index} d={shape.d} fill={`var(--city-icon-${shape.tone})`} fillRule="evenodd" />
-      ))}
+      {cityTypeIcon(type).map((shape, index) => {
+        if (shape.tone === 'wave') {
+          return <path key={index} d={shape.d} fill="none" stroke="var(--city-icon-white)" strokeWidth="1.6" strokeLinecap="round" />;
+        }
+        if (shape.stroke) {
+          return <path key={index} d={shape.d} fill="none" stroke={`var(--city-icon-${shape.tone})`} strokeWidth={shape.stroke} strokeLinecap="round" />;
+        }
+        return <path key={index} d={shape.d} fill={`var(--city-icon-${shape.tone})`} fillRule={shape.rule || 'evenodd'} />;
+      })}
     </svg>
   );
 }
