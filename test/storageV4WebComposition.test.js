@@ -1,0 +1,156 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { createV4WebSyncComposition } from '../src/infrastructure/firebase/createV4WebSyncComposition.js';
+import { createMemoryV4LocalPersistence } from '../src/modules/storage-v4/memoryLocalPersistence.js';
+
+function intent() {
+  return {
+    userId: 'alice',
+    tripId: 'trip-1',
+    entityType: 'segment',
+    entityId: 'segment-1',
+    serverVersion: 0,
+    serverStatus: 'missing',
+    desiredStatus: 'active',
+    payload: { id: 'segment-1', rank: '5000000000', note: 'local' },
+  };
+}
+
+function inertNotifier() {
+  return {
+    publish() {},
+    subscribe() { return () => {}; },
+    close() {},
+  };
+}
+
+test('composition root ensambla local queue -> coordinator -> gateway sin activar la app', async () => {
+  const localPersistence = createMemoryV4LocalPersistence();
+  const writes = [];
+  const timers = new Map();
+  let timerId = 0;
+  const composition = createV4WebSyncComposition({
+    uid: 'alice',
+    contextId: 'tab-a',
+    localPersistence,
+    crossContextNotifier: inertNotifier(),
+    remoteGateway: {
+      async writeMutation(mutation) {
+        writes.push(mutation);
+        return { serverVersion: 1, serverStatus: 'active' };
+      },
+    },
+    now: () => 1000,
+    lifecycleOptions: {
+      setTimer(callback) {
+        timerId += 1;
+        timers.set(timerId, callback);
+        return timerId;
+      },
+      clearTimer(handle) {
+        timers.delete(handle);
+      },
+    },
+  });
+
+  await composition.runtime.commitIntent(intent());
+  assert.equal((await localPersistence.listMutations({ userId: 'alice' })).length, 1);
+
+  const result = await composition.syncCoordinator.flush({ userId: 'alice' });
+  assert.equal(result.synced, 1);
+  assert.equal(writes.length, 1);
+  assert.equal((await localPersistence.listMutations({ userId: 'alice' })).length, 0);
+  assert.equal((await localPersistence.getEntity('alice/trip-1/segment/segment-1')).state, 'clean');
+
+  await composition.stop();
+});
+
+test('composition root conecta telemetria sync opcional sin activar WRITE por si sola', async () => {
+  const localPersistence = createMemoryV4LocalPersistence();
+  const metrics = [];
+  const shutdownOrder = [];
+  const telemetry = {
+    emit(metric) {
+      metrics.push(metric);
+    },
+    async flush() {
+      shutdownOrder.push('flush');
+      return true;
+    },
+    stop() {
+      shutdownOrder.push('stop');
+    },
+  };
+  const composition = createV4WebSyncComposition({
+    uid: 'alice',
+    contextId: 'tab-a',
+    localPersistence,
+    crossContextNotifier: inertNotifier(),
+    syncTelemetryEmitter: telemetry,
+    remoteGateway: {
+      async writeMutation() {
+        return { serverVersion: 1, serverStatus: 'active' };
+      },
+    },
+    now: () => 1000,
+    lifecycleOptions: {
+      setTimer() { return 1; },
+      clearTimer() {},
+    },
+  });
+
+  assert.equal(composition.syncTelemetryEmitter, telemetry);
+  assert.deepEqual(metrics, []);
+
+  await composition.runtime.commitIntent(intent());
+  const result = await composition.runtime.saveNow();
+
+  assert.equal(result.synced, 1);
+  assert.equal(metrics.length, 1);
+  assert.equal(metrics[0].event, 'flush');
+  assert.equal(metrics[0].outcome, 'success');
+  assert.equal(metrics[0].synced, 1);
+  assert.doesNotMatch(JSON.stringify(metrics), /userId|tripId|entityId|entityKey|payload|uid/i);
+
+  await composition.stop();
+  assert.deepEqual(shutdownOrder, ['flush', 'stop']);
+});
+
+test('composition root detiene emitter aunque flush de telemetria falle', async () => {
+  const localPersistence = createMemoryV4LocalPersistence();
+  let telemetryStopped = false;
+  const composition = createV4WebSyncComposition({
+    uid: 'alice',
+    contextId: 'tab-a',
+    localPersistence,
+    crossContextNotifier: inertNotifier(),
+    syncTelemetryEmitter: {
+      emit() {},
+      async flush() { throw new Error('telemetry unavailable'); },
+      stop() { telemetryStopped = true; },
+    },
+    remoteGateway: {
+      async writeMutation() {
+        return { serverVersion: 1, serverStatus: 'active' };
+      },
+    },
+    lifecycleOptions: {
+      setTimer() { return 1; },
+      clearTimer() {},
+    },
+  });
+
+  await composition.stop();
+  assert.equal(telemetryStopped, true);
+});
+
+test('selector autenticado entra directo al repositorio v4 sin Gate G ni híbrido', async () => {
+  const selectorSource = await readFile(
+    new URL('../src/modules/trips/tripRepositorySelector.js', import.meta.url),
+    'utf8'
+  );
+  assert.match(selectorSource, /createFirestoreV4AppTripRepository/);
+  assert.doesNotMatch(selectorSource, /createGateGTripRepository|firestoreHybridTripRepository|storageV4Rollout/);
+  assert.doesNotMatch(selectorSource, /createV4WebSyncComposition|createFirestoreV4SyncGateway/);
+});

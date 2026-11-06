@@ -1,0 +1,171 @@
+.trip-summary__identity {
+  flex: 1 1 360px;
+  min-width: 310px;
+  max-width: 470px;
+}
+
+.trip-summary__primary-nav {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+}
+
+.trip-summary__primary-nav-item {
+  position: relative;
+  min-width: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #111827;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.trip-summary__primary-nav-item + .trip-summary__primary-nav-item::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 1px;
+  height: 22px;
+  transform: translateY(-50%);
+  background: rgba(148, 153, 171, 0.18);
+}
+
+.trip-summary__primary-nav-item:hover,
+.trip-summary__primary-nav-item:focus-visible {
+  background: #f6f7f8;
+  outline: none;
+}
+
+.trip-summary__primary-nav-item.is-active {
+  background: #f6f7f8;
+  color: #111827;
+}
+
+.trip-summary__primary-nav-icon {
+  width: 22px;
+  height: 24px;
+  flex: 0 0 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #667085;
+}
+
+.trip-summary__primary-nav-item.is-active .trip-summary__primary-nav-icon {
+  color: var(--atlas-accent) !important;
+}
+
+.trip-summary__primary-nav-label {
+  min-width: 0;
+  overflow: hidden;
+  color: #000000;
+  font-size: 14px;
+  text-overflow: ellipsis;
+}
+
+.trip-summary__primary-nav-badge {
+  min-width: 17px;
+  height: 16px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.trip-summary__primary-nav-badge--notes {
+  background: #fff0eb;
+  color: #e2725b;
+}
+
+/* La navegación ya vive en el header: el editor recupera el ancho que ocupaba
+   la barra lateral sin mover el borde exterior del panel ni el mapa. */
+@media (min-width: 721px) {
+  .editor-module {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .editor-module > :not(.editor-module__tabs) {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 1180px) {
+  .trip-summary__identity {
+    flex-basis: 300px;
+    min-width: 270px;
+  }
+
+  .trip-summary__primary-nav-item {
+    gap: 4px;
+    padding-inline: 6px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 900px) {
+  .trip-summary__identity {
+    flex: 0 0 210px;
+    min-width: 210px;
+  }
+
+  .trip-summary__primary-nav-item {
+    padding-inline: 4px;
+  }
+
+  .trip-summary__primary-nav-label {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 720px) {
+  .trip-summary__identity {
+    flex: 0 0 126px;
+    min-width: 126px;
+  }
+
+  .trip-summary__primary-nav-item {
+    gap: 0;
+    padding: 4px;
+  }
+
+  .trip-summary__primary-nav-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .trip-summary__primary-nav-badge {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    min-width: 14px;
+    height: 14px;
+    padding-inline: 3px;
+    font-size: 8px;
+  }
+}

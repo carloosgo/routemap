@@ -1,38 +1,29 @@
-# Fase 1 — mejoras internas sin cambios de diseño
+# Fase 1 — registro histórico
 
-Esta rama contiene únicamente cambios de estabilidad, seguridad y consistencia de datos.
+> **Documento histórico.** Describe una etapa temprana del proyecto previa a Firebase/Gate G/Atlas Storage v4. Las referencias a repository REST/API, URL base y decisiones de persistencia de esta página **no describen la arquitectura actual** y no deben usarse como guía de implementación.
+>
+> Para el estado vigente consulta `README.md`, `ARCHITECTURE.md`, `docs/STORAGE_ARCHITECTURE_V4.md` y los decision records/closeouts posteriores.
 
-## Regla de alcance
+Esta fase contenía únicamente cambios de estabilidad, seguridad y consistencia de datos y tenía como restricción no modificar el diseño visual.
 
-No modificar:
+## Alcance histórico
 
-- CSS
-- distribución visual
-- colores
-- tamaños
-- tipografías
-- textos visibles
-- animaciones
-- comportamiento visual
+En aquel momento se trabajó sobre:
 
-La revisión automática de GitHub rechaza cambios en hojas o carpetas de estilos dentro de este PR.
+- preservación de identificadores de segmentos al cargar viajes;
+- validación estricta de latitud y longitud;
+- prevención de coordenadas falsas `0,0` provocadas por valores vacíos;
+- manejo consistente de errores al cargar, guardar y eliminar viajes;
+- pruebas de regresión del modelo de viajes;
+- persistencia local;
+- un repository REST experimental con control de errores/concurrencia;
+- incorporación inicial de GitHub Actions para tests, ESLint y build.
 
-## Cambios incluidos
+El repository REST y su contrato fueron posteriormente sustituidos por la arquitectura Firebase/Storage v4 y ya no forman parte del runtime actual.
 
-- Preservación de identificadores de segmentos al cargar viajes.
-- Validación estricta de latitud y longitud.
-- Prevención de coordenadas falsas `0,0` provocadas por valores vacíos.
-- Mensajes de error de API sin exponer respuestas internas del servidor.
-- Normalización de la URL base de la API.
-- Selección correcta de `POST` para viajes nuevos y `PUT` para viajes ya persistidos.
-- Manejo consistente de errores al cargar, guardar y eliminar viajes.
-- Pruebas de regresión del modelo de viajes mediante `node --test`.
-- Pruebas de persistencia local y del repositorio API.
-- Flujo de GitHub Actions para ejecutar pruebas, ESLint y build en cada cambio.
+## Validación que introdujo esta fase
 
-## Validación automática
-
-GitHub Actions ejecuta:
+La base de validación automatizada quedó establecida alrededor de:
 
 ```bash
 npm ci
@@ -41,4 +32,4 @@ npm run lint
 npm run build
 ```
 
-El último flujo de validación terminó correctamente.
+Los workflows actuales agregan contratos de Firestore/Storage v4 y controles adicionales; consultar `.github/workflows/` y la documentación vigente en vez de asumir que esta lista histórica sigue completa.

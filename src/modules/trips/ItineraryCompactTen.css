@@ -1,0 +1,309 @@
+/* Vista compacta del itinerario en escritorio.
+   Origen y destinos comparten la misma banda vertical. Número, bandera y ciudad
+   son tracks independientes; la bandera conserva 30x20. La ciudad termina bajo
+   el separador del header entre Itinerario y Mis rutas sin alterar los demás tracks. */
+
+@media (min-width: 721px) {
+  .editor-module--itinerary .editor__body {
+    --itinerary-compact-gap: 10px;
+    --itinerary-city-width: calc((var(--workspace-panel-width) - 147px) / 3);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    -ms-overflow-style: auto;
+    padding: 0 2px 6px 10px;
+    gap: 0;
+  }
+
+  .editor-module--itinerary .editor__body::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+    display: block;
+  }
+
+  .editor-module--itinerary .segments:not(.segments--compact) {
+    padding-top: 0;
+    gap: 0;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin-section {
+    margin: 0;
+  }
+
+  /* La banda permanece en 40px sin escalar ningún elemento interno. */
+  .segments:not(.segments--compact) .itinerary-origin,
+  .editor-module.editor-module--itinerary .itinerary-segment .segment__header.itinerary-stop {
+    box-sizing: border-box;
+    min-height: 40px;
+    height: 40px;
+    margin: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    align-items: center;
+  }
+
+  .itinerary-segment.segment,
+  .itinerary-segment:last-child {
+    padding-bottom: 0 !important;
+  }
+
+  /* Borde -> arrastre -> número -> eje -> ciudad comparten exactamente el
+     mismo gap. El ancho del eje es el mismo token que posiciona el riel. */
+  .editor-module.editor-module--itinerary .itinerary-segment .segment__header.itinerary-stop {
+    grid-template-columns:
+      var(--country-run-drag-w, 14px)
+      var(--country-run-sequence-w, 19px)
+      var(--country-run-track-w, 30px)
+      var(--itinerary-city-width)
+      minmax(0, 1fr);
+    column-gap: var(--itinerary-compact-gap);
+  }
+
+  .editor-module--itinerary .segment__drag-handle {
+    position: relative;
+    width: 14px;
+    min-width: 14px;
+    height: 18px;
+    flex-basis: 14px;
+  }
+
+  .editor-module--itinerary .segment__drag-handle::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-stop__place,
+  .segments:not(.segments--compact) .itinerary-origin__place {
+    max-width: var(--itinerary-city-width);
+  }
+
+  /* El origen no necesita drag ni número, pero reserva exactamente la huella
+     de esas dos columnas para compartir el mismo eje X que los destinos. */
+  .segments:not(.segments--compact) .itinerary-origin {
+    padding-left: calc(
+      var(--country-run-drag-w, 14px) +
+      var(--itinerary-compact-gap) +
+      var(--country-run-sequence-w, 19px) +
+      var(--itinerary-compact-gap)
+    );
+    grid-template-columns:
+      var(--country-run-track-w, 30px)
+      var(--itinerary-city-width)
+      minmax(0, 1fr);
+    column-gap: var(--itinerary-compact-gap);
+  }
+
+  /* Los nombres largos usan hasta dos líneas dentro de la misma fila de 40px;
+     nunca aumentan el alto del trayecto ni desplazan fecha, costo o acciones. */
+  .editor-module--itinerary .itinerary-stop__picker .autocomplete__selected-value,
+  .segments:not(.segments--compact) .itinerary-origin__picker .autocomplete__selected-value {
+    top: 50%;
+    bottom: auto;
+    left: 0;
+    right: 4px;
+    max-height: calc(2 * 1.2em);
+    transform: translateY(-50%);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    color: #000000;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  .editor-module--itinerary .itinerary-stop__picker .input,
+  .segments:not(.segments--compact) .itinerary-origin__picker .input {
+    padding-left: 0;
+    padding-right: 0;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  /* Origen y ciudades intermedias de un bloque nacional comparten exactamente
+     la misma jerarquía tipográfica secundaria. */
+  .segments:not(.segments--compact) .itinerary-origin__picker .autocomplete__selected-value,
+  .editor-module--itinerary .itinerary-segment.is-country-run-middle .itinerary-stop__picker .autocomplete__selected-value {
+    font-size: 13px;
+    font-weight: 400;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__picker .input {
+    font-size: 13px;
+    font-weight: 400;
+  }
+
+  /* Después de la ciudad, origen y trayectos usan exactamente la misma retícula:
+     fecha, costo, nota, detalle y eliminar. El resto conserva su espacio previo. */
+  .editor-module.editor-module--itinerary .itinerary-stop__after-place,
+  .segments:not(.segments--compact) .itinerary-origin__after-place {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding-left: 0;
+    padding-right: 0;
+    display: grid;
+    grid-template-columns: minmax(60px, 1fr) 78px repeat(3, 14px);
+    align-items: center;
+    justify-content: end;
+    justify-self: stretch;
+    column-gap: 8px;
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-stop__metrics,
+  .segments:not(.segments--compact) .itinerary-origin__metrics {
+    display: contents;
+  }
+
+  .editor-module--itinerary .itinerary-stop__date-range {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: center;
+    box-sizing: border-box;
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
+    width: max-content;
+    min-width: 0;
+    max-width: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 1px;
+    color: #0d6078;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 11px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .editor-module--itinerary .itinerary-stop__date-range > span {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    text-align: right;
+    text-overflow: ellipsis;
+  }
+
+  .editor-module--itinerary .itinerary-stop__amount {
+    box-sizing: border-box;
+    width: 78px;
+    min-width: 78px;
+    max-width: 78px;
+    height: auto;
+    min-height: 0;
+    padding: 0 2px 0 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent !important;
+    box-shadow: none;
+    color: #5f5f5f;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 14px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-segment .itinerary-stop__amount,
+  .segments:not(.segments--compact) .itinerary-origin .itinerary-stop__amount {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-stop__after-place > .btn--icon,
+  .segments:not(.segments--compact) .itinerary-origin__after-place > .btn--icon {
+    position: relative;
+    width: 14px;
+    min-width: 14px;
+    height: 22px;
+    padding: 0;
+    justify-self: center;
+  }
+
+  /* Amplía el área clicable sin reservar ancho visual extra en la retícula. */
+  .editor-module.editor-module--itinerary .itinerary-stop__after-place > .btn--icon::before,
+  .segments:not(.segments--compact) .itinerary-origin__after-place > .btn--icon::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+  }
+
+  .editor-module.editor-module--itinerary .itinerary-stop__after-place > .btn--icon svg,
+  .segments:not(.segments--compact) .itinerary-origin__after-place > .btn--icon svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .editor-module--itinerary .segment__details-btn {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #a1a7b0;
+    box-shadow: none;
+  }
+
+  .editor-module--itinerary .segment__details-btn:hover,
+  .editor-module--itinerary .segment__details-btn:focus-visible {
+    background: #f4f5f7;
+    color: #586170;
+    filter: none;
+    outline: none;
+  }
+
+  .editor-module--itinerary .btn--add {
+    margin-top: 0;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+}
+
+/* El detalle abre hacia el mapa, por eso el chevron visual apunta a la derecha. */
+.itinerary-details-chevron {
+  transform: rotate(-90deg);
+}
+
+/* En escritorio con puntero preciso, eliminar no añade ruido permanente: aparece
+   al recorrer la fila. Con teclado sigue haciéndose visible al recibir foco. */
+@media (min-width: 721px) and (hover: hover) and (pointer: fine) {
+  .editor-module--itinerary .itinerary-stop__remove-btn {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+  }
+
+  .editor-module--itinerary .segment__header.itinerary-stop:hover .itinerary-stop__remove-btn,
+  .editor-module--itinerary .itinerary-origin:hover .itinerary-origin__clear,
+  .editor-module--itinerary .itinerary-stop__remove-btn:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* El punto indica que existe contenido, pero no debe competir visualmente con
+   el icono de nota. La zona clicable del botón permanece intacta. */
+.segment__note-btn.has-note::after {
+  top: 5px;
+  right: 5px;
+  width: 4px;
+  height: 4px;
+  border-width: 1px;
+}

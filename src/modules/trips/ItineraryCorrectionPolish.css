@@ -1,0 +1,83 @@
+/* Correcciones de la revisión visual posterior al rediseño del itinerario. */
+
+/* El origen ya no recibe una jerarquía tipográfica distinta: vuelve a heredar
+   exactamente la misma escala y peso que las ciudades-destino de la timeline. */
+
+/* El aumento de tipografía corresponde a las tarjetas-resumen de la cabecera,
+   no a los conceptos del editor de gastos. Restauramos aquí sus escalas previas. */
+.expenses--journey .moneycard__label,
+.expenses--journey .moneycard__typeinput,
+.floating-editor .segment__body .expenses--journey .moneycard__label,
+.floating-editor .segment__body .expenses--journey .moneycard__typeinput {
+  font-size: 13px;
+}
+
+.expenses--journey .moneycard__input,
+.floating-editor .segment__body .expenses--journey .moneycard__input,
+.floating-editor .segment__body .expenses--journey .moneycard__amount {
+  font-size: 12px;
+}
+
+.expenses--journey .moneycard__currency,
+.floating-editor .segment__body .expenses--journey .moneycard__currency {
+  font-size: 11px;
+}
+
+.expenses--journey .expenses__add-other {
+  font-size: 13px;
+}
+
+/* El body permanece montado únicamente durante los 190ms de salida. El grid
+   anima altura y opacidad en ambos sentidos sin medir el DOM ni usar max-height
+   arbitrarios; al terminar el cierre React lo desmonta para recuperar coste. */
+.itinerary-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  min-width: 0;
+  opacity: 0;
+  transition:
+    grid-template-rows 190ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity 150ms ease;
+}
+
+.itinerary-collapse.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.itinerary-collapse__inner {
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Desactiva la animación antigua de entrada; el shell es ahora la única
+   autoridad de movimiento para que abrir y cerrar sean simétricos. */
+.itinerary-segment .segment__body,
+.segments:not(.segments--compact) .itinerary-origin__body {
+  animation: none;
+}
+
+@media (max-width: 720px) {
+  .itinerary-segment .segment__header.itinerary-stop {
+    grid-template-columns: 18px 30px minmax(0, 1fr) 50px;
+  }
+
+  .itinerary-segment .itinerary-stop__after-place {
+    display: grid;
+    grid-template-columns: 22px 22px;
+    justify-content: end;
+    gap: 6px;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin {
+    grid-template-columns: 30px minmax(0, 1fr) 78px;
+  }
+
+  .segments:not(.segments--compact) .itinerary-origin__after-place {
+    display: grid;
+    grid-template-columns: 22px 22px 22px;
+    justify-content: end;
+    gap: 6px;
+  }
+}

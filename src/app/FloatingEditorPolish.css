@@ -1,0 +1,275 @@
+/* Ajustes visuales puntuales del módulo flotante solicitados por el usuario. */
+.floating-editor,
+.floating-editor .editor-module,
+.floating-editor .editor,
+.floating-editor .editor__body {
+  background: transparent;
+}
+
+.floating-editor .segment {
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+}
+
+.floating-editor .segment__badge {
+  font-size: 9px;
+}
+
+.floating-editor .segment__route .autocomplete__field .input {
+  font-size: 11px;
+}
+
+.floating-editor .segment__route .autocomplete:not(:focus-within) .autocomplete__field .input:not(:placeholder-shown) {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.floating-editor .segment__header .autocomplete__list .flag {
+  width: 24px;
+  height: 17px;
+  object-fit: contain;
+}
+
+.floating-editor .segment__pill {
+  background: #f3f3f3;
+  color: #656565;
+}
+
+.floating-editor .segment__body {
+  font-size: 11px;
+}
+
+.floating-editor .segment__body .dates__label,
+.floating-editor .segment__body .field__label,
+.floating-editor .segment__body .expenses__togglelabel,
+.floating-editor .segment__body .expenses__title,
+.floating-editor .segment__body .moneycard__label,
+.floating-editor .segment__body .expenses__total,
+.floating-editor .segment__body .toggle__btn,
+.floating-editor .segment__body .btn--sm {
+  font-size: 10px;
+}
+
+.floating-editor .segment__body .expenses__total,
+.floating-editor .segment__body .expenses__total strong {
+  font-size: 11px;
+}
+
+.floating-editor .segment__body .input,
+.floating-editor .segment__body .input[type='date'],
+.floating-editor .segment__body .input[type='date']::-webkit-datetime-edit,
+.floating-editor .segment__body .input[type='date']::-webkit-datetime-edit-fields-wrapper,
+.floating-editor .segment__body .input[type='date']::-webkit-datetime-edit-text,
+.floating-editor .segment__body .input[type='date']::-webkit-datetime-edit-day-field,
+.floating-editor .segment__body .input[type='date']::-webkit-datetime-edit-month-field,
+.floating-editor .segment__body .input[type='date']::-webkit-datetime-edit-year-field,
+.floating-editor .segment__body .moneycard__input,
+.floating-editor .segment__body .moneycard__typeinput {
+  font-size: 11px;
+}
+
+.floating-editor .segment__body .moneycard__currency,
+.floating-editor .segment__body .moneycard__amount {
+  font-size: 10px;
+}
+
+.floating-editor .segment__body .dates__label svg {
+  width: 11px;
+  height: 11px;
+}
+
+.floating-editor .segment__body .dates__arrow {
+  width: 12px;
+  height: 12px;
+}
+
+.floating-editor .segment__body .moneycard__icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.floating-editor .segment__body .moneycard__remove svg {
+  width: 13px;
+  height: 13px;
+}
+
+.floating-editor .segment__body .moneycard__icon {
+  width: 27px;
+  height: 27px;
+}
+
+.floating-editor .segment__body .toggle__btn {
+  padding: 4px 8px;
+}
+
+.floating-editor .segment__body .btn--sm {
+  padding: 5px 9px;
+}
+
+.editor-module__menu-heading,
+.editor-module__language-options,
+.editor-module__language-option,
+.editor-module__menu-item,
+.editor-module__saved-name,
+.editor-module__saved-meta,
+.editor-module__menu-empty {
+  font-family: var(--font-body);
+}
+
+/* Mantiene la cuadrícula anterior, pero reduce la altura de cada concepto. */
+.floating-editor .segment__body .expenses__grid {
+  gap: 6px;
+}
+
+.floating-editor .segment__body .moneycard {
+  min-height: 40px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.floating-editor .segment__body .moneycard__icon {
+  width: 24px;
+  height: 24px;
+}
+
+.floating-editor .segment__body .moneycard__icon svg {
+  width: 13px;
+  height: 13px;
+}
+
+.floating-editor .segment__body .moneycard__label,
+.floating-editor .segment__body .moneycard__amount {
+  line-height: 1.1;
+}
+
+.floating-editor .segment__body .moneycard__input,
+.floating-editor .segment__body .moneycard__typeinput {
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+/* Acento visual unificado para los controles principales solicitados. */
+.topbar__save,
+.trip-save-popover__submit,
+.editor-module__settings .editor-module__more-button,
+.geo-search__button,
+.place-save-prompt button,
+.toast {
+  background: var(--atlas-accent);
+  border-color: var(--atlas-accent);
+  color: #ffffff;
+}
+
+.topbar__save:hover,
+.trip-save-popover__submit:hover,
+.editor-module__settings .editor-module__more-button:hover,
+.editor-module__settings .editor-module__more-button.is-active,
+.geo-search__button:hover,
+.place-save-prompt button:hover {
+  background: var(--atlas-accent);
+  border-color: var(--atlas-accent);
+  color: #ffffff;
+  filter: brightness(0.92);
+}
+
+/* La geometría de Tramos, Mis Rutas y Notas vive exclusivamente en
+   ItinerarySidebar.css. Aquí solo quedan estilos ajenos a su layout. */
+.editor-module__tab-chevron {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+}
+
+/* Solo el contador de lugares conserva el acento azul con número blanco. */
+.editor-module__tab[data-tab-icon='places-map-pin'] .tabbar__badge {
+  background: var(--atlas-accent);
+  color: #ffffff;
+}
+
+/* Eliminar Lugares replica exactamente el estilo de viajes guardados. */
+.floating-editor .trip-place button {
+  background: transparent;
+  color: #b6bbc5;
+}
+
+.floating-editor .trip-place button:hover,
+.floating-editor .trip-place button:focus-visible {
+  background: #ffffff;
+  color: var(--danger);
+  outline: none;
+}
+
+.place-result-marker:hover,
+.place-result-marker:focus-visible {
+  border-color: var(--atlas-accent);
+  box-shadow: 0 7px 20px rgba(25, 165, 208, 0.28);
+}
+
+/* El popup se descarta al pulsar fuera; no muestra botón de cierre. */
+.place-save-popup .maplibregl-popup-close-button {
+  display: none;
+}
+
+/* Acento verde azulado compartido con la moneda seleccionada. */
+.floating-editor .btn--add:hover {
+  border-color: #357d94;
+  color: #357d94;
+}
+
+.floating-editor .notes-section__title svg {
+  color: #357d94;
+}
+
+.floating-editor .checklist__check.is-done {
+  background: #357d94;
+  border-color: #357d94;
+  color: #ffffff;
+}
+
+.floating-editor .checklist__submit {
+  color: #357d94;
+  border-color: #357d94;
+}
+
+.floating-editor .checklist__submit:hover,
+.floating-editor .checklist__submit:focus-visible {
+  background: #eef6f8;
+  color: #357d94;
+  border-color: #357d94;
+}
+
+/* El contorno de foco de todos los campos de captura usa el mismo acento. */
+.floating-editor input:not([type='checkbox']):not([type='radio']):focus,
+.floating-editor textarea:focus,
+.floating-editor select:focus {
+  border-color: #357d94 !important;
+  outline-color: #357d94;
+}
+
+/* El monto del total global usa exactamente el color del botón Buscar. */
+.floating-editor .total__value {
+  color: var(--atlas-accent);
+}
+
+/* Los cuadros de eliminación muestran solo la pregunta y las acciones. */
+#confirm-delete-place-title,
+#confirm-delete-trip-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* La nota del tramo con contenido usa el mismo acento azul de Buscar. */
+.floating-editor .segment__note-btn.has-note {
+  color: var(--atlas-accent);
+}
+
+.floating-editor .segment__note-btn.has-note::after {
+  background: var(--atlas-accent);
+}

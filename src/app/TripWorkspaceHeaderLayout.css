@@ -1,0 +1,115 @@
+/* Integración entre marca, resumen global y workspace.
+   En escritorio existe una sola cabecera real: marca, navegación principal
+   y métricas comparten la misma retícula y la misma superficie. */
+.app {
+  --atlas-nav-width: 82px;
+  /* La navegación lateral desapareció: el panel conserva el ancho útil que
+     antes quedaba después de esos 82px, en vez de reservar una franja vacía. */
+  --workspace-panel-width: clamp(458px, calc(40vw - var(--atlas-nav-width)), 540px);
+  --trip-header-height: 63px;
+}
+
+@media (min-width: 721px) {
+  .trip-summary {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    box-sizing: border-box;
+    width: auto;
+    height: var(--trip-header-height);
+    min-height: var(--trip-header-height);
+    display: grid;
+    grid-template-columns:
+      var(--atlas-nav-width)
+      calc(var(--workspace-panel-width) - var(--atlas-nav-width))
+      minmax(0, 1fr);
+    align-items: center;
+    column-gap: 0;
+    padding: 0 14px 0 0;
+  }
+
+  .trip-summary__brand {
+    grid-column: 1;
+    width: 100%;
+    height: 100%;
+    padding: 0 7px;
+    justify-content: center;
+  }
+
+  .trip-summary__identity {
+    grid-column: 2;
+    width: 100%;
+    max-width: none;
+    padding: 0 18px 0 8px;
+  }
+
+  .trip-summary__metrics {
+    position: relative;
+    grid-column: 3;
+    width: 100%;
+    padding-left: 10px;
+  }
+
+  /* Separador explícito entre Notas y Total del viaje. */
+  .trip-summary__metrics::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 1px;
+    height: 22px;
+    transform: translateY(-50%);
+    background: rgba(148, 153, 171, 0.24);
+  }
+
+  .editor-module {
+    grid-template-rows: var(--trip-header-height) minmax(0, 1fr);
+  }
+
+  .editor-module > .editor-module__tabs {
+    grid-row: 1 / -1;
+    padding-top: calc(var(--trip-header-height) + 8px);
+  }
+
+  .editor-module > :not(.editor-module__tabs) {
+    grid-row: 2;
+  }
+
+  /* Conserva la geometría de los controles flotantes respecto al borde
+     inferior del header, aunque cambie su altura. */
+  .topbar__save {
+    top: calc(var(--trip-header-height) + 14px);
+  }
+
+  .editor-module__workspace-anchor {
+    top: calc(var(--trip-header-height) + 60px) !important;
+  }
+
+  /* El mapa vive por debajo de un header fijo. Sus overlays propios deben
+     empezar después de esa superficie para no quedar tapados por ella. */
+  .workspace__desktop--column > .mappane .segnote,
+  .workspace__desktop--column > .mappane .geo-search {
+    top: calc(var(--trip-header-height) + 12px) !important;
+  }
+
+  .workspace__desktop--column > .mappane .segnote {
+    max-height: calc(100% - var(--trip-header-height) - 24px);
+  }
+}
+
+@media (max-width: 720px) {
+  .trip-summary {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    box-sizing: border-box;
+    width: auto;
+  }
+
+  .workspace__mobile {
+    box-sizing: border-box;
+    padding-top: var(--trip-header-height);
+  }
+}

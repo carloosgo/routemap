@@ -16,6 +16,7 @@
   --coral-soft-text: #a3422e;
   --marina: #0e4f63;
   --marina-hover: #0b3f4f;
+  --atlas-accent: #19a5d0;
 
   /* Área de trabajo clara */
   --bg: #fafbfc;
@@ -34,8 +35,8 @@
   --radius: 9px;
   --radius-sm: 7px;
 
-  --font-display: 'Inter', 'Segoe UI', system-ui, sans-serif;
-  --font-body: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-display: 'Outfit', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
 * {
@@ -54,8 +55,13 @@ body {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
 }
-button {
+button,
+input,
+select,
+textarea {
   font-family: inherit;
+}
+button {
   cursor: pointer;
 }
 

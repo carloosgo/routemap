@@ -1,0 +1,56 @@
+.google-itinerary-city-marker {
+  display: inline-flex;
+  width: auto;
+  min-width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #ffffff;
+  transform: none;
+}
+
+.google-itinerary-city-marker__dot {
+  box-sizing: border-box;
+  display: grid;
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  place-items: center;
+  border: 1.3px solid #ffffff;
+  border-radius: 50%;
+  background: var(--itinerary-visit-color, var(--itinerary-city-color, #111111));
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3);
+}
+
+.google-itinerary-city-marker__flag {
+  display: block;
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border: 0;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 18px 18px;
+  box-shadow: none;
+}
+
+.google-itinerary-city-marker__flag--origin {
+  background-image: url("../../assets/itinerary-start-flag.svg");
+}
+
+.google-itinerary-city-marker__flag--finish {
+  background-image: url("../../assets/itinerary-finish-flag.svg");
+}

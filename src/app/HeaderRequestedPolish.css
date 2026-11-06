@@ -1,0 +1,56 @@
+/* Estados interactivos del header global. Este archivo se importa al final de
+   la cascada del header para que hover/active no dependan de especificidad. */
+
+/* El header no usa superficies sombreadas para hover/selección. La jerarquía
+   se comunica mediante color de texto/icono y focus ring de teclado. */
+.trip-summary__primary-nav-item:hover,
+.trip-summary__primary-nav-item:focus-visible,
+.trip-summary__primary-nav-item.is-active,
+.trip-summary__metric:hover,
+.trip-summary__metric:focus-within,
+button.trip-summary__metric[aria-expanded='true'],
+.trip-summary__metric--selector:has(.trip-summary__selector-trigger[aria-expanded='true']) {
+  background: transparent;
+}
+
+.trip-summary__primary-nav-item.is-active,
+.trip-summary__primary-nav-item.is-active .trip-summary__primary-nav-label {
+  color: #5f6875;
+}
+
+.trip-summary__primary-nav-label {
+  transition: color 120ms ease;
+}
+
+.trip-summary__primary-nav-item:focus-visible,
+button.trip-summary__metric:focus-visible,
+.trip-summary__selector-trigger:focus-visible {
+  outline: 1px solid rgba(100, 116, 139, 0.48);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.trip-summary__selector-trigger:hover,
+.trip-summary__selector-trigger[aria-expanded='true'] {
+  color: var(--text);
+}
+
+.trip-summary__selector-option:hover,
+.trip-summary__selector-option:focus-visible,
+.trip-summary__selector-option.is-active {
+  background: transparent;
+}
+
+/* Las leyendas secundarias visibles bajo cada valor del header usan el teal
+   solicitado. Esta regla vive en la capa final del header para que no pueda
+   quedar anulada por estilos base o tipográficos anteriores. */
+.trip-summary .trip-summary__metric-label {
+  color: #0d6078;
+}
+
+/* El rango de fechas ocupa la primera métrica, inmediatamente después de
+   Notas. Conserva espacio suficiente para dos fechas completas sin comprimir
+   Total, Destinos, Noches, Moneda o Idioma. */
+.trip-summary__metrics {
+  grid-template-columns: 1.45fr 1.2fr 1fr 1fr 0.88fr 0.88fr;
+}

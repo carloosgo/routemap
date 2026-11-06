@@ -5,6 +5,7 @@ import {
   createCollapsedSegments,
   isOutsideTarget,
   isSaveShortcut,
+  toggleTarget,
 } from '../src/app/appInteractionModel.js';
 
 test('isSaveShortcut reconoce Ctrl+S y Cmd+S sin importar mayúsculas', () => {
@@ -34,4 +35,11 @@ test('isOutsideTarget distingue objetivos internos y externos', () => {
   assert.equal(isOutsideTarget(container, inside), false);
   assert.equal(isOutsideTarget(container, outside), true);
   assert.equal(isOutsideTarget(null, outside), false);
+});
+
+test('toggleTarget abre, cambia y cierra el mismo target de forma uniforme', () => {
+  assert.equal(toggleTarget(null, 'segment-1'), 'segment-1');
+  assert.equal(toggleTarget('segment-1', 'segment-2'), 'segment-2');
+  assert.equal(toggleTarget('segment-1', 'segment-1'), null);
+  assert.equal(toggleTarget('__atlas-origin-note__', '__atlas-origin-note__'), null);
 });

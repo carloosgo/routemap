@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" role="img" aria-label="Moneda">
+  <circle cx="20" cy="21" r="15.2" fill="#111827" opacity="0.14"/>
+  <circle cx="20" cy="19.3" r="15.2" fill="#fff3d6" stroke="#171717" stroke-width="2.2"/>
+  <path d="M23.9 11.6c-1.2-1-2.7-1.5-4.5-1.5-3 0-5 1.6-5 4.1 0 2.6 2 3.7 5.5 4.6 3.4.9 5.1 2 5.1 4.7 0 3-2.4 5-6 5-2.5 0-4.7-.8-6.3-2.3" fill="none" stroke="#19bde6" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M23.9 11.6c-1.2-1-2.7-1.5-4.5-1.5-3 0-5 1.6-5 4.1 0 2.6 2 3.7 5.5 4.6 3.4.9 5.1 2 5.1 4.7 0 3-2.4 5-6 5-2.5 0-4.7-.8-6.3-2.3" fill="none" stroke="#111827" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M20 7.1v24.5" fill="none" stroke="#19bde6" stroke-width="5" stroke-linecap="round"/>
+  <path d="M20 7.1v24.5" fill="none" stroke="#111827" stroke-width="1.35" stroke-linecap="round"/>
+</svg>

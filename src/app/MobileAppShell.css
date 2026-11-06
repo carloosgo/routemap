@@ -1,0 +1,301 @@
+/* Shell móvil tipo app (iPhone "Añadir a pantalla de inicio").
+   Solo actúa por debajo de 721 px: el escritorio no cambia.
+   - Cabecera de una fila: marca + métricas desplazables + menú ⋮.
+   - Navegación principal en barra inferior (Itinerario, Mis Rutas, Notas).
+   - Itinerario y Mis Rutas: su mapa de fondo + hoja deslizable con la lista.
+   - Respeta las zonas seguras (notch / indicador de inicio) en modo standalone. */
+
+.app {
+  height: 100vh;
+  height: 100dvh;
+}
+
+@media (max-width: 720px) {
+  html,
+  body {
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .app {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --trip-header-height: calc(56px + var(--safe-top));
+    width: 100%;
+  }
+
+  /* ===== Cabecera ===== */
+  .trip-summary {
+    height: var(--trip-header-height);
+    min-height: var(--trip-header-height);
+    padding: var(--safe-top) 54px 0 12px;
+    gap: 8px;
+  }
+
+  .trip-summary__brand {
+    flex: 0 0 auto;
+    gap: 6px;
+  }
+
+  .trip-summary__brand-icon {
+    width: 26px;
+    height: 26px;
+    flex-basis: 26px;
+  }
+
+  .trip-summary__brand-name {
+    font-size: 13px;
+  }
+
+  /* La navegación vive en la barra inferior. */
+  .trip-summary__identity {
+    display: none;
+  }
+
+  .trip-summary__metrics {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .trip-summary__metrics::-webkit-scrollbar {
+    display: none;
+  }
+
+  .trip-summary__metrics > *,
+  .trip-summary__metrics > .trip-summary__breakdown-anchor {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  .trip-summary__metric {
+    width: auto;
+    gap: 5px;
+    padding-inline: 8px;
+  }
+
+  .trip-summary__metric-value,
+  .trip-summary__metric-label {
+    overflow: visible;
+    white-space: nowrap;
+    text-overflow: clip;
+  }
+
+  .trip-summary__metric-value,
+  .trip-summary__selector-trigger {
+    font-size: 13px;
+  }
+
+  /* Desglose del total: fijo bajo la cabecera para escapar del recorte de la
+     tira desplazable de métricas (sin máscara: una máscara recortaría también
+     a este hijo fijo y el desplegable no se vería). */
+  .trip-summary__breakdown {
+    position: fixed;
+    top: calc(var(--trip-header-height) + 8px);
+    right: 10px;
+    left: 10px;
+    width: auto;
+  }
+
+  /* ===== Menú ⋮ integrado en la cabecera ===== */
+  .editor-module__settings > .editor-module__menu-anchor.editor-module__workspace-anchor {
+    position: fixed !important;
+    top: calc(var(--safe-top) + 10px) !important;
+    right: 10px !important;
+    left: auto !important;
+    bottom: auto !important;
+    z-index: 950 !important;
+    margin: 0 !important;
+  }
+
+  .editor-module__workspace-anchor .editor-module__more-button {
+    width: 36px;
+    height: 36px;
+    box-shadow: none;
+  }
+
+  .editor-module__workspace-anchor .editor-module__more-menu {
+    position: fixed;
+    top: calc(var(--trip-header-height) + 6px);
+    right: 10px;
+    left: auto;
+    width: min(300px, calc(100vw - 20px));
+    max-height: calc(100dvh - var(--trip-header-height) - 90px - var(--safe-bottom));
+  }
+
+  /* ===== Barra inferior ===== */
+  .mobiletabs {
+    padding: 0 4px var(--safe-bottom);
+    background: rgba(255, 255, 255, 0.96);
+  }
+
+  .mobiletabs__btn {
+    min-width: 0;
+    min-height: 54px;
+    flex-direction: column;
+    gap: 3px;
+    padding: 7px 2px 5px;
+    font-size: 11px;
+    font-weight: 600;
+    box-shadow: none;
+  }
+
+  .mobiletabs__btn.is-active {
+    box-shadow: none;
+  }
+
+  .mobiletabs__icon {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .mobiletabs__label {
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .mobiletabs__badge {
+    position: absolute;
+    top: -4px;
+    left: calc(100% - 6px);
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: #fff0eb;
+    color: #e2725b;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+  }
+}
+
+/* ===== Escenario: mapa de fondo + hoja deslizable =====
+   Itinerario y Mis Rutas pintan su propio mapa detrás y la lista va en una
+   hoja con tres alturas (AppWorkspace calcula la altura en px). Notas usa la
+   hoja a altura completa y sin mapa. La hoja nunca usa transform: el menú ⋮ y
+   los paneles fijos que viven dentro deben seguir anclados a la ventana. */
+@media (max-width: 720px) {
+  .workspace__mobile {
+    position: relative;
+  }
+
+  .workspace__mobile .mobile-stage {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .workspace__mobile .mobile-mapstage {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    /* z-index 0: encierra las capas internas del mapa sin tapar la hoja. */
+    z-index: 0;
+    transition: height 0.22s ease;
+  }
+
+  /* Nota, datos del trayecto y avisos viven dentro del mapa: mientras están
+     abiertos, el mapa sube por encima de la hoja para que se vean. */
+  .workspace__mobile .mobile-mapstage:has(.segnote, .toast) {
+    z-index: 10;
+  }
+
+  .workspace__mobile.is-sheet-only .mobile-mapstage {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .workspace__mobile .mobile-sheet {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    /* Sin z-index propio (no crea contexto de apilamiento): así el menú ⋮,
+       que es fijo y vive dentro de la hoja, sigue por encima de la cabecera. */
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--bg, #ffffff);
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -6px 24px rgba(15, 23, 42, 0.14);
+    transition: height 0.22s ease;
+  }
+
+  .workspace__mobile .mobile-sheet.is-dragging {
+    transition: none;
+  }
+
+  .workspace__mobile.is-sheet-only .mobile-sheet {
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .workspace__mobile .mobile-sheet__handle {
+    flex: 0 0 auto;
+    width: 100%;
+    height: 30px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .workspace__mobile .mobile-sheet__handle span {
+    width: 36px;
+    height: 5px;
+    border-radius: 3px;
+    background: #d5d9de;
+  }
+
+  .workspace__mobile .mobile-sheet__body {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .mobilepane .editor-module__workspace-anchor {
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  /* Nota y datos del trayecto: hoja fija bajo la cabecera. */
+  .workspace__mobile .mappane .segnote {
+    position: fixed !important;
+    top: calc(var(--trip-header-height) + 10px) !important;
+    right: 10px !important;
+    left: 10px !important;
+    bottom: auto !important;
+    z-index: 1200 !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    max-height: calc(100dvh - var(--trip-header-height) - 84px - var(--safe-bottom)) !important;
+    overflow-y: auto;
+    visibility: visible;
+    pointer-events: auto;
+    box-shadow: 0 12px 36px rgba(15, 23, 42, 0.24);
+  }
+
+  .workspace__mobile .mappane .toast {
+    position: fixed;
+    bottom: calc(70px + var(--safe-bottom));
+    z-index: 1300;
+    visibility: visible;
+  }
+}

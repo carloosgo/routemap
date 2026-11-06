@@ -1,0 +1,26 @@
+/* Micro-ajustes visuales del header solicitados: el total no cambia de color,
+   selectores legibles con separador y divisores tenues. */
+button.trip-summary__metric--total:hover,
+button.trip-summary__metric--total[aria-expanded='true'] {
+  border-radius: 0;
+  background: transparent !important;
+}
+
+.trip-summary__selector-menu .trip-summary__selector-option {
+  grid-template-columns: 36px 8px minmax(0, 1fr) 18px;
+  gap: 6px;
+  border-bottom: 1px dashed #eef0f3;
+  border-radius: 0;
+}
+
+.trip-summary__selector-menu .trip-summary__selector-option:last-child {
+  border-bottom: 0;
+}
+
+.trip-summary__selector-separator {
+  color: #c2c7ce;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  text-align: center;
+}
