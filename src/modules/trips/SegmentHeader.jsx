@@ -29,21 +29,21 @@ const SEQUENCE_BADGE_STYLE = Object.freeze({
   zIndex: 12,
   top: '6px',
   left: '6px',
-  width: '24px',
-  minWidth: '24px',
-  height: '24px',
-  minHeight: '24px',
+  width: '20px',
+  minWidth: '20px',
+  height: '20px',
+  minHeight: '20px',
   display: 'grid',
   placeItems: 'center',
   margin: 0,
   transform: 'none',
-  border: '2px solid rgba(255, 255, 255, 0.96)',
+  border: 0,
   borderRadius: '50%',
-  color: '#fff',
-  fontSize: '10px',
+  background: '#ffffff',
+  fontSize: '10.5px',
   fontWeight: 800,
   lineHeight: 1,
-  boxShadow: '0 2px 6px rgba(23, 38, 45, 0.18)',
+  boxShadow: '0 1px 3px rgba(23, 38, 45, 0.18)',
   pointerEvents: 'none',
 });
 
@@ -65,9 +65,10 @@ export function SegmentHeader({
   const destination = segment.destination;
   const hasNote = Boolean(segment.note);
   const formattedDateRange = formatSegmentCardDateRange(segment, locale);
+  // Número de parada en blanco sobre el bloque de color de la ciudad.
   const sequenceBadgeStyle = {
     ...SEQUENCE_BADGE_STYLE,
-    background: sequenceColor || '#1f718c',
+    color: sequenceColor || '#1f718c',
   };
 
   return (

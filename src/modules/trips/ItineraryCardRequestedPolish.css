@@ -108,3 +108,13 @@
   visibility: visible !important;
   pointer-events: auto !important;
 }
+
+/* El monto recorta el "$" y la coma con interlineado 1.2 y overflow oculto:
+   se da aire vertical sin cambiar tamaño ni peso. */
+.editor:not(.is-panel-collapsed)
+  .editor__body > .segments.itinerary-cards
+  .itinerary-card__side .itinerary-card__amount.itinerary-stop__amount {
+  line-height: 1.5 !important;
+  padding-block: 1px !important;
+  overflow: visible !important;
+}

@@ -209,3 +209,27 @@ test('el itinerario de transporte lista estaciones, tramos y transbordos sin rep
   assert.equal(transitVehicleKey('SUBWAY'), 'transitVehicleSubway');
   assert.equal(transitVehicleKey('ROCKET'), '');
 });
+
+test('cada ciudad usa su monumento, si no un icono genérico de su tipo o región, y si no el de ciudad', async () => {
+  const { CITY_ICONS, CITY_TYPE_ICONS, cityTypeFor, cityTypeIcon } = await import('../src/modules/trips/cityTypeIcons.js');
+  const tones = new Set(['mid', 'deep', 'soft', 'white', 'wave']);
+  for (const [type, shapes] of Object.entries(CITY_ICONS)) {
+    assert.ok(shapes.length >= 3, `${type} tiene formas`);
+    shapes.forEach((shape) => {
+      assert.ok(tones.has(shape.tone), `${type} usa tonos conocidos`);
+      assert.match(shape.d, /^M[-\d.]/, `${type} tiene trazados válidos`);
+      assert.doesNotMatch(shape.d, /NaN|undefined|\d\.\d{3,}/, `${type} no tiene números rotos`);
+    });
+  }
+  assert.equal(cityTypeFor({ name: 'Paris' }), 'eiffel');
+  assert.equal(cityTypeFor({ name: 'Berlín' }), 'brandenburg');
+  assert.equal(cityTypeFor({ name: 'Ámsterdam' }), 'canalHouses');
+  assert.equal(cityTypeFor({ name: 'Brujas' }), 'belfry');
+  assert.equal(cityTypeFor({ name: 'Gante' }), 'castle');
+  assert.equal(cityTypeFor({ name: 'Ciudad de México' }), 'victoryColumn');
+  assert.equal(cityTypeFor({ name: 'Núremberg' }), 'timbered');
+  assert.equal(cityTypeFor({ displayName: 'Oaxaca, México' }), 'colonial');
+  assert.equal(cityTypeFor({ name: 'Sapporo', countryCode: 'jp' }), 'pagoda');
+  assert.equal(cityTypeFor({ name: 'Boston', countryCode: 'US' }), 'city');
+  assert.equal(cityTypeIcon('nope'), CITY_TYPE_ICONS.city);
+});
