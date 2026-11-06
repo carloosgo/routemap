@@ -52,7 +52,8 @@ test('el mapa agrupa transporte y lugares de otros días en un único control Ca
   // Mismo zoom nativo que el Itinerario; Capas, circular, en la esquina bajo + / −.
   assert.doesNotMatch(map, /zoomControl: !placesActive/);
   assert.match(map, /zoomControlOptions: \{ position: maps\.ControlPosition\?\.RIGHT_BOTTOM \}/);
-  assert.match(map, /map\.controls\[maps\.ControlPosition\.BOTTOM_RIGHT\]/);
+  assert.doesNotMatch(map, /map\.controls\[maps\.ControlPosition\.BOTTOM_RIGHT\]/);
+  assert.match(map, /className="map-layers-capsule"/);
   assert.match(map, /borderRadius: '50%'/);
   assert.doesNotMatch(map, /IconBus/);
 });
