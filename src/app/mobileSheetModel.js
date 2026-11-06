@@ -4,7 +4,7 @@
 export const SHEET_SNAPS = ['low', 'mid', 'high'];
 const SHEET_LOW_PX = 112;
 const SHEET_MAP_PEEK_PX = 120;
-const SHEET_DRAG_THRESHOLD_PX = 36;
+const SHEET_DRAG_THRESHOLD_PX = 24;
 
 export function sheetSnapHeights(stageHeight) {
   const height = Math.max(0, Number(stageHeight) || 0);
@@ -13,10 +13,11 @@ export function sheetSnapHeights(stageHeight) {
   return { low: Math.min(SHEET_LOW_PX, high), mid, high };
 }
 
-export function nextSheetSnap(current, startHeight, endHeight, heights) {
+export function nextSheetSnap(current, startHeight, endHeight, heights, { tapToggles = true } = {}) {
   const delta = endHeight - startHeight;
   const index = SHEET_SNAPS.indexOf(current);
   if (Math.abs(delta) < SHEET_DRAG_THRESHOLD_PX) {
+    if (!tapToggles) return current;
     // Un toque en el asa alterna entre media altura y arriba.
     return current === 'high' ? 'mid' : current === 'low' ? 'mid' : 'high';
   }

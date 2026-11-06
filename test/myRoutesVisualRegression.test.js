@@ -49,6 +49,10 @@ test('el mapa agrupa transporte y lugares de otros días en un único control Ca
   assert.match(map, /t\('mapLayers'\)/);
   assert.match(map, /t\('mapLayerTransit'\)/);
   assert.match(map, /t\('mapLayerOtherDays'\)/);
-  assert.match(map, /map\.setOptions\?\.\(\{ zoomControl: !placesActive \}\)/);
+  // Mismo zoom nativo que el Itinerario; Capas, circular, en la esquina bajo + / −.
+  assert.doesNotMatch(map, /zoomControl: !placesActive/);
+  assert.match(map, /zoomControlOptions: \{ position: maps\.ControlPosition\?\.RIGHT_BOTTOM \}/);
+  assert.match(map, /map\.controls\[maps\.ControlPosition\.BOTTOM_RIGHT\]/);
+  assert.match(map, /borderRadius: '50%'/);
   assert.doesNotMatch(map, /IconBus/);
 });

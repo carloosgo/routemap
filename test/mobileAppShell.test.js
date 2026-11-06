@@ -44,7 +44,8 @@ test('la hoja móvil tiene tres alturas y se ajusta al arrastrar o tocar el asa'
   assert.equal(nextSheetSnap('high', 612, 612, heights), 'mid', 'tocar arriba baja a media');
   assert.equal(nextSheetSnap('mid', 366, 600, heights), 'high');
   assert.equal(nextSheetSnap('mid', 366, 130, heights), 'low');
-  assert.equal(nextSheetSnap('mid', 366, 410, heights), 'high', 'un arrastre corto avanza una altura');
+  assert.equal(nextSheetSnap('mid', 366, 400, heights), 'high', 'un arrastre corto (≥ 24 px) avanza una altura');
+  assert.equal(nextSheetSnap('mid', 366, 380, heights, { tapToggles: false }), 'mid', 'un roce del dedo no mueve la hoja');
   assert.equal(nextSheetSnap('high', 612, 120, heights), 'low');
   assert.deepEqual(sheetSnapHeights(0), { low: 112, mid: 112, high: 112 });
 });

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { IconMinus, IconPlus, IconStack2 } from '@tabler/icons-react';
+import { IconStack2 } from '@tabler/icons-react';
 import { config, colorForIndex, countryColorForIndex } from '../../config.js';
 import { useTranslation } from '../../i18n/index.jsx';
 import { loadGooglePlaceLocations } from '../places/googlePlacesClient.js';
@@ -42,32 +42,21 @@ function toGooglePath(coordinates) {
     .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lng));
 }
 
+// Capas: botón circular de 40 px, mismo tamaño que los botones nativos de zoom.
 const controlButtonStyle = (active = false) => ({
   display: 'inline-flex',
-  height: 40,
-  alignItems: 'center',
-  gap: 8,
-  padding: '0 14px 0 12px',
-  border: 0,
-  borderRadius: 10,
-  background: active ? '#0b1f2c' : '#ffffff',
-  color: active ? '#ffffff' : '#0b1f2c',
-  font: '600 13px var(--font-body)',
-  boxShadow: '0 2px 8px rgba(15, 23, 42, 0.16)',
-  cursor: 'pointer',
-});
-const zoomButtonStyle = {
-  display: 'flex',
   width: 40,
   height: 40,
   alignItems: 'center',
   justifyContent: 'center',
   padding: 0,
   border: 0,
-  background: '#ffffff',
-  color: '#3b4556',
+  borderRadius: '50%',
+  background: active ? '#0b1f2c' : '#ffffff',
+  color: active ? '#ffffff' : '#0b1f2c',
+  boxShadow: '0 2px 8px rgba(15, 23, 42, 0.16)',
   cursor: 'pointer',
-};
+});
 
 function placeLabel(place, t) {
   return place.name || place.userLabel || t('place');
@@ -374,6 +363,7 @@ export function GooglePlacesMap({
           renderingType: RenderingType.VECTOR,
           mapTypeControl: false,
           zoomControl: true,
+          zoomControlOptions: { position: maps.ControlPosition?.RIGHT_BOTTOM },
           streetViewControl: false,
           fullscreenControl: false,
           rotateControl: false,
@@ -950,12 +940,13 @@ export function GooglePlacesMap({
     const map = mapRef.current;
     const maps = globalThis.google?.maps;
     if (!map || !ready || !maps?.ControlPosition) return undefined;
-    // En Mis rutas el zoom vive junto a «Capas», con el mismo lenguaje visual.
-    map.setOptions?.({ zoomControl: !placesActive });
+    // Mis rutas usa el mismo zoom nativo que el Itinerario (tamaño, estilo y
+    // posición). «Capas» va en BOTTOM_RIGHT, la esquina, y Google coloca los
+    // controles RIGHT_BOTTOM (el zoom) encima: Capas queda debajo de + / −.
     if (!placesActive) return undefined;
     const node = document.createElement('div');
     node.style.margin = '0 10px 10px 0';
-    const controls = map.controls[maps.ControlPosition.RIGHT_BOTTOM];
+    const controls = map.controls[maps.ControlPosition.BOTTOM_RIGHT];
     controls.push(node);
     setLayersControlNode(node);
     return () => {
@@ -1015,7 +1006,7 @@ export function GooglePlacesMap({
             <div
               role="dialog"
               aria-label={t('mapLayers')}
-              style={{ position: 'absolute', right: 48, bottom: 48, width: 244, padding: 6, borderRadius: 12, background: '#ffffff', boxShadow: '0 6px 24px rgba(0, 0, 0, 0.16)' }}
+              style={{ position: 'absolute', right: 48, bottom: 0, width: 244, padding: 6, borderRadius: 12, background: '#ffffff', boxShadow: '0 6px 24px rgba(0, 0, 0, 0.16)' }}
             >
               <div style={{ padding: '8px 10px 6px', color: '#667085', fontSize: 11, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>{t('mapLayers')}</div>
               {[
@@ -1045,21 +1036,13 @@ export function GooglePlacesMap({
             type="button"
             aria-expanded={layersOpen}
             aria-haspopup="dialog"
+            aria-label={t('mapLayers')}
+            title={t('mapLayers')}
             onClick={() => setLayersOpen((value) => !value)}
             style={controlButtonStyle(layersOpen)}
           >
-            <IconStack2 size={17} stroke={1.8} aria-hidden="true" />
-            {t('mapLayers')}
+            <IconStack2 size={18} stroke={1.8} aria-hidden="true" />
           </button>
-          <div style={{ display: 'flex', flexDirection: 'column', borderRadius: 10, background: '#ffffff', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.16)', overflow: 'hidden' }}>
-            <button type="button" aria-label={t('zoomIn')} title={t('zoomIn')} style={zoomButtonStyle} onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() || 0) + 1)}>
-              <IconPlus size={17} aria-hidden="true" />
-            </button>
-            <span aria-hidden="true" style={{ height: 1, margin: '0 8px', background: '#eef0f2' }} />
-            <button type="button" aria-label={t('zoomOut')} title={t('zoomOut')} style={zoomButtonStyle} onClick={() => mapRef.current?.setZoom((mapRef.current.getZoom() || 0) - 1)}>
-              <IconMinus size={17} aria-hidden="true" />
-            </button>
-          </div>
         </div>,
         layersControlNode
       )}

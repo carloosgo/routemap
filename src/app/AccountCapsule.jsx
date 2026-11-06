@@ -39,12 +39,12 @@ export function AccountCapsule({ account, menuRef, open, onToggle, t }) {
         type="button"
         className={'account-capsule__button' + (open ? ' is-active' : '')}
         aria-label={`${t('account')}: ${user.email || label}`}
+        title={label}
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={onToggle}
       >
         <AccountAvatar user={user} />
-        <span className="account-capsule__name">{label}</span>
       </button>
 
       {open && (

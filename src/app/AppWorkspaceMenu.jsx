@@ -28,6 +28,7 @@ export function AppWorkspaceMenu({
           className={'editor-module__more-button' +
             (openMenu === 'workspace' ? ' is-active' : '')}
           aria-label={t('moreOptions')}
+          title={t('tripsMenu')}
           aria-expanded={openMenu === 'workspace'}
           onClick={() => setOpenMenu(openMenu === 'workspace' ? null : 'workspace')}
         >
