@@ -18,6 +18,7 @@ import { useItineraryFloatingPanels } from './app/useItineraryFloatingPanels.js'
 import { usePlacesFocus } from './app/usePlacesFocus.js';
 import { useOutsideClick, useSaveShortcut } from './app/useAppInteractions.js';
 import { useTripSaveFlow } from './app/useTripSaveFlow.js';
+import { useAccountMenu } from './app/useAccountMenu.js';
 import './App.css';
 import './app/FloatingEditor.css';
 
@@ -30,7 +31,7 @@ export default function App() {
   const itineraryPanels = useItineraryFloatingPanels();
   const { trip, loadTrip, setCurrency, updateSegment, updateExpenses, updateOriginDetails, updateOriginExpenses, addPlace } = tripStore;
   const placesFocus = usePlacesFocus({ tripId: trip.id, segments: trip.segments, places: trip.places || [], t });
-  const { getTrip, getActiveTripDraft, stageTrip, getTripPersistenceState, saveTrip, deleteTrip, importLocalTrips, getLocalTripCount } = savedTrips;
+  const { getTrip, getActiveTripDraft, stageTrip, getTripPersistenceState, saveTrip, deleteTrip } = savedTrips;
   const [toast, setToast] = useState('');
   const [mobileView, setMobileView] = useState('form');
   const [activeTab, setActiveTab] = useState('segments');
@@ -91,33 +92,7 @@ export default function App() {
     t,
   });
 
-  const handleGoogleSignIn = useCallback(async () => {
-    try {
-      await auth.signInWithGoogle();
-      setOpenMenu(null);
-      showToast(t('signedIn'));
-    } catch {
-      showToast(t('signInError'), 3000);
-    }
-  }, [auth, showToast, t]);
-
-  const handleSignOut = useCallback(async () => {
-    await auth.signOutUser();
-    setOpenMenu(null);
-    showToast(t('signedOut'));
-  }, [auth, showToast, t]);
-
-  const handleImportLocalTrips = useCallback(async () => {
-    const count = await getLocalTripCount();
-    if (count === 0) {
-      showToast(t('noLocalTrips'));
-      return;
-    }
-    if (!globalThis.confirm(t('confirmImportLocalTrips'))) return;
-    const imported = await importLocalTrips();
-    setOpenMenu(null);
-    showToast(`${t('importedTrips')}: ${imported}`);
-  }, [getLocalTripCount, importLocalTrips, showToast, t]);
+  const account = useAccountMenu({ auth, savedTrips, setOpenMenu, showToast, t });
 
   const handleOpenSavedTrip = useCallback(async (savedTrip) => {
     try {
@@ -166,18 +141,20 @@ export default function App() {
       setTripNameDraft={setTripNameDraft}
       closeTripNamePrompt={closeTripNamePrompt}
       tripNameMaxLength={TRIP_LIMITS.tripName}
-      authUser={auth.user}
-      authLoading={auth.loading}
-      onGoogleSignIn={handleGoogleSignIn}
-      onSignOut={handleSignOut}
-      onImportLocalTrips={handleImportLocalTrips}
     />
   );
+
+  const headerNavigation = {
+    activeTab,
+    setActiveTab,
+    routeCount: editorState.places?.length || 0,
+    checklistProgress: editorState.checklist?.length ? `${editorState.doneCount}/${editorState.checklist.length}` : '',
+  };
 
   const tripHeader = (
     <TripSummaryHeader
       trip={trip}
-      navigation={{ activeTab, setActiveTab, routeCount: editorState.places?.length || 0, checklistProgress: editorState.checklist?.length ? `${editorState.doneCount}/${editorState.checklist.length}` : '' }}
+      navigation={headerNavigation}
       setCurrency={setCurrency}
       locale={locale}
       setLocale={setLocale}
@@ -206,6 +183,7 @@ export default function App() {
       handleOpenSavedTrip={handleOpenSavedTrip}
       placesFocus={placesFocus}
       persistenceState={persistence.state}
+      account={account}
       t={t}
       intlLocale={intlLocale}
     />
@@ -241,6 +219,8 @@ export default function App() {
         setMobileView={setMobileView}
         desktopPanelCollapsed={desktopPanelCollapsed}
         setDesktopPanelCollapsed={setDesktopPanelCollapsed}
+        navigation={headerNavigation}
+        floatingPanelOpen={Boolean(itineraryPanels.noteTarget || itineraryPanels.detailsTarget)}
         t={t}
       />
       <TripDeleteDialog

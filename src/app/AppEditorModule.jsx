@@ -15,6 +15,7 @@ export function AppEditorModule({
   handleOpenSavedTrip,
   placesFocus,
   persistenceState = 'saved',
+  account,
   t,
   intlLocale,
 }) {
@@ -116,6 +117,7 @@ export function AppEditorModule({
         setOpenMenu={setOpenMenu}
         handleOpenSavedTrip={handleOpenSavedTrip}
         setTripToDelete={setTripToDelete}
+        account={account}
         intlLocale={intlLocale}
         t={t}
       />
