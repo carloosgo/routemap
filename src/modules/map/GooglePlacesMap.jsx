@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { IconStack2 } from '@tabler/icons-react';
 import { config, colorForIndex, countryColorForIndex } from '../../config.js';
 import { useTranslation } from '../../i18n/index.jsx';
@@ -228,7 +227,6 @@ export function GooglePlacesMap({
   const transitLayerRef = useRef(null);
   const routeBadgeMarkersRef = useRef([]);
   const lastFocusedDayRef = useRef(undefined);
-  const [layersControlNode, setLayersControlNode] = useState(null);
   const [layersOpen, setLayersOpen] = useState(false);
   const [transitLayerOn, setTransitLayerOn] = useState(false);
   const [showOtherDays, setShowOtherDays] = useState(true);
@@ -939,26 +937,6 @@ export function GooglePlacesMap({
   useEffect(() => {
     const map = mapRef.current;
     const maps = globalThis.google?.maps;
-    if (!map || !ready || !maps?.ControlPosition) return undefined;
-    // Mis rutas usa el mismo zoom nativo que el Itinerario (tamaño, estilo y
-    // posición). «Capas» va en BOTTOM_RIGHT, la esquina, y Google coloca los
-    // controles RIGHT_BOTTOM (el zoom) encima: Capas queda debajo de + / −.
-    if (!placesActive) return undefined;
-    const node = document.createElement('div');
-    node.style.margin = '0 10px 10px 0';
-    const controls = map.controls[maps.ControlPosition.BOTTOM_RIGHT];
-    controls.push(node);
-    setLayersControlNode(node);
-    return () => {
-      const index = controls.getArray().indexOf(node);
-      if (index >= 0) controls.removeAt(index);
-      setLayersControlNode(null);
-    };
-  }, [placesActive, ready]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    const maps = globalThis.google?.maps;
     if (!map || !ready || !maps?.TransitLayer) return;
     if (!transitLayerRef.current) transitLayerRef.current = new maps.TransitLayer();
     transitLayerRef.current.setMap(transitLayerOn && placesActive ? map : null);
@@ -1000,13 +978,16 @@ export function GooglePlacesMap({
       {saveNotice && (
         <div className="toast" role="status" aria-live="polite">{saveNotice}</div>
       )}
-      {layersControlNode && createPortal(
-        <div data-map-layers style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', gap: 8, fontFamily: 'var(--font-body)' }}>
+      {/* «Capas» vive en la columna de círculos (Cuenta, Guardar, ⋯), justo
+          debajo de ⋯; MapCapsules.css fija su posición. */}
+      {placesActive && ready && (
+        <div className="map-layers-capsule" data-map-layers>
           {layersOpen && (
             <div
               role="dialog"
               aria-label={t('mapLayers')}
-              style={{ position: 'absolute', right: 48, bottom: 0, width: 244, padding: 6, borderRadius: 12, background: '#ffffff', boxShadow: '0 6px 24px rgba(0, 0, 0, 0.16)' }}
+              className="map-layers-capsule__menu"
+              style={{ position: 'absolute', right: 50, top: 0, width: 244, padding: 6, borderRadius: 12, background: '#ffffff', boxShadow: '0 6px 24px rgba(0, 0, 0, 0.16)' }}
             >
               <div style={{ padding: '8px 10px 6px', color: '#667085', fontSize: 11, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>{t('mapLayers')}</div>
               {[
@@ -1043,8 +1024,7 @@ export function GooglePlacesMap({
           >
             <IconStack2 size={18} stroke={1.8} aria-hidden="true" />
           </button>
-        </div>,
-        layersControlNode
+        </div>
       )}
     </div>
   );

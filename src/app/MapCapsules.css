@@ -259,3 +259,27 @@
     width: min(260px, calc(100vw - 78px));
   }
 }
+
+/* Mis Rutas: «Capas» es el siguiente círculo de la columna, bajo ⋯ (web y app). */
+.map-layers-capsule {
+  position: fixed;
+  top: calc(var(--trip-header-height, 63px) + 164px);
+  right: 14px;
+  z-index: 901;
+  display: flex;
+  font-family: var(--font-body);
+}
+
+@media (max-width: 720px) {
+  /* El buscador de lugares deja libre la columna de círculos. */
+  .app .geo-search {
+    left: 12px;
+    right: 64px;
+    width: auto;
+    transform: none;
+  }
+
+  .map-layers-capsule__menu {
+    width: min(244px, calc(100vw - 78px)) !important;
+  }
+}
