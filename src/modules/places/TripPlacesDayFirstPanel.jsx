@@ -57,7 +57,7 @@ const MY_ROUTES_STYLES = `
 .mr__row:focus-visible{box-shadow:inset 0 0 0 2px #19a5d0}
 .mr__title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mr__title strong{font-weight:600}
-.mr__title small{color:#667085;font-size:13px;font-weight:500}
+.mr__title small{color:#667085;font-size:12px;font-weight:500}
 .mr__summary{color:#5b6080;font-size:12px;white-space:nowrap}
 .mr__head{display:flex;min-height:50px;align-items:center;gap:6px;padding-right:12px;background:#f1f8f7}.mr__head .mr__row{flex:1;min-width:0;min-height:50px;grid-template-columns:minmax(0,1fr) auto;background:transparent}.mr__head .mr__row:hover{background:transparent}
 
