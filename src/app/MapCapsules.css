@@ -71,12 +71,6 @@
   outline-offset: 2px;
 }
 
-.account-capsule__name {
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .account-capsule__menu {
   position: absolute;
@@ -238,10 +232,6 @@
   .account-capsule__button:hover,
   .account-capsule__button.is-active {
     background: transparent;
-  }
-
-  .account-capsule__name {
-    display: none;
   }
 
   .account-capsule__menu {
