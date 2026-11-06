@@ -59,8 +59,6 @@
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
-    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
-    mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
   }
 
   .trip-summary__metrics::-webkit-scrollbar {
@@ -91,8 +89,15 @@
     font-size: 13px;
   }
 
+  /* Desglose del total: fijo bajo la cabecera para escapar del recorte de la
+     tira desplazable de métricas (sin máscara: una máscara recortaría también
+     a este hijo fijo y el desplegable no se vería). */
   .trip-summary__breakdown {
+    position: fixed;
     top: calc(var(--trip-header-height) + 8px);
+    right: 10px;
+    left: 10px;
+    width: auto;
   }
 
   /* ===== Menú ⋮ integrado en la cabecera ===== */
