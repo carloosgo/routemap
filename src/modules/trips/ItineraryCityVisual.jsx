@@ -1,51 +1,45 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { cityLandmarkGlyph } from './cityLandmarkGlyphs.js';
+import { cityTypeFor, cityTypeIcon } from './cityTypeIcons.js';
 import { loadGooglePlacePhoto } from '../places/googlePlacePhotoClient.js';
 import { searchGooglePlaces } from '../places/googlePlacesClient.js';
 
 const cityPhotoCache = new Map();
 const pendingCityPhotos = new Map();
 
+// Tres tonos del color de la parada para los iconos propios por tipo de ciudad.
 const VISUAL_STYLE = Object.freeze({
   '--city-visual-accent': '#475467',
+  '--city-icon-mid': 'var(--city-visual-accent)',
+  '--city-icon-deep': 'color-mix(in srgb, var(--city-visual-accent) 62%, #0b1f2c)',
+  '--city-icon-soft': 'color-mix(in srgb, var(--city-visual-accent) 42%, #ffffff)',
+  '--city-icon-white': '#ffffff',
   position: 'absolute',
   inset: 0,
   display: 'grid',
   placeItems: 'center',
   overflow: 'hidden',
   borderRadius: 'inherit',
-  background: 'var(--city-visual-accent)',
-  color: '#ffffff',
+  background: 'color-mix(in srgb, var(--city-visual-accent) 13%, #ffffff)',
 });
 
-const GLYPH_STYLE = Object.freeze({
-  width: '46px',
-  height: '46px',
-  transform: 'translateY(3px)',
+const ICON_STYLE = Object.freeze({
+  width: '78%',
+  height: '78%',
+  transform: 'translateY(4%)',
   pointerEvents: 'none',
 });
 
-/** Silueta del lugar emblemático de la ciudad, en blanco sobre su color de parada. */
-function VisualIcon({ kind }) {
+/** Icono propio de Atlas según el tipo de ciudad (costa, montaña, canales…). */
+function VisualIcon({ type }) {
   return (
-    <svg viewBox="0 0 24 24" style={GLYPH_STYLE} aria-hidden="true">
-      {cityLandmarkGlyph(kind).map((shape, index) => {
-        if (typeof shape === 'string') return <path key={index} d={shape} fill="currentColor" fillRule="evenodd" />;
-        if (shape.line) {
-          return <path key={index} d={shape.line} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />;
-        }
-        return <circle key={index} cx={shape.cx} cy={shape.cy} r={shape.r} fill="currentColor" />;
-      })}
+    <svg viewBox="0 0 48 48" style={ICON_STYLE} aria-hidden="true">
+      {cityTypeIcon(type).map((shape, index) => (
+        shape.tone === 'wave'
+          ? <path key={index} d={shape.d} fill="none" stroke="var(--city-icon-white)" strokeWidth="1.6" strokeLinecap="round" />
+          : <path key={index} d={shape.d} fill={`var(--city-icon-${shape.tone})`} fillRule="evenodd" />
+      ))}
     </svg>
   );
-}
-
-function normalizeCityName(value) {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toLowerCase();
 }
 
 function cityPhotoKey(city) {
@@ -105,44 +99,19 @@ async function resolveCityPhoto(city) {
   }
 }
 
-export function itineraryCityVisualKind(city) {
-  const name = normalizeCityName(city?.name || city?.displayName);
-  if (!name) return 'generic';
-  if (name.includes('mexico city') || name.includes('ciudad de mexico') || name.includes('cdmx')) return 'metropolis';
-  if (name.includes('paris')) return 'paris';
-  if (name.includes('amsterdam')) return 'amsterdam';
-  if (name.includes('bruges') || name.includes('brujas')) return 'bruges';
-  if (name.includes('ghent') || name.includes('gante')) return 'ghent';
-  if (name.includes('brussels') || name.includes('bruselas')) return 'brussels';
-  if (name.includes('cologne') || name.includes('koln') || name.includes('colonia')) return 'cologne';
-  if (name.includes('berlin')) return 'berlin';
-  if (name.includes('munich') || name.includes('munchen')) return 'munich';
-  if (name.includes('nuremberg') || name.includes('nurnberg')) return 'nuremberg';
-  if (name.includes('bamberg')) return 'bamberg';
-  if (name.includes('rothenburg')) return 'rothenburg';
-  if (name.includes('london') || name.includes('londres')) return 'london';
-  if (name.includes('madrid')) return 'madrid';
-  if (name.includes('barcelona')) return 'barcelona';
-  if (name.includes('rome') || name.includes('roma')) return 'rome';
-  if (name.includes('venice') || name.includes('venecia') || name.includes('venezia')) return 'venice';
-  if (name.includes('prague') || name.includes('praga') || name.includes('praha')) return 'prague';
-  if (name.includes('vienna') || name.includes('viena') || name.includes('wien')) return 'vienna';
-  if (name.includes('frankfurt')) return 'frankfurt';
-  return 'generic';
-}
 
 
 export function ItineraryCityVisual({ city, accent }) {
   const hostRef = useRef(null);
-  const kind = itineraryCityVisualKind(city);
+  const type = cityTypeFor(city);
   const [shouldLoad, setShouldLoad] = useState(false);
   const [photo, setPhoto] = useState(null);
   const [photoFailed, setPhotoFailed] = useState(false);
   const key = cityPhotoKey(city);
   const hasCity = Boolean(String(city?.name || '').trim());
   const visualStyle = useMemo(() => {
-    // Tarjeta aún vacía: miniatura neutra con la silueta genérica en gris.
-    if (!hasCity) return { ...VISUAL_STYLE, background: '#eef1f3', color: '#b4bcc4' };
+    // Tarjeta aún vacía: miniatura neutra en gris.
+    if (!hasCity) return { ...VISUAL_STYLE, '--city-visual-accent': '#98a2b3' };
     return accent ? { ...VISUAL_STYLE, '--city-visual-accent': accent } : VISUAL_STYLE;
   }, [accent, hasCity]);
 
@@ -186,7 +155,7 @@ export function ItineraryCityVisual({ city, accent }) {
     <span
       ref={hostRef}
       className="itinerary-card-city-icon"
-      data-city-visual={kind}
+      data-city-visual={type}
       style={visualStyle}
       aria-hidden="true"
     >
@@ -209,7 +178,7 @@ export function ItineraryCityVisual({ city, accent }) {
           />
         </a>
       ) : (
-        <VisualIcon kind={hasCity ? kind : 'generic'} />
+        <VisualIcon type={type} />
       )}
     </span>
   );

@@ -210,16 +210,20 @@ test('el itinerario de transporte lista estaciones, tramos y transbordos sin rep
   assert.equal(transitVehicleKey('ROCKET'), '');
 });
 
-test('cada ciudad conocida tiene su silueta emblemática y las demás una silueta genérica de ciudad', async () => {
-  const { CITY_LANDMARK_GLYPHS, cityLandmarkGlyph } = await import('../src/modules/trips/cityLandmarkGlyphs.js');
-  for (const kind of Object.keys(CITY_LANDMARK_GLYPHS)) {
-    const shapes = cityLandmarkGlyph(kind);
-    assert.ok(Array.isArray(shapes) && shapes.length > 0, `${kind} tiene formas`);
-    shapes.forEach((shape) => assert.ok(
-      typeof shape === 'string' || typeof shape.line === 'string' || Number.isFinite(shape.r),
-      `${kind} forma válida`
-    ));
+test('los iconos propios van por tipo de ciudad y cualquier ciudad desconocida usa el de ciudad', async () => {
+  const { CITY_TYPE_ICONS, cityTypeFor, cityTypeIcon } = await import('../src/modules/trips/cityTypeIcons.js');
+  const tones = new Set(['mid', 'deep', 'soft', 'white', 'wave']);
+  for (const [type, shapes] of Object.entries(CITY_TYPE_ICONS)) {
+    assert.ok(shapes.length >= 3, `${type} tiene formas`);
+    shapes.forEach((shape) => {
+      assert.ok(tones.has(shape.tone), `${type} usa tonos conocidos`);
+      assert.match(shape.d, /^M/, `${type} tiene trazados válidos`);
+    });
   }
-  assert.equal(cityLandmarkGlyph('rothenburg'), cityLandmarkGlyph('nuremberg'));
-  assert.equal(cityLandmarkGlyph('atlantis'), CITY_LANDMARK_GLYPHS.generic);
+  assert.equal(cityTypeFor({ name: 'Ámsterdam' }), 'waterfront');
+  assert.equal(cityTypeFor({ name: 'Brujas' }), 'waterfront');
+  assert.equal(cityTypeFor({ name: 'Gante' }), 'oldTown');
+  assert.equal(cityTypeFor({ name: 'Ciudad de México' }), 'metropolis');
+  assert.equal(cityTypeFor({ name: 'Villarrica' }), 'city');
+  assert.equal(cityTypeIcon('nope'), CITY_TYPE_ICONS.city);
 });

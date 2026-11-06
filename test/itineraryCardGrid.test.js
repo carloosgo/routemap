@@ -46,7 +46,7 @@ test('city thumbnail reuses existing Google Places search and photo infrastructu
   assert.match(visual, /cityPhotoCache/);
   assert.match(visual, /className="itinerary-card-city-photo"/);
   assert.doesNotMatch(visual, /itinerary-card-city-photo__attribution|>Google Maps</);
-  assert.match(visual, /from '.\/cityLandmarkGlyphs.js'/);
+  assert.match(visual, /from '.\/cityTypeIcons.js'/);
   assert.match(visual, /<VisualIcon/);
   assert.doesNotMatch(visual, /fetch\(|https?:\/\//);
 });
