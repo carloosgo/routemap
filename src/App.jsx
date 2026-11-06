@@ -32,7 +32,6 @@ export default function App({ auth }) {
   const placesFocus = usePlacesFocus({ tripId: trip.id, segments: trip.segments, places: trip.places || [], t });
   const { getTrip, getActiveTripDraft, stageTrip, getTripPersistenceState, saveTrip, deleteTrip } = savedTrips;
   const [toast, setToast] = useState('');
-  const [mobileView, setMobileView] = useState('form');
   const [activeTab, setActiveTab] = useState('segments');
   const [tripToDelete, setTripToDelete] = useState(null);
   const [deletePending, setDeletePending] = useState(false);
@@ -220,8 +219,6 @@ export default function App({ auth }) {
       <AppWorkspace
         editorModule={editorModule}
         mapPane={mapPane}
-        mobileView={mobileView}
-        setMobileView={setMobileView}
         desktopPanelCollapsed={desktopPanelCollapsed}
         setDesktopPanelCollapsed={setDesktopPanelCollapsed}
         navigation={headerNavigation}

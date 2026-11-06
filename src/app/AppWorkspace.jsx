@@ -1,24 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   IconChevronLeft,
   IconChevronRight,
   IconListDetails,
-  IconMap,
   IconNotebook,
   IconRoute,
 } from '@tabler/icons-react';
+import { nextSheetSnap, sheetSnapHeights } from './mobileSheetModel.js';
 import './DockedWorkspace.css';
 
 const MOBILE_MEDIA_QUERY = '(max-width: 720px)';
 
-// En móvil la navegación principal baja a una barra inferior tipo app:
-// las tres secciones del editor más el mapa, al alcance del pulgar.
+// En móvil la navegación principal baja a una barra inferior tipo app. No hay
+// pestaña Mapa: Itinerario y Mis Rutas muestran su propio mapa de fondo y la
+// lista va en una hoja deslizable encima (abajo / media / arriba).
 const MOBILE_TABS = [
   { id: 'segments', labelKey: 'itinerary', Icon: IconListDetails },
   { id: 'places', labelKey: 'myRoutes', Icon: IconRoute },
   { id: 'notes', labelKey: 'notes', Icon: IconNotebook },
-  { id: 'map', labelKey: 'map', Icon: IconMap },
 ];
+
+const MAP_SECTIONS = new Set(['segments', 'places']);
 
 function currentMobileViewport() {
   return typeof globalThis.matchMedia === 'function'
@@ -29,8 +31,6 @@ function currentMobileViewport() {
 export function AppWorkspace({
   editorModule,
   mapPane,
-  mobileView,
-  setMobileView,
   desktopPanelCollapsed,
   setDesktopPanelCollapsed,
   navigation = {},
@@ -38,18 +38,25 @@ export function AppWorkspace({
   t,
 }) {
   const { activeTab = 'segments', setActiveTab, checklistProgress = '' } = navigation;
-  const activeMobileTab = mobileView === 'map' ? 'map' : activeTab;
+  const sectionHasMap = MAP_SECTIONS.has(activeTab);
   const selectMobileTab = (id) => {
-    if (id === 'map') {
-      setMobileView('map');
-      return;
-    }
     setActiveTab?.(id);
-    setMobileView('form');
   };
+  const stageRef = useRef(null);
+  const dragRef = useRef(null);
+  const [stageHeight, setStageHeight] = useState(0);
+  const [sheetSnap, setSheetSnap] = useState('mid');
+  const [dragHeight, setDragHeight] = useState(null);
+  const snapHeights = sheetSnapHeights(stageHeight);
+  const sheetHeight = sectionHasMap
+    ? (dragHeight ?? snapHeights[sheetSnap])
+    : stageHeight;
+  // El mapa ocupa solo la zona visible sobre la hoja (con un pequeño solape
+  // bajo sus esquinas redondeadas) para que encuadre lo que se ve.
+  const mapHeight = Math.max(0, stageHeight - snapHeights[sheetSnap] + 18);
   const [mobileViewport, setMobileViewport] = useState(currentMobileViewport);
   const [mobileMapMounted, setMobileMapMounted] = useState(
-    () => !currentMobileViewport() || mobileView === 'map'
+    () => !currentMobileViewport() || sectionHasMap
   );
 
   useEffect(() => {
@@ -65,8 +72,42 @@ export function AppWorkspace({
     // Nota y datos del trayecto viven en el panel del mapa; en móvil se
     // muestran como hoja fija sobre la vista activa, así que el panel debe
     // existir aunque el mapa no se haya visitado.
-    if (!mobileViewport || mobileView === 'map' || floatingPanelOpen) setMobileMapMounted(true);
-  }, [mobileViewport, mobileView, floatingPanelOpen]);
+    if (!mobileViewport || sectionHasMap || floatingPanelOpen) setMobileMapMounted(true);
+  }, [mobileViewport, sectionHasMap, floatingPanelOpen]);
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!mobileViewport || !stage) return undefined;
+    const measure = () => setStageHeight(stage.clientHeight);
+    measure();
+    if (typeof ResizeObserver === 'undefined') {
+      globalThis.addEventListener?.('resize', measure);
+      return () => globalThis.removeEventListener?.('resize', measure);
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, [mobileViewport]);
+
+  const handleSheetPointerDown = (event) => {
+    if (!sectionHasMap) return;
+    dragRef.current = { startY: event.clientY, startHeight: snapHeights[sheetSnap] };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+  const handleSheetPointerMove = (event) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const next = drag.startHeight - (event.clientY - drag.startY);
+    setDragHeight(Math.min(snapHeights.high, Math.max(snapHeights.low, next)));
+  };
+  const handleSheetPointerUp = (event) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    dragRef.current = null;
+    const endHeight = drag.startHeight - (event.clientY - drag.startY);
+    setSheetSnap(nextSheetSnap(sheetSnap, drag.startHeight, endHeight, snapHeights));
+    setDragHeight(null);
+  };
 
   return (
     <main className="workspace">
@@ -92,16 +133,43 @@ export function AppWorkspace({
         </button>
         {!mobileViewport && mapPane}
       </div>
-      <div className="workspace__mobile">
-        <div className={'mobilepane' + (mobileView === 'form' ? ' is-active' : '')}>
-          {editorModule}
-        </div>
-        <div className={'mobilepane' + (mobileView === 'map' ? ' is-active' : '')}>
-          {mobileViewport && mobileMapMounted && mapPane}
+      <div
+        className={'workspace__mobile' + (sectionHasMap ? ' has-map' : ' is-sheet-only')}
+        data-sheet-snap={sectionHasMap ? sheetSnap : 'full'}
+      >
+        <div className="mobile-stage" ref={stageRef}>
+          <div
+            className="mobilepane is-active mobile-mapstage"
+            aria-hidden={sectionHasMap ? undefined : 'true'}
+            style={{ height: `${mapHeight}px` }}
+          >
+            {mobileViewport && mobileMapMounted && mapPane}
+          </div>
+          <section
+            className={'mobile-sheet' + (dragHeight != null ? ' is-dragging' : '')}
+            style={{ height: `${sheetHeight}px` }}
+          >
+            {sectionHasMap && (
+              <button
+                type="button"
+                className="mobile-sheet__handle"
+                aria-label={t(sheetSnap === 'high' ? 'collapse' : 'expand')}
+                onPointerDown={handleSheetPointerDown}
+                onPointerMove={handleSheetPointerMove}
+                onPointerUp={handleSheetPointerUp}
+                onPointerCancel={handleSheetPointerUp}
+              >
+                <span aria-hidden="true" />
+              </button>
+            )}
+            <div className="mobilepane is-active mobile-sheet__body">
+              {editorModule}
+            </div>
+          </section>
         </div>
         <nav className="mobiletabs" aria-label={t('itinerary')}>
           {MOBILE_TABS.map(({ id, labelKey, Icon }) => {
-            const isActive = activeMobileTab === id;
+            const isActive = activeTab === id;
             const badge = id === 'notes' ? checklistProgress : '';
             return (
               <button
