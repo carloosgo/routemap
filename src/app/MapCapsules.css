@@ -223,8 +223,13 @@
     display: block;
   }
 
+  /* Sin PDF en móvil: Compartir sube a su hueco. */
   .app .itinerary-pdf-export__button {
-    display: inline-flex;
+    display: none;
+  }
+
+  .app .itinerary-share__button {
+    top: calc(var(--trip-header-height, 63px) + 164px) !important;
   }
 
   .app .editor-module__settings > .editor-module__menu-anchor.editor-module__workspace-anchor {
