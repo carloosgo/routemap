@@ -23,7 +23,7 @@ import {
   routeLineLayers,
   transitBadgeElement,
 } from './myRoutesMapStyle.js';
-import { placeColor, placeCountryColors, placeDayIndex } from '../places/placesDayModel.js';
+import { placeColor, placeCountryColors, placeDayIndex, stopColor } from '../places/placesDayModel.js';
 import { useLiveRoutesVersion, withLiveGeometry } from '../routes/liveRouteStore.js';
 import { usePlaceSearch } from './usePlaceSearch.js';
 import { createWebglLandmarkOverlay } from './webglLandmarkOverlay.js';
@@ -749,9 +749,10 @@ export function GooglePlacesMap({
       const inFocus = !focusedPlaceIds || focusedPlaceIds.has(place.id);
       if (!inFocus && !showOtherDays) return;
       const selected = inFocus && selectedPlaceId === place.id;
+      const number = dayIndex.get(place.id)?.number || 0;
       const content = numberedPlaceMarker({
-        number: dayIndex.get(place.id)?.number || 0,
-        color: placeColor(place, planningSegmentById, placeColors),
+        number,
+        color: stopColor(number) || placeColor(place, planningSegmentById, placeColors),
         selected,
         muted: !inFocus,
         label: placeLabel(place, t),

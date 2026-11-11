@@ -12,6 +12,7 @@ import {
   itineraryAssignmentsByDay,
   placeCountryColors,
   placeDayIndex,
+  stopColor,
 } from '../src/modules/places/placesDayModel.js';
 import {
   clearLiveRoutesForTests,
@@ -232,4 +233,11 @@ test('cada ciudad usa su monumento, si no un icono genérico de su tipo o regió
   assert.equal(cityTypeFor({ name: 'Sapporo', countryCode: 'jp' }), 'pagoda');
   assert.equal(cityTypeFor({ name: 'Boston', countryCode: 'US' }), 'city');
   assert.equal(cityTypeIcon('nope'), CITY_TYPE_ICONS.city);
+});
+
+test('cada número de parada tiene su propio color', () => {
+  const colors = [1, 2, 3, 4, 5, 6].map(stopColor);
+  assert.equal(new Set(colors).size, colors.length);
+  colors.forEach((color) => assert.match(color, /^#[0-9a-f]{6}$/i));
+  assert.equal(stopColor(0), '');
 });

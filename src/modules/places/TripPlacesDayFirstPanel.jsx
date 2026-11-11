@@ -3,7 +3,6 @@ import {
   IconCheck,
   IconChevronDown,
   IconChevronRight,
-  IconGripVertical,
   IconMapPin,
   IconNote,
   IconX,
@@ -29,6 +28,7 @@ import {
   itineraryAssignmentsByDay,
   placeColor,
   placeCountryColors,
+  stopColor,
 } from './placesDayModel.js';
 import { TripRouteConnections, formatDuration } from './TripRouteConnections.jsx';
 import './TripPlacesPanel.css';
@@ -109,7 +109,7 @@ const MY_ROUTES_STYLES = `
 .mr-place.is-dragging{z-index:20;background:#fff;box-shadow:0 12px 28px rgba(15,23,42,.18);transform:translateY(var(--mr-drag-y,0));pointer-events:none}
 .mr-place.is-drop-before:before,.mr-place.is-drop-after:after{content:'';position:absolute;right:8px;left:40px;height:2px;border-radius:999px;background:var(--atlas-accent)}
 .mr-place.is-drop-before:before{top:-1px}.mr-place.is-drop-after:after{bottom:-1px}
-.mr-place__num{display:inline-flex;width:28px;height:28px;justify-self:center;align-items:center;justify-content:center;border-radius:50%;background:var(--mr-color);color:#fff;font-size:13px;font-weight:700;box-shadow:0 0 0 3px #fbfcfc,0 0 0 4px color-mix(in srgb,var(--mr-color) 30%,#fff)}
+.mr-place__num{display:inline-flex;width:28px;height:28px;justify-self:center;align-items:center;justify-content:center;border-radius:50%;background:var(--mr-color);color:#fff;font-size:13px;font-weight:700;line-height:1;box-shadow:0 0 0 3px #fbfcfc,0 0 0 4px color-mix(in srgb,var(--mr-color) 30%,#fff)}
 .mr-place.is-selected .mr-place__num{box-shadow:0 0 0 3px #e8f3f1,0 0 0 4.5px var(--mr-color)}
 .mr-place__num--none{background:#c9ced7}
 .mr-place__text{min-width:0}
@@ -121,12 +121,15 @@ const MY_ROUTES_STYLES = `
 .mr-place__actions button{display:inline-flex;width:30px;height:30px;align-items:center;justify-content:center;padding:0;border:0;border-radius:7px;background:transparent;color:#8a94a3;cursor:pointer}
 .mr-place__actions button:hover,.mr-place__actions button:focus-visible{background:#e6ecef;color:#0b1f2c;outline:none}
 .mr-place__actions .has-note{color:#0e4f63}
-.mr-place__actions .mr-place__drag{cursor:grab;touch-action:none}
-.mr-place__actions .mr-place__drag:active{cursor:grabbing}
-.mr-place__move{position:relative;display:inline-flex}
+.mr-place__move .mr-place__drag{padding:0;border:0;font-family:inherit;cursor:grab;touch-action:none}
+.mr-place__move .mr-place__drag:active{cursor:grabbing}
+.mr-place__move .mr-place__drag:focus-visible{outline:2px solid var(--mr-color);outline-offset:3px}
+.mr-place__move .mr-place__menu{right:auto;left:0}
+.mr-place__move{position:relative;display:inline-flex;justify-self:center}
 .mr-place__menu{position:absolute;z-index:80;top:34px;right:0;display:flex;width:min(290px,calc(100vw - 48px));max-height:260px;flex-direction:column;gap:2px;padding:6px;overflow-y:auto;border:1px solid #e2e4e9;border-radius:10px;background:#fff;box-shadow:0 12px 30px rgba(15,23,42,.16);cursor:default}
 .mr-place__menu strong{padding:4px 8px 6px;color:#667085;font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
-.mr-place__actions .mr-place__menu button{width:100%;height:auto;min-height:34px;justify-content:flex-start;padding:6px 8px;color:#0b1f2c;font:500 12.5px var(--font-body);text-align:left}
+.mr-place__menu button{display:flex;align-items:center;border:0;border-radius:7px;background:transparent;cursor:pointer;width:100%;height:auto;min-height:34px;justify-content:flex-start;padding:6px 8px;color:#0b1f2c;font:500 12.5px var(--font-body);text-align:left}
+.mr-place__menu button:hover,.mr-place__menu button:focus-visible{background:#e6ecef;outline:none}
 .mr-place__has-note-dot{position:absolute;top:8px;right:4px;width:6px;height:6px;border-radius:50%;background:#0e4f63}
 .mr-place:hover .mr-place__has-note-dot,.mr-place:focus-within .mr-place__has-note-dot,.mr-place.is-selected .mr-place__has-note-dot{display:none}
 .mr__transfer{margin:2px 0}
@@ -412,7 +415,7 @@ export function TripPlacesDayFirstPanel({
       ? ` is-drop-${placeDrag.placement}`
       : '';
     const selected = selectedPlaceId === place.id;
-    const color = placeColor(place, segmentById, colors);
+    const color = stopColor(number) || placeColor(place, segmentById, colors);
     const subtitle = placeSubtitle(place, segmentById);
 
     return (
@@ -426,48 +429,45 @@ export function TripPlacesDayFirstPanel({
           selectPlace?.(selected ? '' : place.id);
         }}
       >
-        <span className={'mr-place__num' + (number ? '' : ' mr-place__num--none')} aria-hidden="true">
-          {number || '·'}
+        <span className="mr-place__move" data-place-move-menu>
+          <button
+            type="button"
+            className={'mr-place__num mr-place__drag' + (number ? '' : ' mr-place__num--none')}
+            onPointerDown={(event) => startPlaceDrag(event, place.id)}
+            onClick={() => setMoveMenuPlaceId((current) => current === place.id ? '' : place.id)}
+            aria-label={t('movePlace')}
+            title={t('movePlace')}
+          >
+            {number || '·'}
+          </button>
+          {moveMenuPlaceId === place.id && (
+            <div className="mr-place__menu" role="menu">
+              <strong>{t('movePlaceTo')}</strong>
+              {calendarDays.map((day) => {
+                const cities = dayCityNames(assignmentsByDay.get(day.tripDayOffset));
+                if (!cities) return null;
+                return (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    key={day.date}
+                    onClick={() => {
+                      movePlaceToDay?.(place.id, day.tripDayOffset);
+                      setMoveMenuPlaceId('');
+                    }}
+                  >
+                    {`${t('day')} ${day.globalDayNumber} · ${formatDayDate(day.date, intlLocale, false)} · ${cities}`}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </span>
         <span className="mr-place__text">
           <strong>{placeTitle(place, t)}</strong>
           {subtitle && <small>{subtitle}</small>}
         </span>
         <span className="mr-place__actions">
-          <span className="mr-place__move" data-place-move-menu>
-            <button
-              type="button"
-              className="mr-place__drag"
-              onPointerDown={(event) => startPlaceDrag(event, place.id)}
-              onClick={() => setMoveMenuPlaceId((current) => current === place.id ? '' : place.id)}
-              aria-label={t('movePlace')}
-              title={t('movePlace')}
-            >
-              <IconGripVertical size={15} aria-hidden="true" />
-            </button>
-            {moveMenuPlaceId === place.id && (
-              <div className="mr-place__menu" role="menu">
-                <strong>{t('movePlaceTo')}</strong>
-                {calendarDays.map((day) => {
-                  const cities = dayCityNames(assignmentsByDay.get(day.tripDayOffset));
-                  if (!cities) return null;
-                  return (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      key={day.date}
-                      onClick={() => {
-                        movePlaceToDay?.(place.id, day.tripDayOffset);
-                        setMoveMenuPlaceId('');
-                      }}
-                    >
-                      {`${t('day')} ${day.globalDayNumber} · ${formatDayDate(day.date, intlLocale, false)} · ${cities}`}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </span>
           <button
             type="button"
             className={place.note ? 'has-note' : ''}
@@ -597,7 +597,7 @@ export function TripPlacesDayFirstPanel({
                 cities={dayCities(day.assignments)}
                 places={day.places}
                 routeFor={routeFor}
-                colorFor={(place) => placeColor(place, segmentById, colors)}
+                colorFor={(place) => stopColor(day.places.indexOf(place) + 1) || placeColor(place, segmentById, colors)}
                 t={t}
                 intlLocale={intlLocale}
               />

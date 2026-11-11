@@ -8,7 +8,6 @@
 
 .itinerary-card-toolbar {
   position: relative;
-  z-index: 40;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -16,6 +15,12 @@
   box-sizing: border-box;
   width: 100%;
   padding: 8px 10px 3px;
+}
+
+/* Solo sube por encima de las cards mientras el buscador está abierto (para
+   que su lista se vea). Cerrado no compite con la nota ni con los costos. */
+.itinerary-card-toolbar:has(.itinerary-add-city.is-open) {
+  z-index: 40;
 }
 
 .itinerary-add-city {

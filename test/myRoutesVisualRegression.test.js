@@ -28,7 +28,9 @@ test('cada parada muestra su número del día, sin miniatura de Street View', as
   const panel = await read('src/modules/places/TripPlacesDayFirstPanel.jsx');
 
   assert.match(panel, /renderPlace\(place, index \+ 1\)/);
-  assert.match(panel, /className=\{'mr-place__num'/);
+  // El número es también el asa para arrastrar el lugar (sin icono de puntitos).
+  assert.match(panel, /className=\{'mr-place__num mr-place__drag'/);
+  assert.doesNotMatch(panel, /IconGripVertical/);
   assert.doesNotMatch(panel, /StreetViewThumbnail|PlacePhotoThumbnail/);
 });
 
