@@ -82,3 +82,10 @@ test('el link corto vive en /share/dia/<id> con lectura pública solo por get', 
   assert.match(block, /request\.auth\.uid == request\.resource\.data\.ownerId/);
   assert.match(block, /allow update, delete: if false/);
 });
+
+test('el diagnóstico local refleja las condiciones de las reglas', async () => {
+  const { dayShareModelIssues } = await import('../src/modules/share/dayRouteShare.js');
+  const model = buildPublicDayShareModel({ title: 'Día 1', subtitle: '', places: [place(1)], routeFor: () => null });
+  assert.deepEqual(dayShareModelIssues(model), []);
+  assert.deepEqual(dayShareModelIssues({ ...model, places: [] }), ['places:0']);
+});
