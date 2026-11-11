@@ -182,7 +182,6 @@ export default {
   sharedDayOpenMaps: 'Abrir ruta en Google Maps',
   sharedDayOpenMapsPart: 'Abrir ruta en Google Maps · parte {number}',
   sharedDayPlacesCount: '{count} lugares',
-  sharedDayNoMode: 'Sin ruta elegida',
   shareItinerary: 'Compartir itinerario',
   shareItineraryError: 'No fue posible crear la vista compartida. Intenta de nuevo.',
   shareSignInRequired: 'Inicia sesión para compartir este viaje.',
