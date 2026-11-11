@@ -15,6 +15,7 @@ import {
 } from '../trips/globalTripDayPlanning.js';
 import { savedPlaceRoutePairKey } from '../routes/routeModel.js';
 import { useLiveRoutesVersion, withLiveGeometry } from '../routes/liveRouteStore.js';
+import { capitalizeFirst } from '../../shared/utils.js';
 import { DayShareButton } from './DayShareButton.jsx';
 import { NextCityTransfer } from './NextCityTransfer.jsx';
 import { cityTransfers } from './cityTransferModel.js';
@@ -139,9 +140,19 @@ const UNASSIGNED_KEY = 'unassigned';
 
 function dayCityNames(assignments) {
   const names = (assignments || [])
-    .map(({ destination }) => destination?.name || '')
+    .map(({ destination }) => capitalizeFirst(destination?.name))
     .filter(Boolean);
   return [...new Set(names)].join(' / ');
+}
+
+function dayCities(assignments) {
+  const seen = new Set();
+  return (assignments || []).flatMap(({ destination }) => {
+    const name = capitalizeFirst(destination?.name);
+    if (!name || seen.has(name)) return [];
+    seen.add(name);
+    return [{ name, countryCode: destination?.countryCode || '' }];
+  });
 }
 
 function persistenceLabelKey(state) {
@@ -157,18 +168,20 @@ function formatDayDate(value, intlLocale, long = true) {
     : { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(date);
 }
 
+// Los nombres se muestran con mayúscula inicial aunque se hayan guardado en minúsculas.
 function placeTitle(place, t) {
-  return place?.name || place?.userLabel || t('place');
+  return capitalizeFirst(place?.name || place?.userLabel) || t('place');
 }
 
 function placeSubtitle(place, segmentById) {
   const destination = segmentById.get(place?.segmentId)?.destination || null;
   const city = place?.city || destination?.name || '';
-  const parts = [place?.category, city].map((value) => String(value || '').trim()).filter(Boolean);
+  const parts = [place?.category, city].map((value) => capitalizeFirst(value)).filter(Boolean);
   return [...new Set(parts)].join(' · ');
 }
 
 export function TripPlacesDayFirstPanel({
+  tripId = '',
   segments = [],
   places = [],
   routes = [],
@@ -577,8 +590,11 @@ export function TripPlacesDayFirstPanel({
             </button>
             {day.places.length > 0 && (
               <DayShareButton
+                tripId={tripId}
+                date={day.date}
                 title={date ? `${title} · ${date}` : title}
                 subtitle={dayCityNames(day.assignments)}
+                cities={dayCities(day.assignments)}
                 places={day.places}
                 routeFor={routeFor}
                 colorFor={(place) => placeColor(place, segmentById, colors)}
@@ -650,7 +666,7 @@ export function TripPlacesDayFirstPanel({
             <div key={group.key}>
               <div className="mr__city">
                 {flag && <img src={flag} alt="" width={16} height={11} />}
-                {destination?.name || t('city')}
+                {capitalizeFirst(destination?.name) || t('city')}
                 <small>{t(group.days.length === 1 ? 'dayCountOne' : 'dayCountMany', { count: group.days.length })}</small>
               </div>
               {group.days.map((day) => renderDay(day, groupColor))}

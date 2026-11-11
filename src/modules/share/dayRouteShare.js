@@ -228,7 +228,7 @@ function publicRouteParts(segments) {
  * Copia pública del día: solo lo necesario para verlo. No incluye notas,
  * gastos, ids internos ni el resto del viaje.
  */
-export function buildPublicDayShareModel({ title, subtitle, places, routeFor, colorFor }) {
+export function buildPublicDayShareModel({ title, subtitle, cities = [], places, routeFor, colorFor }) {
   const stops = (places || []).filter(hasCoordinates).slice(0, MAX_SHARED_PLACES);
   const legs = [];
   for (let index = 0; index < stops.length - 1; index += 1) {
@@ -246,6 +246,10 @@ export function buildPublicDayShareModel({ title, subtitle, places, routeFor, co
   return {
     title: cleanText(title, 160),
     subtitle: cleanText(subtitle, 200),
+    cities: (Array.isArray(cities) ? cities : []).slice(0, 20).map((city) => ({
+      name: cleanText(city?.name, 120),
+      countryCode: /^[a-z]{2}$/i.test(String(city?.countryCode || '')) ? city.countryCode.toUpperCase() : '',
+    })).filter((city) => city.name),
     places: stops.map((place, index) => ({
       number: index + 1,
       name: cleanText(placeName(place), 160),
@@ -267,8 +271,9 @@ export function buildPublicDayShareModel({ title, subtitle, places, routeFor, co
  */
 export function dayShareModelIssues(model) {
   const issues = [];
-  const keys = Object.keys(model || {}).sort().join(',');
+  const keys = Object.keys(model || {}).filter((key) => key !== 'cities').sort().join(',');
   if (keys !== 'legs,mapsLinks,places,subtitle,title') issues.push(`keys:${keys}`);
+  if (model?.cities !== undefined && (!Array.isArray(model.cities) || model.cities.length > 20)) issues.push('cities');
   if (typeof model?.title !== 'string' || model.title.length > 160) issues.push('title');
   if (typeof model?.subtitle !== 'string' || model.subtitle.length > 200) issues.push('subtitle');
   if (!Array.isArray(model?.places) || model.places.length < 1 || model.places.length > 60) {

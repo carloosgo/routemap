@@ -95,3 +95,9 @@ export function sanitizeMultilineText(value, maxLen = 120) {
   const normalized = value.replace(/\r\n?/g, '\n');
   return stripControlCharacters(normalized, true).slice(0, maxLen);
 }
+
+/** Primera letra en mayúscula para mostrar nombres guardados en minúsculas. */
+export function capitalizeFirst(value, locale) {
+  const text = String(value ?? '').trim();
+  return text ? text.charAt(0).toLocaleUpperCase(locale) + text.slice(1) : '';
+}

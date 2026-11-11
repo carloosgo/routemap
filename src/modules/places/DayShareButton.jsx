@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { IconCheck, IconLoader2, IconShare } from '@tabler/icons-react';
 import { buildPublicDayShareModel, dayShareModelIssues } from '../share/dayRouteShare.js';
-import { createDayShare, dayShareUrl } from '../share/dayShareRepository.js';
+import { dayShareUrl, publishDayShare, syncDayShareIfShared } from '../share/dayShareRepository.js';
 import { loadGooglePlaceLocations } from './googlePlacesClient.js';
 
 function hasPoint(place) {
@@ -47,9 +47,76 @@ async function copyText(value) {
  * Botón «Compartir día» de Mis rutas: guarda una copia pública del día y
  * comparte su link corto (hoja nativa en iPhone; si no, lo copia).
  */
-export function DayShareButton({ title, subtitle, places, routeFor, colorFor, t, intlLocale }) {
+const SYNC_DELAY_MS = 1500;
+
+async function buildModel({ title, subtitle, cities, places, routeFor, colorFor }) {
+  const located = await placesWithCoordinates(places);
+  // Las rutas y colores se buscan por id: se mapean al lugar original.
+  const originalById = new Map((places || []).map((place) => [place.id, place]));
+  const original = (place) => originalById.get(place?.id) || place;
+  return buildPublicDayShareModel({
+    title,
+    subtitle,
+    cities,
+    places: located,
+    routeFor: (from, to) => routeFor?.(original(from), original(to)),
+    colorFor: (place) => colorFor?.(original(place)),
+  });
+}
+
+export function DayShareButton({
+  tripId,
+  date,
+  title,
+  subtitle,
+  cities,
+  places,
+  routeFor,
+  colorFor,
+  t,
+  intlLocale,
+}) {
   const [state, setState] = useState('idle');
   const [status, setStatus] = useState('');
+  const lastSyncedRef = useRef('');
+  const inputsRef = useRef(null);
+  inputsRef.current = { title, subtitle, cities, places, routeFor, colorFor };
+
+  // Si este día ya tiene link, cada cambio del día (lugares, orden, rutas)
+  // se publica en su copia pública, así el link siempre está al día.
+  const signature = JSON.stringify([
+    tripId,
+    date,
+    title,
+    subtitle,
+    cities,
+    (places || []).map((place) => [place.id, place.name, place.lat, place.lon]),
+    (places || []).slice(1).map((place, index) => {
+      const route = routeFor?.(places[index], place);
+      return route ? [route.mode, route.distance, route.duration, Boolean(route.geometry)] : null;
+    }),
+  ]);
+
+  useEffect(() => {
+    if (!tripId || !date) return undefined;
+    let cancelled = false;
+    const timer = globalThis.setTimeout(async () => {
+      try {
+        const model = await buildModel(inputsRef.current);
+        if (cancelled || dayShareModelIssues(model).length) return;
+        const serialized = JSON.stringify(model);
+        if (serialized === lastSyncedRef.current) return;
+        await syncDayShareIfShared(model, { tripId, date, intlLocale });
+        if (!cancelled) lastSyncedRef.current = serialized;
+      } catch (error) {
+        if (error?.code !== 'day-share/auth-required') console.warn('[Mis rutas] actualizar día compartido', error);
+      }
+    }, SYNC_DELAY_MS);
+    return () => {
+      cancelled = true;
+      globalThis.clearTimeout(timer);
+    };
+  }, [signature, tripId, date, intlLocale]);
 
   useEffect(() => {
     if (!status) return undefined;
@@ -62,18 +129,9 @@ export function DayShareButton({ title, subtitle, places, routeFor, colorFor, t,
     setState('sharing');
     let model = null;
     try {
-      const located = await placesWithCoordinates(places);
-      // Las rutas y colores se buscan por id: se mapean al lugar original.
-      const originalById = new Map((places || []).map((place) => [place.id, place]));
-      const original = (place) => originalById.get(place?.id) || place;
-      model = buildPublicDayShareModel({
-        title,
-        subtitle,
-        places: located,
-        routeFor: (from, to) => routeFor?.(original(from), original(to)),
-        colorFor: (place) => colorFor?.(original(place)),
-      });
-      const url = dayShareUrl(await createDayShare(model, { intlLocale }));
+      model = await buildModel({ title, subtitle, cities, places, routeFor, colorFor });
+      const url = dayShareUrl(await publishDayShare(model, { tripId, date, intlLocale }));
+      lastSyncedRef.current = JSON.stringify(model);
       const navigatorRef = globalThis.navigator;
       if (typeof navigatorRef?.share === 'function') {
         try {

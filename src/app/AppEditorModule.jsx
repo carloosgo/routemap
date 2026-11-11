@@ -54,6 +54,7 @@ export function AppEditorModule({
 
   const editorPane = activeTab === 'places' ? (
     <TripPlacesDayFirstPanel
+      tripId={trip.id}
       segments={trip.segments}
       places={places}
       routes={trip.routeConnections || []}

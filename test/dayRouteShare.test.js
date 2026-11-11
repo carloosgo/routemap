@@ -59,7 +59,7 @@ test('the public day copy keeps only what the shared page shows', () => {
     ? { mode: 'walk', distance: 1200, duration: 900, geometry: { type: 'LineString', coordinates: [[135.7, 35.01], [135.71, 35.015], [135.7, 35.02]] } }
     : null);
   const model = buildPublicDayShareModel({ title: 'Día 3 · jueves', subtitle: 'Kioto', places, routeFor, colorFor: () => '#C24E36' });
-  assert.deepEqual(Object.keys(model).sort(), ['legs', 'mapsLinks', 'places', 'subtitle', 'title']);
+  assert.deepEqual(Object.keys(model).sort(), ['cities', 'legs', 'mapsLinks', 'places', 'subtitle', 'title']);
   assert.deepEqual(Object.keys(model.places[0]).sort(), ['address', 'category', 'color', 'googlePlaceId', 'lat', 'lon', 'name', 'number']);
   assert.equal(model.places[0].color, '#c24e36');
   assert.equal(model.legs.length, 2);
@@ -80,7 +80,9 @@ test('el link corto vive en /share/dia/<id> con lectura pública solo por get', 
   const block = rules.slice(rules.indexOf('match /dayShares/{shareId}'));
   assert.match(block, /allow get: if true;\s*allow list: if false;/);
   assert.match(block, /request\.auth\.uid == request\.resource\.data\.ownerId/);
-  assert.match(block, /allow update, delete: if false/);
+  assert.match(block, /allow update: if signedIn\(\)\s*&& resource\.data\.ownerId == request\.auth\.uid/);
+  assert.match(block, /request\.resource\.data\.createdAt == resource\.data\.createdAt/);
+  assert.match(block, /allow delete: if false/);
 });
 
 test('el diagnóstico local refleja las condiciones de las reglas', async () => {
@@ -105,4 +107,18 @@ test('un tramo en transporte guarda líneas, estaciones y trazos por línea', ()
   assert.deepEqual(model.legs[0].steps, [{ line: 'M1', color: '#ffcd00', textColor: '#000000', vehicle: 'SUBWAY', from: 'Châtelet', to: 'Bastille', stops: 3, headsign: 'Château de Vincennes' }]);
   assert.deepEqual(model.legs[0].parts.map((part) => [part.kind, part.color]), [['walk', ''], ['transit', '#ffcd00']]);
   assert.deepEqual(decodePolyline(model.legs[0].parts[1].path), [[48.858, 2.345], [48.853, 2.369]]);
+});
+
+test('el id del día compartido es estable por viaje y fecha', async () => {
+  const { stableDayShareId } = await import('../src/modules/share/dayShareRepository.js');
+  const a = await stableDayShareId('uid1', 'trip1', '2026-12-11');
+  assert.match(a, /^[0-9a-f]{24}$/);
+  assert.equal(await stableDayShareId('uid1', 'trip1', '2026-12-11'), a);
+  assert.notEqual(await stableDayShareId('uid1', 'trip1', '2026-12-12'), a);
+  assert.equal(await stableDayShareId('uid1', '', '2026-12-11'), '');
+});
+
+test('la copia pública guarda las ciudades del día con su país', () => {
+  const model = buildPublicDayShareModel({ title: 'Día 1', subtitle: 'París', cities: [{ name: 'París', countryCode: 'fr' }, { name: '' }], places: [place(1)], routeFor: () => null });
+  assert.deepEqual(model.cities, [{ name: 'París', countryCode: 'FR' }]);
 });
