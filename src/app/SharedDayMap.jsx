@@ -63,7 +63,8 @@ export function SharedDayMap({ places, legs, unavailableLabel }) {
           fullscreenControl: false,
           rotateControl: false,
           clickableIcons: false,
-          gestureHandling: 'cooperative',
+          // Un dedo mueve el mapa y pellizcar acerca, como en una app de mapas.
+          gestureHandling: 'greedy',
         });
 
         const bounds = new LatLngBounds();
