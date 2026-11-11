@@ -65,7 +65,7 @@ test('the public day copy keeps only what the shared page shows', () => {
   assert.equal(model.legs.length, 2);
   assert.equal(model.legs[0].mode, 'walk');
   assert.deepEqual(decodePolyline(model.legs[0].path), [[35.01, 135.7], [35.015, 135.71], [35.02, 135.7]]);
-  assert.deepEqual(model.legs[1], { mode: '', distance: 0, duration: 0, path: '' });
+  assert.deepEqual(model.legs[1], { mode: '', distance: 0, duration: 0, path: '', steps: [], parts: [] });
   assert.equal(model.mapsLinks.length, 1);
   assert.doesNotMatch(JSON.stringify(model), /privada|s1/);
 });
@@ -88,4 +88,21 @@ test('el diagnóstico local refleja las condiciones de las reglas', async () => 
   const model = buildPublicDayShareModel({ title: 'Día 1', subtitle: '', places: [place(1)], routeFor: () => null });
   assert.deepEqual(dayShareModelIssues(model), []);
   assert.deepEqual(dayShareModelIssues({ ...model, places: [] }), ['places:0']);
+});
+
+test('un tramo en transporte guarda líneas, estaciones y trazos por línea', () => {
+  const route = {
+    mode: 'transit',
+    distance: 4000,
+    duration: 1200,
+    transitSteps: [{ lineShortName: 'M1', lineColor: '#FFCD00', lineTextColor: '#000000', vehicleType: 'SUBWAY', departureStop: 'Châtelet', arrivalStop: 'Bastille', stopCount: 3, headsign: 'Château de Vincennes' }],
+    segments: [
+      { kind: 'walk', geometry: { coordinates: [[2.34, 48.85], [2.345, 48.858]] } },
+      { kind: 'transit', color: '#FFCD00', geometry: { coordinates: [[2.345, 48.858], [2.369, 48.853]] } },
+    ],
+  };
+  const model = buildPublicDayShareModel({ title: 'Día 1', subtitle: 'París', places: [place(1), place(2)], routeFor: () => route });
+  assert.deepEqual(model.legs[0].steps, [{ line: 'M1', color: '#ffcd00', textColor: '#000000', vehicle: 'SUBWAY', from: 'Châtelet', to: 'Bastille', stops: 3, headsign: 'Château de Vincennes' }]);
+  assert.deepEqual(model.legs[0].parts.map((part) => [part.kind, part.color]), [['walk', ''], ['transit', '#ffcd00']]);
+  assert.deepEqual(decodePolyline(model.legs[0].parts[1].path), [[48.858, 2.345], [48.853, 2.369]]);
 });

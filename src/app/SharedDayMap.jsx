@@ -48,7 +48,7 @@ export function SharedDayMap({ places, legs, unavailableLabel }) {
 
     loadGoogleMaps()
       .then(async (maps) => {
-        const [{ Map, Polyline }, { AdvancedMarkerElement }, { LatLngBounds }] = await Promise.all([
+        const [{ Map, Polyline, TransitLayer }, { AdvancedMarkerElement }, { LatLngBounds }] = await Promise.all([
           maps.importLibrary('maps'),
           maps.importLibrary('marker'),
           maps.importLibrary('core'),
@@ -78,6 +78,22 @@ export function SharedDayMap({ places, legs, unavailableLabel }) {
           const path = (decoded.length >= 2 ? decoded : [[from.lat, from.lon], [to.lat, to.lon]])
             .map(([lat, lng]) => ({ lat, lng }));
           path.forEach((point) => bounds.extend(point));
+          // En transporte público cada parte va en el color de su línea (a pie, punteado).
+          const parts = leg.mode === 'transit' && Array.isArray(leg.parts) ? leg.parts : [];
+          if (parts.length) {
+            parts.forEach((part) => {
+              const partPath = decodePolyline(part.path).map(([lat, lng]) => ({ lat, lng }));
+              if (partPath.length < 2) return;
+              partPath.forEach((point) => bounds.extend(point));
+              if (part.kind === 'walk') {
+                overlays.push(new Polyline({ map, path: partPath, zIndex: 2, ...lineStyle('walk') }));
+                return;
+              }
+              overlays.push(new Polyline({ map, path: partPath, strokeColor: '#ffffff', strokeOpacity: 1, strokeWeight: 9, zIndex: 1 }));
+              overlays.push(new Polyline({ map, path: partPath, strokeColor: part.color || MARINA, strokeOpacity: 1, strokeWeight: 5, zIndex: 2 }));
+            });
+            return;
+          }
           const { casing, ...style } = lineStyle(leg.mode);
           if (casing) {
             overlays.push(new Polyline({ map, path, strokeColor: '#ffffff', strokeOpacity: 1, strokeWeight: 9, zIndex: 1 }));
@@ -94,6 +110,13 @@ export function SharedDayMap({ places, legs, unavailableLabel }) {
             zIndex: 10 + place.number,
           }));
         });
+
+        // Las líneas de transporte del mapa, como la capa de Mis rutas.
+        if (TransitLayer && legs.some((leg) => leg?.mode === 'transit')) {
+          const transitLayer = new TransitLayer();
+          transitLayer.setMap(map);
+          overlays.push(transitLayer);
+        }
 
         if (places.length > 1) map.fitBounds(bounds, 48);
       })

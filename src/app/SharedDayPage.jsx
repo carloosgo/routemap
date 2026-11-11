@@ -3,7 +3,6 @@ import {
   IconBike,
   IconBus,
   IconCar,
-  IconChevronRight,
   IconExternalLink,
   IconRoute,
   IconWalk,
@@ -11,6 +10,7 @@ import {
 import { useTranslation } from '../i18n/index.jsx';
 import { loadDayShare } from '../modules/share/dayShareRepository.js';
 import { placeMapsUrl } from '../modules/share/dayRouteShare.js';
+import { transitVehicleKey } from '../modules/places/routeConnectionStyle.js';
 import { SharedDayMap } from './SharedDayMap.jsx';
 import { SHARED_ITINERARY_STYLES } from './sharedItineraryStyles.js';
 import { SHARED_DAY_STYLES } from './sharedDayStyles.js';
@@ -36,6 +36,16 @@ function formatDistance(meters, locale) {
   if (value <= 0) return '';
   if (value < 1000) return `${Math.round(value / 10) * 10} m`;
   return `${new Intl.NumberFormat(locale, { maximumFractionDigits: value < 10000 ? 1 : 0 }).format(value / 1000)} km`;
+}
+
+/** Primera letra en mayúscula (nombres de ciudades y lugares guardados en minúsculas). */
+function capitalize(value, locale) {
+  const text = String(value || '').trim();
+  return text ? text.charAt(0).toLocaleUpperCase(locale) + text.slice(1) : '';
+}
+
+function capitalizeCities(value, locale) {
+  return String(value || '').split(' / ').map((city) => capitalize(city, locale)).join(' / ');
 }
 
 function safeNumber(value) {
@@ -67,6 +77,47 @@ function safeMapsLink(value) {
   } catch {
     return '';
   }
+}
+
+function LineBadge({ step }) {
+  if (!step.line) return null;
+  return (
+    <span
+      className="shared-day__line"
+      style={{ background: step.color || '#0e4f63', color: step.textColor || '#ffffff' }}
+    >
+      {step.line}
+    </span>
+  );
+}
+
+/** Tramo entre dos lugares: nada si no hay ruta; líneas y estaciones en transporte. */
+function SharedLeg({ leg, mode, legText, t }) {
+  if (!mode) return <div className="shared-day__leg is-empty" aria-hidden="true" />;
+  const steps = mode === MODES.transit && Array.isArray(leg?.steps) ? leg.steps : [];
+  return (
+    <div className="shared-day__leg">
+      <div className="shared-day__leg-head">
+        <mode.Icon size={15} aria-hidden="true" />
+        <span>{legText}</span>
+      </div>
+      {steps.map((step, index) => {
+        const vehicleKey = transitVehicleKey(step.vehicle);
+        const stops = Number(step.stops) || 0;
+        const route = [step.from, step.to].filter(Boolean).join(' → ');
+        return (
+          <div className="shared-day__step" key={`${index}-${step.line}-${step.from}`}>
+            <div className="shared-day__step-head">
+              <LineBadge step={step} />
+              {vehicleKey && <span>{t(vehicleKey)}</span>}
+              {stops > 0 && <small>{t(stops === 1 ? 'transitStopOne' : 'transitStopMany', { count: stops })}</small>}
+            </div>
+            {route && <p>{route}</p>}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function SharedState({ message, error = false, title }) {
@@ -138,11 +189,14 @@ export default function SharedDayPage({ shareId }) {
       <style>{SHARED_ITINERARY_STYLES}</style>
       <style>{SHARED_DAY_STYLES}</style>
       <div className="shared-itinerary__shell">
-        <header className="shared-itinerary__header">
-          <div className="shared-itinerary__brand">{t('appName')}</div>
-          <p className="shared-itinerary__readonly">{t('sharedReadOnly')}</p>
+        <header className="shared-itinerary__header shared-day__header">
+          <div className="shared-day__brand">
+            <img src="/atlas-icon.svg" alt="" width="20" height="20" />
+            <span>{t('appName')}</span>
+            <small>{t('sharedReadOnly')}</small>
+          </div>
           <h1>{model.title || t('day')}</h1>
-          {model.subtitle && <p className="shared-day__city">{model.subtitle}</p>}
+          {model.subtitle && <p className="shared-day__city">{capitalizeCities(model.subtitle, locale)}</p>}
           <p className="shared-day__summary">{summary}</p>
         </header>
 
@@ -179,17 +233,12 @@ export default function SharedDayPage({ shareId }) {
                 <a className="shared-day__place" href={placeMapsUrl(place)} target="_blank" rel="noreferrer">
                   <span className="shared-day__num" style={{ background: place.color }} aria-hidden="true">{place.number}</span>
                   <span className="shared-day__text">
-                    <strong>{place.name || t('place')}</strong>
+                    <strong>{capitalize(place.name, locale) || t('place')}</strong>
                     {detail && <small>{detail}</small>}
                   </span>
                   <IconExternalLink size={16} className="shared-day__ext" aria-hidden="true" />
                 </a>
-                {next && (
-                  <div className={'shared-day__leg' + (mode ? '' : ' is-empty')}>
-                    {mode ? <mode.Icon size={15} aria-hidden="true" /> : <IconChevronRight size={15} aria-hidden="true" />}
-                    <span>{legText || t('sharedDayNoMode')}</span>
-                  </div>
-                )}
+                {next && <SharedLeg leg={leg} mode={mode} legText={legText} t={t} />}
               </div>
             );
           })}

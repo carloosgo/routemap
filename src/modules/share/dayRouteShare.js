@@ -196,6 +196,34 @@ function cleanColor(value) {
   return /^#[0-9a-f]{6}$/i.test(color) ? color.toLowerCase() : '#0e4f63';
 }
 
+/** Líneas de transporte de un tramo: línea, color, vehículo y estaciones. */
+function publicTransitSteps(steps) {
+  return (Array.isArray(steps) ? steps : []).slice(0, 8).map((step) => ({
+    line: cleanText(step?.lineShortName || step?.lineName || step?.tripShortText, 60),
+    color: /^#[0-9a-f]{6}$/i.test(String(step?.lineColor || '')) ? step.lineColor.toLowerCase() : '',
+    textColor: /^#[0-9a-f]{6}$/i.test(String(step?.lineTextColor || '')) ? step.lineTextColor.toLowerCase() : '',
+    vehicle: cleanText(step?.vehicleType, 40),
+    from: cleanText(step?.departureStop, 120),
+    to: cleanText(step?.arrivalStop, 120),
+    stops: cleanNumber(step?.stopCount),
+    headsign: cleanText(step?.headsign, 120),
+  }));
+}
+
+/** Trazos por tramo de transporte (a pie / línea) con el color de cada línea. */
+function publicRouteParts(segments) {
+  return (Array.isArray(segments) ? segments : []).slice(0, 12).map((segment) => {
+    const points = (segment?.geometry?.coordinates || [])
+      .filter((point) => Array.isArray(point) && Number.isFinite(point[0]) && Number.isFinite(point[1]))
+      .map(([lng, lat]) => [lat, lng]);
+    return {
+      kind: segment?.kind === 'transit' || segment?.kind === 'walk' ? segment.kind : 'other',
+      color: /^#[0-9a-f]{6}$/i.test(String(segment?.color || '')) ? segment.color.toLowerCase() : '',
+      path: points.length >= 2 ? encodePolyline(downsample(points, 80)) : '',
+    };
+  }).filter((part) => part.path);
+}
+
 /**
  * Copia pública del día: solo lo necesario para verlo. No incluye notas,
  * gastos, ids internos ni el resto del viaje.
@@ -211,6 +239,8 @@ export function buildPublicDayShareModel({ title, subtitle, places, routeFor, co
       distance: mode ? cleanNumber(route.distance) : 0,
       duration: mode ? cleanNumber(route.duration) : 0,
       path: mode ? encodePolyline(legPoints(stops[index], stops[index + 1], route)) : '',
+      steps: mode === 'transit' ? publicTransitSteps(route.transitSteps) : [],
+      parts: mode === 'transit' ? publicRouteParts(route.segments) : [],
     });
   }
   return {
