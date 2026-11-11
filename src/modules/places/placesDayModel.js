@@ -5,8 +5,9 @@ import {
 } from '../trips/globalTripDayPlanning.js';
 
 /**
- * Modelo visual de Mis rutas: un día abierto a la vez, paradas numeradas por
- * día y un único color por país compartido entre la lista y el mapa.
+ * Modelo visual de Mis rutas: un día abierto a la vez y paradas numeradas por
+ * día. Cada número tiene su propio color, el mismo en la lista, el mapa y la
+ * vista compartida; los lugares sin día usan el color de su país.
  */
 
 export function countryKey(value) {
@@ -37,6 +38,12 @@ export function placeCountry(place, segmentById) {
 
 export function placeColor(place, segmentById, colors) {
   return colors.get(countryKey(placeCountry(place, segmentById))) || countryColorForIndex(0);
+}
+
+/** Color de la parada N del día (1, 2, 3…): uno distinto por número. */
+export function stopColor(number) {
+  const value = Math.trunc(Number(number));
+  return value > 0 ? countryColorForIndex(value - 1) : '';
 }
 
 /**

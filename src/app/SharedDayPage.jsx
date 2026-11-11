@@ -12,6 +12,7 @@ import { watchDayShare } from '../modules/share/dayShareRepository.js';
 import { flagImageUrl } from '../modules/flags/flags.js';
 import { placeMapsUrl } from '../modules/share/dayRouteShare.js';
 import { transitVehicleKey } from '../modules/places/routeConnectionStyle.js';
+import { countryColorForIndex } from '../config.js';
 import { SharedDayMap } from './SharedDayMap.jsx';
 import { SHARED_ITINERARY_STYLES } from './sharedItineraryStyles.js';
 import { SHARED_DAY_STYLES } from './sharedDayStyles.js';
@@ -52,16 +53,20 @@ function safeNumber(value) {
 
 function cleanPlaces(model) {
   return (Array.isArray(model?.places) ? model.places : [])
-    .map((place, index) => ({
-      number: Number(place?.number) || index + 1,
-      name: String(place?.name || ''),
-      address: String(place?.address || ''),
-      category: String(place?.category || ''),
-      lat: safeNumber(place?.lat),
-      lon: safeNumber(place?.lon),
-      color: /^#[0-9a-f]{6}$/i.test(String(place?.color || '')) ? place.color : '#0e4f63',
-      googlePlaceId: String(place?.googlePlaceId || ''),
-    }))
+    .map((place, index) => {
+      const number = Number(place?.number) || index + 1;
+      return {
+        number,
+        name: String(place?.name || ''),
+        address: String(place?.address || ''),
+        category: String(place?.category || ''),
+        lat: safeNumber(place?.lat),
+        lon: safeNumber(place?.lon),
+        // Un color por número, igual que en Mis rutas (también en links antiguos).
+        color: countryColorForIndex(number - 1),
+        googlePlaceId: String(place?.googlePlaceId || ''),
+      };
+    })
     .filter((place) => place.lat !== null && place.lon !== null);
 }
 
