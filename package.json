@@ -17,7 +17,7 @@
     "verify:change": "npm run test:contracts && npm run test:changed && npm run lint && npm run build",
     "verify:local": "npm run test:impact && npm run test:contracts && npm test && npm run lint && npm run build",
     "preprod:hosting:deploy": "node scripts/runPreprodHostingDeploy.mjs",
-    "test:rules": "firebase emulators:exec --only firestore \"node --test --test-concurrency=1 firebase-tests/internalCollections.rules.spec.js firebase-tests/firestore.v4.rules.spec.js firebase-tests/firestore.v4.internal.rules.spec.js firebase-tests/firestore.v4.repository.spec.js firebase-tests/firestore.v4.sync.spec.js functions/v4AggregateStore.emulator.spec.js functions/v4TripLifecycleStore.emulator.spec.js functions/v4TripPurgeStore.emulator.spec.js\"",
+    "test:rules": "firebase emulators:exec --only firestore \"node --test --test-concurrency=1 firebase-tests/internalCollections.rules.spec.js firebase-tests/dayShares.rules.spec.js firebase-tests/firestore.v4.rules.spec.js firebase-tests/firestore.v4.internal.rules.spec.js firebase-tests/firestore.v4.repository.spec.js firebase-tests/firestore.v4.sync.spec.js functions/v4AggregateStore.emulator.spec.js functions/v4TripLifecycleStore.emulator.spec.js functions/v4TripPurgeStore.emulator.spec.js\"",
     "test:rules:phase-k-e2e": "firebase emulators:exec --only firestore \"node --test --test-concurrency=1 firebase-tests/firestore.phase-k-e2e.rules.spec.js\"",
     "storage-v4:dev:verify": "node scripts/runStorageV4DevStageVerify.mjs",
     "storage-v4:dev:reconcile-runtime": "node scripts/runStorageV4DevRuntimeReconcile.mjs",

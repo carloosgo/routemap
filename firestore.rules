@@ -476,7 +476,7 @@ service cloud.firestore {
 
     function validSharedDayModel(data) {
       return data is map
-        && data.keys().hasOnly(['title', 'subtitle', 'places', 'legs', 'mapsLinks'])
+        && data.keys().hasOnly(['title', 'subtitle', 'cities', 'places', 'legs', 'mapsLinks'])
         && data.keys().hasAll(['title', 'subtitle', 'places', 'legs', 'mapsLinks'])
         && data.title is string
         && data.title.size() <= 160
@@ -488,10 +488,11 @@ service cloud.firestore {
         && data.legs is list
         && data.legs.size() <= 59
         && data.mapsLinks is list
-        && data.mapsLinks.size() <= 8;
+        && data.mapsLinks.size() <= 8
+        && (!('cities' in data) || (data.cities is list && data.cities.size() <= 20));
     }
 
-    function validDayShare(data) {
+    function validDayShareBody(data) {
       return data is map
         && data.keys().hasOnly([
           'schemaVersion', 'ownerId', 'intlLocale', 'model', 'createdAt'
@@ -506,8 +507,11 @@ service cloud.firestore {
         && data.intlLocale is string
         && (data.intlLocale == 'es-MX' || data.intlLocale == 'en-US')
         && data.createdAt is timestamp
-        && data.createdAt == request.time
         && validSharedDayModel(data.model);
+    }
+
+    function validDayShare(data) {
+      return validDayShareBody(data) && data.createdAt == request.time;
     }
 
     // Copia pública de un día de Mis rutas (link corto /share/dia/<id>).
@@ -517,7 +521,14 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.auth.uid == request.resource.data.ownerId
         && validDayShare(request.resource.data);
-      allow update, delete: if false;
+      // El dueño mantiene el link al día: solo cambian el modelo y el idioma.
+      allow update: if signedIn()
+        && resource.data.ownerId == request.auth.uid
+        && validDayShareBody(request.resource.data)
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.schemaVersion == resource.data.schemaVersion;
+      allow delete: if false;
     }
 
     match /itineraryShares/{shareId} {
