@@ -112,3 +112,21 @@ test('el lugar del buscador se guarda en su ciudad y en el día abierto si es de
   assert.equal(openMadridDay?.dayOffset, 0);
   assert.equal(placeSaveDay({ city: 'Munich', countryCode: 'DE', lat: 48.1351, lon: 11.582 }, segments(), 3), null);
 });
+
+test('guarda en el día abierto aunque la ciudad aparezca en varias estancias', () => {
+  const trip = [
+    createSegment({ id: 'paris-1', destination: paris, startDate: '2026-08-01', endDate: '2026-08-02' }),
+    createSegment({ id: 'madrid-leg', destination: madrid, startDate: '2026-08-03', endDate: '2026-08-04' }),
+    createSegment({ id: 'paris-2', destination: paris, startDate: '2026-08-05', endDate: '2026-08-07' }),
+  ];
+  const louvre = { city: 'Paris', countryCode: 'FR', lat: 48.8606, lon: 2.3376 };
+  // Día 6 del viaje abierto (offset 5) = segundo día de la segunda estancia en París.
+  const secondStay = placeSaveDay(louvre, trip, 5);
+  assert.equal(secondStay?.segmentId, 'paris-2');
+  assert.equal(secondStay?.dayOffset, 1);
+  // Día abierto en la primera estancia sigue funcionando.
+  assert.equal(placeSaveDay(louvre, trip, 1)?.segmentId, 'paris-1');
+  // Un día de otra ciudad abierto: primera estancia de París.
+  assert.equal(placeSaveDay(louvre, trip, 3)?.segmentId, 'paris-1');
+  assert.equal(placeSaveDay(louvre, trip, 3)?.dayOffset, 0);
+});

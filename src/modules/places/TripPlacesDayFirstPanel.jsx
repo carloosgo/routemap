@@ -40,6 +40,38 @@ const PERSISTENCE_LABEL_KEYS = Object.freeze({
   error: 'persistenceError',
 });
 
+const DRAG_SCROLL_EDGE_PX = 64;
+const DRAG_SCROLL_MAX_SPEED_PX = 18;
+
+// Contenedor que realmente se desplaza (el panel en escritorio, la hoja en móvil).
+function scrollContainerFor(element) {
+  for (let node = element; node && node !== document.body; node = node.parentElement) {
+    const overflowY = window.getComputedStyle(node).overflowY;
+    if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight + 1) {
+      return node;
+    }
+  }
+  return document.scrollingElement || document.documentElement;
+}
+
+function dragScrollStep(clientY, container) {
+  const isRoot = container === document.scrollingElement || container === document.documentElement;
+  const bounds = isRoot
+    ? { top: 0, bottom: window.innerHeight }
+    : container.getBoundingClientRect();
+  const top = Math.max(bounds.top, 0);
+  const bottom = Math.min(bounds.bottom, window.innerHeight);
+  const edge = Math.min(DRAG_SCROLL_EDGE_PX, (bottom - top) / 4);
+  if (edge <= 0) return 0;
+  if (clientY < top + edge) {
+    return -Math.ceil(DRAG_SCROLL_MAX_SPEED_PX * Math.min(1, (top + edge - clientY) / edge));
+  }
+  if (clientY > bottom - edge) {
+    return Math.ceil(DRAG_SCROLL_MAX_SPEED_PX * Math.min(1, (clientY - (bottom - edge)) / edge));
+  }
+  return 0;
+}
+
 // Variante D aprobada: lista de días agrupada por ciudad, un día abierto a la vez.
 const MY_ROUTES_STYLES = `
 .mr{display:flex;flex:1;min-height:0;flex-direction:column;overflow-x:hidden;overflow-y:auto;scrollbar-gutter:stable;font-family:var(--font-body);color:#0b1f2c}
@@ -263,17 +295,42 @@ export function TripPlacesDayFirstPanel({
       };
     };
 
-    const move = (event) => {
-      event.preventDefault();
+    // Al acercarse al borde de la lista, se desplaza siguiendo el arrastre.
+    const scroller = scrollContainerFor(panel);
+    const startScrollTop = scroller.scrollTop;
+    let lastPointer = null;
+    let scrollFrame = 0;
+
+    const update = (pointer) => {
       const current = placeDragRef.current;
       if (!current) return;
       const next = {
         ...current,
-        offsetY: event.clientY - current.startY,
-        ...resolveTarget(event),
+        offsetY: pointer.clientY - current.startY + (scroller.scrollTop - startScrollTop),
+        ...resolveTarget(pointer),
       };
       placeDragRef.current = next;
       setPlaceDrag(next);
+    };
+
+    const autoScroll = () => {
+      scrollFrame = 0;
+      if (!lastPointer || !placeDragRef.current) return;
+      const step = dragScrollStep(lastPointer.clientY, scroller);
+      if (!step) return;
+      const before = scroller.scrollTop;
+      scroller.scrollTop = before + step;
+      if (scroller.scrollTop === before) return;
+      update(lastPointer);
+      scrollFrame = requestAnimationFrame(autoScroll);
+    };
+
+    const move = (event) => {
+      event.preventDefault();
+      if (!placeDragRef.current) return;
+      lastPointer = { clientX: event.clientX, clientY: event.clientY };
+      update(lastPointer);
+      if (!scrollFrame) scrollFrame = requestAnimationFrame(autoScroll);
     };
 
     const finish = (commit) => {
@@ -289,6 +346,8 @@ export function TripPlacesDayFirstPanel({
       }
       placeDragRef.current = null;
       setPlaceDrag(null);
+      if (scrollFrame) cancelAnimationFrame(scrollFrame);
+      scrollFrame = 0;
     };
 
     const up = () => finish(true);
@@ -300,6 +359,7 @@ export function TripPlacesDayFirstPanel({
       document.removeEventListener('pointermove', move);
       document.removeEventListener('pointerup', up);
       document.removeEventListener('pointercancel', cancel);
+      if (scrollFrame) cancelAnimationFrame(scrollFrame);
     };
   }, [placeDrag?.placeId, places, segments, movePlaceToDay, reorderPlace]);
 

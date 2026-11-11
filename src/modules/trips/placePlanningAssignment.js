@@ -84,17 +84,25 @@ export function itineraryPlacePlanningTarget(place, segments) {
   return nearby ? { ...nearby, reason: 'nearby' } : null;
 }
 
+function dayMatchesPlace(place, day) {
+  if (!countriesCompatible(place, day?.destination)) return false;
+  const placeCity = normalizedText(place?.city);
+  if (placeCity && normalizedText(day?.destination?.name) === placeCity) return true;
+  return distanceKm(place, day?.destination) <= NEARBY_ITINERARY_CITY_MAX_KM;
+}
+
 /**
  * Día en el que se guarda un lugar encontrado en el buscador: la ciudad la
- * decide el propio lugar; si el día abierto en Mis rutas es de esa ciudad, se
- * guarda ahí, y si no, en el primer día de la estancia.
+ * decide el propio lugar; si el día abierto en Mis rutas es de esa ciudad
+ * (aunque la ciudad aparezca en varias estancias), se guarda ahí, y si no, en
+ * el primer día de la primera estancia de esa ciudad.
  */
 export function placeSaveDay(place, segments, openTripDay = null) {
   const target = itineraryPlacePlanningTarget(place, segments);
   if (!target?.day) return null;
   if (!Number.isInteger(openTripDay)) return target.day;
-  const openDay = tripPlanningDays(segments).find((day) =>
-    day.segmentId === target.day.segmentId && day.globalDayNumber === openTripDay + 1
-  );
+  const openDays = tripPlanningDays(segments).filter((day) => day.globalDayNumber === openTripDay + 1);
+  const openDay = openDays.find((day) => day.segmentId === target.day.segmentId)
+    || openDays.find((day) => dayMatchesPlace(place, day));
   return openDay || target.day;
 }
