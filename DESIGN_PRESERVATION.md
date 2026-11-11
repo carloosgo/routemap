@@ -294,10 +294,9 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 
 ## Ajuste solicitado: compartir la ruta de cada día en Mis Rutas
 
-- La cabecera del día abierto añade un botón icon-only `IconShare` de 15 px entre la nota del día y el chevron, con la misma caja de 32 px de `.mr__icon-btn`. Solo aparece si el día tiene lugares.
-- Abre un menú blanco con el mismo formato de `.mr-place__menu` (borde `#e2e4e9`, radio 10 px, sombra suave, título en versalitas gris de 11 px) y tres opciones de 13 px con icono gris: `Lugares y ruta`, `Imagen del mapa` y `Abrir en Google Maps`.
-- `Lugares y ruta` comparte por la hoja nativa del sistema (o copia, si no existe) un texto con el día, la ciudad, los lugares numerados con su dirección, el modo elegido entre paradas y el enlace de Google Maps con la ruta del día (más de 11 lugares se parten en enlaces encadenados).
-- `Imagen del mapa` comparte un PNG de Maps Static API con las paradas numeradas en el color de su país y los trazos del día; se prepara al abrir el menú y, sin hoja nativa, se descarga. No se persiste nada nuevo en el viaje.
+- La cabecera del día abierto añade un botón icon-only `IconShare` de 15 px entre la nota del día y el chevron, con la misma caja de 32 px de `.mr__icon-btn`. Solo aparece si el día tiene lugares. No abre menú: un toque crea el link corto y lo comparte por la hoja nativa del sistema (o lo copia y muestra «Link copiado.» en una etiqueta oscura bajo el botón). Mientras se crea, el icono gira.
+- El link corto es `/share/dia/<id>`, igual que el del itinerario (`/share/<id>`): una copia pública y mínima del día en `dayShares` (título, ciudad, lugares numerados con color, dirección y categoría, modo/distancia/tiempo/trazo de cada tramo y enlaces de Google Maps). No incluye notas, gastos ni el resto del viaje. Lectura pública solo por `get`.
+- La vista `/share/dia/<id>` reutiliza el marco de la vista compartida del itinerario (fondo `#f4f7f6`, tarjetas blancas de 20 px de radio): cabecera con `Día N · fecha`, ciudad y resumen (`N lugares · km · tiempo` en `#2a7d73`), mapa interactivo con las paradas numeradas en el color de su país y los trazos con el mismo lenguaje de Mis rutas, botón marina «Abrir ruta en Google Maps» y la lista de lugares (cada uno abre Google Maps) con el tramo entre ellos.
 
 ## Ajuste solicitado: versión móvil instalable en iPhone (PWA)
 
