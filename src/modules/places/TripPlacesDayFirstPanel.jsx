@@ -132,7 +132,7 @@ const MY_ROUTES_STYLES = `
 .mr-share{position:relative;display:inline-flex}
 .mr-share .is-busy svg{animation:mr-spin .8s linear infinite}
 @keyframes mr-spin{to{transform:rotate(360deg)}}
-.mr-share__status{position:absolute;z-index:80;top:36px;right:0;padding:6px 10px;border-radius:8px;background:#0b1f2c;color:#fff;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 8px 20px rgba(15,23,42,.18)}
+.mr-share__status{position:absolute;z-index:80;top:36px;right:0;padding:6px 10px;border-radius:8px;background:#0b1f2c;color:#fff;font-size:12px;font-weight:600;max-width:min(300px,calc(100vw - 32px));white-space:normal;box-shadow:0 8px 20px rgba(15,23,42,.18)}
 `;
 
 const UNASSIGNED_KEY = 'unassigned';

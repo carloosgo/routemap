@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { IconCheck, IconLoader2, IconShare } from '@tabler/icons-react';
-import { buildPublicDayShareModel } from '../share/dayRouteShare.js';
+import { buildPublicDayShareModel, dayShareModelIssues } from '../share/dayRouteShare.js';
 import { createDayShare, dayShareUrl } from '../share/dayShareRepository.js';
 
 async function copyText(value) {
@@ -30,15 +30,16 @@ export function DayShareButton({ title, subtitle, places, routeFor, colorFor, t,
 
   useEffect(() => {
     if (!status) return undefined;
-    const timer = globalThis.setTimeout(() => setStatus(''), 2800);
+    const timer = globalThis.setTimeout(() => setStatus(''), 9000);
     return () => globalThis.clearTimeout(timer);
   }, [status]);
 
   async function share() {
     if (state === 'sharing') return;
     setState('sharing');
+    let model = null;
     try {
-      const model = buildPublicDayShareModel({ title, subtitle, places, routeFor, colorFor });
+      model = buildPublicDayShareModel({ title, subtitle, places, routeFor, colorFor });
       const url = dayShareUrl(await createDayShare(model, { intlLocale }));
       const navigatorRef = globalThis.navigator;
       if (typeof navigatorRef?.share === 'function') {
@@ -57,8 +58,16 @@ export function DayShareButton({ title, subtitle, places, routeFor, colorFor, t,
       setStatus(t('shareDayCopied'));
       setState('done');
     } catch (error) {
-      console.error('[Mis rutas] compartir día', error);
-      setStatus(t(error?.code === 'day-share/auth-required' ? 'shareDayAuthRequired' : 'shareDayError'));
+      // Diagnóstico visible (también en iPhone): código de Firebase y la
+      // condición de las reglas que el modelo no cumple, si alguna.
+      const issues = model ? dayShareModelIssues(model) : ['model'];
+      const detail = [error?.code, ...issues, `p${places?.length ?? 0}/${model?.places?.length ?? 0}`]
+        .filter(Boolean)
+        .join(' · ');
+      console.error('[Mis rutas] compartir día', detail, error, model);
+      setStatus(error?.code === 'day-share/auth-required'
+        ? t('shareDayAuthRequired')
+        : `${t('shareDayError')} (${detail})`);
       setState('idle');
     }
   }

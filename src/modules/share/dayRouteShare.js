@@ -230,3 +230,21 @@ export function buildPublicDayShareModel({ title, subtitle, places, routeFor, co
     mapsLinks: dayGoogleMapsLinks(stops, routeFor).slice(0, 8),
   };
 }
+
+/**
+ * Comprueba en el cliente las mismas condiciones que `validSharedDayModel`
+ * en firestore.rules y devuelve la lista de las que no se cumplen.
+ */
+export function dayShareModelIssues(model) {
+  const issues = [];
+  const keys = Object.keys(model || {}).sort().join(',');
+  if (keys !== 'legs,mapsLinks,places,subtitle,title') issues.push(`keys:${keys}`);
+  if (typeof model?.title !== 'string' || model.title.length > 160) issues.push('title');
+  if (typeof model?.subtitle !== 'string' || model.subtitle.length > 200) issues.push('subtitle');
+  if (!Array.isArray(model?.places) || model.places.length < 1 || model.places.length > 60) {
+    issues.push(`places:${Array.isArray(model?.places) ? model.places.length : typeof model?.places}`);
+  }
+  if (!Array.isArray(model?.legs) || model.legs.length > 59) issues.push(`legs:${model?.legs?.length}`);
+  if (!Array.isArray(model?.mapsLinks) || model.mapsLinks.length > 8) issues.push(`links:${model?.mapsLinks?.length}`);
+  return issues;
+}
