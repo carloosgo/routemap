@@ -15,7 +15,7 @@ import {
 } from '../trips/globalTripDayPlanning.js';
 import { savedPlaceRoutePairKey } from '../routes/routeModel.js';
 import { useLiveRoutesVersion, withLiveGeometry } from '../routes/liveRouteStore.js';
-import { DayShareMenu } from './DayShareMenu.jsx';
+import { DayShareButton } from './DayShareButton.jsx';
 import { NextCityTransfer } from './NextCityTransfer.jsx';
 import { cityTransfers } from './cityTransferModel.js';
 import {
@@ -130,14 +130,9 @@ const MY_ROUTES_STYLES = `
 .mr-place:hover .mr-place__has-note-dot,.mr-place:focus-within .mr-place__has-note-dot,.mr-place.is-selected .mr-place__has-note-dot{display:none}
 .mr__transfer{margin:2px 0}
 .mr-share{position:relative;display:inline-flex}
-.mr-share__menu{position:absolute;z-index:80;top:36px;right:0;display:flex;width:min(250px,calc(100vw - 48px));flex-direction:column;gap:2px;padding:6px;border:1px solid #e2e4e9;border-radius:10px;background:#fff;box-shadow:0 12px 30px rgba(15,23,42,.16)}
-.mr-share__menu strong{padding:4px 8px 6px;color:#667085;font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
-.mr-share__menu button,.mr-share__menu a{display:flex;width:100%;min-height:36px;align-items:center;gap:10px;padding:6px 8px;border:0;border-radius:7px;background:transparent;color:#0b1f2c;font:500 13px var(--font-body);text-align:left;text-decoration:none;cursor:pointer}
-.mr-share__menu button svg,.mr-share__menu a svg{flex:none;color:#667085}
-.mr-share__menu button:hover,.mr-share__menu button:focus-visible,.mr-share__menu a:hover,.mr-share__menu a:focus-visible{background:#f1f8f7;outline:none}
-.mr-share__menu button:disabled{color:#98a2b3;cursor:default;background:transparent}
-.mr-share__menu small{padding:6px 8px 2px;color:#2a7d73;font-size:12px;font-weight:600}
-@media (max-width:560px){.mr__head .mr__row{grid-template-columns:minmax(0,1fr)}.mr__head .mr__summary{display:none}}
+.mr-share .is-busy svg{animation:mr-spin .8s linear infinite}
+@keyframes mr-spin{to{transform:rotate(360deg)}}
+.mr-share__status{position:absolute;z-index:80;top:36px;right:0;padding:6px 10px;border-radius:8px;background:#0b1f2c;color:#fff;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 8px 20px rgba(15,23,42,.18)}
 `;
 
 const UNASSIGNED_KEY = 'unassigned';
@@ -581,15 +576,12 @@ export function TripPlacesDayFirstPanel({
               <IconNote size={15} aria-hidden="true" />
             </button>
             {day.places.length > 0 && (
-              <DayShareMenu
-                dayNumber={day.globalDayNumber}
+              <DayShareButton
                 title={date ? `${title} · ${date}` : title}
                 subtitle={dayCityNames(day.assignments)}
-                cityName={day.assignments.at(-1)?.destination?.name || ''}
                 places={day.places}
                 routeFor={routeFor}
                 colorFor={(place) => placeColor(place, segmentById, colors)}
-                language={String(intlLocale || '').toLowerCase().startsWith('en') ? 'en' : 'es'}
                 t={t}
                 intlLocale={intlLocale}
               />
