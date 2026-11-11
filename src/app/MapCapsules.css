@@ -213,50 +213,108 @@
   height: 40px !important;
 }
 
-/* iPhone: los mismos círculos viven sobre el mapa, no en la cabecera. */
+/* Guardar y Compartir dentro del menú ⋯: solo en la app (móvil). */
+.editor-module__more-menu .editor-module__menu-item--app {
+  display: none;
+}
+
+/* App (iPhone): la cabecera lleva la cuenta a la izquierda (en el lugar del
+   logo) y el menú ⋯ a la derecha. El menú reúne Guardar, Compartir, Nuevo
+   viaje y Viajes guardados, así que sobre el mapa ya no hay círculos. */
 @media (max-width: 720px) {
   .app .trip-summary {
-    padding-right: 12px;
+    padding-right: 54px;
+    padding-left: 58px;
+  }
+
+  .app .trip-summary__brand {
+    display: none;
   }
 
   .app .topbar--floating-only {
     display: block;
   }
 
-  /* Sin PDF en móvil: Compartir sube a su hueco. */
-  .app .itinerary-pdf-export__button {
-    display: none;
-  }
-
+  .app .topbar .topbar__save,
+  .app .itinerary-pdf-export__button,
   .app .itinerary-share__button {
-    top: calc(var(--trip-header-height, 63px) + 164px) !important;
+    display: none !important;
   }
 
-  .app .editor-module__settings > .editor-module__menu-anchor.editor-module__workspace-anchor {
-    top: calc(var(--trip-header-height, 63px) + 114px) !important;
-    right: 14px !important;
-    z-index: 950 !important;
+  .editor-module__more-menu .editor-module__menu-item--app {
+    display: flex;
   }
 
-  .app .editor-module__workspace-anchor .editor-module__more-menu {
-    top: calc(var(--trip-header-height) + 114px);
-    right: 64px;
-    width: min(300px, calc(100vw - 78px));
-    max-height: calc(100dvh - var(--trip-header-height) - 200px - var(--safe-bottom));
+  .editor-module__more-menu .editor-module__menu-item--app:disabled {
+    opacity: 0.55;
+    cursor: wait;
   }
 
+  /* Cuenta: avatar en la cabecera, donde estaba el logo. */
   .account-capsule {
+    top: calc(var(--safe-top, 0px) + 9px);
+    right: auto;
+    left: 12px;
     z-index: 955;
   }
 
-  .account-capsule__menu {
-    width: min(260px, calc(100vw - 78px));
+  .account-capsule__button {
+    width: 38px;
+    height: 38px;
+    background: transparent;
+    box-shadow: none;
   }
 
+  .account-capsule__button .account-avatar--sm {
+    width: 34px;
+    height: 34px;
+    font-size: 13px;
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
+  }
+
+  .account-capsule__button:hover,
+  .account-capsule__button.is-active {
+    background: transparent;
+  }
+
+  .account-capsule__button.is-active .account-avatar--sm {
+    box-shadow: 0 0 0 2px var(--atlas-accent);
+  }
+
+  .account-capsule__menu {
+    top: calc(100% + 8px);
+    right: auto;
+    left: 0;
+    width: min(260px, calc(100vw - 24px));
+  }
+
+  /* Menú ⋯: a la derecha de la cabecera. */
+  .app .editor-module__settings > .editor-module__menu-anchor.editor-module__workspace-anchor {
+    top: calc(var(--safe-top, 0px) + 10px) !important;
+    right: 10px !important;
+    z-index: 950 !important;
+  }
+
+  .app .editor-module__settings .editor-module__workspace-anchor .editor-module__more-button {
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .app .editor-module__workspace-anchor .editor-module__more-menu {
+    top: calc(var(--trip-header-height) + 6px);
+    right: 10px;
+    width: min(300px, calc(100vw - 20px));
+    max-height: calc(100dvh - var(--trip-header-height) - 90px - var(--safe-bottom));
+  }
+
+  /* Nombre del viaje al guardar: bajo la cabecera, a lo ancho. */
   .app .trip-save-popover {
-    top: calc(var(--trip-header-height) + 64px);
-    right: 64px;
-    width: min(260px, calc(100vw - 78px));
+    top: calc(var(--trip-header-height) + 8px);
+    right: 10px;
+    left: 10px;
+    width: auto;
   }
 }
 
@@ -271,6 +329,11 @@
 }
 
 @media (max-width: 720px) {
+  /* Sin círculos encima, Capas es el primero bajo la cabecera. */
+  .map-layers-capsule {
+    top: calc(var(--trip-header-height, 63px) + 14px);
+  }
+
   /* El buscador de lugares deja libre la columna de círculos. */
   .app .geo-search {
     left: 12px;

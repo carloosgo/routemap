@@ -13,6 +13,8 @@ export function AppEditorModule({
   editorMenuRef,
   setTripToDelete,
   handleOpenSavedTrip,
+  handleSave,
+  showToast,
   placesFocus,
   persistenceState = 'saved',
   t,
@@ -117,6 +119,8 @@ export function AppEditorModule({
         setOpenMenu={setOpenMenu}
         handleOpenSavedTrip={handleOpenSavedTrip}
         setTripToDelete={setTripToDelete}
+        handleSave={handleSave}
+        showToast={showToast}
         intlLocale={intlLocale}
         t={t}
       />

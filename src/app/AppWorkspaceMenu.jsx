@@ -1,11 +1,16 @@
+import { useMemo } from 'react';
 import {
   IconBookmark,
+  IconDeviceFloppy,
   IconDots,
   IconPlus,
+  IconShare,
   IconTrash,
 } from '@tabler/icons-react';
+import { buildItineraryPdfModel } from '../modules/export/itineraryPdfModel.js';
 import { tripTotal } from '../modules/trips/tripModel.js';
 import { formatMoney } from '../shared/utils.js';
+import { useItineraryShare } from './ItineraryShareButton.jsx';
 
 export function AppWorkspaceMenu({
   tripStore,
@@ -14,11 +19,27 @@ export function AppWorkspaceMenu({
   setOpenMenu,
   handleOpenSavedTrip,
   setTripToDelete,
+  handleSave,
+  showToast,
   intlLocale,
   t,
 }) {
   const { trip, resetTrip } = tripStore;
   const { trips, loading } = savedTrips;
+  const open = openMenu === 'workspace';
+  // En la app (móvil) Guardar y Compartir viven en este menú; en escritorio
+  // siguen como círculos sobre el mapa y estas opciones se ocultan por CSS.
+  const shareModel = useMemo(() => (open ? buildItineraryPdfModel(trip) : null), [open, trip]);
+  const { sharing, shareItinerary } = useItineraryShare({
+    model: shareModel,
+    intlLocale,
+    onStatus: (message) => showToast?.(message, 3000),
+    onError: (error) => showToast?.(
+      t(error?.code === 'itinerary-share/auth-required' ? 'shareSignInRequired' : 'shareItineraryError'),
+      3600
+    ),
+    t,
+  });
 
   return (
     <div className="editor-module__settings">
@@ -38,6 +59,29 @@ export function AppWorkspaceMenu({
 
         {openMenu === 'workspace' && (
           <div className="editor-module__more-menu" role="menu">
+            <button
+              type="button"
+              className="editor-module__menu-item editor-module__menu-item--app"
+              onClick={() => {
+                setOpenMenu(null);
+                handleSave?.();
+              }}
+            >
+              <IconDeviceFloppy size={17} aria-hidden="true" />
+              <span>{t('saveTrip')}</span>
+            </button>
+            <button
+              type="button"
+              className="editor-module__menu-item editor-module__menu-item--app"
+              disabled={sharing || !shareModel}
+              onClick={async () => {
+                await shareItinerary();
+                setOpenMenu(null);
+              }}
+            >
+              <IconShare size={17} aria-hidden="true" />
+              <span>{t('shareItinerary')}</span>
+            </button>
             <button
               type="button"
               className="editor-module__menu-item"
