@@ -219,11 +219,11 @@
 }
 
 /* App (iPhone): la cabecera lleva la cuenta a la izquierda (en el lugar del
-   logo) y el menú ⋯ a la derecha. El menú reúne Guardar, Compartir, Nuevo
-   viaje y Viajes guardados, así que sobre el mapa ya no hay círculos. */
+   logo). El menú ⋯ es un círculo sobre el mapa y reúne Guardar, Compartir,
+   Nuevo viaje y Viajes guardados; Capas (Mis rutas) va debajo. */
 @media (max-width: 720px) {
   .app .trip-summary {
-    padding-right: 54px;
+    padding-right: 12px;
     padding-left: 58px;
   }
 
@@ -288,25 +288,18 @@
     width: min(260px, calc(100vw - 24px));
   }
 
-  /* Menú ⋯: a la derecha de la cabecera. */
+  /* Menú ⋯: primer círculo sobre el mapa, arriba a la derecha. */
   .app .editor-module__settings > .editor-module__menu-anchor.editor-module__workspace-anchor {
-    top: calc(var(--safe-top, 0px) + 10px) !important;
-    right: 10px !important;
+    top: calc(var(--trip-header-height, 63px) + 14px) !important;
+    right: 14px !important;
     z-index: 950 !important;
   }
 
-  .app .editor-module__settings .editor-module__workspace-anchor .editor-module__more-button {
-    width: 36px;
-    height: 36px;
-    background: transparent;
-    box-shadow: none;
-  }
-
   .app .editor-module__workspace-anchor .editor-module__more-menu {
-    top: calc(var(--trip-header-height) + 6px);
-    right: 10px;
-    width: min(300px, calc(100vw - 20px));
-    max-height: calc(100dvh - var(--trip-header-height) - 90px - var(--safe-bottom));
+    top: calc(var(--trip-header-height) + 62px);
+    right: 14px;
+    width: min(300px, calc(100vw - 28px));
+    max-height: calc(100dvh - var(--trip-header-height) - 140px - var(--safe-bottom));
   }
 
   /* Nombre del viaje al guardar: bajo la cabecera, a lo ancho. */
@@ -329,9 +322,9 @@
 }
 
 @media (max-width: 720px) {
-  /* Sin círculos encima, Capas es el primero bajo la cabecera. */
+  /* Capas es el siguiente círculo, bajo ⋯. */
   .map-layers-capsule {
-    top: calc(var(--trip-header-height, 63px) + 14px);
+    top: calc(var(--trip-header-height, 63px) + 64px);
   }
 
   /* El buscador de lugares deja libre la columna de círculos. */
