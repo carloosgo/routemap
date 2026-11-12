@@ -131,6 +131,19 @@ function normalizeTransitSteps(value) {
 const ROUTE_SEGMENT_KINDS = new Set(['transit', 'walk', 'other']);
 const MAX_ROUTE_SEGMENTS = 40;
 
+/** Estaciones de un tramo de transporte: subida, intermedias y bajada. */
+export function normalizeTransitStops(value) {
+  return (Array.isArray(value) ? value : [])
+    .slice(0, 60)
+    .map((stop) => {
+      const lat = Number(stop?.lat);
+      const lng = Number(stop?.lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+      return { name: normalizeShortText(stop?.name, 80), lat, lng };
+    })
+    .filter(Boolean);
+}
+
 export function normalizeRouteSegments(value) {
   return (Array.isArray(value) ? value : [])
     .slice(0, MAX_ROUTE_SEGMENTS)
@@ -144,6 +157,7 @@ export function normalizeRouteSegments(value) {
         label: normalizeShortText(segment?.label, 60),
         icon: normalizeTransitIcon(segment?.icon),
         geometry: { type: 'LineString', coordinates },
+        ...(segment?.kind === 'transit' ? { stops: normalizeTransitStops(segment?.stops) } : {}),
       };
     })
     .filter(Boolean);

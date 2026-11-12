@@ -23,6 +23,7 @@ import {
   routeDrawSegments,
   routeLineLayers,
   transitBadgeElement,
+  transitStopElement,
 } from './myRoutesMapStyle.js';
 import { placeColor, placeCountryColors, placeDayIndex, stopColor } from '../places/placesDayModel.js';
 import { capitalizeFirst } from '../../shared/utils.js';
@@ -934,6 +935,22 @@ export function GooglePlacesMap({
           routeLineLayers(maps, segment, path).forEach((options) => {
             savedRouteLinesRef.current.push(new maps.Polyline({ ...options, map }));
           });
+          // Estaciones por las que pasa la línea: puntos sobre el trazo.
+          if (segment.kind === 'transit' && AdvancedMarkerElement) {
+            const stops = segment.stops || [];
+            stops.forEach((stop, stopIndex) => {
+              routeBadgeMarkersRef.current.push(new AdvancedMarkerElement({
+                map,
+                position: { lat: stop.lat, lng: stop.lng },
+                content: transitStopElement(segment.color, {
+                  name: stop.name,
+                  end: stopIndex === 0 || stopIndex === stops.length - 1,
+                }),
+                title: stop.name || '',
+                zIndex: 24,
+              }));
+            });
+          }
           if (segment.kind === 'transit' && (segment.label || segment.icon) && AdvancedMarkerElement) {
             routeBadgeMarkersRef.current.push(new AdvancedMarkerElement({
               map,
