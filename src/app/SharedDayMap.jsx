@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { config } from '../config.js';
 import { loadGoogleMaps } from '../modules/map/googleMapsLoader.js';
 import { decodePolyline } from '../modules/share/dayRouteShare.js';
+import { declutterPlaceLabels, numberedPlaceMarker } from '../modules/map/myRoutesMapStyle.js';
+import { capitalizeFirst } from '../shared/utils.js';
 
 const INK = '#0b1f2c';
 const MARINA = '#0e4f63';
@@ -28,12 +30,12 @@ function lineStyle(mode) {
   };
 }
 
+/** Número del lugar con su cápsula negra de nombre, igual que en Mis rutas. */
 function markerElement(place) {
-  const element = document.createElement('div');
-  element.className = 'shared-day__marker';
-  element.style.background = place.color || MARINA;
-  element.textContent = String(place.number);
-  return element;
+  const name = capitalizeFirst(place.name);
+  const content = numberedPlaceMarker({ number: place.number, color: place.color || MARINA, label: name, name });
+  content.style.cursor = 'default';
+  return content;
 }
 
 /** Mapa de solo lectura del día compartido: paradas numeradas y sus tramos. */
@@ -43,6 +45,7 @@ export function SharedDayMap({ places, legs, unavailableLabel }) {
 
   useEffect(() => {
     let disposed = false;
+    let idleListener = null;
     const overlays = [];
     if (!nodeRef.current || !places.length) return undefined;
 
@@ -101,15 +104,21 @@ export function SharedDayMap({ places, legs, unavailableLabel }) {
           overlays.push(new Polyline({ map, path, zIndex: 2, ...style }));
         });
 
-        places.forEach((place) => {
+        const contents = places.map((place) => {
+          const content = markerElement(place);
           overlays.push(new AdvancedMarkerElement({
             map,
             position: { lat: place.lat, lng: place.lon },
-            content: markerElement(place),
+            content,
             title: place.name,
             zIndex: 10 + place.number,
           }));
+          return content;
         });
+        // Al terminar cada movimiento o zoom se ocultan las cápsulas que se empalman.
+        const declutter = () => declutterPlaceLabels(contents);
+        idleListener = map.addListener('idle', declutter);
+        globalThis.requestAnimationFrame?.(declutter);
 
         // Las líneas de transporte del mapa, como la capa de Mis rutas.
         if (TransitLayer && legs.some((leg) => leg?.mode === 'transit')) {
@@ -127,6 +136,7 @@ export function SharedDayMap({ places, legs, unavailableLabel }) {
 
     return () => {
       disposed = true;
+      idleListener?.remove();
       overlays.forEach((overlay) => {
         if ('setMap' in overlay) overlay.setMap(null);
         else overlay.map = null;
