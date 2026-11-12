@@ -118,6 +118,9 @@ export function colorForIndex(index) {
   return paletteColor(config.segmentColors, index);
 }
 
+/** Color de los números de parada de Mis rutas (lista, mapa y vista compartida). */
+export const STOP_NUMBER_COLOR = '#1f2328';
+
 export function countryColorForIndex(index) {
   return paletteColor(config.countryColors, index);
 }

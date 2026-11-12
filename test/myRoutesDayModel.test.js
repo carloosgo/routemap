@@ -235,9 +235,7 @@ test('cada ciudad usa su monumento, si no un icono genérico de su tipo o regió
   assert.equal(cityTypeIcon('nope'), CITY_TYPE_ICONS.city);
 });
 
-test('cada número de parada tiene su propio color', () => {
-  const colors = [1, 2, 3, 4, 5, 6].map(stopColor);
-  assert.equal(new Set(colors).size, colors.length);
-  colors.forEach((color) => assert.match(color, /^#[0-9a-f]{6}$/i));
+test('los números de parada van en negro y los lugares sin día no tienen color de número', () => {
+  [1, 2, 3, 12].forEach((number) => assert.equal(stopColor(number), '#1f2328'));
   assert.equal(stopColor(0), '');
 });

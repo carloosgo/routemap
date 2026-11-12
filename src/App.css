@@ -882,15 +882,40 @@ select.input {
   overflow-y: auto;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
+.autocomplete__item-row {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* Cada opción es un <button>: sin el fondo gris ni el texto centrado que el
+   navegador da a los botones. Bandera a la izquierda y texto alineado a la
+   izquierda en el resto del ancho, haya o no bandera. */
 .autocomplete__item {
   display: grid;
-  grid-template-columns: auto auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 8px;
+  width: 100%;
   padding: 7px 8px;
-  cursor: pointer;
+  border: 0;
   border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
+.autocomplete__item > .autocomplete__cityinfo:only-child {
+  grid-column: 1 / -1;
+}
+.autocomplete__cityinfo {
+  min-width: 0;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.autocomplete__item:hover,
 .autocomplete__item.is-active {
   background: var(--coral-soft);
 }
