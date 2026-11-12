@@ -5,6 +5,7 @@ import SharedDayPage from './app/SharedDayPage.jsx';
 import SharedItineraryPage from './app/SharedItineraryPage.jsx';
 import { I18nProvider } from './i18n/index.jsx';
 import './modules/map/placeSavePopupDismiss.js';
+import { installStandaloneViewport } from './app/standaloneViewport.js';
 import './index.css';
 import './app/FloatingEditorPlacement.css';
 import './app/FloatingEditorPolish.css';
@@ -30,6 +31,8 @@ const sharedRoute = globalThis.location?.pathname?.match(/^\/share\/([^/]+)\/?$/
 let content = <AuthGate />;
 if (sharedDayRoute) content = <SharedDayPage shareId={decodeURIComponent(sharedDayRoute[1])} />;
 else if (sharedRoute) content = <SharedItineraryPage shareId={decodeURIComponent(sharedRoute[1])} />;
+
+installStandaloneViewport();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <I18nProvider>
