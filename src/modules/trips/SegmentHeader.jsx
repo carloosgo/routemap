@@ -1,5 +1,4 @@
 import {
-  IconGripVertical,
   IconMessageCircle,
   IconReceipt,
   IconTrash,
@@ -44,7 +43,6 @@ const SEQUENCE_BADGE_STYLE = Object.freeze({
   fontWeight: 800,
   lineHeight: 1,
   boxShadow: '0 1px 3px rgba(23, 38, 45, 0.18)',
-  pointerEvents: 'none',
 });
 
 export function SegmentHeader({
@@ -69,6 +67,10 @@ export function SegmentHeader({
   const sequenceBadgeStyle = {
     ...SEQUENCE_BADGE_STYLE,
     color: sequenceColor || '#1f718c',
+    pointerEvents: 'auto',
+    cursor: dragging ? 'grabbing' : 'grab',
+    touchAction: 'none',
+    userSelect: 'none',
   };
 
   return (
@@ -76,24 +78,14 @@ export function SegmentHeader({
       <div className="itinerary-stop__visual-frame itinerary-card__visual-frame">
         <ItineraryCityVisual city={destination} accent={sequenceColor} />
 
-        <span
-          className="segment__drag-handle itinerary-stop__drag itinerary-card__drag"
-          style={{
-            cursor: dragging ? 'grabbing' : 'grab',
-            touchAction: 'none',
-            userSelect: 'none',
-          }}
-          onPointerDown={onReorderPointerStart}
-          aria-hidden="true"
-        >
-          <IconGripVertical size={13} stroke={1.8} />
-        </span>
-
+        {/* El número es el asa para mover la ciudad (ya no hay puntitos sobre la imagen). */}
         {sequenceNumber != null && (
           <span
             className="itinerary-stop__sequence-badge"
             style={sequenceBadgeStyle}
-            aria-hidden="true"
+            data-sequence-drag="true"
+            onPointerDown={onReorderPointerStart}
+            title={t('moveCity')}
           >
             {sequenceNumber}
           </span>

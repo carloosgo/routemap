@@ -23,6 +23,7 @@ import './app/FloatingItineraryPanel.css';
 import './modules/trips/ItineraryCompactTen.css';
 import './app/MobileAppShell.css';
 import './app/MapCapsules.css';
+import './app/MobileNoHeader.css';
 
 const sharedDayRoute = globalThis.location?.pathname?.match(/^\/share\/dia\/([^/]+)\/?$/);
 const sharedRoute = globalThis.location?.pathname?.match(/^\/share\/([^/]+)\/?$/);
