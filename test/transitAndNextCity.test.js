@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { chooseTransitRoute, preferRailRoute, routeSegments, routeUsesBus, routeWalkSeconds, transitIconUri } from '../functions/googleOptimizedRouteFunction.js';
+import { chooseTransitRoute, preferRailRoute, routeTransferStats, transitEffort, routeSegments, routeUsesBus, routeWalkSeconds, transitIconUri } from '../functions/googleOptimizedRouteFunction.js';
 import { normalizeRouteSegments, normalizeTransitIcon, createSavedPlaceRoute } from '../src/modules/routes/routeModel.js';
 import { transitLineBadges } from '../src/modules/places/routeConnectionStyle.js';
 import { cityTransfers, transferDepartureTime } from '../src/modules/places/cityTransferModel.js';
@@ -144,4 +144,18 @@ test('transporte: entre alternativas parecidas gana la que evita una caminata la
   assert.equal(chooseTransitRoute(longWalk, [slow]), longWalk, 'no a costa de tardar mucho más');
   assert.equal(chooseTransitRoute(transfer, [longWalk]), transfer);
   assert.equal(chooseTransitRoute(null, [transfer]), transfer);
+});
+
+test('transporte: evita transbordos caminando entre estaciones distintas (RER + caminar + metro)', () => {
+  const walk = (seconds) => ({ travelMode: 'WALK', staticDuration: `${seconds}s` });
+  const ride = (seconds) => ({ travelMode: 'TRANSIT', staticDuration: `${seconds}s` });
+  // Étoile → RER A → Auber, caminar 6 min a Opéra, línea 8 (22 min).
+  const rerWalk = { duration: '1320s', legs: [{ steps: [walk(180), ride(180), walk(360), ride(480), walk(120)] }] };
+  // Étoile → línea 1 → Concorde, transbordo en la estación, línea 8 (24 min).
+  const metro = { duration: '1440s', legs: [{ steps: [walk(180), ride(600), walk(90), ride(300), walk(120)] }] };
+
+  assert.deepEqual(routeTransferStats(rerWalk), { transfers: 1, walkSeconds: 240 });
+  assert.deepEqual(routeTransferStats(metro), { transfers: 1, walkSeconds: 0 });
+  assert.equal(chooseTransitRoute(rerWalk, [metro]), metro);
+  assert.ok(transitEffort(metro) < transitEffort(rerWalk));
 });

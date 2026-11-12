@@ -146,15 +146,43 @@ export function routeWalkSeconds(route) {
   const steps = route?.legs?.flatMap((leg) => leg?.steps || []) || [];
   return steps
     .filter((step) => step?.travelMode === 'WALK')
-    .reduce((total, step) => {
-      const seconds = parseDurationSeconds(step?.staticDuration);
-      return total + (seconds || Math.max(0, Number(step?.distanceMeters) || 0) / WALK_SPEED_MPS);
-    }, 0);
+    .reduce((total, step) => total + stepWalkSeconds(step), 0);
 }
 
-function transitEffort(route) {
+// Transbordos: cada cambio de línea cuesta algo, y caminar entre estaciones
+// en un transbordo (salir de una y entrar a otra) cuesta el doble.
+const TRANSFER_PENALTY_SECONDS = 2 * 60;
+const TRANSFER_WALK_FREE_SECONDS = 2 * 60;
+const TRANSFER_WALK_PENALTY = 1;
+
+function stepWalkSeconds(step) {
+  const seconds = parseDurationSeconds(step?.staticDuration);
+  return seconds || Math.max(0, Number(step?.distanceMeters) || 0) / WALK_SPEED_MPS;
+}
+
+export function routeTransferStats(route) {
+  const steps = route?.legs?.flatMap((leg) => leg?.steps || []) || [];
+  const transitIndexes = steps
+    .map((step, index) => (step?.travelMode === 'TRANSIT' ? index : -1))
+    .filter((index) => index >= 0);
+  let walkSeconds = 0;
+  for (let k = 1; k < transitIndexes.length; k += 1) {
+    let between = 0;
+    for (let i = transitIndexes[k - 1] + 1; i < transitIndexes[k]; i += 1) {
+      if (steps[i]?.travelMode === 'WALK') between += stepWalkSeconds(steps[i]);
+    }
+    walkSeconds += Math.max(0, between - TRANSFER_WALK_FREE_SECONDS);
+  }
+  return { transfers: Math.max(0, transitIndexes.length - 1), walkSeconds };
+}
+
+export function transitEffort(route) {
   const duration = parseDurationSeconds(route?.duration);
-  return duration + WALK_PENALTY * Math.max(0, routeWalkSeconds(route) - WALK_FREE_SECONDS);
+  const { transfers, walkSeconds } = routeTransferStats(route);
+  return duration
+    + WALK_PENALTY * Math.max(0, routeWalkSeconds(route) - WALK_FREE_SECONDS)
+    + TRANSFER_PENALTY_SECONDS * transfers
+    + TRANSFER_WALK_PENALTY * walkSeconds;
 }
 
 /**
@@ -321,15 +349,25 @@ export const googleRouteOptimized = onCall(
       if (modeConfig.travelMode === 'TRANSIT') {
         // Transporte público: alternativas de Google + la variante de menos
         // caminata, para no terminar caminando si hay otra línea más cerca.
+        // También se piden «menos transbordos» y, en transporte general, una
+        // variante solo metro/tranvía/bus (sin tren de cercanías tipo RER), que
+        // suele evitar transbordos caminando entre estaciones distintas.
         const transitBody = { ...body, computeAlternativeRoutes: true };
-        const [routes, lessWalking] = await Promise.all([
+        const variant = (prefs) => fetchRoutes({
+          ...transitBody,
+          transitPreferences: { ...(body.transitPreferences || {}), ...prefs },
+        }).catch(() => []);
+        const [routes, lessWalking, fewerTransfers, cityLines] = await Promise.all([
           fetchRoutes(transitBody),
-          fetchRoutes({
-            ...transitBody,
-            transitPreferences: { ...(body.transitPreferences || {}), routingPreference: 'LESS_WALKING' },
-          }).catch(() => []),
+          variant({ routingPreference: 'LESS_WALKING' }),
+          variant({ routingPreference: 'FEWER_TRANSFERS' }),
+          requestedMode === 'transit'
+            ? variant({ allowedTravelModes: ['SUBWAY', 'LIGHT_RAIL', 'BUS'] })
+            : Promise.resolve([]),
         ]);
-        route = chooseTransitRoute(routes[0] || null, [...routes.slice(1), ...lessWalking]);
+        route = chooseTransitRoute(routes[0] || null, [
+          ...routes.slice(1), ...lessWalking, ...fewerTransfers, ...cityLines,
+        ]);
       } else {
         route = await fetchRoute(body);
       }
