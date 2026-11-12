@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { preferRailRoute, routeSegments, routeUsesBus, transitIconUri } from '../functions/googleOptimizedRouteFunction.js';
+import { chooseTransitRoute, preferRailRoute, routeSegments, routeUsesBus, routeWalkSeconds, transitIconUri } from '../functions/googleOptimizedRouteFunction.js';
 import { normalizeRouteSegments, normalizeTransitIcon, createSavedPlaceRoute } from '../src/modules/routes/routeModel.js';
 import { transitLineBadges } from '../src/modules/places/routeConnectionStyle.js';
 import { cityTransfers, transferDepartureTime } from '../src/modules/places/cityTransferModel.js';
@@ -126,4 +126,22 @@ test('en transporte público se prefiere metro o tren si no tarda mucho más que
   assert.equal(preferRailRoute(busRoute, metroRoute), metroRoute);
   assert.equal(preferRailRoute(busRoute, slowTrain), busRoute, 'no a costa de tardar mucho más');
   assert.equal(preferRailRoute(busRoute, null), busRoute);
+});
+
+test('transporte: entre alternativas parecidas gana la que evita una caminata larga al final', () => {
+  const walk = (seconds) => ({ travelMode: 'WALK', staticDuration: `${seconds}s` });
+  const ride = { travelMode: 'TRANSIT', staticDuration: '600s' };
+  // Metro y luego 15 min caminando (lo que Google da por defecto, 25 min).
+  const longWalk = { duration: '1500s', legs: [{ steps: [walk(120), ride, walk(900)] }] };
+  // Metro + otra línea hasta una estación cerca del destino (27 min).
+  const transfer = { duration: '1620s', legs: [{ steps: [walk(120), ride, { ...ride }, walk(180)] }] };
+  // Mucho más lenta: no compensa aunque camine poco.
+  const slow = { duration: '3600s', legs: [{ steps: [walk(60), ride] }] };
+
+  assert.equal(routeWalkSeconds(longWalk), 1020);
+  assert.equal(routeWalkSeconds({ legs: [{ steps: [{ travelMode: 'WALK', distanceMeters: 130 }] }] }), 100);
+  assert.equal(chooseTransitRoute(longWalk, [transfer, slow]), transfer);
+  assert.equal(chooseTransitRoute(longWalk, [slow]), longWalk, 'no a costa de tardar mucho más');
+  assert.equal(chooseTransitRoute(transfer, [longWalk]), transfer);
+  assert.equal(chooseTransitRoute(null, [transfer]), transfer);
 });
