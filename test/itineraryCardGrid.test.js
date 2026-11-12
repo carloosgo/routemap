@@ -51,14 +51,14 @@ test('city thumbnail reuses existing Google Places search and photo infrastructu
   assert.doesNotMatch(visual, /fetch\(|https?:\/\//);
 });
 
-test('canonical number and existing drag interaction remain over each destination thumbnail', async () => {
+test('the canonical number over each destination thumbnail is the drag handle', async () => {
   const header = await read('src/modules/trips/SegmentHeader.jsx');
   const pane = await read('src/app/AppEditorPane.jsx');
 
   assert.match(pane, /sequenceNumber=\{stopSequence\[index\]\?\.number \?\? null\}/);
   assert.match(header, /className="itinerary-stop__sequence-badge"[\s\S]*style=\{sequenceBadgeStyle\}/s);
-  assert.match(header, /onPointerDown=\{onReorderPointerStart\}/);
-  assert.match(header, /IconGripVertical/);
+  assert.match(header, /itinerary-stop__sequence-badge"[\s\S]*onPointerDown=\{onReorderPointerStart\}/);
+  assert.doesNotMatch(header, /IconGripVertical/);
 });
 
 test('compact list uses a square thumbnail, tight city/date identity and right-aligned controls', async () => {

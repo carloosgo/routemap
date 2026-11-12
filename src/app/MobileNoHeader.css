@@ -1,0 +1,72 @@
+/* App (≤720 px), petición del 12/11/2026. Se carga al final: es la autoridad
+   de esta geometría. */
+@media (max-width: 720px) {
+  /* ===== Sin cabecera: el mapa ocupa también ese espacio ===== */
+  .app {
+    --trip-header-height: var(--safe-top, 0px);
+  }
+
+  .app .trip-summary {
+    display: none !important;
+  }
+
+  .workspace__mobile {
+    padding-top: 0 !important;
+  }
+
+  /* Notas y Configuración (sin mapa): el contenido empieza bajo la zona segura. */
+  .workspace__mobile.is-sheet-only .mobile-sheet {
+    padding-top: var(--safe-top, 0px);
+  }
+
+  /* ===== Itinerario: lista de ciudades a todo el ancho ===== */
+  .workspace__mobile .editor-module--itinerary .editor:not(.is-panel-collapsed) .editor__body {
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .workspace__mobile .editor:not(.is-panel-collapsed) .editor__body > .segments.itinerary-cards {
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .workspace__mobile .editor:not(.is-panel-collapsed) .editor__body > .segments.itinerary-cards .itinerary-segment {
+    width: 100% !important;
+    margin-inline: 0 !important;
+  }
+
+  .workspace__mobile .editor:not(.is-panel-collapsed)
+    .editor__body > .segments.itinerary-cards
+    .itinerary-card__content {
+    grid-template-columns: 112px minmax(0, 1fr) 80px !important;
+    column-gap: 12px !important;
+  }
+
+  .workspace__mobile .editor:not(.is-panel-collapsed)
+    .editor__body > .segments.itinerary-cards.itinerary-cards--grid
+    .itinerary-segment .segment__header.itinerary-stop,
+  .workspace__mobile .editor:not(.is-panel-collapsed)
+    .editor__body > .segments.itinerary-cards.itinerary-cards--grid
+    .itinerary-origin.itinerary-origin--card {
+    padding: 8px 16px !important;
+  }
+
+  /* Imagen más ancha (misma altura). */
+  .workspace__mobile .editor:not(.is-panel-collapsed)
+    .editor__body > .segments.itinerary-cards
+    .itinerary-card__visual-frame {
+    width: 112px !important;
+    min-width: 112px !important;
+    max-width: 112px !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .workspace__mobile .itinerary-card-toolbar {
+    padding-inline: 16px !important;
+  }
+
+  .workspace__mobile .itinerary-add-city {
+    margin-inline: 0 !important;
+  }
+}

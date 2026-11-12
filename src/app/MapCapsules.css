@@ -167,7 +167,7 @@
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.16);
 }
 
-/* ⋯ Viajes: círculo blanco de 40 px; su menú sigue abriéndose a la izquierda. */
+/* ⋯ Viajes: círculo azul de 40 px (como Guardar); su menú sigue abriéndose a la izquierda. */
 .app .editor-module__settings > .editor-module__menu-anchor.editor-module__workspace-anchor {
   top: calc(var(--trip-header-height, 63px) + 114px) !important;
 }
@@ -180,8 +180,8 @@
   justify-content: center;
   border: 0;
   border-radius: 50%;
-  background: #ffffff;
-  color: var(--text, #0b1f2c);
+  background: var(--atlas-accent);
+  color: #ffffff;
   font-family: var(--font-body);
   font-size: 13px;
   font-weight: 600;
@@ -190,20 +190,30 @@
 }
 
 .app .editor-module__settings .editor-module__workspace-anchor .editor-module__more-button svg {
-  color: #3a4250;
+  color: #ffffff;
 }
 
 .app .editor-module__settings .editor-module__workspace-anchor .editor-module__more-button:hover,
 .app .editor-module__settings .editor-module__workspace-anchor .editor-module__more-button.is-active {
-  background: #f4f5f7;
-  color: var(--text, #0b1f2c);
-  filter: none;
+  background: var(--atlas-accent);
+  color: #ffffff;
+  filter: brightness(0.92);
 }
 
+/* Web: todos los círculos sobre el mapa van en el azul de Guardar, salvo la
+   Cuenta (Itinerario y Mis rutas). */
 .app .itinerary-pdf-export__button {
   top: calc(var(--trip-header-height, 63px) + 164px);
   width: 40px;
   height: 40px;
+  background: var(--atlas-accent);
+  color: #ffffff;
+}
+
+.app .itinerary-pdf-export__button:hover,
+.app .itinerary-pdf-export__button:focus-visible {
+  background: var(--atlas-accent);
+  filter: brightness(0.92);
 }
 
 /* Compartir usa estilos inline: se reubica bajo PDF con !important. */
@@ -211,6 +221,12 @@
   top: calc(var(--trip-header-height, 63px) + 214px) !important;
   width: 40px !important;
   height: 40px !important;
+  background: var(--atlas-accent) !important;
+  color: #ffffff !important;
+}
+
+.app .itinerary-share__button:hover:not(:disabled) {
+  filter: brightness(0.92);
 }
 
 /* Guardar y Compartir dentro del menú ⋯: solo en la app (móvil). */
@@ -218,19 +234,11 @@
   display: none;
 }
 
-/* App (iPhone): la cabecera lleva la cuenta a la izquierda (en el lugar del
-   logo). El menú ⋯ es un círculo sobre el mapa y reúne Guardar, Compartir,
-   Nuevo viaje y Viajes guardados; Capas (Mis rutas) va debajo. */
+/* App (iPhone), desde el 12/11/2026: sin cabecera; el mapa llega hasta arriba.
+   Columna de círculos a la derecha, bajo el buscador de Mis rutas y en la
+   misma posición en Itinerario: Cuenta → ⋯ → Resumen del viaje → Capas.
+   El menú ⋯ reúne Guardar, Compartir, Nuevo viaje y Viajes guardados. */
 @media (max-width: 720px) {
-  .app .trip-summary {
-    padding-right: 12px;
-    padding-left: 58px;
-  }
-
-  .app .trip-summary__brand {
-    display: none;
-  }
-
   .app .topbar--floating-only {
     display: block;
   }
@@ -250,48 +258,23 @@
     cursor: wait;
   }
 
-  /* Cuenta: avatar en la cabecera, donde estaba el logo. */
+  /* Cuenta: primer círculo (blanco, con la foto o iniciales); su menú se
+     abre a la izquierda, como en web. */
   .account-capsule {
-    top: calc(var(--safe-top, 0px) + 9px);
-    right: auto;
-    left: 12px;
+    top: calc(var(--safe-top, 0px) + 70px);
+    right: 14px;
+    left: auto;
     z-index: 955;
   }
 
-  .account-capsule__button {
-    width: 38px;
-    height: 38px;
-    background: transparent;
-    box-shadow: none;
-  }
-
-  .account-capsule__button .account-avatar--sm {
-    width: 34px;
-    height: 34px;
-    font-size: 13px;
-    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
-  }
-
-  .account-capsule__button:hover,
-  .account-capsule__button.is-active {
-    background: transparent;
-  }
-
-  .account-capsule__button.is-active .account-avatar--sm {
-    box-shadow: 0 0 0 2px var(--atlas-accent);
-  }
-
   .account-capsule__menu {
-    top: calc(100% + 8px);
-    right: auto;
-    left: 0;
-    width: min(260px, calc(100vw - 24px));
+    width: min(260px, calc(100vw - 88px));
   }
 
   /* Menú ⋯: círculo azul sobre el mapa, a la derecha y bajo el buscador de
      Mis rutas (que va centrado a lo ancho). Misma posición en Itinerario. */
   .app .editor-module__settings > .editor-module__menu-anchor.editor-module__workspace-anchor {
-    top: calc(var(--trip-header-height, 63px) + 72px) !important;
+    top: calc(var(--safe-top, 0px) + 120px) !important;
     right: 14px !important;
     z-index: 950 !important;
   }
@@ -308,23 +291,32 @@
   }
 
   .app .editor-module__workspace-anchor .editor-module__more-menu {
-    top: calc(var(--trip-header-height) + 120px);
+    top: calc(var(--safe-top, 0px) + 168px);
     right: 14px;
     width: min(300px, calc(100vw - 28px));
-    max-height: calc(100dvh - var(--trip-header-height) - 200px - var(--safe-bottom));
+    max-height: calc(100dvh - var(--safe-top, 0px) - 248px - var(--safe-bottom));
   }
 
-  /* Con una nota o el formulario de costos abiertos, ⋯ y Capas se ocultan
-     para no quedar encima. */
+  /* Con una nota o el formulario de costos abiertos, y en Notas y
+     Configuración (sin mapa), los círculos se ocultan. */
   .app:has(.segnote, .trip-place-note-dialog) .editor-module__settings > .editor-module__workspace-anchor,
-  .app:has(.segnote, .trip-place-note-dialog) .map-layers-capsule {
+  .app:has(.segnote, .trip-place-note-dialog) .map-layers-capsule,
+  .app:has(.segnote, .trip-place-note-dialog) .account-capsule,
+  .app:has(.segnote, .trip-place-note-dialog) .trip-info-capsule,
+  .app:has(.workspace__mobile.is-sheet-only) .editor-module__settings > .editor-module__workspace-anchor,
+  .app:has(.workspace__mobile.is-sheet-only) .account-capsule,
+  .app:has(.workspace__mobile.is-sheet-only) .trip-info-capsule,
+  .app:has(.trip-info-panel) .editor-module__settings > .editor-module__workspace-anchor,
+  .app:has(.trip-info-panel) .account-capsule,
+  .app:has(.trip-info-panel) .map-layers-capsule,
+  .app:has(.trip-info-panel) .trip-info-capsule__button {
     visibility: hidden;
     pointer-events: none;
   }
 
-  /* Nombre del viaje al guardar: bajo la cabecera, a lo ancho. */
+  /* Nombre del viaje al guardar: arriba, a lo ancho. */
   .app .trip-save-popover {
-    top: calc(var(--trip-header-height) + 8px);
+    top: calc(var(--safe-top, 0px) + 10px);
     right: 10px;
     left: 10px;
     width: auto;
@@ -341,20 +333,22 @@
   font-family: var(--font-body);
 }
 
+/* Capas también en azul (web y app). */
+.map-layers-capsule > button {
+  background: var(--atlas-accent) !important;
+  color: #ffffff !important;
+}
+
 @media (max-width: 720px) {
-  /* Capas es el siguiente círculo, bajo ⋯, también en azul. */
+  /* Capas es el último círculo, bajo Resumen del viaje. */
   .map-layers-capsule {
-    top: calc(var(--trip-header-height, 63px) + 122px);
+    top: calc(var(--safe-top, 0px) + 220px);
   }
 
-  .map-layers-capsule > button {
-    background: var(--atlas-accent) !important;
-    color: #ffffff !important;
-  }
-
-  /* Buscador de lugares: el mismo ancho de antes (pantalla − 76 px), ahora
-     centrado; los círculos van debajo. */
+  /* Buscador de lugares: el mismo ancho de antes (pantalla − 76 px),
+     centrado, y arriba, donde estaba la cabecera; los círculos van debajo. */
   .app .geo-search {
+    top: calc(var(--safe-top, 0px) + 10px) !important;
     left: 38px;
     right: 38px;
     width: auto;

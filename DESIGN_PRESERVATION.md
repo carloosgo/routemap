@@ -192,6 +192,17 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - El listado de sugerencias vive dentro de `.geo-search__input-wrap`, por lo que su borde izquierdo, borde derecho y ancho siguen exactamente al campo de búsqueda incluso cuando el ancho disponible cambia.
 - Este ajuste no modifica el centrado respecto al mapa, el comportamiento móvil existente, proveedores, búsqueda/autocompletado, selección de resultados, cámara, persistencia ni Storage v4.
 
+## Ajuste solicitado (12/11/2026): app sin cabecera, Configuración y círculos azules
+
+- **App (≤720 px) sin cabecera.** El mapa sube hasta el borde superior (respeta `--safe-top`) y `--trip-header-height` vale solo la zona segura. La barra inferior gana una cuarta pestaña, **Configuración** (icono engrane), con Moneda e Idioma como listas de opciones (código en negrita, nombre, check azul en la elegida) sobre la hoja a pantalla completa.
+- **Columna de círculos en la app** (derecha, 14 px; misma posición en Itinerario y Mis Rutas): Cuenta (`+70px`, blanco con foto o iniciales, menú hacia la izquierda) → ⋯ (`+120px`, azul) → **Resumen del viaje** (`+170px`, azul, icono info) → Capas en Mis Rutas (`+220px`, azul). El Resumen abre una tarjeta fija arriba (10 px de margen) con Fechas, Total del viaje con su desglose por categoría, Ciudades/países y Noches; mientras está abierta se ocultan los demás círculos.
+- El buscador de Mis Rutas sube al lugar de la cabecera (`--safe-top + 10px`) con el mismo ancho (`left/right: 38px`).
+- Los círculos se ocultan en Notas y Configuración, y mientras hay una nota o el formulario de costos abiertos.
+- **Itinerario en la app:** la lista de ciudades ocupa todo el ancho (sin márgenes laterales del contenedor; 16 px de margen interno en cada fila y en Agregar ciudad) y la imagen pasa de 76 a 112 px de ancho (misma altura).
+- **Mover ciudad desde su número** (web y app): el círculo del número sobre la imagen es el asa de arrastre (cursor grab); se quitaron los puntitos de arrastre.
+- **Web:** ⋯, PDF, Compartir y Capas pasan al azul de Guardar (`--atlas-accent`, icono blanco); la Cuenta sigue blanca.
+- **Mis Rutas:** el botón de nota usa el mismo icono que Itinerario (`IconMessageCircle`, trazo 1.8), en la cabecera de ciudad y en los lugares.
+
 ## Ajuste solicitado (12/11/2026): nota de ciudad una sola vez en Mis Rutas
 
 - La nota del Itinerario es de la estancia (ciudad), no del día. En `Mis Rutas` su botón vive en la cabecera de cada ciudad (bandera · ciudad · N días), alineado a la derecha, y ya no en la fila de cada día abierto. Así no se repite en todos los días de la misma ciudad ni muestra la nota de la ciudad de salida en un día de traslado.

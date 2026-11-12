@@ -10,6 +10,7 @@ import { AppEditorModule } from './app/AppEditorModule.jsx';
 import { AppMapPane } from './app/AppMapPane.jsx';
 import { AppWorkspace } from './app/AppWorkspace.jsx';
 import { TripSummaryHeader } from './app/TripSummaryHeader.jsx';
+import { TripInfoCapsule, TripSettingsPanel } from './app/MobileTripPanels.jsx';
 import { TripDeleteDialog } from './app/TripDeleteDialog.jsx';
 import { normalizeRecoveredDraft } from './app/recoveredTripDraft.js';
 import { useAppEditorState } from './app/useAppEditorState.js';
@@ -167,6 +168,20 @@ export default function App({ auth }) {
     />
   );
 
+  // App (móvil): sin cabecera. Moneda e Idioma van a la pestaña Configuración
+  // y el resto del resumen a un círculo sobre el mapa.
+  const settingsPanel = (
+    <TripSettingsPanel
+      currency={trip.currency}
+      setCurrency={setCurrency}
+      locale={locale}
+      setLocale={setLocale}
+      availableLocales={availableLocales}
+      t={t}
+      intlLocale={intlLocale}
+    />
+  );
+
   const editorModule = (
     <AppEditorModule
       tripStore={tripStore}
@@ -218,8 +233,17 @@ export default function App({ auth }) {
         onToggle={() => setOpenMenu(openMenu === 'account' ? null : 'account')}
         t={t}
       />
+      <TripInfoCapsule
+        trip={trip}
+        total={editorState.total}
+        hasCosts={editorState.hasCosts}
+        breakdown={editorState.breakdown}
+        t={t}
+        intlLocale={intlLocale}
+      />
       <AppWorkspace
         editorModule={editorModule}
+        settingsPanel={settingsPanel}
         mapPane={mapPane}
         desktopPanelCollapsed={desktopPanelCollapsed}
         setDesktopPanelCollapsed={setDesktopPanelCollapsed}

@@ -23,9 +23,9 @@ import { SummarySelectorMetric } from './SummarySelectorMetric.jsx';
 import { TripHeaderNavigation } from './TripHeaderNavigation.jsx';
 import './TripSummaryHeaderMicroPolish.css';
 
-const CURRENCIES = ['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'];
+export const CURRENCIES = ['USD', 'EUR', 'MXN', 'GBP', 'JPY', 'CAD', 'BRL'];
 
-const BREAKDOWN_CATS = [
+export const BREAKDOWN_CATS = [
   { key: 'plane', labelKey: 'flights', Icon: IconPlane, color: '#e2725b' },
   { key: 'train', labelKey: 'train', Icon: IconTrain, color: '#4f6df5' },
   { key: 'bus', labelKey: 'bus', Icon: IconBus, color: '#e08a17' },
@@ -35,7 +35,7 @@ const BREAKDOWN_CATS = [
   { key: 'others', labelKey: 'others', Icon: IconDots, color: '#9499ab' },
 ];
 
-function displayName(code, type, locale) {
+export function displayName(code, type, locale) {
   try {
     const name = new Intl.DisplayNames([locale], { type }).of(code);
     if (!name) return code;
@@ -71,7 +71,7 @@ function formatHeaderDate(iso, locale) {
   }
 }
 
-function formatTripDateRange(summary, locale, emptyLabel) {
+export function formatTripDateRange(summary, locale, emptyLabel) {
   const start = formatHeaderDate(summary.startDate, locale);
   const end = formatHeaderDate(summary.endDate, locale);
   if (start && end) return `${start} - ${end}`;

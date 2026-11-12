@@ -5,6 +5,7 @@ import {
   IconListDetails,
   IconNotebook,
   IconRoute,
+  IconSettings,
 } from '@tabler/icons-react';
 import { nextSheetSnap, sheetSnapHeights } from './mobileSheetModel.js';
 import './DockedWorkspace.css';
@@ -18,6 +19,7 @@ const MOBILE_TABS = [
   { id: 'segments', labelKey: 'itinerary', Icon: IconListDetails },
   { id: 'places', labelKey: 'myRoutes', Icon: IconRoute },
   { id: 'notes', labelKey: 'notes', Icon: IconNotebook },
+  { id: 'settings', labelKey: 'settings', Icon: IconSettings },
 ];
 
 const MAP_SECTIONS = new Set(['segments', 'places']);
@@ -30,6 +32,7 @@ function currentMobileViewport() {
 
 export function AppWorkspace({
   editorModule,
+  settingsPanel = null,
   mapPane,
   desktopPanelCollapsed,
   setDesktopPanelCollapsed,
@@ -69,6 +72,11 @@ export function AppWorkspace({
     media.addEventListener?.('change', handleChange);
     return () => media.removeEventListener?.('change', handleChange);
   }, []);
+
+  // Configuración solo existe en la app: al pasar a escritorio vuelve a Itinerario.
+  useEffect(() => {
+    if (!mobileViewport && activeTab === 'settings') setActiveTab?.('segments');
+  }, [mobileViewport, activeTab, setActiveTab]);
 
   useEffect(() => {
     // Nota y datos del trayecto viven en el panel del mapa; en móvil se
@@ -112,7 +120,7 @@ export function AppWorkspace({
       const state = sheetStateRef.current;
       if (!state.sectionHasMap || event.touches.length !== 1) return;
       // Campos de texto y asas de reordenar (ciudades / lugares) conservan su gesto.
-      if (event.target.closest?.('input, textarea, select, [contenteditable="true"], .segment__drag-handle, .mr-place__drag')) return;
+      if (event.target.closest?.('input, textarea, select, [contenteditable="true"], .segment__drag-handle, [data-sequence-drag], .mr-place__drag')) return;
       const point = event.touches[0];
       touch = {
         startX: point.clientX,
@@ -257,7 +265,7 @@ export function AppWorkspace({
               </button>
             )}
             <div className="mobilepane is-active mobile-sheet__body">
-              {editorModule}
+              {activeTab === 'settings' && mobileViewport ? settingsPanel : editorModule}
             </div>
           </section>
         </div>

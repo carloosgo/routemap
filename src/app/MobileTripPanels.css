@@ -1,0 +1,198 @@
+/* Resumen del viaje (círculo sobre el mapa) y Configuración: solo en la app. */
+.trip-info-capsule {
+  display: none;
+}
+
+.trip-settings {
+  padding: 18px 16px 32px;
+  font-family: var(--font-body);
+}
+
+.trip-settings__title {
+  margin: 0 0 14px;
+  color: #0b1f2c;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.trip-settings__group + .trip-settings__group {
+  margin-top: 22px;
+}
+
+.trip-settings__group-title {
+  margin: 0 0 8px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.trip-settings__list {
+  overflow: hidden;
+  border: 1px solid #e6e8ec;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.trip-settings__option {
+  width: 100%;
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 0;
+  border-bottom: 1px solid #eef0f2;
+  background: transparent;
+  color: #0b1f2c;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.trip-settings__option:last-child {
+  border-bottom: 0;
+}
+
+.trip-settings__option strong {
+  font-weight: 700;
+}
+
+.trip-settings__option span {
+  overflow: hidden;
+  color: #3a4250;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-settings__option svg {
+  color: var(--atlas-accent);
+}
+
+.trip-settings__option.is-selected span {
+  color: #0b1f2c;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .trip-info-capsule {
+    position: fixed;
+    top: calc(var(--safe-top, 0px) + 170px);
+    right: 14px;
+    z-index: 945;
+    display: block;
+    font-family: var(--font-body);
+  }
+
+  .trip-info-capsule__button {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--atlas-accent);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.16);
+    cursor: pointer;
+  }
+
+  /* Panel: tarjeta fija arriba, por encima de todos los círculos. */
+  .trip-info-panel {
+    position: fixed;
+    top: calc(var(--safe-top, 0px) + 10px);
+    right: 10px;
+    left: 10px;
+    z-index: 1250;
+    max-height: calc(100dvh - var(--safe-top, 0px) - 90px - var(--safe-bottom, 0px));
+    overflow-y: auto;
+    padding: 6px 0 8px;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 12px 36px rgba(15, 23, 42, 0.24);
+  }
+
+  .trip-info-panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px 6px 16px;
+    color: #0b1f2c;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .trip-info-panel__close {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #667085;
+    cursor: pointer;
+  }
+
+  .trip-info-panel__block + .trip-info-panel__block {
+    border-top: 1px solid #eef0f2;
+  }
+
+  .trip-info-panel__row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+  }
+
+  .trip-info-panel__icon {
+    display: grid;
+    color: #667085;
+  }
+
+  .trip-info-panel__copy {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .trip-info-panel__copy strong {
+    color: #000000;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .trip-info-panel__copy small {
+    color: #0d6078;
+    font-size: 12px;
+  }
+
+  .trip-info-panel__breakdown {
+    padding: 0 16px 10px 46px;
+  }
+
+  .trip-info-panel__breakdown-row {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) auto 36px;
+    align-items: center;
+    gap: 8px;
+    min-height: 30px;
+    color: #3a4250;
+    font-size: 13px;
+  }
+
+  .trip-info-panel__breakdown-row strong {
+    color: #0b1f2c;
+    font-weight: 600;
+  }
+
+  .trip-info-panel__breakdown-row small {
+    color: #667085;
+    text-align: right;
+  }
+}
