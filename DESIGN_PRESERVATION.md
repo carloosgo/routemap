@@ -209,7 +209,7 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Los círculos del mapa que quedarían bajo la hoja desplegada se ocultan (`data-under-sheet`), así nunca quedan encima de la lista de ciudades o lugares.
 - Cabecera de la hoja más delgada: asa de 20 px (barra de 32×4 px) y sin el hueco de 18 px sobre `Agregar ciudad`.
 - Las notas generales (pestaña Notas) conservan saltos de línea al guardarse en Firestore.
-- La app se fija a los cuatro bordes (`position: fixed; inset: 0`): con la barra translúcida, `100dvh` dejaba un hueco gris bajo la barra inferior.
+- La app es fija arriba y, instalada en iPhone, toma la altura real de la pantalla (`--app-height`, `standaloneViewport.js`): con la barra translúcida, `100dvh` e `inset: 0` quedan cortos por la zona segura superior y dejaban un hueco gris bajo la barra inferior.
 - La hoja empieza abajo y solo asoma el asa (32 px); un toque la sube a media altura. Máximo espacio para el mapa.
 
 ## Ajuste solicitado (12/11/2026): nota de ciudad una sola vez en Mis Rutas

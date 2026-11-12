@@ -103,14 +103,19 @@
   }
 }
 
-/* iPhone instalado con barra de estado translúcida: 100vh/100dvh no cuentan
-   la franja de la barra y dejaban un hueco gris abajo. La app se fija a los
-   cuatro bordes de la pantalla. */
+/* iPhone instalado con barra de estado translúcida: 100vh/100dvh e inset: 0
+   quedan cortos por la altura de la zona segura superior y dejaban un hueco
+   gris abajo. En modo standalone la altura sale de la pantalla. */
 @media (max-width: 720px) {
   .app {
     position: fixed;
-    inset: 0;
+    top: 0;
+    right: 0;
+    left: 0;
+    bottom: auto;
     width: auto;
-    height: auto;
+    /* --app-height: altura real de la pantalla en modo standalone
+       (standaloneViewport.js); en Safari normal, 100dvh. */
+    height: var(--app-height, 100dvh);
   }
 }
