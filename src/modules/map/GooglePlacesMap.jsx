@@ -16,6 +16,7 @@ import { itineraryLandmarksFromFeatures } from './itineraryLandmarkCatalog.js';
 import { markerElement, savedPlacePopup } from './placeMapDom.js';
 import { buildMapFeatureData, cityKey } from './routeMapModel.js';
 import {
+  declutterPlaceLabels,
   middlePoint,
   numberedPlaceMarker,
   pendingLineLayer,
@@ -24,6 +25,7 @@ import {
   transitBadgeElement,
 } from './myRoutesMapStyle.js';
 import { placeColor, placeCountryColors, placeDayIndex, stopColor } from '../places/placesDayModel.js';
+import { capitalizeFirst } from '../../shared/utils.js';
 import { useLiveRoutesVersion, withLiveGeometry } from '../routes/liveRouteStore.js';
 import { usePlaceSearch } from './usePlaceSearch.js';
 import { createWebglLandmarkOverlay } from './webglLandmarkOverlay.js';
@@ -222,7 +224,7 @@ export function GooglePlacesMap({
   selectedPlaceId = '',
   onSelectPlace,
 }) {
-  const { t } = useTranslation();
+  const { t, intlLocale } = useTranslation();
   const liveRoutesVersion = useLiveRoutesVersion();
   const wrapRef = useRef(null);
   const nodeRef = useRef(null);
@@ -759,6 +761,7 @@ export function GooglePlacesMap({
       return undefined;
     }
 
+    const labelled = [];
     locatedPlaces.filter(isPlaced).forEach((place) => {
       const inFocus = !focusedPlaceIds || focusedPlaceIds.has(place.id);
       if (!inFocus && !showOtherDays) return;
@@ -770,7 +773,10 @@ export function GooglePlacesMap({
         selected,
         muted: !inFocus,
         label: placeLabel(place, t),
+        name: capitalizeFirst(placeLabel(place, t), intlLocale),
       });
+      // Prioridad de las cápsulas: el lugar seleccionado y luego por número.
+      labelled.push({ content, rank: selected ? -1 : number || 999 });
       const marker = new AdvancedMarkerElement({
         map,
         position: { lat: place.lat, lng: place.lon },
@@ -791,8 +797,20 @@ export function GooglePlacesMap({
       savedPlaceMarkersRef.current.push(marker);
     });
 
-    return () => clearAdvancedMarkers(savedPlaceMarkersRef);
+    // Cápsulas con el nombre: se recalculan al terminar cada movimiento o zoom
+    // para ocultar las que se empalman.
+    const contents = labelled.sort((a, b) => a.rank - b.rank).map((entry) => entry.content);
+    const declutter = () => declutterPlaceLabels(contents);
+    const frame = globalThis.requestAnimationFrame?.(declutter);
+    const idleListener = map.addListener?.('idle', declutter);
+
+    return () => {
+      if (frame) globalThis.cancelAnimationFrame?.(frame);
+      idleListener?.remove?.();
+      clearAdvancedMarkers(savedPlaceMarkersRef);
+    };
   }, [
+    intlLocale,
     dayIndex,
     focusedPlaceIds,
     locatedPlaces,
