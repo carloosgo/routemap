@@ -34,3 +34,40 @@
 .trip-place-note-dialog .segnote__textarea {
   width: auto;
 }
+
+/* La nota de un lugar se coloca exactamente donde aparece la nota del
+   itinerario: arriba a la izquierda del mapa, bajo la cabecera (escritorio),
+   o como hoja fija bajo la cabecera (app). Antes quedaba centrada. */
+.confirm__scrim:has(> .trip-place-note-dialog) {
+  display: block;
+  padding: 0;
+}
+
+@media (min-width: 721px) {
+  .trip-place-note-dialog {
+    position: fixed;
+    top: calc(var(--trip-header-height, 63px) + 12px);
+    left: calc(var(--workspace-panel-width, 458px) + 14px);
+    width: 300px;
+    max-width: 300px;
+    max-height: calc(100dvh - var(--trip-header-height, 63px) - 24px);
+  }
+
+  .workspace__desktop--column.is-panel-collapsed .trip-place-note-dialog {
+    left: 14px;
+  }
+}
+
+@media (max-width: 720px) {
+  .trip-place-note-dialog {
+    position: fixed;
+    top: calc(var(--trip-header-height) + 10px);
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-width: none;
+    max-height: calc(100dvh - var(--trip-header-height) - 84px - var(--safe-bottom, 0px));
+    overflow-y: auto;
+    box-shadow: 0 12px 36px rgba(15, 23, 42, 0.24);
+  }
+}

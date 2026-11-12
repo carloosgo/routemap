@@ -12,7 +12,7 @@ import { watchDayShare } from '../modules/share/dayShareRepository.js';
 import { flagImageUrl } from '../modules/flags/flags.js';
 import { placeMapsUrl } from '../modules/share/dayRouteShare.js';
 import { transitVehicleKey } from '../modules/places/routeConnectionStyle.js';
-import { countryColorForIndex } from '../config.js';
+import { STOP_NUMBER_COLOR } from '../config.js';
 import { SharedDayMap } from './SharedDayMap.jsx';
 import { SHARED_ITINERARY_STYLES } from './sharedItineraryStyles.js';
 import { SHARED_DAY_STYLES } from './sharedDayStyles.js';
@@ -62,8 +62,8 @@ function cleanPlaces(model) {
         category: String(place?.category || ''),
         lat: safeNumber(place?.lat),
         lon: safeNumber(place?.lon),
-        // Un color por número, igual que en Mis rutas (también en links antiguos).
-        color: countryColorForIndex(number - 1),
+        // Números en negro, igual que en Mis rutas (también en links antiguos).
+        color: STOP_NUMBER_COLOR,
         googlePlaceId: String(place?.googlePlaceId || ''),
       };
     })

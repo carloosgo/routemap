@@ -288,18 +288,38 @@
     width: min(260px, calc(100vw - 24px));
   }
 
-  /* Menú ⋯: primer círculo sobre el mapa, arriba a la derecha. */
+  /* Menú ⋯: círculo azul sobre el mapa, a la derecha y bajo el buscador de
+     Mis rutas (que va centrado a lo ancho). Misma posición en Itinerario. */
   .app .editor-module__settings > .editor-module__menu-anchor.editor-module__workspace-anchor {
-    top: calc(var(--trip-header-height, 63px) + 14px) !important;
+    top: calc(var(--trip-header-height, 63px) + 72px) !important;
     right: 14px !important;
     z-index: 950 !important;
   }
 
+  .app .editor-module__settings .editor-module__workspace-anchor .editor-module__more-button,
+  .app .editor-module__settings .editor-module__workspace-anchor .editor-module__more-button:hover,
+  .app .editor-module__settings .editor-module__workspace-anchor .editor-module__more-button.is-active {
+    background: var(--atlas-accent);
+    color: #ffffff;
+  }
+
+  .app .editor-module__settings .editor-module__workspace-anchor .editor-module__more-button svg {
+    color: #ffffff;
+  }
+
   .app .editor-module__workspace-anchor .editor-module__more-menu {
-    top: calc(var(--trip-header-height) + 62px);
+    top: calc(var(--trip-header-height) + 120px);
     right: 14px;
     width: min(300px, calc(100vw - 28px));
-    max-height: calc(100dvh - var(--trip-header-height) - 140px - var(--safe-bottom));
+    max-height: calc(100dvh - var(--trip-header-height) - 200px - var(--safe-bottom));
+  }
+
+  /* Con una nota o el formulario de costos abiertos, ⋯ y Capas se ocultan
+     para no quedar encima. */
+  .app:has(.segnote, .trip-place-note-dialog) .editor-module__settings > .editor-module__workspace-anchor,
+  .app:has(.segnote, .trip-place-note-dialog) .map-layers-capsule {
+    visibility: hidden;
+    pointer-events: none;
   }
 
   /* Nombre del viaje al guardar: bajo la cabecera, a lo ancho. */
@@ -322,15 +342,20 @@
 }
 
 @media (max-width: 720px) {
-  /* Capas es el siguiente círculo, bajo ⋯. */
+  /* Capas es el siguiente círculo, bajo ⋯, también en azul. */
   .map-layers-capsule {
-    top: calc(var(--trip-header-height, 63px) + 64px);
+    top: calc(var(--trip-header-height, 63px) + 122px);
   }
 
-  /* El buscador de lugares deja libre la columna de círculos. */
+  .map-layers-capsule > button {
+    background: var(--atlas-accent) !important;
+    color: #ffffff !important;
+  }
+
+  /* Buscador de lugares centrado a lo ancho; los círculos van debajo. */
   .app .geo-search {
     left: 12px;
-    right: 64px;
+    right: 12px;
     width: auto;
     transform: none;
   }
