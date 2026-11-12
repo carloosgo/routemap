@@ -179,6 +179,8 @@ export default function App({ auth }) {
       editorMenuRef={editorMenuRef}
       setTripToDelete={setTripToDelete}
       handleOpenSavedTrip={handleOpenSavedTrip}
+      handleSave={handleSave}
+      showToast={showToast}
       placesFocus={placesFocus}
       persistenceState={persistence.state}
       t={t}

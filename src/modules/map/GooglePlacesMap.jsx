@@ -28,6 +28,13 @@ import { useLiveRoutesVersion, withLiveGeometry } from '../routes/liveRouteStore
 import { usePlaceSearch } from './usePlaceSearch.js';
 import { createWebglLandmarkOverlay } from './webglLandmarkOverlay.js';
 
+// Misma frontera que el shell móvil (MobileAppShell.css / AppWorkspace).
+const APP_MEDIA_QUERY = '(max-width: 720px)';
+
+function appViewport() {
+  return Boolean(globalThis.matchMedia?.(APP_MEDIA_QUERY)?.matches);
+}
+
 function geometryPaths(geometry) {
   if (geometry?.type === 'LineString') return [geometry.coordinates || []];
   if (geometry?.type === 'MultiLineString') return geometry.coordinates || [];
@@ -335,6 +342,7 @@ export function GooglePlacesMap({
   useEffect(() => {
     let disposed = false;
     let resizeHandler = null;
+    let disposeZoomControlSync = null;
     if (!wrapRef.current || !nodeRef.current || !mapConfigured) return undefined;
 
     syncMapElementSize(wrapRef.current, nodeRef.current);
@@ -360,7 +368,8 @@ export function GooglePlacesMap({
           mapId: config.googleMaps.mapId,
           renderingType: RenderingType.VECTOR,
           mapTypeControl: false,
-          zoomControl: true,
+          // En la app (móvil) se hace zoom con los dedos: sin botones + y −.
+          zoomControl: !appViewport(),
           zoomControlOptions: { position: maps.ControlPosition?.RIGHT_BOTTOM },
           streetViewControl: false,
           fullscreenControl: false,
@@ -371,6 +380,10 @@ export function GooglePlacesMap({
           gestureHandling: 'greedy',
         });
         mapRef.current = map;
+        const appMedia = globalThis.matchMedia?.(APP_MEDIA_QUERY);
+        const syncZoomControl = (event) => map.setOptions({ zoomControl: !event.matches });
+        appMedia?.addEventListener?.('change', syncZoomControl);
+        disposeZoomControlSync = () => appMedia?.removeEventListener?.('change', syncZoomControl);
         mapRef.current.__AdvancedMarkerElement = AdvancedMarkerElement;
         itineraryLandmarkOverlayRef.current = createWebglLandmarkOverlay({
           WebGLOverlayView,
@@ -416,6 +429,7 @@ export function GooglePlacesMap({
 
     return () => {
       disposed = true;
+      disposeZoomControlSync?.();
       if (resizeHandler) globalThis.removeEventListener?.('resize', resizeHandler);
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;

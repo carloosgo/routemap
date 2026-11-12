@@ -44,13 +44,8 @@ function shareUrl(shareId) {
   return new URL(`/share/${encodeURIComponent(shareId)}`, globalThis.location.origin).toString();
 }
 
-export function ItineraryShareButton({
-  model,
-  intlLocale,
-  onError,
-  onStatus,
-  t,
-}) {
+/** Crea el link corto del itinerario y lo comparte (o lo copia). */
+export function useItineraryShare({ model, intlLocale, onError, onStatus, t }) {
   const [sharing, setSharing] = useState(false);
 
   const shareItinerary = useCallback(async () => {
@@ -84,6 +79,18 @@ export function ItineraryShareButton({
       setSharing(false);
     }
   }, [intlLocale, model, onError, onStatus, sharing, t]);
+
+  return { sharing, shareItinerary };
+}
+
+export function ItineraryShareButton({
+  model,
+  intlLocale,
+  onError,
+  onStatus,
+  t,
+}) {
+  const { sharing, shareItinerary } = useItineraryShare({ model, intlLocale, onError, onStatus, t });
 
   return (
     <button
