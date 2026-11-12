@@ -203,6 +203,13 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - **Web:** ⋯, PDF, Compartir y Capas pasan al azul de Guardar (`--atlas-accent`, icono blanco); la Cuenta sigue blanca.
 - **Mis Rutas:** el botón de nota usa el mismo icono que Itinerario (`IconMessageCircle`, trazo 1.8), en la cabecera de ciudad y en los lugares.
 
+## Ajuste solicitado (12/11/2026, tras probar en iPhone)
+
+- En la app instalada, la barra de estado es `black-translucent`: el mapa llega hasta el borde superior, también bajo la cámara frontal (texto de la barra en blanco).
+- Los círculos del mapa que quedarían bajo la hoja desplegada se ocultan (`data-under-sheet`), así nunca quedan encima de la lista de ciudades o lugares.
+- Cabecera de la hoja más delgada: asa de 20 px (barra de 32×4 px) y sin el hueco de 18 px sobre `Agregar ciudad`.
+- Las notas generales (pestaña Notas) conservan saltos de línea al guardarse en Firestore.
+
 ## Ajuste solicitado (12/11/2026): nota de ciudad una sola vez en Mis Rutas
 
 - La nota del Itinerario es de la estancia (ciudad), no del día. En `Mis Rutas` su botón vive en la cabecera de cada ciudad (bandera · ciudad · N días), alineado a la derecha, y ya no en la fila de cada día abierto. Así no se repite en todos los días de la misma ciudad ni muestra la nota de la ciudad de salida en un día de traslado.
