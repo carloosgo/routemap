@@ -352,10 +352,11 @@
     color: #ffffff !important;
   }
 
-  /* Buscador de lugares centrado a lo ancho; los círculos van debajo. */
+  /* Buscador de lugares: el mismo ancho de antes (pantalla − 76 px), ahora
+     centrado; los círculos van debajo. */
   .app .geo-search {
-    left: 12px;
-    right: 12px;
+    left: 38px;
+    right: 38px;
     width: auto;
     transform: none;
   }

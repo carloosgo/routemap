@@ -148,7 +148,7 @@ export function middlePoint(path) {
 }
 
 /** Marcador numerado del día (DOM). `muted` = lugar de otro día. */
-export function numberedPlaceMarker({ number, color, selected = false, muted = false, label = '' }) {
+export function numberedPlaceMarker({ number, color, selected = false, muted = false, label = '', name = '' }) {
   const button = document.createElement('button');
   button.type = 'button';
   button.setAttribute('aria-label', label);
@@ -175,7 +175,72 @@ export function numberedPlaceMarker({ number, color, selected = false, muted = f
         : '0 0 0 2.5px #ffffff, 0 3px 8px rgba(15, 23, 42, 0.3)',
   });
   if (!muted && number) button.textContent = String(number);
-  return button;
+  const text = String(name || '').trim();
+  if (muted || !text) return button;
+
+  // Cápsula negra con el nombre bajo el número. Va en posición absoluta para
+  // no mover el ancla del marcador; `declutterPlaceLabels` oculta las que se
+  // empalman con otra cápsula o con otro número.
+  const wrap = document.createElement('div');
+  wrap.dataset.myRoutesPlace = 'day';
+  Object.assign(wrap.style, { position: 'relative', display: 'flex', justifyContent: 'center' });
+  const caption = document.createElement('span');
+  caption.dataset.myRoutesLabel = 'true';
+  caption.textContent = text;
+  Object.assign(caption.style, {
+    position: 'absolute',
+    top: `calc(100% + ${size / 2 + 5}px)`,
+    left: '50%',
+    maxWidth: '150px',
+    padding: '3px 8px',
+    overflow: 'hidden',
+    borderRadius: '999px',
+    background: '#1f2328',
+    color: '#ffffff',
+    font: '600 11px/1.25 var(--font-body, sans-serif)',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    boxShadow: '0 2px 6px rgba(15, 23, 42, 0.25)',
+    transform: 'translateX(-50%)',
+    pointerEvents: 'none',
+  });
+  wrap.append(button, caption);
+  return wrap;
+}
+
+function rectsOverlap(a, b, gap = 2) {
+  return a.left < b.right + gap && b.left < a.right + gap && a.top < b.bottom + gap && b.top < a.bottom + gap;
+}
+
+/**
+ * Muestra las cápsulas de nombre en orden de prioridad y oculta las que se
+ * empalman con una ya visible o con cualquier número del mapa.
+ * `contents` son los contenidos de los marcadores, de mayor a menor prioridad.
+ */
+export function declutterPlaceLabels(contents) {
+  const circles = contents
+    .map((content) => (content.matches?.('button') ? content : content.querySelector?.('button')))
+    .filter(Boolean)
+    .map((button) => button.getBoundingClientRect())
+    .filter((rect) => rect.width > 0);
+  const placed = [];
+  contents.forEach((content) => {
+    const caption = content.querySelector?.('[data-my-routes-label]');
+    if (!caption) return;
+    caption.style.visibility = 'visible';
+    const rect = caption.getBoundingClientRect();
+    const own = content.querySelector('button')?.getBoundingClientRect();
+    const blocked = rect.width === 0
+      || placed.some((other) => rectsOverlap(rect, other))
+      || circles.some((circle) => circle !== own
+        && !(own && circle.left === own.left && circle.top === own.top)
+        && rectsOverlap(rect, circle, 0));
+    if (blocked) {
+      caption.style.visibility = 'hidden';
+      return;
+    }
+    placed.push(rect);
+  });
 }
 
 /** Distintivo de línea sobre el trazo (DOM). */
