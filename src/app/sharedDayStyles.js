@@ -1,5 +1,5 @@
 export const SHARED_DAY_STYLES = `
-.shared-day .shared-day__header{padding:12px 14px;border-radius:16px}
+.shared-day .shared-day__header{margin-top:14px;padding:12px 14px;border-radius:16px}
 .shared-day__brand{display:flex;min-width:0;align-items:center;gap:8px;color:#0b1f2c}
 .shared-day__logo{flex:none;width:22px;height:22px}
 .shared-day__brand-name{flex:none;font-size:14px;font-weight:800}
@@ -28,4 +28,11 @@ export const SHARED_DAY_STYLES = `
 .shared-day__step-head small{color:#667085;font-size:11.5px;font-weight:500}
 .shared-day__step p{margin:0;color:#425158;font-size:12px;line-height:1.35}
 .shared-day__line{display:inline-flex;min-width:22px;height:20px;align-items:center;justify-content:center;padding:0 6px;border-radius:5px;font-size:11.5px;font-weight:700}
+/* Móvil: el mapa ocupa todo el ancho y casi toda la altura de la pantalla, sin
+   tarjeta. Deja una franja de 88 px para ver que abajo sigue la lista y poder
+   desplazarse (el mapa se mueve con un dedo). */
+@media(max-width:720px){
+.shared-itinerary.shared-day{padding:0 12px 40px}
+.shared-day .shared-itinerary__map-card{height:calc(100dvh - 88px);min-height:320px;margin:0 -12px;border:0;border-radius:0;box-shadow:none}
+}
 `;
