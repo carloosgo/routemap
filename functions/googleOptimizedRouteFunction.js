@@ -149,15 +149,27 @@ export function routeWalkSeconds(route) {
     .reduce((total, step) => total + stepWalkSeconds(step), 0);
 }
 
-// Transbordos: cada cambio de línea cuesta algo, y caminar entre estaciones
-// en un transbordo (salir de una y entrar a otra) cuesta el doble.
-const TRANSFER_PENALTY_SECONDS = 2 * 60;
+// Regla general (cualquier ciudad), al comparar alternativas parecidas:
+// 1. Riel primero: metro, tranvía y tren. Un transbordo entre dos líneas de
+//    riel cuesta poco, así que se prefiere «tranvía + metro» que te deja cerca
+//    sobre «tranvía + caminar mucho».
+// 2. Caminar largo (al final o entre estaciones distintas) cuesta el doble.
+// 3. El bus es la última opción: cada minuto en bus cuenta 1.5. Si en la
+//    ciudad no hay riel, todas las opciones llevan bus y gana la de siempre.
+const RAIL_TRANSFER_SECONDS = 60;
+const MIXED_TRANSFER_SECONDS = 3 * 60;
 const TRANSFER_WALK_FREE_SECONDS = 2 * 60;
 const TRANSFER_WALK_PENALTY = 1;
+const BUS_RIDE_PENALTY = 0.5;
+const BUS_FIXED_PENALTY_SECONDS = 3 * 60;
 
 function stepWalkSeconds(step) {
   const seconds = parseDurationSeconds(step?.staticDuration);
   return seconds || Math.max(0, Number(step?.distanceMeters) || 0) / WALK_SPEED_MPS;
+}
+
+function stepIsBus(step) {
+  return BUS_VEHICLES.has(String(step?.transitDetails?.transitLine?.vehicle?.type || ''));
 }
 
 export function routeTransferStats(route) {
@@ -166,23 +178,40 @@ export function routeTransferStats(route) {
     .map((step, index) => (step?.travelMode === 'TRANSIT' ? index : -1))
     .filter((index) => index >= 0);
   let walkSeconds = 0;
+  let railTransfers = 0;
+  let mixedTransfers = 0;
   for (let k = 1; k < transitIndexes.length; k += 1) {
     let between = 0;
     for (let i = transitIndexes[k - 1] + 1; i < transitIndexes[k]; i += 1) {
       if (steps[i]?.travelMode === 'WALK') between += stepWalkSeconds(steps[i]);
     }
     walkSeconds += Math.max(0, between - TRANSFER_WALK_FREE_SECONDS);
+    if (stepIsBus(steps[transitIndexes[k - 1]]) || stepIsBus(steps[transitIndexes[k]])) mixedTransfers += 1;
+    else railTransfers += 1;
   }
-  return { transfers: Math.max(0, transitIndexes.length - 1), walkSeconds };
+  const busSeconds = transitIndexes
+    .map((index) => steps[index])
+    .filter(stepIsBus)
+    .reduce((total, step) => total + (parseDurationSeconds(step?.staticDuration) || 0), 0);
+  return {
+    transfers: Math.max(0, transitIndexes.length - 1),
+    railTransfers,
+    mixedTransfers,
+    walkSeconds,
+    busSeconds,
+    usesBus: transitIndexes.some((index) => stepIsBus(steps[index])),
+  };
 }
 
 export function transitEffort(route) {
   const duration = parseDurationSeconds(route?.duration);
-  const { transfers, walkSeconds } = routeTransferStats(route);
+  const stats = routeTransferStats(route);
   return duration
     + WALK_PENALTY * Math.max(0, routeWalkSeconds(route) - WALK_FREE_SECONDS)
-    + TRANSFER_PENALTY_SECONDS * transfers
-    + TRANSFER_WALK_PENALTY * walkSeconds;
+    + RAIL_TRANSFER_SECONDS * stats.railTransfers
+    + MIXED_TRANSFER_SECONDS * stats.mixedTransfers
+    + TRANSFER_WALK_PENALTY * stats.walkSeconds
+    + (stats.usesBus ? BUS_FIXED_PENALTY_SECONDS + BUS_RIDE_PENALTY * stats.busSeconds : 0);
 }
 
 /**
@@ -347,39 +376,25 @@ export const googleRouteOptimized = onCall(
       const fetchRoute = async (requestBody) => (await fetchRoutes(requestBody))[0] || null;
       let route;
       if (modeConfig.travelMode === 'TRANSIT') {
-        // Transporte público: alternativas de Google + la variante de menos
-        // caminata, para no terminar caminando si hay otra línea más cerca.
-        // También se piden «menos transbordos» y, en transporte general, una
-        // variante solo metro/tranvía/bus (sin tren de cercanías tipo RER), que
-        // suele evitar transbordos caminando entre estaciones distintas.
+        // Candidatas: la de Google y sus alternativas, «menos caminata»,
+        // «menos transbordos» y, en transporte general, las mismas solo en
+        // riel (metro, tranvía, tren). Gana la de menor esfuerzo (ver arriba).
         const transitBody = { ...body, computeAlternativeRoutes: true };
         const variant = (prefs) => fetchRoutes({
           ...transitBody,
           transitPreferences: { ...(body.transitPreferences || {}), ...prefs },
         }).catch(() => []);
-        const [routes, lessWalking, fewerTransfers, cityLines] = await Promise.all([
+        const general = requestedMode === 'transit';
+        const [routes, ...variants] = await Promise.all([
           fetchRoutes(transitBody),
           variant({ routingPreference: 'LESS_WALKING' }),
           variant({ routingPreference: 'FEWER_TRANSFERS' }),
-          requestedMode === 'transit'
-            ? variant({ allowedTravelModes: ['SUBWAY', 'LIGHT_RAIL', 'BUS'] })
-            : Promise.resolve([]),
+          general ? variant(RAIL_ONLY_TRANSIT) : Promise.resolve([]),
+          general ? variant({ ...RAIL_ONLY_TRANSIT, routingPreference: 'LESS_WALKING' }) : Promise.resolve([]),
         ]);
-        route = chooseTransitRoute(routes[0] || null, [
-          ...routes.slice(1), ...lessWalking, ...fewerTransfers, ...cityLines,
-        ]);
+        route = chooseTransitRoute(routes[0] || null, [...routes.slice(1), ...variants.flat()]);
       } else {
         route = await fetchRoute(body);
-      }
-      // Transporte público: si Google propone bus, se busca también en metro/tren.
-      if (requestedMode === 'transit' && routeUsesBus(route)) {
-        const railRoutes = await fetchRoutes({
-          ...body,
-          computeAlternativeRoutes: true,
-          transitPreferences: RAIL_ONLY_TRANSIT,
-        }).catch(() => []);
-        const railRoute = chooseTransitRoute(railRoutes[0] || null, railRoutes.slice(1));
-        route = preferRailRoute(route, railRoute);
       }
       if (!route) throw new Error('Google Routes no devolvió una ruta.');
       const geometry = decodeGooglePolyline(cleanText(route.polyline?.encodedPolyline, 1000000));
