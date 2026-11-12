@@ -211,7 +211,7 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Las notas generales (pestaña Notas) conservan saltos de línea al guardarse en Firestore.
 - La app es fija arriba y, instalada en iPhone, toma la altura real de la pantalla (`--app-height`, `standaloneViewport.js`): con la barra translúcida, `100dvh` e `inset: 0` quedan cortos por la zona segura superior y dejaban un hueco gris bajo la barra inferior.
 - La hoja empieza abajo y solo asoma el asa (32 px); un toque la sube a media altura. Máximo espacio para el mapa.
-- Barra de pestañas pegada abajo: del margen del indicador de inicio solo quedan 8 px (`safe-bottom − 26px`) y los botones miden 48 px.
+- Barra de pestañas pegada abajo: del margen del indicador de inicio quedan 28 px (`safe-bottom − 6px`; con 8 px se activaba Siri al tocar las pestañas) y los botones miden 48 px.
 
 ## Ajuste solicitado (12/11/2026): nota de ciudad una sola vez en Mis Rutas
 

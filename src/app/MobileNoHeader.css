@@ -131,10 +131,10 @@ html.is-standalone-app #root {
 }
 
 /* Barra de pestañas pegada abajo: del margen del indicador de inicio
-   (≈34 px) solo se dejan 8 px, y los botones bajan a 48 px de alto. */
+   (≈34 px) se dejan 28 px (con menos, la barra de inicio se encimaba y al tocar se activaba Siri), y los botones bajan a 48 px de alto. */
 @media (max-width: 720px) {
   .mobiletabs {
-    padding-bottom: max(0px, calc(var(--safe-bottom, 0px) - 26px)) !important;
+    padding-bottom: max(0px, calc(var(--safe-bottom, 0px) - 6px)) !important;
   }
 
   .mobiletabs__btn {
