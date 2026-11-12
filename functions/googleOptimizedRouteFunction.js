@@ -1,8 +1,13 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { error as logError } from 'firebase-functions/logger';
 import { callableOptions, enforceQuota } from './callablePolicy.js';
-import { GOOGLE_ROUTES_API_KEY, QUOTAS, db } from './geoapifyRuntime.js';
+import { GOOGLE_ROUTES_API_KEY, QUOTAS, cacheDb, db } from './geoapifyRuntime.js';
 import { limitedFetch, safeError, validPoint } from './geoapifySupport.js';
+import { addTransitStops, stopPoint } from './transitStops.js';
+import { createSharedCache } from './sharedCache.js';
+
+const TRANSIT_CACHE_VERSION = 'v1';
+const cachedTransitRoute = createSharedCache(cacheDb, { ttlMs: 24 * 60 * 60 * 1000 });
 
 const GOOGLE_ROUTES_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
 const ROUTE_FIELDS = [
@@ -319,12 +324,22 @@ export function routeSegments(route) {
     const label = kind === 'transit' ? cleanText(line.nameShort || line.name, 60) : '';
     const textColor = kind === 'transit' && HEX_COLOR.test(String(line.textColor || '')) ? line.textColor : '';
     const icon = kind === 'transit' ? transitLineLogo(line) : '';
+    const details = kind === 'transit' ? step?.transitDetails || {} : {};
+    const departure = stopPoint(details.stopDetails?.departureStop?.name, details.stopDetails?.departureStop?.location?.latLng);
+    const arrival = stopPoint(details.stopDetails?.arrivalStop?.name, details.stopDetails?.arrivalStop?.location?.latLng);
+    const stopCount = Math.max(0, Number(details.stopCount) || 0);
     const previous = segments.at(-1);
     if (previous && previous.kind === kind && previous.color === color && previous.label === label && previous.icon === icon) {
       previous.geometry.coordinates.push(...geometry.coordinates.slice(1));
+      if (kind === 'transit') {
+        previous.arrival = arrival || previous.arrival;
+        previous.stopCount += stopCount;
+      }
       return;
     }
-    segments.push({ kind, color, textColor, label, icon, geometry });
+    segments.push(kind === 'transit'
+      ? { kind, color, textColor, label, icon, geometry, departure, arrival, stopCount, vehicle: cleanText(line.vehicle?.type, 40) }
+      : { kind, color, textColor, label, icon, geometry });
   });
   return segments.slice(0, MAX_ROUTE_SEGMENTS);
 }
@@ -346,7 +361,7 @@ export const googleRouteOptimized = onCall(
       throw new HttpsError('invalid-argument', 'Origen o destino inválido.');
     }
 
-    try {
+    const compute = async () => {
       const modeConfig = routeRequestMode(requestedMode);
       const body = {
         origin,
@@ -400,6 +415,8 @@ export const googleRouteOptimized = onCall(
       const geometry = decodeGooglePolyline(cleanText(route.polyline?.encodedPolyline, 1000000));
       if (!geometry) throw new Error('Google Routes no devolvió una geometría válida.');
 
+      const segments = routeSegments(route);
+      if (modeConfig.travelMode === 'TRANSIT') await addTransitStops(segments);
       return {
         provider: 'google',
         mode: requestedMode,
@@ -408,8 +425,20 @@ export const googleRouteOptimized = onCall(
         duration: parseDurationSeconds(route.duration),
         calculatedAt: new Date().toISOString(),
         transitSteps: transitSummary(route),
-        segments: routeSegments(route),
+        segments,
       };
+    };
+
+    try {
+      // Transporte público: la misma ruta (origen, destino, modo y salida) se
+      // reutiliza 24 h para no repetir las 5 consultas a Google en cada sesión.
+      if (requestedMode === 'transit' || requestedMode === 'train' || requestedMode === 'bus') {
+        const key = [TRANSIT_CACHE_VERSION, requestedMode, JSON.stringify(origin), JSON.stringify(destination),
+          cleanText(request.data?.departureTime, 48)].join('|');
+        const { result } = await cachedTransitRoute('googleTransitRoutes', key, compute);
+        return result;
+      }
+      return await compute();
     } catch (error) {
       logError('Optimized Google route calculation failed.', {
         ...safeError(error),

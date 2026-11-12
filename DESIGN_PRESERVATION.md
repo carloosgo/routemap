@@ -343,3 +343,8 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Notas usa la hoja a altura completa, sin asa ni mapa.
 - La hoja no usa `transform` ni `z-index` propio, para que el menú ⋮ (fijo, dentro del editor) siga sobre la cabecera. Nota, datos del trayecto y avisos viven en el panel del mapa; mientras están abiertos el mapa sube por encima de la hoja (`:has`, z-index 50) y se muestran como hoja fija bajo la cabecera, con márgenes de 10 px.
 - El menú ⋮ empieza con `Cuenta`: `Continuar con Google` sin sesión; con sesión muestra el correo, `Importar viajes locales` y `Cerrar sesión`.
+
+## Estaciones sobre las rutas de transporte (12/11/2026)
+
+- En Mis Rutas, cada tramo de transporte público marca sus estaciones con puntos blancos con borde del color de la línea: subida y bajada de 12 px, intermedias de 9 px. El nombre aparece al pasar el cursor. No llevan etiqueta fija para no saturar el mapa.
+- Subida y bajada vienen de Google; las intermedias, de OpenStreetMap (Overpass). Si Overpass no responde, solo se marcan los extremos.

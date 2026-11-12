@@ -129,6 +129,7 @@ export function routeDrawSegments(route, geometryPaths) {
       label: segment.kind === 'transit' ? segment.label || '' : '',
       textColor: segment.kind === 'transit' ? segment.textColor || '' : '',
       icon: segment.kind === 'transit' ? segment.icon || '' : '',
+      stops: segment.kind === 'transit' && Array.isArray(segment.stops) ? segment.stops : [],
       coordinates: segment.geometry?.coordinates || [],
     }));
   }
@@ -138,8 +139,33 @@ export function routeDrawSegments(route, geometryPaths) {
     label: '',
     textColor: '',
     icon: '',
+    stops: [],
     coordinates,
   }));
+}
+
+/**
+ * Punto de estación sobre la línea de transporte (DOM): blanco con borde del
+ * color de la línea; subida y bajada un poco más grandes.
+ */
+export function transitStopElement(color, { name = '', end = false } = {}) {
+  const dot = document.createElement('span');
+  dot.dataset.transitStop = end ? 'end' : 'mid';
+  if (name) dot.title = name;
+  const size = end ? 12 : 9;
+  Object.assign(dot.style, {
+    display: 'block',
+    width: `${size}px`,
+    height: `${size}px`,
+    boxSizing: 'border-box',
+    borderRadius: '50%',
+    background: '#ffffff',
+    border: `${end ? 3 : 2.5}px solid ${color || '#23647a'}`,
+    boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.9)',
+    transform: 'translateY(50%)',
+    pointerEvents: 'none',
+  });
+  return dot;
 }
 
 export function middlePoint(path) {
