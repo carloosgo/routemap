@@ -10,6 +10,8 @@ const ROUTE_FIELDS = [
   'routes.distanceMeters',
   'routes.polyline.encodedPolyline',
   'routes.legs.steps.travelMode',
+  'routes.legs.steps.distanceMeters',
+  'routes.legs.steps.staticDuration',
   'routes.legs.steps.polyline.encodedPolyline',
   'routes.legs.steps.transitDetails.stopDetails',
   'routes.legs.steps.transitDetails.headsign',
@@ -130,6 +132,51 @@ export function routeUsesBus(route) {
     step?.travelMode === 'TRANSIT'
     && BUS_VEHICLES.has(String(step?.transitDetails?.transitLine?.vehicle?.type || ''))
   );
+}
+
+// Caminatas: Google optimiza solo el tiempo y a veces termina con una
+// caminata larga aunque haya otra línea o estación más cerca del destino.
+// Cada minuto caminado por encima de WALK_FREE_SECONDS cuenta doble al
+// comparar alternativas, siempre que la alternativa no tarde mucho más.
+const WALK_FREE_SECONDS = 4 * 60;
+const WALK_PENALTY = 1;
+const WALK_SPEED_MPS = 1.3;
+
+export function routeWalkSeconds(route) {
+  const steps = route?.legs?.flatMap((leg) => leg?.steps || []) || [];
+  return steps
+    .filter((step) => step?.travelMode === 'WALK')
+    .reduce((total, step) => {
+      const seconds = parseDurationSeconds(step?.staticDuration);
+      return total + (seconds || Math.max(0, Number(step?.distanceMeters) || 0) / WALK_SPEED_MPS);
+    }, 0);
+}
+
+function transitEffort(route) {
+  const duration = parseDurationSeconds(route?.duration);
+  return duration + WALK_PENALTY * Math.max(0, routeWalkSeconds(route) - WALK_FREE_SECONDS);
+}
+
+/**
+ * Entre la ruta de Google y sus alternativas (incluida la de «menos caminata»)
+ * elige la que menos obliga a caminar sin tardar mucho más que la original.
+ */
+export function chooseTransitRoute(defaultRoute, alternatives = []) {
+  if (!defaultRoute) return alternatives.find(Boolean) || null;
+  const base = parseDurationSeconds(defaultRoute.duration);
+  if (!base) return defaultRoute;
+  let best = defaultRoute;
+  let bestEffort = transitEffort(defaultRoute);
+  alternatives.forEach((route) => {
+    const duration = parseDurationSeconds(route?.duration);
+    if (!duration || duration > base * RAIL_MAX_RATIO || duration - base > RAIL_MAX_EXTRA_SECONDS) return;
+    const effort = transitEffort(route);
+    if (effort < bestEffort) {
+      best = route;
+      bestEffort = effort;
+    }
+  });
+  return best;
 }
 
 /** Entre la ruta por defecto (con bus) y la de solo metro/tren, elige la de riel si es razonable. */
@@ -257,7 +304,7 @@ export const googleRouteOptimized = onCall(
         body.departureTime = departureTime;
       }
 
-      const fetchRoute = async (requestBody) => {
+      const fetchRoutes = async (requestBody) => {
         const payload = await limitedFetch(
           GOOGLE_ROUTES_URL,
           {
@@ -267,12 +314,33 @@ export const googleRouteOptimized = onCall(
           },
           'Google Routes'
         );
-        return payload.routes?.[0] || null;
+        return Array.isArray(payload.routes) ? payload.routes.filter(Boolean) : [];
       };
-      let route = await fetchRoute(body);
+      const fetchRoute = async (requestBody) => (await fetchRoutes(requestBody))[0] || null;
+      let route;
+      if (modeConfig.travelMode === 'TRANSIT') {
+        // Transporte público: alternativas de Google + la variante de menos
+        // caminata, para no terminar caminando si hay otra línea más cerca.
+        const transitBody = { ...body, computeAlternativeRoutes: true };
+        const [routes, lessWalking] = await Promise.all([
+          fetchRoutes(transitBody),
+          fetchRoutes({
+            ...transitBody,
+            transitPreferences: { ...(body.transitPreferences || {}), routingPreference: 'LESS_WALKING' },
+          }).catch(() => []),
+        ]);
+        route = chooseTransitRoute(routes[0] || null, [...routes.slice(1), ...lessWalking]);
+      } else {
+        route = await fetchRoute(body);
+      }
       // Transporte público: si Google propone bus, se busca también en metro/tren.
       if (requestedMode === 'transit' && routeUsesBus(route)) {
-        const railRoute = await fetchRoute({ ...body, transitPreferences: RAIL_ONLY_TRANSIT }).catch(() => null);
+        const railRoutes = await fetchRoutes({
+          ...body,
+          computeAlternativeRoutes: true,
+          transitPreferences: RAIL_ONLY_TRANSIT,
+        }).catch(() => []);
+        const railRoute = chooseTransitRoute(railRoutes[0] || null, railRoutes.slice(1));
         route = preferRailRoute(route, railRoute);
       }
       if (!route) throw new Error('Google Routes no devolvió una ruta.');
