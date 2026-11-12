@@ -18,6 +18,9 @@ export function installStandaloneViewport(win = globalThis) {
   if (!root) return () => {};
   const apply = () => {
     const height = standaloneAppHeight(win);
+    // La clase permite agrandar también html/body: con overflow hidden, iOS
+    // recorta lo que pase del viewport corto (se cortaban las etiquetas).
+    root.classList.toggle('is-standalone-app', Boolean(height));
     if (height) root.style.setProperty('--app-height', `${height}px`);
     else root.style.removeProperty('--app-height');
   };
