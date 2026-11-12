@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   IconChevronLeft,
   IconChevronRight,
@@ -23,6 +23,11 @@ const MOBILE_TABS = [
 ];
 
 const MAP_SECTIONS = new Set(['segments', 'places']);
+
+// Círculos sobre el mapa (app): se ocultan los que quedarían bajo la hoja
+// cuando esta sube, para que nunca queden encima de la lista.
+const MAP_CIRCLE_SELECTOR = '.account-capsule, .trip-info-capsule, .map-layers-capsule, .workspace__mobile .editor-module__workspace-anchor';
+const UNDER_SHEET_ATTR = 'data-under-sheet';
 
 function currentMobileViewport() {
   return typeof globalThis.matchMedia === 'function'
@@ -98,6 +103,22 @@ export function AppWorkspace({
     observer.observe(stage);
     return () => observer.disconnect();
   }, [mobileViewport]);
+
+  useLayoutEffect(() => {
+    const stage = stageRef.current;
+    const circles = Array.from(document.querySelectorAll(MAP_CIRCLE_SELECTOR));
+    if (!mobileViewport || !stage || !sectionHasMap) {
+      circles.forEach((circle) => circle.removeAttribute(UNDER_SHEET_ATTR));
+      return;
+    }
+    const stageRect = stage.getBoundingClientRect();
+    const sheetTop = stageRect.top + stageRect.height - sheetHeight;
+    circles.forEach((circle) => {
+      const button = circle.querySelector('button') || circle;
+      const rect = button.getBoundingClientRect();
+      circle.toggleAttribute(UNDER_SHEET_ATTR, rect.height > 0 && rect.bottom > sheetTop - 8);
+    });
+  });
 
   // Arrastre táctil desde cualquier punto de la hoja (no solo el asa), como en
   // las apps de mapas: hacia arriba mueve la hoja hasta su altura máxima y

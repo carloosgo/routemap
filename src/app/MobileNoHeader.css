@@ -70,3 +70,35 @@
     margin-inline: 0 !important;
   }
 }
+
+/* 13/11/2026 tras probar en iPhone. */
+@media (max-width: 720px) {
+  /* Círculos que quedarían bajo la hoja desplegada: ocultos (AppWorkspace
+     marca cada uno con data-under-sheet). */
+  .app [data-under-sheet] {
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  /* Cabecera de la hoja más delgada: asa de 20 px y sin el hueco de 18 px
+     que dejaba el contenedor del menú ⋯ (que es fijo). */
+  .workspace__mobile .mobile-sheet__handle {
+    height: 20px;
+  }
+
+  .workspace__mobile .mobile-sheet__handle span {
+    width: 32px;
+    height: 4px;
+  }
+
+  .workspace__mobile .editor-module > .editor-module__settings {
+    display: block !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+  }
+
+  .workspace__mobile .editor-module--itinerary .editor:not(.is-panel-collapsed) .editor__body {
+    padding-top: 4px !important;
+  }
+}

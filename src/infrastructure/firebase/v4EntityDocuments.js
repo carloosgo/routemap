@@ -5,7 +5,7 @@ import {
   placeForPersistence,
 } from '../../modules/trips/tripModel.js';
 import { createSavedPlaceRoute } from '../../modules/routes/routeModel.js';
-import { sanitizeText } from '../../shared/utils.js';
+import { sanitizeMultilineText, sanitizeText } from '../../shared/utils.js';
 import { V4_ENTITY_STATUS } from '../../modules/storage-v4/storageV4Contract.js';
 import { nextEntityVersion } from '../../modules/storage-v4/entityVersionModel.js';
 
@@ -55,7 +55,8 @@ export function v4EntityPayload(entityType, rawEntity, rank) {
       id: requireId(rawEntity?.id),
       rank: requireRank(rank),
       title: sanitizeText(rawEntity?.title || '', TRIP_LIMITS.noteTitle),
-      text: sanitizeText(rawEntity?.text || '', TRIP_LIMITS.noteText),
+      // Las notas conservan saltos de línea al guardarse en Firestore.
+      text: sanitizeMultilineText(rawEntity?.text || '', TRIP_LIMITS.noteText),
     };
   }
   if (entityType === 'checklist') {
