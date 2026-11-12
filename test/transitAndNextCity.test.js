@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { chooseTransitRoute, preferRailRoute, routeSegments, routeUsesBus, routeWalkSeconds, transitIconUri } from '../functions/googleOptimizedRouteFunction.js';
+import { chooseTransitRoute, preferRailRoute, routeTransferStats, transitEffort, routeSegments, routeUsesBus, routeWalkSeconds, transitIconUri } from '../functions/googleOptimizedRouteFunction.js';
 import { normalizeRouteSegments, normalizeTransitIcon, createSavedPlaceRoute } from '../src/modules/routes/routeModel.js';
 import { transitLineBadges } from '../src/modules/places/routeConnectionStyle.js';
 import { cityTransfers, transferDepartureTime } from '../src/modules/places/cityTransferModel.js';
@@ -144,4 +144,40 @@ test('transporte: entre alternativas parecidas gana la que evita una caminata la
   assert.equal(chooseTransitRoute(longWalk, [slow]), longWalk, 'no a costa de tardar mucho más');
   assert.equal(chooseTransitRoute(transfer, [longWalk]), transfer);
   assert.equal(chooseTransitRoute(null, [transfer]), transfer);
+});
+
+test('transporte: evita transbordos caminando entre estaciones distintas (RER + caminar + metro)', () => {
+  const walk = (seconds) => ({ travelMode: 'WALK', staticDuration: `${seconds}s` });
+  const ride = (seconds) => ({ travelMode: 'TRANSIT', staticDuration: `${seconds}s` });
+  // Étoile → RER A → Auber, caminar 6 min a Opéra, línea 8 (22 min).
+  const rerWalk = { duration: '1320s', legs: [{ steps: [walk(180), ride(180), walk(360), ride(480), walk(120)] }] };
+  // Étoile → línea 1 → Concorde, transbordo en la estación, línea 8 (24 min).
+  const metro = { duration: '1440s', legs: [{ steps: [walk(180), ride(600), walk(90), ride(300), walk(120)] }] };
+
+  assert.equal(routeTransferStats(rerWalk).walkSeconds, 240);
+  assert.equal(routeTransferStats(metro).walkSeconds, 0);
+  assert.equal(chooseTransitRoute(rerWalk, [metro]), metro);
+  assert.ok(transitEffort(metro) < transitEffort(rerWalk));
+});
+
+test('transporte (regla general): riel con transbordo antes que caminar mucho; bus al final', () => {
+  const walk = (seconds) => ({ travelMode: 'WALK', staticDuration: `${seconds}s` });
+  const line = (type, seconds) => ({
+    travelMode: 'TRANSIT',
+    staticDuration: `${seconds}s`,
+    transitDetails: { transitLine: { vehicle: { type } } },
+  });
+  // Tranvía y luego 12 min caminando (22 min).
+  const tramWalk = { duration: '1320s', legs: [{ steps: [walk(120), line('TRAM', 480), walk(720)] }] };
+  // Tranvía, transbordo al metro que deja cerca (25 min).
+  const tramMetro = { duration: '1500s', legs: [{ steps: [walk(120), line('TRAM', 480), walk(60), line('SUBWAY', 480), walk(180)] }] };
+  // Bus directo (21 min).
+  const bus = { duration: '1260s', legs: [{ steps: [walk(120), line('BUS', 960), walk(180)] }] };
+
+  assert.equal(chooseTransitRoute(tramWalk, [tramMetro]), tramMetro);
+  assert.equal(chooseTransitRoute(bus, [tramMetro]), tramMetro, 'riel antes que bus');
+  assert.equal(chooseTransitRoute(bus, []), bus, 'sin riel, el bus sigue valiendo');
+  const busTransfer = { duration: '1320s', legs: [{ steps: [walk(60), line('BUS', 480), walk(60), line('SUBWAY', 600), walk(120)] }] };
+  assert.equal(routeTransferStats(busTransfer).mixedTransfers, 1);
+  assert.equal(routeTransferStats(tramMetro).railTransfers, 1);
 });
