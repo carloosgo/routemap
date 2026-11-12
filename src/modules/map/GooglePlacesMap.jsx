@@ -28,6 +28,7 @@ import {
 import { placeColor, placeCountryColors, placeDayIndex, stopColor } from '../places/placesDayModel.js';
 import { capitalizeFirst } from '../../shared/utils.js';
 import { useLiveRoutesVersion, withLiveGeometry } from '../routes/liveRouteStore.js';
+import { ensureTransitStops, segmentStops, useTransitStopsVersion } from '../routes/transitStops.js';
 import { usePlaceSearch } from './usePlaceSearch.js';
 import { createWebglLandmarkOverlay } from './webglLandmarkOverlay.js';
 
@@ -227,6 +228,7 @@ export function GooglePlacesMap({
 }) {
   const { t, intlLocale } = useTranslation();
   const liveRoutesVersion = useLiveRoutesVersion();
+  const transitStopsVersion = useTransitStopsVersion();
   const wrapRef = useRef(null);
   const nodeRef = useRef(null);
   const mapRef = useRef(null);
@@ -937,7 +939,9 @@ export function GooglePlacesMap({
           });
           // Estaciones por las que pasa la línea: puntos sobre el trazo.
           if (segment.kind === 'transit' && AdvancedMarkerElement) {
-            const stops = segment.stops || [];
+            const located = { ...segment, kind: 'transit', geometry: { type: 'LineString', coordinates: segment.coordinates } };
+            ensureTransitStops(located).catch(() => {});
+            const stops = segmentStops(located);
             stops.forEach((stop, stopIndex) => {
               routeBadgeMarkersRef.current.push(new AdvancedMarkerElement({
                 map,
@@ -982,7 +986,7 @@ export function GooglePlacesMap({
       clearPolylines(savedRouteLinesRef);
       clearAdvancedMarkers(routeBadgeMarkersRef);
     };
-  }, [dayIndex, focusedPlaceIds, liveRoutesVersion, locatedPlaces, placesActive, ready, routeConnections]);
+  }, [dayIndex, focusedPlaceIds, liveRoutesVersion, locatedPlaces, placesActive, ready, routeConnections, transitStopsVersion]);
 
   useEffect(() => {
     const map = mapRef.current;

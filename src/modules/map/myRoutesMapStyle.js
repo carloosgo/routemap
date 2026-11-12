@@ -130,6 +130,8 @@ export function routeDrawSegments(route, geometryPaths) {
       textColor: segment.kind === 'transit' ? segment.textColor || '' : '',
       icon: segment.kind === 'transit' ? segment.icon || '' : '',
       stops: segment.kind === 'transit' && Array.isArray(segment.stops) ? segment.stops : [],
+      stopCount: segment.kind === 'transit' ? Number(segment.stopCount) || 0 : 0,
+      vehicle: segment.kind === 'transit' ? segment.vehicle || '' : '',
       coordinates: segment.geometry?.coordinates || [],
     }));
   }

@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { chooseTransitRoute, preferRailRoute, routeTransferStats, transitEffort, routeSegments, routeUsesBus, routeWalkSeconds, transitIconUri } from '../functions/googleOptimizedRouteFunction.js';
+import { chooseTransitRoute, preferRailRoute, primaryRailFamily, routeLinesText, routeTransferStats, transitEffort, routeSegments, routeUsesBus, routeWalkSeconds, transitIconUri } from '../functions/googleOptimizedRouteFunction.js';
 import { normalizeRouteSegments, normalizeTransitIcon, createSavedPlaceRoute } from '../src/modules/routes/routeModel.js';
 import { transitLineBadges } from '../src/modules/places/routeConnectionStyle.js';
 import { cityTransfers, transferDepartureTime } from '../src/modules/places/cityTransferModel.js';
@@ -180,4 +180,43 @@ test('transporte (regla general): riel con transbordo antes que caminar mucho; b
   const busTransfer = { duration: '1320s', legs: [{ steps: [walk(60), line('BUS', 480), walk(60), line('SUBWAY', 600), walk(120)] }] };
   assert.equal(routeTransferStats(busTransfer).mixedTransfers, 1);
   assert.equal(routeTransferStats(tramMetro).railTransfers, 1);
+});
+
+test('transporte: con tiempos parecidos gana quedarse en la red principal (metro + metro sobre RER + metro)', () => {
+  const walk = (seconds) => ({ travelMode: 'WALK', staticDuration: `${seconds}s` });
+  const line = (type, name, seconds) => ({
+    travelMode: 'TRANSIT',
+    staticDuration: `${seconds}s`,
+    transitDetails: { transitLine: { nameShort: name, vehicle: { type } } },
+  });
+  // RER A → Auber, caminar 3 min a Opéra, línea 8 (24 min).
+  const rer = { duration: '1440s', legs: [{ steps: [walk(180), line('COMMUTER_TRAIN', 'A', 240), walk(180), line('SUBWAY', '8', 600), walk(240)] }] };
+  // Línea 1 → Concorde, línea 8 (25 min).
+  const metro = { duration: '1500s', legs: [{ steps: [walk(180), line('SUBWAY', '1', 600), walk(120), line('SUBWAY', '8', 360), walk(240)] }] };
+  let info = null;
+  assert.equal(primaryRailFamily([rer, metro]), 'metro');
+  assert.equal(chooseTransitRoute(rer, [metro], { explain: (value) => { info = value; } }), metro);
+  assert.equal(routeLinesText(rer), 'A › 8');
+  assert.deepEqual(info.candidates.map((note) => [note.lines, note.chosen]), [['A › 8', false], ['1 › 8', true]]);
+});
+
+test('los tramos de transporte traen subida y bajada de Google, número de paradas y vehículo', () => {
+  const stop = (name, latitude, longitude) => ({ name, location: { latLng: { latitude, longitude } } });
+  const [segment] = routeSegments({
+    legs: [{
+      steps: [{
+        travelMode: 'TRANSIT',
+        polyline: { encodedPolyline: LINE_A },
+        transitDetails: {
+          stopCount: 6,
+          stopDetails: { departureStop: stop('Étoile', 48.874, 2.295), arrivalStop: stop('Concorde', 48.866, 2.322) },
+          transitLine: { nameShort: '1', vehicle: { type: 'SUBWAY' } },
+        },
+      }],
+    }],
+  });
+  assert.deepEqual(segment.stops.map((item) => item.name), ['Étoile', 'Concorde']);
+  assert.equal(segment.stopCount, 6);
+  assert.equal(segment.vehicle, 'SUBWAY');
+  assert.equal('departure' in segment, false);
 });

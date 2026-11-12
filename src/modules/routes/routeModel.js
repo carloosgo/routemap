@@ -157,7 +157,13 @@ export function normalizeRouteSegments(value) {
         label: normalizeShortText(segment?.label, 60),
         icon: normalizeTransitIcon(segment?.icon),
         geometry: { type: 'LineString', coordinates },
-        ...(segment?.kind === 'transit' ? { stops: normalizeTransitStops(segment?.stops) } : {}),
+        ...(segment?.kind === 'transit'
+          ? {
+            stops: normalizeTransitStops(segment?.stops),
+            stopCount: Math.max(0, Math.min(200, Math.trunc(Number(segment?.stopCount) || 0))),
+            vehicle: normalizeShortText(segment?.vehicle, 40),
+          }
+          : {}),
       };
     })
     .filter(Boolean);

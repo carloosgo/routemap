@@ -1,17 +1,19 @@
+import { useSyncExternalStore } from 'react';
+
 // Estaciones intermedias de cada tramo de transporte público.
 //
 // Google Routes solo da la estación de subida y la de bajada (más el número de
-// paradas). Las intermedias salen de OpenStreetMap (Overpass, gratis): las
-// paradas de la relación de la línea (ref = número/letra de la línea) dentro
-// del área del tramo, y solo las que quedan pegadas al trazo. Si Overpass falla
-// o tarda, el tramo se queda con subida y bajada; nunca rompe la ruta.
+// paradas). Las intermedias las busca el navegador en OpenStreetMap (Overpass,
+// gratis) después de dibujar la ruta, para no hacerla esperar: las paradas de
+// la relación de la línea (ref = número/letra de la línea) dentro del área del
+// tramo, y solo las que quedan pegadas al trazo. Si Overpass falla o tarda, el
+// tramo se queda con subida y bajada.
 
 const OVERPASS_URLS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
 ];
-const OVERPASS_TIMEOUT_MS = 7000;
-const MAX_TRANSIT_SEGMENTS = 6;
+const OVERPASS_TIMEOUT_MS = 9000;
 const MAX_STOPS = 60;
 const NEAR_LINE_METERS = 70;
 const SAME_STOP_METERS = 160;
@@ -26,13 +28,6 @@ function cleanName(value) {
 
 function validLatLng(lat, lng) {
   return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
-}
-
-export function stopPoint(name, latLng) {
-  const lat = Number(latLng?.latitude);
-  const lng = Number(latLng?.longitude);
-  if (!validLatLng(lat, lng)) return null;
-  return { name: cleanName(name), lat, lng };
 }
 
 // Metros aproximados en un plano local (suficiente para una ciudad).
@@ -82,8 +77,9 @@ function isStopNode(element) {
  */
 export function intermediateStops(elements, segment) {
   const coordinates = segment?.geometry?.coordinates || [];
-  const first = segment?.departure;
-  const last = segment?.arrival;
+  const ends = Array.isArray(segment?.stops) ? segment.stops : [];
+  const first = ends[0] || null;
+  const last = ends.length > 1 ? ends[ends.length - 1] : null;
   const candidates = [];
   (Array.isArray(elements) ? elements : []).forEach((element) => {
     if (element?.type !== 'node' || !isStopNode(element)) return;
@@ -174,7 +170,6 @@ async function fetchOverpass(query, fetchImpl) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': 'atlas-route-planner/1.0',
         },
         body: `data=${encodeURIComponent(query)}`,
         signal: controller.signal,
@@ -191,35 +186,99 @@ async function fetchOverpass(query, fetchImpl) {
   return null;
 }
 
-/**
- * Completa `stops` de cada tramo de transporte: subida, intermedias y bajada.
- * Quita los campos internos (departure, arrival, stopCount).
- */
-export async function addTransitStops(segments, { fetchImpl = globalThis.fetch } = {}) {
-  const list = Array.isArray(segments) ? segments : [];
-  const transit = list.filter((segment) => segment?.kind === 'transit').slice(0, MAX_TRANSIT_SEGMENTS);
-  await Promise.all(transit.map(async (segment) => {
-    const query = typeof fetchImpl === 'function' ? overpassQuery(segment) : '';
-    let elements = query ? await fetchOverpass(query, fetchImpl) : null;
-    // Sin resultados con la línea (ref distinto en OSM): estaciones junto al trazo.
-    if (query && segment.label && (!elements || !intermediateStops(elements, segment).length)) {
-      const fallback = await fetchOverpass(overpassQuery({ ...segment, label: '' }), fetchImpl);
-      if (fallback) elements = fallback;
+const STORAGE_KEY = 'atlas.transitStops.v1';
+const STORAGE_MAX_ENTRIES = 200;
+const found = new Map();
+const pending = new Map();
+const failures = new Map();
+const RETRY_AFTER_MS = 2 * 60 * 1000;
+const listeners = new Set();
+let version = 0;
+let loaded = false;
+
+function loadStored() {
+  if (loaded) return;
+  loaded = true;
+  try {
+    const stored = JSON.parse(globalThis.localStorage?.getItem(STORAGE_KEY) || '[]');
+    if (Array.isArray(stored)) stored.forEach(([key, stops]) => found.set(key, stops));
+  } catch {
+    // Sin almacenamiento: se vuelven a buscar en la sesión.
+  }
+}
+
+function saveStored() {
+  try {
+    globalThis.localStorage?.setItem(STORAGE_KEY, JSON.stringify([...found].slice(-STORAGE_MAX_ENTRIES)));
+  } catch {
+    // Almacenamiento lleno o bloqueado: no pasa nada.
+  }
+}
+
+function emit() {
+  version += 1;
+  listeners.forEach((listener) => listener());
+}
+
+export function transitStopsKey(segment) {
+  const ends = Array.isArray(segment?.stops) ? segment.stops : [];
+  const round = (value) => Number(value || 0).toFixed(4);
+  const first = ends[0];
+  const last = ends[ends.length - 1];
+  if (!first || !last) return '';
+  return [segment?.label || '', segment?.vehicle || '', round(first.lat), round(first.lng), round(last.lat), round(last.lng)].join('|');
+}
+
+/** Subida, intermedias (si ya se encontraron) y bajada del tramo. */
+export function segmentStops(segment) {
+  loadStored();
+  const ends = Array.isArray(segment?.stops) ? segment.stops : [];
+  const middle = found.get(transitStopsKey(segment));
+  if (!middle?.length || ends.length < 2) return ends;
+  return [ends[0], ...middle, ends[ends.length - 1]];
+}
+
+/** Busca una sola vez por tramo las estaciones intermedias en Overpass. */
+export function ensureTransitStops(segment, { fetchImpl = globalThis.fetch } = {}) {
+  loadStored();
+  const key = transitStopsKey(segment);
+  if (!key || segment?.kind !== 'transit' || typeof fetchImpl !== 'function') return Promise.resolve([]);
+  if (found.has(key)) return Promise.resolve(found.get(key));
+  if (pending.has(key)) return pending.get(key);
+  if (Date.now() - (failures.get(key) || 0) < RETRY_AFTER_MS) return Promise.resolve([]);
+  const request = (async () => {
+    let elements = await fetchOverpass(overpassQuery(segment), fetchImpl);
+    let stops = elements ? intermediateStops(elements, segment) : [];
+    // La línea no aparece con ese ref en OSM: estaciones junto al trazo.
+    if (!stops.length && segment.label) {
+      elements = await fetchOverpass(overpassQuery({ ...segment, label: '' }), fetchImpl);
+      stops = elements ? intermediateStops(elements, segment) : [];
     }
-    segment.stops = [
-      segment.departure,
-      ...(elements ? intermediateStops(elements, segment) : []),
-      segment.arrival,
-    ].filter(Boolean).slice(0, MAX_STOPS);
-  }));
-  list.forEach((segment) => {
-    if (segment?.kind === 'transit' && !Array.isArray(segment.stops)) {
-      segment.stops = [segment.departure, segment.arrival].filter(Boolean);
+    if (!elements) failures.set(key, Date.now());
+    if (elements) {
+      found.set(key, stops);
+      saveStored();
+      if (stops.length) emit();
     }
-    delete segment.departure;
-    delete segment.arrival;
-    delete segment.stopCount;
-    delete segment.vehicle;
-  });
-  return list;
+    return stops;
+  })().finally(() => pending.delete(key));
+  pending.set(key, request);
+  return request;
+}
+
+function subscribe(listener) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+export function useTransitStopsVersion() {
+  return useSyncExternalStore(subscribe, () => version, () => version);
+}
+
+/** Solo para tests. */
+export function resetTransitStopsForTests() {
+  found.clear();
+  pending.clear();
+  failures.clear();
+  loaded = true;
 }

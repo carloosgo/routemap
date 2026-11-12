@@ -49,6 +49,12 @@ export async function requestGooglePlaceRoute(
     });
     const route = response.data || {};
     if (!route.geometry) throw new Error('Google Routes no devolvió geometría para la ruta.');
+    // Diagnóstico: qué opciones de transporte comparó la función y cuál eligió.
+    if (route.choice && Array.isArray(route.choice.candidates)) {
+      globalThis.console?.info?.('[Atlas rutas]', route.choice.primary || '-', route.choice.candidates
+        .map((note) => `${note.chosen ? '✓' : ' '} ${note.lines} · ${note.minutes} min · esfuerzo ${note.effort ?? 'fuera'}`)
+        .join('\n'));
+    }
     return {
       provider: 'google',
       mode: normalizeSavedPlaceRouteMode(route.mode || normalizedMode),

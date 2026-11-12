@@ -1,19 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addTransitStops, intermediateStops, locateOnLine, overpassQuery } from '../functions/transitStops.js';
+import {
+  ensureTransitStops,
+  intermediateStops,
+  locateOnLine,
+  overpassQuery,
+  resetTransitStopsForTests,
+  segmentStops,
+} from '../src/modules/routes/transitStops.js';
 import { normalizeRouteSegments } from '../src/modules/routes/routeModel.js';
 
 // Línea recta este-oeste (≈ 2.2 km) con estaciones cada ~550 m.
 const line = { type: 'LineString', coordinates: [[2.30, 48.87], [2.33, 48.87]] };
-const segment = () => ({
+const segment = (extra = {}) => ({
   kind: 'transit',
   label: '1',
   vehicle: 'SUBWAY',
   color: '#ffcd00',
   geometry: { type: 'LineString', coordinates: line.coordinates.map((point) => [...point]) },
-  departure: { name: 'Étoile', lat: 48.87, lng: 2.30 },
-  arrival: { name: 'Concorde', lat: 48.87, lng: 2.33 },
+  stops: [{ name: 'Étoile', lat: 48.87, lng: 2.30 }, { name: 'Concorde', lat: 48.87, lng: 2.33 }],
   stopCount: 4,
+  ...extra,
 });
 const node = (id, name, lng, lat = 48.87, tags = { public_transport: 'stop_position' }) => ({
   type: 'node', id, lat, lon: lng, tags: { name, ...tags },
@@ -37,35 +44,45 @@ test('estaciones: solo las intermedias pegadas al trazo, en orden y sin repetir'
 });
 
 test('estaciones: no más de las que cuenta Google', () => {
-  const stops = intermediateStops(elements, { ...segment(), stopCount: 2 });
-  assert.equal(stops.length, 1);
+  assert.equal(intermediateStops(elements, segment({ stopCount: 2 })).length, 1);
 });
 
 test('estaciones: consulta de Overpass por línea y tipo, o por estaciones si no hay línea', () => {
-  const byLine = overpassQuery(segment());
-  assert.match(byLine, /\["ref"="1"\]\["route"~"\^\(subway\|light_rail\)\$"\]/);
-  assert.match(overpassQuery({ ...segment(), label: '' }), /public_transport/);
-  assert.match(overpassQuery({ ...segment(), label: 'A"]' }), /\["ref"="A\]"\]/);
+  assert.match(overpassQuery(segment()), /\["ref"="1"\]\["route"~"\^\(subway\|light_rail\)\$"\]/);
+  assert.match(overpassQuery(segment({ label: '' })), /public_transport/);
+  assert.match(overpassQuery(segment({ label: 'A"]' })), /\["ref"="A\]"\]/);
 });
 
-test('estaciones: completa subida, intermedias y bajada; si Overpass falla, solo los extremos', async () => {
-  const ok = async () => ({ ok: true, json: async () => ({ elements }) });
-  const [withStops] = await addTransitStops([segment()], { fetchImpl: ok });
-  assert.deepEqual(withStops.stops.map((stop) => stop.name), [
+test('estaciones: se buscan una vez y se suman a subida y bajada; si Overpass falla, solo los extremos', async () => {
+  resetTransitStopsForTests();
+  let calls = 0;
+  const ok = async () => {
+    calls += 1;
+    return { ok: true, json: async () => ({ elements }) };
+  };
+  assert.deepEqual(segmentStops(segment()).map((stop) => stop.name), ['Étoile', 'Concorde']);
+  await ensureTransitStops(segment(), { fetchImpl: ok });
+  await ensureTransitStops(segment(), { fetchImpl: ok });
+  assert.equal(calls, 1);
+  assert.deepEqual(segmentStops(segment()).map((stop) => stop.name), [
     'Étoile', 'George V', 'Franklin Roosevelt', 'Champs-Élysées', 'Concorde',
   ]);
-  assert.equal('departure' in withStops || 'stopCount' in withStops || 'vehicle' in withStops, false);
 
   const failing = async () => { throw new Error('offline'); };
-  const [ends] = await addTransitStops([segment(), { kind: 'walk', geometry: line }], { fetchImpl: failing });
-  assert.deepEqual(ends.stops.map((stop) => stop.name), ['Étoile', 'Concorde']);
+  const other = segment({ label: '2' });
+  assert.deepEqual(await ensureTransitStops(other, { fetchImpl: failing }), []);
+  assert.deepEqual(segmentStops(other).map((stop) => stop.name), ['Étoile', 'Concorde']);
 });
 
-test('estaciones: el modelo de ruta conserva las paradas válidas del tramo', () => {
+test('estaciones: el modelo de ruta conserva paradas, número de paradas y vehículo', () => {
   const [normalized] = normalizeRouteSegments([{
     kind: 'transit',
     geometry: line,
+    stopCount: 4,
+    vehicle: 'SUBWAY',
     stops: [{ name: 'Étoile', lat: 48.87, lng: 2.3 }, { name: 'x', lat: 'nope', lng: 2 }],
   }]);
   assert.deepEqual(normalized.stops, [{ name: 'Étoile', lat: 48.87, lng: 2.3 }]);
+  assert.equal(normalized.stopCount, 4);
+  assert.equal(normalized.vehicle, 'SUBWAY');
 });
