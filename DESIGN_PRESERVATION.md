@@ -192,6 +192,11 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - El listado de sugerencias vive dentro de `.geo-search__input-wrap`, por lo que su borde izquierdo, borde derecho y ancho siguen exactamente al campo de búsqueda incluso cuando el ancho disponible cambia.
 - Este ajuste no modifica el centrado respecto al mapa, el comportamiento móvil existente, proveedores, búsqueda/autocompletado, selección de resultados, cámara, persistencia ni Storage v4.
 
+## Ajuste solicitado (12/11/2026): nota de ciudad una sola vez en Mis Rutas
+
+- La nota del Itinerario es de la estancia (ciudad), no del día. En `Mis Rutas` su botón vive en la cabecera de cada ciudad (bandera · ciudad · N días), alineado a la derecha, y ya no en la fila de cada día abierto. Así no se repite en todos los días de la misma ciudad ni muestra la nota de la ciudad de salida en un día de traslado.
+- Abre la misma superficie `.segnote` de la nota del Itinerario; los datos no cambian.
+
 ## Ajuste solicitado: paridad visual de notas en Mis Rutas
 
 - La nota de un lugar guardado conserva la misma semántica existente de edición/autosave, pero su superficie visual usa exactamente la geometría canónica de `.segnote`: 300 px de ancho en escritorio, radio de 12 px, fondo blanco y sombra `0 6px 24px rgba(0, 0, 0, 0.16)`.

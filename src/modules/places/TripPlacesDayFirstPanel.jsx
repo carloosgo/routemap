@@ -84,6 +84,7 @@ const MY_ROUTES_STYLES = `
 .mr__city{display:flex;align-items:center;gap:10px;padding:18px 16px 8px;color:#0b1f2c;font-size:15px;font-weight:600}
 .mr__city img{width:24px;height:16px;border-radius:3px;object-fit:cover;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
 .mr__city small{color:#667085;font-size:12.5px;font-weight:500}
+.mr__city .mr__city-note{margin:-6px 4px -6px auto}
 .mr__day{position:relative;border-bottom:1px solid #eef0f2}
 .mr__day.is-drop-target{box-shadow:inset 3px 0 0 var(--atlas-accent)}
 .mr__row{display:grid;width:100%;min-height:46px;grid-template-columns:minmax(0,1fr) 16px;align-items:center;gap:12px;padding:6px 16px;border:0;background:#fff;color:#0b1f2c;font:500 13.5px var(--font-body);text-align:left;cursor:pointer}
@@ -550,7 +551,6 @@ export function TripPlacesDayFirstPanel({
   function renderDay(day, groupColor) {
     const open = openDay === day.tripDayOffset;
     const dropTarget = placeDrag && placeDrag.targetOffset === day.tripDayOffset;
-    const noteSegment = day.assignments[0]?.segment || null;
     const title = `${t('day')} ${day.globalDayNumber}`;
     // La ciudad ya la dice la cabecera del grupo: el día solo lleva su fecha.
     const date = formatDayDate(day.date, intlLocale);
@@ -578,16 +578,6 @@ export function TripPlacesDayFirstPanel({
         {open ? (
           <div className="mr__head">
             {rowButton}
-            <button
-              type="button"
-              className={'mr__icon-btn' + (noteSegment?.note ? ' has-note' : '')}
-              onClick={() => noteSegment && toggleSegmentNote?.(noteSegment.id)}
-              disabled={!noteSegment}
-              aria-label={t('segmentNote')}
-              title={t('segmentNote')}
-            >
-              <IconNote size={15} aria-hidden="true" />
-            </button>
             {day.places.length > 0 && (
               <DayShareButton
                 tripId={tripId}
@@ -662,12 +652,26 @@ export function TripPlacesDayFirstPanel({
           const destination = group.destination;
           const flag = flagImageUrl(destination?.countryCode, 40);
           const groupColor = colors.get(countryKey(destination)) || '#64748b';
+          // La nota del Itinerario es de la estancia, no del día: se muestra una
+          // sola vez en la cabecera de la ciudad para que no se repita por día.
+          const noteSegment = segmentById.get(group.segmentId) || null;
           return (
             <div key={group.key}>
               <div className="mr__city">
                 {flag && <img src={flag} alt="" width={16} height={11} />}
                 {capitalizeFirst(destination?.name) || t('city')}
                 <small>{t(group.days.length === 1 ? 'dayCountOne' : 'dayCountMany', { count: group.days.length })}</small>
+                {noteSegment && (
+                  <button
+                    type="button"
+                    className={'mr__icon-btn mr__city-note' + (noteSegment.note ? ' has-note' : '')}
+                    onClick={() => toggleSegmentNote?.(noteSegment.id)}
+                    aria-label={t('segmentNote')}
+                    title={t('segmentNote')}
+                  >
+                    <IconNote size={15} aria-hidden="true" />
+                  </button>
+                )}
               </div>
               {group.days.map((day) => renderDay(day, groupColor))}
             </div>
