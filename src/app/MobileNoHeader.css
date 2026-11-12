@@ -102,3 +102,15 @@
     padding-top: 4px !important;
   }
 }
+
+/* iPhone instalado con barra de estado translúcida: 100vh/100dvh no cuentan
+   la franja de la barra y dejaban un hueco gris abajo. La app se fija a los
+   cuatro bordes de la pantalla. */
+@media (max-width: 720px) {
+  .app {
+    position: fixed;
+    inset: 0;
+    width: auto;
+    height: auto;
+  }
+}

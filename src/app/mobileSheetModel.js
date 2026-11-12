@@ -2,7 +2,8 @@
 // low: solo el asa y la cabecera de la lista; mid: mitad del escenario;
 // high: casi toda la lista, dejando una franja de mapa visible arriba.
 export const SHEET_SNAPS = ['low', 'mid', 'high'];
-const SHEET_LOW_PX = 112;
+// Baja: solo asoma el asa, para dejarle al mapa el máximo de pantalla.
+const SHEET_LOW_PX = 32;
 const SHEET_MAP_PEEK_PX = 120;
 const SHEET_DRAG_THRESHOLD_PX = 24;
 

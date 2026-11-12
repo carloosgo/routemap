@@ -39,7 +39,7 @@ test('el shell móvil respeta zonas seguras y lleva la navegación a la barra in
 test('la hoja móvil tiene tres alturas y se ajusta al arrastrar o tocar el asa', async () => {
   const { sheetSnapHeights, nextSheetSnap } = await import('../src/app/mobileSheetModel.js');
   const heights = sheetSnapHeights(732);
-  assert.deepEqual(heights, { low: 112, mid: 366, high: 612 });
+  assert.deepEqual(heights, { low: 32, mid: 366, high: 612 });
   assert.equal(nextSheetSnap('mid', 366, 366, heights), 'high', 'tocar el asa sube');
   assert.equal(nextSheetSnap('high', 612, 612, heights), 'mid', 'tocar arriba baja a media');
   assert.equal(nextSheetSnap('mid', 366, 600, heights), 'high');
@@ -47,7 +47,7 @@ test('la hoja móvil tiene tres alturas y se ajusta al arrastrar o tocar el asa'
   assert.equal(nextSheetSnap('mid', 366, 400, heights), 'high', 'un arrastre corto (≥ 24 px) avanza una altura');
   assert.equal(nextSheetSnap('mid', 366, 380, heights, { tapToggles: false }), 'mid', 'un roce del dedo no mueve la hoja');
   assert.equal(nextSheetSnap('high', 612, 120, heights), 'low');
-  assert.deepEqual(sheetSnapHeights(0), { low: 112, mid: 112, high: 112 });
+  assert.deepEqual(sheetSnapHeights(0), { low: 32, mid: 32, high: 32 });
 });
 
 test('el acceso con Google es obligatorio y la cuenta vive en una cápsula sobre el mapa', () => {

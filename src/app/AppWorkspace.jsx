@@ -55,7 +55,8 @@ export function AppWorkspace({
   const dragRef = useRef(null);
   const pointerTypeRef = useRef('');
   const [stageHeight, setStageHeight] = useState(0);
-  const [sheetSnap, setSheetSnap] = useState('mid');
+  // La hoja empieza abajo (solo el asa): el mapa ocupa casi toda la pantalla.
+  const [sheetSnap, setSheetSnap] = useState('low');
   const [dragHeight, setDragHeight] = useState(null);
   const snapHeights = sheetSnapHeights(stageHeight);
   const sheetHeight = sectionHasMap
