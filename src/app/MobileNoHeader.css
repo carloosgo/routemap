@@ -129,3 +129,18 @@ html.is-standalone-app #root {
   height: var(--app-height, 100%);
   min-height: var(--app-height, 100%);
 }
+
+/* Barra de pestañas pegada abajo: del margen del indicador de inicio
+   (≈34 px) solo se dejan 8 px, y los botones bajan a 48 px de alto. */
+@media (max-width: 720px) {
+  .mobiletabs {
+    padding-bottom: max(0px, calc(var(--safe-bottom, 0px) - 26px)) !important;
+  }
+
+  .mobiletabs__btn {
+    min-height: 48px !important;
+    padding-top: 5px !important;
+    padding-bottom: 3px !important;
+    gap: 2px !important;
+  }
+}
