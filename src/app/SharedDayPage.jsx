@@ -198,32 +198,9 @@ export default function SharedDayPage({ shareId }) {
       <style>{SHARED_ITINERARY_STYLES}</style>
       <style>{SHARED_DAY_STYLES}</style>
       <div className="shared-itinerary__shell">
-        <header className="shared-itinerary__header shared-day__header">
-          <div className="shared-day__brand">
-            <AtlasLogo />
-            <span className="shared-day__brand-name">{t('appName')}</span>
-            <h1>{model.title || t('day')}</h1>
-          </div>
-          {cities.length > 0 && (
-            <p className="shared-day__cities">
-              {cities.map((city, index) => {
-                const flag = flagImageUrl(city.countryCode, 40);
-                return (
-                  <span className="shared-day__city" key={`${city.name}-${index}`}>
-                    {flag && <img src={flag} alt="" width={18} height={12} />}
-                    {capitalize(city.name, locale)}
-                  </span>
-                );
-              })}
-              <small>{t('sharedDayPlacesCount', { count: places.length })}</small>
-            </p>
-          )}
-        </header>
-
         <section className="shared-itinerary__map-card" aria-label={t('mapRegion')}>
           <SharedDayMap places={places} legs={legs} unavailableLabel={t('sharedDayMapUnavailable')} />
         </section>
-
 
         <section className="shared-day__list" aria-label={t('places')}>
           {places.map((place, index) => {
@@ -263,6 +240,27 @@ export default function SharedDayPage({ shareId }) {
             ))}
           </div>
         )}
+        <footer className="shared-itinerary__header shared-day__header">
+          <div className="shared-day__brand">
+            <AtlasLogo />
+            <span className="shared-day__brand-name">{t('appName')}</span>
+            <h1>{model.title || t('day')}</h1>
+          </div>
+          {cities.length > 0 && (
+            <p className="shared-day__cities">
+              {cities.map((city, index) => {
+                const flag = flagImageUrl(city.countryCode, 40);
+                return (
+                  <span className="shared-day__city" key={`${city.name}-${index}`}>
+                    {flag && <img src={flag} alt="" width={18} height={12} />}
+                    {capitalize(city.name, locale)}
+                  </span>
+                );
+              })}
+              <small>{t('sharedDayPlacesCount', { count: places.length })}</small>
+            </p>
+          )}
+        </footer>
       </div>
     </main>
   );
