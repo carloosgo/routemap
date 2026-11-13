@@ -15,7 +15,10 @@ const OVERPASS_URLS = [
 ];
 const OVERPASS_TIMEOUT_MS = 9000;
 const MAX_STOPS = 60;
+// El trazo de Google viene simplificado: las paradas de la propia línea se
+// aceptan más lejos que las estaciones sueltas buscadas sin línea.
 const NEAR_LINE_METERS = 70;
+const NEAR_LINE_METERS_BY_LINE = 160;
 const SAME_STOP_METERS = 160;
 const BBOX_PADDING_DEG = 0.004;
 
@@ -75,7 +78,8 @@ function isStopNode(element) {
  * orden de recorrido, una por nombre y, si se sabe, no más de las que Google
  * cuenta (stopCount incluye la de bajada).
  */
-export function intermediateStops(elements, segment) {
+export function intermediateStops(elements, segment, { byLine = false } = {}) {
+  const maxDistance = byLine ? NEAR_LINE_METERS_BY_LINE : NEAR_LINE_METERS;
   const coordinates = segment?.geometry?.coordinates || [];
   const ends = Array.isArray(segment?.stops) ? segment.stops : [];
   const first = ends[0] || null;
@@ -86,7 +90,7 @@ export function intermediateStops(elements, segment) {
     const point = { lat: Number(element.lat), lng: Number(element.lon) };
     if (!validLatLng(point.lat, point.lng)) return;
     const located = locateOnLine(point, coordinates);
-    if (!located || located.distance > NEAR_LINE_METERS) return;
+    if (!located || located.distance > maxDistance) return;
     const name = cleanName(element.tags.name);
     if (first && (distanceMeters(point, first) < SAME_STOP_METERS || name === first.name)) return;
     if (last && (distanceMeters(point, last) < SAME_STOP_METERS || name === last.name)) return;
@@ -248,7 +252,7 @@ export function ensureTransitStops(segment, { fetchImpl = globalThis.fetch } = {
   if (Date.now() - (failures.get(key) || 0) < RETRY_AFTER_MS) return Promise.resolve([]);
   const request = (async () => {
     let elements = await fetchOverpass(overpassQuery(segment), fetchImpl);
-    let stops = elements ? intermediateStops(elements, segment) : [];
+    let stops = elements ? intermediateStops(elements, segment, { byLine: Boolean(segment.label) }) : [];
     // La línea no aparece con ese ref en OSM: estaciones junto al trazo.
     if (!stops.length && segment.label) {
       elements = await fetchOverpass(overpassQuery({ ...segment, label: '' }), fetchImpl);

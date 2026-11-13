@@ -86,3 +86,9 @@ test('estaciones: el modelo de ruta conserva paradas, número de paradas y vehí
   assert.equal(normalized.stopCount, 4);
   assert.equal(normalized.vehicle, 'SUBWAY');
 });
+
+test('estaciones: las paradas de la propia línea se aceptan un poco más lejos del trazo simplificado', () => {
+  const offset = [node(9, 'Lejana', 2.315, 48.8711)];
+  assert.equal(intermediateStops(offset, segment()).length, 0);
+  assert.equal(intermediateStops(offset, segment(), { byLine: true }).length, 1);
+});
