@@ -243,10 +243,14 @@ export function segmentStops(segment) {
 }
 
 /** Busca una sola vez por tramo las estaciones intermedias en Overpass. */
-export function ensureTransitStops(segment, { fetchImpl = globalThis.fetch } = {}) {
+// `fetch` suelto (sin `window` como this) lanza «Illegal invocation» en el
+// navegador; por eso se envuelve.
+const browserFetch = (...args) => globalThis.fetch(...args);
+
+export function ensureTransitStops(segment, { fetchImpl = browserFetch } = {}) {
   loadStored();
   const key = transitStopsKey(segment);
-  if (!key || segment?.kind !== 'transit' || typeof fetchImpl !== 'function') return Promise.resolve([]);
+  if (!key || segment?.kind !== 'transit' || typeof globalThis.fetch !== 'function') return Promise.resolve([]);
   if (found.has(key)) return Promise.resolve(found.get(key));
   if (pending.has(key)) return pending.get(key);
   if (Date.now() - (failures.get(key) || 0) < RETRY_AFTER_MS) return Promise.resolve([]);
