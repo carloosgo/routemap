@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { IconNote, IconPlus, IconTrash, IconX } from '@tabler/icons-react';
+import { IconEdit, IconPlus, IconTrash, IconX } from '@tabler/icons-react';
 import { CityAutocomplete } from '../../components/CityAutocomplete.jsx';
 import { useTranslation } from '../../i18n/index.jsx';
 import { flagImageUrl } from '../flags/flags.js';
@@ -284,7 +284,7 @@ function MobileCityCard({
                 onOpenNote(segment.id);
               }}
             >
-              <IconNote size={19} stroke={1.8} aria-hidden="true" />
+              <IconEdit size={19} stroke={1.8} aria-hidden="true" />
               {hasNote && <span className="mcity__note-dot" aria-hidden="true" />}
             </button>
           </div>
