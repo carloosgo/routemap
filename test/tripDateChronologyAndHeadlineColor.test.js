@@ -149,7 +149,7 @@ test('adding the next destination starts one calendar day after the previous fin
   assert.equal(fallback.segments[1].startDate, '2026-12-29');
 });
 
-test('reordering a dated segment keeps the valid boundary and clears only the conflicting date', () => {
+test('reordering a dated segment keeps every stay length and chains the dates in the new order', () => {
   const trip = sampleTrip();
   trip.originDetails.departureDate = '2026-09-01';
   trip.segments = [
@@ -166,12 +166,12 @@ test('reordering a dated segment keeps the valid boundary and clears only the co
   });
 
   assert.deepEqual(reordered.segments.map(({ id }) => id), ['a', 'b', 'moved']);
-  assert.equal(reordered.segments[0].startDate, '2026-09-02');
-  assert.equal(reordered.segments[0].endDate, '2026-09-05');
-  assert.equal(reordered.segments[1].startDate, '2026-09-07');
-  assert.equal(reordered.segments[1].endDate, '2026-09-07');
-  assert.equal(reordered.segments[2].startDate, '');
-  assert.equal(reordered.segments[2].endDate, '2026-09-07');
+  // 13/11/2026: mover una ciudad ya no le borra fechas (perdía sus días y sus
+  // lugares en Mis rutas); conserva sus noches y las fechas se encadenan.
+  assert.deepEqual(
+    reordered.segments.map(({ startDate, endDate }) => [startDate, endDate]),
+    [['2026-09-02', '2026-09-05'], ['2026-09-05', '2026-09-05'], ['2026-09-05', '2026-09-07']]
+  );
 });
 
 test('reordering cannot leave a stale date that deadlocks the moved segment calendar', () => {
