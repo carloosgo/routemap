@@ -1,5 +1,6 @@
-/* Lista de ciudades de la app (≤720 px), rediseño del 13/11/2026.
-   Solo se monta en móvil (MobileCityList), así que no necesita media query. */
+/* Lista de ciudades (rediseño del 13/11/2026), igual en app y web.
+   En web (mouse) se arrastra sin pulsación larga y Eliminar aparece al
+   pasar el mouse sobre la tarjeta. */
 
 .mcity-list {
   display: flex;
@@ -323,4 +324,52 @@
   line-height: 1.5;
   color: #6b7684;
   text-align: center;
+}
+
+/* ===== Web: borrar al pasar el mouse ===== */
+.mcity__tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.mcity__hover-delete {
+  display: none;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #b42318;
+  cursor: pointer;
+}
+
+.mcity__hover-delete:hover,
+.mcity__note:hover {
+  background: #f3f5f7;
+}
+
+.mcity-list__hint--mouse {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mcity-list__hint--touch {
+    display: none;
+  }
+
+  .mcity-list__hint--mouse {
+    display: block;
+  }
+
+  .mcity:hover .mcity__hover-delete,
+  .mcity__hover-delete:focus-visible {
+    display: grid;
+  }
+
+  .mcity__card {
+    cursor: grab;
+  }
 }

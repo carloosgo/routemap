@@ -173,9 +173,8 @@ test('UI consumes canonical numbering while repeated visits and finish assets re
   const routeMap = await read('src/modules/map/RouteMap.jsx');
 
   assert.match(editor, /buildItineraryStopSequence\(trip\.origin, trip\.segments, colorForIndex\)/);
-  assert.match(editor, /sequenceNumber=\{stopSequence\[index\]\?\.number \?\? null\}/);
-  assert.match(editor, /countryRunPosition=\{stopSequence\[index\]\?\.countryRunPosition \|\| null\}/);
-  assert.match(editor, /joinsPreviousCountryRun=\{Boolean\(stopSequence\[index\]\?\.joinsPreviousCountryRun\)\}/);
+  // La lista ya no muestra números (13/11/2026); solo usa el color de cada parada.
+  assert.match(editor, /stopSequence=\{stopSequence\}/);
   assert.match(mapPane, /buildItineraryStopSequence\(trip\.origin, trip\.segments, colorForIndex\)/);
   assert.match(mapPane, /\{stop\.number\}/);
   assert.match(segmentHeader, /className="itinerary-stop__sequence-badge"/);

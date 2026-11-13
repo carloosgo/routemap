@@ -6,16 +6,16 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const read = (path) => readFile(new URL(path, root), 'utf8');
 
-test('itinerary keeps Add city above a single visible list and removes the layout choice from the UI', async () => {
+test('itinerary is one card list with Add next city at the end and no layout choice', async () => {
   const pane = await read('src/app/AppEditorPane.jsx');
-  const css = await read('src/modules/trips/ItineraryCompactList.css');
+  const list = await read('src/modules/trips/MobileCityList.jsx');
 
-  const toolbarIndex = pane.indexOf('itinerary-card-toolbar');
-  const cardsIndex = pane.indexOf('segments itinerary-cards');
-  assert.ok(toolbarIndex >= 0 && cardsIndex > toolbarIndex);
-  assert.match(pane, /<CityAutocomplete[\s\S]*onSelect=\{handleAddCity\}[\s\S]*placeholder=\{t\('addCity'\)\}/s);
-  assert.match(css, /\.itinerary-layout-switch\s*\{\s*display:\s*none\s*!important;/s);
-  assert.match(css, /\.segments\.itinerary-cards\.itinerary-cards--grid,[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*!important;/s);
+  assert.match(pane, /<MobileCityList[\s\S]*onAddCity=\{handleAddCity\}/s);
+  assert.doesNotMatch(pane, /itinerary-layout-switch|itinerary-card-toolbar/);
+  const cardsIndex = list.indexOf('mcity-list__cards');
+  const addIndex = list.indexOf('mcity-add__trigger');
+  assert.ok(cardsIndex >= 0 && addIndex > cardsIndex);
+  assert.match(list, /t\('addNextCity'\)/);
 });
 
 test('add city only creates or fills a card after a valid selection', async () => {
@@ -27,14 +27,14 @@ test('add city only creates or fills a card after a valid selection', async () =
   assert.doesNotMatch(pane, /className="btn btn--add" onClick=\{addSegment\}/);
 });
 
-test('origin remains a first-class row with its label over the thumbnail', async () => {
+test('origin is a thin "Sales de" line that can still be changed', async () => {
   const pane = await read('src/app/AppEditorPane.jsx');
-  const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
+  const list = await read('src/modules/trips/MobileCityList.jsx');
 
-  assert.match(pane, /<SegmentOriginSection[\s\S]*onUpdateOrigin=\{updateOrigin\}/s);
-  assert.match(origin, /itinerary-origin itinerary-origin--card itinerary-card__content/);
-  assert.match(origin, /<ItineraryCityVisual city=\{city\}/);
-  assert.match(origin, /itinerary-origin__badge/);
+  assert.match(pane, /onUpdateOrigin=\{updateOrigin\}/);
+  assert.match(list, /className="mcity-origin"/);
+  assert.match(list, /t\('departFrom'\)/);
+  assert.match(list, /<CityAutocomplete\s+value=\{trip\.origin\}\s+onSelect=\{onUpdateOrigin\}/);
 });
 
 test('city thumbnail reuses existing Google Places search and photo infrastructure with a landmark icon fallback', async () => {
@@ -51,14 +51,13 @@ test('city thumbnail reuses existing Google Places search and photo infrastructu
   assert.doesNotMatch(visual, /fetch\(|https?:\/\//);
 });
 
-test('the canonical number over each destination thumbnail is the drag handle', async () => {
-  const header = await read('src/modules/trips/SegmentHeader.jsx');
-  const pane = await read('src/app/AppEditorPane.jsx');
+test('city cards have no stop number: long press (touch) or drag (mouse) moves them', async () => {
+  const list = await read('src/modules/trips/MobileCityList.jsx');
 
-  assert.match(pane, /sequenceNumber=\{stopSequence\[index\]\?\.number \?\? null\}/);
-  assert.match(header, /className="itinerary-stop__sequence-badge"[\s\S]*style=\{sequenceBadgeStyle\}/s);
-  assert.match(header, /itinerary-stop__sequence-badge"[\s\S]*onPointerDown=\{onReorderPointerStart\}/);
-  assert.doesNotMatch(header, /IconGripVertical/);
+  assert.doesNotMatch(list, /sequenceNumber|sequence-badge/);
+  assert.match(list, /const LONG_PRESS_MS = \d+/);
+  assert.match(list, /gesture\.mouse \? null : setTimeout/);
+  assert.match(list, /onLiftStart\(segment\.id/);
 });
 
 test('compact list uses a square thumbnail, tight city/date identity and right-aligned controls', async () => {

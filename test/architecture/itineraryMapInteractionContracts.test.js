@@ -24,22 +24,19 @@ test('los numeros de marcadores pertenecen al dato y no al orden DOM de Google M
 });
 
 test('el drag confirma el reordenamiento fuera del updater de React y conserva un solo pointer activo', async () => {
-  const editor = await read('src/app/AppEditorPane.jsx');
-  assert.match(editor, /const dragStateRef = useRef\(null\)/);
-  assert.match(editor, /const activeDragId = dragState\?\.segmentId \|\| null/);
-  assert.match(editor, /current\.pointerId !== event\.pointerId/);
-  assert.match(editor, /function clearActiveDrag\(\) \{\s*dragStateRef\.current = null;\s*setDragState\(null\);\s*\}/);
-  assert.match(editor, /function handlePointerEnd\(event\) \{[\s\S]{0,350}clearActiveDrag\(\);[\s\S]{0,250}reorderSegment\(/);
-  assert.match(editor, /\}, \[activeDragId, reorderSegment\]\);/);
-  assert.match(editor, /setPointerCapture\?\.\(event\.pointerId\)/);
-  assert.doesNotMatch(editor, /setDragState\(\(current\) => \{[\s\S]{0,500}reorderSegment\(/);
+  const list = await read('src/modules/trips/MobileCityList.jsx');
+  assert.match(list, /const liftRef = useRef\(null\)/);
+  assert.match(list, /gesture\.pointerId !== event\.pointerId/);
+  assert.match(list, /const handleLiftEnd = \(commit\) => \{\s*const current = liftRef\.current;\s*updateLift\(null\);[\s\S]{0,400}onReorderSegment\(/);
+  assert.match(list, /setPointerCapture\?\.\(event\.pointerId\)/);
+  assert.doesNotMatch(list, /setLift\(\(current\) => \{[\s\S]{0,500}onReorderSegment\(/);
 });
 
 test('pointercancel cancela el drag y nunca confirma un reordenamiento', async () => {
-  const editor = await read('src/app/AppEditorPane.jsx');
-  const cancelHandler = editor.match(/function handlePointerCancel\(event\) \{([\s\S]*?)\n {4}\}/)?.[1] || '';
-  assert.match(cancelHandler, /activeDragFor\(event\)/);
-  assert.match(cancelHandler, /clearActiveDrag\(\)/);
-  assert.doesNotMatch(cancelHandler, /reorderSegment\(/);
-  assert.match(editor, /addEventListener\('pointercancel', handlePointerCancel\)/);
+  const list = await read('src/modules/trips/MobileCityList.jsx');
+  const cancelHandler = list.match(/const handlePointerCancel = \(\) => \{([\s\S]*?)\n {2}\};/)?.[1] || '';
+  assert.match(cancelHandler, /finishGesture\(\)/);
+  assert.match(cancelHandler, /onLiftEnd\(false\)/);
+  assert.doesNotMatch(cancelHandler, /onReorderSegment\(|onLiftEnd\(true\)/);
+  assert.match(list, /onPointerCancel=\{handlePointerCancel\}/);
 });

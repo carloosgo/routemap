@@ -128,6 +128,7 @@ export default {
   addNextCity: 'Agregar siguiente ciudad',
   departFrom: 'Sales de',
   cityListHint: 'Toca una ciudad para sus gastos · mantenla presionada para moverla · deslízala a la izquierda para borrarla',
+  cityListHintWeb: 'Haz clic en una ciudad para sus gastos · arrástrala para moverla · pasa el mouse para borrarla',
   itineraryView: 'Vista del itinerario',
   listView: 'Una card por fila',
   gridView: 'Dos cards por fila',

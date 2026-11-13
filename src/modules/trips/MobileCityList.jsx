@@ -108,13 +108,15 @@ function MobileCityCard({
       lastY: event.clientY,
       baseX: offsetX,
       mode: 'pending',
+      mouse: event.pointerType === 'mouse',
     };
     try {
       event.currentTarget.setPointerCapture?.(event.pointerId);
     } catch {
       // Sin captura el gesto sigue funcionando mientras el dedo esté encima.
     }
-    gesture.timer = setTimeout(() => {
+    // Con mouse (web) no hay pulsación larga: arrastrar en vertical ya mueve la ciudad.
+    gesture.timer = gesture.mouse ? null : setTimeout(() => {
       if (gestureRef.current !== gesture || gesture.mode !== 'pending') return;
       gesture.mode = 'lift';
       rootRef.current?.setAttribute('data-city-gesture', 'lift');
@@ -136,7 +138,15 @@ function MobileCityCard({
     const dx = event.clientX - gesture.startX;
     const dy = event.clientY - gesture.startY;
 
-    if (gesture.mode === 'pending') {
+    if (gesture.mode === 'pending' && gesture.mouse) {
+      if (Math.abs(dy) > MOVE_TOLERANCE && Math.abs(dy) >= Math.abs(dx)) {
+        gesture.mode = 'lift';
+        rootRef.current?.setAttribute('data-city-gesture', 'lift');
+        onLiftStart(segment.id, gesture.startY, rootRef.current);
+      } else if (Math.abs(dx) > MOVE_TOLERANCE) {
+        gesture.mode = 'none';
+      }
+    } else if (gesture.mode === 'pending') {
       if (Math.abs(dx) > MOVE_TOLERANCE && Math.abs(dx) > Math.abs(dy)) {
         clearTimeout(gesture.timer);
         gesture.mode = 'swipe';
@@ -249,20 +259,35 @@ function MobileCityCard({
           <strong className={'mcity__amount' + (total > 0 ? '' : ' is-zero')}>
             {formatSegmentAmount(total, locale, currency)}
           </strong>
-          <button
-            type="button"
-            className={'mcity__note' + (hasNote ? ' has-note' : '')}
-            aria-label={t('segmentNote')}
-            title={t('segmentNote')}
-            onPointerDown={(event) => event.stopPropagation()}
-            onClick={(event) => {
-              event.stopPropagation();
-              onOpenNote(segment.id);
-            }}
-          >
-            <IconNote size={19} stroke={1.8} aria-hidden="true" />
-            {hasNote && <span className="mcity__note-dot" aria-hidden="true" />}
-          </button>
+          <div className="mcity__tools">
+            <button
+              type="button"
+              className="mcity__hover-delete"
+              aria-label={t('removeSegment')}
+              title={t('removeSegment')}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                setConfirmOpen(true);
+              }}
+            >
+              <IconTrash size={17} stroke={1.8} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className={'mcity__note' + (hasNote ? ' has-note' : '')}
+              aria-label={t('segmentNote')}
+              title={t('segmentNote')}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenNote(segment.id);
+              }}
+            >
+              <IconNote size={19} stroke={1.8} aria-hidden="true" />
+              {hasNote && <span className="mcity__note-dot" aria-hidden="true" />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -393,7 +418,12 @@ export function MobileCityList({
         )}
       </div>
 
-      {entries.length > 0 && <p className="mcity-list__hint">{t('cityListHint')}</p>}
+      {entries.length > 0 && (
+        <>
+          <p className="mcity-list__hint mcity-list__hint--touch">{t('cityListHint')}</p>
+          <p className="mcity-list__hint mcity-list__hint--mouse">{t('cityListHintWeb')}</p>
+        </>
+      )}
     </div>
   );
 }

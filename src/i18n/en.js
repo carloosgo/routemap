@@ -128,6 +128,7 @@ export default {
   addNextCity: 'Add next city',
   departFrom: 'Leaving from',
   cityListHint: 'Tap a city for its expenses · press and hold to move it · swipe left to delete it',
+  cityListHintWeb: 'Click a city for its expenses · drag it to move it · hover to delete it',
   itineraryView: 'Itinerary view',
   listView: 'One card per row',
   gridView: 'Two cards per row',
