@@ -10,7 +10,7 @@ import {
   transitStopOffsets,
 } from '../src/modules/routes/transitStops.js';
 import { normalizeRouteSegments } from '../src/modules/routes/routeModel.js';
-import { searchCircles, stationTypes } from '../functions/googleTransitStopsFunction.js';
+import { excludedStationTypes, searchCircles, stationTypes } from '../functions/googleTransitStopsFunction.js';
 
 // Línea recta este-oeste (≈ 2.2 km) con estaciones cada ~550 m.
 const line = { type: 'LineString', coordinates: [[2.30, 48.87], [2.33, 48.87]] };
@@ -75,15 +75,20 @@ test('estaciones: se buscan una vez y se suman a subida y bajada; si falla, solo
 
 test('estaciones (función): círculos que cubren todo el tramo y tipos según el vehículo', () => {
   const circles = searchCircles(line.coordinates);
-  assert.equal(circles.length, 3);
+  assert.equal(circles.length, 4);
   assert.ok(circles.every((circle) => circle.radius >= 500 && Math.abs(circle.lat - 48.87) < 0.001));
-  assert.ok(circles[0].lng < circles[1].lng && circles[1].lng < circles[2].lng);
+  assert.ok(circles.every((circle, index) => index === 0 || circle.lng > circles[index - 1].lng));
   const long = searchCircles([[2.0, 48.8], [2.6, 48.8]]);
-  assert.equal(long.length, 10, 'tramos largos: máximo 10 búsquedas');
+  assert.equal(long.length, 16, 'tramos largos: máximo 16 búsquedas');
   assert.deepEqual(searchCircles([[2.3, 48.87]]), []);
   assert.deepEqual(stationTypes('SUBWAY'), ['subway_station']);
   assert.deepEqual(stationTypes('TRAM'), ['light_rail_station', 'transit_station']);
   assert.ok(stationTypes('???').includes('train_station'));
+  assert.ok(stationTypes('COMMUTER_TRAIN').includes('transit_station'), 'RER: estaciones que Google marca solo como transit_station');
+  assert.deepEqual(excludedStationTypes('COMMUTER_TRAIN'), ['bus_stop', 'bus_station']);
+  assert.deepEqual(excludedStationTypes('BUS'), []);
+  assert.deepEqual(excludedStationTypes('TRAM'), [], 'tranvía: paradas compartidas con bus');
+  assert.equal(searchCircles(line.coordinates, { minSpacing: 450 }).length, 5, 'tranvía: círculos más juntos');
 });
 
 test('estaciones: el modelo de ruta conserva paradas, número de paradas y vehículo', () => {
@@ -97,4 +102,15 @@ test('estaciones: el modelo de ruta conserva paradas, número de paradas y vehí
   assert.deepEqual(normalized.stops, [{ name: 'Étoile', lat: 48.87, lng: 2.3 }]);
   assert.equal(normalized.stopCount, 4);
   assert.equal(normalized.vehicle, 'SUBWAY');
+});
+
+test('estaciones: en tren/RER se aceptan estaciones algo más lejos del trazo', async () => {
+  resetTransitStopsForTests();
+  const rer = segment({ label: 'A', vehicle: 'COMMUTER_TRAIN', stopCount: 2 });
+  const far = [{ name: 'Charles de Gaulle', lat: 48.8718, lng: 2.315 }];
+  await ensureTransitStops(rer, { loadPlaces: async () => far });
+  assert.deepEqual(segmentStops(rer).map((stop) => stop.name), ['Étoile', 'Charles de Gaulle', 'Concorde']);
+  const metro = segment({ label: '5', stopCount: 2 });
+  await ensureTransitStops(metro, { loadPlaces: async () => far });
+  assert.deepEqual(segmentStops(metro).map((stop) => stop.name), ['Étoile', 'Concorde']);
 });
