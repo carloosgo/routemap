@@ -363,3 +363,9 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Bajo los cuadros: «Día N · X lugares · Y km» con Compartir a la derecha. Luego las ciudades del día una debajo de otra (bandera + nombre, nota de esa ciudad a la derecha), cada una con sus lugares, y entre ciudad y ciudad el traslado.
 - Nota y Compartir son solo icono, sin círculo de fondo. Los nombres de lugares y ciudades se parten en líneas; no se cortan con «…».
 - Ningún bloque del panel se encoge: en días largos todo se desplaza y nada se encima sobre los cuadros.
+
+## Ajuste solicitado (13/11/2026, noche): Mis Rutas en web vuelve a la lista por ciudad
+
+- En web (>720 px), Mis Rutas vuelve a la variante D anterior a los días en cuadros (`TripPlacesDayFirstPanelClassic.jsx`): días agrupados por ciudad, un día abierto a la vez, con nota de ciudad (lápiz) en la cabecera del grupo.
+- Los días en cuadros, la lista vertical de ciudades y las tarjetas con gestos quedan solo en móvil (≤720 px, `TripPlacesDayFirstPanel.jsx`).
+- Móvil (13/11/2026): los lugares vuelven al estilo sin marco (círculo numerado, nombre y ciudad, trayecto con línea de color entre ellos); los gestos se conservan. Los lugares ya no tienen nota (solo las ciudades). Se quita «Tu viaje · N días» también en móvil; la franja solo aparece si hay lugares por organizar.
