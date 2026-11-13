@@ -368,3 +368,4 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 
 - En web (>720 px), Mis Rutas vuelve a la variante D anterior a los días en cuadros (`TripPlacesDayFirstPanelClassic.jsx`): días agrupados por ciudad, un día abierto a la vez, con nota de ciudad (lápiz) en la cabecera del grupo.
 - Los días en cuadros, la lista vertical de ciudades y las tarjetas con gestos quedan solo en móvil (≤720 px, `TripPlacesDayFirstPanel.jsx`).
+- Móvil (13/11/2026): los lugares vuelven al estilo sin marco (círculo numerado, nombre y ciudad, trayecto con línea de color entre ellos); los gestos se conservan. Los lugares ya no tienen nota (solo las ciudades). Se quita «Tu viaje · N días» también en móvil; la franja solo aparece si hay lugares por organizar.

@@ -142,9 +142,10 @@ const MY_ROUTES_STYLES = `
 .mr-daytile.is-selected.has-places i{background:#7fd3ec}
 .mr-daytile.is-drop-target{box-shadow:inset 0 0 0 2px var(--atlas-accent)}
 .mr-daytile:focus-visible{outline:2px solid #19a5d0;outline-offset:2px}
-@media (min-width:721px){
 .mr__overline{display:none}
 .mr__top:not(:has(.mr__pending)){display:none}
+.mr__top:has(.mr__pending){justify-content:flex-end}
+@media (min-width:721px){
 .mr__strip{display:grid;grid-template-columns:repeat(5,44px);gap:8px;overflow:visible}
 .mr-daytile{width:44px;height:44px;border-radius:12px}
 .mr-daytile small{font-size:9px}
@@ -165,11 +166,11 @@ const MY_ROUTES_STYLES = `
 .mr-card.is-dragging{overflow:visible;z-index:20}
 .mr-card__delete{position:absolute;top:0;right:0;bottom:0;display:flex;width:84px;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:0;border-radius:0 14px 14px 0;background:#d94f4f;color:#fff;font:600 12px var(--font-body);opacity:0;cursor:pointer}
 .mr-card.is-swiped .mr-card__delete,.mr-card.is-swiping .mr-card__delete{opacity:1}
-.mr-card .mr-place{min-height:56px;padding:6px 4px 6px 10px;border:1.5px solid #e6e8ec;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.04);touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:transform .22s ease,box-shadow .2s ease,border-color .2s ease}
+.mr-card .mr-place{min-height:52px;padding:4px 0;border:0;border-radius:10px;background:#fff;touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:transform .22s ease,box-shadow .2s ease}
 .mr-card.is-swiping .mr-place{transition:none}
-.mr-card .mr-place:hover{background:#fafbfc}
-.mr-card .mr-place.is-selected{border-color:#9cc9d6;background:#f5fbfd}
-.mr-card .mr-place.is-dragging{border-color:#19a5d0;background:#fff;box-shadow:0 14px 30px rgba(15,23,42,.22);transform:translateY(var(--mr-drag-y,0)) scale(1.03)}
+.mr-card .mr-place:hover{background:#fff}
+.mr-card .mr-place.is-selected{background:#e8f3f1}
+.mr-card .mr-place.is-dragging{background:#fff;box-shadow:0 14px 30px rgba(15,23,42,.22);transform:translateY(var(--mr-drag-y,0)) scale(1.03)}
 .mr-card .mr-place.is-dragging .mr-place__text{animation:mr-wiggle .5s ease-in-out infinite}
 @keyframes mr-wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-.6deg)}75%{transform:rotate(.6deg)}}
 @media (prefers-reduced-motion:reduce){.mr-card .mr-place.is-dragging .mr-place__text{animation:none}}
@@ -181,7 +182,7 @@ const MY_ROUTES_STYLES = `
 .mr-card .mr-place__hover-delete{display:none}
 @media (hover:hover) and (pointer:fine){.mr-card:hover .mr-place__hover-delete{display:inline-flex;color:#b42318}}
 .mr__body .mr-route,.mr__body .mr__transfer{margin:2px 0}
-.mr__body > * + .mr-card{margin-top:4px}
+.mr__body > * + .mr-card{margin-top:2px}
 .mr__hint{margin:12px 0 0;color:#6b7684;font-size:12px;line-height:1.5;text-align:center}
 .mr__hint--mouse{display:none}
 @media (hover:hover) and (pointer:fine){.mr__hint--touch{display:none}.mr__hint--mouse{display:block}}
@@ -718,16 +719,6 @@ export function TripPlacesDayFirstPanel({
                 title={t('delete')}
               >
                 <IconTrash size={17} stroke={1.8} aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                className={'mr-place__note' + (place.note ? ' has-note' : '')}
-                onClick={() => setNotePlaceId(place.id)}
-                aria-label={t('placeNote')}
-                title={t('placeNote')}
-              >
-                <IconEdit size={16} stroke={1.8} aria-hidden="true" />
-                {place.note && <span className="mr-place__note-dot" aria-hidden="true" />}
               </button>
             </span>
           </article>
