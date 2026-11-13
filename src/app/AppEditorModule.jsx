@@ -1,4 +1,6 @@
 import { TripPlacesDayFirstPanel } from '../modules/places/TripPlacesDayFirstPanel.jsx';
+import { TripPlacesDayFirstPanelClassic } from '../modules/places/TripPlacesDayFirstPanelClassic.jsx';
+import { useIsMobileViewport } from '../modules/trips/MobileCityList.jsx';
 import { AppEditorPane } from './AppEditorPane.jsx';
 import { AppWorkspaceMenu } from './AppWorkspaceMenu.jsx';
 
@@ -20,6 +22,7 @@ export function AppEditorModule({
   t,
   intlLocale,
 }) {
+  const isMobileViewport = useIsMobileViewport();
   const {
     trip,
     addNote,
@@ -54,8 +57,10 @@ export function AppEditorModule({
     setNewItemText,
   } = editorState;
 
+  // Web conserva la lista de días por ciudad; los días en cuadros son solo móvil.
+  const PlacesPanel = isMobileViewport ? TripPlacesDayFirstPanel : TripPlacesDayFirstPanelClassic;
   const editorPane = activeTab === 'places' ? (
-    <TripPlacesDayFirstPanel
+    <PlacesPanel
       tripId={trip.id}
       segments={trip.segments}
       places={places}
