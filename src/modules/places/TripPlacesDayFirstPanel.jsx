@@ -1,10 +1,9 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import {
   IconCheck,
-  IconChevronDown,
-  IconChevronRight,
   IconMapPin,
   IconEdit,
+  IconTrash,
   IconX,
 } from '@tabler/icons-react';
 import { flagImageUrl } from '../flags/flags.js';
@@ -20,7 +19,6 @@ import { NextCityTransfer } from './NextCityTransfer.jsx';
 import { cityTransfers } from './cityTransferModel.js';
 import {
   cityDayGroups,
-  countryKey,
   dayRouteTotals,
   defaultOpenDay,
   formatDistance,
@@ -30,7 +28,7 @@ import {
   placeCountryColors,
   stopColor,
 } from './placesDayModel.js';
-import { TripRouteConnections, formatDuration } from './TripRouteConnections.jsx';
+import { TripRouteConnections } from './TripRouteConnections.jsx';
 import './TripPlacesPanel.css';
 
 const PERSISTENCE_LABEL_KEYS = Object.freeze({
@@ -81,10 +79,6 @@ const MY_ROUTES_STYLES = `
 .mr__overline{color:#667085;font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase}
 .mr__pending{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border:1px solid #f3d3cb;border-radius:999px;background:#fbe8e3;color:#a3422e;font:600 12px var(--font-body);cursor:pointer}
 .mr__pending[aria-expanded=true]{border-color:#a3422e}
-.mr__city{display:flex;align-items:center;gap:10px;padding:18px 16px 8px;color:#0b1f2c;font-size:15px;font-weight:600}
-.mr__city img{width:24px;height:16px;border-radius:3px;object-fit:cover;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
-.mr__city small{color:#667085;font-size:12.5px;font-weight:500}
-.mr__city .mr__city-note{margin:-6px 4px -6px auto}
 .mr__day{position:relative;border-bottom:1px solid #eef0f2}
 .mr__day.is-drop-target{box-shadow:inset 3px 0 0 var(--atlas-accent)}
 .mr__row{display:grid;width:100%;min-height:46px;grid-template-columns:minmax(0,1fr) 16px;align-items:center;gap:12px;padding:6px 16px;border:0;background:#fff;color:#0b1f2c;font:500 13.5px var(--font-body);text-align:left;cursor:pointer}
@@ -137,6 +131,52 @@ const MY_ROUTES_STYLES = `
 .mr-share{position:relative;display:inline-flex}
 .mr-share .is-busy svg{animation:mr-spin .8s linear infinite}
 @keyframes mr-spin{to{transform:rotate(360deg)}}
+.mr__strip{display:flex;gap:8px;padding:12px 16px 14px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid #eef0f2;background:#fff}
+.mr__strip::-webkit-scrollbar{display:none}
+.mr-daytile{display:flex;flex:0 0 auto;width:56px;height:56px;flex-direction:column;align-items:center;justify-content:center;padding:0;border:0;border-radius:16px;background:#f4f5f7;box-shadow:inset 0 0 0 1px #e8eaee;color:#0b1f2c;font-family:var(--font-body);cursor:pointer;transition:background .15s ease,box-shadow .15s ease}
+.mr-daytile small{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;opacity:.75}
+.mr-daytile strong{font-size:21px;font-weight:700;line-height:1.05}
+.mr-daytile i{width:4px;height:4px;margin-top:2px;border-radius:50%;background:transparent}
+.mr-daytile.has-places i{background:#19a5d0}
+.mr-daytile.is-selected{background:#1f2933;box-shadow:0 6px 14px rgba(15,23,42,.22);color:#fff}
+.mr-daytile.is-selected.has-places i{background:#7fd3ec}
+.mr-daytile.is-drop-target{box-shadow:inset 0 0 0 2px var(--atlas-accent)}
+.mr-daytile:focus-visible{outline:2px solid #19a5d0;outline-offset:2px}
+.mr__dayhead{display:flex;align-items:center;gap:8px;padding:16px 12px 10px 16px}
+.mr__dayhead-text{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.mr__dayhead-city{display:flex;align-items:center;gap:9px;min-width:0;font-size:20px;font-weight:700;line-height:1.15}
+.mr__dayhead-city img{width:26px;height:18px;flex:0 0 auto;border-radius:4px;object-fit:cover;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.mr__dayhead-city span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mr__dayhead-sub{color:#5b6573;font-size:13.5px}
+.mr__dayhead-sub strong{color:#1f2933;font-weight:600}
+.mr__dayhead .mr__icon-btn{width:40px;height:40px;border-radius:50%;background:#f1f3f5}
+.mr__body{padding:2px 16px 18px;background:#fff}
+.mr__body .mr-place{margin:0}
+.mr-card{position:relative;border-radius:14px;overflow:hidden}
+.mr-card.is-dragging{overflow:visible;z-index:20}
+.mr-card__delete{position:absolute;top:0;right:0;bottom:0;display:flex;width:84px;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:0;border-radius:0 14px 14px 0;background:#d94f4f;color:#fff;font:600 12px var(--font-body);opacity:0;cursor:pointer}
+.mr-card.is-swiped .mr-card__delete,.mr-card.is-swiping .mr-card__delete{opacity:1}
+.mr-card .mr-place{min-height:64px;padding:8px 6px 8px 12px;border:1.5px solid #e6e8ec;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.04);touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:transform .22s ease,box-shadow .2s ease,border-color .2s ease}
+.mr-card.is-swiping .mr-place{transition:none}
+.mr-card .mr-place:hover{background:#fafbfc}
+.mr-card .mr-place.is-selected{border-color:#9cc9d6;background:#f5fbfd}
+.mr-card .mr-place.is-dragging{border-color:#19a5d0;background:#fff;box-shadow:0 14px 30px rgba(15,23,42,.22);transform:translateY(var(--mr-drag-y,0)) scale(1.03)}
+.mr-card .mr-place.is-dragging .mr-place__text{animation:mr-wiggle .5s ease-in-out infinite}
+@keyframes mr-wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-.6deg)}75%{transform:rotate(.6deg)}}
+@media (prefers-reduced-motion:reduce){.mr-card .mr-place.is-dragging .mr-place__text{animation:none}}
+.mr-card .mr-place__text strong{font-size:15.5px}
+.mr-card .mr-place__text small{font-size:13px;color:#5b6573}
+.mr-card .mr-place__actions{opacity:1}
+.mr-card .mr-place__actions button{width:40px;height:40px;border-radius:10px}
+.mr-card .mr-place__note{position:relative}
+.mr-card .mr-place__note-dot{position:absolute;top:8px;right:8px;width:7px;height:7px;box-sizing:border-box;border:1.5px solid #fff;border-radius:50%;background:#19a5d0}
+.mr-card .mr-place__hover-delete{display:none}
+@media (hover:hover) and (pointer:fine){.mr-card:hover .mr-place__hover-delete{display:inline-flex;color:#b42318}}
+.mr__body .mr-route,.mr__body .mr__transfer{margin:2px 0}
+.mr__body > * + .mr-card{margin-top:4px}
+.mr__hint{margin:12px 0 0;color:#6b7684;font-size:12px;line-height:1.5;text-align:center}
+.mr__hint--mouse{display:none}
+@media (hover:hover) and (pointer:fine){.mr__hint--touch{display:none}.mr__hint--mouse{display:block}}
 .mr-share__status{position:absolute;z-index:80;top:36px;right:0;padding:6px 10px;border-radius:8px;background:#0b1f2c;color:#fff;font-size:12px;font-weight:600;max-width:min(300px,calc(100vw - 32px));white-space:normal;box-shadow:0 8px 20px rgba(15,23,42,.18)}
 `;
 
@@ -184,6 +224,166 @@ function placeSubtitle(place, segmentById) {
   return [...new Set(parts)].join(' · ');
 }
 
+const LONG_PRESS_MS = 420;
+const MOVE_TOLERANCE = 8;
+const DELETE_WIDTH = 84;
+
+/**
+ * Tarjeta de lugar con los gestos de la lista de ciudades: tocar selecciona,
+ * mantener presionado (o arrastrar con mouse) la levanta para moverla y
+ * deslizar a la izquierda descubre Borrar.
+ */
+function SwipePlaceCard({ placeId, dragging, onTap, onLift, onDelete, deleteLabel, children }) {
+  const rootRef = useRef(null);
+  const gestureRef = useRef(null);
+  const [offsetX, setOffsetX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
+
+  useEffect(() => {
+    const node = rootRef.current;
+    if (!node) return undefined;
+    const onTouchMove = (event) => {
+      if (node.hasAttribute('data-city-gesture')) event.preventDefault();
+    };
+    node.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => node.removeEventListener('touchmove', onTouchMove);
+  }, []);
+
+  useEffect(() => () => clearTimeout(gestureRef.current?.timer), []);
+
+  useEffect(() => {
+    if (dragging) rootRef.current?.setAttribute('data-city-gesture', 'lift');
+    else if (gestureRef.current?.mode !== 'swipe') rootRef.current?.removeAttribute('data-city-gesture');
+  }, [dragging]);
+
+  const finish = () => {
+    clearTimeout(gestureRef.current?.timer);
+    gestureRef.current = null;
+    if (!dragging) rootRef.current?.removeAttribute('data-city-gesture');
+  };
+
+  const lift = (gesture, clientY) => {
+    gesture.mode = 'lift';
+    rootRef.current?.setAttribute('data-city-gesture', 'lift');
+    setOffsetX(0);
+    try {
+      globalThis.navigator?.vibrate?.(12);
+    } catch {
+      // Vibración opcional.
+    }
+    onLift({
+      pointerType: gesture.pointerType,
+      button: 0,
+      clientY,
+      preventDefault() {},
+      stopPropagation() {},
+    }, placeId);
+  };
+
+  const handlePointerDown = (event) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (event.target.closest?.('button')) return;
+    clearTimeout(gestureRef.current?.timer);
+    const gesture = {
+      pointerId: event.pointerId,
+      pointerType: event.pointerType,
+      startX: event.clientX,
+      startY: event.clientY,
+      lastY: event.clientY,
+      baseX: offsetX,
+      mode: 'pending',
+    };
+    if (event.pointerType !== 'mouse') {
+      gesture.timer = setTimeout(() => {
+        if (gestureRef.current === gesture && gesture.mode === 'pending') lift(gesture, gesture.lastY);
+      }, LONG_PRESS_MS);
+    }
+    gestureRef.current = gesture;
+  };
+
+  const handlePointerMove = (event) => {
+    const gesture = gestureRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId || gesture.mode === 'lift') return;
+    gesture.lastY = event.clientY;
+    const dx = event.clientX - gesture.startX;
+    const dy = event.clientY - gesture.startY;
+    if (gesture.mode === 'pending') {
+      if (gesture.pointerType === 'mouse') {
+        if (Math.abs(dy) > MOVE_TOLERANCE && Math.abs(dy) >= Math.abs(dx)) {
+          lift(gesture, gesture.startY);
+          return;
+        }
+        if (Math.abs(dx) > MOVE_TOLERANCE) gesture.mode = 'none';
+      } else if (Math.abs(dx) > MOVE_TOLERANCE && Math.abs(dx) > Math.abs(dy)) {
+        clearTimeout(gesture.timer);
+        gesture.mode = 'swipe';
+        rootRef.current?.setAttribute('data-city-gesture', 'swipe');
+        setSwiping(true);
+        try {
+          event.currentTarget.setPointerCapture?.(event.pointerId);
+        } catch {
+          // Sin captura el gesto sigue mientras el dedo esté encima.
+        }
+      } else if (Math.abs(dy) > MOVE_TOLERANCE) {
+        clearTimeout(gesture.timer);
+        gesture.mode = 'none';
+      }
+    }
+    if (gesture.mode === 'swipe') {
+      setOffsetX(Math.max(-DELETE_WIDTH, Math.min(0, gesture.baseX + dx)));
+    }
+  };
+
+  const handlePointerUp = (event) => {
+    const gesture = gestureRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+    const { mode } = gesture;
+    finish();
+    if (mode === 'pending') {
+      if (offsetX < 0) setOffsetX(0);
+      else onTap();
+    } else if (mode === 'swipe') {
+      setSwiping(false);
+      rootRef.current?.removeAttribute('data-city-gesture');
+      setOffsetX((current) => (current < -DELETE_WIDTH / 2 ? -DELETE_WIDTH : 0));
+    }
+  };
+
+  const handlePointerCancel = () => {
+    const mode = gestureRef.current?.mode;
+    finish();
+    setSwiping(false);
+    if (mode === 'swipe') setOffsetX(0);
+  };
+
+  return (
+    <div
+      ref={rootRef}
+      className={'mr-card' + (dragging ? ' is-dragging' : '') + (offsetX < 0 ? ' is-swiped' : '') + (swiping ? ' is-swiping' : '')}
+      onPointerDownCapture={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+      onContextMenu={(event) => event.preventDefault()}
+    >
+      <button
+        type="button"
+        className="mr-card__delete"
+        aria-label={deleteLabel}
+        tabIndex={offsetX < 0 ? 0 : -1}
+        onClick={() => {
+          setOffsetX(0);
+          onDelete();
+        }}
+      >
+        <IconTrash size={20} stroke={1.9} aria-hidden="true" />
+        <span>{deleteLabel}</span>
+      </button>
+      {children(offsetX)}
+    </div>
+  );
+}
+
 export function TripPlacesDayFirstPanel({
   tripId = '',
   segments = [],
@@ -228,6 +428,22 @@ export function TripPlacesDayFirstPanel({
   const rawOpenDay = controlled ? controlledOpenDay : localOpenDay;
   const fallbackOpenDay = useMemo(() => defaultOpenDay(grouped.groups), [grouped.groups]);
   const openDay = rawOpenDay === undefined ? fallbackOpenDay : rawOpenDay;
+  const allDays = useMemo(() => cityGroups.flatMap((group) => group.days), [cityGroups]);
+  // Siempre hay un día a la vista: el abierto, el sugerido o el primero.
+  // Solo "Por organizar" lo oculta.
+  const selectedDay = openDay === UNASSIGNED_KEY
+    ? null
+    : allDays.find((day) => day.tripDayOffset === openDay)
+      || allDays.find((day) => day.tripDayOffset === fallbackOpenDay)
+      || allDays[0]
+      || null;
+  const stripRef = useRef(null);
+  const selectedOffset = selectedDay?.tripDayOffset;
+  useEffect(() => {
+    if (selectedOffset == null) return;
+    const tile = stripRef.current?.querySelector(`[data-trip-day-offset="${selectedOffset}"]`);
+    tile?.scrollIntoView?.({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+  }, [selectedOffset]);
   const setOpenDay = (value) => {
     if (controlled) setControlledOpenDay(value);
     else setLocalOpenDay(value);
@@ -278,7 +494,15 @@ export function TripPlacesDayFirstPanel({
     if (!panel) return undefined;
 
     const resolveTarget = (event) => {
-      const days = Array.from(panel.querySelectorAll('[data-trip-day-offset]'))
+      // Soltar sobre un cuadro de la barra manda el lugar a ese día.
+      const tile = Array.from(panel.querySelectorAll('.mr-daytile[data-trip-day-offset]')).find((element) => {
+        const bounds = element.getBoundingClientRect();
+        return event.clientX >= bounds.left && event.clientX <= bounds.right
+          && event.clientY >= bounds.top && event.clientY <= bounds.bottom;
+      });
+      if (tile) return { targetOffset: Number(tile.dataset.tripDayOffset), targetId: null, placement: null };
+
+      const days = Array.from(panel.querySelectorAll('[data-trip-day-offset]:not(.mr-daytile)'))
         .map((element) => ({
           offset: Number(element.dataset.tripDayOffset),
           bounds: element.getBoundingClientRect(),
@@ -420,75 +644,87 @@ export function TripPlacesDayFirstPanel({
     const subtitle = placeSubtitle(place, segmentById);
 
     return (
-      <article
+      <SwipePlaceCard
         key={place.id}
-        className={'mr-place' + (dragging ? ' is-dragging' : '') + (selected ? ' is-selected' : '') + dropClass}
-        data-place-id={place.id}
-        style={{ '--mr-color': color, ...(dragging ? { '--mr-drag-y': `${placeDrag.offsetY}px` } : null) }}
-        onClick={(event) => {
-          if (event.target.closest('button')) return;
-          selectPlace?.(selected ? '' : place.id);
-        }}
+        placeId={place.id}
+        dragging={dragging}
+        onTap={() => selectPlace?.(selected ? '' : place.id)}
+        onLift={startPlaceDrag}
+        onDelete={() => setPlaceToDelete(place)}
+        deleteLabel={t('delete')}
       >
-        <span className="mr-place__move" data-place-move-menu>
-          <button
-            type="button"
-            className={'mr-place__num mr-place__drag' + (number ? '' : ' mr-place__num--none')}
-            onPointerDown={(event) => startPlaceDrag(event, place.id)}
-            onClick={() => setMoveMenuPlaceId((current) => current === place.id ? '' : place.id)}
-            aria-label={t('movePlace')}
-            title={t('movePlace')}
+        {(offsetX) => (
+          <article
+            className={'mr-place' + (dragging ? ' is-dragging' : '') + (selected ? ' is-selected' : '') + dropClass}
+            data-place-id={place.id}
+            style={{
+              '--mr-color': color,
+              ...(dragging ? { '--mr-drag-y': `${placeDrag.offsetY}px` } : null),
+              ...(offsetX ? { transform: `translateX(${offsetX}px)` } : null),
+            }}
           >
-            {number || '·'}
-          </button>
-          {moveMenuPlaceId === place.id && (
-            <div className="mr-place__menu" role="menu">
-              <strong>{t('movePlaceTo')}</strong>
-              {calendarDays.map((day) => {
-                const cities = dayCityNames(assignmentsByDay.get(day.tripDayOffset));
-                if (!cities) return null;
-                return (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    key={day.date}
-                    onClick={() => {
-                      movePlaceToDay?.(place.id, day.tripDayOffset);
-                      setMoveMenuPlaceId('');
-                    }}
-                  >
-                    {`${t('day')} ${day.globalDayNumber} · ${formatDayDate(day.date, intlLocale, false)} · ${cities}`}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </span>
-        <span className="mr-place__text">
-          <strong>{placeTitle(place, t)}</strong>
-          {subtitle && <small>{subtitle}</small>}
-        </span>
-        <span className="mr-place__actions">
-          <button
-            type="button"
-            className={place.note ? 'has-note' : ''}
-            onClick={() => setNotePlaceId(place.id)}
-            aria-label={t('placeNote')}
-            title={t('placeNote')}
-          >
-            <IconEdit size={15} stroke={1.8} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setPlaceToDelete(place)}
-            aria-label={t('delete')}
-            title={t('delete')}
-          >
-            <IconX size={15} aria-hidden="true" />
-          </button>
-        </span>
-        {place.note && <span className="mr-place__has-note-dot" aria-hidden="true" />}
-      </article>
+            <span className="mr-place__move" data-place-move-menu>
+              <button
+                type="button"
+                className={'mr-place__num mr-place__drag' + (number ? '' : ' mr-place__num--none')}
+                onPointerDown={(event) => startPlaceDrag(event, place.id)}
+                onClick={() => setMoveMenuPlaceId((current) => current === place.id ? '' : place.id)}
+                aria-label={t('movePlace')}
+                title={t('movePlace')}
+              >
+                {number || '·'}
+              </button>
+              {moveMenuPlaceId === place.id && (
+                <div className="mr-place__menu" role="menu">
+                  <strong>{t('movePlaceTo')}</strong>
+                  {calendarDays.map((day) => {
+                    const cities = dayCityNames(assignmentsByDay.get(day.tripDayOffset));
+                    if (!cities) return null;
+                    return (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        key={day.date}
+                        onClick={() => {
+                          movePlaceToDay?.(place.id, day.tripDayOffset);
+                          setMoveMenuPlaceId('');
+                        }}
+                      >
+                        {`${t('day')} ${day.globalDayNumber} · ${formatDayDate(day.date, intlLocale, false)} · ${cities}`}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </span>
+            <span className="mr-place__text">
+              <strong>{placeTitle(place, t)}</strong>
+              {subtitle && <small>{subtitle}</small>}
+            </span>
+            <span className="mr-place__actions">
+              <button
+                type="button"
+                className="mr-place__hover-delete"
+                onClick={() => setPlaceToDelete(place)}
+                aria-label={t('delete')}
+                title={t('delete')}
+              >
+                <IconTrash size={17} stroke={1.8} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className={'mr-place__note' + (place.note ? ' has-note' : '')}
+                onClick={() => setNotePlaceId(place.id)}
+                aria-label={t('placeNote')}
+                title={t('placeNote')}
+              >
+                <IconEdit size={19} stroke={1.8} aria-hidden="true" />
+                {place.note && <span className="mr-place__note-dot" aria-hidden="true" />}
+              </button>
+            </span>
+          </article>
+        )}
+      </SwipePlaceCard>
     );
   }
 
@@ -538,73 +774,98 @@ export function TripPlacesDayFirstPanel({
     );
   }
 
-  // Solo el día abierto resume sus traslados; las filas cerradas quedan limpias.
-  function daySummary(day) {
+  function dayDistance(day) {
     if (!day.places.length) return '';
     const totals = dayRouteTotals(day.places, routeFor);
-    return [
-      formatDistance(totals.distance, intlLocale),
-      totals.duration ? formatDuration(totals.duration) : '',
-    ].filter(Boolean).join(' · ');
+    return totals.distance ? formatDistance(totals.distance, intlLocale) : '';
   }
 
-  function renderDay(day, groupColor) {
-    const open = openDay === day.tripDayOffset;
-    const dropTarget = placeDrag && placeDrag.targetOffset === day.tripDayOffset;
-    const title = `${t('day')} ${day.globalDayNumber}`;
-    // La ciudad ya la dice la cabecera del grupo: el día solo lleva su fecha.
+  // Día abierto: cabecera con bandera y ciudad grandes y, debajo,
+  // "Día N · X lugares · Y km".
+  function renderDayHead(day) {
+    const cities = dayCities(day.assignments);
     const date = formatDayDate(day.date, intlLocale);
-    const color = groupColor;
-    const rowButton = (
+    const title = `${t('day')} ${day.globalDayNumber}`;
+    const noteSegment = segmentById.get(day.assignments.at(-1)?.segmentId) || null;
+    const distance = dayDistance(day);
+    return (
+      <div className="mr__dayhead">
+        <div className="mr__dayhead-text">
+          <div className="mr__dayhead-city">
+            {cities.map((city, index) => {
+              const flag = flagImageUrl(city.countryCode, 40);
+              return (
+                <Fragment key={city.name}>
+                  {index > 0 && <span aria-hidden="true">·</span>}
+                  {flag && <img src={flag} alt="" width={26} height={18} />}
+                  <span>{city.name}</span>
+                </Fragment>
+              );
+            })}
+            {!cities.length && <span>{t('city')}</span>}
+          </div>
+          <div className="mr__dayhead-sub">
+            <strong>{title}</strong>
+            {` · ${t(day.places.length === 1 ? 'dayPlacesOne' : 'dayPlacesMany', { count: day.places.length })}`}
+            {distance && ` · ${distance}`}
+          </div>
+        </div>
+        {day.places.length > 0 && (
+          <DayShareButton
+            tripId={tripId}
+            date={day.date}
+            title={date ? `${title} · ${date}` : title}
+            subtitle={dayCityNames(day.assignments)}
+            cities={cities}
+            places={day.places}
+            routeFor={routeFor}
+            colorFor={(place) => stopColor(day.places.indexOf(place) + 1) || placeColor(place, segmentById, colors)}
+            t={t}
+            intlLocale={intlLocale}
+          />
+        )}
+        {noteSegment && (
+          <button
+            type="button"
+            className={'mr__icon-btn mr__city-note' + (noteSegment.note ? ' has-note' : '')}
+            onClick={() => toggleSegmentNote?.(noteSegment.id)}
+            aria-label={t('segmentNote')}
+            title={t('segmentNote')}
+          >
+            <IconEdit size={18} stroke={1.8} aria-hidden="true" />
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  function renderDayTile(day, selected) {
+    const dropTarget = placeDrag && placeDrag.targetOffset === day.tripDayOffset;
+    const date = new Date(`${day.date}T00:00:00Z`);
+    const valid = !Number.isNaN(date.getTime());
+    const weekday = valid
+      ? new Intl.DateTimeFormat(intlLocale || 'es-MX', { weekday: 'short', timeZone: 'UTC' }).format(date).replace('.', '')
+      : '';
+    const label = [`${t('day')} ${day.globalDayNumber}`, formatDayDate(day.date, intlLocale), dayCityNames(day.assignments)]
+      .filter(Boolean).join(' · ');
+    return (
       <button
         type="button"
-        className="mr__row"
-        aria-expanded={open}
-        onClick={() => toggleDay(day.tripDayOffset)}
-      >
-        <span className="mr__title"><strong>{title}</strong>{date && <small>{`\u00a0· ${date}`}</small>}</span>
-        {open && <span className="mr__summary">{daySummary(day)}</span>}
-        {!open && <IconChevronRight size={15} color="#8a94a3" aria-hidden="true" />}
-      </button>
-    );
-
-    return (
-      <section
-        className={'mr__day' + (open ? ' is-open' : '') + (dropTarget ? ' is-drop-target' : '')}
         key={day.date}
+        className={'mr-daytile'
+          + (day.places.length ? ' has-places' : '')
+          + (selected ? ' is-selected' : '')
+          + (dropTarget ? ' is-drop-target' : '')}
         data-trip-day-offset={day.tripDayOffset}
-        style={{ '--mr-color': color }}
+        aria-pressed={selected}
+        aria-label={label}
+        title={label}
+        onClick={() => setOpenDay(day.tripDayOffset)}
       >
-        {open ? (
-          <div className="mr__head">
-            {rowButton}
-            {day.places.length > 0 && (
-              <DayShareButton
-                tripId={tripId}
-                date={day.date}
-                title={date ? `${title} · ${date}` : title}
-                subtitle={dayCityNames(day.assignments)}
-                cities={dayCities(day.assignments)}
-                places={day.places}
-                routeFor={routeFor}
-                colorFor={(place) => stopColor(day.places.indexOf(place) + 1) || placeColor(place, segmentById, colors)}
-                t={t}
-                intlLocale={intlLocale}
-              />
-            )}
-            <button
-              type="button"
-              className="mr__icon-btn mr__icon-btn--plain"
-              aria-label={t('collapse')}
-              title={t('collapse')}
-              onClick={() => toggleDay(day.tripDayOffset)}
-            >
-              <IconChevronDown size={15} aria-hidden="true" />
-            </button>
-          </div>
-        ) : rowButton}
-        {open && renderDayBody(day)}
-      </section>
+        <small>{weekday}</small>
+        <strong>{valid ? date.getUTCDate() : day.globalDayNumber}</strong>
+        <i aria-hidden="true" />
+      </button>
     );
   }
 
@@ -648,35 +909,21 @@ export function TripPlacesDayFirstPanel({
           </section>
         )}
 
-        {cityGroups.map((group) => {
-          const destination = group.destination;
-          const flag = flagImageUrl(destination?.countryCode, 40);
-          const groupColor = colors.get(countryKey(destination)) || '#64748b';
-          // La nota del Itinerario es de la estancia, no del día: se muestra una
-          // sola vez en la cabecera de la ciudad para que no se repita por día.
-          const noteSegment = segmentById.get(group.segmentId) || null;
-          return (
-            <div key={group.key}>
-              <div className="mr__city">
-                {flag && <img src={flag} alt="" width={16} height={11} />}
-                {capitalizeFirst(destination?.name) || t('city')}
-                <small>{t(group.days.length === 1 ? 'dayCountOne' : 'dayCountMany', { count: group.days.length })}</small>
-                {noteSegment && (
-                  <button
-                    type="button"
-                    className={'mr__icon-btn mr__city-note' + (noteSegment.note ? ' has-note' : '')}
-                    onClick={() => toggleSegmentNote?.(noteSegment.id)}
-                    aria-label={t('segmentNote')}
-                    title={t('segmentNote')}
-                  >
-                    <IconEdit size={15} stroke={1.8} aria-hidden="true" />
-                  </button>
-                )}
-              </div>
-              {group.days.map((day) => renderDay(day, groupColor))}
-            </div>
-          );
-        })}
+        <div className="mr__strip" ref={stripRef}>
+          {allDays.map((day) => renderDayTile(day, day.tripDayOffset === selectedDay?.tripDayOffset))}
+        </div>
+
+        {selectedDay && (
+          <section
+            className={'mr__dayview' + (placeDrag && placeDrag.targetOffset === selectedDay.tripDayOffset ? ' is-drop-target' : '')}
+            data-trip-day-offset={selectedDay.tripDayOffset}
+          >
+            {renderDayHead(selectedDay)}
+            {renderDayBody(selectedDay)}
+          </section>
+        )}
+        <p className="mr__hint mr__hint--touch">{t('placeListHint')}</p>
+        <p className="mr__hint mr__hint--mouse">{t('placeListHintWeb')}</p>
       </div>
 
       {notePlace && (

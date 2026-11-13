@@ -15,13 +15,27 @@ test('Mis Rutas no permite arrastrar días completos y muestra Por organizar arr
   assert.match(panel, /dayCityNames\(assignmentsByDay\.get\(day\.tripDayOffset\)\)/);
 });
 
-test('Mis Rutas agrupa los días por ciudad y abre un solo día a la vez', async () => {
+test('Mis Rutas elige el día en una barra de cuadros y muestra un solo día a la vez', async () => {
   const panel = await read('src/modules/places/TripPlacesDayFirstPanel.jsx');
 
   assert.match(panel, /cityDayGroups\(grouped\.groups, assignmentsByDay\)/);
-  assert.match(panel, /setOpenDay\(openDay === key \? null : key\)/);
-  assert.match(panel, /const open = openDay === day\.tripDayOffset/);
-  assert.match(panel, /\{open && renderDayBody\(day\)\}/);
+  assert.match(panel, /className="mr__strip"/);
+  assert.match(panel, /className=\{'mr-daytile'/);
+  assert.match(panel, /onClick=\{\(\) => setOpenDay\(day\.tripDayOffset\)\}/);
+  // Cabecera: bandera y ciudad grandes; debajo "Día N · X lugares · Y km".
+  assert.match(panel, /className="mr__dayhead-city"/);
+  assert.match(panel, /className="mr__dayhead-sub"/);
+  assert.match(panel, /\{renderDayBody\(selectedDay\)\}/);
+  assert.doesNotMatch(panel, /className="mr__city"/);
+});
+
+test('cada lugar es una tarjeta con gestos: tocar, mantener para mover, deslizar para borrar', async () => {
+  const panel = await read('src/modules/places/TripPlacesDayFirstPanel.jsx');
+
+  assert.match(panel, /function SwipePlaceCard\(/);
+  assert.match(panel, /data-city-gesture/);
+  assert.match(panel, /className="mr-card__delete"/);
+  assert.doesNotMatch(panel, /mr-place__remove/);
 });
 
 test('cada parada muestra su número del día, sin miniatura de Street View', async () => {
