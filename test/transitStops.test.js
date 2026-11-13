@@ -92,3 +92,21 @@ test('estaciones: las paradas de la propia línea se aceptan un poco más lejos 
   assert.equal(intermediateStops(offset, segment()).length, 0);
   assert.equal(intermediateStops(offset, segment(), { byLine: true }).length, 1);
 });
+
+test('estaciones: sin fetchImpl llama a fetch global a través de un envoltorio', async () => {
+  resetTransitStopsForTests();
+  const original = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = function strictFetch(...args) {
+    if (this !== undefined && this !== globalThis) throw new TypeError('Illegal invocation');
+    calls.push(args[0]);
+    return Promise.resolve({ ok: true, json: async () => ({ elements }) });
+  };
+  try {
+    const stops = await ensureTransitStops(segment({ label: '7' }));
+    assert.equal(calls.length, 1);
+    assert.equal(stops.length, 3);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
