@@ -346,5 +346,5 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 
 ## Estaciones sobre las rutas de transporte (12/11/2026)
 
-- En Mis Rutas, cada tramo de transporte público marca sus estaciones con puntos blancos con borde del color de la línea: subida y bajada de 12 px, intermedias de 9 px. El nombre aparece al pasar el cursor. No llevan etiqueta fija para no saturar el mapa.
+- En Mis Rutas, cada tramo de transporte público marca sus estaciones como círculos blancos con borde del color de la línea dibujados sobre la propia línea (símbolos de la polilínea, mismo tamaño para subida, intermedias y bajada). No llevan etiqueta para no saturar el mapa.
 - Subida y bajada vienen de Google con la ruta; las intermedias se piden después de dibujarla a la función `googleTransitStops` (Google Places, estaciones del tipo de la línea junto al trazo) y se guardan en el dispositivo. Si falla, solo se marcan los extremos.

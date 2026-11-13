@@ -23,12 +23,11 @@ import {
   routeDrawSegments,
   routeLineLayers,
   transitBadgeElement,
-  transitStopElement,
 } from './myRoutesMapStyle.js';
 import { placeColor, placeCountryColors, placeDayIndex, stopColor } from '../places/placesDayModel.js';
 import { capitalizeFirst } from '../../shared/utils.js';
 import { useLiveRoutesVersion, withLiveGeometry } from '../routes/liveRouteStore.js';
-import { ensureTransitStops, segmentStops, useTransitStopsVersion } from '../routes/transitStops.js';
+import { ensureTransitStops, transitStopOffsets, useTransitStopsVersion } from '../routes/transitStops.js';
 import { usePlaceSearch } from './usePlaceSearch.js';
 import { createWebglLandmarkOverlay } from './webglLandmarkOverlay.js';
 
@@ -934,27 +933,16 @@ export function GooglePlacesMap({
         routeDrawSegments(route, geometryPaths).forEach((segment) => {
           const path = toGooglePath(segment.coordinates);
           if (path.length < 2) return;
+          // Estaciones intermedias: círculos sobre la propia línea, como los
+          // de subida y bajada (se añaden cuando llegan de la búsqueda).
+          if (segment.kind === 'transit') {
+            const located = { ...segment, kind: 'transit', geometry: { type: 'LineString', coordinates: segment.coordinates } };
+            ensureTransitStops(located).catch(() => {});
+            segment.stopOffsets = transitStopOffsets(located);
+          }
           routeLineLayers(maps, segment, path).forEach((options) => {
             savedRouteLinesRef.current.push(new maps.Polyline({ ...options, map }));
           });
-          // Estaciones por las que pasa la línea: puntos sobre el trazo.
-          if (segment.kind === 'transit' && AdvancedMarkerElement) {
-            const located = { ...segment, kind: 'transit', geometry: { type: 'LineString', coordinates: segment.coordinates } };
-            ensureTransitStops(located).catch(() => {});
-            const stops = segmentStops(located);
-            stops.forEach((stop, stopIndex) => {
-              routeBadgeMarkersRef.current.push(new AdvancedMarkerElement({
-                map,
-                position: { lat: stop.lat, lng: stop.lng },
-                content: transitStopElement(segment.color, {
-                  name: stop.name,
-                  end: stopIndex === 0 || stopIndex === stops.length - 1,
-                }),
-                title: stop.name || '',
-                zIndex: 24,
-              }));
-            });
-          }
           if (segment.kind === 'transit' && (segment.label || segment.icon) && AdvancedMarkerElement) {
             routeBadgeMarkersRef.current.push(new AdvancedMarkerElement({
               map,

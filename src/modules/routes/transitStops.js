@@ -176,6 +176,35 @@ export function transitStopsKey(segment) {
   return [segment?.label || '', segment?.vehicle || '', round(first.lat), round(first.lng), round(last.lat), round(last.lng)].join('|');
 }
 
+function lineLength(coordinates) {
+  let total = 0;
+  for (let i = 1; i < coordinates.length; i += 1) {
+    total += distanceMeters(
+      { lng: coordinates[i - 1][0], lat: coordinates[i - 1][1] },
+      { lng: coordinates[i][0], lat: coordinates[i][1] }
+    );
+  }
+  return total;
+}
+
+/**
+ * Posición (0–1) de cada estación intermedia ya encontrada a lo largo del
+ * trazo, para dibujarla como círculo sobre la propia línea.
+ */
+export function transitStopOffsets(segment) {
+  loadStored();
+  const coordinates = segment?.geometry?.coordinates || [];
+  const middle = found.get(transitStopsKey(segment)) || [];
+  if (!middle.length || coordinates.length < 2) return [];
+  const total = lineLength(coordinates);
+  if (!total) return [];
+  return middle
+    .map((stop) => locateOnLine(stop, coordinates))
+    .filter(Boolean)
+    .map((located) => Math.min(0.995, Math.max(0.005, located.along / total)))
+    .sort((a, b) => a - b);
+}
+
 /** Subida, intermedias (si ya se encontraron) y bajada del tramo. */
 export function segmentStops(segment) {
   loadStored();

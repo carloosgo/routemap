@@ -33,7 +33,7 @@ function dashes(maps, color, scale = 3, repeat = '14px', opacity = 1) {
   }];
 }
 
-function stations(maps, color) {
+function stations(maps, color, stopOffsets = []) {
   const station = {
     path: maps.SymbolPath.CIRCLE,
     fillColor: '#ffffff',
@@ -42,14 +42,17 @@ function stations(maps, color) {
     strokeWeight: 2.5,
     scale: 4.5,
   };
-  return [{ icon: station, offset: '0%' }, { icon: station, offset: '100%' }];
+  const middle = (Array.isArray(stopOffsets) ? stopOffsets : [])
+    .filter((offset) => Number.isFinite(offset) && offset > 0 && offset < 1)
+    .map((offset) => ({ icon: station, offset: `${(offset * 100).toFixed(2)}%` }));
+  return [{ icon: station, offset: '0%' }, ...middle, { icon: station, offset: '100%' }];
 }
 
 /**
  * Capas de polilínea (de abajo hacia arriba) para un tramo. `kind` es walk,
  * transit, drive, bicycle u other; `color` solo se usa en transporte.
  */
-export function routeLineLayers(maps, { kind, color = '' }, path) {
+export function routeLineLayers(maps, { kind, color = '', stopOffsets = [] }, path) {
   const base = { path, clickable: false, geodesic: false };
   if (kind === 'walk') {
     return [
@@ -61,7 +64,7 @@ export function routeLineLayers(maps, { kind, color = '' }, path) {
     const lineColor = color || MY_ROUTE_COLORS.transit;
     return [
       { ...base, strokeColor: MY_ROUTE_COLORS.casing, strokeOpacity: 1, strokeWeight: 10, zIndex: 3 },
-      { ...base, strokeColor: lineColor, strokeOpacity: 1, strokeWeight: 5.5, zIndex: 4, icons: stations(maps, lineColor) },
+      { ...base, strokeColor: lineColor, strokeOpacity: 1, strokeWeight: 5.5, zIndex: 4, icons: stations(maps, lineColor, stopOffsets) },
     ];
   }
   if (kind === 'bicycle') {
@@ -146,29 +149,6 @@ export function routeDrawSegments(route, geometryPaths) {
   }));
 }
 
-/**
- * Punto de estación sobre la línea de transporte (DOM): blanco con borde del
- * color de la línea; subida y bajada un poco más grandes.
- */
-export function transitStopElement(color, { name = '', end = false } = {}) {
-  const dot = document.createElement('span');
-  dot.dataset.transitStop = end ? 'end' : 'mid';
-  if (name) dot.title = name;
-  const size = end ? 12 : 9;
-  Object.assign(dot.style, {
-    display: 'block',
-    width: `${size}px`,
-    height: `${size}px`,
-    boxSizing: 'border-box',
-    borderRadius: '50%',
-    background: '#ffffff',
-    border: `${end ? 3 : 2.5}px solid ${color || '#23647a'}`,
-    boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.9)',
-    transform: 'translateY(50%)',
-    pointerEvents: 'none',
-  });
-  return dot;
-}
 
 export function middlePoint(path) {
   if (!Array.isArray(path) || !path.length) return null;
