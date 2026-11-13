@@ -16,7 +16,6 @@ import { useLiveRoutesVersion, withLiveGeometry } from '../routes/liveRouteStore
 import { capitalizeFirst } from '../../shared/utils.js';
 import { DayShareButton } from './DayShareButton.jsx';
 import { NextCityTransfer } from './NextCityTransfer.jsx';
-import { cityTransfers } from './cityTransferModel.js';
 import {
   cityDayGroups,
   dayRouteTotals,
@@ -131,32 +130,42 @@ const MY_ROUTES_STYLES = `
 .mr-share{position:relative;display:inline-flex}
 .mr-share .is-busy svg{animation:mr-spin .8s linear infinite}
 @keyframes mr-spin{to{transform:rotate(360deg)}}
-.mr__strip{display:flex;gap:8px;padding:12px 16px 14px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid #eef0f2;background:#fff}
+.mr > *{flex-shrink:0}
+.mr__strip{display:flex;gap:8px;padding:12px 16px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid #eef0f2;background:#fff}
 .mr__strip::-webkit-scrollbar{display:none}
-.mr-daytile{display:flex;flex:0 0 auto;width:56px;height:56px;flex-direction:column;align-items:center;justify-content:center;padding:0;border:0;border-radius:16px;background:#f4f5f7;box-shadow:inset 0 0 0 1px #e8eaee;color:#0b1f2c;font-family:var(--font-body);cursor:pointer;transition:background .15s ease,box-shadow .15s ease}
-.mr-daytile small{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;opacity:.75}
-.mr-daytile strong{font-size:21px;font-weight:700;line-height:1.05}
+.mr-daytile{display:flex;flex:0 0 auto;width:50px;height:50px;flex-direction:column;align-items:center;justify-content:center;padding:0;border:0;border-radius:14px;background:#f4f5f7;box-shadow:inset 0 0 0 1px #e8eaee;color:#0b1f2c;font-family:var(--font-body);cursor:pointer;transition:background .15s ease,box-shadow .15s ease}
+.mr-daytile small{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;opacity:.75}
+.mr-daytile strong{font-size:17px;font-weight:700;line-height:1.1}
 .mr-daytile i{width:4px;height:4px;margin-top:2px;border-radius:50%;background:transparent}
 .mr-daytile.has-places i{background:#19a5d0}
-.mr-daytile.is-selected{background:#1f2933;box-shadow:0 6px 14px rgba(15,23,42,.22);color:#fff}
+.mr-daytile.is-selected{background:#1f2933;box-shadow:0 4px 10px rgba(15,23,42,.2);color:#fff}
 .mr-daytile.is-selected.has-places i{background:#7fd3ec}
 .mr-daytile.is-drop-target{box-shadow:inset 0 0 0 2px var(--atlas-accent)}
 .mr-daytile:focus-visible{outline:2px solid #19a5d0;outline-offset:2px}
-.mr__dayhead{display:flex;align-items:center;gap:8px;padding:16px 12px 10px 16px}
-.mr__dayhead-text{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
-.mr__dayhead-city{display:flex;align-items:center;gap:9px;min-width:0;font-size:20px;font-weight:700;line-height:1.15}
-.mr__dayhead-city img{width:26px;height:18px;flex:0 0 auto;border-radius:4px;object-fit:cover;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
-.mr__dayhead-city span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mr__dayhead-sub{color:#5b6573;font-size:13.5px}
-.mr__dayhead-sub strong{color:#1f2933;font-weight:600}
-.mr__dayhead .mr__icon-btn{width:40px;height:40px;border-radius:50%;background:#f1f3f5}
+@media (min-width:721px){
+.mr__overline{display:none}
+.mr__top:not(:has(.mr__pending)){display:none}
+.mr__strip{display:grid;grid-template-columns:repeat(5,44px);gap:8px;overflow:visible}
+.mr-daytile{width:44px;height:44px;border-radius:12px}
+.mr-daytile small{font-size:9px}
+.mr-daytile strong{font-size:15px}
+}
+.mr__dayhead{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding:6px 10px 2px 16px}
+.mr__dayhead-sub{color:#667085;font-size:12.5px;font-weight:500}
+.mr__dayhead-sub strong{color:#0b1f2c;font-weight:600}
+.mr__dayhead .mr__icon-btn,.mr__cityrow .mr__icon-btn{background:transparent}
+.mr__dayhead .mr__icon-btn:hover,.mr__cityrow .mr__icon-btn:hover{background:transparent;color:#0b1f2c}
+.mr__cityrow{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px;margin:2px -6px 4px 0;color:#0b1f2c;font-size:15px;font-weight:600}
+.mr__cityrow-name{display:flex;min-width:0;align-items:center;gap:8px}
+.mr__cityrow-name img{width:20px;height:14px;flex:0 0 auto;border-radius:3px;object-fit:cover;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.mr__cityrow-name span{overflow-wrap:anywhere}
 .mr__body{padding:2px 16px 18px;background:#fff}
 .mr__body .mr-place{margin:0}
 .mr-card{position:relative;border-radius:14px;overflow:hidden}
 .mr-card.is-dragging{overflow:visible;z-index:20}
 .mr-card__delete{position:absolute;top:0;right:0;bottom:0;display:flex;width:84px;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:0;border-radius:0 14px 14px 0;background:#d94f4f;color:#fff;font:600 12px var(--font-body);opacity:0;cursor:pointer}
 .mr-card.is-swiped .mr-card__delete,.mr-card.is-swiping .mr-card__delete{opacity:1}
-.mr-card .mr-place{min-height:64px;padding:8px 6px 8px 12px;border:1.5px solid #e6e8ec;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.04);touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:transform .22s ease,box-shadow .2s ease,border-color .2s ease}
+.mr-card .mr-place{min-height:56px;padding:6px 4px 6px 10px;border:1.5px solid #e6e8ec;border-radius:14px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.04);touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:transform .22s ease,box-shadow .2s ease,border-color .2s ease}
 .mr-card.is-swiping .mr-place{transition:none}
 .mr-card .mr-place:hover{background:#fafbfc}
 .mr-card .mr-place.is-selected{border-color:#9cc9d6;background:#f5fbfd}
@@ -164,12 +173,11 @@ const MY_ROUTES_STYLES = `
 .mr-card .mr-place.is-dragging .mr-place__text{animation:mr-wiggle .5s ease-in-out infinite}
 @keyframes mr-wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-.6deg)}75%{transform:rotate(.6deg)}}
 @media (prefers-reduced-motion:reduce){.mr-card .mr-place.is-dragging .mr-place__text{animation:none}}
-.mr-card .mr-place__text strong{font-size:15.5px}
-.mr-card .mr-place__text small{font-size:13px;color:#5b6573}
+.mr-card .mr-place__text strong,.mr-card .mr-place__text small{overflow:visible;white-space:normal;overflow-wrap:anywhere}
 .mr-card .mr-place__actions{opacity:1}
-.mr-card .mr-place__actions button{width:40px;height:40px;border-radius:10px}
+.mr-card .mr-place__actions button{width:34px;height:34px;border-radius:8px}
 .mr-card .mr-place__note{position:relative}
-.mr-card .mr-place__note-dot{position:absolute;top:8px;right:8px;width:7px;height:7px;box-sizing:border-box;border:1.5px solid #fff;border-radius:50%;background:#19a5d0}
+.mr-card .mr-place__note-dot{position:absolute;top:5px;right:5px;width:7px;height:7px;box-sizing:border-box;border:1.5px solid #fff;border-radius:50%;background:#19a5d0}
 .mr-card .mr-place__hover-delete{display:none}
 @media (hover:hover) and (pointer:fine){.mr-card:hover .mr-place__hover-delete{display:inline-flex;color:#b42318}}
 .mr__body .mr-route,.mr__body .mr__transfer{margin:2px 0}
@@ -718,7 +726,7 @@ export function TripPlacesDayFirstPanel({
                 aria-label={t('placeNote')}
                 title={t('placeNote')}
               >
-                <IconEdit size={19} stroke={1.8} aria-hidden="true" />
+                <IconEdit size={16} stroke={1.8} aria-hidden="true" />
                 {place.note && <span className="mr-place__note-dot" aria-hidden="true" />}
               </button>
             </span>
@@ -728,102 +736,47 @@ export function TripPlacesDayFirstPanel({
     );
   }
 
-  function renderDayBody(day) {
-    const transfers = cityTransfers(day.assignments);
-    const arrivalSegmentId = day.assignments.at(-1)?.segmentId;
-    const firstArrivalIndex = transfers.length
-      ? day.places.findIndex((place) => place.segmentId === arrivalSegmentId)
-      : -1;
-    const transferIndex = transfers.length
-      ? (firstArrivalIndex >= 0 ? firstArrivalIndex : day.places.length)
-      : -1;
-    const transferCards = transfers.map(({ key, from, to }) => (
-      <div className="mr__transfer" key={key}>
-        <NextCityTransfer from={from} to={to} date={day.date} t={t} intlLocale={intlLocale} />
-      </div>
-    ));
-
-    return (
-      <div className="mr__body">
-        {transferIndex === 0 && transferCards}
-        {day.places.length === 0 && <div className="mr__empty">{t('dayNoPlaces')}</div>}
-        {day.places.map((place, index) => {
-          const next = day.places[index + 1] || null;
-          const crossesTransfer = next && transferIndex === index + 1;
-          return (
-            <Fragment key={place.id}>
-              {renderPlace(place, index + 1)}
-              {next && !crossesTransfer && (
-                <TripRouteConnections
-                  origin={place}
-                  destination={next}
-                  route={routeByPair.get(`${place.id}\u0000${next.id}`) || null}
-                  date={day.date}
-                  upsertRoute={upsertRoute}
-                  removeRoute={removeRoute}
-                  t={t}
-                  intlLocale={intlLocale}
-                />
-              )}
-              {crossesTransfer && transferCards}
-            </Fragment>
-          );
-        })}
-        {transferIndex > 0 && transferIndex === day.places.length && transferCards}
-      </div>
-    );
+  // Las ciudades del día van una debajo de otra, cada una con sus lugares, y
+  // entre ellas el traslado. Un día sin cambio de ciudad tiene una sola.
+  function daySections(day) {
+    const sections = [];
+    for (const assignment of day.assignments || []) {
+      const destination = assignment.destination;
+      const last = sections.at(-1);
+      if (last && last.destination?.name === destination?.name) {
+        last.segmentIds.add(assignment.segmentId);
+        continue;
+      }
+      sections.push({
+        key: `${assignment.segmentId}:${sections.length}`,
+        destination,
+        segmentId: assignment.segmentId,
+        segmentIds: new Set([assignment.segmentId]),
+        places: [],
+      });
+    }
+    if (!sections.length) {
+      sections.push({ key: 'day', destination: null, segmentId: '', segmentIds: new Set(), places: [] });
+    }
+    for (const place of day.places) {
+      // Si una ciudad se repite en el día, el lugar va a su primera visita.
+      const section = sections.find((candidate) => candidate.segmentIds.has(place.segmentId)) || sections.at(-1);
+      section.places.push(place);
+    }
+    return sections;
   }
 
-  function dayDistance(day) {
-    if (!day.places.length) return '';
-    const totals = dayRouteTotals(day.places, routeFor);
-    return totals.distance ? formatDistance(totals.distance, intlLocale) : '';
-  }
-
-  // Día abierto: cabecera con bandera y ciudad grandes y, debajo,
-  // "Día N · X lugares · Y km".
-  function renderDayHead(day) {
-    const cities = dayCities(day.assignments);
-    const date = formatDayDate(day.date, intlLocale);
-    const title = `${t('day')} ${day.globalDayNumber}`;
-    const noteSegment = segmentById.get(day.assignments.at(-1)?.segmentId) || null;
-    const distance = dayDistance(day);
+  function renderCityRow(section, extra = null) {
+    const destination = section.destination;
+    const flag = flagImageUrl(destination?.countryCode, 40);
+    const noteSegment = segmentById.get(section.segmentId) || null;
     return (
-      <div className="mr__dayhead">
-        <div className="mr__dayhead-text">
-          <div className="mr__dayhead-city">
-            {cities.map((city, index) => {
-              const flag = flagImageUrl(city.countryCode, 40);
-              return (
-                <Fragment key={city.name}>
-                  {index > 0 && <span aria-hidden="true">·</span>}
-                  {flag && <img src={flag} alt="" width={26} height={18} />}
-                  <span>{city.name}</span>
-                </Fragment>
-              );
-            })}
-            {!cities.length && <span>{t('city')}</span>}
-          </div>
-          <div className="mr__dayhead-sub">
-            <strong>{title}</strong>
-            {` · ${t(day.places.length === 1 ? 'dayPlacesOne' : 'dayPlacesMany', { count: day.places.length })}`}
-            {distance && ` · ${distance}`}
-          </div>
-        </div>
-        {day.places.length > 0 && (
-          <DayShareButton
-            tripId={tripId}
-            date={day.date}
-            title={date ? `${title} · ${date}` : title}
-            subtitle={dayCityNames(day.assignments)}
-            cities={cities}
-            places={day.places}
-            routeFor={routeFor}
-            colorFor={(place) => stopColor(day.places.indexOf(place) + 1) || placeColor(place, segmentById, colors)}
-            t={t}
-            intlLocale={intlLocale}
-          />
-        )}
+      <div className="mr__cityrow">
+        <span className="mr__cityrow-name">
+          {flag && <img src={flag} alt="" width={20} height={14} />}
+          <span>{capitalizeFirst(destination?.name) || t('city')}</span>
+        </span>
+        {extra}
         {noteSegment && (
           <button
             type="button"
@@ -832,10 +785,97 @@ export function TripPlacesDayFirstPanel({
             aria-label={t('segmentNote')}
             title={t('segmentNote')}
           >
-            <IconEdit size={18} stroke={1.8} aria-hidden="true" />
+            <IconEdit size={17} stroke={1.8} aria-hidden="true" />
           </button>
         )}
       </div>
+    );
+  }
+
+  function renderSectionPlaces(day, places) {
+    return places.map((place, index) => {
+      const next = places[index + 1] || null;
+      return (
+        <Fragment key={place.id}>
+          {renderPlace(place, day.places.indexOf(place) + 1)}
+          {next && (
+            <TripRouteConnections
+              origin={place}
+              destination={next}
+              route={routeByPair.get(`${place.id}\u0000${next.id}`) || null}
+              date={day.date}
+              upsertRoute={upsertRoute}
+              removeRoute={removeRoute}
+              t={t}
+              intlLocale={intlLocale}
+            />
+          )}
+        </Fragment>
+      );
+    });
+  }
+
+  function dayDistance(day) {
+    if (!day.places.length) return '';
+    const totals = dayRouteTotals(day.places, routeFor);
+    return totals.distance ? formatDistance(totals.distance, intlLocale) : '';
+  }
+
+  // Día abierto: "Día N · X lugares · Y km" y, debajo, sus ciudades en orden
+  // con sus lugares y el traslado entre una y otra.
+  function renderDay(day) {
+    const sections = daySections(day);
+    const date = formatDayDate(day.date, intlLocale);
+    const title = `${t('day')} ${day.globalDayNumber}`;
+    const distance = dayDistance(day);
+    const share = day.places.length > 0 && (
+      <DayShareButton
+        tripId={tripId}
+        date={day.date}
+        title={date ? `${title} · ${date}` : title}
+        subtitle={dayCityNames(day.assignments)}
+        cities={dayCities(day.assignments)}
+        places={day.places}
+        routeFor={routeFor}
+        colorFor={(place) => stopColor(day.places.indexOf(place) + 1) || placeColor(place, segmentById, colors)}
+        t={t}
+        intlLocale={intlLocale}
+      />
+    );
+    return (
+      <>
+        <div className="mr__dayhead">
+          <div className="mr__dayhead-sub">
+            <strong>{title}</strong>
+            {` · ${t(day.places.length === 1 ? 'dayPlacesOne' : 'dayPlacesMany', { count: day.places.length })}`}
+            {distance && ` · ${distance}`}
+          </div>
+          {share}
+        </div>
+        <div className="mr__body">
+          {sections.map((section, index) => {
+            const previous = sections[index - 1];
+            return (
+              <Fragment key={section.key}>
+                {previous && previous.destination && section.destination && (
+                  <div className="mr__transfer">
+                    <NextCityTransfer
+                      from={previous.destination}
+                      to={section.destination}
+                      date={day.date}
+                      t={t}
+                      intlLocale={intlLocale}
+                    />
+                  </div>
+                )}
+                {section.destination && renderCityRow(section)}
+                {renderSectionPlaces(day, section.places)}
+              </Fragment>
+            );
+          })}
+          {day.places.length === 0 && <div className="mr__empty">{t('dayNoPlaces')}</div>}
+        </div>
+      </>
     );
   }
 
@@ -918,8 +958,7 @@ export function TripPlacesDayFirstPanel({
             className={'mr__dayview' + (placeDrag && placeDrag.targetOffset === selectedDay.tripDayOffset ? ' is-drop-target' : '')}
             data-trip-day-offset={selectedDay.tripDayOffset}
           >
-            {renderDayHead(selectedDay)}
-            {renderDayBody(selectedDay)}
+            {renderDay(selectedDay)}
           </section>
         )}
         <p className="mr__hint mr__hint--touch">{t('placeListHint')}</p>
