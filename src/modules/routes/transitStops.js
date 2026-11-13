@@ -178,11 +178,15 @@ async function fetchOverpass(query, fetchImpl) {
         body: `data=${encodeURIComponent(query)}`,
         signal: controller.signal,
       });
-      if (!response.ok) continue;
+      if (!response.ok) {
+        globalThis.console?.warn?.('[Atlas estaciones]', url, response.status);
+        continue;
+      }
       const payload = await response.json();
       if (Array.isArray(payload?.elements)) return payload.elements;
-    } catch {
+    } catch (error) {
       // Siguiente espejo; si ninguno responde, el tramo queda sin intermedias.
+      globalThis.console?.warn?.('[Atlas estaciones]', url, error?.name || 'Error', error?.message || '');
     } finally {
       clearTimeout(timer);
     }
