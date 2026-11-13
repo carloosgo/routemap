@@ -7,6 +7,7 @@ import {
   placesAsStopNodes,
   resetTransitStopsForTests,
   segmentStops,
+  transitStopOffsets,
 } from '../src/modules/routes/transitStops.js';
 import { normalizeRouteSegments } from '../src/modules/routes/routeModel.js';
 import { searchCircles, stationTypes } from '../functions/googleTransitStopsFunction.js';
@@ -60,6 +61,11 @@ test('estaciones: se buscan una vez y se suman a subida y bajada; si falla, solo
   assert.deepEqual(segmentStops(segment()).map((stop) => stop.name), [
     'Étoile', 'George V', 'Franklin D. Roosevelt', 'Champs-Élysées - Clemenceau', 'Concorde',
   ]);
+  // Sobre la propia línea: posición a lo largo del trazo (0–1), en orden.
+  const offsets = transitStopOffsets(segment());
+  assert.equal(offsets.length, 3);
+  assert.ok(Math.abs(offsets[0] - 0.25) < 0.02 && Math.abs(offsets[1] - 0.5) < 0.02 && Math.abs(offsets[2] - 0.75) < 0.02);
+  assert.deepEqual(transitStopOffsets(segment({ label: '9' })), []);
 
   const other = segment({ label: '2' });
   const failing = async () => { throw new Error('offline'); };
