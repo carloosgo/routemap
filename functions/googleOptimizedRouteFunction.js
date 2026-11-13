@@ -3,10 +3,9 @@ import { error as logError } from 'firebase-functions/logger';
 import { callableOptions, enforceQuota } from './callablePolicy.js';
 import { GOOGLE_ROUTES_API_KEY, QUOTAS, cacheDb, db } from './geoapifyRuntime.js';
 import { limitedFetch, safeError, validPoint } from './geoapifySupport.js';
-import { addTransitStops, stopPoint } from './transitStops.js';
 import { createSharedCache } from './sharedCache.js';
 
-const TRANSIT_CACHE_VERSION = 'v1';
+const TRANSIT_CACHE_VERSION = 'v2';
 const cachedTransitRoute = createSharedCache(cacheDb, { ttlMs: 24 * 60 * 60 * 1000 });
 
 const GOOGLE_ROUTES_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes';
@@ -208,36 +207,129 @@ export function routeTransferStats(route) {
   };
 }
 
-export function transitEffort(route) {
+// Red principal de la ciudad: entre las candidatas, el tipo de riel (metro,
+// tranvía o tren) con más minutos de viaje. Usar otro tipo de riel cuesta un
+// poco más y cambiar de tipo en un transbordo también: «metro + metro» le
+// gana a «tren + caminar + metro» cuando tardan parecido.
+const VEHICLE_FAMILIES = Object.freeze({
+  SUBWAY: 'metro',
+  METRO_RAIL: 'metro',
+  MONORAIL: 'metro',
+  TRAM: 'tram',
+  LIGHT_RAIL: 'tram',
+  RAIL: 'train',
+  HEAVY_RAIL: 'train',
+  COMMUTER_TRAIN: 'train',
+  HIGH_SPEED_TRAIN: 'train',
+  LONG_DISTANCE_TRAIN: 'train',
+});
+const OFF_NETWORK_PENALTY = 0.25;
+const FAMILY_SWITCH_SECONDS = 60;
+
+function stepFamily(step) {
+  if (stepIsBus(step)) return 'bus';
+  return VEHICLE_FAMILIES[String(step?.transitDetails?.transitLine?.vehicle?.type || '')] || 'other';
+}
+
+function transitSteps(route) {
+  return (route?.legs?.flatMap((leg) => leg?.steps || []) || []).filter((step) => step?.travelMode === 'TRANSIT');
+}
+
+export function primaryRailFamily(routes) {
+  const totals = new Map();
+  (Array.isArray(routes) ? routes : []).forEach((route) => {
+    transitSteps(route).forEach((step) => {
+      const family = stepFamily(step);
+      if (family === 'bus' || family === 'other') return;
+      totals.set(family, (totals.get(family) || 0) + (parseDurationSeconds(step?.staticDuration) || 1));
+    });
+  });
+  let best = '';
+  totals.forEach((seconds, family) => {
+    if (!best || seconds > totals.get(best)) best = family;
+  });
+  return best;
+}
+
+export function transitEffort(route, primary = '') {
   const duration = parseDurationSeconds(route?.duration);
   const stats = routeTransferStats(route);
+  const steps = transitSteps(route);
+  const families = steps.map(stepFamily);
+  let networkPenalty = 0;
+  if (primary) {
+    steps.forEach((step, index) => {
+      const family = families[index];
+      if (family !== primary && family !== 'bus' && family !== 'other') {
+        networkPenalty += OFF_NETWORK_PENALTY * (parseDurationSeconds(step?.staticDuration) || 0);
+      }
+    });
+  }
+  for (let index = 1; index < families.length; index += 1) {
+    if (families[index] !== families[index - 1]) networkPenalty += FAMILY_SWITCH_SECONDS;
+  }
   return duration
     + WALK_PENALTY * Math.max(0, routeWalkSeconds(route) - WALK_FREE_SECONDS)
     + RAIL_TRANSFER_SECONDS * stats.railTransfers
     + MIXED_TRANSFER_SECONDS * stats.mixedTransfers
     + TRANSFER_WALK_PENALTY * stats.walkSeconds
-    + (stats.usesBus ? BUS_FIXED_PENALTY_SECONDS + BUS_RIDE_PENALTY * stats.busSeconds : 0);
+    + (stats.usesBus ? BUS_FIXED_PENALTY_SECONDS + BUS_RIDE_PENALTY * stats.busSeconds : 0)
+    + networkPenalty;
+}
+
+/** Resumen corto de una candidata para depurar la elección («RER A › 8»). */
+export function routeLinesText(route) {
+  return transitSteps(route)
+    .map((step) => {
+      const line = step?.transitDetails?.transitLine || {};
+      return String(line.nameShort || line.name || line.vehicle?.type || '?').slice(0, 24);
+    })
+    .join(' › ');
 }
 
 /**
  * Entre la ruta de Google y sus alternativas (incluida la de «menos caminata»)
  * elige la que menos obliga a caminar sin tardar mucho más que la original.
  */
-export function chooseTransitRoute(defaultRoute, alternatives = []) {
+export function chooseTransitRoute(defaultRoute, alternatives = [], { explain } = {}) {
   if (!defaultRoute) return alternatives.find(Boolean) || null;
   const base = parseDurationSeconds(defaultRoute.duration);
   if (!base) return defaultRoute;
+  const primary = primaryRailFamily([defaultRoute, ...alternatives]);
   let best = defaultRoute;
-  let bestEffort = transitEffort(defaultRoute);
+  let bestEffort = transitEffort(defaultRoute, primary);
+  const notes = [{ route: defaultRoute, effort: bestEffort, allowed: true }];
   alternatives.forEach((route) => {
     const duration = parseDurationSeconds(route?.duration);
-    if (!duration || duration > base * RAIL_MAX_RATIO || duration - base > RAIL_MAX_EXTRA_SECONDS) return;
-    const effort = transitEffort(route);
-    if (effort < bestEffort) {
+    const allowed = Boolean(duration) && duration <= base * RAIL_MAX_RATIO && duration - base <= RAIL_MAX_EXTRA_SECONDS;
+    const effort = allowed ? transitEffort(route, primary) : Infinity;
+    notes.push({ route, effort, allowed });
+    if (allowed && effort < bestEffort) {
       best = route;
       bestEffort = effort;
     }
   });
+  if (typeof explain === 'function') {
+    const seen = new Set();
+    explain({
+      primary,
+      candidates: notes
+        .map(({ route, effort, allowed }) => ({
+          lines: routeLinesText(route),
+          minutes: Math.round(parseDurationSeconds(route?.duration) / 60),
+          effort: Number.isFinite(effort) ? Math.round(effort / 60) : null,
+          allowed,
+          chosen: route === best,
+        }))
+        .filter((note) => {
+          const key = `${note.lines}|${note.minutes}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .slice(0, 12),
+    });
+  }
   return best;
 }
 
@@ -301,6 +393,14 @@ function transitSummary(route) {
 
 const MAX_ROUTE_SEGMENTS = 40;
 
+// Estación de subida o bajada de Google (las intermedias las busca el cliente).
+function stopPoint(name, latLng) {
+  const lat = Number(latLng?.latitude);
+  const lng = Number(latLng?.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return { name: cleanText(name, 80), lat, lng };
+}
+
 function stepKind(step) {
   if (step?.travelMode === 'TRANSIT') return 'transit';
   if (step?.travelMode === 'WALK') return 'walk';
@@ -341,7 +441,11 @@ export function routeSegments(route) {
       ? { kind, color, textColor, label, icon, geometry, departure, arrival, stopCount, vehicle: cleanText(line.vehicle?.type, 40) }
       : { kind, color, textColor, label, icon, geometry });
   });
-  return segments.slice(0, MAX_ROUTE_SEGMENTS);
+  return segments.slice(0, MAX_ROUTE_SEGMENTS).map((segment) => {
+    if (segment.kind !== 'transit') return segment;
+    const { departure, arrival, ...rest } = segment;
+    return { ...rest, stops: [departure, arrival].filter(Boolean) };
+  });
 }
 
 export const googleRouteOptimized = onCall(
@@ -390,6 +494,7 @@ export const googleRouteOptimized = onCall(
       };
       const fetchRoute = async (requestBody) => (await fetchRoutes(requestBody))[0] || null;
       let route;
+      let choice = null;
       if (modeConfig.travelMode === 'TRANSIT') {
         // Candidatas: la de Google y sus alternativas, «menos caminata»,
         // «menos transbordos» y, en transporte general, las mismas solo en
@@ -407,7 +512,9 @@ export const googleRouteOptimized = onCall(
           general ? variant(RAIL_ONLY_TRANSIT) : Promise.resolve([]),
           general ? variant({ ...RAIL_ONLY_TRANSIT, routingPreference: 'LESS_WALKING' }) : Promise.resolve([]),
         ]);
-        route = chooseTransitRoute(routes[0] || null, [...routes.slice(1), ...variants.flat()]);
+        route = chooseTransitRoute(routes[0] || null, [...routes.slice(1), ...variants.flat()], {
+          explain: (info) => { choice = info; },
+        });
       } else {
         route = await fetchRoute(body);
       }
@@ -416,7 +523,6 @@ export const googleRouteOptimized = onCall(
       if (!geometry) throw new Error('Google Routes no devolvió una geometría válida.');
 
       const segments = routeSegments(route);
-      if (modeConfig.travelMode === 'TRANSIT') await addTransitStops(segments);
       return {
         provider: 'google',
         mode: requestedMode,
@@ -426,6 +532,7 @@ export const googleRouteOptimized = onCall(
         calculatedAt: new Date().toISOString(),
         transitSteps: transitSummary(route),
         segments,
+        ...(choice ? { choice } : {}),
       };
     };
 
