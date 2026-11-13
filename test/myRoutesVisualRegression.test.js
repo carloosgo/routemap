@@ -22,10 +22,10 @@ test('Mis Rutas elige el día en una barra de cuadros y muestra un solo día a l
   assert.match(panel, /className="mr__strip"/);
   assert.match(panel, /className=\{'mr-daytile'/);
   assert.match(panel, /onClick=\{\(\) => setOpenDay\(day\.tripDayOffset\)\}/);
-  // Cabecera: bandera y ciudad grandes; debajo "Día N · X lugares · Y km".
-  assert.match(panel, /className="mr__dayhead-city"/);
+  // "Día N · X lugares · Y km" y las ciudades del día una debajo de otra.
   assert.match(panel, /className="mr__dayhead-sub"/);
-  assert.match(panel, /\{renderDayBody\(selectedDay\)\}/);
+  assert.match(panel, /className="mr__cityrow"/);
+  assert.match(panel, /\{renderDay\(selectedDay\)\}/);
   assert.doesNotMatch(panel, /className="mr__city"/);
 });
 
@@ -41,7 +41,7 @@ test('cada lugar es una tarjeta con gestos: tocar, mantener para mover, deslizar
 test('cada parada muestra su número del día, sin miniatura de Street View', async () => {
   const panel = await read('src/modules/places/TripPlacesDayFirstPanel.jsx');
 
-  assert.match(panel, /renderPlace\(place, index \+ 1\)/);
+  assert.match(panel, /renderPlace\(place, day\.places\.indexOf\(place\) \+ 1\)/);
   // El número es también el asa para arrastrar el lugar (sin icono de puntitos).
   assert.match(panel, /className=\{'mr-place__num mr-place__drag'/);
   assert.doesNotMatch(panel, /IconGripVertical/);

@@ -355,3 +355,11 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 - Arriba, una barra horizontal de cuadros de día (56 × 56 px, radio 16 px, fondo `#f4f5f7`) con día de la semana corto y número; sin etiquetas de ciudad ni separadores entre días. Punto azul `#19a5d0` si el día tiene lugares. El día elegido es oscuro (`#1f2933`, texto blanco). Siempre hay un día a la vista; solo «Por organizar» lo oculta.
 - Bajo la barra, la cabecera del día: bandera y ciudad en grande (20 px, bold) y debajo «**Día N** · X lugares · Y km». A la derecha, Compartir y la nota de la ciudad (lápiz `IconEdit`) en círculos de 40 px. En un día de traslado se muestran ambas ciudades y la nota es la de llegada.
 - Cada lugar es una tarjeta con los gestos de la lista de ciudades: tocar la ubica en el mapa, mantener presionado la levanta (animación) para moverla, deslizar a la izquierda muestra Eliminar. Sin X. En web se arrastra con el mouse y el bote aparece al pasar el mouse. Soltar sobre un cuadro de la barra la manda a ese día.
+
+## Ajuste solicitado (13/11/2026, tarde): Mis Rutas, días largos y varias ciudades
+
+- Sustituye, donde haya conflicto, el apartado anterior. Las fuentes vuelven a su tamaño previo: ciudad 15 px/600, «Día N · X lugares · Y km» 12.5 px, lugares 14/12 px.
+- Cuadros de día: 50 px (radio 14) en móvil, en una fila horizontal. En web (>720 px) van en filas de 5 de 44 px y se quita la cabecera «Tu viaje · N días» (solo queda si hay lugares por organizar).
+- Bajo los cuadros: «Día N · X lugares · Y km» con Compartir a la derecha. Luego las ciudades del día una debajo de otra (bandera + nombre, nota de esa ciudad a la derecha), cada una con sus lugares, y entre ciudad y ciudad el traslado.
+- Nota y Compartir son solo icono, sin círculo de fondo. Los nombres de lugares y ciudades se parten en líneas; no se cortan con «…».
+- Ningún bloque del panel se encoge: en días largos todo se desplaza y nada se encima sobre los cuadros.
