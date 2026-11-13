@@ -1,21 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import {
   IconArrowRight,
   IconChecklist,
   IconChevronLeft,
   IconChevronRight,
-  IconLayoutGrid,
-  IconList,
   IconPlus,
   IconTrash,
   IconX,
 } from '@tabler/icons-react';
-import { CityAutocomplete } from '../components/CityAutocomplete.jsx';
-import { SegmentForm } from '../modules/trips/SegmentForm.jsx';
-import { SegmentOriginSection } from '../modules/trips/SegmentOriginSection.jsx';
+import { MobileCityList } from '../modules/trips/MobileCityList.jsx';
 import { buildItineraryStopSequence } from '../modules/trips/itineraryStopSequence.js';
 import { segmentTotal } from '../modules/trips/tripModel.js';
-import { ORIGIN_NOTE_TARGET } from '../modules/trips/tripNoteTargets.js';
 import { flagImageUrl } from '../modules/flags/flags.js';
 import { colorForIndex } from '../config.js';
 
@@ -71,112 +66,11 @@ export function AppEditorPane({
   newItemText,
   setNewItemText,
 }) {
-  const [dragState, setDragState] = useState(null);
-  const dragStateRef = useRef(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
-  const [itineraryLayout, setItineraryLayout] = useState('grid');
-  const [addCityOpen, setAddCityOpen] = useState(false);
-  const activeDragId = dragState?.segmentId || null;
   const stopSequence = buildItineraryStopSequence(trip.origin, trip.segments, colorForIndex);
   const visibleSegmentEntries = trip.segments
     .map((segment, index) => ({ segment, index }))
     .filter(({ segment }) => !isPristineDestinationSegment(segment));
-
-  useEffect(() => {
-    if (!activeDragId) return undefined;
-
-    function visibleDropCandidates(sourceId) {
-      return Array.from(document.querySelectorAll('[data-segment-id]'))
-        .map((element) => ({
-          element,
-          id: element.dataset.segmentId,
-          bounds: element.getBoundingClientRect(),
-        }))
-        .filter(({ id, bounds }) => id && id !== sourceId && bounds.width > 0 && bounds.height > 0)
-        .sort((left, right) => left.bounds.top - right.bounds.top);
-    }
-
-    function resolveDropTarget(event, sourceId) {
-      const candidates = visibleDropCandidates(sourceId);
-      if (candidates.length === 0) return { targetId: null, placement: null };
-      const samePaneCandidates = candidates.filter(
-        ({ bounds }) => event.clientX >= bounds.left && event.clientX <= bounds.right
-      );
-      const available = samePaneCandidates.length > 0 ? samePaneCandidates : candidates;
-      const first = available[0];
-      const last = available[available.length - 1];
-      if (event.clientY <= first.bounds.top + first.bounds.height / 2) {
-        return { targetId: first.id, placement: 'before' };
-      }
-      if (event.clientY >= last.bounds.top + last.bounds.height / 2) {
-        return { targetId: last.id, placement: 'after' };
-      }
-      const nearest = available.reduce((best, candidate) => {
-        const midpoint = candidate.bounds.top + candidate.bounds.height / 2;
-        const distance = Math.abs(event.clientY - midpoint);
-        return !best || distance < best.distance ? { candidate, distance } : best;
-      }, null).candidate;
-      return {
-        targetId: nearest.id,
-        placement:
-          event.clientY >= nearest.bounds.top + nearest.bounds.height / 2 ? 'after' : 'before',
-      };
-    }
-
-    function activeDragFor(event) {
-      const current = dragStateRef.current;
-      if (
-        !current
-        || current.segmentId !== activeDragId
-        || current.pointerId !== event.pointerId
-      ) {
-        return null;
-      }
-      return current;
-    }
-
-    function clearActiveDrag() {
-      dragStateRef.current = null;
-      setDragState(null);
-    }
-
-    function handlePointerMove(event) {
-      const current = activeDragFor(event);
-      if (!current) return;
-      const { targetId, placement } = resolveDropTarget(event, current.segmentId);
-      const next = {
-        ...current,
-        offsetY: event.clientY - current.startY,
-        targetId,
-        placement,
-      };
-      dragStateRef.current = next;
-      setDragState(next);
-    }
-
-    function handlePointerEnd(event) {
-      const current = activeDragFor(event);
-      if (!current) return;
-      clearActiveDrag();
-      if (current.targetId && current.placement) {
-        reorderSegment(current.segmentId, current.targetId, current.placement);
-      }
-    }
-
-    function handlePointerCancel(event) {
-      if (!activeDragFor(event)) return;
-      clearActiveDrag();
-    }
-
-    document.addEventListener('pointermove', handlePointerMove);
-    document.addEventListener('pointerup', handlePointerEnd);
-    document.addEventListener('pointercancel', handlePointerCancel);
-    return () => {
-      document.removeEventListener('pointermove', handlePointerMove);
-      document.removeEventListener('pointerup', handlePointerEnd);
-      document.removeEventListener('pointercancel', handlePointerCancel);
-    };
-  }, [activeDragId, reorderSegment]);
 
   function handleAddCity(city) {
     if (!city) return;
@@ -186,7 +80,6 @@ export function AppEditorPane({
     } else {
       addSegment({ destination: city });
     }
-    setAddCityOpen(false);
   }
 
   return (
@@ -234,117 +127,18 @@ export function AppEditorPane({
         ) : (
           <>
             {activeTab === 'segments' && (
-              <>
-                <div className="itinerary-card-toolbar">
-                  <div className={'itinerary-add-city' + (addCityOpen ? ' is-open' : '')}>
-                    {addCityOpen ? (
-                      <>
-                        <div className="itinerary-add-city__picker">
-                          <CityAutocomplete
-                            value={null}
-                            onSelect={handleAddCity}
-                            placeholder={t('addCity')}
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          className="btn btn--icon itinerary-add-city__cancel"
-                          aria-label={t('cancel')}
-                          title={t('cancel')}
-                          onClick={() => setAddCityOpen(false)}
-                        >
-                          <IconX size={15} aria-hidden="true" />
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        className="itinerary-add-city__trigger"
-                        onClick={() => setAddCityOpen(true)}
-                      >
-                        <IconPlus size={16} aria-hidden="true" />
-                        <span>{t('addCity')}</span>
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="itinerary-layout-switch" role="group" aria-label={t('itineraryView')}>
-                    <button
-                      type="button"
-                      className={'itinerary-layout-switch__button' + (itineraryLayout === 'list' ? ' is-active' : '')}
-                      aria-label={t('listView')}
-                      title={t('listView')}
-                      aria-pressed={itineraryLayout === 'list'}
-                      onClick={() => setItineraryLayout('list')}
-                    >
-                      <IconList size={16} aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      className={'itinerary-layout-switch__button' + (itineraryLayout === 'grid' ? ' is-active' : '')}
-                      aria-label={t('gridView')}
-                      title={t('gridView')}
-                      aria-pressed={itineraryLayout === 'grid'}
-                      onClick={() => setItineraryLayout('grid')}
-                    >
-                      <IconLayoutGrid size={16} aria-hidden="true" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className={`segments itinerary-cards itinerary-cards--${itineraryLayout}`}>
-                  <SegmentOriginSection
-                    origin={trip.origin}
-                    locale={intlLocale}
-                    currency={trip.currency}
-                    originDetails={trip.originDetails}
-                    onUpdateOrigin={updateOrigin}
-                    onOpenNote={() => toggleNoteTarget(ORIGIN_NOTE_TARGET)}
-                    onOpenDetails={() => toggleDetailsTarget(ORIGIN_NOTE_TARGET)}
-                  />
-
-                  {visibleSegmentEntries.map(({ segment, index }) => (
-                    <SegmentForm
-                      key={segment.id}
-                      segment={segment}
-                      index={index}
-                      sequenceNumber={stopSequence[index]?.number ?? null}
-                      sequenceColor={stopSequence[index]?.color || null}
-                      countryRunPosition={stopSequence[index]?.countryRunPosition || null}
-                      joinsPreviousCountryRun={Boolean(stopSequence[index]?.joinsPreviousCountryRun)}
-                      origin={trip.origin}
-                      locale={intlLocale}
-                      currency={trip.currency}
-                      originDetails={trip.originDetails}
-                      showOrigin={false}
-                      hasAssignedPlaces={(trip.places || []).some((place) => place.segmentId === segment.id)}
-                      dragging={dragState?.segmentId === segment.id}
-                      dragOffsetY={dragState?.segmentId === segment.id ? dragState.offsetY : 0}
-                      dropPlacement={dragState?.targetId === segment.id ? dragState.placement : null}
-                      onUpdate={(patch) => updateSegment(segment.id, patch)}
-                      onUpdateOrigin={updateOrigin}
-                      onRemove={() => removeSegment(segment.id)}
-                      onOpenNote={toggleNoteTarget}
-                      onOpenDetails={toggleDetailsTarget}
-                      onReorderPointerStart={(event) => {
-                        if (event.pointerType === 'mouse' && event.button !== 0) return;
-                        event.preventDefault();
-                        event.currentTarget.setPointerCapture?.(event.pointerId);
-                        const nextDragState = {
-                          segmentId: segment.id,
-                          pointerId: event.pointerId,
-                          startY: event.clientY,
-                          offsetY: 0,
-                          targetId: null,
-                          placement: null,
-                        };
-                        dragStateRef.current = nextDragState;
-                        setDragState(nextDragState);
-                      }}
-                    />
-                  ))}
-                </div>
-              </>
+              <MobileCityList
+                trip={trip}
+                entries={visibleSegmentEntries}
+                stopSequence={stopSequence}
+                locale={intlLocale}
+                onUpdateOrigin={updateOrigin}
+                onRemoveSegment={removeSegment}
+                onReorderSegment={reorderSegment}
+                onOpenNote={toggleNoteTarget}
+                onOpenDetails={toggleDetailsTarget}
+                onAddCity={handleAddCity}
+              />
             )}
 
             {activeTab === 'notes' && (

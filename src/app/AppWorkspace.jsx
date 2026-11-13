@@ -151,6 +151,7 @@ export function AppWorkspace({
         scroller: scrollerFor(event.target),
         dragging: false,
         decided: false,
+        target: event.target,
       };
     };
     const onMove = (event) => {
@@ -160,6 +161,11 @@ export function AppWorkspace({
       const dx = point.clientX - touch.startX;
       const dy = point.clientY - touch.startY;
       if (!touch.decided) {
+        // Tarjeta de ciudad levantada o deslizándose: el gesto es suyo.
+        if (touch.target?.closest?.('[data-city-gesture]')) {
+          touch = null;
+          return;
+        }
         if (Math.abs(dy) < 6 && Math.abs(dx) < 6) return;
         touch.decided = true;
         const vertical = Math.abs(dy) > Math.abs(dx);
