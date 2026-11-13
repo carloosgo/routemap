@@ -82,6 +82,76 @@ function reconcileReorderedSegmentDates(trip, segmentId) {
   return withSegmentDatePatch(trip, segmentId, reconciledDates);
 }
 
+const DAY_MS = 86400000;
+
+function dateToTime(value) {
+  return isTripISODate(value) ? Date.parse(`${value}T00:00:00Z`) : null;
+}
+
+function timeToDate(time) {
+  return new Date(time).toISOString().slice(0, 10);
+}
+
+/**
+ * Fechas encadenadas tras reordenar: arranca el primer día del viaje y da a
+ * cada ciudad las mismas noches que tenía. Respeta si el viaje comparte el día
+ * de traslado (la siguiente ciudad empieza el día que termina la anterior) o
+ * empieza al día siguiente. Devuelve null si el resultado no sería válido,
+ * para usar entonces la reconciliación conservadora.
+ */
+export function chainReorderedSegmentDates(originalSegments, reorderedTrip) {
+  const original = Array.isArray(originalSegments) ? originalSegments : [];
+  const starts = original.map((segment) => dateToTime(segment?.startDate)).filter((time) => time != null);
+  if (!starts.length) return null;
+  const anchor = Math.min(...starts);
+
+  let join = 0;
+  for (let index = 1; index < original.length; index += 1) {
+    const previousEnd = dateToTime(original[index - 1]?.endDate);
+    const nextStart = dateToTime(original[index]?.startDate);
+    if (previousEnd == null || nextStart == null) continue;
+    join = nextStart - previousEnd === DAY_MS ? 1 : 0;
+    break;
+  }
+
+  const lengthById = new Map();
+  original.forEach((segment, index) => {
+    const start = dateToTime(segment?.startDate);
+    if (start == null) return;
+    let end = dateToTime(segment?.endDate);
+    // Sin fecha de salida: dura hasta que empieza la siguiente ciudad.
+    if (end == null) {
+      const nextStart = dateToTime(original[index + 1]?.startDate);
+      if (nextStart != null) end = nextStart - join * DAY_MS;
+    }
+    if (end != null && end >= start) {
+      lengthById.set(segment.id, { days: Math.round((end - start) / DAY_MS) });
+    } else {
+      lengthById.set(segment.id, null);
+    }
+  });
+
+  let cursor = anchor;
+  const segments = reorderedTrip.segments.map((segment) => {
+    if (!lengthById.has(segment.id)) return segment;
+    const length = lengthById.get(segment.id);
+    const startDate = timeToDate(cursor);
+    if (!length) return { ...segment, startDate, endDate: '' };
+    const end = cursor + length.days * DAY_MS;
+    cursor = end + join * DAY_MS;
+    // Una salida inferida se escribe: al cambiar de lugar ya no hay una ciudad
+    // siguiente que la marque.
+    return { ...segment, startDate, endDate: timeToDate(end) };
+  });
+
+  const chained = { ...reorderedTrip, segments };
+  const valid = segments.every((segment) => validateSegmentDatePatch(chained, segment.id, {
+    startDate: segment.startDate || '',
+    endDate: segment.endDate || '',
+  }).valid);
+  return valid ? chained : null;
+}
+
 export function reorderSegments(
   trip,
   sourceId,
@@ -109,7 +179,19 @@ export function reorderSegments(
     ...trip,
     segments: reordered,
   };
-  const reconciledTrip = reconcileReorderedSegmentDates(reorderedTrip, moved.id);
+  // Mover una ciudad cambia el orden del viaje, no su duración. Si las fechas
+  // siguen siendo válidas en el nuevo orden no se tocan; si no, cada estancia
+  // conserva sus noches y las fechas se encadenan en el nuevo orden. Así la
+  // ciudad movida no pierde sus días ni sus lugares de Mis rutas.
+  const keepsDates = reordered.every((segment) => validateSegmentDatePatch(reorderedTrip, segment.id, {
+    startDate: segment.startDate || '',
+    endDate: segment.endDate || '',
+  }).valid);
+  const chainedTrip = keepsDates
+    ? reorderedTrip
+    : chainReorderedSegmentDates(segments, reorderedTrip);
+  const reconciledTrip = chainedTrip
+    || reconcileReorderedSegmentDates(reorderedTrip, moved.id);
 
   return {
     ...reconciledTrip,
