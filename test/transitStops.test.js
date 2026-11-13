@@ -87,6 +87,8 @@ test('estaciones (función): círculos que cubren todo el tramo y tipos según e
   assert.ok(stationTypes('COMMUTER_TRAIN').includes('transit_station'), 'RER: estaciones que Google marca solo como transit_station');
   assert.deepEqual(excludedStationTypes('COMMUTER_TRAIN'), ['bus_stop', 'bus_station']);
   assert.deepEqual(excludedStationTypes('BUS'), []);
+  assert.deepEqual(excludedStationTypes('TRAM'), [], 'tranvía: paradas compartidas con bus');
+  assert.equal(searchCircles(line.coordinates, { minSpacing: 450 }).length, 5, 'tranvía: círculos más juntos');
 });
 
 test('estaciones: el modelo de ruta conserva paradas, número de paradas y vehículo', () => {

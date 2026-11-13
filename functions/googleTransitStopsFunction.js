@@ -41,6 +41,10 @@ const STATION_TYPES = Object.freeze({
 const DEFAULT_TYPES = ['subway_station', 'train_station', 'light_rail_station', 'transit_station'];
 
 const BUS_VEHICLES = new Set(['BUS', 'INTERCITY_BUS', 'TROLLEYBUS']);
+// Tranvía y bus: paradas cada 300–400 m, a menudo compartidas (Google las
+// marca bus_stop + transit_station). Círculos más juntos y sin excluir bus.
+const STREET_VEHICLES = new Set(['TRAM', 'LIGHT_RAIL', ...BUS_VEHICLES]);
+const STREET_SPACING_METERS = 450;
 
 export function stationTypes(vehicle) {
   return STATION_TYPES[String(vehicle || '')] || DEFAULT_TYPES;
@@ -48,7 +52,7 @@ export function stationTypes(vehicle) {
 
 /** Para riel se descartan paradas de bus (también llevan transit_station). */
 export function excludedStationTypes(vehicle) {
-  return BUS_VEHICLES.has(String(vehicle || '')) ? [] : ['bus_stop', 'bus_station'];
+  return STREET_VEHICLES.has(String(vehicle || '')) ? [] : ['bus_stop', 'bus_station'];
 }
 
 function validPoint(point) {
@@ -63,14 +67,14 @@ function meters(a, b) {
 }
 
 /** Centros de búsqueda repartidos sobre el trazo y su radio (cubren todo el tramo). */
-export function searchCircles(coordinates) {
+export function searchCircles(coordinates, { minSpacing = BASE_SPACING_METERS } = {}) {
   const line = (Array.isArray(coordinates) ? coordinates : []).filter(validPoint)
     .slice(0, MAX_POINTS)
     .map(([lng, lat]) => [Number(lng), Number(lat)]);
   if (line.length < 2) return [];
   let total = 0;
   for (let i = 1; i < line.length; i += 1) total += meters(line[i - 1], line[i]);
-  const spacing = Math.max(BASE_SPACING_METERS, total / MAX_CIRCLES);
+  const spacing = Math.max(minSpacing, total / MAX_CIRCLES);
   const radius = Math.round(spacing * 0.6 + 80);
   const count = Math.max(1, Math.ceil(total / spacing));
   const circles = [];
@@ -141,7 +145,10 @@ export const googleTransitStops = onCall(
     await enforceQuota(db, request, QUOTAS.googleTransitStops);
     const types = stationTypes(request.data?.vehicle);
     const excluded = excludedStationTypes(request.data?.vehicle);
-    const circles = searchCircles(request.data?.coordinates);
+    const vehicle = String(request.data?.vehicle || '');
+    const circles = searchCircles(request.data?.coordinates, {
+      minSpacing: STREET_VEHICLES.has(vehicle) ? STREET_SPACING_METERS : BASE_SPACING_METERS,
+    });
     if (!circles.length) return { places: [] };
     try {
       const results = await Promise.all(circles.map(async (circle) => {
