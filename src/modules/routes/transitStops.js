@@ -12,6 +12,9 @@ const MAX_STOPS = 60;
 // El trazo de Google viene simplificado y la ubicación de cada estación es su
 // centro, no el andén: se aceptan estaciones hasta ~130 m de la línea.
 const NEAR_LINE_METERS = 130;
+// Tren y RER: estaciones grandes y trazo más simplificado en tramos largos.
+const NEAR_LINE_METERS_TRAIN = 230;
+const TRAIN_VEHICLES = new Set(['RAIL', 'HEAVY_RAIL', 'COMMUTER_TRAIN', 'HIGH_SPEED_TRAIN', 'LONG_DISTANCE_TRAIN']);
 const MAX_LINE_POINTS = 400;
 const SAME_STOP_METERS = 160;
 
@@ -133,7 +136,7 @@ async function loadGooglePlaces(segment) {
   return Array.isArray(response?.data?.places) ? response.data.places : [];
 }
 
-const STORAGE_KEY = 'atlas.transitStops.v2';
+const STORAGE_KEY = 'atlas.transitStops.v3';
 const STORAGE_MAX_ENTRIES = 200;
 const found = new Map();
 const pending = new Map();
@@ -225,7 +228,8 @@ export function ensureTransitStops(segment, { loadPlaces = loadGooglePlaces } = 
   const request = (async () => {
     try {
       const places = await loadPlaces(segment);
-      const stops = intermediateStops(placesAsStopNodes(places), segment);
+      const maxDistance = TRAIN_VEHICLES.has(String(segment?.vehicle || '')) ? NEAR_LINE_METERS_TRAIN : NEAR_LINE_METERS;
+      const stops = intermediateStops(placesAsStopNodes(places), segment, { maxDistance });
       found.set(key, stops);
       saveStored();
       if (stops.length) emit();
