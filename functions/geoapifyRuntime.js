@@ -52,6 +52,7 @@ export const QUOTAS = Object.freeze({
   googlePlacePhoto: { scope: 'google-place-photo', maxRequests: 24, windowMs: 60_000 },
   googleCountryPlaceIds: { scope: 'google-country-place-ids', maxRequests: 8, windowMs: 60_000 },
   googleRoute: { scope: 'google-route', maxRequests: 30, windowMs: 60_000 },
+  googleTransitStops: { scope: 'google-transit-stops', maxRequests: 30, windowMs: 60_000 },
   batchSubmit: {
     scope: 'geoapify-batch-submit',
     maxRequests: 2,

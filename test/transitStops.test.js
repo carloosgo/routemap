@@ -4,11 +4,12 @@ import {
   ensureTransitStops,
   intermediateStops,
   locateOnLine,
-  overpassQuery,
+  placesAsStopNodes,
   resetTransitStopsForTests,
   segmentStops,
 } from '../src/modules/routes/transitStops.js';
 import { normalizeRouteSegments } from '../src/modules/routes/routeModel.js';
+import { searchCircles, stationTypes } from '../functions/googleTransitStopsFunction.js';
 
 // Línea recta este-oeste (≈ 2.2 km) con estaciones cada ~550 m.
 const line = { type: 'LineString', coordinates: [[2.30, 48.87], [2.33, 48.87]] };
@@ -22,56 +23,61 @@ const segment = (extra = {}) => ({
   stopCount: 4,
   ...extra,
 });
-const node = (id, name, lng, lat = 48.87, tags = { public_transport: 'stop_position' }) => ({
-  type: 'node', id, lat, lon: lng, tags: { name, ...tags },
-});
-const elements = [
-  node(1, 'Étoile', 2.3001),
-  node(2, 'George V', 2.3075),
-  node(3, 'George V', 2.3076, 48.8701, { railway: 'station' }),
-  node(4, 'Franklin Roosevelt', 2.315),
-  node(5, 'Champs-Élysées', 2.3225),
-  node(6, 'Lejos', 2.315, 48.875),
-  node(7, 'Concorde', 2.3299),
-  node(8, '', 2.31),
+// Estaciones como las devuelve Google (centro de la estación, no el andén).
+const places = [
+  { name: 'Étoile', lat: 48.8702, lng: 2.3001 },
+  { name: 'George V', lat: 48.8706, lng: 2.3075 },
+  { name: 'George V', lat: 48.8701, lng: 2.3077 },
+  { name: 'Franklin D. Roosevelt', lat: 48.8695, lng: 2.315 },
+  { name: 'Champs-Élysées - Clemenceau', lat: 48.8703, lng: 2.3225 },
+  { name: 'Lejos', lat: 48.875, lng: 2.315 },
+  { name: 'Concorde', lat: 48.8699, lng: 2.3299 },
 ];
 
 test('estaciones: solo las intermedias pegadas al trazo, en orden y sin repetir', () => {
-  assert.deepEqual(intermediateStops(elements, segment()).map((stop) => stop.name), [
-    'George V', 'Franklin Roosevelt', 'Champs-Élysées',
+  assert.deepEqual(intermediateStops(placesAsStopNodes(places), segment()).map((stop) => stop.name), [
+    'George V', 'Franklin D. Roosevelt', 'Champs-Élysées - Clemenceau',
   ]);
   assert.ok(locateOnLine({ lat: 48.875, lng: 2.315 }, line.coordinates).distance > 500);
 });
 
 test('estaciones: no más de las que cuenta Google', () => {
-  assert.equal(intermediateStops(elements, segment({ stopCount: 2 })).length, 1);
+  assert.equal(intermediateStops(placesAsStopNodes(places), segment({ stopCount: 2 })).length, 1);
 });
 
-test('estaciones: consulta de Overpass por línea y tipo, o por estaciones si no hay línea', () => {
-  assert.match(overpassQuery(segment()), /\["ref"="1"\]\["route"~"\^\(subway\|light_rail\)\$"\]/);
-  assert.match(overpassQuery(segment({ label: '' })), /public_transport/);
-  assert.match(overpassQuery(segment({ label: 'A"]' })), /\["ref"="A\]"\]/);
-});
-
-test('estaciones: se buscan una vez y se suman a subida y bajada; si Overpass falla, solo los extremos', async () => {
+test('estaciones: se buscan una vez y se suman a subida y bajada; si falla, solo los extremos', async () => {
   resetTransitStopsForTests();
   let calls = 0;
-  const ok = async () => {
+  const loadPlaces = async (requested) => {
     calls += 1;
-    return { ok: true, json: async () => ({ elements }) };
+    assert.equal(requested.vehicle, 'SUBWAY');
+    return places;
   };
   assert.deepEqual(segmentStops(segment()).map((stop) => stop.name), ['Étoile', 'Concorde']);
-  await ensureTransitStops(segment(), { fetchImpl: ok });
-  await ensureTransitStops(segment(), { fetchImpl: ok });
+  await ensureTransitStops(segment(), { loadPlaces });
+  await ensureTransitStops(segment(), { loadPlaces });
   assert.equal(calls, 1);
   assert.deepEqual(segmentStops(segment()).map((stop) => stop.name), [
-    'Étoile', 'George V', 'Franklin Roosevelt', 'Champs-Élysées', 'Concorde',
+    'Étoile', 'George V', 'Franklin D. Roosevelt', 'Champs-Élysées - Clemenceau', 'Concorde',
   ]);
 
-  const failing = async () => { throw new Error('offline'); };
   const other = segment({ label: '2' });
-  assert.deepEqual(await ensureTransitStops(other, { fetchImpl: failing }), []);
+  const failing = async () => { throw new Error('offline'); };
+  assert.deepEqual(await ensureTransitStops(other, { loadPlaces: failing }), []);
   assert.deepEqual(segmentStops(other).map((stop) => stop.name), ['Étoile', 'Concorde']);
+});
+
+test('estaciones (función): círculos que cubren todo el tramo y tipos según el vehículo', () => {
+  const circles = searchCircles(line.coordinates);
+  assert.equal(circles.length, 3);
+  assert.ok(circles.every((circle) => circle.radius >= 500 && Math.abs(circle.lat - 48.87) < 0.001));
+  assert.ok(circles[0].lng < circles[1].lng && circles[1].lng < circles[2].lng);
+  const long = searchCircles([[2.0, 48.8], [2.6, 48.8]]);
+  assert.equal(long.length, 10, 'tramos largos: máximo 10 búsquedas');
+  assert.deepEqual(searchCircles([[2.3, 48.87]]), []);
+  assert.deepEqual(stationTypes('SUBWAY'), ['subway_station']);
+  assert.deepEqual(stationTypes('TRAM'), ['light_rail_station', 'transit_station']);
+  assert.ok(stationTypes('???').includes('train_station'));
 });
 
 test('estaciones: el modelo de ruta conserva paradas, número de paradas y vehículo', () => {
@@ -85,28 +91,4 @@ test('estaciones: el modelo de ruta conserva paradas, número de paradas y vehí
   assert.deepEqual(normalized.stops, [{ name: 'Étoile', lat: 48.87, lng: 2.3 }]);
   assert.equal(normalized.stopCount, 4);
   assert.equal(normalized.vehicle, 'SUBWAY');
-});
-
-test('estaciones: las paradas de la propia línea se aceptan un poco más lejos del trazo simplificado', () => {
-  const offset = [node(9, 'Lejana', 2.315, 48.8711)];
-  assert.equal(intermediateStops(offset, segment()).length, 0);
-  assert.equal(intermediateStops(offset, segment(), { byLine: true }).length, 1);
-});
-
-test('estaciones: sin fetchImpl llama a fetch global a través de un envoltorio', async () => {
-  resetTransitStopsForTests();
-  const original = globalThis.fetch;
-  const calls = [];
-  globalThis.fetch = function strictFetch(...args) {
-    if (this !== undefined && this !== globalThis) throw new TypeError('Illegal invocation');
-    calls.push(args[0]);
-    return Promise.resolve({ ok: true, json: async () => ({ elements }) });
-  };
-  try {
-    const stops = await ensureTransitStops(segment({ label: '7' }));
-    assert.equal(calls.length, 1);
-    assert.equal(stops.length, 3);
-  } finally {
-    globalThis.fetch = original;
-  }
 });

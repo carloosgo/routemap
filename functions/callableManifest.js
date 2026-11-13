@@ -19,6 +19,7 @@ export const CALLABLE_FUNCTIONS = Object.freeze([
   Object.freeze({ name: 'googlePlacePhoto', file: 'googlePlacePhotoFunction.js' }),
   Object.freeze({ name: 'googleCountryPlaceIds', file: 'googleCountryPlaceIdsFunction.js' }),
   Object.freeze({ name: 'googleRouteOptimized', file: 'googleOptimizedRouteFunction.js' }),
+  Object.freeze({ name: 'googleTransitStops', file: 'googleTransitStopsFunction.js' }),
   Object.freeze({ name: 'storageV4SyncTelemetry', file: 'v4SyncTelemetryFunction.js' }),
 ]);
 
