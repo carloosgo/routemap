@@ -7,7 +7,7 @@ import {
   IconExternalLink,
   IconGripVertical,
   IconMapPin,
-  IconNote,
+  IconEdit,
   IconTrash,
   IconX,
 } from '@tabler/icons-react';
@@ -459,7 +459,7 @@ export function TripPlacesPanel({
               aria-label={t('placeNote')}
               title={t('placeNote')}
             >
-              <IconNote size={14} aria-hidden="true" />
+              <IconEdit size={14} aria-hidden="true" />
             </button>
             <button
               type="button"

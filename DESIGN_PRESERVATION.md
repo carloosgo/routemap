@@ -348,3 +348,10 @@ La interfaz puede incorporar capacidades nuevas, pero el lenguaje visual de Atla
 
 - En Mis Rutas, cada tramo de transporte público marca sus estaciones como círculos blancos con borde del color de la línea dibujados sobre la propia línea (símbolos de la polilínea, mismo tamaño para subida, intermedias y bajada). No llevan etiqueta para no saturar el mapa.
 - Subida y bajada vienen de Google con la ruta; las intermedias se piden después de dibujarla a la función `googleTransitStops` (Google Places, estaciones del tipo de la línea junto al trazo) y se guardan en el dispositivo. Si falla, solo se marcan los extremos.
+
+## Ajuste solicitado (13/11/2026): Mis Rutas con días en cuadros
+
+- Sustituye, donde haya conflicto, la lista de días agrupada por ciudad (variante D) y la regla de la nota de ciudad en la cabecera del grupo. Mapa, trayectos, Capas, Itinerario y gastos no cambian.
+- Arriba, una barra horizontal de cuadros de día (56 × 56 px, radio 16 px, fondo `#f4f5f7`) con día de la semana corto y número; sin etiquetas de ciudad ni separadores entre días. Punto azul `#19a5d0` si el día tiene lugares. El día elegido es oscuro (`#1f2933`, texto blanco). Siempre hay un día a la vista; solo «Por organizar» lo oculta.
+- Bajo la barra, la cabecera del día: bandera y ciudad en grande (20 px, bold) y debajo «**Día N** · X lugares · Y km». A la derecha, Compartir y la nota de la ciudad (lápiz `IconEdit`) en círculos de 40 px. En un día de traslado se muestran ambas ciudades y la nota es la de llegada.
+- Cada lugar es una tarjeta con los gestos de la lista de ciudades: tocar la ubica en el mapa, mantener presionado la levanta (animación) para moverla, deslizar a la izquierda muestra Eliminar. Sin X. En web se arrastra con el mouse y el bote aparece al pasar el mouse. Soltar sobre un cuadro de la barra la manda a ese día.

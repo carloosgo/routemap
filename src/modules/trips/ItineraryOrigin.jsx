@@ -1,5 +1,5 @@
 import {
-  IconNote,
+  IconEdit,
   IconReceipt,
   IconTrash,
 } from '@tabler/icons-react';
@@ -78,7 +78,7 @@ export function ItineraryOrigin({
             title={originNoteLabel}
             onClick={onOpenNote}
           >
-            <IconNote size={15} stroke={1.8} aria-hidden="true" />
+            <IconEdit size={15} stroke={1.8} aria-hidden="true" />
             {hasNote && <span aria-hidden="true" style={NOTE_DOT_STYLE} />}
           </button>
 

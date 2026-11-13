@@ -89,10 +89,10 @@ test('note, concepts and delete keep their order while concepts opens the symmet
 
   assert.match(header, /segment__note-btn[\s\S]*segment__toggle segment__details-btn itinerary-stop__details-btn[\s\S]*aria-label=\{t\('removeSegment'\)\}/s);
   assert.match(origin, /segment__note-btn itinerary-origin__note-btn[\s\S]*segment__toggle segment__details-btn itinerary-origin__details-btn[\s\S]*itinerary-stop__remove-btn itinerary-origin__clear/s);
-  assert.match(header, /IconNote/);
+  assert.match(header, /IconEdit/);
   assert.match(header, /IconReceipt/);
   assert.match(header, /IconTrash/);
-  assert.match(origin, /IconNote/);
+  assert.match(origin, /IconEdit/);
   assert.match(origin, /IconReceipt/);
   assert.match(origin, /IconTrash/);
   assert.doesNotMatch(header, /IconChevronRight|IconChevronDown|IconChevronUp|IconX|aria-expanded|aria-controls/);
