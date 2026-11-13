@@ -18,6 +18,7 @@ export { googlePlaceLocations } from './googlePlaceLocationFunction.js';
 export { googlePlacePhoto } from './googlePlacePhotoFunction.js';
 export { googleCountryPlaceIds } from './googleCountryPlaceIdsFunction.js';
 export { googleRouteOptimized } from './googleOptimizedRouteFunction.js';
+export { googleTransitStops } from './googleTransitStopsFunction.js';
 export {
   v4FirestoreEventIngress,
   v4TripLifecycle,

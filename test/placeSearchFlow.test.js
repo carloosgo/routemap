@@ -102,7 +102,6 @@ test('CSP permite todos los hosts dinámicos requeridos por Google Maps JavaScri
   assert.match(html, /connect-src[^;]*https:\/\/\*\.googleapis\.com/);
   assert.match(html, /connect-src[^;]*https:\/\/\*\.gstatic\.com/);
   assert.match(html, /connect-src[^;]*https:\/\/\*\.google\.com/);
-  assert.match(html, /connect-src[^;]*https:\/\/overpass-api\.de/, 'estaciones de transporte (Overpass)');
   assert.match(html, /script-src[^;]*'unsafe-eval'/);
   assert.match(html, /script-src[^;]*https:\/\/\*\.googleapis\.com/);
   assert.match(html, /script-src[^;]*https:\/\/\*\.gstatic\.com/);
