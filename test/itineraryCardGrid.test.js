@@ -101,10 +101,10 @@ test('note, concepts and delete use dedicated professional icons while remaining
   const origin = await read('src/modules/trips/ItineraryOrigin.jsx');
   const css = await read('src/modules/trips/ItineraryCompactList.css');
 
-  assert.match(header, /IconMessageCircle/);
+  assert.match(header, /IconNote/);
   assert.match(header, /IconReceipt/);
   assert.match(header, /IconTrash/);
-  assert.match(origin, /IconMessageCircle/);
+  assert.match(origin, /IconNote/);
   assert.match(origin, /IconReceipt/);
   assert.match(origin, /IconTrash/);
   assert.doesNotMatch(header, /IconChevronDown|IconX/);

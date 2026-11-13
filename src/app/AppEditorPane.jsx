@@ -13,6 +13,7 @@ import {
 import { CityAutocomplete } from '../components/CityAutocomplete.jsx';
 import { SegmentForm } from '../modules/trips/SegmentForm.jsx';
 import { SegmentOriginSection } from '../modules/trips/SegmentOriginSection.jsx';
+import { MobileCityList, useIsMobileViewport } from '../modules/trips/MobileCityList.jsx';
 import { buildItineraryStopSequence } from '../modules/trips/itineraryStopSequence.js';
 import { segmentTotal } from '../modules/trips/tripModel.js';
 import { ORIGIN_NOTE_TARGET } from '../modules/trips/tripNoteTargets.js';
@@ -76,6 +77,7 @@ export function AppEditorPane({
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [itineraryLayout, setItineraryLayout] = useState('grid');
   const [addCityOpen, setAddCityOpen] = useState(false);
+  const mobileViewport = useIsMobileViewport();
   const activeDragId = dragState?.segmentId || null;
   const stopSequence = buildItineraryStopSequence(trip.origin, trip.segments, colorForIndex);
   const visibleSegmentEntries = trip.segments
@@ -233,7 +235,22 @@ export function AppEditorPane({
           </div>
         ) : (
           <>
-            {activeTab === 'segments' && (
+            {activeTab === 'segments' && mobileViewport && (
+              <MobileCityList
+                trip={trip}
+                entries={visibleSegmentEntries}
+                stopSequence={stopSequence}
+                locale={intlLocale}
+                onUpdateOrigin={updateOrigin}
+                onRemoveSegment={removeSegment}
+                onReorderSegment={reorderSegment}
+                onOpenNote={toggleNoteTarget}
+                onOpenDetails={toggleDetailsTarget}
+                onAddCity={handleAddCity}
+              />
+            )}
+
+            {activeTab === 'segments' && !mobileViewport && (
               <>
                 <div className="itinerary-card-toolbar">
                   <div className={'itinerary-add-city' + (addCityOpen ? ' is-open' : '')}>

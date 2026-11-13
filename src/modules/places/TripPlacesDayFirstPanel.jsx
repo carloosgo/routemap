@@ -4,7 +4,7 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconMapPin,
-  IconMessageCircle,
+  IconNote,
   IconX,
 } from '@tabler/icons-react';
 import { flagImageUrl } from '../flags/flags.js';
@@ -476,7 +476,7 @@ export function TripPlacesDayFirstPanel({
             aria-label={t('placeNote')}
             title={t('placeNote')}
           >
-            <IconMessageCircle size={15} stroke={1.8} aria-hidden="true" />
+            <IconNote size={15} stroke={1.8} aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -669,7 +669,7 @@ export function TripPlacesDayFirstPanel({
                     aria-label={t('segmentNote')}
                     title={t('segmentNote')}
                   >
-                    <IconMessageCircle size={15} stroke={1.8} aria-hidden="true" />
+                    <IconNote size={15} stroke={1.8} aria-hidden="true" />
                   </button>
                 )}
               </div>

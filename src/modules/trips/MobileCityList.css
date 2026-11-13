@@ -1,0 +1,326 @@
+/* Lista de ciudades de la app (≤720 px), rediseño del 13/11/2026.
+   Solo se monta en móvil (MobileCityList), así que no necesita media query. */
+
+.mcity-list {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 16px 18px;
+  font-family: inherit;
+  color: var(--text, #1f2933);
+}
+
+/* ===== Origen: una línea delgada ===== */
+.mcity-origin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding-left: 2px;
+  font-size: 14px;
+  color: #5b6573;
+}
+
+.mcity-origin__label {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.mcity-origin__city {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mcity-origin__city .autocomplete__field {
+  min-height: 32px;
+  padding: 0 4px;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.mcity-origin__city .autocomplete__field {
+  position: relative;
+}
+
+.mcity-origin__city .autocomplete__field .input {
+  width: 100%;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2933;
+  background: transparent;
+}
+
+/* Ciudad elegida: se muestra el nombre y el campo queda debajo, invisible,
+   hasta que se toca para cambiarla. */
+.mcity-origin__city .autocomplete--timeline-selected:not(.is-open) .input {
+  color: transparent;
+  caret-color: transparent;
+}
+
+.mcity-origin__city .autocomplete--timeline-selected:not(.is-open) .autocomplete__selected-value {
+  position: absolute;
+  top: 50%;
+  left: 36px;
+  right: 4px;
+  overflow: hidden;
+  transform: translateY(-50%);
+  color: #1f2933;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+/* ===== Tarjetas ===== */
+.mcity-list__cards {
+  display: flex;
+  flex-direction: column;
+  row-gap: 10px;
+  margin-top: 6px;
+}
+
+.mcity {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  transition: transform 0.2s ease;
+}
+
+.mcity-list.is-reordering .mcity:not(.is-lifted) {
+  transition: transform 0.18s ease;
+}
+
+.mcity.is-lifted {
+  z-index: 10;
+  overflow: visible;
+  transition: none;
+}
+
+.mcity__delete {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 0;
+  border-radius: 0 14px 14px 0;
+  background: #d94f4f;
+  color: #ffffff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.mcity.is-swiped .mcity__delete,
+.mcity:has(.mcity__card.is-swiping) .mcity__delete {
+  opacity: 1;
+}
+
+.mcity__card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 80px;
+  box-sizing: border-box;
+  padding: 10px 6px 10px 10px;
+  border: 1.5px solid #e6e8ec;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  transition: transform 0.22s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.mcity__card.is-swiping {
+  transition: none;
+}
+
+.mcity__card:active {
+  background: #fafbfc;
+}
+
+.mcity.is-lifted .mcity__card {
+  border-color: #19a5d0;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.22);
+  cursor: grabbing;
+}
+
+.mcity.is-lifted .mcity__body {
+  animation: mcity-wiggle 0.5s ease-in-out infinite;
+}
+
+@keyframes mcity-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-0.6deg); }
+  75% { transform: rotate(0.6deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mcity.is-lifted .mcity__body {
+    animation: none;
+  }
+}
+
+.mcity__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mcity__visual {
+  position: relative;
+  flex-shrink: 0;
+  width: 58px;
+  height: 58px;
+  border-radius: 11px;
+  overflow: hidden;
+}
+
+.mcity__identity {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mcity__name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.mcity__flag {
+  flex-shrink: 0;
+  width: 20px;
+  height: 14px;
+  border-radius: 3px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px #e1e4e8;
+}
+
+.mcity__name strong {
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mcity__name strong.is-empty {
+  color: #8a94a1;
+}
+
+.mcity__dates {
+  overflow: hidden;
+  font-size: 13px;
+  color: #5b6573;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mcity__side {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+}
+
+.mcity__amount {
+  padding-right: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2933;
+  white-space: nowrap;
+}
+
+.mcity__amount.is-zero {
+  color: #8a94a1;
+}
+
+.mcity__note {
+  position: relative;
+  width: 36px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #8a94a1;
+  cursor: pointer;
+}
+
+.mcity__note.has-note {
+  color: #417c8f;
+}
+
+.mcity__note-dot {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  box-sizing: border-box;
+  border: 1.5px solid #ffffff;
+  border-radius: 50%;
+  background: #19a5d0;
+}
+
+/* ===== Agregar siguiente ciudad ===== */
+.mcity-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.mcity-add__trigger {
+  flex: 1 1 auto;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1.5px dashed #9cc9d6;
+  border-radius: 14px;
+  background: #f5fbfd;
+  color: #0e7fa3;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mcity-add__picker {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mcity-list__hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #6b7684;
+  text-align: center;
+}
