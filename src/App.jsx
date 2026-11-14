@@ -16,7 +16,7 @@ import { normalizeRecoveredDraft } from './app/recoveredTripDraft.js';
 import { useAppEditorState } from './app/useAppEditorState.js';
 import { useItineraryFloatingPanels } from './app/useItineraryFloatingPanels.js';
 import { usePlacesFocus } from './app/usePlacesFocus.js';
-import { useOutsideClick, useSaveShortcut } from './app/useAppInteractions.js';
+import { useCloudTripRefresh, useOutsideClick, useSaveShortcut } from './app/useAppInteractions.js';
 import { useTripSaveFlow } from './app/useTripSaveFlow.js';
 import { useAccountMenu } from './app/useAccountMenu.js';
 import { AccountCapsule } from './app/AccountCapsule.jsx';
@@ -31,7 +31,7 @@ export default function App({ auth }) {
   const itineraryPanels = useItineraryFloatingPanels();
   const { trip, loadTrip, setCurrency, updateSegment, updateExpenses, updateOriginDetails, updateOriginExpenses, addPlace } = tripStore;
   const placesFocus = usePlacesFocus({ tripId: trip.id, segments: trip.segments, places: trip.places || [], t });
-  const { getTrip, getActiveTripDraft, stageTrip, getTripPersistenceState, saveTrip, deleteTrip } = savedTrips;
+  const { getTrip, getActiveTripDraft, getCloudTripUpdate, stageTrip, getTripPersistenceState, saveTrip, deleteTrip } = savedTrips;
   const [toast, setToast] = useState('');
   const [activeTab, setActiveTab] = useState('segments');
   const [tripToDelete, setTripToDelete] = useState(null);
@@ -48,6 +48,7 @@ export default function App({ auth }) {
 
   const canSave = isTripSavable(trip);
   const persistence = useTripAutoPersistence({ trip, stageTrip, getTripPersistenceState, canRemoteSync: canSave });
+  useCloudTripRefresh({ enabled: Boolean(auth.user?.uid), trip, persistence, getCloudTripUpdate, loadTrip });
 
   useEffect(() => {
     if (auth.loading) return undefined;

@@ -88,6 +88,31 @@ export function createFirestoreV4AppTripRepository({
     return Object.fromEntries(entries);
   }
 
+  /**
+   * Lee la nube sin tocar la base local de sincronización. accept() la
+   * adopta como base; solo debe llamarse si de verdad se va a mostrar.
+   */
+  async function fetchRemote(id) {
+    const tripId = requiredText(id, 'tripId');
+    const summary = await remote.getTripSummary(tripId);
+    if (!summary) return null;
+    if (Number(summary.schemaVersion) !== 4) throw storageV4RequiredError();
+
+    const collections = await readCollections(tripId);
+    const trip = hydrateV4Trip(summary, collections);
+    return {
+      trip,
+      async accept() {
+        if (typeof editor.acceptRemoteState !== 'function') return;
+        await editor.acceptRemoteState({
+          tripId,
+          remoteRoot: summary,
+          remoteCollections: writerRemoteCollections(collections),
+        });
+      },
+    };
+  }
+
   return {
     initialize,
 
@@ -99,22 +124,13 @@ export function createFirestoreV4AppTripRepository({
     },
 
     async get(id) {
-      const tripId = requiredText(id, 'tripId');
-      const summary = await remote.getTripSummary(tripId);
-      if (!summary) return null;
-      if (Number(summary.schemaVersion) !== 4) throw storageV4RequiredError();
-
-      const collections = await readCollections(tripId);
-      const hydrated = hydrateV4Trip(summary, collections);
-      if (typeof editor.acceptRemoteState === 'function') {
-        await editor.acceptRemoteState({
-          tripId,
-          remoteRoot: summary,
-          remoteCollections: writerRemoteCollections(collections),
-        });
-      }
-      return hydrated;
+      const fetched = await fetchRemote(id);
+      if (!fetched) return null;
+      await fetched.accept();
+      return fetched.trip;
     },
+
+    fetchRemote,
 
     stage(rawTrip) {
       if (typeof editor.stage !== 'function') {
