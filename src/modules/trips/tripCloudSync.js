@@ -12,14 +12,24 @@ import { openSavedTrip } from './savedTripOperations.js';
  * notas) y es la que se muestra.
  */
 
-/** true si el dispositivo tiene cambios locales del viaje sin subir. */
-export async function tripHasUnsyncedLocalChanges(repository, tripId) {
+/**
+ * true si el dispositivo tiene cambios locales del viaje sin subir: en la cola
+ * de sincronización o, si se pasa el borrador, cambios que ni siquiera
+ * llegaron a la cola (por ejemplo, editados sin internet). El borrador se
+ * compara con la última versión de la nube que conoce ESTE dispositivo, antes
+ * de descargar la nueva; así una copia vieja no se confunde con cambios.
+ */
+export async function tripHasUnsyncedLocalChanges(repository, tripId, draft = null) {
   // Sin repositorio remoto (sin sesión) el borrador local es la única copia.
   if (typeof repository?.getPersistenceState !== 'function') return true;
   try {
     const state = await repository.getPersistenceState(tripId);
     if (state?.supported !== true) return true;
-    return !(state.state === 'saved' && !(Number(state.pending) > 0));
+    if (!(state.state === 'saved' && !(Number(state.pending) > 0))) return true;
+    if (!draft || typeof repository.localChangeCount !== 'function') return false;
+    const changes = await repository.localChangeCount(draft);
+    // null: el dispositivo no conoce la nube de este viaje; se conserva.
+    return changes == null || changes > 0;
   } catch {
     // Ante la duda se conserva el trabajo local.
     return true;
@@ -27,25 +37,17 @@ export async function tripHasUnsyncedLocalChanges(repository, tripId) {
 }
 
 /**
- * Elige entre la versión de la nube y el borrador local de un viaje.
- * Devuelve { trip, source: 'remote' | 'draft' }.
+ * Abre un viaje: la nube, salvo que el borrador de este dispositivo tenga
+ * cambios sin subir. Se decide ANTES de descargar, porque abrir desde la nube
+ * actualiza la base local con la que se compara.
  */
-export async function resolveTripWithDraft({ repository, draftStore, tripId, storedTrip, draft }) {
-  if (!draft) return { trip: storedTrip || null, source: 'remote' };
-  if (!storedTrip) return { trip: draft, source: 'draft' };
-  if (await tripHasUnsyncedLocalChanges(repository, tripId)) {
-    return { trip: draft, source: 'draft' };
-  }
-  await draftStore?.delete?.(tripId)?.catch?.(() => {});
-  return { trip: storedTrip, source: 'remote' };
-}
-
-/** Abre un viaje: la nube, salvo que aquí haya cambios sin subir. */
 export async function openTripPreferringCloud({ repository, draftStore, tripId }) {
-  const storedTrip = await openSavedTrip(repository, tripId);
   const draft = await draftStore.get(tripId);
-  const resolved = await resolveTripWithDraft({ repository, draftStore, tripId, storedTrip, draft });
-  return resolved.trip;
+  if (draft && await tripHasUnsyncedLocalChanges(repository, tripId, draft)) return draft;
+  const storedTrip = await openSavedTrip(repository, tripId);
+  if (!storedTrip) return draft || null;
+  if (draft) await draftStore.delete(tripId).catch(() => {});
+  return storedTrip;
 }
 
 /**

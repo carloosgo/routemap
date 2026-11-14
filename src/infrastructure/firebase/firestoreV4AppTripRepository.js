@@ -156,6 +156,11 @@ export function createFirestoreV4AppTripRepository({
       return editor.getPersistenceState(requiredText(id, 'tripId'));
     },
 
+    localChangeCount(rawTrip) {
+      if (typeof editor.localChangeCount !== 'function') return Promise.resolve(null);
+      return editor.localChangeCount(rawTrip);
+    },
+
     save(rawTrip) {
       return editor.save(rawTrip);
     },

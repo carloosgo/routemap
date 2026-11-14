@@ -2,12 +2,11 @@ import { useCallback } from 'react';
 import {
   countLocalTrips,
   importLocalTripsIntoRepository,
-  openSavedTrip,
   persistSavedTrip,
   removeSavedTrip,
   savedTripErrorMessage,
 } from './savedTripOperations.js';
-import { resolveTripWithDraft } from './tripCloudSync.js';
+import { openTripPreferringCloud } from './tripCloudSync.js';
 
 function localOnlyState(durable = true) {
   return {
@@ -30,26 +29,15 @@ export function useSavedTripPersistenceActions({
   setError,
 }) {
   // Viaje con el que arranca la app: el último abierto en este dispositivo,
-  // pero con la versión de la nube si aquí no quedó nada sin subir.
+  // con la versión de la nube si aquí no quedó nada sin subir (y sin
+  // internet, la copia del teléfono).
   const getActiveTripDraft = useCallback(async () => {
     const draft = await draftStore.getActive();
-    if (!draft || typeof repository.getPersistenceState !== 'function') return draft;
-    let storedTrip = null;
-    try {
-      await repository.initialize?.();
-      storedTrip = await openSavedTrip(repository, draft.id);
-    } catch {
-      // Sin conexión o viaje no disponible: se sigue con la copia local.
-      return draft;
-    }
-    const resolved = await resolveTripWithDraft({
-      repository,
-      draftStore,
-      tripId: draft.id,
-      storedTrip,
-      draft,
-    });
-    return resolved.trip;
+    const tripId = draft?.id || await repository.lastTripId?.();
+    if (!tripId) return null;
+    if (draft && typeof repository.getPersistenceState !== 'function') return draft;
+    await Promise.resolve(repository.initialize?.()).catch(() => {});
+    return openTripPreferringCloud({ repository, draftStore, tripId }).catch(() => draft || null);
   }, [draftStore, repository]);
 
   const getTripPersistenceState = useCallback(

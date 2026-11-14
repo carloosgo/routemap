@@ -4,7 +4,7 @@ import { createMemoryV4LocalPersistence } from '../src/modules/storage-v4/memory
 import { createTrip, createPlace } from '../src/modules/trips/tripModel.js';
 import { createTripDraftStore, tripDraftScopeId } from '../src/modules/trips/tripDraftStore.js';
 import {
-  resolveTripWithDraft,
+  openTripPreferringCloud,
   tripCloudFingerprint,
   tripHasUnsyncedLocalChanges,
   tripsDifferInCloudData,
@@ -17,71 +17,72 @@ function tripWithTwoPlaces() {
   return { ...trip, places: [a, b] };
 }
 
-function repositoryWithState(state) {
-  return { getPersistenceState: async () => state };
+function repositoryWith({ state = SAVED_STATE, cloud = null, changes = 0 } = {}) {
+  let opened = 0;
+  return {
+    get opened() { return opened; },
+    getPersistenceState: async () => state,
+    localChangeCount: async () => changes,
+    get: async () => { opened += 1; return cloud; },
+  };
 }
 
-const SAVED = { supported: true, autosync: true, state: 'saved', pending: 0 };
+const SAVED_STATE = { supported: true, autosync: true, state: 'saved', pending: 0 };
 
-test('un borrador viejo ya sincronizado no tapa las rutas guardadas desde otro dispositivo', async () => {
-  const draftStore = createTripDraftStore({
+function memoryDrafts() {
+  return createTripDraftStore({
     scopeId: tripDraftScopeId('carlos'),
     localPersistence: createMemoryV4LocalPersistence(),
   });
+}
+
+test('un borrador viejo ya sincronizado no tapa las rutas guardadas desde otro dispositivo', async () => {
+  const draftStore = memoryDrafts();
   const stale = tripWithTwoPlaces();
   await draftStore.put(stale);
   const cloud = {
     ...stale,
     routeConnections: [{ id: 'r1', fromPlaceId: 'p1', toPlaceId: 'p2', mode: 'walk', visible: true }],
   };
+  // El borrador es igual a la última nube conocida aquí: 0 cambios.
+  const repository = repositoryWith({ cloud, changes: 0 });
+  const opened = await openTripPreferringCloud({ repository, draftStore, tripId: stale.id });
 
-  const resolved = await resolveTripWithDraft({
-    repository: repositoryWithState(SAVED),
-    draftStore,
-    tripId: stale.id,
-    storedTrip: cloud,
-    draft: await draftStore.get(stale.id),
-  });
-
-  assert.equal(resolved.source, 'remote');
-  assert.equal(resolved.trip.routeConnections[0].mode, 'walk');
+  assert.equal(opened.routeConnections[0].mode, 'walk');
   assert.equal(await draftStore.get(stale.id), null, 'el borrador viejo se descarta');
   assert.equal(await draftStore.getActive(), null);
 });
 
-test('cambios de este dispositivo sin subir se conservan', async () => {
-  const draftStore = createTripDraftStore({
-    scopeId: tripDraftScopeId('carlos'),
-    localPersistence: createMemoryV4LocalPersistence(),
-  });
+test('cambios de este dispositivo sin subir se conservan (en cola o hechos sin internet)', async () => {
+  const draftStore = memoryDrafts();
   const local = { ...tripWithTwoPlaces(), name: 'Europa (editado sin conexión)' };
   await draftStore.put(local);
 
-  for (const state of [
-    { supported: true, autosync: true, state: 'pending', pending: 2 },
-    { supported: true, autosync: true, state: 'local', pending: 1 },
-    { supported: true, autosync: true, state: 'conflict', pending: 1 },
+  for (const options of [
+    { state: { supported: true, autosync: true, state: 'pending', pending: 2 } },
+    { state: { supported: true, autosync: true, state: 'local', pending: 1 } },
+    { state: { supported: true, autosync: true, state: 'conflict', pending: 1 } },
+    { changes: 3 },
+    { changes: null },
   ]) {
-    const resolved = await resolveTripWithDraft({
-      repository: repositoryWithState(state),
-      draftStore,
-      tripId: local.id,
-      storedTrip: tripWithTwoPlaces(),
-      draft: await draftStore.get(local.id),
-    });
-    assert.equal(resolved.source, 'draft', state.state);
-    assert.equal(resolved.trip.name, 'Europa (editado sin conexión)');
+    const repository = repositoryWith({ ...options, cloud: tripWithTwoPlaces() });
+    const opened = await openTripPreferringCloud({ repository, draftStore, tripId: local.id });
+    assert.equal(opened.name, 'Europa (editado sin conexión)', JSON.stringify(options));
+    assert.equal(repository.opened, 0, 'no se descarga la nube antes de decidir');
   }
 });
 
-test('sin sesión o sin copia en la nube manda el borrador local', async () => {
+test('sin sesión manda el borrador; sin borrador manda la nube', async () => {
   const draft = tripWithTwoPlaces();
   assert.equal(await tripHasUnsyncedLocalChanges({}, draft.id), true);
   assert.equal(await tripHasUnsyncedLocalChanges({ getPersistenceState: async () => { throw new Error('offline'); } }, draft.id), true);
-  const noCloud = await resolveTripWithDraft({ repository: repositoryWithState(SAVED), tripId: draft.id, storedTrip: null, draft });
-  assert.equal(noCloud.source, 'draft');
-  const noDraft = await resolveTripWithDraft({ repository: repositoryWithState(SAVED), tripId: draft.id, storedTrip: draft, draft: null });
-  assert.equal(noDraft.source, 'remote');
+  assert.equal(await tripHasUnsyncedLocalChanges(repositoryWith(), draft.id), false);
+  const draftStore = memoryDrafts();
+  const cloud = { ...draft, name: 'Nube' };
+  assert.equal((await openTripPreferringCloud({ repository: repositoryWith({ cloud }), draftStore, tripId: draft.id })).name, 'Nube');
+  await draftStore.put(draft);
+  const noCloud = await openTripPreferringCloud({ repository: repositoryWith({ cloud: null }), draftStore, tripId: draft.id });
+  assert.equal(noCloud.name, draft.name);
 });
 
 test('la huella ignora datos de sesión y detecta cambios guardables', () => {
@@ -106,7 +107,7 @@ test('la huella ignora datos de sesión y detecta cambios guardables', () => {
 test('ponerse al día solo adopta la nube como base si se va a mostrar', async () => {
   const { cloudTripUpdate } = await import('../src/modules/trips/tripCloudSync.js');
   let accepted = 0;
-  let state = SAVED;
+  let state = SAVED_STATE;
   const cloud = tripWithTwoPlaces();
   const repository = {
     getPersistenceState: async () => state,

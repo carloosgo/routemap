@@ -96,7 +96,9 @@ export function useSavedTrips(user) {
     setError(null);
     try {
       // La copia local solo gana si tiene cambios de este dispositivo sin subir.
-      return await openTripPreferringCloud({ repository, draftStore, tripId: id });
+      const trip = await openTripPreferringCloud({ repository, draftStore, tripId: id });
+      if (trip) void repository.rememberLastTrip?.(id);
+      return trip;
     } catch (err) {
       if (isCurrentRepository()) {
         setError(savedTripErrorMessage(err, 'Error al abrir el viaje'));
@@ -107,6 +109,7 @@ export function useSavedTrips(user) {
 
   const stageTrip = useCallback(async (trip, { remote = true } = {}) => {
     const localDraft = await draftStore.put(trip);
+    void repository.rememberTrip?.(trip); // copia para usarlo sin internet
     if (!remote || typeof repository.stage !== 'function') {
       return localOnlyState(localDraft.durable);
     }

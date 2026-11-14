@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { offlineServiceWorkerPlugin } from './src/pwa/offlineServiceWorkerPlugin.js';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), offlineServiceWorkerPlugin()],
   server: {
     port: 5173,
     host: true,
