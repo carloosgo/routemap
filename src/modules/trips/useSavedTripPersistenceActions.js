@@ -2,10 +2,12 @@ import { useCallback } from 'react';
 import {
   countLocalTrips,
   importLocalTripsIntoRepository,
+  openSavedTrip,
   persistSavedTrip,
   removeSavedTrip,
   savedTripErrorMessage,
 } from './savedTripOperations.js';
+import { resolveTripWithDraft } from './tripCloudSync.js';
 
 function localOnlyState(durable = true) {
   return {
@@ -27,10 +29,28 @@ export function useSavedTripPersistenceActions({
   refreshIfCurrent,
   setError,
 }) {
-  const getActiveTripDraft = useCallback(
-    () => draftStore.getActive(),
-    [draftStore]
-  );
+  // Viaje con el que arranca la app: el último abierto en este dispositivo,
+  // pero con la versión de la nube si aquí no quedó nada sin subir.
+  const getActiveTripDraft = useCallback(async () => {
+    const draft = await draftStore.getActive();
+    if (!draft || typeof repository.getPersistenceState !== 'function') return draft;
+    let storedTrip = null;
+    try {
+      await repository.initialize?.();
+      storedTrip = await openSavedTrip(repository, draft.id);
+    } catch {
+      // Sin conexión o viaje no disponible: se sigue con la copia local.
+      return draft;
+    }
+    const resolved = await resolveTripWithDraft({
+      repository,
+      draftStore,
+      tripId: draft.id,
+      storedTrip,
+      draft,
+    });
+    return resolved.trip;
+  }, [draftStore, repository]);
 
   const getTripPersistenceState = useCallback(
     async (id) => {

@@ -24,8 +24,11 @@ test('editor real queda conectado a draft durable y estado de persistencia', asy
   assert.ok(savedTrips.includes('createTripDraftStore'));
   assert.ok(savedTrips.includes('draftStore.put(trip)'));
   assert.ok(savedTrips.includes('repository.stage(trip)'));
-  assert.ok(savedTrips.includes('const draft = await draftStore.get(id)'));
-  assert.ok(savedTrips.includes('return draft || storedTrip'));
+  assert.ok(savedTrips.includes('openTripPreferringCloud({ repository, draftStore, tripId: id })'));
+  // Web y app: al volver a la app se trae lo guardado en el otro dispositivo.
+  assert.ok(app.includes('useCloudTripRefresh({'));
+  const cloudRefresh = await read('src/app/useCloudTripRefresh.js');
+  assert.ok(cloudRefresh.includes('persistence.markSaved({ adoptNextTrip: true })'));
   assert.ok(draftStore.includes("ACTIVE_DRAFT_ID = '__active__'"));
   assert.ok(draftStore.includes('getActive: getActiveDraft'));
   assert.ok(draftStore.includes('draftId: ACTIVE_DRAFT_ID'));

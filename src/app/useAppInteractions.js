@@ -107,3 +107,6 @@ export function useCollapseSegmentsOnTripChange(tripId, segments, setExpandedSeg
     };
   }, []);
 }
+
+// Al volver a la app, ponerse al día con lo guardado en otro dispositivo.
+export { useCloudTripRefresh } from './useCloudTripRefresh.js';

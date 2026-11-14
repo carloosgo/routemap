@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   listSavedTrips,
-  openSavedTrip,
   savedTripErrorMessage,
 } from './savedTripOperations.js';
 import {
@@ -9,6 +8,7 @@ import {
   selectTripRepository,
 } from './tripRepositorySelector.js';
 import { createTripDraftStore, tripDraftScopeId } from './tripDraftStore.js';
+import { cloudTripUpdate, openTripPreferringCloud } from './tripCloudSync.js';
 import { useSavedTripPersistenceActions } from './useSavedTripPersistenceActions.js';
 
 function localOnlyState(durable = true) {
@@ -95,9 +95,8 @@ export function useSavedTrips(user) {
   const getTrip = useCallback(async (id) => {
     setError(null);
     try {
-      const storedTrip = await openSavedTrip(repository, id);
-      const draft = await draftStore.get(id);
-      return draft || storedTrip;
+      // La copia local solo gana si tiene cambios de este dispositivo sin subir.
+      return await openTripPreferringCloud({ repository, draftStore, tripId: id });
     } catch (err) {
       if (isCurrentRepository()) {
         setError(savedTripErrorMessage(err, 'Error al abrir el viaje'));
@@ -126,6 +125,8 @@ export function useSavedTrips(user) {
       durable: localDraft.durable,
     };
   }, [draftStore, repository]);
+
+  const getCloudTripUpdate = useCallback((id) => cloudTripUpdate(repository, id), [repository]);
 
   const refreshIfCurrent = useCallback(async () => {
     if (isCurrentRepository()) await refresh();
@@ -158,6 +159,7 @@ export function useSavedTrips(user) {
     refresh,
     getTrip,
     getActiveTripDraft,
+    getCloudTripUpdate,
     stageTrip,
     getTripPersistenceState,
     saveTrip,
