@@ -364,9 +364,29 @@ export function createFirestoreV4EditorTripWriter({
     return { ...(accepted || {}), primed };
   }
 
+  /**
+   * Cuántos cambios tiene el viaje respecto a la última versión de la nube
+   * conocida en este dispositivo. null si el dispositivo aún no la conoce.
+   */
+  async function localChangeCountOnce(rawTrip) {
+    const tripId = requiredText(rawTrip?.id, 'trip.id');
+    const state = await currentPlanState(tripId);
+    if (!state.remoteRoot) return null;
+    const plan = planV4TripSave({
+      uid: userId,
+      rawTrip,
+      remoteRoot: state.remoteRoot,
+      remoteCollections: state.remoteCollections,
+    });
+    return plan.intents.length;
+  }
+
   return {
     save(rawTrip) {
       return enqueue(() => baseWriter.save(rawTrip));
+    },
+    localChangeCount(rawTrip) {
+      return enqueue(() => localChangeCountOnce(rawTrip));
     },
     stage(rawTrip) {
       return enqueue(() => stageOnce(rawTrip));

@@ -42,7 +42,10 @@ export function hydrateV4Trip(summary = {}, collections = {}) {
     updatedAt: timestampIso(summary.updatedAt),
     segments: active(collections.segments),
     places: active(collections.places),
-    routeConnections: active(collections.connections),
+    // El repositorio entrega las colecciones con el nombre del campo del viaje
+    // (routeConnections). Leer solo "connections" dejaba las rutas "Elegir
+    // cómo llegar" fuera de todo viaje abierto desde la nube.
+    routeConnections: active(collections.routeConnections ?? collections.connections),
     notes: active(collections.notes),
     checklist: active(collections.checklist),
   });
